@@ -1,4 +1,5 @@
 use std::{str, mem};
+use std::rc::Rc;
 
 #[cfg(test)]
 mod tests {
@@ -8,27 +9,44 @@ mod tests {
     }
 }
 
+#[derive(Default, Clone)]
 pub struct Node {
-    
+    parent: Option<Rc<Node>>,
+    children: Vec<Node>,
+}
+
+impl Node {
+    fn new() -> Node {
+        Node {
+            parent: None,
+            children: vec![],
+        }
+    }
 }
 
 pub fn parse_document(buffer: &[u8], options: u32) -> Node {
-    let mut parser = Parser::new(options);
+    let mut root = Node::new();
+    let mut parser = Parser::new(&mut root, options);
     parser.feed(buffer, true);
     parser.finish()
 }
 
-struct Parser {
+struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
     linebuf: Vec<u8>,
+    line_number: u32,
+    current: &'a mut Node,
 }
 
-impl Parser {
-    fn new(options: u32) -> Parser {
-        Parser {
+impl<'a> Parser<'a> {
+    fn new(root: &'a mut Node, options: u32) -> Parser<'a> {
+        let mut p = Parser {
             last_buffer_ended_with_cr: false,
             linebuf: vec![],
-        }
+            line_number: 0,
+            current: root,
+        };
+        p
     }
 
     fn feed(&mut self, mut buffer: &[u8], eof: bool) {
@@ -88,11 +106,64 @@ impl Parser {
     }
 
     fn process_line(&mut self, buffer: &[u8]) {
-        println!("process: {}", str::from_utf8(buffer).unwrap())
+        let mut line: Vec<u8> = buffer.into();
+        if line.len() == 0 || !is_line_end_char(line[line.len() - 1]) {
+            line.push(10);
+        }
+
+        println!("process: [{}]", String::from_utf8(line.clone()).unwrap());
+
+        //self.offset = 0;
+        //self.column = 0;
+        //self.blank = false;
+        //self.partially_consumed_tab = false;
+        self.line_number += 1;
+
+        let mut all_matched = true;
+        let last_matched_container = self.check_open_blocks(&mut line, &mut all_matched);
+
+        /*
+
+        if (!last_matched_container)
+        goto finished;
+
+        container = last_matched_container;
+
+        current = parser->current;
+
+        open_new_blocks(parser, &container, &input, all_matched);
+
+        /* parser->current might have changed if feed_reentrant was called */
+        if (current == parser->current)
+        add_text_to_container(parser, container, last_matched_container, &input);
+
+        finished:
+        parser->last_line_length = input.len;
+        if (parser->last_line_length &&
+        input.data[parser->last_line_length - 1] == '\n')
+        parser->last_line_length -= 1;
+        if (parser->last_line_length &&
+        input.data[parser->last_line_length - 1] == '\r')
+        parser->last_line_length -= 1;
+        */
     }
 
-    fn finish(&mut self) -> Node {
-        Node {}
+    fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<Node> {
+        //        while self.root.
+        None
+    }
+
+    fn finish(&'a mut self) -> Node {
+        while self.current.parent.is_some() {
+            let ref mut c = self.current;
+            let r = self.finalize(c);
+            self.current = r;
+        }
+        *self.current
+    }
+
+    fn finalize(&'a mut self, node: &'a mut Node) -> &'a mut Node {
+        node
     }
 }
 
