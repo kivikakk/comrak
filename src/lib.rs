@@ -1,5 +1,4 @@
 #![feature(move_cell)]
-#![allow(dead_code)]
 #![allow(unused_variables)]
 
 extern crate typed_arena;
@@ -14,13 +13,12 @@ use arena_tree::Node;
 #[cfg(test)]
 mod tests {
     use typed_arena::Arena;
-    use arena_tree::Node;
-    use std::cell::Cell;
     #[test]
     fn it_works() {
         let arena = Arena::new();
-        let root = arena.alloc(Node::new(Cell::new(::NI {})));
         let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n", 0);
+        let m = ::format_document(n);
+        assert_eq!(m, "<p>My <strong>document</strong>.</p>\n<p>It's mine.</p>\n");
     }
 }
 
@@ -29,6 +27,10 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
     let mut parser = Parser::new(root, options);
     parser.feed(buffer, true);
     parser.finish()
+}
+
+pub fn format_document(root: &Node<N>) -> String {
+    return "".to_string();
 }
 
 pub struct NI {}
@@ -43,13 +45,12 @@ struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn new(root: &'a Node<'a, N>, options: u32) -> Parser<'a> {
-        let mut p = Parser {
+        Parser {
             last_buffer_ended_with_cr: false,
             linebuf: vec![],
             line_number: 0,
             current: root,
-        };
-        p
+        }
     }
 
     fn feed(&mut self, mut buffer: &[u8], eof: bool) {
