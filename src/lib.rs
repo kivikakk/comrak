@@ -24,8 +24,8 @@ mod tests {
     }
 }
 
-pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a mut Node<'a, N> {
-    let root: &'a mut Node<'a, N> = arena.alloc(Node::new(Cell::new(NI {})));
+pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
+    let root: &'a Node<'a, N> = arena.alloc(Node::new(Cell::new(NI {})));
     let mut parser = Parser::new(root, options);
     parser.feed(buffer, true);
     parser.finish()
@@ -38,11 +38,11 @@ struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
     linebuf: Vec<u8>,
     line_number: u32,
-    current: &'a mut Node<'a, N>,
+    current: &'a Node<'a, N>,
 }
 
 impl<'a> Parser<'a> {
-    fn new(root: &'a mut Node<'a, N>, options: u32) -> Parser<'a> {
+    fn new(root: &'a Node<'a, N>, options: u32) -> Parser<'a> {
         let mut p = Parser {
             last_buffer_ended_with_cr: false,
             linebuf: vec![],
@@ -156,19 +156,15 @@ impl<'a> Parser<'a> {
         None
     }
 
-    fn finish(self) -> &'a mut Node<'a, N> {
-        /*
+    fn finish(&mut self) -> &'a Node<'a, N> {
         while self.current.parent().is_some() {
-            let ref mut c = self.current;
-            let r = self.finalize(c);
-            self.current = r;
+            self.current = self.finalize(&self.current);
         }
-        */
         self.current
     }
 
-    fn finalize(&'a mut self, node: &'a mut Node<'a, N>) -> &'a mut Node<'a, N> {
-        node
+    fn finalize(&self, node: &'a Node<'a, N>) -> &'a Node<'a, N> {
+        node.parent().unwrap()
     }
 }
 
