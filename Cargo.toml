@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Yuki Izumi <kivikakk@github.com>"]
 
 [dependencies]
+typed-arena = "1.2.0"

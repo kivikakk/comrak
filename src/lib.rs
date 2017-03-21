@@ -1,45 +1,48 @@
-use std::{str, mem};
-use std::rc::Rc;
+#![feature(move_cell)]
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
+extern crate typed_arena;
+
+mod arena_tree;
+
+use std::cell::Cell;
+use std::mem;
+use typed_arena::Arena;
+use arena_tree::Node;
 
 #[cfg(test)]
 mod tests {
+    use typed_arena::Arena;
+    use arena_tree::Node;
+    use std::cell::Cell;
     #[test]
     fn it_works() {
-        let n = ::parse_document(b"My **document**.\n\nIt's mine.\n", 0);
+        let arena = Arena::new();
+        let root = arena.alloc(Node::new(Cell::new(::NI {})));
+        let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n", 0);
     }
 }
 
-#[derive(Default, Clone)]
-pub struct Node {
-    parent: Option<Rc<Node>>,
-    children: Vec<Node>,
-}
-
-impl Node {
-    fn new() -> Node {
-        Node {
-            parent: None,
-            children: vec![],
-        }
-    }
-}
-
-pub fn parse_document(buffer: &[u8], options: u32) -> Node {
-    let mut root = Node::new();
-    let mut parser = Parser::new(&mut root, options);
+pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a mut Node<'a, N> {
+    let root: &'a mut Node<'a, N> = arena.alloc(Node::new(Cell::new(NI {})));
+    let mut parser = Parser::new(root, options);
     parser.feed(buffer, true);
     parser.finish()
 }
+
+pub struct NI {}
+type N = Cell<NI>;
 
 struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
     linebuf: Vec<u8>,
     line_number: u32,
-    current: &'a mut Node,
+    current: &'a mut Node<'a, N>,
 }
 
 impl<'a> Parser<'a> {
-    fn new(root: &'a mut Node, options: u32) -> Parser<'a> {
+    fn new(root: &'a mut Node<'a, N>, options: u32) -> Parser<'a> {
         let mut p = Parser {
             last_buffer_ended_with_cr: false,
             linebuf: vec![],
@@ -148,21 +151,23 @@ impl<'a> Parser<'a> {
         */
     }
 
-    fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<Node> {
+    fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<Node<'a, N>> {
         //        while self.root.
         None
     }
 
-    fn finish(&'a mut self) -> Node {
-        while self.current.parent.is_some() {
+    fn finish(self) -> &'a mut Node<'a, N> {
+        /*
+        while self.current.parent().is_some() {
             let ref mut c = self.current;
             let r = self.finalize(c);
             self.current = r;
         }
-        *self.current
+        */
+        self.current
     }
 
-    fn finalize(&'a mut self, node: &'a mut Node) -> &'a mut Node {
+    fn finalize(&'a mut self, node: &'a mut Node<'a, N>) -> &'a mut Node<'a, N> {
         node
     }
 }
