@@ -6,6 +6,7 @@ extern crate typed_arena;
 mod arena_tree;
 
 use std::cell::RefCell;
+use std::cmp::min;
 use std::fmt::{Debug, Formatter, Result};
 use std::mem;
 use typed_arena::Arena;
@@ -371,15 +372,55 @@ impl<'a> Parser<'a> {
                     self.advance_offset(line, 1, true);
                 }
                 *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
-            } else if !indented && false {
-                // TODO: scan_atx_heading_start
-            }
+            } else if !indented && false { // TODO: scan_atx_heading_start
+                /*
+                let heading_startpos = self.first_nonspace;
+                self.advance_offset(line, self.first_nonspace + matched - self.offset, false);
+                *container = self.add_child(*container, NodeType::Heading, heading_startpos + 1);
+
+                let mut hashpos = strchr(line, '#', self.first_nonspace);
+                let mut level = 0;
+                while peek_at(line, hashpos) == '#' {
+                    level += 1;
+                    hashpos += 1;
+                }
+
+                container.as.heading.level = level;
+                container.as.heading.setext = false;
+                */
+            } // TODO
 
             break;
         }
     }
 
-    fn advance_offset(&mut self, line: &mut Vec<u8>, count: u32, columns: bool) {
+    fn advance_offset(&mut self, line: &mut Vec<u8>, mut count: u32, columns: bool) {
+        while count > 0 {
+            match peek_at(line, self.offset) {
+                None => break,
+                Some(&9) => {
+                    let chars_to_tab = 8 - (self.column % 8);
+                    if columns {
+                        self.partially_consumed_tab = chars_to_tab > count;
+                        let chars_to_advance = min(count, chars_to_tab);
+                        self.column += chars_to_advance;
+                        self.offset += if self.partially_consumed_tab { 0 } else { 1 };
+                        count -= chars_to_advance;
+                    } else {
+                        self.partially_consumed_tab = false;
+                        self.column += chars_to_tab;
+                        self.offset += 1;
+                        count -= 1;
+                    }
+                },
+                Some(_) => {
+                    self.partially_consumed_tab = false;
+                    self.offset += 1;
+                    self.column += 1;
+                    count -= 1;
+                },
+            }
+        }
     }
 
     fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeType, start_column: u32) -> &'a Node<'a, N> {
