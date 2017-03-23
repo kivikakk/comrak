@@ -300,10 +300,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn open_new_blocks(&mut self, container: &mut &Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
     }
 
-    fn add_text_to_container(&mut self, container: &Node<'a, N>, last_matched_container: &Node<'a, N>, line: &mut Vec<u8>) {
+    fn add_text_to_container(&mut self, container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
     }
 
     fn finish(&mut self) -> &'a Node<'a, N> {
