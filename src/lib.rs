@@ -17,7 +17,7 @@ mod tests {
     #[test]
     fn it_works() {
         let arena = Arena::new();
-        let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n", 0);
+        let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n\n> Yes.\n", 0);
         println!("got: {:?}", n);
         let m = ::format_document(n);
         assert_eq!(m, "<p>My <strong>document</strong>.</p>\n<p>It's mine.</p>\n");
@@ -27,11 +27,13 @@ mod tests {
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
     let root: &'a Node<'a, N> = arena.alloc(Node::new(RefCell::new(NI {
         typ: NodeType::Document,
-
-        open: false,
+        start_line: 0,
+        start_column: 0,
+        end_line: 0,
+        open: true,
         last_line_blank: false,
     })));
-    let mut parser = Parser::new(root, options);
+    let mut parser = Parser::new(arena, root, options);
     parser.feed(buffer, true);
     parser.finish()
 }
@@ -75,9 +77,22 @@ pub enum NodeType {
 #[derive(Debug)]
 pub struct NI {
     typ: NodeType,
-
+    start_line: u32,
+    start_column: u32,
+    end_line: u32,
     open: bool,
     last_line_blank: bool,
+}
+
+fn make_block(typ: NodeType, start_line: u32, start_column: u32) -> NI {
+    NI {
+        typ: typ,
+        start_line: start_line,
+        start_column: start_column,
+        end_line: start_line,
+        open: true,
+        last_line_blank: false,
+    }
 }
 
 type N = RefCell<NI>;
@@ -85,6 +100,11 @@ type N = RefCell<NI>;
 impl<'a> Node<'a, N> {
     fn last_child_is_open(&self) -> bool {
         self.last_child().map_or(false, |n| n.data.borrow().open)
+    }
+
+    fn can_contain_type(&self, typ: &NodeType) -> bool {
+        // TODO
+        true
     }
 }
 
@@ -112,6 +132,7 @@ impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
 }
 
 struct Parser<'a> {
+    arena: &'a Arena<Node<'a, N>>,
     root: &'a Node<'a, N>,
     current: &'a Node<'a, N>,
     line_number: u32,
@@ -128,8 +149,9 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(root: &'a Node<'a, N>, options: u32) -> Parser<'a> {
+    fn new(arena: &'a Arena<Node<'a, N>>, root: &'a Node<'a, N>, options: u32) -> Parser<'a> {
         Parser {
+            arena: arena,
             root: root,
             current: root,
             line_number: 0,
@@ -358,8 +380,15 @@ impl<'a> Parser<'a> {
     fn advance_offset(&mut self, line: &mut Vec<u8>, count: u32, columns: bool) {
     }
 
-    fn add_child(&mut self, parent: &'a Node<'a, N>, typ: NodeType, start_column: u32) -> &'a Node<'a, N> {
-        parent
+    fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeType, start_column: u32) -> &'a Node<'a, N> {
+        while !parent.can_contain_type(&typ) {
+            parent = self.finalize(parent);
+        }
+
+        let child = make_block(typ, self.line_number, start_column);
+        let node = self.arena.alloc(Node::new(RefCell::new(child)));
+        parent.append(node);
+        node
     }
 
     fn add_text_to_container(&mut self, container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
