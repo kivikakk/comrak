@@ -371,6 +371,8 @@ impl<'a> Parser<'a> {
                     self.advance_offset(line, 1, true);
                 }
                 *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
+            } else if !indented && false {
+                // TODO: scan_atx_heading_start
             }
 
             break;
