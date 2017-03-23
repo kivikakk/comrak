@@ -47,7 +47,6 @@ pub struct Node<'a, T: 'a> {
     pub data: T,
 }
 
-
 fn same_ref<T>(a: &T, b: &T) -> bool {
     a as *const T == b as *const T
 }

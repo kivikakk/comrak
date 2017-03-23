@@ -6,6 +6,7 @@ extern crate typed_arena;
 mod arena_tree;
 
 use std::cell::RefCell;
+use std::fmt::{Debug, Formatter, Result};
 use std::mem;
 use typed_arena::Arena;
 use arena_tree::Node;
@@ -17,6 +18,7 @@ mod tests {
     fn it_works() {
         let arena = Arena::new();
         let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n", 0);
+        println!("got: {:?}", n);
         let m = ::format_document(n);
         assert_eq!(m, "<p>My <strong>document</strong>.</p>\n<p>It's mine.</p>\n");
     }
@@ -34,10 +36,18 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
     parser.finish()
 }
 
-pub fn format_document(root: &Node<N>) -> String {
-    return "".to_string();
+pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
+    match root.data.borrow().typ {
+        NodeType::Document => {
+            root.children().map(format_document).collect::<Vec<_>>().concat()
+        },
+        _ => { "".to_string() }
+    }
 }
 
+const CODE_INDENT: u32 = 4;
+
+#[derive(PartialEq, Debug)]
 pub enum NodeType {
     Document,
     BlockQuote,
@@ -62,6 +72,7 @@ pub enum NodeType {
     Image,
 }
 
+#[derive(Debug)]
 pub struct NI {
     typ: NodeType,
 
@@ -74,6 +85,29 @@ type N = RefCell<NI>;
 impl<'a> Node<'a, N> {
     fn last_child_is_open(&self) -> bool {
         self.last_child().map_or(false, |n| n.data.borrow().open)
+    }
+}
+
+impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        let mut ch = vec![];
+        let mut c = self.first_child();
+        while let Some(e) = c {
+            ch.push(e);
+            c = e.next_sibling();
+        }
+        write!(f, "[({:?}) {} children: {{", self.data.borrow(), ch.len())?;
+        let mut first = true;
+        for e in &ch {
+            if first {
+                first = false;
+            } else {
+                write!(f, ", ")?;
+            }
+            write!(f, "{:?}", e)?;
+        }
+        write!(f, "}}]")?;
+        Ok(())
     }
 }
 
@@ -301,6 +335,31 @@ impl<'a> Parser<'a> {
     }
 
     fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
+        let mut cont_type = &container.data.borrow().typ;
+
+        while cont_type != &NodeType::CodeBlock && cont_type != &NodeType::HtmlBlock {
+            self.find_first_nonspace(line);
+            let indented = self.indent >= CODE_INDENT;
+
+            if !indented && peek_at(line, self.first_nonspace) == Some(&('>' as u8)) {
+                let blockquote_startpos = self.first_nonspace;
+                let offset = self.first_nonspace + 1 - self.offset;
+                self.advance_offset(line, offset, false);
+                if peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+                    self.advance_offset(line, 1, true);
+                }
+                *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
+            }
+
+            break;
+        }
+    }
+
+    fn advance_offset(&mut self, line: &mut Vec<u8>, count: u32, columns: bool) {
+    }
+
+    fn add_child(&mut self, parent: &'a Node<'a, N>, typ: NodeType, start_column: u32) -> &'a Node<'a, N> {
+        parent
     }
 
     fn add_text_to_container(&mut self, container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
@@ -319,8 +378,15 @@ impl<'a> Parser<'a> {
 }
 
 fn is_line_end_char(ch: &u8) -> bool {
-    match *ch {
-        10 | 13 => true,
+    match ch {
+        &10 | &13 => true,
+        _ => false,
+    }
+}
+
+fn is_space_or_tab(ch: &u8) -> bool {
+    match ch {
+        &9 | &32 => true,
         _ => false,
     }
 }
