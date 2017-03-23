@@ -5,7 +5,7 @@ extern crate typed_arena;
 
 mod arena_tree;
 
-use std::cell::Cell;
+use std::cell::RefCell;
 use std::mem;
 use typed_arena::Arena;
 use arena_tree::Node;
@@ -23,7 +23,9 @@ mod tests {
 }
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
-    let root: &'a Node<'a, N> = arena.alloc(Node::new(Cell::new(NI {})));
+    let root: &'a Node<'a, N> = arena.alloc(Node::new(RefCell::new(NI {
+        typ: 0,
+    })));
     let mut parser = Parser::new(root, options);
     parser.feed(buffer, true);
     parser.finish()
@@ -33,23 +35,48 @@ pub fn format_document(root: &Node<N>) -> String {
     return "".to_string();
 }
 
-pub struct NI {}
-type N = Cell<NI>;
+pub struct NI {
+    typ: u32,
+}
+
+impl NI {
+    fn last_child_is_open(&self) -> bool {
+        false
+    }
+}
+
+type N = RefCell<NI>;
 
 struct Parser<'a> {
-    last_buffer_ended_with_cr: bool,
-    linebuf: Vec<u8>,
-    line_number: u32,
+    root: &'a Node<'a, N>,
     current: &'a Node<'a, N>,
+    line_number: u32,
+    offset: u32,
+    column: u32,
+    first_nonspace: u32,
+    first_nonspace_column: u32,
+    indent: u32,
+    blank: bool,
+    partially_consumed_tab: bool,
+    linebuf: Vec<u8>,
+    last_buffer_ended_with_cr: bool,
 }
 
 impl<'a> Parser<'a> {
     fn new(root: &'a Node<'a, N>, options: u32) -> Parser<'a> {
         Parser {
-            last_buffer_ended_with_cr: false,
-            linebuf: vec![],
-            line_number: 0,
+            root: root,
             current: root,
+            line_number: 0,
+            offset: 0,
+            column: 0,
+            first_nonspace: 0,
+            first_nonspace_column: 0,
+            indent: 0,
+            blank: false,
+            partially_consumed_tab: false,
+            linebuf: vec![],
+            last_buffer_ended_with_cr: false,
         }
     }
 
@@ -63,7 +90,7 @@ impl<'a> Parser<'a> {
             let mut process = false;
             let mut eol = 0;
             while eol < buffer.len() {
-                if is_line_end_char(buffer[eol]) {
+                if is_line_end_char(&buffer[eol]) {
                     process = true;
                     break;
                 }
@@ -109,9 +136,37 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn find_first_nonspace(&mut self, line: &mut Vec<u8>) {
+        self.first_nonspace = self.offset;
+        self.first_nonspace_column = self.column;
+        let mut chars_to_tab = 8 - (self.column % 8);
+
+        while let Some(&c) = peek_at(line, self.first_nonspace) {
+            match c as char {
+                ' ' => {
+                    self.first_nonspace += 1;
+                    self.first_nonspace_column += 1;
+                    chars_to_tab -= 1;
+                    if chars_to_tab == 0 {
+                        chars_to_tab = 8;
+                    }
+                },
+                '\t' => {
+                    self.first_nonspace += 1;
+                    self.first_nonspace_column += chars_to_tab;
+                    chars_to_tab = 8;
+                },
+                _ => break,
+            }
+        }
+
+        self.indent = self.first_nonspace_column - self.column;
+        self.blank = peek_at(line, self.first_nonspace).map_or(false, is_line_end_char);
+    }
+
     fn process_line(&mut self, buffer: &[u8]) {
         let mut line: Vec<u8> = buffer.into();
-        if line.len() == 0 || !is_line_end_char(line[line.len() - 1]) {
+        if line.len() == 0 || !is_line_end_char(&line[line.len() - 1]) {
             line.push(10);
         }
 
@@ -153,7 +208,17 @@ impl<'a> Parser<'a> {
     }
 
     fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<Node<'a, N>> {
-        //        while self.root.
+        let mut should_continue = true;
+        *all_matched = false;
+        let mut container = self.root;
+
+        while container.data.borrow().last_child_is_open() {
+            container = container.last_child().unwrap();
+            let cont_type = container.data.borrow().typ;
+
+            self.find_first_nonspace(line);
+        }
+
         None
     }
 
@@ -169,9 +234,13 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn is_line_end_char(ch: u8) -> bool {
-    match ch {
+fn is_line_end_char(ch: &u8) -> bool {
+    match *ch {
         10 | 13 => true,
         _ => false,
     }
+}
+
+fn peek_at(line: &mut Vec<u8>, i: u32) -> Option<&u8> {
+    line.get(i as usize)
 }
