@@ -24,7 +24,10 @@ mod tests {
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
     let root: &'a Node<'a, N> = arena.alloc(Node::new(RefCell::new(NI {
-        typ: 0,
+        typ: NodeType::Document,
+
+        open: false,
+        last_line_blank: false,
     })));
     let mut parser = Parser::new(root, options);
     parser.feed(buffer, true);
@@ -35,17 +38,44 @@ pub fn format_document(root: &Node<N>) -> String {
     return "".to_string();
 }
 
-pub struct NI {
-    typ: u32,
+pub enum NodeType {
+    Document,
+    BlockQuote,
+    List,
+    Item,
+    CodeBlock,
+    HtmlBlock,
+    CustomBlock,
+    Paragraph,
+    Heading,
+    ThematicBreak,
+
+    Text,
+    SoftBreak,
+    LineBreak,
+    Code,
+    HtmlInline,
+    CustomInline,
+    Emph,
+    Strong,
+    Link,
+    Image,
 }
 
-impl NI {
-    fn last_child_is_open(&self) -> bool {
-        false
-    }
+pub struct NI {
+    typ: NodeType,
+
+    open: bool,
+    last_line_blank: bool,
 }
 
 type N = RefCell<NI>;
+
+impl<'a> Node<'a, N> {
+    fn last_child_is_open(&self) -> bool {
+        self.last_child().map_or(false, |n| n.data.borrow().open)
+    }
+}
 
 struct Parser<'a> {
     root: &'a Node<'a, N>,
@@ -58,6 +88,7 @@ struct Parser<'a> {
     indent: u32,
     blank: bool,
     partially_consumed_tab: bool,
+    last_line_length: u32,
     linebuf: Vec<u8>,
     last_buffer_ended_with_cr: bool,
 }
@@ -75,6 +106,7 @@ impl<'a> Parser<'a> {
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
+            last_line_length: 0,
             linebuf: vec![],
             last_buffer_ended_with_cr: false,
         }
@@ -158,6 +190,7 @@ impl<'a> Parser<'a> {
                 },
                 _ => break,
             }
+
         }
 
         self.indent = self.first_nonspace_column - self.column;
@@ -172,54 +205,105 @@ impl<'a> Parser<'a> {
 
         println!("process: [{}]", String::from_utf8(line.clone()).unwrap());
 
-        //self.offset = 0;
-        //self.column = 0;
-        //self.blank = false;
-        //self.partially_consumed_tab = false;
+        self.offset = 0;
+        self.column = 0;
+        self.blank = false;
+        self.partially_consumed_tab = false;
+
+        if self.line_number == 0 && line.len() >= 3 && &line[0..3] == &[0xef, 0xbb, 0xbf] {
+            self.offset += 3;
+        }
+
         self.line_number += 1;
 
         let mut all_matched = true;
-        let last_matched_container = self.check_open_blocks(&mut line, &mut all_matched);
+        if let Some(last_matched_container) = self.check_open_blocks(&mut line, &mut all_matched) {
+            let mut container = last_matched_container;
+            let current = self.current;
+            self.open_new_blocks(&mut container, &mut line, all_matched);
 
-        /*
+            if current.same_node(self.current) {
+                self.add_text_to_container(container, last_matched_container, &mut line);
+            }
+        }
 
-        if (!last_matched_container)
-        goto finished;
-
-        container = last_matched_container;
-
-        current = parser->current;
-
-        open_new_blocks(parser, &container, &input, all_matched);
-
-        /* parser->current might have changed if feed_reentrant was called */
-        if (current == parser->current)
-        add_text_to_container(parser, container, last_matched_container, &input);
-
-        finished:
-        parser->last_line_length = input.len;
-        if (parser->last_line_length &&
-        input.data[parser->last_line_length - 1] == '\n')
-        parser->last_line_length -= 1;
-        if (parser->last_line_length &&
-        input.data[parser->last_line_length - 1] == '\r')
-        parser->last_line_length -= 1;
-        */
+        self.last_line_length = line.len() as u32;
+        if self.last_line_length > 0 && line[(self.last_line_length - 1) as usize] == '\n' as u8 {
+            self.last_line_length -= 1;
+        }
+        if self.last_line_length > 0 && line[(self.last_line_length - 1) as usize] == '\r' as u8 {
+            self.last_line_length -= 1;
+        }
     }
 
-    fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<Node<'a, N>> {
+    fn check_open_blocks(&mut self, line: &mut Vec<u8>, all_matched: &mut bool) -> Option<&'a Node<'a, N>> {
         let mut should_continue = true;
         *all_matched = false;
         let mut container = self.root;
 
-        while container.data.borrow().last_child_is_open() {
-            container = container.last_child().unwrap();
-            let cont_type = container.data.borrow().typ;
+        'done: loop {
+            while container.last_child_is_open() {
+                container = container.last_child().unwrap();
+                let cont_type = &container.data.borrow().typ;
 
-            self.find_first_nonspace(line);
+                self.find_first_nonspace(line);
+
+                match cont_type {
+                    &NodeType::BlockQuote => {
+                        assert!(false);
+                        // if !self.parse_block_quote_prefix(line) {
+                        //     break 'done;
+                        // }
+                    },
+                    &NodeType::Item => {
+                        assert!(false);
+                        // if !self.parse_node_item_prefix(line, container) {
+                        //     break 'done;
+                        // }
+                    },
+                    &NodeType::CodeBlock => {
+                        assert!(false);
+                        // if !self.parse_code_block_prefix(line, container, &mut should_continue) {
+                        //     break 'done;
+                        // }
+                    },
+                    &NodeType::Heading => {
+                        break 'done;
+                    },
+                    &NodeType::HtmlBlock => {
+                        assert!(false);
+                        // if !self.parse_html_block_prefix(container) {
+                        //     break 'done;
+                        // }
+                    },
+                    &NodeType::Paragraph => {
+                        if self.blank {
+                            break 'done;
+                        }
+                    },
+                    _ => { },
+                }
+            }
+
+            *all_matched = true;
+            break 'done;
         }
 
-        None
+        if !*all_matched {
+            container = container.parent().unwrap();
+        }
+
+        if !should_continue {
+            None
+        } else {
+            Some(container)
+        }
+    }
+
+    fn open_new_blocks(&mut self, container: &mut &Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
+    }
+
+    fn add_text_to_container(&mut self, container: &Node<'a, N>, last_matched_container: &Node<'a, N>, line: &mut Vec<u8>) {
     }
 
     fn finish(&mut self) -> &'a Node<'a, N> {
