@@ -2,15 +2,20 @@
 #![allow(unused_variables)]
 
 extern crate typed_arena;
+extern crate regex;
+#[macro_use] extern crate lazy_static;
 
 mod arena_tree;
+mod scanners;
 
 use std::cell::RefCell;
 use std::cmp::min;
 use std::fmt::{Debug, Formatter, Result};
 use std::mem;
-use typed_arena::Arena;
+
 use arena_tree::Node;
+
+use typed_arena::Arena;
 
 #[cfg(test)]
 mod tests {
@@ -18,7 +23,10 @@ mod tests {
     #[test]
     fn it_works() {
         let arena = Arena::new();
-        let n = ::parse_document(&arena, b"My **document**.\n\nIt's mine.\n\n> Yes.\n", 0);
+        let n = ::parse_document(
+            &arena,
+            b"My **document**.\n\nIt's mine.\n\n> Yes.\n\n## Hi!\n\nOkay.",
+            0);
         println!("got: {:?}", n);
         let m = ::format_document(n);
         assert_eq!(m, "<p>My <strong>document</strong>.</p>\n<p>It's mine.</p>\n");
@@ -75,6 +83,17 @@ pub enum NodeType {
     Image,
 }
 
+impl NodeType {
+    fn block(&self) -> bool {
+        match self {
+            &NodeType::Document | &NodeType::BlockQuote | &NodeType::List | &NodeType::Item |
+            &NodeType::CodeBlock | &NodeType::HtmlBlock | &NodeType::CustomBlock |
+            &NodeType::Paragraph | &NodeType::Heading | &NodeType::ThematicBreak => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct NI {
     typ: NodeType,
@@ -103,9 +122,26 @@ impl<'a> Node<'a, N> {
         self.last_child().map_or(false, |n| n.data.borrow().open)
     }
 
-    fn can_contain_type(&self, typ: &NodeType) -> bool {
-        // TODO
-        true
+    fn can_contain_type(&self, child: &NodeType) -> bool {
+        if child == &NodeType::Document {
+            return false;
+        }
+
+        match self.data.borrow().typ {
+            NodeType::Document | NodeType::BlockQuote | NodeType::Item =>
+                child.block() && child != &NodeType::Item,
+
+            NodeType::List =>
+                child == &NodeType::Item,
+
+            NodeType::CustomBlock => true,
+
+            NodeType::Paragraph | NodeType::Heading | NodeType::Emph | NodeType::Strong |
+            NodeType::Link | NodeType::Image | NodeType::CustomInline =>
+                !child.block(),
+
+            _ => false,
+        }
     }
 }
 
@@ -307,7 +343,7 @@ impl<'a> Parser<'a> {
 
                 match cont_type {
                     &NodeType::BlockQuote => {
-                        assert!(false);
+                        assert!(false, "BlockQuote");
                         // if !self.parse_block_quote_prefix(line) {
                         //     break 'done;
                         // }
@@ -374,7 +410,7 @@ impl<'a> Parser<'a> {
                 }
                 *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
             } else if !indented && false { // TODO: scan_atx_heading_start
-                matched = Some(1);
+                matched = scanners::atx_heading_start(line, self.first_nonspace);
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched.unwrap() - offset, false);

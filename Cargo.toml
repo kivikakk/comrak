@@ -5,3 +5,5 @@ authors = ["Yuki Izumi <kivikakk@github.com>"]
 
 [dependencies]
 typed-arena = "1.2.0"
+regex = "*"
+lazy_static = "*"
