@@ -35,7 +35,7 @@ mod tests {
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
     let root: &'a Node<'a, N> = arena.alloc(Node::new(RefCell::new(NI {
-        typ: NodeType::Document,
+        typ: NodeVal::Document,
         start_line: 0,
         start_column: 0,
         end_line: 0,
@@ -49,7 +49,7 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
 
 pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
     match root.data.borrow().typ {
-        NodeType::Document => {
+        NodeVal::Document => {
             root.children().map(format_document).collect::<Vec<_>>().concat()
         },
         _ => { "".to_string() }
@@ -58,8 +58,8 @@ pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
 
 const CODE_INDENT: usize = 4;
 
-#[derive(PartialEq, Debug)]
-pub enum NodeType {
+#[derive(Debug)]
+pub enum NodeVal {
     Document,
     BlockQuote,
     List,
@@ -68,7 +68,7 @@ pub enum NodeType {
     HtmlBlock,
     CustomBlock,
     Paragraph,
-    Heading,
+    Heading(NodeHeading),
     ThematicBreak,
 
     Text,
@@ -83,12 +83,18 @@ pub enum NodeType {
     Image,
 }
 
-impl NodeType {
+#[derive(Default, Debug)]
+pub struct NodeHeading {
+    level: u32,
+    setext: bool,
+}
+
+impl NodeVal {
     fn block(&self) -> bool {
         match self {
-            &NodeType::Document | &NodeType::BlockQuote | &NodeType::List | &NodeType::Item |
-            &NodeType::CodeBlock | &NodeType::HtmlBlock | &NodeType::CustomBlock |
-            &NodeType::Paragraph | &NodeType::Heading | &NodeType::ThematicBreak => true,
+            &NodeVal::Document | &NodeVal::BlockQuote | &NodeVal::List | &NodeVal::Item |
+            &NodeVal::CodeBlock | &NodeVal::HtmlBlock | &NodeVal::CustomBlock |
+            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::ThematicBreak => true,
             _ => false,
         }
     }
@@ -96,7 +102,7 @@ impl NodeType {
 
 #[derive(Debug)]
 pub struct NI {
-    typ: NodeType,
+    typ: NodeVal,
     start_line: u32,
     start_column: usize,
     end_line: u32,
@@ -104,7 +110,7 @@ pub struct NI {
     last_line_blank: bool,
 }
 
-fn make_block(typ: NodeType, start_line: u32, start_column: usize) -> NI {
+fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
     NI {
         typ: typ,
         start_line: start_line,
@@ -122,22 +128,28 @@ impl<'a> Node<'a, N> {
         self.last_child().map_or(false, |n| n.data.borrow().open)
     }
 
-    fn can_contain_type(&self, child: &NodeType) -> bool {
-        if child == &NodeType::Document {
+    fn can_contain_type(&self, child: &NodeVal) -> bool {
+        if let &NodeVal::Document = child {
             return false;
         }
 
         match self.data.borrow().typ {
-            NodeType::Document | NodeType::BlockQuote | NodeType::Item =>
-                child.block() && child != &NodeType::Item,
+            NodeVal::Document | NodeVal::BlockQuote | NodeVal::Item =>
+                child.block() && match child {
+                    &NodeVal::Item => false,
+                    _ => true,
+                },
 
-            NodeType::List =>
-                child == &NodeType::Item,
+            NodeVal::List =>
+                match child {
+                    &NodeVal::Item => true,
+                    _ => false,
+                },
 
-            NodeType::CustomBlock => true,
+            NodeVal::CustomBlock => true,
 
-            NodeType::Paragraph | NodeType::Heading | NodeType::Emph | NodeType::Strong |
-            NodeType::Link | NodeType::Image | NodeType::CustomInline =>
+            NodeVal::Paragraph | NodeVal::Heading(..) | NodeVal::Emph | NodeVal::Strong |
+            NodeVal::Link | NodeVal::Image | NodeVal::CustomInline =>
                 !child.block(),
 
             _ => false,
@@ -342,33 +354,33 @@ impl<'a> Parser<'a> {
                 self.find_first_nonspace(line);
 
                 match cont_type {
-                    &NodeType::BlockQuote => {
+                    &NodeVal::BlockQuote => {
                         if !self.parse_block_quote_prefix(line) {
                             break 'done;
                         }
                     },
-                    &NodeType::Item => {
+                    &NodeVal::Item => {
                         assert!(false);
                         // if !self.parse_node_item_prefix(line, container) {
                         //     break 'done;
                         // }
                     },
-                    &NodeType::CodeBlock => {
+                    &NodeVal::CodeBlock => {
                         assert!(false);
                         // if !self.parse_code_block_prefix(line, container, &mut should_continue) {
                         //     break 'done;
                         // }
                     },
-                    &NodeType::Heading => {
+                    &NodeVal::Heading(..) => {
                         break 'done;
                     },
-                    &NodeType::HtmlBlock => {
+                    &NodeVal::HtmlBlock => {
                         assert!(false);
                         // if !self.parse_html_block_prefix(container) {
                         //     break 'done;
                         // }
                     },
-                    &NodeType::Paragraph => {
+                    &NodeVal::Paragraph => {
                         if self.blank {
                             break 'done;
                         }
@@ -395,7 +407,12 @@ impl<'a> Parser<'a> {
     fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
         let mut cont_type = &container.data.borrow().typ;
 
-        while cont_type != &NodeType::CodeBlock && cont_type != &NodeType::HtmlBlock {
+        loop {
+            match cont_type {
+                &NodeVal::CodeBlock | &NodeVal::HtmlBlock => break,
+                _ => { },
+            }
+
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
@@ -406,13 +423,13 @@ impl<'a> Parser<'a> {
                 if peek_at(line, self.offset).map_or(false, is_space_or_tab) {
                     self.advance_offset(line, 1, true);
                 }
-                *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
+                *container = self.add_child(*container, NodeVal::BlockQuote, blockquote_startpos + 1);
             } else if !indented {
                 if let Some(matched) = scanners::atx_heading_start(line, self.first_nonspace) {
                     let heading_startpos = self.first_nonspace;
                     let offset = self.offset;
                     self.advance_offset(line, heading_startpos + matched - offset, false);
-                    *container = self.add_child(*container, NodeType::Heading, heading_startpos + 1);
+                    *container = self.add_child(*container, NodeVal::Heading(NodeHeading::default()), heading_startpos + 1);
 
                     let mut hashpos = line[self.first_nonspace..].iter().position(|&c| c == '#' as u8).unwrap() + self.first_nonspace;
                     let mut level = 0;
@@ -421,9 +438,10 @@ impl<'a> Parser<'a> {
                         hashpos += 1;
                     }
 
-                    //container.as.heading.level = level;
-                    //container.as.heading.setext = false;
-                    //TODO
+                    container.data.borrow_mut().typ = NodeVal::Heading(NodeHeading {
+                        level: level,
+                        setext: false,
+                    });
                 }
             } // TODO
 
@@ -475,7 +493,7 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeType, start_column: usize) -> &'a Node<'a, N> {
+    fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeVal, start_column: usize) -> &'a Node<'a, N> {
         while !parent.can_contain_type(&typ) {
             parent = self.finalize(parent);
         }
