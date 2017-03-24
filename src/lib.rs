@@ -48,7 +48,7 @@ pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
     }
 }
 
-const CODE_INDENT: u32 = 4;
+const CODE_INDENT: usize = 4;
 
 #[derive(PartialEq, Debug)]
 pub enum NodeType {
@@ -79,13 +79,13 @@ pub enum NodeType {
 pub struct NI {
     typ: NodeType,
     start_line: u32,
-    start_column: u32,
+    start_column: usize,
     end_line: u32,
     open: bool,
     last_line_blank: bool,
 }
 
-fn make_block(typ: NodeType, start_line: u32, start_column: u32) -> NI {
+fn make_block(typ: NodeType, start_line: u32, start_column: usize) -> NI {
     NI {
         typ: typ,
         start_line: start_line,
@@ -137,11 +137,11 @@ struct Parser<'a> {
     root: &'a Node<'a, N>,
     current: &'a Node<'a, N>,
     line_number: u32,
-    offset: u32,
-    column: u32,
-    first_nonspace: u32,
-    first_nonspace_column: u32,
-    indent: u32,
+    offset: usize,
+    column: usize,
+    first_nonspace: usize,
+    first_nonspace_column: usize,
+    indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: u32,
@@ -359,6 +359,7 @@ impl<'a> Parser<'a> {
 
     fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
         let mut cont_type = &container.data.borrow().typ;
+        let mut matched: Option<usize>;
 
         while cont_type != &NodeType::CodeBlock && cont_type != &NodeType::HtmlBlock {
             self.find_first_nonspace(line);
@@ -373,28 +374,28 @@ impl<'a> Parser<'a> {
                 }
                 *container = self.add_child(*container, NodeType::BlockQuote, blockquote_startpos + 1);
             } else if !indented && false { // TODO: scan_atx_heading_start
-                /*
+                matched = Some(1);
                 let heading_startpos = self.first_nonspace;
-                self.advance_offset(line, self.first_nonspace + matched - self.offset, false);
+                let offset = self.offset;
+                self.advance_offset(line, heading_startpos + matched.unwrap() - offset, false);
                 *container = self.add_child(*container, NodeType::Heading, heading_startpos + 1);
 
-                let mut hashpos = strchr(line, '#', self.first_nonspace);
+                let mut hashpos = line[self.first_nonspace..].iter().position(|&c| c == '#' as u8).unwrap() + self.first_nonspace;
                 let mut level = 0;
-                while peek_at(line, hashpos) == '#' {
+                while peek_at(line, hashpos) == Some(&('#' as u8)) {
                     level += 1;
                     hashpos += 1;
                 }
 
-                container.as.heading.level = level;
-                container.as.heading.setext = false;
-                */
+                //container.as.heading.level = level;
+                //container.as.heading.setext = false;
             } // TODO
 
             break;
         }
     }
 
-    fn advance_offset(&mut self, line: &mut Vec<u8>, mut count: u32, columns: bool) {
+    fn advance_offset(&mut self, line: &mut Vec<u8>, mut count: usize, columns: bool) {
         while count > 0 {
             match peek_at(line, self.offset) {
                 None => break,
@@ -423,7 +424,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeType, start_column: u32) -> &'a Node<'a, N> {
+    fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeType, start_column: usize) -> &'a Node<'a, N> {
         while !parent.can_contain_type(&typ) {
             parent = self.finalize(parent);
         }
@@ -463,6 +464,6 @@ fn is_space_or_tab(ch: &u8) -> bool {
     }
 }
 
-fn peek_at(line: &mut Vec<u8>, i: u32) -> Option<&u8> {
-    line.get(i as usize)
+fn peek_at(line: &mut Vec<u8>, i: usize) -> Option<&u8> {
+    line.get(i)
 }
