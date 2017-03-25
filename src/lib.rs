@@ -67,7 +67,7 @@ pub enum NodeVal {
     List,
     Item,
     CodeBlock,
-    HtmlBlock,
+    HtmlBlock(u8),
     CustomBlock,
     Paragraph,
     Heading(NodeHeading),
@@ -95,7 +95,7 @@ impl NodeVal {
     fn block(&self) -> bool {
         match self {
             &NodeVal::Document | &NodeVal::BlockQuote | &NodeVal::List | &NodeVal::Item |
-            &NodeVal::CodeBlock | &NodeVal::HtmlBlock | &NodeVal::CustomBlock |
+            &NodeVal::CodeBlock | &NodeVal::HtmlBlock(..) | &NodeVal::CustomBlock |
             &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::ThematicBreak => true,
             _ => false,
         }
@@ -386,7 +386,7 @@ impl<'a> Parser<'a> {
                     &NodeVal::Heading(..) => {
                         break 'done;
                     },
-                    &NodeVal::HtmlBlock => {
+                    &NodeVal::HtmlBlock(..) => {
                         assert!(false);
                         // if !self.parse_html_block_prefix(container) {
                         //     break 'done;
@@ -421,7 +421,7 @@ impl<'a> Parser<'a> {
 
         loop {
             match cont_type {
-                &NodeVal::CodeBlock | &NodeVal::HtmlBlock => break,
+                &NodeVal::CodeBlock | &NodeVal::HtmlBlock(..) => break,
                 _ => { },
             }
 
@@ -516,7 +516,7 @@ impl<'a> Parser<'a> {
         node
     }
 
-    fn add_text_to_container(&mut self, container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
+    fn add_text_to_container(&mut self, mut container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
         self.find_first_nonspace(line);
 
         if self.blank {
@@ -558,19 +558,34 @@ impl<'a> Parser<'a> {
                 &NodeVal::CodeBlock => {
                     self.add_line(container, line);
                 },
-                &NodeVal::HtmlBlock => {
-                    // ...
+                &NodeVal::HtmlBlock(html_block_type) => {
+                    self.add_line(container, line);
+
+                    let matches_end_condition = match html_block_type {
+                        1 => scanners::html_block_end_1(line, self.first_nonspace).is_some(),
+                        2 => scanners::html_block_end_2(line, self.first_nonspace).is_some(),
+                        3 => scanners::html_block_end_3(line, self.first_nonspace).is_some(),
+                        4 => scanners::html_block_end_4(line, self.first_nonspace).is_some(),
+                        5 => scanners::html_block_end_5(line, self.first_nonspace).is_some(),
+                        _ => false,
+                    };
+
+                    if matches_end_condition {
+                        container = self.finalize(container);
+                    }
                 },
                 _ => {
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().typ.accepts_lines() {
-                        // ...
+                        // TODO
                     } else {
-                        // create para container for line
+                        // TODO create para container for line
                     }
                 },
             }
+
+            self.current = container;
         }
     }
 
