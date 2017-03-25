@@ -36,6 +36,7 @@ mod tests {
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
     let root: &'a Node<'a, N> = arena.alloc(Node::new(RefCell::new(NI {
         typ: NodeVal::Document,
+        content: vec![],
         start_line: 0,
         start_column: 0,
         end_line: 0,
@@ -56,6 +57,7 @@ pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
     }
 }
 
+const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
 
 #[derive(Debug)]
@@ -98,11 +100,20 @@ impl NodeVal {
             _ => false,
         }
     }
+
+    fn accepts_lines(&self) -> bool {
+        match self {
+            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::CodeBlock =>
+                true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct NI {
     typ: NodeVal,
+    content: Vec<u8>,
     start_line: u32,
     start_column: usize,
     end_line: u32,
@@ -113,6 +124,7 @@ pub struct NI {
 fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
     NI {
         typ: typ,
+        content: vec![],
         start_line: start_line,
         start_column: start_column,
         end_line: start_line,
@@ -276,7 +288,7 @@ impl<'a> Parser<'a> {
     fn find_first_nonspace(&mut self, line: &mut Vec<u8>) {
         self.first_nonspace = self.offset;
         self.first_nonspace_column = self.column;
-        let mut chars_to_tab = 8 - (self.column % 8);
+        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
 
         while let Some(&c) = peek_at(line, self.first_nonspace) {
             match c as char {
@@ -285,13 +297,13 @@ impl<'a> Parser<'a> {
                     self.first_nonspace_column += 1;
                     chars_to_tab -= 1;
                     if chars_to_tab == 0 {
-                        chars_to_tab = 8;
+                        chars_to_tab = TAB_STOP;
                     }
                 },
                 '\t' => {
                     self.first_nonspace += 1;
                     self.first_nonspace_column += chars_to_tab;
-                    chars_to_tab = 8;
+                    chars_to_tab = TAB_STOP;
                 },
                 _ => break,
             }
@@ -454,7 +466,7 @@ impl<'a> Parser<'a> {
             match peek_at(line, self.offset) {
                 None => break,
                 Some(&9) => {
-                    let chars_to_tab = 8 - (self.column % 8);
+                    let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
                     if columns {
                         self.partially_consumed_tab = chars_to_tab > count;
                         let chars_to_advance = min(count, chars_to_tab);
@@ -505,6 +517,72 @@ impl<'a> Parser<'a> {
     }
 
     fn add_text_to_container(&mut self, container: &'a Node<'a, N>, last_matched_container: &'a Node<'a, N>, line: &mut Vec<u8>) {
+        self.find_first_nonspace(line);
+
+        if self.blank {
+            if let Some(last_child) = container.last_child() {
+                last_child.data.borrow_mut().last_line_blank = true;
+            }
+        }
+
+        container.data.borrow_mut().last_line_blank =
+            self.blank && match &container.data.borrow().typ {
+                &NodeVal::BlockQuote |
+                &NodeVal::Heading(..) |
+                &NodeVal::ThematicBreak => false,
+                &NodeVal::CodeBlock => /* TODO: !fenced */ true,
+                &NodeVal::Item => /* first_child().is_some() || start_line != self.line_number */ true,
+                _ => true,
+            };
+
+        let mut tmp = container;
+        while let Some(parent) = tmp.parent() {
+            parent.data.borrow_mut().last_line_blank = false;
+            tmp = parent;
+        }
+
+        if !self.current.same_node(last_matched_container) &&
+            container.same_node(last_matched_container) &&
+                !self.blank &&
+                match &self.current.data.borrow().typ {
+                    &NodeVal::Paragraph => true,
+                    _ => false,
+                } {
+            self.add_line(self.current, line);
+        } else {
+            while !self.current.same_node(last_matched_container) {
+                self.current = self.finalize(self.current);
+            }
+
+            match &container.data.borrow().typ {
+                &NodeVal::CodeBlock => {
+                    self.add_line(container, line);
+                },
+                &NodeVal::HtmlBlock => {
+                    // ...
+                },
+                _ => {
+                    if self.blank {
+                        // do nothing
+                    } else if container.data.borrow().typ.accepts_lines() {
+                        // ...
+                    } else {
+                        // create para container for line
+                    }
+                },
+            }
+        }
+    }
+
+    fn add_line(&mut self, node: &'a Node<'a, N>, line: &mut Vec<u8>) {
+        assert!(node.data.borrow().open);
+        if self.partially_consumed_tab {
+            self.offset += 1;
+            let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+            for i in 0..chars_to_tab {
+                node.data.borrow_mut().content.push(' ' as u8);
+            }
+        }
     }
 
     fn finish(&mut self) -> &'a Node<'a, N> {
