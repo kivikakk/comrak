@@ -1041,7 +1041,7 @@ impl<'a> Subject<'a> {
         });
     }
 
-    fn insert_emph(&mut self, opener: i32, closer: i32) -> i32 {
+    fn insert_emph(&mut self, opener: i32, mut closer: i32) -> i32 {
         let mut opener_num_chars = self.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap().len();
         let mut closer_num_chars = self.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len();
         let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 { 2 } else { 1 };
@@ -1060,9 +1060,34 @@ impl<'a> Subject<'a> {
 
         let emph = make_inline(self.arena, if use_delims == 1 { NodeVal::Emph } else { NodeVal::Strong });
 
-        // TODO: We need access to opener_inl, i.e. the actual inline node!
-        //let mut tmp = opener + 1;
-        -10
+        let mut tmp = self.delimiters[opener as usize].inl;
+        while !tmp.same_node(self.delimiters[closer as usize].inl) {
+            let next = tmp.next_sibling();
+            emph.append(tmp);
+            if let Some(n) = next {
+                tmp = n;
+            } else {
+                break;
+            }
+        }
+        self.delimiters[opener as usize].inl.insert_after(emph);
+
+        if opener_num_chars == 0 {
+            self.delimiters[opener as usize].inl.detach();
+            self.delimiters.remove(opener as usize);
+            closer -= 1;
+        }
+
+        if closer_num_chars == 0 {
+            self.delimiters[closer as usize].inl.detach();
+            self.delimiters.remove(closer as usize);
+        }
+
+        if closer == -1 || (closer as usize) < self.delimiters.len() {
+            closer
+        } else {
+            -1
+        }
     }
 }
 
