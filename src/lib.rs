@@ -202,6 +202,13 @@ impl NodeVal {
             _ => false,
         }
     }
+
+    fn contains_inlines(&self) -> bool {
+        match self {
+            &NodeVal::Paragraph | &NodeVal::Heading(..) => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -705,14 +712,16 @@ impl<'a> Parser<'a> {
     }
 
     fn add_line(&mut self, node: &'a Node<'a, N>, line: &mut Vec<u8>) {
-        assert!(node.data.borrow().open);
+        let ni = &mut node.data.borrow_mut();
+        assert!(ni.open);
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
             for i in 0..chars_to_tab {
-                node.data.borrow_mut().content.push(' ' as u8);
+                ni.content.push(' ' as u8);
             }
         }
+        ni.content.extend_from_slice(&line[self.offset..]);
     }
 
     fn finish(&mut self) -> &'a Node<'a, N> {
@@ -796,7 +805,21 @@ impl<'a> Parser<'a> {
     }
 
     fn process_inlines(&mut self) {
-        // TODO
+        self.process_inlines_node(self.root);
+    }
+
+    fn process_inlines_node(&mut self, node: &'a Node<'a, N>) {
+        if node.data.borrow().typ.contains_inlines() {
+            self.parse_inlines(node);
+        }
+
+        for n in node.children() {
+            self.process_inlines_node(n);
+        }
+    }
+
+    fn parse_inlines(&mut self, node: &'a Node<'a, N>) {
+
     }
 }
 
