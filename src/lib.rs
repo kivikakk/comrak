@@ -75,7 +75,7 @@ pub enum NodeVal {
     Heading(NodeHeading),
     ThematicBreak,
 
-    Text(String),
+    Text(Vec<u8>),
     SoftBreak,
     LineBreak,
     Code,
@@ -732,7 +732,108 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_inlines(&mut self, node: &'a Node<'a, N>) {
+        let mut ni = node.data.borrow_mut();
+        let mut subj = Subject {
+            input: ni.content.clone(),
+            pos: 0,
+        };
+        rtrim(&mut subj.input);
 
+        while !subj.eof() && self.parse_inline(&mut subj, node) {}
+    }
+
+    fn parse_inline(&mut self, subj: &mut Subject, node: &'a Node<'a, N>) -> bool {
+        let mut new_inl: Option<&'a Node<'a, N>> = None;
+        let c = match subj.peek_char() {
+            None => return false,
+            Some(ch) => *ch as char,
+        };
+
+        match c {
+            '\0' => return false,
+            '\r' | '\n' => {
+                // TODO
+            },
+            // TODO
+            _ => {
+                let endpos = subj.find_special_char();
+                let mut contents = subj.input[subj.pos..endpos].to_vec();
+                subj.pos = endpos;
+
+                if subj.peek_char().map_or(false, is_line_end_char) {
+                    rtrim(&mut contents);
+                }
+
+                new_inl = Some(make_literal(&self.arena, NodeVal::Text(contents)));
+            },
+        }
+
+        if let Some(inl) = new_inl {
+            node.append(inl);
+        }
+
+        true
+    }
+}
+
+/*
+typedef struct subject{
+  cmark_mem *mem;
+  cmark_chunk input;
+  bufsize_t pos;
+  cmark_reference_map *refmap;
+  delimiter *last_delim;
+  bracket *last_bracket;
+  bufsize_t backticks[MAXBACKTICKS + 1];
+  bool scanned_for_backticks;
+} subject;
+
+typedef struct bracket {
+  struct bracket *previous;
+  struct delimiter *previous_delimiter;
+  cmark_node *inl_text;
+  bufsize_t position;
+  bool image;
+  bool active;
+  bool bracket_after;
+} bracket;
+
+typedef struct delimiter {
+  struct delimiter *previous;
+  struct delimiter *next;
+  cmark_node *inl_text;
+  bufsize_t length;
+  int position;
+  unsigned char delim_char;
+  int can_open;
+  int can_close;
+  int active;
+} delimiter;
+*/
+
+struct Subject {
+    input: Vec<u8>,
+    pos: usize,
+}
+
+impl Subject {
+    fn eof(&self) -> bool {
+        self.pos >= self.input.len()
+    }
+
+    fn peek_char<'a>(&'a self) -> Option<&'a u8> {
+        if self.eof() {
+            return None
+        }
+
+        let ref c = self.input[self.pos];
+        assert!(*c > 0);
+        Some(c)
+    }
+
+    fn find_special_char(&self) -> usize {
+        // TODO
+        self.input.len()
     }
 }
 
@@ -786,4 +887,18 @@ fn rtrim(line: &mut Vec<u8>) {
         line.pop();
         len -= 1;
     }
+}
+
+fn make_literal<'a>(arena: &'a Arena<Node<'a, N>>, typ: NodeVal) -> &'a Node<'a, N> {
+    let ni = NI {
+        typ: typ,
+        content: vec![],
+        start_line: 0,
+        start_column: 0,
+        end_line: 0,
+        end_column: 0,
+        open: false,
+        last_line_blank: false,
+    };
+    arena.alloc(Node::new(RefCell::new(ni)))
 }

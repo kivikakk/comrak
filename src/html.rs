@@ -57,7 +57,7 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, N>) {
         },
         &NodeVal::Text(ref literal) => {
             // TODO: escape HTML
-            write!(w, "{}", literal).unwrap();
+            write!(w, "{}", String::from_utf8(literal.clone()).unwrap()).unwrap();
         },
         &NodeVal::LineBreak => {
             write!(w, "<br />\n").unwrap();
