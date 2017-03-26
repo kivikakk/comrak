@@ -11,6 +11,7 @@ mod html;
 
 use std::cell::RefCell;
 use std::cmp::min;
+use std::collections::BTreeSet;
 use std::fmt::{Debug, Formatter, Result};
 use std::mem;
 
@@ -732,18 +733,23 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_inlines(&mut self, node: &'a Node<'a, N>) {
-        let mut ni = node.data.borrow_mut();
         let mut subj = Subject {
-            input: ni.content.clone(),
+            arena: self.arena,
+            input: node.data.borrow().content.clone(),
             pos: 0,
         };
         rtrim(&mut subj.input);
 
         while !subj.eof() && self.parse_inline(&mut subj, node) {}
+
+        // TODO
+        // self.process_emphasis(subj, None);
+        //while subj.last_delim { subj.pop_bracket() }
+        //while subj.last_bracket { subj.pop_bracket() }
     }
 
-    fn parse_inline(&mut self, subj: &mut Subject, node: &'a Node<'a, N>) -> bool {
-        let mut new_inl: Option<&'a Node<'a, N>> = None;
+    fn parse_inline(&mut self, subj: &mut Subject<'a>, node: &'a Node<'a, N>) -> bool {
+        let mut new_inl: Option<&'a Node<'a, N>>;
         let c = match subj.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -752,7 +758,7 @@ impl<'a> Parser<'a> {
         match c {
             '\0' => return false,
             '\r' | '\n' => {
-                // TODO
+                new_inl = Some(subj.handle_newline());
             },
             // TODO
             _ => {
@@ -764,7 +770,7 @@ impl<'a> Parser<'a> {
                     rtrim(&mut contents);
                 }
 
-                new_inl = Some(make_literal(&self.arena, NodeVal::Text(contents)));
+                new_inl = Some(make_inline(self.arena, NodeVal::Text(contents)));
             },
         }
 
@@ -811,17 +817,18 @@ typedef struct delimiter {
 } delimiter;
 */
 
-struct Subject {
+struct Subject<'a> {
+    arena: &'a Arena<Node<'a, N>>,
     input: Vec<u8>,
     pos: usize,
 }
 
-impl Subject {
+impl<'a> Subject<'a> {
     fn eof(&self) -> bool {
         self.pos >= self.input.len()
     }
 
-    fn peek_char<'a>(&'a self) -> Option<&'a u8> {
+    fn peek_char<'b>(&'b self) -> Option<&'b u8> {
         if self.eof() {
             return None
         }
@@ -832,8 +839,56 @@ impl Subject {
     }
 
     fn find_special_char(&self) -> usize {
-        // TODO
+        lazy_static! {
+            static ref SPECIAL_CHARS: BTreeSet<u8> =
+                ['\n' as u8,
+                '\r' as u8,
+                /* TODO
+                '\\' as u8,
+                '`' as u8,
+                '&' as u8,
+                '_' as u8,
+                '*' as u8,
+                '[' as u8,
+                ']' as u8,
+                '<' as u8,
+                '!' as u8,
+                */
+                ].iter().cloned().collect();
+        }
+
+        for n in self.pos..self.input.len() {
+            if SPECIAL_CHARS.contains(&self.input[n]) {
+                return n;
+            }
+        }
+
         self.input.len()
+    }
+
+    fn handle_newline(&mut self) -> &'a Node<'a, N> {
+        let nlpos = self.pos;
+        if self.input[self.pos] == '\r' as u8 {
+            self.pos += 1;
+        }
+        if self.input[self.pos] == '\n' as u8 {
+            self.pos += 1;
+        }
+        self.skip_spaces();
+        if nlpos > 1 && self.input[nlpos - 1] == ' ' as u8 && self.input[nlpos - 2] == ' ' as u8 {
+            make_inline(self.arena, NodeVal::LineBreak)
+        } else {
+            make_inline(self.arena, NodeVal::SoftBreak)
+        }
+    }
+
+    fn skip_spaces(&mut self) -> bool {
+        let mut skipped = false;
+        while self.peek_char().map_or(false, |&c| c == ' ' as u8 || c == '\t' as u8) {
+            self.pos += 1;
+            skipped = true;
+        }
+        skipped
     }
 }
 
@@ -889,7 +944,7 @@ fn rtrim(line: &mut Vec<u8>) {
     }
 }
 
-fn make_literal<'a>(arena: &'a Arena<Node<'a, N>>, typ: NodeVal) -> &'a Node<'a, N> {
+fn make_inline<'a>(arena: &'a Arena<Node<'a, N>>, typ: NodeVal) -> &'a Node<'a, N> {
     let ni = NI {
         typ: typ,
         content: vec![],
