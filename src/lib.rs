@@ -125,6 +125,13 @@ impl NodeVal {
             _ => false,
         }
     }
+
+    fn text(&mut self) -> Option<&mut Vec<u8>> {
+        match self {
+            &mut NodeVal::Text(ref mut t) => Some(t),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -774,10 +781,10 @@ impl<'a> Parser<'a> {
                 let mut odd_match = false;
 
                 while opener != -1 && opener != stack_bottom &&
-                        opener != openers_bottom[subj.delimiters[closer as usize].inl_text.len() % 3][subj.delimiters[closer as usize].delim_char as usize] {
+                        opener != openers_bottom[subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len() % 3][subj.delimiters[closer as usize].delim_char as usize] {
                     if subj.delimiters[opener as usize].can_open && subj.delimiters[opener as usize].delim_char == subj.delimiters[closer as usize].delim_char {
                         odd_match = (subj.delimiters[closer as usize].can_open || subj.delimiters[opener as usize].can_close) &&
-                            ((subj.delimiters[opener as usize].inl_text.len() + subj.delimiters[closer as usize].inl_text.len()) % 3 == 0);
+                            ((subj.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap().len() + subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len()) % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -794,20 +801,20 @@ impl<'a> Parser<'a> {
                         closer += 1;
                     }
                 } else if subj.delimiters[closer as usize].delim_char == '\'' as u8 {
-                    subj.delimiters[closer as usize].inl_text = "’".as_bytes().to_vec();
+                    *subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap() = "’".as_bytes().to_vec();
                     if opener_found {
-                        subj.delimiters[opener as usize].inl_text = "‘".as_bytes().to_vec();
+                        *subj.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap() = "‘".as_bytes().to_vec();
                     }
                     closer += 1;
                 } else if subj.delimiters[closer as usize].delim_char == '"' as u8 {
-                    subj.delimiters[closer as usize].inl_text = "”".as_bytes().to_vec();
+                    *subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap() = "”".as_bytes().to_vec();
                     if opener_found {
-                        subj.delimiters[opener as usize].inl_text = "“".as_bytes().to_vec();
+                        *subj.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap() = "“".as_bytes().to_vec();
                     }
                     closer += 1;
                 }
                 if !opener_found {
-                    openers_bottom[subj.delimiters[old_closer as usize].inl_text.len() % 3][subj.delimiters[old_closer as usize].delim_char as usize] = old_closer - 1;
+                    openers_bottom[subj.delimiters[old_closer as usize].inl.data.borrow_mut().typ.text().unwrap().len() % 3][subj.delimiters[old_closer as usize].delim_char as usize] = old_closer - 1;
                     if !subj.delimiters[old_closer as usize].can_open {
                         subj.delimiters.remove(old_closer as usize);
                     }
@@ -895,7 +902,7 @@ struct Subject<'a> {
     arena: &'a Arena<Node<'a, N>>,
     input: Vec<u8>,
     pos: usize,
-    delimiters: Vec<Delimiter>,
+    delimiters: Vec<Delimiter<'a>>,
 }
 
 impl<'a> Subject<'a> {
@@ -971,10 +978,10 @@ impl<'a> Subject<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = self.input[self.pos - numdelims..self.pos].to_vec();
-        let inl = make_inline(self.arena, NodeVal::Text(contents.clone()));
+        let inl = make_inline(self.arena, NodeVal::Text(contents));
 
         if (can_open || can_close) && c != '\'' as u8 && c != '"' as u8 {
-            self.push_delimiter(c, can_open, can_close, contents.clone());
+            self.push_delimiter(c, can_open, can_close, inl);
         }
 
         inl
@@ -1023,9 +1030,9 @@ impl<'a> Subject<'a> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl_text: Vec<u8>) {
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: &'a Node<'a, N>) {
         self.delimiters.push(Delimiter {
-            inl_text: inl_text,
+            inl: inl,
             position: 0,
             delim_char: c,
             can_open: can_open,
@@ -1035,14 +1042,14 @@ impl<'a> Subject<'a> {
     }
 
     fn insert_emph(&mut self, opener: i32, closer: i32) -> i32 {
-        let mut opener_num_chars = self.delimiters[opener as usize].inl_text.len();
-        let mut closer_num_chars = self.delimiters[closer as usize].inl_text.len();
+        let mut opener_num_chars = self.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap().len();
+        let mut closer_num_chars = self.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len();
         let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 { 2 } else { 1 };
 
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
-        self.delimiters[opener as usize].inl_text.truncate(opener_num_chars);
-        self.delimiters[closer as usize].inl_text.truncate(closer_num_chars);
+        self.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap().truncate(opener_num_chars);
+        self.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().truncate(closer_num_chars);
 
         // TODO: just remove the range directly
         let mut delim = closer - 1;
@@ -1054,12 +1061,13 @@ impl<'a> Subject<'a> {
         let emph = make_inline(self.arena, if use_delims == 1 { NodeVal::Emph } else { NodeVal::Strong });
 
         // TODO: We need access to opener_inl, i.e. the actual inline node!
-        let mut tmp = opener + 1;
+        //let mut tmp = opener + 1;
+        -10
     }
 }
 
-struct Delimiter {
-    inl_text: Vec<u8>,
+struct Delimiter<'a> {
+    inl: &'a Node<'a, N>,
     position: usize,
     delim_char: u8,
     can_open: bool,
