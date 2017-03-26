@@ -7,30 +7,39 @@ extern crate regex;
 
 mod arena_tree;
 mod scanners;
+mod html;
 
 use std::cell::RefCell;
 use std::cmp::min;
-use std::io::Write;
 use std::fmt::{Debug, Formatter, Result};
 use std::mem;
 
+pub use html::format_document;
 use arena_tree::Node;
 
 use typed_arena::Arena;
 
 #[cfg(test)]
 mod tests {
-    use typed_arena::Arena;
     #[test]
     fn it_works() {
-        let arena = Arena::new();
+        let arena = ::typed_arena::Arena::new();
         let n = ::parse_document(
             &arena,
             b"My **document**.\n\nIt's mine.\n\n> Yes.\n\n## Hi!\n\nOkay.",
             0);
         println!("got: {:?}", n);
         let m = ::format_document(n);
-        assert_eq!(m, "<p>My <strong>document</strong>.</p>\n<p>It's mine.</p>\n");
+        assert_eq!(
+            m,
+            concat!(
+                "<p>My <strong>document</strong>.</p>\n",
+                "<p>It's mine.</p>\n",
+                "<blockquote>\n",
+                "<p>Yes.</p>\n",
+                "</blockquote>\n",
+                "<h2>Hi!</h2>",
+                "<p>Okay.</p>"));
     }
 }
 
@@ -50,106 +59,10 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
     parser.finish()
 }
 
-pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
-    let mut res = vec![];
-    format_node(&mut res, root);
-    String::from_utf8(res).unwrap()
-}
-
-fn format_node<'a>(w: &mut Write, node: &'a Node<'a, N>) {
-    match &node.data.borrow().typ {
-        &NodeVal::Document => {
-            for n in node.children() {
-                format_node(w, n);
-            }
-        },
-        &NodeVal::BlockQuote => {
-            write!(w, "<blockquote>").unwrap();
-            for n in node.children() {
-                format_node(w, n);
-            }
-            write!(w, "</blockquote>\n").unwrap()
-        },
-        &NodeVal::List => {
-            // TODO
-        },
-        &NodeVal::Item => {
-            // TODO
-        },
-        &NodeVal::Heading(ref nch) => {
-            write!(w, "<h{}>", nch.level).unwrap();
-            for n in node.children() {
-                format_node(w, n);
-            }
-            write!(w, "</h{}>\n", nch.level).unwrap();
-        },
-        &NodeVal::CodeBlock(..) => {
-            // TODO
-        },
-        &NodeVal::HtmlBlock(..) => {
-            // TODO
-        },
-        &NodeVal::CustomBlock => {
-            // TODO
-        },
-        &NodeVal::ThematicBreak => {
-            // TODO
-        },
-        &NodeVal::Paragraph => {
-            // TODO: tight list setting
-            write!(w, "<p>").unwrap();
-            for n in node.children() {
-                format_node(w, n);
-            }
-            write!(w, "</p>\n").unwrap();
-        },
-        &NodeVal::Text(ref literal) => {
-            // TODO: escape HTML
-            write!(w, "{}", literal).unwrap();
-        },
-        &NodeVal::LineBreak => {
-            write!(w, "<br />\n").unwrap();
-        },
-        &NodeVal::SoftBreak => {
-            // TODO
-            write!(w, "<br />\n").unwrap();
-        },
-        &NodeVal::Code => {
-            // TODO
-        },
-        &NodeVal::HtmlInline => {
-            // TODO
-        },
-        &NodeVal::CustomInline => {
-            // TODO
-        },
-        &NodeVal::Strong => {
-            write!(w, "<strong>").unwrap();
-            for n in node.children() {
-                format_node(w, n);
-            }
-            write!(w, "</strong>").unwrap();
-        },
-        &NodeVal::Emph => {
-            write!(w, "<em>").unwrap();
-            for n in node.children() {
-                format_node(w, n);
-            }
-            write!(w, "</em>").unwrap();
-        },
-        &NodeVal::Link => {
-            // TODO
-        },
-        &NodeVal::Image => {
-            // TODO
-        },
-    }
-}
-
 const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodeVal {
     Document,
     BlockQuote,
@@ -174,12 +87,12 @@ pub enum NodeVal {
     Image,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
     fenced: bool,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct NodeHeading {
     level: u32,
     setext: bool,
@@ -422,8 +335,6 @@ impl<'a> Parser<'a> {
             line.push(10);
         }
 
-        println!("process: [{}]", String::from_utf8(line.clone()).unwrap());
-
         self.offset = 0;
         self.column = 0;
         self.blank = false;
@@ -663,7 +574,9 @@ impl<'a> Parser<'a> {
                 self.current = self.finalize(self.current).unwrap();
             }
 
-            match &container.data.borrow().typ {
+            // TODO: remove this awful clone
+            let node_type = container.data.borrow().typ.clone();
+            match &node_type {
                 &NodeVal::CodeBlock(..) => {
                     self.add_line(container, line);
                 },
@@ -712,7 +625,7 @@ impl<'a> Parser<'a> {
     }
 
     fn add_line(&mut self, node: &'a Node<'a, N>, line: &mut Vec<u8>) {
-        let ni = &mut node.data.borrow_mut();
+        let mut ni = node.data.borrow_mut();
         assert!(ni.open);
         if self.partially_consumed_tab {
             self.offset += 1;
@@ -745,7 +658,7 @@ impl<'a> Parser<'a> {
     }
 
     fn finalize(&self, node: &'a Node<'a, N>) -> Option<&'a Node<'a, N>> {
-        let ni = &mut node.data.borrow_mut();
+        let mut ni = node.data.borrow_mut();
         assert!(ni.open);
         ni.open = false;
 
