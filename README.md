@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak)
+
 Porting [jgm's `cmark`](https://github.com/jgm/cmark) to Rust for fun.
 
 `cmark` itself is licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause),
