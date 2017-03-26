@@ -8,6 +8,7 @@ extern crate regex;
 mod arena_tree;
 mod scanners;
 mod html;
+mod ctype;
 
 use std::cell::RefCell;
 use std::cmp::min;
@@ -17,6 +18,7 @@ use std::mem;
 
 pub use html::format_document;
 use arena_tree::Node;
+use ctype::{isspace, ispunct};
 
 use typed_arena::Arena;
 
@@ -737,6 +739,7 @@ impl<'a> Parser<'a> {
             arena: self.arena,
             input: node.data.borrow().content.clone(),
             pos: 0,
+            delimiters: vec![],
         };
         rtrim(&mut subj.input);
 
@@ -749,7 +752,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_inline(&mut self, subj: &mut Subject<'a>, node: &'a Node<'a, N>) -> bool {
-        let mut new_inl: Option<&'a Node<'a, N>>;
+        let new_inl: Option<&'a Node<'a, N>>;
         let c = match subj.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -757,9 +760,8 @@ impl<'a> Parser<'a> {
 
         match c {
             '\0' => return false,
-            '\r' | '\n' => {
-                new_inl = Some(subj.handle_newline());
-            },
+            '\r' | '\n' => new_inl = Some(subj.handle_newline()),
+            '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c as u8)),
             // TODO
             _ => {
                 let endpos = subj.find_special_char();
@@ -821,6 +823,7 @@ struct Subject<'a> {
     arena: &'a Arena<Node<'a, N>>,
     input: Vec<u8>,
     pos: usize,
+    delimiters: Vec<Delimiter>,
 }
 
 impl<'a> Subject<'a> {
@@ -843,12 +846,13 @@ impl<'a> Subject<'a> {
             static ref SPECIAL_CHARS: BTreeSet<u8> =
                 ['\n' as u8,
                 '\r' as u8,
+                '_' as u8,
+                '*' as u8,
+                '"' as u8,
                 /* TODO
                 '\\' as u8,
                 '`' as u8,
                 '&' as u8,
-                '_' as u8,
-                '*' as u8,
                 '[' as u8,
                 ']' as u8,
                 '<' as u8,
@@ -890,6 +894,82 @@ impl<'a> Subject<'a> {
         }
         skipped
     }
+
+    fn handle_delim(&mut self, c: u8) -> &'a Node<'a, N> {
+        let (numdelims, can_open, can_close) = self.scan_delims(c);
+
+        let contents = self.input[self.pos - numdelims..self.pos].to_vec();
+        let inl = make_inline(self.arena, NodeVal::Text(contents.clone()));
+
+        if (can_open || can_close) && c != '\'' as u8 && c != '"' as u8 {
+            self.push_delimiter(c, can_open, can_close, contents.clone());
+        }
+
+        inl
+    }
+
+    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
+        // Elided: a bunch of UTF-8 processing stuff.
+        let before_char =
+            if self.pos == 0 {
+                10
+            } else {
+                self.input[self.pos - 1]
+            };
+
+        let mut numdelims = 0;
+        if c == '\'' as u8 || c == '"' as u8 {
+            numdelims += 1;
+            self.pos += 1;
+        } else {
+            while self.peek_char().map_or(false, |&x| x == c) {
+                numdelims += 1;
+                self.pos += 1;
+            }
+        }
+
+        let after_char =
+            if self.eof() {
+                10
+            } else {
+                self.input[self.pos]
+            };
+
+        let left_flanking = numdelims > 0 && !isspace(&after_char) &&
+            !(ispunct(&after_char) && !isspace(&before_char) && !ispunct(&before_char));
+        let right_flanking = numdelims > 0 && !isspace(&before_char) &&
+            !(ispunct(&before_char) && !isspace(&after_char) && !ispunct(&after_char));
+
+        if c == '_' as u8 {
+            (numdelims,
+             left_flanking && (!right_flanking || ispunct(&before_char)),
+             right_flanking && (!left_flanking || ispunct(&after_char)))
+        } else if c == '\'' as u8 || c == '"' as u8 {
+            (numdelims, left_flanking && !right_flanking, right_flanking)
+        } else {
+            (numdelims, left_flanking, right_flanking)
+        }
+    }
+
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl_text: Vec<u8>) {
+        self.delimiters.push(Delimiter {
+            inl_text: inl_text,
+            position: 0,
+            delim_char: c,
+            can_open: can_open,
+            can_close: can_close,
+            active: false,
+        });
+    }
+}
+
+struct Delimiter {
+    inl_text: Vec<u8>,
+    position: usize,
+    delim_char: u8,
+    can_open: bool,
+    can_close: bool,
+    active: bool,
 }
 
 fn is_line_end_char(ch: &u8) -> bool {
@@ -908,13 +988,6 @@ fn is_space_or_tab(ch: &u8) -> bool {
 
 fn peek_at(line: &mut Vec<u8>, i: usize) -> Option<&u8> {
     line.get(i)
-}
-
-fn isspace(ch: &u8) -> bool {
-    match ch {
-        &9 | &10 | &13 | &32 => true,
-        _ => false,
-    }
 }
 
 fn chop_trailing_hashtags(line: &mut Vec<u8>) {
