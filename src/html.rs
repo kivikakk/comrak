@@ -16,7 +16,7 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, N>) {
             }
         },
         &NodeVal::BlockQuote => {
-            write!(w, "<blockquote>").unwrap();
+            write!(w, "<blockquote>\n").unwrap();
             for n in node.children() {
                 format_node(w, n);
             }

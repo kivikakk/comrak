@@ -41,8 +41,8 @@ mod tests {
                 "<blockquote>\n",
                 "<p>Yes.</p>\n",
                 "</blockquote>\n",
-                "<h2>Hi!</h2>",
-                "<p>Okay.</p>"));
+                "<h2>Hi!</h2>\n",
+                "<p>Okay.</p>\n"));
     }
 }
 
@@ -1060,8 +1060,9 @@ impl<'a> Subject<'a> {
 
         let emph = make_inline(self.arena, if use_delims == 1 { NodeVal::Emph } else { NodeVal::Strong });
 
-        let mut tmp = self.delimiters[opener as usize].inl;
+        let mut tmp = self.delimiters[opener as usize].inl.next_sibling().unwrap();
         while !tmp.same_node(self.delimiters[closer as usize].inl) {
+            println!("append: {:?}", tmp);
             let next = tmp.next_sibling();
             emph.append(tmp);
             if let Some(n) = next {
