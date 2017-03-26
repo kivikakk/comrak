@@ -422,10 +422,11 @@ impl<'a> Parser<'a> {
     }
 
     fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
-        let mut cont_type = &container.data.borrow().typ;
+        let mut matched: usize = 0;
+        let mut maybe_lazy = match &self.current.data.borrow().typ { &NodeVal::Paragraph => true, _ => false };
 
         loop {
-            match cont_type {
+            match &container.data.borrow().typ {
                 &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) => break,
                 _ => { },
             }
@@ -441,28 +442,36 @@ impl<'a> Parser<'a> {
                     self.advance_offset(line, 1, true);
                 }
                 *container = self.add_child(*container, NodeVal::BlockQuote, blockquote_startpos + 1);
-            } else if !indented {
-                if let Some(matched) = scanners::atx_heading_start(line, self.first_nonspace) {
-                    let heading_startpos = self.first_nonspace;
-                    let offset = self.offset;
-                    self.advance_offset(line, heading_startpos + matched - offset, false);
-                    *container = self.add_child(*container, NodeVal::Heading(NodeHeading::default()), heading_startpos + 1);
+            } else if !indented && match scanners::atx_heading_start(line, self.first_nonspace) {
+                Some(m) => { matched = m; true },
+                None => false,
+            } {
+                let heading_startpos = self.first_nonspace;
+                let offset = self.offset;
+                self.advance_offset(line, heading_startpos + matched - offset, false);
+                *container = self.add_child(*container, NodeVal::Heading(NodeHeading::default()), heading_startpos + 1);
 
-                    let mut hashpos = line[self.first_nonspace..].iter().position(|&c| c == '#' as u8).unwrap() + self.first_nonspace;
-                    let mut level = 0;
-                    while peek_at(line, hashpos) == Some(&('#' as u8)) {
-                        level += 1;
-                        hashpos += 1;
-                    }
-
-                    container.data.borrow_mut().typ = NodeVal::Heading(NodeHeading {
-                        level: level,
-                        setext: false,
-                    });
+                let mut hashpos = line[self.first_nonspace..].iter().position(|&c| c == '#' as u8).unwrap() + self.first_nonspace;
+                let mut level = 0;
+                while peek_at(line, hashpos) == Some(&('#' as u8)) {
+                    level += 1;
+                    hashpos += 1;
                 }
-            } // TODO
 
-            break;
+                container.data.borrow_mut().typ = NodeVal::Heading(NodeHeading {
+                    level: level,
+                    setext: false,
+                });
+            } // TODO
+            else {
+                break;
+            }
+
+            if container.data.borrow().typ.accepts_lines() {
+                break;
+            }
+
+            maybe_lazy = false;
         }
     }
 
