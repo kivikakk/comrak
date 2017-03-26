@@ -14,6 +14,7 @@ use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::BTreeSet;
 use std::fmt::{Debug, Formatter, Result};
+use std::io::Read;
 use std::mem;
 
 pub use html::format_document;
@@ -31,7 +32,6 @@ mod tests {
             &arena,
             b"My **document**.\n\nIt's mine.\n\n> Yes.\n\n## Hi!\n\nOkay.",
             0);
-        println!("got: {:?}", n);
         let m = ::format_document(n);
         assert_eq!(
             m,
@@ -44,6 +44,14 @@ mod tests {
                 "<h2>Hi!</h2>\n",
                 "<p>Okay.</p>\n"));
     }
+}
+
+fn main() {
+    let mut buf = vec![];
+    std::io::stdin().read_to_end(&mut buf);
+    let arena = Arena::new();
+    let n = parse_document(&arena, &buf, 0);
+    print!("{}", format_document(n));
 }
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options: u32) -> &'a Node<'a, N> {
@@ -1062,7 +1070,6 @@ impl<'a> Subject<'a> {
 
         let mut tmp = self.delimiters[opener as usize].inl.next_sibling().unwrap();
         while !tmp.same_node(self.delimiters[closer as usize].inl) {
-            println!("append: {:?}", tmp);
             let next = tmp.next_sibling();
             emph.append(tmp);
             if let Some(n) = next {
