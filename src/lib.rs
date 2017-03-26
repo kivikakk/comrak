@@ -66,7 +66,7 @@ pub enum NodeVal {
     BlockQuote,
     List,
     Item,
-    CodeBlock,
+    CodeBlock(NodeCodeBlock),
     HtmlBlock(u8),
     CustomBlock,
     Paragraph,
@@ -86,6 +86,11 @@ pub enum NodeVal {
 }
 
 #[derive(Default, Debug)]
+pub struct NodeCodeBlock {
+    fenced: bool,
+}
+
+#[derive(Default, Debug)]
 pub struct NodeHeading {
     level: u32,
     setext: bool,
@@ -95,7 +100,7 @@ impl NodeVal {
     fn block(&self) -> bool {
         match self {
             &NodeVal::Document | &NodeVal::BlockQuote | &NodeVal::List | &NodeVal::Item |
-            &NodeVal::CodeBlock | &NodeVal::HtmlBlock(..) | &NodeVal::CustomBlock |
+            &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) | &NodeVal::CustomBlock |
             &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::ThematicBreak => true,
             _ => false,
         }
@@ -103,7 +108,7 @@ impl NodeVal {
 
     fn accepts_lines(&self) -> bool {
         match self {
-            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::CodeBlock =>
+            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::CodeBlock(..) =>
                 true,
             _ => false,
         }
@@ -377,7 +382,7 @@ impl<'a> Parser<'a> {
                         //     break 'done;
                         // }
                     },
-                    &NodeVal::CodeBlock => {
+                    &NodeVal::CodeBlock(..) => {
                         assert!(false);
                         // if !self.parse_code_block_prefix(line, container, &mut should_continue) {
                         //     break 'done;
@@ -421,7 +426,7 @@ impl<'a> Parser<'a> {
 
         loop {
             match cont_type {
-                &NodeVal::CodeBlock | &NodeVal::HtmlBlock(..) => break,
+                &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) => break,
                 _ => { },
             }
 
@@ -530,8 +535,8 @@ impl<'a> Parser<'a> {
                 &NodeVal::BlockQuote |
                 &NodeVal::Heading(..) |
                 &NodeVal::ThematicBreak => false,
-                &NodeVal::CodeBlock => /* TODO: !fenced */ true,
-                &NodeVal::Item => /* first_child().is_some() || start_line != self.line_number */ true,
+                &NodeVal::CodeBlock(ref ncb) => !ncb.fenced,
+                &NodeVal::Item => container.first_child().is_some() || container.data.borrow().start_line != self.line_number,
                 _ => true,
             };
 
@@ -555,7 +560,7 @@ impl<'a> Parser<'a> {
             }
 
             match &container.data.borrow().typ {
-                &NodeVal::CodeBlock => {
+                &NodeVal::CodeBlock(..) => {
                     self.add_line(container, line);
                 },
                 &NodeVal::HtmlBlock(html_block_type) => {
@@ -578,9 +583,22 @@ impl<'a> Parser<'a> {
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().typ.accepts_lines() {
-                        // TODO
+                        match &container.data.borrow().typ {
+                            &NodeVal::Heading(ref nh) =>
+                                if !nh.setext {
+                                    chop_trailing_hashtags(line);
+                                },
+                            _ => (),
+                        };
+                        let count = self.first_nonspace - self.offset;
+                        self.advance_offset(line, count, false);
+                        self.add_line(container, line);
                     } else {
-                        // TODO create para container for line
+                        let start_column = self.first_nonspace + 1;
+                        container = self.add_child(container, NodeVal::Paragraph, start_column);
+                        let count = self.first_nonspace - self.offset;
+                        self.advance_offset(line, count, false);
+                        self.add_line(container, line);
                     }
                 },
             }
@@ -628,4 +646,38 @@ fn is_space_or_tab(ch: &u8) -> bool {
 
 fn peek_at(line: &mut Vec<u8>, i: usize) -> Option<&u8> {
     line.get(i)
+}
+
+fn isspace(ch: &u8) -> bool {
+    match ch {
+        &9 | &10 | &13 | &32 => true,
+        _ => false,
+    }
+}
+
+fn chop_trailing_hashtags(line: &mut Vec<u8>) {
+    rtrim(line);
+
+    let orig_n = line.len() - 1;
+    let mut n = orig_n;
+
+    while line[n] == '#' as u8 {
+        n -= 1;
+        if n == 0 {
+            return;
+        }
+    }
+
+    if n != orig_n && is_space_or_tab(&line[n]) {
+        line.truncate(n);
+        rtrim(line);
+    }
+}
+
+fn rtrim(line: &mut Vec<u8>) {
+    let mut len = line.len();
+    while len > 0 && isspace(&line[len - 1]) {
+        line.pop();
+        len -= 1;
+    }
 }
