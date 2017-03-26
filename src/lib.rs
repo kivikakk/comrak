@@ -266,7 +266,6 @@ impl<'a> Parser<'a> {
                     self.linebuf.extend_from_slice(&buffer[0..eol]);
                     let linebuf = mem::replace(&mut self.linebuf, vec![]);
                     self.process_line(&linebuf);
-                    self.linebuf.clear();
                 } else {
                     self.process_line(&buffer[0..eol]);
                 }
@@ -522,7 +521,7 @@ impl<'a> Parser<'a> {
 
     fn add_child(&mut self, mut parent: &'a Node<'a, N>, typ: NodeVal, start_column: usize) -> &'a Node<'a, N> {
         while !parent.can_contain_type(&typ) {
-            parent = self.finalize(parent);
+            parent = self.finalize(parent).unwrap();
         }
 
         let child = make_block(typ, self.line_number, start_column);
@@ -566,7 +565,7 @@ impl<'a> Parser<'a> {
             self.add_line(self.current, line);
         } else {
             while !self.current.same_node(last_matched_container) {
-                self.current = self.finalize(self.current);
+                self.current = self.finalize(self.current).unwrap();
             }
 
             match &container.data.borrow().typ {
@@ -586,7 +585,7 @@ impl<'a> Parser<'a> {
                     };
 
                     if matches_end_condition {
-                        container = self.finalize(container);
+                        container = self.finalize(container).unwrap();
                     }
                 },
                 _ => {
@@ -629,13 +628,26 @@ impl<'a> Parser<'a> {
     }
 
     fn finish(&mut self) -> &'a Node<'a, N> {
-        while self.current.parent().is_some() {
-            self.current = self.finalize(&self.current);
+        if self.linebuf.len() > 0 {
+            let linebuf = mem::replace(&mut self.linebuf, vec![]);
+            self.process_line(&linebuf);
         }
-        self.current
+
+        self.finalize_document();
+
+        self.root
     }
 
-    fn finalize(&self, node: &'a Node<'a, N>) -> &'a Node<'a, N> {
+    fn finalize_document(&mut self) {
+        while !self.current.same_node(self.root) {
+            self.current = self.finalize(&self.current).unwrap();
+        }
+
+        self.finalize(self.root);
+        self.process_inlines();
+    }
+
+    fn finalize(&self, node: &'a Node<'a, N>) -> Option<&'a Node<'a, N>> {
         let ni = &mut node.data.borrow_mut();
         assert!(ni.open);
         ni.open = false;
@@ -666,21 +678,37 @@ impl<'a> Parser<'a> {
 
         match &ni.typ {
             &NodeVal::Paragraph => {
+                // TODO: remove reference links
+                /*
+                    while (cmark_strbuf_at(node_content, 0) == '[' &&
+                           (pos = cmark_parse_reference_inline(parser->mem, node_content,
+                                                               parser->refmap))) {
 
+                      cmark_strbuf_drop(node_content, pos);
+                    }
+                    if (is_blank(node_content, 0)) {
+                      // remove blank node (former reference def)
+                      cmark_node_free(b);
+                    }
+                */
             },
             &NodeVal::CodeBlock(..) => {
-
+                // TODO
             },
             &NodeVal::HtmlBlock(..) => {
-
+                // TODO
             },
             &NodeVal::List => {
-                
+                // TODO
             },
             _ => (),
         }
 
-        node.parent().unwrap()
+        node.parent()
+    }
+
+    fn process_inlines(&mut self) {
+        // TODO
     }
 }
 
