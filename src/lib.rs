@@ -40,6 +40,7 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
         start_line: 0,
         start_column: 0,
         end_line: 0,
+        end_column: 0,
         open: true,
         last_line_blank: false,
     })));
@@ -122,6 +123,7 @@ pub struct NI {
     start_line: u32,
     start_column: usize,
     end_line: u32,
+    end_column: usize,
     open: bool,
     last_line_blank: bool,
 }
@@ -133,6 +135,7 @@ fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
         start_line: start_line,
         start_column: start_column,
         end_line: start_line,
+        end_column: 0,
         open: true,
         last_line_blank: false,
     }
@@ -209,7 +212,7 @@ struct Parser<'a> {
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
-    last_line_length: u32,
+    last_line_length: usize,
     linebuf: Vec<u8>,
     last_buffer_ended_with_cr: bool,
 }
@@ -349,11 +352,11 @@ impl<'a> Parser<'a> {
             }
         }
 
-        self.last_line_length = line.len() as u32;
-        if self.last_line_length > 0 && line[(self.last_line_length - 1) as usize] == '\n' as u8 {
+        self.last_line_length = line.len();
+        if self.last_line_length > 0 && line[self.last_line_length - 1] == '\n' as u8 {
             self.last_line_length -= 1;
         }
-        if self.last_line_length > 0 && line[(self.last_line_length - 1) as usize] == '\r' as u8 {
+        if self.last_line_length > 0 && line[self.last_line_length - 1] == '\r' as u8 {
             self.last_line_length -= 1;
         }
     }
@@ -425,12 +428,10 @@ impl<'a> Parser<'a> {
         let mut matched: usize = 0;
         let mut maybe_lazy = match &self.current.data.borrow().typ { &NodeVal::Paragraph => true, _ => false };
 
-        loop {
-            match &container.data.borrow().typ {
-                &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) => break,
-                _ => { },
-            }
-
+        while match &container.data.borrow().typ {
+            &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) => false,
+            _ => true,
+        } {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
@@ -635,6 +636,50 @@ impl<'a> Parser<'a> {
     }
 
     fn finalize(&self, node: &'a Node<'a, N>) -> &'a Node<'a, N> {
+        let ni = &mut node.data.borrow_mut();
+        assert!(ni.open);
+        ni.open = false;
+
+        if self.linebuf.len() == 0 {
+            ni.end_line = self.line_number;
+            ni.end_column = self.last_line_length;
+        } else if match &ni.typ {
+            &NodeVal::Document => true,
+            &NodeVal::CodeBlock(ref ncb) => ncb.fenced,
+            &NodeVal::Heading(ref nh) => nh.setext,
+            _ => false,
+        } {
+            ni.end_line = self.line_number;
+            ni.end_column = self.linebuf.len();
+            if ni.end_column > 0 && self.linebuf[ni.end_column - 1] == '\n' as u8 {
+                ni.end_column -= 1;
+            }
+            if ni.end_column > 0 && self.linebuf[ni.end_column - 1] == '\r' as u8 {
+                ni.end_column -= 1;
+            }
+        } else {
+            ni.end_line = self.line_number - 1;
+            ni.end_column = self.last_line_length;
+        }
+
+        let content = &ni.content;
+
+        match &ni.typ {
+            &NodeVal::Paragraph => {
+
+            },
+            &NodeVal::CodeBlock(..) => {
+
+            },
+            &NodeVal::HtmlBlock(..) => {
+
+            },
+            &NodeVal::List => {
+                
+            },
+            _ => (),
+        }
+
         node.parent().unwrap()
     }
 }
