@@ -745,10 +745,82 @@ impl<'a> Parser<'a> {
 
         while !subj.eof() && self.parse_inline(&mut subj, node) {}
 
+        self.process_emphasis(&mut subj, -1);
         // TODO
-        // self.process_emphasis(subj, None);
         //while subj.last_delim { subj.pop_bracket() }
         //while subj.last_bracket { subj.pop_bracket() }
+    }
+
+    fn process_emphasis(&mut self, subj: &mut Subject<'a>, stack_bottom: i32) {
+        let mut closer = subj.delimiters.len() as i32 - 1;
+        let mut openers_bottom: Vec<[i32; 128]> = vec![];
+        for i in 0..3 {
+            let mut a = [-1; 128];
+            a['*' as usize] = stack_bottom;
+            a['_' as usize] = stack_bottom;
+            a['\'' as usize] = stack_bottom;
+            a['"' as usize] = stack_bottom;
+            openers_bottom.push(a)
+        }
+
+        while closer != -1 && closer - 1 > stack_bottom {
+            closer -= 1;
+        }
+
+        while closer != -1 && (closer as usize) < subj.delimiters.len() {
+            if subj.delimiters[closer as usize].can_close {
+                let mut opener = closer - 1;
+                let mut opener_found = false;
+                let mut odd_match = false;
+
+                while opener != -1 && opener != stack_bottom &&
+                        opener != openers_bottom[subj.delimiters[closer as usize].inl_text.len() % 3][subj.delimiters[closer as usize].delim_char as usize] {
+                    if subj.delimiters[opener as usize].can_open && subj.delimiters[opener as usize].delim_char == subj.delimiters[closer as usize].delim_char {
+                        odd_match = (subj.delimiters[closer as usize].can_open || subj.delimiters[opener as usize].can_close) &&
+                            ((subj.delimiters[opener as usize].inl_text.len() + subj.delimiters[closer as usize].inl_text.len()) % 3 == 0);
+                        if !odd_match {
+                            opener_found = true;
+                            break;
+                        }
+                    }
+                    opener -= 1;
+                }
+                let old_closer = closer;
+
+                if subj.delimiters[closer as usize].delim_char == '*' as u8 || subj.delimiters[closer as usize].delim_char == '_' as u8 {
+                    if opener_found {
+                        closer = subj.insert_emph(opener, closer);
+                    } else {
+                        closer += 1;
+                    }
+                } else if subj.delimiters[closer as usize].delim_char == '\'' as u8 {
+                    subj.delimiters[closer as usize].inl_text = "’".as_bytes().to_vec();
+                    if opener_found {
+                        subj.delimiters[opener as usize].inl_text = "‘".as_bytes().to_vec();
+                    }
+                    closer += 1;
+                } else if subj.delimiters[closer as usize].delim_char == '"' as u8 {
+                    subj.delimiters[closer as usize].inl_text = "”".as_bytes().to_vec();
+                    if opener_found {
+                        subj.delimiters[opener as usize].inl_text = "“".as_bytes().to_vec();
+                    }
+                    closer += 1;
+                }
+                if !opener_found {
+                    openers_bottom[subj.delimiters[old_closer as usize].inl_text.len() % 3][subj.delimiters[old_closer as usize].delim_char as usize] = old_closer - 1;
+                    if !subj.delimiters[old_closer as usize].can_open {
+                        subj.delimiters.remove(old_closer as usize);
+                    }
+                }
+            } else {
+              closer += 1;
+            }
+        }
+
+        // TODO truncate instead!
+        while subj.delimiters.len() > (stack_bottom + 1) as usize {
+            subj.delimiters.pop();
+        }
     }
 
     fn parse_inline(&mut self, subj: &mut Subject<'a>, node: &'a Node<'a, N>) -> bool {
@@ -960,6 +1032,29 @@ impl<'a> Subject<'a> {
             can_close: can_close,
             active: false,
         });
+    }
+
+    fn insert_emph(&mut self, opener: i32, closer: i32) -> i32 {
+        let mut opener_num_chars = self.delimiters[opener as usize].inl_text.len();
+        let mut closer_num_chars = self.delimiters[closer as usize].inl_text.len();
+        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 { 2 } else { 1 };
+
+        opener_num_chars -= use_delims;
+        closer_num_chars -= use_delims;
+        self.delimiters[opener as usize].inl_text.truncate(opener_num_chars);
+        self.delimiters[closer as usize].inl_text.truncate(closer_num_chars);
+
+        // TODO: just remove the range directly
+        let mut delim = closer - 1;
+        while delim != -1 && delim != opener {
+            self.delimiters.remove(delim as usize);
+            delim -= 1;
+        }
+
+        let emph = make_inline(self.arena, if use_delims == 1 { NodeVal::Emph } else { NodeVal::Strong });
+
+        // TODO: We need access to opener_inl, i.e. the actual inline node!
+        let mut tmp = opener + 1;
     }
 }
 
