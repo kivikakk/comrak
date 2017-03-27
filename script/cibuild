@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -ev
+
+sudo apt-get install python3
+cargo build --verbose
+
+if [ x"$SPEC" = "xtrue" ]; then
+	cd vendor/CommonMark
+	python3 test/spec_tests.py --program=../../target/debug/comrak
+else
+	cargo test --verbose
+fi
