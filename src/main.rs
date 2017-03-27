@@ -1,4 +1,3 @@
-#![feature(move_cell)]
 #![allow(unused_variables)]
 
 extern crate typed_arena;
@@ -48,7 +47,7 @@ mod tests {
 
 fn main() {
     let mut buf = vec![];
-    std::io::stdin().read_to_end(&mut buf);
+    std::io::stdin().read_to_end(&mut buf).unwrap();
     let arena = Arena::new();
     let n = parse_document(&arena, &buf, 0);
     print!("{}", format_document(n));
@@ -486,8 +485,17 @@ impl<'a> Parser<'a> {
                     level: level,
                     setext: false,
                 });
-            } // TODO
-            else {
+
+            // TODO
+
+            } else if indented && !maybe_lazy && !self.blank {
+                self.advance_offset(line, CODE_INDENT, true);
+                let ncb = NodeCodeBlock {
+                    fenced: false,
+                };
+                let offset = self.offset + 1;
+                *container = self.add_child(*container, NodeVal::CodeBlock(ncb), offset);
+            } else {
                 break;
             }
 
@@ -786,12 +794,11 @@ impl<'a> Parser<'a> {
             if subj.delimiters[closer as usize].can_close {
                 let mut opener = closer - 1;
                 let mut opener_found = false;
-                let mut odd_match = false;
 
                 while opener != -1 && opener != stack_bottom &&
                         opener != openers_bottom[subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len() % 3][subj.delimiters[closer as usize].delim_char as usize] {
                     if subj.delimiters[opener as usize].can_open && subj.delimiters[opener as usize].delim_char == subj.delimiters[closer as usize].delim_char {
-                        odd_match = (subj.delimiters[closer as usize].can_open || subj.delimiters[opener as usize].can_close) &&
+                        let odd_match = (subj.delimiters[closer as usize].can_open || subj.delimiters[opener as usize].can_close) &&
                             ((subj.delimiters[opener as usize].inl.data.borrow_mut().typ.text().unwrap().len() + subj.delimiters[closer as usize].inl.data.borrow_mut().typ.text().unwrap().len()) % 3 == 0);
                         if !odd_match {
                             opener_found = true;
