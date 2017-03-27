@@ -100,6 +100,10 @@ pub enum NodeVal {
 #[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
     fenced: bool,
+    fence_char: u8,
+    fence_length: usize,
+    fence_offset: usize,
+    info: String,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -448,6 +452,7 @@ impl<'a> Parser<'a> {
 
     fn open_new_blocks(&mut self, container: &mut &'a Node<'a, N>, line: &mut Vec<u8>, all_matched: bool) {
         let mut matched: usize = 0;
+        let mut data: i8 = 0;
         let mut maybe_lazy = match &self.current.data.borrow().typ { &NodeVal::Paragraph => true, _ => false };
 
         while match &container.data.borrow().typ {
@@ -486,12 +491,55 @@ impl<'a> Parser<'a> {
                     setext: false,
                 });
 
-            // TODO
+            } else if !indented && match scanners::open_code_fence(line, self.first_nonspace) {
+                Some(m) => { matched = m; true },
+                None => false,
+            } {
+                // TODO
+            
+            } else if !indented && (match scanners::html_block_start(line, self.first_nonspace) {
+                Some(m) => { matched = m; true },
+                None => false,
+            } || match (&container.data.borrow().typ, scanners::html_block_start_7(line, self.first_nonspace)) {
+                (&NodeVal::Paragraph, _) => false,
+                (_, Some(m)) => { matched = m; true },
+                _ => false,
+            }) {
+                // TODO
+
+            } else if !indented && match (&container.data.borrow().typ, scanners::setext_heading_line(line, self.first_nonspace)) {
+                (&NodeVal::Paragraph, Some(m)) => { matched = m; true },
+                _ => false,
+            } {
+                // TODO
+
+            } else if !indented && match (&container.data.borrow().typ, all_matched, scanners::thematic_break(line, self.first_nonspace)) {
+                (&NodeVal::Paragraph, false, _) => false,
+                (_, _, Some(m)) => { matched = m; true},
+                _ => false,
+            } {
+                // TODO
+
+            } else if (!indented || match &container.data.borrow().typ {
+                &NodeVal::List => true,
+                _ => false,
+            }) && match parse_list_marker(line, self.first_nonspace, match &container.data.borrow().typ {
+                &NodeVal::Paragraph => true,
+                _ => false,
+            }) {
+                Some((m, d)) => { matched = m; data = d; true },
+                _ => false,
+            } {
+                // TODO
 
             } else if indented && !maybe_lazy && !self.blank {
                 self.advance_offset(line, CODE_INDENT, true);
                 let ncb = NodeCodeBlock {
                     fenced: false,
+                    fence_char: 0,
+                    fence_length: 0,
+                    fence_offset: 0,
+                    info: String::new(),
                 };
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeVal::CodeBlock(ncb), offset);
@@ -1172,4 +1220,9 @@ fn make_inline<'a>(arena: &'a Arena<Node<'a, N>>, typ: NodeVal) -> &'a Node<'a, 
         last_line_blank: false,
     };
     arena.alloc(Node::new(RefCell::new(ni)))
+}
+
+fn parse_list_marker(line: &mut Vec<u8>, pos: usize, interrupts_paragraph: bool) -> Option<(usize, i8)> {
+    // TODO
+    None
 }

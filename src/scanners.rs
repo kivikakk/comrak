@@ -47,3 +47,28 @@ pub fn html_block_end_5(line: &mut Vec<u8>, from: usize) -> Option<usize> {
 
     RE.find(&line[from..]).map(|m| m.end() - m.start())
 }
+
+pub fn open_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    // TODO
+    None
+}
+
+pub fn html_block_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    // TODO
+    None
+}
+
+pub fn html_block_start_7(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    // TODO
+    None
+}
+
+pub fn setext_heading_line(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    // TODO
+    None
+}
+
+pub fn thematic_break(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    // TODO
+    None
+}
