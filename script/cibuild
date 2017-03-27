@@ -2,6 +2,7 @@
 
 set -ev
 
+sudo apt-get install python3
 cargo build --verbose
 
 if [ x"$SPEC" = "xtrue" ]; then
