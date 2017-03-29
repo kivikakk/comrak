@@ -3,7 +3,7 @@
 exec 1>&2
 set -e
 
-if [ "$(git status --porcelain README.md | cut -b2-2)" != " " ]; then
+if [ "$(git status --porcelain README.md | cut -b2-2 | tr -d '[:space:]')" != "" ]; then
 	echo "README.md has unstaged changes, commit hook cannot run"
 	exit 1
 fi
