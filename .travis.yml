@@ -13,4 +13,3 @@ matrix:
   allow_failures:
     - env: SPEC=true
     - rust: stable
-    - rust: beta
