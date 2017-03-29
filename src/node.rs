@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter, Result};
 use arena_tree::Node;
 
 #[derive(Debug, Clone)]
-pub enum NodeVal {
+pub enum NodeValue {
     Document,
     BlockQuote,
     List,
@@ -42,42 +42,51 @@ pub struct NodeHeading {
     pub setext: bool,
 }
 
-impl NodeVal {
+impl NodeValue {
     pub fn block(&self) -> bool {
         match self {
-            &NodeVal::Document | &NodeVal::BlockQuote | &NodeVal::List | &NodeVal::Item |
-            &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) | &NodeVal::CustomBlock |
-            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::ThematicBreak => true,
+            &NodeValue::Document |
+            &NodeValue::BlockQuote |
+            &NodeValue::List |
+            &NodeValue::Item |
+            &NodeValue::CodeBlock(..) |
+            &NodeValue::HtmlBlock(..) |
+            &NodeValue::CustomBlock |
+            &NodeValue::Paragraph |
+            &NodeValue::Heading(..) |
+            &NodeValue::ThematicBreak => true,
             _ => false,
         }
     }
 
     pub fn accepts_lines(&self) -> bool {
         match self {
-            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::CodeBlock(..) =>
-                true,
+            &NodeValue::Paragraph |
+            &NodeValue::Heading(..) |
+            &NodeValue::CodeBlock(..) => true,
             _ => false,
         }
     }
 
     pub fn contains_inlines(&self) -> bool {
         match self {
-            &NodeVal::Paragraph | &NodeVal::Heading(..) => true,
+            &NodeValue::Paragraph |
+            &NodeValue::Heading(..) => true,
             _ => false,
         }
     }
 
     pub fn text(&mut self) -> Option<&mut Vec<u8>> {
         match self {
-            &mut NodeVal::Text(ref mut t) => Some(t),
+            &mut NodeValue::Text(ref mut t) => Some(t),
             _ => None,
         }
     }
 }
 
 #[derive(Debug)]
-pub struct NI {
-    pub typ: NodeVal,
+pub struct Ast {
+    pub value: NodeValue,
     pub content: Vec<u8>,
     pub start_line: u32,
     pub start_column: usize,
@@ -87,9 +96,9 @@ pub struct NI {
     pub last_line_blank: bool,
 }
 
-pub fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
-    NI {
-        typ: typ,
+pub fn make_block(value: NodeValue, start_line: u32, start_column: usize) -> Ast {
+    Ast {
+        value: value,
         content: vec![],
         start_line: start_line,
         start_column: start_column,
@@ -100,36 +109,43 @@ pub fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
     }
 }
 
-pub type N = RefCell<NI>;
+pub type AstCell = RefCell<Ast>;
 
-impl<'a> Node<'a, N> {
+impl<'a> Node<'a, AstCell> {
     pub fn last_child_is_open(&self) -> bool {
         self.last_child().map_or(false, |n| n.data.borrow().open)
     }
 
-    pub fn can_contain_type(&self, child: &NodeVal) -> bool {
-        if let &NodeVal::Document = child {
+    pub fn can_contain_type(&self, child: &NodeValue) -> bool {
+        if let &NodeValue::Document = child {
             return false;
         }
 
-        match self.data.borrow().typ {
-            NodeVal::Document | NodeVal::BlockQuote | NodeVal::Item =>
-                child.block() && match child {
-                    &NodeVal::Item => false,
-                    _ => true,
-                },
-
-            NodeVal::List =>
+        match self.data.borrow().value {
+            NodeValue::Document | NodeValue::BlockQuote | NodeValue::Item => {
+                child.block() &&
                 match child {
-                    &NodeVal::Item => true,
+                    &NodeValue::Item => false,
+                    _ => true,
+                }
+            }
+
+            NodeValue::List => {
+                match child {
+                    &NodeValue::Item => true,
                     _ => false,
-                },
+                }
+            }
 
-            NodeVal::CustomBlock => true,
+            NodeValue::CustomBlock => true,
 
-            NodeVal::Paragraph | NodeVal::Heading(..) | NodeVal::Emph | NodeVal::Strong |
-            NodeVal::Link | NodeVal::Image | NodeVal::CustomInline =>
-                !child.block(),
+            NodeValue::Paragraph |
+            NodeValue::Heading(..) |
+            NodeValue::Emph |
+            NodeValue::Strong |
+            NodeValue::Link |
+            NodeValue::Image |
+            NodeValue::CustomInline => !child.block(),
 
             _ => false,
         }
@@ -158,4 +174,3 @@ impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
         Ok(())
     }
 }
-

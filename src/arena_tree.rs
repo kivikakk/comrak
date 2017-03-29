@@ -1,36 +1,38 @@
 // Retrieved from:
-// https://github.com/SimonSapin/rust-typed-arena/blob/42f35d6ccced6f6ef5e250d11ec76a10985a0c9e/src/lib.rs
+// https://github.com/SimonSapin/rust-typed-arena/blob/
+//   42f35d6ccced6f6ef5e250d11ec76a10985a0c9e/src/lib.rs
 // (MIT license, (C) Simon Sapin <simon.sapin@exyr.org>)
-/*
-A DOM-like tree data structure based on `&Node` references.
+//
+// A DOM-like tree data structure based on `&Node` references.
+//
+// Any non-trivial tree involves reference cycles
+// (e.g. if a node has a first child, the parent of the child is that node).
+// To enable this, nodes need to live in an arena allocator
+// such as `arena::TypedArena` distrubuted with rustc (which is `#[unstable]` as of this writing)
+// or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
+//
+// If you need mutability in the node’s `data`,
+// make it a cell (`Cell` or `RefCell`) or use cells inside of it.
+//
+// ## Example
+//
+// ```rust
+// extern crate typed_arena;
+// extern crate arena_tree;
+// use std::cell::RefCell;
+//
+// let arena = typed_arena::Arena::new();
+// let a = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
+// let b = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
+// a.append(b);
+// b.data.borrow_mut().push_str("content");
+// assert_eq!(a.descendants().map(|node| node.data.borrow().clone()).collect::<Vec<_>>(), [
+// "".to_string(), "content".to_string()
+// ]);
+// ```
+//
+//
 
-Any non-trivial tree involves reference cycles
-(e.g. if a node has a first child, the parent of the child is that node).
-To enable this, nodes need to live in an arena allocator
-such as `arena::TypedArena` distrubuted with rustc (which is `#[unstable]` as of this writing)
-or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
-
-If you need mutability in the node’s `data`,
-make it a cell (`Cell` or `RefCell`) or use cells inside of it.
-
-## Example
-
-```rust
-extern crate typed_arena;
-extern crate arena_tree;
-use std::cell::RefCell;
-
-let arena = typed_arena::Arena::new();
-let a = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
-let b = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
-a.append(b);
-b.data.borrow_mut().push_str("content");
-assert_eq!(a.descendants().map(|node| node.data.borrow().clone()).collect::<Vec<_>>(), [
-    "".to_string(), "content".to_string()
-]);
-```
-
-*/
 
 #![allow(dead_code)]
 
@@ -293,7 +295,7 @@ impl<'a, T> Iterator for Descendants<'a, T> {
             match self.0.next() {
                 Some(NodeEdge::Start(node)) => return Some(node),
                 Some(NodeEdge::End(_)) => {}
-                None => return None
+                None => return None,
             }
         }
     }
@@ -363,12 +365,14 @@ macro_rules! traverse_iterator {
 }
 
 traverse_iterator! {
-    #[doc = "An iterator of the start and end edges of a given node and its descendants, in tree order."]
+    #[doc = "An iterator of the start and end edges of a given node
+    and its descendants, in tree order."]
     Traverse: first_child, next_sibling
 }
 
 traverse_iterator! {
-    #[doc = "An iterator of the start and end edges of a given node and its descendants, in reverse tree order."]
+    #[doc = "An iterator of the start and end edges of a given node
+    and its descendants, in reverse tree order."]
     ReverseTraverse: last_child, previous_sibling
 }
 
@@ -411,9 +415,8 @@ fn it_works() {
         c.previous_sibling.get().unwrap().detach();
         assert_eq!(drop_counter.get(), 0);
 
-        assert_eq!(b.descendants().map(|node| node.data.0).collect::<Vec<_>>(), [
-            5, 6, 7, 1, 4, 2, 3, 9, 10
-        ]);
+        assert_eq!(b.descendants().map(|node| node.data.0).collect::<Vec<_>>(),
+                   [5, 6, 7, 1, 4, 2, 3, 9, 10]);
     }
 
     assert_eq!(drop_counter.get(), 10);

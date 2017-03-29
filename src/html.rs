@@ -1,100 +1,99 @@
 use std::io::Write;
 
-use ::{NodeVal, Node, N};
+use ::{NodeValue, Node, AstCell};
 
-pub fn format_document<'a>(root: &'a Node<'a, N>) -> String {
+pub fn format_document<'a>(root: &'a Node<'a, AstCell>) -> String {
     let mut res = vec![];
     format_node(&mut res, root);
     String::from_utf8(res).unwrap()
 }
 
-fn format_node<'a>(w: &mut Write, node: &'a Node<'a, N>) {
-    match &node.data.borrow().typ {
-        &NodeVal::Document => {
+fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
+    match &node.data.borrow().value {
+        &NodeValue::Document => {
             for n in node.children() {
                 format_node(w, n);
             }
-        },
-        &NodeVal::BlockQuote => {
+        }
+        &NodeValue::BlockQuote => {
             write!(w, "<blockquote>\n").unwrap();
             for n in node.children() {
                 format_node(w, n);
             }
             write!(w, "</blockquote>\n").unwrap()
-        },
-        &NodeVal::List => {
+        }
+        &NodeValue::List => {
             // TODO
-        },
-        &NodeVal::Item => {
+        }
+        &NodeValue::Item => {
             // TODO
-        },
-        &NodeVal::Heading(ref nch) => {
+        }
+        &NodeValue::Heading(ref nch) => {
             write!(w, "<h{}>", nch.level).unwrap();
             for n in node.children() {
                 format_node(w, n);
             }
             write!(w, "</h{}>\n", nch.level).unwrap();
-        },
-        &NodeVal::CodeBlock(..) => {
+        }
+        &NodeValue::CodeBlock(..) => {
             // TODO
-        },
-        &NodeVal::HtmlBlock(..) => {
+        }
+        &NodeValue::HtmlBlock(..) => {
             // TODO
-        },
-        &NodeVal::CustomBlock => {
+        }
+        &NodeValue::CustomBlock => {
             // TODO
-        },
-        &NodeVal::ThematicBreak => {
+        }
+        &NodeValue::ThematicBreak => {
             // TODO
-        },
-        &NodeVal::Paragraph => {
+        }
+        &NodeValue::Paragraph => {
             // TODO: tight list setting
             write!(w, "<p>").unwrap();
             for n in node.children() {
                 format_node(w, n);
             }
             write!(w, "</p>\n").unwrap();
-        },
-        &NodeVal::Text(ref literal) => {
+        }
+        &NodeValue::Text(ref literal) => {
             // TODO: escape HTML
             write!(w, "{}", String::from_utf8(literal.clone()).unwrap()).unwrap();
-        },
-        &NodeVal::LineBreak => {
+        }
+        &NodeValue::LineBreak => {
             write!(w, "<br />\n").unwrap();
-        },
-        &NodeVal::SoftBreak => {
+        }
+        &NodeValue::SoftBreak => {
             // TODO
             write!(w, "<br />\n").unwrap();
-        },
-        &NodeVal::Code => {
+        }
+        &NodeValue::Code => {
             // TODO
-        },
-        &NodeVal::HtmlInline => {
+        }
+        &NodeValue::HtmlInline => {
             // TODO
-        },
-        &NodeVal::CustomInline => {
+        }
+        &NodeValue::CustomInline => {
             // TODO
-        },
-        &NodeVal::Strong => {
+        }
+        &NodeValue::Strong => {
             write!(w, "<strong>").unwrap();
             for n in node.children() {
                 format_node(w, n);
             }
             write!(w, "</strong>").unwrap();
-        },
-        &NodeVal::Emph => {
+        }
+        &NodeValue::Emph => {
             write!(w, "<em>").unwrap();
             for n in node.children() {
                 format_node(w, n);
             }
             write!(w, "</em>").unwrap();
-        },
-        &NodeVal::Link => {
+        }
+        &NodeValue::Link => {
             // TODO
-        },
-        &NodeVal::Image => {
+        }
+        &NodeValue::Image => {
             // TODO
-        },
+        }
     }
 }
-
