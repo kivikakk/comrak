@@ -1,0 +1,36 @@
+#!/bin/sh
+
+exec 1>&2
+set -e
+
+if [ "$(git status --porcelain README.md | cut -b2-2)" != " " ]; then
+	echo "README.md has unstaged changes, commit hook cannot run"
+	exit 1
+fi
+
+
+cargo build
+r=$((cd vendor/CommonMark; python3 test/spec_tests.py --program=../../target/debug/comrak) | tail -n 1)
+r=$(echo "$r" | sed -e 's/ passed, /,/' -e 's/ failed, /,/' -e 's/ errored, /,/' -e 's/ skipped//')
+passed=$(echo "$r" | cut -f1 -d,)
+failed=$(echo "$r" | cut -f2 -d,)
+errored=$(echo "$r" | cut -f3 -d,)
+skipped=$(echo "$r" | cut -f4 -d,)
+total=$(($passed + $failed + $errored))
+if [ "$errored" -gt 0 ]; then
+	color=red
+elif [ "$failed" -gt 0 ]; then
+	color=yellow
+elif [ "$skipped" -gt 0 ]; then
+	color=blue
+else
+	color=brightgreen
+fi
+
+sed -i '' \
+	-e '2s@\[.*\]@[Spec Status: '"$passed"/"$total"']@' \
+	-e '2s@(.*)@('https://img.shields.io/badge/specs-"$passed"%2F"$total"-"$color".svg')@' \
+	README.md
+
+git diff README.md
+git add README.md
