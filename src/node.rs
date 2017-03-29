@@ -34,6 +34,7 @@ pub struct NodeCodeBlock {
     pub fence_length: usize,
     pub fence_offset: usize,
     pub info: String,
+    pub literal: Vec<u8>,
 }
 
 #[derive(Default, Debug, Clone)]

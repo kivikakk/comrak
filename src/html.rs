@@ -23,9 +23,11 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             write!(w, "</blockquote>\n").unwrap()
         }
         &NodeValue::List => {
+            assert!(false)
             // TODO
         }
         &NodeValue::Item => {
+            assert!(false)
             // TODO
         }
         &NodeValue::Heading(ref nch) => {
@@ -35,16 +37,23 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             }
             write!(w, "</h{}>\n", nch.level).unwrap();
         }
-        &NodeValue::CodeBlock(..) => {
-            // TODO
+        &NodeValue::CodeBlock(ref ncb) => {
+            write!(w, "<pre><code").unwrap();
+            if ncb.info != "" {
+                write!(w, " class=\"language-{}\"", ncb.info).unwrap();
+            }
+            write!(w, ">{}</code></pre>\n", String::from_utf8(ncb.literal.clone()).unwrap()).unwrap();
         }
         &NodeValue::HtmlBlock(..) => {
+            assert!(false)
             // TODO
         }
         &NodeValue::CustomBlock => {
+            assert!(false)
             // TODO
         }
         &NodeValue::ThematicBreak => {
+            assert!(false)
             // TODO
         }
         &NodeValue::Paragraph => {
@@ -63,16 +72,20 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             write!(w, "<br />\n").unwrap();
         }
         &NodeValue::SoftBreak => {
+            assert!(false);
             // TODO
             write!(w, "<br />\n").unwrap();
         }
         &NodeValue::Code => {
+            assert!(false)
             // TODO
         }
         &NodeValue::HtmlInline => {
+            assert!(false)
             // TODO
         }
         &NodeValue::CustomInline => {
+            assert!(false)
             // TODO
         }
         &NodeValue::Strong => {
@@ -90,9 +103,11 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             write!(w, "</em>").unwrap();
         }
         &NodeValue::Link => {
+            assert!(false)
             // TODO
         }
         &NodeValue::Image => {
+            assert!(false)
             // TODO
         }
     }

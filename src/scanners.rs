@@ -49,8 +49,29 @@ pub fn html_block_end_5(line: &mut Vec<u8>, from: usize) -> Option<usize> {
 }
 
 pub fn open_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
-    // TODO
-    None
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(```+|~~~+)[^`\r\n\x00]*[\r\n]").unwrap();
+    }
+
+    let c = match RE.captures(&line[from..]) {
+        Some(c) => c,
+        None => return None,
+    };
+
+    c.get(1).map(|m| m.end() - m.start())
+}
+
+pub fn close_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(```+|~~~+)[ \t]*[\r\n]").unwrap();
+    }
+
+    let c = match RE.captures(&line[from..]) {
+        Some(c) => c,
+        None => return None,
+    };
+
+    c.get(1).map(|m| m.end() - m.start())
 }
 
 pub fn html_block_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {

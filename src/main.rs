@@ -228,32 +228,33 @@ impl<'a> Parser<'a> {
         'done: loop {
             while container.last_child_is_open() {
                 container = container.last_child().unwrap();
-                let cont_type = &container.data.borrow().value;
+                let ast = &mut *container.data.borrow_mut();
 
                 self.find_first_nonspace(line);
 
-                match cont_type {
+                match &ast.value {
                     &NodeValue::BlockQuote => {
                         if !self.parse_block_quote_prefix(line) {
                             break 'done;
                         }
                     }
                     &NodeValue::Item => {
+                        // TODO
                         assert!(false);
                         // if !self.parse_node_item_prefix(line, container) {
                         //     break 'done;
                         // }
                     }
                     &NodeValue::CodeBlock(..) => {
-                        assert!(false);
-                        // if !self.parse_code_block_prefix(line, container, &mut should_continue) {
-                        //     break 'done;
-                        // }
+                        if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
+                            break 'done;
+                        }
                     }
                     &NodeValue::Heading(..) => {
                         break 'done;
                     }
                     &NodeValue::HtmlBlock(..) => {
+                        // TODO
                         assert!(false);
                         // if !self.parse_html_block_prefix(container) {
                         //     break 'done;
@@ -348,8 +349,18 @@ impl<'a> Parser<'a> {
                 }
                 None => false,
             } {
-                // TODO
-
+                let first_nonspace = self.first_nonspace;
+                let offset = self.offset;
+                let ncb = NodeCodeBlock {
+                    fenced: true,
+                    fence_char: *peek_at(line, first_nonspace).unwrap(),
+                    fence_length: matched,
+                    fence_offset: first_nonspace - offset,
+                    info: String::new(),
+                    literal: vec![],
+                };
+                *container = self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
+                self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented &&
                       (match scanners::html_block_start(line, self.first_nonspace) {
                 Some(m) => {
@@ -421,6 +432,7 @@ impl<'a> Parser<'a> {
                     fence_length: 0,
                     fence_offset: 0,
                     info: String::new(),
+                    literal: vec![],
                 };
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
@@ -478,6 +490,44 @@ impl<'a> Parser<'a> {
         }
 
         false
+    }
+
+    fn parse_code_block_prefix(&mut self, line: &mut Vec<u8>, container: &'a Node<'a, AstCell>, ast: &mut Ast, should_continue: &mut bool) -> bool {
+        let ncb = match ast.value {
+            NodeValue::CodeBlock(ref ncb) => Some(ncb.clone()),
+            _ => None,
+        }.unwrap();
+
+        if !ncb.fenced && self.indent >= CODE_INDENT {
+            self.advance_offset(line, CODE_INDENT, true);
+            return true;
+        } else if !ncb.fenced && self.blank {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            return true;
+        }
+
+        let matched =
+            if self.indent <= 3 && peek_at(line, self.first_nonspace).map_or(false, |&c| c == ncb.fence_char) {
+                scanners::close_code_fence(line, self.first_nonspace).unwrap_or(0)
+            } else {
+                0
+            };
+
+        if matched >= ncb.fence_length {
+            *should_continue = false;
+            self.advance_offset(line, matched, false);
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return false;
+
+        }
+
+        let mut i = ncb.fence_offset;
+        while i > 0 && peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        true
     }
 
     fn add_child(&mut self,
@@ -623,7 +673,10 @@ impl<'a> Parser<'a> {
     }
 
     fn finalize(&self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
-        let mut ast = node.data.borrow_mut();
+        self.finalize_borrowed(node, &mut *node.data.borrow_mut())
+    }
+
+    fn finalize_borrowed(&self, node: &'a Node<'a, AstCell>, ast: &mut Ast) -> Option<&'a Node<'a, AstCell>> {
         assert!(ast.open);
         ast.open = false;
 
@@ -649,10 +702,10 @@ impl<'a> Parser<'a> {
             ast.end_column = self.last_line_length;
         }
 
-        let content = &ast.content;
+        let content = &mut ast.content;
 
-        match &ast.value {
-            &NodeValue::Paragraph => {
+        match &mut ast.value {
+            &mut NodeValue::Paragraph => {
                 // TODO: remove reference links
                 /*
                     while (cmark_strbuf_at(node_content, 0) == '[' &&
@@ -667,13 +720,46 @@ impl<'a> Parser<'a> {
                     }
                 */
             }
-            &NodeValue::CodeBlock(..) => {
+            &mut NodeValue::CodeBlock(ref mut ncb) => {
+                if !ncb.fenced {
+                    remove_trailing_blank_lines(content);
+                    content.push('\n' as u8);
+                } else {
+                    let mut pos = 0;
+                    while pos < content.len() {
+                        if is_line_end_char(&content[pos]) {
+                            break;
+                        }
+                        pos += 1;
+                    }
+                    assert!(pos < content.len());
+
+                    // TODO: unescape HTML, etc.
+                    let mut tmp = content[0..pos].to_vec();
+                    trim(&mut tmp);
+                    ncb.info = String::from_utf8(tmp).unwrap();
+
+                    // TODO: boundscheck lol
+                    if content[pos] == '\r' as u8 {
+                        pos += 1;
+                    }
+                    if content[pos] == '\n' as u8 {
+                        pos += 1;
+                    }
+
+                    for i in 0..pos {
+                        content.remove(0);
+                    }
+                }
+                ncb.literal = content.clone();
+                content.clear();
+            }
+            &mut NodeValue::HtmlBlock(..) => {
+                assert!(false)
                 // TODO
             }
-            &NodeValue::HtmlBlock(..) => {
-                // TODO
-            }
-            &NodeValue::List => {
+            &mut NodeValue::List => {
+                assert!(false)
                 // TODO
             }
             _ => (),
@@ -1174,6 +1260,19 @@ fn rtrim(line: &mut Vec<u8>) {
     }
 }
 
+fn ltrim(line: &mut Vec<u8>) {
+    let mut len = line.len();
+    while len > 0 && isspace(&line[0]) {
+        line.remove(0);
+        len -= 1;
+    }
+}
+
+fn trim(line: &mut Vec<u8>) {
+    ltrim(line);
+    rtrim(line);
+}
+
 fn make_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>, value: NodeValue) -> &'a Node<'a, AstCell> {
     let ast = Ast {
         value: value,
@@ -1194,4 +1293,33 @@ fn parse_list_marker(line: &mut Vec<u8>,
                      -> Option<(usize, i8)> {
     // TODO
     None
+}
+
+fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
+    let mut i = line.len() - 1;
+    loop {
+        let c = line[i];
+
+        if c != ' ' as u8 && c != '\t' as u8 && !is_line_end_char(&c) {
+            break;
+        }
+
+        if i == 0 {
+            line.clear();
+            return;
+        }
+
+        i -= 1;
+    }
+
+    for i in i..line.len() {
+        let c = line[i];
+
+        if !is_line_end_char(&c) {
+            continue;
+        }
+
+        line.truncate(i);
+        break;
+    }
 }
