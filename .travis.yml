@@ -3,6 +3,8 @@ sudo: required
 script: script/cibuild
 rust:
   - nightly
+  - beta
+  - stable
 env:
   - SPEC=false
   - SPEC=true
@@ -10,3 +12,5 @@ matrix:
   fast_finish: true
   allow_failures:
     - env: SPEC=true
+    - rust: stable
+    - rust: beta

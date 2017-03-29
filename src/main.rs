@@ -8,42 +8,22 @@ mod arena_tree;
 mod scanners;
 mod html;
 mod ctype;
+mod node;
+#[cfg(test)]
+mod tests;
 
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::BTreeSet;
-use std::fmt::{Debug, Formatter, Result};
 use std::io::Read;
 use std::mem;
+
+use typed_arena::Arena;
 
 pub use html::format_document;
 use arena_tree::Node;
 use ctype::{isspace, ispunct};
-
-use typed_arena::Arena;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let arena = ::typed_arena::Arena::new();
-        let n = ::parse_document(
-            &arena,
-            b"My **document**.\n\nIt's mine.\n\n> Yes.\n\n## Hi!\n\nOkay.",
-            0);
-        let m = ::format_document(n);
-        assert_eq!(
-            m,
-            concat!(
-                "<p>My <strong>document</strong>.</p>\n",
-                "<p>It's mine.</p>\n",
-                "<blockquote>\n",
-                "<p>Yes.</p>\n",
-                "</blockquote>\n",
-                "<h2>Hi!</h2>\n",
-                "<p>Okay.</p>\n"));
-    }
-}
+use node::{NodeVal, NI, N, NodeCodeBlock, NodeHeading, make_block};
 
 fn main() {
     let mut buf = vec![];
@@ -71,163 +51,6 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, N>>, buffer: &[u8], options:
 
 const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
-
-#[derive(Debug, Clone)]
-pub enum NodeVal {
-    Document,
-    BlockQuote,
-    List,
-    Item,
-    CodeBlock(NodeCodeBlock),
-    HtmlBlock(u8),
-    CustomBlock,
-    Paragraph,
-    Heading(NodeHeading),
-    ThematicBreak,
-
-    Text(Vec<u8>),
-    SoftBreak,
-    LineBreak,
-    Code,
-    HtmlInline,
-    CustomInline,
-    Emph,
-    Strong,
-    Link,
-    Image,
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct NodeCodeBlock {
-    fenced: bool,
-    fence_char: u8,
-    fence_length: usize,
-    fence_offset: usize,
-    info: String,
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct NodeHeading {
-    level: u32,
-    setext: bool,
-}
-
-impl NodeVal {
-    fn block(&self) -> bool {
-        match self {
-            &NodeVal::Document | &NodeVal::BlockQuote | &NodeVal::List | &NodeVal::Item |
-            &NodeVal::CodeBlock(..) | &NodeVal::HtmlBlock(..) | &NodeVal::CustomBlock |
-            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::ThematicBreak => true,
-            _ => false,
-        }
-    }
-
-    fn accepts_lines(&self) -> bool {
-        match self {
-            &NodeVal::Paragraph | &NodeVal::Heading(..) | &NodeVal::CodeBlock(..) =>
-                true,
-            _ => false,
-        }
-    }
-
-    fn contains_inlines(&self) -> bool {
-        match self {
-            &NodeVal::Paragraph | &NodeVal::Heading(..) => true,
-            _ => false,
-        }
-    }
-
-    fn text(&mut self) -> Option<&mut Vec<u8>> {
-        match self {
-            &mut NodeVal::Text(ref mut t) => Some(t),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct NI {
-    typ: NodeVal,
-    content: Vec<u8>,
-    start_line: u32,
-    start_column: usize,
-    end_line: u32,
-    end_column: usize,
-    open: bool,
-    last_line_blank: bool,
-}
-
-fn make_block(typ: NodeVal, start_line: u32, start_column: usize) -> NI {
-    NI {
-        typ: typ,
-        content: vec![],
-        start_line: start_line,
-        start_column: start_column,
-        end_line: start_line,
-        end_column: 0,
-        open: true,
-        last_line_blank: false,
-    }
-}
-
-type N = RefCell<NI>;
-
-impl<'a> Node<'a, N> {
-    fn last_child_is_open(&self) -> bool {
-        self.last_child().map_or(false, |n| n.data.borrow().open)
-    }
-
-    fn can_contain_type(&self, child: &NodeVal) -> bool {
-        if let &NodeVal::Document = child {
-            return false;
-        }
-
-        match self.data.borrow().typ {
-            NodeVal::Document | NodeVal::BlockQuote | NodeVal::Item =>
-                child.block() && match child {
-                    &NodeVal::Item => false,
-                    _ => true,
-                },
-
-            NodeVal::List =>
-                match child {
-                    &NodeVal::Item => true,
-                    _ => false,
-                },
-
-            NodeVal::CustomBlock => true,
-
-            NodeVal::Paragraph | NodeVal::Heading(..) | NodeVal::Emph | NodeVal::Strong |
-            NodeVal::Link | NodeVal::Image | NodeVal::CustomInline =>
-                !child.block(),
-
-            _ => false,
-        }
-    }
-}
-
-impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        let mut ch = vec![];
-        let mut c = self.first_child();
-        while let Some(e) = c {
-            ch.push(e);
-            c = e.next_sibling();
-        }
-        write!(f, "[({:?}) {} children: {{", self.data.borrow(), ch.len())?;
-        let mut first = true;
-        for e in &ch {
-            if first {
-                first = false;
-            } else {
-                write!(f, ", ")?;
-            }
-            write!(f, "{:?}", e)?;
-        }
-        write!(f, "}}]")?;
-        Ok(())
-    }
-}
 
 struct Parser<'a> {
     arena: &'a Arena<Node<'a, N>>,
