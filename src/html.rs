@@ -22,11 +22,11 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             }
             write!(w, "</blockquote>\n").unwrap()
         }
-        &NodeValue::List => {
+        &NodeValue::List(ref nl) => {
             assert!(false)
             // TODO
         }
-        &NodeValue::Item => {
+        &NodeValue::Item(..) => {
             assert!(false)
             // TODO
         }

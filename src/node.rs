@@ -6,8 +6,8 @@ use arena_tree::Node;
 pub enum NodeValue {
     Document,
     BlockQuote,
-    List,
-    Item,
+    List(NodeList),
+    Item(NodeList),
     CodeBlock(NodeCodeBlock),
     HtmlBlock(u8),
     CustomBlock,
@@ -38,7 +38,7 @@ pub struct NodeList {
     pub tight: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ListType {
     None,
     Bullet,
@@ -51,7 +51,7 @@ impl Default for ListType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ListDelimType {
     None,
     Period,
@@ -85,8 +85,8 @@ impl NodeValue {
         match self {
             &NodeValue::Document |
             &NodeValue::BlockQuote |
-            &NodeValue::List |
-            &NodeValue::Item |
+            &NodeValue::List(..) |
+            &NodeValue::Item(..) |
             &NodeValue::CodeBlock(..) |
             &NodeValue::HtmlBlock(..) |
             &NodeValue::CustomBlock |
@@ -160,17 +160,17 @@ impl<'a> Node<'a, AstCell> {
         }
 
         match self.data.borrow().value {
-            NodeValue::Document | NodeValue::BlockQuote | NodeValue::Item => {
+            NodeValue::Document | NodeValue::BlockQuote | NodeValue::Item(..) => {
                 child.block() &&
                 match child {
-                    &NodeValue::Item => false,
+                    &NodeValue::Item(..) => false,
                     _ => true,
                 }
             }
 
-            NodeValue::List => {
+            NodeValue::List(..) => {
                 match child {
-                    &NodeValue::Item => true,
+                    &NodeValue::Item(..) => true,
                     _ => false,
                 }
             }
@@ -187,6 +187,21 @@ impl<'a> Node<'a, AstCell> {
 
             _ => false,
         }
+    }
+
+    pub fn ends_with_blank_line(&self) -> bool {
+        let mut it = Some(self);
+        while let Some(cur) = it {
+            if cur.data.borrow().last_line_blank {
+                return true;
+            }
+            match &cur.data.borrow().value {
+                &NodeValue::List(..) | &NodeValue::Item(..) =>
+                    it = cur.last_child(),
+                _ => it = None,
+            };
+        }
+        false
     }
 }
 
