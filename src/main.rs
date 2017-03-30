@@ -25,7 +25,7 @@ pub use html::format_document;
 use arena_tree::Node;
 use ctype::{isspace, ispunct, isdigit};
 use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
-           make_block};
+           NodeHtmlBlock, make_block};
 
 fn main() {
     let mut buf = vec![];
@@ -253,12 +253,10 @@ impl<'a> Parser<'a> {
                     NodeValue::Heading(..) => {
                         break 'done;
                     }
-                    NodeValue::HtmlBlock(..) => {
-                        // TODO
-                        assert!(false);
-                        // if !self.parse_html_block_prefix(container) {
-                        //     break 'done;
-                        // }
+                    NodeValue::HtmlBlock(ref nhb) => {
+                        if !self.parse_html_block_prefix(nhb.block_type) {
+                            break 'done;
+                        }
                     }
                     NodeValue::Paragraph => {
                         if self.blank {
@@ -363,8 +361,13 @@ impl<'a> Parser<'a> {
                                 &mut matched)
                 }
             } {
-                // TODO
+                let offset = self.first_nonspace + 1;
+                let nhb = NodeHtmlBlock {
+                    block_type: matched as u8,
+                    literal: vec![],
+                };
 
+                *container = self.add_child(*container, NodeValue::HtmlBlock(nhb), offset);
             } else if !indented &&
                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => {
@@ -373,14 +376,13 @@ impl<'a> Parser<'a> {
                 }
                 _ => false,
             } {
-                container.data.borrow_mut().value =
-                    NodeValue::Heading(NodeHeading {
-                        level: match sc {
-                            scanners::SetextChar::Equals => 1,
-                            scanners::SetextChar::Hyphen => 2,
-                        },
-                        setext: true,
-                    });
+                container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+                    level: match sc {
+                        scanners::SetextChar::Equals => 1,
+                        scanners::SetextChar::Hyphen => 2,
+                    },
+                    setext: true,
+                });
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
             } else if !indented &&
@@ -573,6 +575,17 @@ impl<'a> Parser<'a> {
         true
     }
 
+    fn parse_html_block_prefix(&mut self, t: u8) -> bool {
+        match t {
+            1 | 2 | 3 | 4 | 5 => true,
+            6 | 7 => !self.blank,
+            _ => {
+                assert!(false);
+                false
+            }
+        }
+    }
+
     fn add_child(&mut self,
                  mut parent: &'a Node<'a, AstCell>,
                  value: NodeValue,
@@ -637,10 +650,10 @@ impl<'a> Parser<'a> {
                 &NodeValue::CodeBlock(..) => {
                     self.add_line(container, line);
                 }
-                &NodeValue::HtmlBlock(html_block_type) => {
+                &NodeValue::HtmlBlock(ref nhb) => {
                     self.add_line(container, line);
 
-                    let matches_end_condition = match html_block_type {
+                    let matches_end_condition = match nhb.block_type {
                         1 => scanners::html_block_end_1(line, self.first_nonspace).is_some(),
                         2 => scanners::html_block_end_2(line, self.first_nonspace).is_some(),
                         3 => scanners::html_block_end_3(line, self.first_nonspace).is_some(),
@@ -800,9 +813,9 @@ impl<'a> Parser<'a> {
                 ncb.literal = content.clone();
                 content.clear();
             }
-            &mut NodeValue::HtmlBlock(..) => {
-                assert!(false)
-                // TODO
+            &mut NodeValue::HtmlBlock(ref mut nhb) => {
+                nhb.literal = content.clone();
+                content.clear();
             }
             &mut NodeValue::List(ref mut nl) => {
                 nl.tight = true;
