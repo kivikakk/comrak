@@ -27,6 +27,43 @@ pub enum NodeValue {
     Image,
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NodeList {
+    pub list_type: ListType,
+    pub marker_offset: usize,
+    pub padding: usize,
+    pub start: usize,
+    pub delimiter: ListDelimType,
+    pub bullet_char: u8,
+    pub tight: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ListType {
+    None,
+    Bullet,
+    Ordered,
+}
+
+impl Default for ListType {
+    fn default() -> ListType {
+        ListType::None
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ListDelimType {
+    None,
+    Period,
+    Paren,
+}
+
+impl Default for ListDelimType {
+    fn default() -> ListDelimType {
+        ListDelimType::None
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
     pub fenced: bool,

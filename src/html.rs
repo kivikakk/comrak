@@ -42,7 +42,10 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             if ncb.info != "" {
                 write!(w, " class=\"language-{}\"", ncb.info).unwrap();
             }
-            write!(w, ">{}</code></pre>\n", String::from_utf8(ncb.literal.clone()).unwrap()).unwrap();
+            write!(w,
+                   ">{}</code></pre>\n",
+                   String::from_utf8(ncb.literal.clone()).unwrap())
+                .unwrap();
         }
         &NodeValue::HtmlBlock(..) => {
             assert!(false)
@@ -72,9 +75,8 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             write!(w, "<br />\n").unwrap();
         }
         &NodeValue::SoftBreak => {
-            assert!(false);
-            // TODO
-            write!(w, "<br />\n").unwrap();
+            // TODO: if HARDBREAKS option set.
+            write!(w, "\n").unwrap();
         }
         &NodeValue::Code => {
             assert!(false)

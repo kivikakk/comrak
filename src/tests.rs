@@ -25,3 +25,18 @@ fn codefence() {
             concat!("<pre><code class=\"language-rust\">fn main();\n",
                     "</code></pre>\n"));
 }
+
+#[test]
+fn lists() {
+    compare(b"2. Hello.\n3. Hi.\n",
+            concat!("<ol start=\"2\">\n",
+                    "<li>Hello.</li>\n",
+                    "<li>Hi.</li>\n",
+                    "</ol>\n"));
+
+    compare(b"- Hello.\n- Hi.\n",
+            concat!("<ul>\n",
+                    "<li>Hello.</li>\n",
+                    "<li>Hi.</li>\n",
+                    "</ul>\n"));
+}

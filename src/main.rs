@@ -23,8 +23,8 @@ use typed_arena::Arena;
 
 pub use html::format_document;
 use arena_tree::Node;
-use ctype::{isspace, ispunct};
-use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, make_block};
+use ctype::{isspace, ispunct, isdigit};
+use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType, make_block};
 
 fn main() {
     let mut buf = vec![];
@@ -246,7 +246,8 @@ impl<'a> Parser<'a> {
                         // }
                     }
                     &NodeValue::CodeBlock(..) => {
-                        if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
+                        if !self.parse_code_block_prefix(
+                            line, container, ast, &mut should_continue) {
                             break 'done;
                         }
                     }
@@ -289,7 +290,7 @@ impl<'a> Parser<'a> {
                        line: &mut Vec<u8>,
                        all_matched: bool) {
         let mut matched: usize = 0;
-        let mut data: i8 = 0;
+        let mut data: NodeList = NodeList::default();
         let mut maybe_lazy = match &self.current.data.borrow().value {
             &NodeValue::Paragraph => true,
             _ => false,
@@ -313,13 +314,8 @@ impl<'a> Parser<'a> {
                 *container =
                     self.add_child(*container, NodeValue::BlockQuote, blockquote_startpos + 1);
             } else if !indented &&
-                      match scanners::atx_heading_start(line, self.first_nonspace) {
-                Some(m) => {
-                    matched = m;
-                    true
-                }
-                None => false,
-            } {
+                      unwrap_into(scanners::atx_heading_start(line, self.first_nonspace),
+                                  &mut matched) {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
@@ -342,13 +338,8 @@ impl<'a> Parser<'a> {
                 });
 
             } else if !indented &&
-                      match scanners::open_code_fence(line, self.first_nonspace) {
-                Some(m) => {
-                    matched = m;
-                    true
-                }
-                None => false,
-            } {
+                      unwrap_into(scanners::open_code_fence(line, self.first_nonspace),
+                                  &mut matched) {
                 let first_nonspace = self.first_nonspace;
                 let offset = self.offset;
                 let ncb = NodeCodeBlock {
@@ -359,48 +350,38 @@ impl<'a> Parser<'a> {
                     info: String::new(),
                     literal: vec![],
                 };
-                *container = self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
+                *container =
+                    self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented &&
-                      (match scanners::html_block_start(line, self.first_nonspace) {
-                Some(m) => {
-                    matched = m;
-                    true
+                      unwrap_into(scanners::html_block_start(line, self.first_nonspace),
+                                  &mut matched) ||
+                      match &container.data.borrow().value {
+                &NodeValue::Paragraph => false,
+                _ => {
+                    unwrap_into(scanners::html_block_start_7(line, self.first_nonspace),
+                                &mut matched)
                 }
-                None => false,
-            } ||
-                       match (&container.data.borrow().value,
-                              scanners::html_block_start_7(line, self.first_nonspace)) {
-                (&NodeValue::Paragraph, _) => false,
-                (_, Some(m)) => {
-                    matched = m;
-                    true
-                }
-                _ => false,
-            }) {
+            } {
                 // TODO
 
             } else if !indented &&
-                      match (&container.data.borrow().value,
-                             scanners::setext_heading_line(line, self.first_nonspace)) {
-                (&NodeValue::Paragraph, Some(m)) => {
-                    matched = m;
-                    true
+                      match &container.data.borrow().value {
+                &NodeValue::Paragraph => {
+                    unwrap_into(scanners::setext_heading_line(line, self.first_nonspace),
+                                &mut matched)
                 }
                 _ => false,
             } {
                 // TODO
 
             } else if !indented &&
-                      match (&container.data.borrow().value,
-                             all_matched,
-                             scanners::thematic_break(line, self.first_nonspace)) {
-                (&NodeValue::Paragraph, false, _) => false,
-                (_, _, Some(m)) => {
-                    matched = m;
-                    true
+                      match (&container.data.borrow().value, all_matched) {
+                (&NodeValue::Paragraph, false) => false,
+                _ => {
+                    unwrap_into(scanners::thematic_break(line, self.first_nonspace),
+                                &mut matched)
                 }
-                _ => false,
             } {
                 // TODO
 
@@ -409,20 +390,14 @@ impl<'a> Parser<'a> {
                 &NodeValue::List => true,
                 _ => false,
             }) &&
-                      match parse_list_marker(line,
-                                              self.first_nonspace,
-                                              match &container.data.borrow().value {
-                                                  &NodeValue::Paragraph => true,
-                                                  _ => false,
-                                              }) {
-                Some((m, d)) => {
-                    matched = m;
-                    data = d;
-                    true
-                }
-                _ => false,
-            } {
-                // TODO
+                      unwrap_into(parse_list_marker(line,
+                                                    self.first_nonspace,
+                                                    match &container.data.borrow().value {
+                                                        &NodeValue::Paragraph => true,
+                                                        _ => false,
+                                                    }),
+                                  &mut (matched, data)) {
+                assert!(false);
 
             } else if indented && !maybe_lazy && !self.blank {
                 self.advance_offset(line, CODE_INDENT, true);
@@ -492,11 +467,17 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn parse_code_block_prefix(&mut self, line: &mut Vec<u8>, container: &'a Node<'a, AstCell>, ast: &mut Ast, should_continue: &mut bool) -> bool {
+    fn parse_code_block_prefix(&mut self,
+                               line: &mut Vec<u8>,
+                               container: &'a Node<'a, AstCell>,
+                               ast: &mut Ast,
+                               should_continue: &mut bool)
+                               -> bool {
         let ncb = match ast.value {
-            NodeValue::CodeBlock(ref ncb) => Some(ncb.clone()),
-            _ => None,
-        }.unwrap();
+                NodeValue::CodeBlock(ref ncb) => Some(ncb.clone()),
+                _ => None,
+            }
+            .unwrap();
 
         if !ncb.fenced && self.indent >= CODE_INDENT {
             self.advance_offset(line, CODE_INDENT, true);
@@ -507,12 +488,13 @@ impl<'a> Parser<'a> {
             return true;
         }
 
-        let matched =
-            if self.indent <= 3 && peek_at(line, self.first_nonspace).map_or(false, |&c| c == ncb.fence_char) {
-                scanners::close_code_fence(line, self.first_nonspace).unwrap_or(0)
-            } else {
-                0
-            };
+        let matched = if self.indent <= 3 &&
+                         peek_at(line, self.first_nonspace)
+            .map_or(false, |&c| c == ncb.fence_char) {
+            scanners::close_code_fence(line, self.first_nonspace).unwrap_or(0)
+        } else {
+            0
+        };
 
         if matched >= ncb.fence_length {
             *should_continue = false;
@@ -676,7 +658,10 @@ impl<'a> Parser<'a> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
-    fn finalize_borrowed(&self, node: &'a Node<'a, AstCell>, ast: &mut Ast) -> Option<&'a Node<'a, AstCell>> {
+    fn finalize_borrowed(&self,
+                         node: &'a Node<'a, AstCell>,
+                         ast: &mut Ast)
+                         -> Option<&'a Node<'a, AstCell>> {
         assert!(ast.open);
         ast.open = false;
 
@@ -1288,10 +1273,89 @@ fn make_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>, value: NodeValue) -> &'a
 }
 
 fn parse_list_marker(line: &mut Vec<u8>,
-                     pos: usize,
+                     mut pos: usize,
                      interrupts_paragraph: bool)
-                     -> Option<(usize, i8)> {
-    // TODO
+                     -> Option<(usize, NodeList)> {
+    let c = match peek_at(line, pos) {
+        Some(c) => *c,
+        _ => return None,
+    };
+    let startpos = pos;
+
+    if c == '*' as u8 || c == '-' as u8 || c == '+' as u8 {
+        pos += 1;
+        if !peek_at(line, pos).map_or(false, isspace) {
+            return None;
+        }
+
+        if interrupts_paragraph {
+            let mut i = pos;
+            while peek_at(line, i).map_or(false, is_space_or_tab) {
+                i += 1;
+            }
+            if peek_at(line, i) == Some(&('\n' as u8)) {
+                return None;
+            }
+        }
+
+        return Some((pos - startpos, NodeList {
+            list_type: ListType::Bullet,
+            marker_offset: 0,
+            padding: 0,
+            start: 1,
+            delimiter: ListDelimType::Period,
+            bullet_char: c,
+            tight: false,
+        }));
+    } else if isdigit(&c) {
+        let mut start: usize = 0;
+        let mut digits = 0;
+
+        loop {
+            start = (10 * start) + (peek_at(line, pos).unwrap() - '0' as u8) as usize;
+            pos += 1;
+            digits += 1;
+
+            if !(digits < 9 && peek_at(line, pos).map_or(false, isdigit)) {
+                break;
+            }
+        }
+
+        if interrupts_paragraph && start != 1 {
+            return None
+        }
+
+        if c != '.' as u8 && c != ')' as u8 {
+            return None;
+        }
+
+        pos += 1;
+
+        if !peek_at(line, pos).map_or(false, isspace) {
+            return None;
+        }
+
+        if interrupts_paragraph {
+            let mut i = pos;
+            while peek_at(line, i).map_or(false, is_space_or_tab) {
+                i += 1;
+            }
+            if peek_at(line, i).map_or(false, is_line_end_char) {
+                return None;
+            }
+        }
+
+        return Some((pos - startpos, NodeList {
+            list_type: ListType::Ordered,
+            marker_offset: 0,
+            padding: 0,
+            start: start,
+            delimiter: if c == '.' as u8 { ListDelimType::Period } else { ListDelimType::Paren },
+            bullet_char: 0,
+            tight: false,
+        }));
+    }
+
     None
 }
 
@@ -1321,5 +1385,15 @@ fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
 
         line.truncate(i);
         break;
+    }
+}
+
+fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
+    match t {
+        Some(v) => {
+            *out = v;
+            true
+        }
+        _ => false,
     }
 }
