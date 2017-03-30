@@ -75,6 +75,14 @@ pub fn close_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
 }
 
 pub fn html_block_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+    lazy_static! {
+        static ref RE1: Regex = Regex::new(r"<(script|pre|style)([ \t\v\f\r\n]|>)").unwrap();
+        static ref RE2: Regex = Regex::new(r"<!--").unwrap();
+        static ref RE3: Regex = Regex::new(r"<\?").unwrap();
+        static ref RE4: Regex = Regex::new(r"<![A-Z]").unwrap();
+        static ref RE5: Regex = Regex::new(r"<!\[CDATA\[").unwrap();
+        static ref RE6: Regex = Regex::new(r"</?(blocktagname)([ \t\v\f\r\n]|/?>)").unwrap();
+    }
     // TODO
     None
 }
