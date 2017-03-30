@@ -160,7 +160,9 @@ impl<'a> Node<'a, AstCell> {
         }
 
         match self.data.borrow().value {
-            NodeValue::Document | NodeValue::BlockQuote | NodeValue::Item(..) => {
+            NodeValue::Document |
+            NodeValue::BlockQuote |
+            NodeValue::Item(..) => {
                 child.block() &&
                 match child {
                     &NodeValue::Item(..) => false,
@@ -196,8 +198,8 @@ impl<'a> Node<'a, AstCell> {
                 return true;
             }
             match &cur.data.borrow().value {
-                &NodeValue::List(..) | &NodeValue::Item(..) =>
-                    it = cur.last_child(),
+                &NodeValue::List(..) |
+                &NodeValue::Item(..) => it = cur.last_child(),
                 _ => it = None,
             };
         }

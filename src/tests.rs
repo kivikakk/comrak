@@ -35,8 +35,5 @@ fn lists() {
                     "</ol>\n"));
 
     compare(b"- Hello.\n- Hi.\n",
-            concat!("<ul>\n",
-                    "<li>Hello.</li>\n",
-                    "<li>Hi.</li>\n",
-                    "</ul>\n"));
+            concat!("<ul>\n", "<li>Hello.</li>\n", "<li>Hi.</li>\n", "</ul>\n"));
 }

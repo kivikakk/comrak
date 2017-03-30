@@ -24,7 +24,8 @@ use typed_arena::Arena;
 pub use html::format_document;
 use arena_tree::Node;
 use ctype::{isspace, ispunct, isdigit};
-use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType, make_block};
+use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
+           make_block};
 
 fn main() {
     let mut buf = vec![];
@@ -389,18 +390,20 @@ impl<'a> Parser<'a> {
                 _ => false,
             }) &&
                       unwrap_into_2(parse_list_marker(line,
-                                                    self.first_nonspace,
-                                                    match &container.data.borrow().value {
-                                                        &NodeValue::Paragraph => true,
-                                                        _ => false,
-                                                    }),
-                                  &mut matched, &mut nl) {
+                                                      self.first_nonspace,
+                                                      match &container.data.borrow().value {
+                                                          &NodeValue::Paragraph => true,
+                                                          _ => false,
+                                                      }),
+                                    &mut matched,
+                                    &mut nl) {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
-                let (save_partially_consumed_tab, save_offset, save_column) = 
+                let (save_partially_consumed_tab, save_offset, save_column) =
                     (self.partially_consumed_tab, self.offset, self.column);
 
-                while self.column - save_column <= 5 && peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+                while self.column - save_column <= 5 &&
+                      peek_at(line, self.offset).map_or(false, is_space_or_tab) {
                     self.advance_offset(line, 1, true);
                 }
 
@@ -497,7 +500,11 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn parse_node_item_prefix(&mut self, line: &mut Vec<u8>, container: &'a Node<'a, AstCell>, nl: &NodeList) -> bool {
+    fn parse_node_item_prefix(&mut self,
+                              line: &mut Vec<u8>,
+                              container: &'a Node<'a, AstCell>,
+                              nl: &NodeList)
+                              -> bool {
         if self.indent >= nl.marker_offset + nl.padding {
             self.advance_offset(line, nl.marker_offset + nl.padding, true);
             true
@@ -798,7 +805,8 @@ impl<'a> Parser<'a> {
 
                     let mut subch = item.first_child();
                     while let Some(subitem) = subch {
-                        if subitem.ends_with_blank_line() && (item.next_sibling().is_some() || subitem.next_sibling().is_some()) {
+                        if subitem.ends_with_blank_line() &&
+                           (item.next_sibling().is_some() || subitem.next_sibling().is_some()) {
                             nl.tight = false;
                             break;
                         }
@@ -1363,15 +1371,16 @@ fn parse_list_marker(line: &mut Vec<u8>,
             }
         }
 
-        return Some((pos - startpos, NodeList {
-            list_type: ListType::Bullet,
-            marker_offset: 0,
-            padding: 0,
-            start: 1,
-            delimiter: ListDelimType::Period,
-            bullet_char: c,
-            tight: false,
-        }));
+        return Some((pos - startpos,
+                     NodeList {
+                         list_type: ListType::Bullet,
+                         marker_offset: 0,
+                         padding: 0,
+                         start: 1,
+                         delimiter: ListDelimType::Period,
+                         bullet_char: c,
+                         tight: false,
+                     }));
     } else if isdigit(&c) {
         let mut start: usize = 0;
         let mut digits = 0;
@@ -1387,7 +1396,7 @@ fn parse_list_marker(line: &mut Vec<u8>,
         }
 
         if interrupts_paragraph && start != 1 {
-            return None
+            return None;
         }
 
         c = peek_at(line, pos).map_or(0, |&c| c);
@@ -1411,15 +1420,20 @@ fn parse_list_marker(line: &mut Vec<u8>,
             }
         }
 
-        return Some((pos - startpos, NodeList {
-            list_type: ListType::Ordered,
-            marker_offset: 0,
-            padding: 0,
-            start: start,
-            delimiter: if c == '.' as u8 { ListDelimType::Period } else { ListDelimType::Paren },
-            bullet_char: 0,
-            tight: false,
-        }));
+        return Some((pos - startpos,
+                     NodeList {
+                         list_type: ListType::Ordered,
+                         marker_offset: 0,
+                         padding: 0,
+                         start: start,
+                         delimiter: if c == '.' as u8 {
+                             ListDelimType::Period
+                         } else {
+                             ListDelimType::Paren
+                         },
+                         bullet_char: 0,
+                         tight: false,
+                     }));
     }
 
     None
@@ -1459,7 +1473,7 @@ fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
         Some(v) => {
             *out = v;
             true
-        },
+        }
         _ => false,
     }
 }
@@ -1470,13 +1484,12 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
             *out_t = t;
             *out_u = u;
             true
-        },
+        }
         _ => false,
     }
 }
 
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
-    list_data.list_type == item_data.list_type &&
-        list_data.delimiter == item_data.delimiter &&
-        list_data.bullet_char == item_data.bullet_char
+    list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter &&
+    list_data.bullet_char == item_data.bullet_char
 }

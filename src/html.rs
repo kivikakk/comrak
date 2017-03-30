@@ -24,9 +24,7 @@ impl Write for HtmlFormatter {
 
 impl HtmlFormatter {
     fn new() -> Self {
-        HtmlFormatter {
-            v: vec![],
-        }
+        HtmlFormatter { v: vec![] }
     }
 
     fn cr(&mut self) {
@@ -108,7 +106,9 @@ impl HtmlFormatter {
                 // TODO
             }
             &NodeValue::Paragraph => {
-                let tight = match node.parent().and_then(|ref n| n.parent()).map(|ref n| n.data.borrow().value.clone()) {
+                let tight = match node.parent()
+                    .and_then(|ref n| n.parent())
+                    .map(|ref n| n.data.borrow().value.clone()) {
                     Some(NodeValue::List(ref nl)) => nl.tight,
                     _ => false,
                 };
