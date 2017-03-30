@@ -79,3 +79,35 @@ fn html_block_1() {
                     "</style>\n",
                     "<p><em>ok</em></p>\n"));
 }
+
+#[test]
+fn html_block_2() {
+    compare(b"   <!-- abc\n\nok --> *hi*\n*hi*\n",
+            concat!("   <!-- abc\n",
+                    "\n",
+                    "ok --> *hi*\n",
+                    "<p><em>hi</em></p>\n"));
+}
+
+#[test]
+fn html_block_3() {
+    compare(b" <? o\nk ?> *a*\n*a*\n",
+            concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"));
+}
+
+#[test]
+fn html_block_4() {
+    compare(b"<!X >\nok\n<!X\num > h\nok\n",
+            concat!("<!X >\n", "<p>ok</p>\n", "<!X\n", "um > h\n", "<p>ok</p>\n"));
+}
+
+#[test]
+fn html_block_5() {
+    compare(b"<![CDATA[\n\nhm >\n*ok*\n]]> *ok*\n*ok*\n",
+            concat!("<![CDATA[\n",
+                    "\n",
+                    "hm >\n",
+                    "*ok*\n",
+                    "]]> *ok*\n",
+                    "<p><em>ok</em></p>\n"));
+}

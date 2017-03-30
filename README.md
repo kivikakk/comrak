@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak)
-![Spec Status: 333/621](https://img.shields.io/badge/specs-333%2F621-red.svg)
+![Spec Status: 334/621](https://img.shields.io/badge/specs-334%2F621-red.svg)
 
 Porting [jgm's `cmark`](https://github.com/jgm/cmark) to Rust for fun.
 

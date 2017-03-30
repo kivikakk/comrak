@@ -72,9 +72,9 @@ impl HtmlFormatter {
             }
             &NodeValue::Item(..) => {
                 self.cr();
-                write!(self, "<li>");
+                write!(self, "<li>").unwrap();
                 self.format_children(node);
-                write!(self, "</li>\n");
+                write!(self, "</li>\n").unwrap();
             }
             &NodeValue::Heading(ref nch) => {
                 self.cr();
