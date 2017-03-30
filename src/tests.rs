@@ -4,6 +4,18 @@ fn compare(input: &[u8], expected: &str) {
     let arena = Arena::new();
     let ast = parse_document(&arena, input, 0);
     let html = format_document(ast);
+    if html != expected {
+        println!("Got:");
+        println!("==============================");
+        println!("{}", html);
+        println!("==============================");
+        println!();
+        println!("Expected:");
+        println!("==============================");
+        println!("{}", expected);
+        println!("==============================");
+        println!();
+    }
     assert_eq!(html, expected);
 }
 
@@ -41,14 +53,29 @@ fn lists() {
 #[test]
 fn thematic_breaks() {
     compare(b"---\n\n- - -\n\n\n_        _   _\n",
-            concat!("<hr />\n",
-                    "<hr />\n",
-                    "<hr />\n"));
+            concat!("<hr />\n", "<hr />\n", "<hr />\n"));
 }
 
 #[test]
 fn setext_heading() {
     compare(b"Hi\n==\n\nOk\n-----\n",
-            concat!("<h1>Hi</h1>\n",
-                    "<h2>Ok</h2>\n"));
+            concat!("<h1>Hi</h1>\n", "<h2>Ok</h2>\n"));
+}
+
+#[test]
+fn html_block_1() {
+    compare(b"<script\n*ok* </script> *ok*\n\n*ok*\n\n*ok*\n\n\
+<pre x>\n*ok*\n</style>\n*ok*\n<style>\n*ok*\n</style>\n\n*ok*\n",
+            concat!("<script\n",
+                    "*ok* </script> *ok*\n",
+                    "<p><em>ok</em></p>\n",
+                    "<p><em>ok</em></p>\n",
+                    "<pre x>\n",
+                    "*ok*\n",
+                    "</style>\n",
+                    "<p><em>ok</em></p>\n",
+                    "<style>\n",
+                    "*ok*\n",
+                    "</style>\n",
+                    "<p><em>ok</em></p>\n"));
 }

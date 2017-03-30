@@ -9,7 +9,7 @@ pub enum NodeValue {
     List(NodeList),
     Item(NodeList),
     CodeBlock(NodeCodeBlock),
-    HtmlBlock(u8),
+    HtmlBlock(NodeHtmlBlock),
     CustomBlock,
     Paragraph,
     Heading(NodeHeading),
@@ -79,6 +79,13 @@ pub struct NodeHeading {
     pub level: u32,
     pub setext: bool,
 }
+
+#[derive(Debug, Clone)]
+pub struct NodeHtmlBlock {
+    pub block_type: u8,
+    pub literal: Vec<u8>,
+}
+
 
 impl NodeValue {
     pub fn block(&self) -> bool {

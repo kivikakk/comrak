@@ -93,9 +93,10 @@ impl HtmlFormatter {
                        String::from_utf8(ncb.literal.clone()).unwrap())
                     .unwrap();
             }
-            &NodeValue::HtmlBlock(..) => {
-                assert!(false)
-                // TODO
+            &NodeValue::HtmlBlock(ref nhb) => {
+                self.cr();
+                self.write(&nhb.literal).unwrap();
+                self.cr();
             }
             &NodeValue::CustomBlock => {
                 assert!(false)
@@ -124,7 +125,7 @@ impl HtmlFormatter {
             }
             &NodeValue::Text(ref literal) => {
                 // TODO: escape HTML
-                write!(self, "{}", String::from_utf8(literal.clone()).unwrap()).unwrap();
+                self.write(&literal).unwrap();
             }
             &NodeValue::LineBreak => {
                 write!(self, "<br />\n").unwrap();
