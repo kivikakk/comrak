@@ -382,8 +382,10 @@ impl<'a> Parser<'a> {
                                 &mut matched)
                 }
             } {
-                // TODO
-
+                let offset = self.first_nonspace + 1;
+                *container = self.add_child(*container, NodeValue::ThematicBreak, offset);
+                let adv = line.len() - 1 - self.offset;
+                self.advance_offset(line, adv, false);
             } else if (!indented ||
                        match &container.data.borrow().value {
                 &NodeValue::List(..) => true,

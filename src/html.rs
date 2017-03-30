@@ -102,8 +102,8 @@ impl HtmlFormatter {
                 // TODO
             }
             &NodeValue::ThematicBreak => {
-                assert!(false)
-                // TODO
+                self.cr();
+                write!(self, "<hr />\n").unwrap();
             }
             &NodeValue::Paragraph => {
                 let tight = match node.parent()

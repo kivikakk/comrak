@@ -90,6 +90,9 @@ pub fn setext_heading_line(line: &mut Vec<u8>, from: usize) -> Option<usize> {
 }
 
 pub fn thematic_break(line: &mut Vec<u8>, from: usize) -> Option<usize> {
-    // TODO
-    None
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n]").unwrap();
+    }
+
+    RE.find(&line[from..]).map(|m| m.end() - m.start())
 }

@@ -37,3 +37,11 @@ fn lists() {
     compare(b"- Hello.\n- Hi.\n",
             concat!("<ul>\n", "<li>Hello.</li>\n", "<li>Hi.</li>\n", "</ul>\n"));
 }
+
+#[test]
+fn thematic_breaks() {
+    compare(b"---\n\n- - -\n\n\n_        _   _\n",
+            concat!("<hr />\n",
+                    "<hr />\n",
+                    "<hr />\n"));
+}
