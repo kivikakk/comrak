@@ -232,34 +232,34 @@ impl<'a> Parser<'a> {
 
                 self.find_first_nonspace(line);
 
-                match &ast.value {
-                    &NodeValue::BlockQuote => {
+                match ast.value {
+                    NodeValue::BlockQuote => {
                         if !self.parse_block_quote_prefix(line) {
                             break 'done;
                         }
                     }
-                    &NodeValue::Item(..) => {
-                        if !self.parse_node_item_prefix(line, container) {
+                    NodeValue::Item(ref nl) => {
+                        if !self.parse_node_item_prefix(line, container, nl) {
                             break 'done;
                         }
                     }
-                    &NodeValue::CodeBlock(..) => {
+                    NodeValue::CodeBlock(..) => {
                         if !self.parse_code_block_prefix(
                             line, container, ast, &mut should_continue) {
                             break 'done;
                         }
                     }
-                    &NodeValue::Heading(..) => {
+                    NodeValue::Heading(..) => {
                         break 'done;
                     }
-                    &NodeValue::HtmlBlock(..) => {
+                    NodeValue::HtmlBlock(..) => {
                         // TODO
                         assert!(false);
                         // if !self.parse_html_block_prefix(container) {
                         //     break 'done;
                         // }
                     }
-                    &NodeValue::Paragraph => {
+                    NodeValue::Paragraph => {
                         if self.blank {
                             break 'done;
                         }
@@ -497,8 +497,17 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn parse_node_item_prefix(&mut self, line: &mut Vec<u8>, container: &'a Node<'a, AstCell>) -> bool {
-        false
+    fn parse_node_item_prefix(&mut self, line: &mut Vec<u8>, container: &'a Node<'a, AstCell>, nl: &NodeList) -> bool {
+        if self.indent >= nl.marker_offset + nl.padding {
+            self.advance_offset(line, nl.marker_offset + nl.padding, true);
+            true
+        } else if self.blank && container.first_child().is_some() {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            true
+        } else {
+            false
+        }
     }
 
     fn parse_code_block_prefix(&mut self,

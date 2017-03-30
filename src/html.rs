@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use ::{NodeValue, Node, AstCell};
+use ::{NodeValue, Node, AstCell, ListType};
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>) -> String {
     let mut res = vec![];
@@ -23,12 +23,30 @@ fn format_node<'a>(w: &mut Write, node: &'a Node<'a, AstCell>) {
             write!(w, "</blockquote>\n").unwrap()
         }
         &NodeValue::List(ref nl) => {
-            assert!(false)
-            // TODO
+            if nl.list_type == ListType::Bullet {
+                write!(w, "<ul>\n").unwrap();
+            } else if nl.start == 1 {
+                write!(w, "<ol>\n").unwrap();
+            } else {
+                write!(w, "<ol start=\"{}\">\n", nl.start).unwrap();
+            }
+
+            for n in node.children() {
+                format_node(w, n);
+            }
+
+            if nl.list_type == ListType::Bullet {
+                write!(w, "</ul>\n").unwrap();
+            } else {
+                write!(w, "</ol>\n").unwrap();
+            }
         }
         &NodeValue::Item(..) => {
-            assert!(false)
-            // TODO
+            write!(w, "<li>");
+            for n in node.children() {
+                format_node(w, n);
+            }
+            write!(w, "</li>");
         }
         &NodeValue::Heading(ref nch) => {
             write!(w, "<h{}>", nch.level).unwrap();
