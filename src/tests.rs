@@ -45,3 +45,10 @@ fn thematic_breaks() {
                     "<hr />\n",
                     "<hr />\n"));
 }
+
+#[test]
+fn setext_heading() {
+    compare(b"Hi\n==\n\nOk\n-----\n",
+            concat!("<h1>Hi</h1>\n",
+                    "<h2>Ok</h2>\n"));
+}

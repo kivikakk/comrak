@@ -290,6 +290,7 @@ impl<'a> Parser<'a> {
                        all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
+        let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
         let mut maybe_lazy = match &self.current.data.borrow().value {
             &NodeValue::Paragraph => true,
             _ => false,
@@ -368,12 +369,20 @@ impl<'a> Parser<'a> {
                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => {
                     unwrap_into(scanners::setext_heading_line(line, self.first_nonspace),
-                                &mut matched)
+                                &mut sc)
                 }
                 _ => false,
             } {
-                // TODO
-
+                container.data.borrow_mut().value =
+                    NodeValue::Heading(NodeHeading {
+                        level: match sc {
+                            scanners::SetextChar::Equals => 1,
+                            scanners::SetextChar::Hyphen => 2,
+                        },
+                        setext: true,
+                    });
+                let adv = line.len() - 1 - self.offset;
+                self.advance_offset(line, adv, false);
             } else if !indented &&
                       match (&container.data.borrow().value, all_matched) {
                 (&NodeValue::Paragraph, false) => false,

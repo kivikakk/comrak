@@ -84,9 +84,17 @@ pub fn html_block_start_7(line: &mut Vec<u8>, from: usize) -> Option<usize> {
     None
 }
 
-pub fn setext_heading_line(line: &mut Vec<u8>, from: usize) -> Option<usize> {
-    // TODO
-    None
+pub enum SetextChar {
+    Equals,
+    Hyphen,
+}
+
+pub fn setext_heading_line(line: &mut Vec<u8>, from: usize) -> Option<SetextChar> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(=+|-+)[ \t]*[\r\n]").unwrap();
+    }
+
+    RE.find(&line[from..]).map(|m| if line[from] == '=' as u8 { SetextChar::Equals } else { SetextChar::Hyphen })
 }
 
 pub fn thematic_break(line: &mut Vec<u8>, from: usize) -> Option<usize> {
