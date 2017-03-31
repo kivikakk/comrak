@@ -1,4 +1,6 @@
 use std::io::Write;
+use std::iter::FromIterator;
+use std::collections::BTreeMap;
 
 use ::{NodeValue, Node, AstCell, ListType, std};
 
@@ -31,6 +33,27 @@ impl HtmlFormatter {
         let l = self.v.len();
         if l > 0 && self.v[l - 1] != '\n' as u8 {
             self.v.push('\n' as u8);
+        }
+    }
+
+    fn escape(&mut self, buffer: &Vec<char>) {
+        lazy_static! {
+            static ref ESCAPE_TABLE: BTreeMap<char, &'static str> = BTreeMap::from_iter(
+                vec![('"', "&quot;"),
+                     ('&', "&amp;"),
+                     // Secure mode only:
+                     // ('\'', "&#39;"),
+                     // ('/', "&#47;"),
+                     ('<', "&lt;"),
+                     ('>', "&gt;"),
+            ]);
+        }
+
+        for c in buffer {
+            match ESCAPE_TABLE.get(c) {
+                Some(s) => { self.write(s.as_bytes()).unwrap(); },
+                None => { write!(self, "{}", c).unwrap(); },
+            };
         }
     }
 
@@ -86,15 +109,13 @@ impl HtmlFormatter {
                 self.cr();
                 write!(self, "<pre><code").unwrap();
                 if ncb.info.len() > 0 {
-                    write!(self,
-                           " class=\"language-{}\"",
-                           ncb.info.iter().collect::<String>())
-                        .unwrap();
+                    write!(self, " class=\"language-").unwrap();
+                    self.escape(&ncb.info);
+                    write!(self, "\"").unwrap();
                 }
-                write!(self,
-                       ">{}</code></pre>\n",
-                       ncb.literal.iter().collect::<String>())
-                    .unwrap();
+                write!(self, ">").unwrap();
+                self.escape(&ncb.literal);
+                write!(self, "</code></pre>\n").unwrap();
             }
             &NodeValue::HtmlBlock(ref nhb) => {
                 self.cr();
@@ -127,8 +148,7 @@ impl HtmlFormatter {
                 }
             }
             &NodeValue::Text(ref literal) => {
-                // TODO: escape HTML
-                self.write(literal.iter().collect::<String>().as_bytes()).unwrap();
+                self.escape(literal);
             }
             &NodeValue::LineBreak => {
                 write!(self, "<br />\n").unwrap();
