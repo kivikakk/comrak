@@ -1,0 +1,3240 @@
+Example 1 (lines 350-355) Tabs
+	foo	baz		bim
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<pre><code>foo	baz		bim
++<pre><code>    foo	baz		bim
+ </code></pre>
+
+Example 2 (lines 357-362) Tabs
+  	foo	baz		bim
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<pre><code>foo	baz		bim
++<pre><code>    foo	baz		bim
+ </code></pre>
+
+Example 4 (lines 377-388) Tabs
+  - foo
+
+	bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,6 +1,7 @@
+ <ul>
+ <li>
+ <p>foo</p>
+-<p>bar</p>
++<pre><code>bar
++</code></pre>
+ </li>
+ </ul>
+
+Example 5 (lines 390-402) Tabs
+- foo
+
+		bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,7 +1,7 @@
+ <ul>
+ <li>
+ <p>foo</p>
+-<pre><code>  bar
++<pre><code>  	bar
+ </code></pre>
+ </li>
+ </ul>
+
+Example 6 (lines 413-420) Tabs
+>		foo
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+ <blockquote>
+-<pre><code>  foo
++<pre><code>  	foo
+ </code></pre>
+ </blockquote>
+
+Example 7 (lines 422-431) Tabs
+-		foo
+
+--- expected HTML
++++ actual HTML
+@@ -1,6 +1,6 @@
+ <ul>
+ <li>
+-<pre><code>  foo
++<pre><code>  	foo
+ </code></pre>
+ </li>
+ </ul>
+
+Example 8 (lines 434-441) Tabs
+    foo
+	bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+ <pre><code>foo
+-bar
++    bar
+ </code></pre>
+
+Example 9 (lines 443-459) Tabs
+ - foo
+   - bar
+	 - baz
+
+--- expected HTML
++++ actual HTML
+@@ -2,10 +2,7 @@
+ <li>foo
+ <ul>
+ <li>bar
+-<ul>
+-<li>baz</li>
++- baz</li>
+ </ul>
+ </li>
+ </ul>
+-</li>
+-</ul>
+
+Example 25 (lines 648-658) Thematic breaks
+_ _ _ _ a
+
+a------
+
+---a---
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+ <p>_ _ _ _ a</p>
+-<p>a------</p>
+-<p>---a---</p>
++<hr />
++<hr />
+
+Example 31 (lines 737-747) Thematic breaks
+- Foo
+- * * *
+
+--- expected HTML
++++ actual HTML
+@@ -1,6 +1,4 @@
+ <ul>
+ <li>Foo</li>
+-<li>
++</ul>
+ <hr />
+-</li>
+-</ul>
+
+Example 33 (lines 785-789) ATX headings
+####### foo
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>####### foo</p>
++<h7>foo</h7>
+
+Example 35 (lines 812-816) ATX headings
+\## foo
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>## foo</p>
++<h2>foo</h2>
+
+Example 36 (lines 821-825) ATX headings
+# foo *bar* \*baz\*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<h1>foo <em>bar</em> *baz*</h1>
++<h1>foo <em>bar</em> \<em>baz\</em></h1>
+
+Example 46 (lines 923-931) ATX headings
+### foo \###
+## foo #\##
+# foo \#
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<h3>foo ###</h3>
+-<h2>foo ###</h2>
+-<h1>foo #</h1>
++<h3>foo \###</h3>
++<h2>foo #\##</h2>
++<h1>foo \#</h1>
+
+Example 49 (lines 961-969) ATX headings
+program returned error code 101
+thread 'main' panicked at 'attempt to subtract with overflow', src/main.rs:1325
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+Example 54 (lines 1063-1076) Setext headings
+    Foo
+    ---
+
+    Foo
+---
+
+--- expected HTML
++++ actual HTML
+@@ -3,4 +3,3 @@
+ 
+ Foo
+ </code></pre>
+-<hr />
+
+Example 57 (lines 1103-1114) Setext headings
+Foo
+= =
+
+Foo
+--- -
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,2 @@
+-<p>Foo
+-= =</p>
+-<p>Foo</p>
+-<hr />
++<h1>Foo</h1>
++<h2>Foo</h2>
+
+Example 60 (lines 1140-1153) Setext headings
+`Foo
+----
+`
+
+<a title="a lot
+---
+of dashes"/>
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+ <h2>`Foo</h2>
+ <p>`</p>
+-<h2>&lt;a title=&quot;a lot</h2>
+-<p>of dashes&quot;/&gt;</p>
++<h2><a title="a lot</h2>
++<p>of dashes"/></p>
+
+Example 69 (lines 1260-1267) Setext headings
+    foo
+---
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,2 @@
+ <pre><code>foo
+ </code></pre>
+-<hr />
+
+Example 71 (lines 1284-1289) Setext headings
+\> foo
+------
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<h2>&gt; foo</h2>
++<h2>\> foo</h2>
+
+Example 75 (lines 1364-1374) Setext headings
+Foo
+bar
+\---
+baz
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,3 @@
+-<p>Foo
+-bar
+----
+-baz</p>
++<h2>Foo
++bar</h2>
++<p>baz</p>
+
+Example 79 (lines 1440-1451) Indented code blocks
+    <a/>
+    *hi*
+
+    - one
+
+--- expected HTML
++++ actual HTML
+@@ -1,5 +1,4 @@
+-<pre><code>&lt;a/&gt;
+-*hi*
+-
+-- one
++    <a/>
++    *hi*
++<pre><code>- one
+ </code></pre>
+
+Example 83 (lines 1508-1515) Indented code blocks
+    foo
+bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,2 @@
+ <pre><code>foo
+ </code></pre>
+-<p>bar</p>
+
+Example 84 (lines 1521-1536) Indented code blocks
+# Heading
+    foo
+Heading
+------
+    foo
+----
+
+--- expected HTML
++++ actual HTML
+@@ -1,7 +1,6 @@
+ <h1>Heading</h1>
+ <pre><code>foo
+ </code></pre>
+-<h2>Heading</h2>
++<hr />
+ <pre><code>foo
+ </code></pre>
+-<hr />
+
+Example 88 (lines 1623-1632) Fenced code blocks
+```
+<
+ >
+```
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<pre><code>&lt;
+- &gt;
++<pre><code><
++ >
+ </code></pre>
+
+Example 89 (lines 1637-1646) Fenced code blocks
+~~~
+<
+ >
+~~~
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<pre><code>&lt;
+- &gt;
++<pre><code><
++ >
+ </code></pre>
+
+Example 106 (lines 1860-1866) Fenced code blocks
+``` ```
+aaa
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><code></code>
+-aaa</p>
++<pre><code class="language-```">aaa
++</code></pre>
+
+Example 111 (lines 1934-1945) Fenced code blocks
+~~~~    ruby startline=3 $%@#$
+def foo(x)
+  return 3
+end
+~~~~~~~
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+-<pre><code class="language-ruby">def foo(x)
++<pre><code class="language-ruby startline=3 $%@#$">def foo(x)
+   return 3
+ end
+ </code></pre>
+
+Example 113 (lines 1958-1964) Fenced code blocks
+``` aa ```
+foo
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><code>aa</code>
+-foo</p>
++<pre><code class="language-aa ```">foo
++</code></pre>
+
+Example 134 (lines 2302-2306) HTML blocks
+<del>*foo*</del>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><del><em>foo</em></del></p>
++<del>*foo*</del>
+
+Example 140 (lines 2408-2418) HTML blocks
+- <div>
+- foo
+
+--- expected HTML
++++ actual HTML
+@@ -1,6 +1,2 @@
+-<ul>
+-<li>
+-<div>
+-</li>
+-<li>foo</li>
+-</ul>
++- <div>
++- foo
+
+Example 148 (lines 2536-2544) HTML blocks
+  <!-- foo -->
+
+    <!-- foo -->
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+   <!-- foo -->
+-<pre><code>&lt;!-- foo --&gt;
++<pre><code><!-- foo -->
+ </code></pre>
+
+Example 149 (lines 2547-2555) HTML blocks
+  <div>
+
+    <div>
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,2 @@
+   <div>
+-<pre><code>&lt;div&gt;
+-</code></pre>
++    <div>
+
+Example 156 (lines 2695-2716) HTML blocks
+<table>
+
+  <tr>
+
+    <td>
+      Hi
+    </td>
+
+  </tr>
+
+</table>
+
+--- expected HTML
++++ actual HTML
+@@ -1,8 +1,7 @@
+ <table>
+   <tr>
+-<pre><code>&lt;td&gt;
+-  Hi
+-&lt;/td&gt;
+-</code></pre>
++    <td>
++      Hi
++    </td>
+   </tr>
+ </table>
+
+Example 157 (lines 2743-2749) Link reference definitions
+[foo]: /url "title"
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">foo</a></p>
++<p>[foo]: /url "title"</p>
++<p>[foo]</p>
+
+Example 158 (lines 2752-2760) Link reference definitions
+   [foo]: 
+      /url  
+           'the title'  
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,4 @@
+-<p><a href="/url" title="the title">foo</a></p>
++<p>[foo]:
++/url<br />
++'the title'</p>
++<p>[foo]</p>
+
+Example 159 (lines 2763-2769) Link reference definitions
+[Foo*bar\]]:my_(url) 'title (with parens)'
+
+[Foo*bar\]]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
++<p>[Foo*bar\]]:my_(url) 'title (with parens)'</p>
++<p>[Foo*bar\]]</p>
+
+Example 160 (lines 2772-2780) Link reference definitions
+[Foo bar]:
+<my%20url>
+'title'
+
+[Foo bar]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,4 @@
+-<p><a href="my%20url" title="title">Foo bar</a></p>
++<p>[Foo bar]:
++<my%20url>
++'title'</p>
++<p>[Foo bar]</p>
+
+Example 161 (lines 2785-2799) Link reference definitions
+[foo]: /url '
+title
+line1
+line2
+'
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1,5 +1,6 @@
+-<p><a href="/url" title="
++<p>[foo]: /url '
+ title
+ line1
+ line2
+-">foo</a></p>
++'</p>
++<p>[foo]</p>
+
+Example 163 (lines 2819-2826) Link reference definitions
+[foo]:
+/url
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="/url">foo</a></p>
++<p>[foo]:
++/url</p>
++<p>[foo]</p>
+
+Example 165 (lines 2844-2850) Link reference definitions
+[foo]: /url\bar\*baz "foo\"bar\baz"
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
++<p>[foo]: /url\bar\*baz "foo\"bar\baz"</p>
++<p>[foo]</p>
+
+Example 166 (lines 2855-2861) Link reference definitions
+[foo]
+
+[foo]: url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="url">foo</a></p>
++<p>[foo]</p>
++<p>[foo]: url</p>
+
+Example 167 (lines 2867-2874) Link reference definitions
+[foo]
+
+[foo]: first
+[foo]: second
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="first">foo</a></p>
++<p>[foo]</p>
++<p>[foo]: first
++[foo]: second</p>
+
+Example 168 (lines 2880-2886) Link reference definitions
+[FOO]: /url
+
+[Foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url">Foo</a></p>
++<p>[FOO]: /url</p>
++<p>[Foo]</p>
+
+Example 169 (lines 2889-2895) Link reference definitions
+[ΑΓΩ]: /φου
+
+[αγω]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
++<p>[ΑΓΩ]: /φου</p>
++<p>[αγω]</p>
+
+Example 170 (lines 2901-2904) Link reference definitions
+[foo]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -0,0 +1 @@
++<p>[foo]: /url</p>
+
+Example 171 (lines 2909-2916) Link reference definitions
+[
+foo
+]: /url
+bar
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,4 @@
+-<p>bar</p>
++<p>[
++foo
++]: /url
++bar</p>
+
+Example 172 (lines 2922-2926) Link reference definitions
+[foo]: /url "title" ok
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo]: /url &quot;title&quot; ok</p>
++<p>[foo]: /url "title" ok</p>
+
+Example 173 (lines 2931-2936) Link reference definitions
+[foo]: /url
+"title" ok
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>&quot;title&quot; ok</p>
++<p>[foo]: /url
++"title" ok</p>
+
+Example 174 (lines 2942-2950) Link reference definitions
+    [foo]: /url "title"
+
+[foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,2 @@
+-<pre><code>[foo]: /url &quot;title&quot;
++<pre><code>[foo]: /url "title"
+ </code></pre>
+-<p>[foo]</p>
+
+Example 177 (lines 2986-2995) Link reference definitions
+# [Foo]
+[foo]: /url
+> bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,5 @@
+-<h1><a href="/url">Foo</a></h1>
++<h1>[Foo]</h1>
++<p>[foo]: /url</p>
+ <blockquote>
+ <p>bar</p>
+ </blockquote>
+
+Example 178 (lines 3001-3014) Link reference definitions
+[foo]: /foo-url "foo"
+[bar]: /bar-url
+  "bar"
+[baz]: /baz-url
+
+[foo],
+[bar],
+[baz]
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,7 @@
+-<p><a href="/foo-url" title="foo">foo</a>,
+-<a href="/bar-url" title="bar">bar</a>,
+-<a href="/baz-url">baz</a></p>
++<p>[foo]: /foo-url "foo"
++[bar]: /bar-url
++"bar"
++[baz]: /baz-url</p>
++<p>[foo],
++[bar],
++[baz]</p>
+
+Example 179 (lines 3022-3030) Link reference definitions
+[foo]
+
+> [foo]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,4 @@
+-<p><a href="/url">foo</a></p>
++<p>[foo]</p>
+ <blockquote>
++<p>[foo]: /url</p>
+ </blockquote>
+
+Example 186 (lines 3121-3128) Paragraphs
+    aaa
+bbb
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,2 @@
+ <pre><code>aaa
+ </code></pre>
+-<p>bbb</p>
+
+Example 192 (lines 3263-3272) Block quotes
+    > # Foo
+    > bar
+    > baz
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+-<pre><code>&gt; # Foo
+-&gt; bar
+-&gt; baz
++<pre><code>> # Foo
++> bar
++> baz
+ </code></pre>
+
+Example 214 (lines 3650-3665) List items
+A paragraph
+with two lines.
+
+    indented code
+
+> A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -2,6 +2,3 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+
+Example 215 (lines 3672-3691) List items
+1.  A paragraph
+    with two lines.
+
+        indented code
+
+    > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -4,8 +4,5 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+ </li>
+ </ol>
+
+Example 233 (lines 3990-4002) List items
+    indented code
+
+paragraph
+
+    more code
+
+--- expected HTML
++++ actual HTML
+@@ -1,5 +1,4 @@
+ <pre><code>indented code
+ </code></pre>
+-<p>paragraph</p>
+ <pre><code>more code
+ </code></pre>
+
+Example 234 (lines 4005-4021) List items
+1.     indented code
+
+   paragraph
+
+       more code
+
+--- expected HTML
++++ actual HTML
+@@ -2,7 +2,6 @@
+ <li>
+ <pre><code>indented code
+ </code></pre>
+-<p>paragraph</p>
+ <pre><code>more code
+ </code></pre>
+ </li>
+
+Example 235 (lines 4027-4043) List items
+1.      indented code
+
+   paragraph
+
+       more code
+
+--- expected HTML
++++ actual HTML
+@@ -2,7 +2,6 @@
+ <li>
+ <pre><code> indented code
+ </code></pre>
+-<p>paragraph</p>
+ <pre><code>more code
+ </code></pre>
+ </li>
+
+Example 247 (lines 4240-4259) List items
+ 1.  A paragraph
+     with two lines.
+
+         indented code
+
+     > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -4,8 +4,5 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+ </li>
+ </ol>
+
+Example 248 (lines 4264-4283) List items
+  1.  A paragraph
+      with two lines.
+
+          indented code
+
+      > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -4,8 +4,5 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+ </li>
+ </ol>
+
+Example 249 (lines 4288-4307) List items
+   1.  A paragraph
+       with two lines.
+
+           indented code
+
+       > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -4,8 +4,5 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+ </li>
+ </ol>
+
+Example 250 (lines 4312-4327) List items
+    1.  A paragraph
+        with two lines.
+
+            indented code
+
+        > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -3,5 +3,5 @@
+ 
+         indented code
+ 
+-    &gt; A block quote.
++    > A block quote.
+ </code></pre>
+
+Example 251 (lines 4342-4361) List items
+  1.  A paragraph
+with two lines.
+
+          indented code
+
+      > A block quote.
+
+--- expected HTML
++++ actual HTML
+@@ -4,8 +4,5 @@
+ with two lines.</p>
+ <pre><code>indented code
+ </code></pre>
+-<blockquote>
+-<p>A block quote.</p>
+-</blockquote>
+ </li>
+ </ol>
+
+Example 261 (lines 4529-4543) List items
+- # Foo
+- Bar
+  ---
+  baz
+
+--- expected HTML
++++ actual HTML
+@@ -1,7 +1,5 @@
++<h1># Foo</h1>
+ <ul>
+-<li>
+-<h1>Foo</h1>
+-</li>
+ <li>
+ <h2>Bar</h2>
+ baz</li>
+
+Example 276 (lines 5118-5136) Lists
+- a
+- b
+
+  [ref]: /url
+- d
+
+--- expected HTML
++++ actual HTML
+@@ -4,6 +4,7 @@
+ </li>
+ <li>
+ <p>b</p>
++<p>[ref]: /url</p>
+ </li>
+ <li>
+ <p>d</p>
+
+Example 277 (lines 5141-5160) Lists
+- a
+- ```
+  b
+
+
+  ```
+- c
+
+--- expected HTML
++++ actual HTML
+@@ -1,10 +1,9 @@
+ <ul>
+ <li>a</li>
+-<li>
+-<pre><code>b
++</ul>
++<pre><code class="language-``">  b
+ 
+ 
++  ```
++- c
+ </code></pre>
+-</li>
+-<li>c</li>
+-</ul>
+
+Example 283 (lines 5260-5274) Lists
+1. ```
+   foo
+   ```
+
+   bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,7 +1,5 @@
+-<ol>
+-<li>
+-<pre><code>foo
++<pre><code class="language-```">   foo
++   ```
++
++   bar
+ </code></pre>
+-<p>bar</p>
+-</li>
+-</ol>
+
+Example 286 (lines 5331-5335) Inlines
+`hi`lo`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>hi</code>lo`</p>
++<p>`hi`lo`</p>
+
+Example 287 (lines 5345-5349) Backslash escapes
+\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
++<p>\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~</p>
+
+Example 289 (lines 5365-5383) Backslash escapes
+\*not emphasized*
+\<br/> not a tag
+\[not a link](/foo)
+\`not code`
+1\. not a list
+\* not a list
+\# not a heading
+\[foo]: /url "not a reference"
+
+--- expected HTML
++++ actual HTML
+@@ -1,8 +1,8 @@
+-<p>*not emphasized*
+-&lt;br/&gt; not a tag
+-[not a link](/foo)
+-`not code`
+-1. not a list
+-* not a list
+-# not a heading
+-[foo]: /url &quot;not a reference&quot;</p>
++<p>\<em>not emphasized</em>
++\<br/> not a tag
++\[not a link](/foo)
++\`not code`
++1\. not a list
++\* not a list</p>
++<h1>not a heading</h1>
++<p>\[foo]: /url "not a reference"</p>
+
+Example 290 (lines 5388-5392) Backslash escapes
+\\*emphasis*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>\<em>emphasis</em></p>
++<p>\\<em>emphasis</em></p>
+
+Example 291 (lines 5397-5403) Backslash escapes
+foo\
+bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>foo<br />
++<p>foo\
+ bar</p>
+
+Example 292 (lines 5409-5413) Backslash escapes
+`` \[\` ``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>\[\`</code></p>
++<p>`` \[\` ``</p>
+
+Example 295 (lines 5434-5438) Backslash escapes
+<http://example.com?find=\*>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
++<p><http://example.com?find=\*></p>
+
+Example 297 (lines 5451-5455) Backslash escapes
+[foo](/bar\* "ti\*tle")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/bar*" title="ti*tle">foo</a></p>
++<p>[foo](/bar\* "ti\*tle")</p>
+
+Example 298 (lines 5458-5464) Backslash escapes
+[foo]
+
+[foo]: /bar\* "ti\*tle"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/bar*" title="ti*tle">foo</a></p>
++<p>[foo]</p>
++<p>[foo]: /bar\* "ti\*tle"</p>
+
+Example 299 (lines 5467-5474) Backslash escapes
+``` foo\+bar
+foo
+```
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<pre><code class="language-foo+bar">foo
++<pre><code class="language-foo\+bar">foo
+ </code></pre>
+
+Example 300 (lines 5494-5502) Entity and numeric character references
+&nbsp; &amp; &copy; &AElig; &Dcaron;
+&frac34; &HilbertSpace; &DifferentialD;
+&ClockwiseContourIntegral; &ngE;
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<p>  &amp; © Æ Ď
+-¾ ℋ ⅆ
+-∲ ≧̸</p>
++<p>&nbsp; &amp; &copy; &AElig; &Dcaron;
++&frac34; &HilbertSpace; &DifferentialD;
++&ClockwiseContourIntegral; &ngE;</p>
+
+Example 301 (lines 5513-5517) Entity and numeric character references
+&#35; &#1234; &#992; &#98765432; &#0;
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p># Ӓ Ϡ � �</p>
++<p>&#35; &#1234; &#992; &#98765432; &#0;</p>
+
+Example 302 (lines 5526-5530) Entity and numeric character references
+&#X22; &#XD06; &#xcab;
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&quot; ആ ಫ</p>
++<p>&#X22; &#XD06; &#xcab;</p>
+
+Example 303 (lines 5535-5541) Entity and numeric character references
+&nbsp &x; &#; &#x;
+&ThisIsNotDefined; &hi?;
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>&amp;nbsp &amp;x; &amp;#; &amp;#x;
+-&amp;ThisIsNotDefined; &amp;hi?;</p>
++<p>&nbsp &x; &#; &#x;
++&ThisIsNotDefined; &hi?;</p>
+
+Example 304 (lines 5548-5552) Entity and numeric character references
+&copy
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&amp;copy</p>
++<p>&copy</p>
+
+Example 305 (lines 5558-5562) Entity and numeric character references
+&MadeUpEntity;
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&amp;MadeUpEntity;</p>
++<p>&MadeUpEntity;</p>
+
+Example 307 (lines 5576-5580) Entity and numeric character references
+[foo](/f&ouml;&ouml; "f&ouml;&ouml;")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
++<p>[foo](/f&ouml;&ouml; "f&ouml;&ouml;")</p>
+
+Example 308 (lines 5583-5589) Entity and numeric character references
+[foo]
+
+[foo]: /f&ouml;&ouml; "f&ouml;&ouml;"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
++<p>[foo]</p>
++<p>[foo]: /f&ouml;&ouml; "f&ouml;&ouml;"</p>
+
+Example 310 (lines 5605-5609) Entity and numeric character references
+`f&ouml;&ouml;`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>f&amp;ouml;&amp;ouml;</code></p>
++<p>`f&ouml;&ouml;`</p>
+
+Example 311 (lines 5612-5617) Entity and numeric character references
+    f&ouml;f&ouml;
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<pre><code>f&amp;ouml;f&amp;ouml;
++<pre><code>f&ouml;f&ouml;
+ </code></pre>
+
+Example 312 (lines 5634-5638) Code spans
+`foo`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo</code></p>
++<p>`foo`</p>
+
+Example 313 (lines 5644-5648) Code spans
+`` foo ` bar  ``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo ` bar</code></p>
++<p>`` foo ` bar  ``</p>
+
+Example 314 (lines 5654-5658) Code spans
+` `` `
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>``</code></p>
++<p>` `` `</p>
+
+Example 315 (lines 5663-5669) Code spans
+``
+foo
+``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><code>foo</code></p>
++<p>``
++foo
++``</p>
+
+Example 316 (lines 5675-5680) Code spans
+`foo   bar
+  baz`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><code>foo bar baz</code></p>
++<p>`foo   bar
++baz`</p>
+
+Example 317 (lines 5686-5690) Code spans
+`a  b`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>a  b</code></p>
++<p>`a  b`</p>
+
+Example 318 (lines 5706-5710) Code spans
+`foo `` bar`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo `` bar</code></p>
++<p>`foo `` bar`</p>
+
+Example 319 (lines 5716-5720) Code spans
+`foo\`bar`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo\</code>bar`</p>
++<p>`foo\`bar`</p>
+
+Example 320 (lines 5732-5736) Code spans
+*foo`*`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>*foo<code>*</code></p>
++<p><em>foo`</em>`</p>
+
+Example 321 (lines 5741-5745) Code spans
+[not a `link](/foo`)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[not a <code>link](/foo</code>)</p>
++<p>[not a `link](/foo`)</p>
+
+Example 322 (lines 5751-5755) Code spans
+`<a href="`">`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>&lt;a href=&quot;</code>&quot;&gt;`</p>
++<p>`<a href="`">`</p>
+
+Example 324 (lines 5769-5773) Code spans
+`<http://foo.bar.`baz>`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>&lt;http://foo.bar.</code>baz&gt;`</p>
++<p>`<http://foo.bar.`baz>`</p>
+
+Example 325 (lines 5778-5782) Code spans
+<http://foo.bar.`baz>`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
++<p><http://foo.bar.`baz>`</p>
+
+Example 330 (lines 6028-6032) Emphasis and strong emphasis
+a*"foo"*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>a*&quot;foo&quot;*</p>
++<p>a*"foo"*</p>
+
+Example 331 (lines 6037-6041) Emphasis and strong emphasis
+* a *
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>* a *</p>
++<p><em> a </em></p>
+
+Example 336 (lines 6082-6086) Emphasis and strong emphasis
+a_"foo"_
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>a_&quot;foo&quot;_</p>
++<p>a_"foo"_</p>
+
+Example 340 (lines 6115-6119) Emphasis and strong emphasis
+aa_"bb"_cc
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>aa_&quot;bb&quot;_cc</p>
++<p>aa_"bb"_cc</p>
+
+Example 357 (lines 6285-6289) Emphasis and strong emphasis
+a**"foo"**
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>a**&quot;foo&quot;**</p>
++<p>a**"foo"**</p>
+
+Example 362 (lines 6333-6337) Emphasis and strong emphasis
+a__"foo"__
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>a__&quot;foo&quot;__</p>
++<p>a__"foo"__</p>
+
+Example 372 (lines 6426-6430) Emphasis and strong emphasis
+**foo "*bar*" foo**
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo &quot;<em>bar</em>&quot; foo</strong></p>
++<p><strong>foo "<em>bar</em>" foo</strong></p>
+
+Example 381 (lines 6513-6517) Emphasis and strong emphasis
+*foo [bar](/url)*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo <a href="/url">bar</a></em></p>
++<p><em>foo [bar](/url)</em></p>
+
+Example 390 (lines 6598-6602) Emphasis and strong emphasis
+*foo **bar***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo <strong>bar</strong></em></p>
++<hr />
+
+Example 391 (lines 6605-6609) Emphasis and strong emphasis
+*foo**bar***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo<strong>bar</strong></em></p>
++<hr />
+
+Example 393 (lines 6621-6625) Emphasis and strong emphasis
+*foo [*bar*](/url)*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo <a href="/url"><em>bar</em></a></em></p>
++<p><em>foo [<em>bar</em>](/url)</em></p>
+
+Example 396 (lines 6650-6654) Emphasis and strong emphasis
+**foo [bar](/url)**
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo <a href="/url">bar</a></strong></p>
++<p><strong>foo [bar](/url)</strong></p>
+
+Example 401 (lines 6690-6694) Emphasis and strong emphasis
+**foo **bar****
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo <strong>bar</strong></strong></p>
++<hr />
+
+Example 405 (lines 6718-6722) Emphasis and strong emphasis
+**foo *bar***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo <em>bar</em></strong></p>
++<hr />
+
+Example 407 (lines 6736-6740) Emphasis and strong emphasis
+**foo [*bar*](/url)**
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
++<p><strong>foo [<em>bar</em>](/url)</strong></p>
+
+Example 410 (lines 6762-6766) Emphasis and strong emphasis
+foo ***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo ***</p>
++<hr />
+
+Example 411 (lines 6769-6773) Emphasis and strong emphasis
+foo *\**
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <em>*</em></p>
++<p>foo <em>\</em>*</p>
+
+Example 412 (lines 6776-6780) Emphasis and strong emphasis
+program returned error code 101
+thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+Example 413 (lines 6783-6787) Emphasis and strong emphasis
+foo *****
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo *****</p>
++<hr />
+
+Example 414 (lines 6790-6794) Emphasis and strong emphasis
+foo **\***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <strong>*</strong></p>
++<hr />
+
+Example 415 (lines 6797-6801) Emphasis and strong emphasis
+program returned error code 101
+thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+Example 420 (lines 6836-6840) Emphasis and strong emphasis
+**foo***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo</strong>*</p>
++<hr />
+
+Example 421 (lines 6843-6847) Emphasis and strong emphasis
+*foo****
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo</em>***</p>
++<hr />
+
+Example 422 (lines 6853-6857) Emphasis and strong emphasis
+foo ___
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo ___</p>
++<hr />
+
+Example 423 (lines 6860-6864) Emphasis and strong emphasis
+foo _\__
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <em>_</em></p>
++<p>foo <em>\</em>_</p>
+
+Example 424 (lines 6867-6871) Emphasis and strong emphasis
+program returned error code 101
+thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+Example 425 (lines 6874-6878) Emphasis and strong emphasis
+foo _____
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo _____</p>
++<hr />
+
+Example 426 (lines 6881-6885) Emphasis and strong emphasis
+foo __\___
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <strong>_</strong></p>
++<hr />
+
+Example 427 (lines 6888-6892) Emphasis and strong emphasis
+program returned error code 101
+thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+Example 432 (lines 6927-6931) Emphasis and strong emphasis
+__foo___
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong>foo</strong>_</p>
++<hr />
+
+Example 433 (lines 6934-6938) Emphasis and strong emphasis
+_foo____
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo</em>___</p>
++<hr />
+
+Example 438 (lines 6975-6979) Emphasis and strong emphasis
+****foo****
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong><strong>foo</strong></strong></p>
++<hr />
+
+Example 439 (lines 6982-6986) Emphasis and strong emphasis
+____foo____
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong><strong>foo</strong></strong></p>
++<hr />
+
+Example 440 (lines 6993-6997) Emphasis and strong emphasis
+******foo******
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><strong><strong><strong>foo</strong></strong></strong></p>
++<hr />
+
+Example 441 (lines 7002-7006) Emphasis and strong emphasis
+***foo***
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em><strong>foo</strong></em></p>
++<hr />
+
+Example 442 (lines 7009-7013) Emphasis and strong emphasis
+_____foo_____
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em><strong><strong>foo</strong></strong></em></p>
++<hr />
+
+Example 443 (lines 7018-7022) Emphasis and strong emphasis
+*foo _bar* baz_
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo _bar</em> baz_</p>
++<p><em>foo _bar baz</em></p>
+
+Example 444 (lines 7025-7029) Emphasis and strong emphasis
+*foo __bar *baz bim__ bam*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
++<p>*foo <strong>bar *baz bim bam</strong></p>
+
+Example 447 (lines 7050-7054) Emphasis and strong emphasis
+*[bar*](/url)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>*<a href="/url">bar*</a></p>
++<p><em>[bar</em>](/url)</p>
+
+Example 448 (lines 7057-7061) Emphasis and strong emphasis
+_foo [bar_](/url)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>_foo <a href="/url">bar_</a></p>
++<p><em>foo [bar</em>](/url)</p>
+
+Example 449 (lines 7064-7068) Emphasis and strong emphasis
+*<img src="foo" title="*"/>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>*<img src="foo" title="*"/></p>
++*<img src="foo" title="*"/>
+
+Example 450 (lines 7071-7075) Emphasis and strong emphasis
+**<a href="**">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>**<a href="**"></p>
++**<a href="**">
+
+Example 451 (lines 7078-7082) Emphasis and strong emphasis
+__<a href="__">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>__<a href="__"></p>
++__<a href="__">
+
+Example 452 (lines 7085-7089) Emphasis and strong emphasis
+*a `*`*
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>a <code>*</code></em></p>
++<p><em>a `</em>`*</p>
+
+Example 453 (lines 7092-7096) Emphasis and strong emphasis
+_a `_`_
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><em>a <code>_</code></em></p>
++<p><em>a `</em>`_</p>
+
+Example 454 (lines 7099-7103) Emphasis and strong emphasis
+**a<http://foo.bar/?q=**>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
++<p><strong>a<http://foo.bar/?q=</strong>></p>
+
+Example 455 (lines 7106-7110) Emphasis and strong emphasis
+__a<http://foo.bar/?q=__>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
++<p><strong>a<http://foo.bar/?q=</strong>></p>
+
+Example 456 (lines 7185-7189) Links
+[link](/uri "title")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri" title="title">link</a></p>
++<p>[link](/uri "title")</p>
+
+Example 457 (lines 7194-7198) Links
+[link](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri">link</a></p>
++<p>[link](/uri)</p>
+
+Example 458 (lines 7203-7207) Links
+[link]()
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="">link</a></p>
++<p>[link]()</p>
+
+Example 459 (lines 7210-7214) Links
+[link](<>)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="">link</a></p>
++<p>[link](<>)</p>
+
+Example 461 (lines 7227-7231) Links
+[link](</my uri>)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[link](&lt;/my uri&gt;)</p>
++<p>[link](</my uri>)</p>
+
+Example 464 (lines 7253-7257) Links
+[link](\(foo\))
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="(foo)">link</a></p>
++<p>[link](\(foo\))</p>
+
+Example 465 (lines 7262-7266) Links
+[link](foo(and(bar)))
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo(and(bar))">link</a></p>
++<p>[link](foo(and(bar)))</p>
+
+Example 466 (lines 7271-7275) Links
+[link](foo\(and\(bar\))
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo(and(bar)">link</a></p>
++<p>[link](foo\(and\(bar\))</p>
+
+Example 467 (lines 7278-7282) Links
+[link](<foo(and(bar)>)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo(and(bar)">link</a></p>
++<p>[link](<foo(and(bar)>)</p>
+
+Example 468 (lines 7288-7292) Links
+[link](foo\)\:)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo):">link</a></p>
++<p>[link](foo\)\:)</p>
+
+Example 469 (lines 7297-7307) Links
+[link](#fragment)
+
+[link](http://example.com#fragment)
+
+[link](http://example.com?foo=3#frag)
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<p><a href="#fragment">link</a></p>
+-<p><a href="http://example.com#fragment">link</a></p>
+-<p><a href="http://example.com?foo=3#frag">link</a></p>
++<p>[link](#fragment)</p>
++<p>[link](http://example.com#fragment)</p>
++<p>[link](http://example.com?foo=3#frag)</p>
+
+Example 470 (lines 7313-7317) Links
+[link](foo\bar)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo%5Cbar">link</a></p>
++<p>[link](foo\bar)</p>
+
+Example 471 (lines 7329-7333) Links
+[link](foo%20b&auml;)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="foo%20b%C3%A4">link</a></p>
++<p>[link](foo%20b&auml;)</p>
+
+Example 472 (lines 7340-7344) Links
+[link]("title")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="%22title%22">link</a></p>
++<p>[link]("title")</p>
+
+Example 473 (lines 7349-7357) Links
+[link](/url "title")
+[link](/url 'title')
+[link](/url (title))
+
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<p><a href="/url" title="title">link</a>
+-<a href="/url" title="title">link</a>
+-<a href="/url" title="title">link</a></p>
++<p>[link](/url "title")
++[link](/url 'title')
++[link](/url (title))</p>
+
+Example 474 (lines 7363-7367) Links
+[link](/url "title \"&quot;")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/url" title="title &quot;&quot;">link</a></p>
++<p>[link](/url "title \"&quot;")</p>
+
+Example 475 (lines 7373-7377) Links
+[link](/url "title")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/url%C2%A0%22title%22">link</a></p>
++<p>[link](/url "title")</p>
+
+Example 476 (lines 7382-7386) Links
+[link](/url "title "and" title")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
++<p>[link](/url "title "and" title")</p>
+
+Example 477 (lines 7391-7395) Links
+[link](/url 'title "and" title')
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
++<p>[link](/url 'title "and" title')</p>
+
+Example 478 (lines 7415-7420) Links
+[link](   /uri
+  "title"  )
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri" title="title">link</a></p>
++<p>[link](   /uri
++"title"  )</p>
+
+Example 480 (lines 7436-7440) Links
+[link [foo [bar]]](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri">link [foo [bar]]</a></p>
++<p>[link [foo [bar]]](/uri)</p>
+
+Example 482 (lines 7450-7454) Links
+[link [bar](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[link <a href="/uri">bar</a></p>
++<p>[link [bar](/uri)</p>
+
+Example 483 (lines 7457-7461) Links
+[link \[bar](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri">link [bar</a></p>
++<p>[link \[bar](/uri)</p>
+
+Example 484 (lines 7466-7470) Links
+[link *foo **bar** `#`*](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
++<p>[link <em>foo <strong>bar</strong> `#`</em>](/uri)</p>
+
+Example 485 (lines 7473-7477) Links
+[![moon](moon.jpg)](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
++<p>[![moon](moon.jpg)](/uri)</p>
+
+Example 486 (lines 7482-7486) Links
+[foo [bar](/uri)](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo <a href="/uri">bar</a>](/uri)</p>
++<p>[foo [bar](/uri)](/uri)</p>
+
+Example 487 (lines 7489-7493) Links
+[foo *[bar [baz](/uri)](/uri)*](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
++<p>[foo <em>[bar [baz](/uri)](/uri)</em>](/uri)</p>
+
+Example 488 (lines 7496-7500) Links
+![[[foo](uri1)](uri2)](uri3)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="uri3" alt="[foo](uri2)" /></p>
++<p>![[[foo](uri1)](uri2)](uri3)</p>
+
+Example 489 (lines 7506-7510) Links
+*[foo*](/uri)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>*<a href="/uri">foo*</a></p>
++<p><em>[foo</em>](/uri)</p>
+
+Example 490 (lines 7513-7517) Links
+[foo *bar](baz*)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="baz*">foo *bar</a></p>
++<p>[foo <em>bar](baz</em>)</p>
+
+Example 492 (lines 7533-7537) Links
+[foo <bar attr="](baz)">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo <bar attr="](baz)"></p>
++[foo <bar attr="](baz)">
+
+Example 493 (lines 7540-7544) Links
+[foo`](/uri)`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo<code>](/uri)</code></p>
++<p>[foo`](/uri)`</p>
+
+Example 494 (lines 7547-7551) Links
+[foo<http://example.com/?search=](uri)>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
++<p>[foo<http://example.com/?search=](uri)></p>
+
+Example 495 (lines 7582-7588) Links
+[foo][bar]
+
+[bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">foo</a></p>
++<p>[foo][bar]</p>
++<p>[bar]: /url "title"</p>
+
+Example 496 (lines 7597-7603) Links
+[link [foo [bar]]][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">link [foo [bar]]</a></p>
++<p>[link [foo [bar]]][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 497 (lines 7606-7612) Links
+[link \[bar][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">link [bar</a></p>
++<p>[link \[bar][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 498 (lines 7617-7623) Links
+[link *foo **bar** `#`*][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
++<p>[link <em>foo <strong>bar</strong> `#`</em>][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 499 (lines 7626-7632) Links
+[![moon](moon.jpg)][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
++<p>[![moon](moon.jpg)][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 500 (lines 7637-7643) Links
+[foo [bar](/uri)][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
++<p>[foo [bar](/uri)][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 501 (lines 7646-7652) Links
+[foo *bar [baz][ref]*][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
++<p>[foo <em>bar [baz][ref]</em>][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 502 (lines 7661-7667) Links
+*[foo*][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>*<a href="/uri">foo*</a></p>
++<p><em>[foo</em>][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 503 (lines 7670-7676) Links
+[foo *bar][ref]
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">foo *bar</a></p>
++<p>[foo *bar][ref]</p>
++<p>[ref]: /uri</p>
+
+Example 504 (lines 7682-7688) Links
+[foo <bar attr="][ref]">
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo <bar attr="][ref]"></p>
++[foo <bar attr="][ref]">
++<p>[ref]: /uri</p>
+
+Example 505 (lines 7691-7697) Links
+[foo`][ref]`
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo<code>][ref]</code></p>
++<p>[foo`][ref]`</p>
++<p>[ref]: /uri</p>
+
+Example 506 (lines 7700-7706) Links
+[foo<http://example.com/?search=][ref]>
+
+[ref]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
++<p>[foo<http://example.com/?search=][ref]></p>
++<p>[ref]: /uri</p>
+
+Example 507 (lines 7711-7717) Links
+[foo][BaR]
+
+[bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">foo</a></p>
++<p>[foo][BaR]</p>
++<p>[bar]: /url "title"</p>
+
+Example 508 (lines 7722-7728) Links
+[Толпой][Толпой] is a Russian word.
+
+[ТОЛПОЙ]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url">Толпой</a> is a Russian word.</p>
++<p>[Толпой][Толпой] is a Russian word.</p>
++<p>[ТОЛПОЙ]: /url</p>
+
+Example 509 (lines 7734-7741) Links
+[Foo
+  bar]: /url
+
+[Baz][Foo bar]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="/url">Baz</a></p>
++<p>[Foo
++bar]: /url</p>
++<p>[Baz][Foo bar]</p>
+
+Example 510 (lines 7747-7753) Links
+[foo] [bar]
+
+[bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo] <a href="/url" title="title">bar</a></p>
++<p>[foo] [bar]</p>
++<p>[bar]: /url "title"</p>
+
+Example 511 (lines 7756-7764) Links
+[foo]
+[bar]
+
+[bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,3 @@
+ <p>[foo]
+-<a href="/url" title="title">bar</a></p>
++[bar]</p>
++<p>[bar]: /url "title"</p>
+
+Example 512 (lines 7797-7805) Links
+[foo]: /url1
+
+[foo]: /url2
+
+[bar][foo]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="/url1">bar</a></p>
++<p>[foo]: /url1</p>
++<p>[foo]: /url2</p>
++<p>[bar][foo]</p>
+
+Example 513 (lines 7812-7818) Links
+[bar][foo\!]
+
+[foo!]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[bar][foo!]</p>
++<p>[bar][foo\!]</p>
++<p>[foo!]: /url</p>
+
+Example 517 (lines 7854-7860) Links
+[foo][ref\[]
+
+[ref\[]: /uri
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">foo</a></p>
++<p>[foo][ref\[]</p>
++<p>[ref\[]: /uri</p>
+
+Example 518 (lines 7865-7871) Links
+[bar\\]: /uri
+
+[bar\\]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/uri">bar\</a></p>
++<p>[bar\\]: /uri</p>
++<p>[bar\\]</p>
+
+Example 521 (lines 7909-7915) Links
+[foo][]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">foo</a></p>
++<p>[foo][]</p>
++<p>[foo]: /url "title"</p>
+
+Example 522 (lines 7918-7924) Links
+[*foo* bar][]
+
+[*foo* bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title"><em>foo</em> bar</a></p>
++<p>[<em>foo</em> bar][]</p>
++<p>[<em>foo</em> bar]: /url "title"</p>
+
+Example 523 (lines 7929-7935) Links
+[Foo][]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">Foo</a></p>
++<p>[Foo][]</p>
++<p>[foo]: /url "title"</p>
+
+Example 524 (lines 7942-7950) Links
+[foo] 
+[]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,3 @@
+-<p><a href="/url" title="title">foo</a>
++<p>[foo]
+ []</p>
++<p>[foo]: /url "title"</p>
+
+Example 525 (lines 7962-7968) Links
+[foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">foo</a></p>
++<p>[foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 526 (lines 7971-7977) Links
+[*foo* bar]
+
+[*foo* bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title"><em>foo</em> bar</a></p>
++<p>[<em>foo</em> bar]</p>
++<p>[<em>foo</em> bar]: /url "title"</p>
+
+Example 527 (lines 7980-7986) Links
+[[*foo* bar]]
+
+[*foo* bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
++<p>[[<em>foo</em> bar]]</p>
++<p>[<em>foo</em> bar]: /url "title"</p>
+
+Example 528 (lines 7989-7995) Links
+[[bar [foo]
+
+[foo]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[[bar <a href="/url">foo</a></p>
++<p>[[bar [foo]</p>
++<p>[foo]: /url</p>
+
+Example 529 (lines 8000-8006) Links
+[Foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url" title="title">Foo</a></p>
++<p>[Foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 530 (lines 8011-8017) Links
+[foo] bar
+
+[foo]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url">foo</a> bar</p>
++<p>[foo] bar</p>
++<p>[foo]: /url</p>
+
+Example 531 (lines 8023-8029) Links
+\[foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo]</p>
++<p>\[foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 532 (lines 8035-8041) Links
+[foo*]: /url
+
+*[foo*]
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>*<a href="/url">foo*</a></p>
++<p>[foo*]: /url</p>
++<p><em>[foo</em>]</p>
+
+Example 533 (lines 8047-8054) Links
+[foo][bar]
+
+[foo]: /url1
+[bar]: /url2
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="/url2">foo</a></p>
++<p>[foo][bar]</p>
++<p>[foo]: /url1
++[bar]: /url2</p>
+
+Example 534 (lines 8056-8062) Links
+[foo][]
+
+[foo]: /url1
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url1">foo</a></p>
++<p>[foo][]</p>
++<p>[foo]: /url1</p>
+
+Example 535 (lines 8066-8072) Links
+[foo]()
+
+[foo]: /url1
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="">foo</a></p>
++<p>[foo]()</p>
++<p>[foo]: /url1</p>
+
+Example 536 (lines 8074-8080) Links
+[foo](not a link)
+
+[foo]: /url1
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><a href="/url1">foo</a>(not a link)</p>
++<p>[foo](not a link)</p>
++<p>[foo]: /url1</p>
+
+Example 537 (lines 8085-8091) Links
+[foo][bar][baz]
+
+[baz]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>[foo]<a href="/url">bar</a></p>
++<p>[foo][bar][baz]</p>
++<p>[baz]: /url</p>
+
+Example 538 (lines 8097-8104) Links
+[foo][bar][baz]
+
+[baz]: /url1
+[bar]: /url2
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
++<p>[foo][bar][baz]</p>
++<p>[baz]: /url1
++[bar]: /url2</p>
+
+Example 539 (lines 8110-8117) Links
+[foo][bar][baz]
+
+[baz]: /url1
+[foo]: /url2
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,3 @@
+-<p>[foo]<a href="/url1">bar</a></p>
++<p>[foo][bar][baz]</p>
++<p>[baz]: /url1
++[foo]: /url2</p>
+
+Example 540 (lines 8133-8137) Images
+![foo](/url "title")
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="/url" alt="foo" title="title" /></p>
++<p>![foo](/url "title")</p>
+
+Example 541 (lines 8140-8146) Images
+![foo *bar*]
+
+[foo *bar*]: train.jpg "train & tracks"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
++<p>![foo <em>bar</em>]</p>
++<p>[foo <em>bar</em>]: train.jpg "train & tracks"</p>
+
+Example 542 (lines 8149-8153) Images
+![foo ![bar](/url)](/url2)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="/url2" alt="foo bar" /></p>
++<p>![foo ![bar](/url)](/url2)</p>
+
+Example 543 (lines 8156-8160) Images
+![foo [bar](/url)](/url2)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="/url2" alt="foo bar" /></p>
++<p>![foo [bar](/url)](/url2)</p>
+
+Example 544 (lines 8170-8176) Images
+![foo *bar*][]
+
+[foo *bar*]: train.jpg "train & tracks"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
++<p>![foo <em>bar</em>][]</p>
++<p>[foo <em>bar</em>]: train.jpg "train & tracks"</p>
+
+Example 545 (lines 8179-8185) Images
+![foo *bar*][foobar]
+
+[FOOBAR]: train.jpg "train & tracks"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
++<p>![foo <em>bar</em>][foobar]</p>
++<p>[FOOBAR]: train.jpg "train & tracks"</p>
+
+Example 546 (lines 8188-8192) Images
+![foo](train.jpg)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="train.jpg" alt="foo" /></p>
++<p>![foo](train.jpg)</p>
+
+Example 547 (lines 8195-8199) Images
+My ![foo bar](/path/to/train.jpg  "title"   )
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
++<p>My ![foo bar](/path/to/train.jpg  "title"   )</p>
+
+Example 548 (lines 8202-8206) Images
+![foo](<url>)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="url" alt="foo" /></p>
++<p>![foo](<url>)</p>
+
+Example 549 (lines 8209-8213) Images
+![](/url)
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><img src="/url" alt="" /></p>
++<p>![](/url)</p>
+
+Example 550 (lines 8218-8224) Images
+![foo][bar]
+
+[bar]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo" /></p>
++<p>![foo][bar]</p>
++<p>[bar]: /url</p>
+
+Example 551 (lines 8227-8233) Images
+![foo][bar]
+
+[BAR]: /url
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo" /></p>
++<p>![foo][bar]</p>
++<p>[BAR]: /url</p>
+
+Example 552 (lines 8238-8244) Images
+![foo][]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo" title="title" /></p>
++<p>![foo][]</p>
++<p>[foo]: /url "title"</p>
+
+Example 553 (lines 8247-8253) Images
+![*foo* bar][]
+
+[*foo* bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo bar" title="title" /></p>
++<p>![<em>foo</em> bar][]</p>
++<p>[<em>foo</em> bar]: /url "title"</p>
+
+Example 554 (lines 8258-8264) Images
+![Foo][]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="Foo" title="title" /></p>
++<p>![Foo][]</p>
++<p>[foo]: /url "title"</p>
+
+Example 555 (lines 8270-8278) Images
+![foo] 
+[]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,3 @@
+-<p><img src="/url" alt="foo" title="title" />
++<p>![foo]
+ []</p>
++<p>[foo]: /url "title"</p>
+
+Example 556 (lines 8283-8289) Images
+![foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo" title="title" /></p>
++<p>![foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 557 (lines 8292-8298) Images
+![*foo* bar]
+
+[*foo* bar]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="foo bar" title="title" /></p>
++<p>![<em>foo</em> bar]</p>
++<p>[<em>foo</em> bar]: /url "title"</p>
+
+Example 558 (lines 8303-8310) Images
+![[foo]]
+
+[[foo]]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+ <p>![[foo]]</p>
+-<p>[[foo]]: /url &quot;title&quot;</p>
++<p>[[foo]]: /url "title"</p>
+
+Example 559 (lines 8315-8321) Images
+![Foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><img src="/url" alt="Foo" title="title" /></p>
++<p>![Foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 560 (lines 8327-8333) Images
+!\[foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>![foo]</p>
++<p>!\[foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 561 (lines 8339-8345) Images
+\![foo]
+
+[foo]: /url "title"
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p>!<a href="/url" title="title">foo</a></p>
++<p>\![foo]</p>
++<p>[foo]: /url "title"</p>
+
+Example 562 (lines 8372-8376) Autolinks
+<http://foo.bar.baz>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
++<p><http://foo.bar.baz></p>
+
+Example 563 (lines 8379-8383) Autolinks
+<http://foo.bar.baz/test?q=hello&id=22&boolean>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
++<p><http://foo.bar.baz/test?q=hello&id=22&boolean></p>
+
+Example 564 (lines 8386-8390) Autolinks
+<irc://foo.bar:2233/baz>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
++<p><irc://foo.bar:2233/baz></p>
+
+Example 565 (lines 8395-8399) Autolinks
+<MAILTO:FOO@BAR.BAZ>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
++<p><MAILTO:FOO@BAR.BAZ></p>
+
+Example 566 (lines 8407-8411) Autolinks
+<a+b+c:d>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="a+b+c:d">a+b+c:d</a></p>
++<p><a+b+c:d></p>
+
+Example 567 (lines 8414-8418) Autolinks
+<made-up-scheme://foo,bar>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
++<p><made-up-scheme://foo,bar></p>
+
+Example 568 (lines 8421-8425) Autolinks
+<http://../>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://../">http://../</a></p>
++<p><http://../></p>
+
+Example 569 (lines 8428-8432) Autolinks
+<localhost:5001/foo>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
++<p><localhost:5001/foo></p>
+
+Example 570 (lines 8437-8441) Autolinks
+<http://foo.bar/baz bim>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;http://foo.bar/baz bim&gt;</p>
++<p><http://foo.bar/baz bim></p>
+
+Example 571 (lines 8446-8450) Autolinks
+<http://example.com/\[\>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
++<p><http://example.com/\[\></p>
+
+Example 572 (lines 8468-8472) Autolinks
+<foo@bar.example.com>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
++<p><foo@bar.example.com></p>
+
+Example 573 (lines 8475-8479) Autolinks
+<foo+special@Bar.baz-bar0.com>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
++<p><foo+special@Bar.baz-bar0.com></p>
+
+Example 574 (lines 8484-8488) Autolinks
+<foo\+@bar.example.com>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;foo+@bar.example.com&gt;</p>
++<p><foo\+@bar.example.com></p>
+
+Example 575 (lines 8493-8497) Autolinks
+<>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;&gt;</p>
++<p><></p>
+
+Example 576 (lines 8500-8504) Autolinks
+< http://foo.bar >
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt; http://foo.bar &gt;</p>
++<p>< http://foo.bar ></p>
+
+Example 577 (lines 8507-8511) Autolinks
+<m:abc>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;m:abc&gt;</p>
++<p><m:abc></p>
+
+Example 578 (lines 8514-8518) Autolinks
+<foo.bar.baz>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;foo.bar.baz&gt;</p>
++<p><foo.bar.baz></p>
+
+Example 581 (lines 8610-8614) Raw HTML
+<a><bab><c2c>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a><bab><c2c></p>
++<a><bab><c2c>
+
+Example 582 (lines 8619-8623) Raw HTML
+<a/><b2/>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a/><b2/></p>
++<a/><b2/>
+
+Example 585 (lines 8650-8654) Raw HTML
+Foo <responsive-image src="foo.jpg" />
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>Foo <responsive-image src="foo.jpg" /></p>
++Foo <responsive-image src="foo.jpg" />
+
+Example 586 (lines 8659-8663) Raw HTML
+<33> <__>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;33&gt; &lt;__&gt;</p>
++<p><33> <__></p>
+
+Example 587 (lines 8668-8672) Raw HTML
+<a h*#ref="hi">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;a h*#ref=&quot;hi&quot;&gt;</p>
++<p><a h*#ref="hi"></p>
+
+Example 588 (lines 8677-8681) Raw HTML
+<a href="hi'> <a href=hi'>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;a href=&quot;hi'&gt; &lt;a href=hi'&gt;</p>
++<p><a href="hi'> <a href=hi'></p>
+
+Example 589 (lines 8686-8692) Raw HTML
+< a><
+foo><bar/ >
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>&lt; a&gt;&lt;
+-foo&gt;&lt;bar/ &gt;</p>
++<p>< a><
++foo><bar/ ></p>
+
+Example 590 (lines 8697-8701) Raw HTML
+<a href='bar'title=title>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;a href='bar'title=title&gt;</p>
++<p><a href='bar'title=title></p>
+
+Example 591 (lines 8706-8710) Raw HTML
+</a></foo >
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p></a></foo ></p>
++</a></foo >
+
+Example 592 (lines 8715-8719) Raw HTML
+</a href="foo">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;/a href=&quot;foo&quot;&gt;</p>
++<p></a href="foo"></p>
+
+Example 593 (lines 8724-8730) Raw HTML
+foo <!-- this is a
+comment - with hyphen -->
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>foo <!-- this is a
+-comment - with hyphen --></p>
++foo <!-- this is a
++comment - with hyphen -->
+
+Example 594 (lines 8733-8737) Raw HTML
+foo <!-- not a comment -- two hyphens -->
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo &lt;!-- not a comment -- two hyphens --&gt;</p>
++foo <!-- not a comment -- two hyphens -->
+
+Example 595 (lines 8742-8749) Raw HTML
+foo <!--> foo -->
+
+foo <!-- foo--->
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>foo &lt;!--&gt; foo --&gt;</p>
+-<p>foo &lt;!-- foo---&gt;</p>
++foo <!--> foo -->
++foo <!-- foo--->
+
+Example 596 (lines 8754-8758) Raw HTML
+foo <?php echo $a; ?>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <?php echo $a; ?></p>
++foo <?php echo $a; ?>
+
+Example 597 (lines 8763-8767) Raw HTML
+foo <!ELEMENT br EMPTY>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <!ELEMENT br EMPTY></p>
++foo <!ELEMENT br EMPTY>
+
+Example 598 (lines 8772-8776) Raw HTML
+foo <![CDATA[>&<]]>
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <![CDATA[>&<]]></p>
++foo <![CDATA[>&<]]>
+
+Example 599 (lines 8782-8786) Raw HTML
+foo <a href="&ouml;">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <a href="&ouml;"></p>
++foo <a href="&ouml;">
+
+Example 600 (lines 8791-8795) Raw HTML
+foo <a href="\*">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>foo <a href="\*"></p>
++foo <a href="\*">
+
+Example 601 (lines 8798-8802) Raw HTML
+<a href="\"">
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
++<p><a href="\""></p>
+
+Example 603 (lines 8824-8830) Hard line breaks
+foo\
+baz
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>foo<br />
++<p>foo\
+ baz</p>
+
+Example 606 (lines 8855-8861) Hard line breaks
+foo\
+     bar
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>foo<br />
++<p>foo\
+ bar</p>
+
+Example 608 (lines 8876-8882) Hard line breaks
+*foo\
+bar*
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><em>foo<br />
++<p><em>foo\
+ bar</em></p>
+
+Example 609 (lines 8887-8892) Hard line breaks
+`code  
+span`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><code>code span</code></p>
++<p>`code<br />
++span`</p>
+
+Example 610 (lines 8895-8900) Hard line breaks
+`code\
+span`
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1,2 @@
+-<p><code>code\ span</code></p>
++<p>`code\
++span`</p>
+
+Example 611 (lines 8905-8911) Hard line breaks
+<a href="foo  
+bar">
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><a href="foo  
++<p><a href="foo<br />
+ bar"></p>
+
+335 passed, 281 failed, 5 errored, 0 skipped

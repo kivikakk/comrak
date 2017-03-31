@@ -10,8 +10,8 @@ fi
 
 
 cargo build
-r=$((cd vendor/CommonMark; python3 test/spec_tests.py --program=../../target/debug/comrak) | tail -n 1)
-r=$(echo "$r" | sed -e 's/ passed, /,/' -e 's/ failed, /,/' -e 's/ errored, /,/' -e 's/ skipped//')
+(cd vendor/CommonMark; python3 test/spec_tests.py --program=../../target/debug/comrak || true) > spec_out.txt
+r=$(tail -n 1 spec_out.txt | sed -e 's/ passed, /,/' -e 's/ failed, /,/' -e 's/ errored, /,/' -e 's/ skipped//')
 passed=$(echo "$r" | cut -f1 -d,)
 failed=$(echo "$r" | cut -f2 -d,)
 errored=$(echo "$r" | cut -f3 -d,)
@@ -34,3 +34,4 @@ sed -i '' \
 
 git diff README.md
 git add README.md
+git add spec_out.txt
