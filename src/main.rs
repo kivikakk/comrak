@@ -1256,6 +1256,7 @@ impl<'a> Subject<'a> {
         while delim != -1 && delim != opener {
             self.delimiters.remove(delim as usize);
             delim -= 1;
+            closer -= 1;
         }
 
         let emph = make_inline(self.arena,

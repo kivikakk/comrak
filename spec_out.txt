@@ -1530,22 +1530,6 @@ foo *\**
 -<p>foo <em>*</em></p>
 +<p>foo <em>\</em>*</p>
 
-Example 412 (lines 6776-6780) Emphasis and strong emphasis
-program returned error code 101
-thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
-   1: comrak::Subject::insert_emph
-   2: comrak::Parser::process_emphasis
-   3: comrak::Parser::parse_inlines
-   4: comrak::Parser::process_inlines_node
-   5: comrak::Parser::process_inlines_node
-   6: comrak::Parser::process_inlines
-   7: comrak::Parser::finalize_document
-   8: comrak::Parser::finish
-   9: comrak::parse_document
-  10: comrak::main
 Example 413 (lines 6783-6787) Emphasis and strong emphasis
 foo *****
 
@@ -1564,22 +1548,6 @@ foo **\***
 -<p>foo <strong>*</strong></p>
 +<hr />
 
-Example 415 (lines 6797-6801) Emphasis and strong emphasis
-program returned error code 101
-thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
-   1: comrak::Subject::insert_emph
-   2: comrak::Parser::process_emphasis
-   3: comrak::Parser::parse_inlines
-   4: comrak::Parser::process_inlines_node
-   5: comrak::Parser::process_inlines_node
-   6: comrak::Parser::process_inlines
-   7: comrak::Parser::finalize_document
-   8: comrak::Parser::finish
-   9: comrak::parse_document
-  10: comrak::main
 Example 420 (lines 6836-6840) Emphasis and strong emphasis
 **foo***
 
@@ -1616,22 +1584,6 @@ foo _\__
 -<p>foo <em>_</em></p>
 +<p>foo <em>\</em>_</p>
 
-Example 424 (lines 6867-6871) Emphasis and strong emphasis
-program returned error code 101
-thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
-   1: comrak::Subject::insert_emph
-   2: comrak::Parser::process_emphasis
-   3: comrak::Parser::parse_inlines
-   4: comrak::Parser::process_inlines_node
-   5: comrak::Parser::process_inlines_node
-   6: comrak::Parser::process_inlines
-   7: comrak::Parser::finalize_document
-   8: comrak::Parser::finish
-   9: comrak::parse_document
-  10: comrak::main
 Example 425 (lines 6874-6878) Emphasis and strong emphasis
 foo _____
 
@@ -1650,22 +1602,6 @@ foo __\___
 -<p>foo <strong>_</strong></p>
 +<hr />
 
-Example 427 (lines 6888-6892) Emphasis and strong emphasis
-program returned error code 101
-thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
-   1: comrak::Subject::insert_emph
-   2: comrak::Parser::process_emphasis
-   3: comrak::Parser::parse_inlines
-   4: comrak::Parser::process_inlines_node
-   5: comrak::Parser::process_inlines_node
-   6: comrak::Parser::process_inlines
-   7: comrak::Parser::finalize_document
-   8: comrak::Parser::finish
-   9: comrak::parse_document
-  10: comrak::main
 Example 432 (lines 6927-6931) Emphasis and strong emphasis
 __foo___
 
@@ -1728,24 +1664,6 @@ _____foo_____
 @@ -1 +1 @@
 -<p><em><strong><strong>foo</strong></strong></em></p>
 +<hr />
-
-Example 443 (lines 7018-7022) Emphasis and strong emphasis
-*foo _bar* baz_
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><em>foo _bar</em> baz_</p>
-+<p><em>foo _bar baz</em></p>
-
-Example 444 (lines 7025-7029) Emphasis and strong emphasis
-*foo __bar *baz bim__ bam*
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><em>foo <strong>bar *baz bim</strong> bam</em></p>
-+<p>*foo <strong>bar *baz bim bam</strong></p>
 
 Example 447 (lines 7050-7054) Emphasis and strong emphasis
 *[bar*](/url)
@@ -3281,4 +3199,4 @@ bar">
 +<p><a href="foo<br />
  bar"></p>
 
-336 passed, 281 failed, 4 errored, 0 skipped
+342 passed, 279 failed, 0 errored, 0 skipped
