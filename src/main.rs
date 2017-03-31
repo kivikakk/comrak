@@ -1328,10 +1328,10 @@ fn chop_trailing_hashtags(line: &mut Vec<char>) {
     let mut n = orig_n;
 
     while line[n] == '#' {
-        n -= 1;
         if n == 0 {
             return;
         }
+        n -= 1;
     }
 
     if n != orig_n && is_space_or_tab(&line[n]) {

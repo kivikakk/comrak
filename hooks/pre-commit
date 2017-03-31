@@ -10,7 +10,7 @@ fi
 
 
 cargo build
-(cd vendor/CommonMark; python3 test/spec_tests.py --program=../../target/debug/comrak || true) > spec_out.txt
+(cd vendor/CommonMark; RUST_BACKTRACE=1 python3 test/spec_tests.py --program=../../target/debug/comrak || true) > spec_out.txt
 r=$(tail -n 1 spec_out.txt | sed -e 's/ passed, /,/' -e 's/ failed, /,/' -e 's/ errored, /,/' -e 's/ skipped//')
 passed=$(echo "$r" | cut -f1 -d,)
 failed=$(echo "$r" | cut -f2 -d,)
