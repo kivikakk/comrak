@@ -1,77 +1,78 @@
-use regex::bytes::Regex;
+use regex::Regex;
 
-pub fn atx_heading_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+fn search(re: &Regex, line: &Vec<char>, from: usize) -> Option<usize> {
+    let s: String = line[from..].iter().collect();
+    re.find(&s).map(|m| m.as_str().chars().count())
+}
+
+fn captures(re: &Regex, line: &Vec<char>, from: usize, ix: usize) -> Option<usize> {
+    let s: String = line[from..].iter().collect();
+    let c = match re.captures(&s) {
+        Some(c) => c,
+        None => return None,
+    };
+    c.get(ix).map(|m| m.as_str().chars().count())
+}
+
+fn is_match(re: &Regex, line: &Vec<char>, from: usize) -> bool {
+    let s: String = line[from..].iter().collect();
+    re.is_match(&s)
+}
+
+pub fn atx_heading_start(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"#{1,6}([ \t]+|[\r\n])").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn html_block_end_1(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_end_1(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*</(script|pre|style)>").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn html_block_end_2(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_end_2(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*-->").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn html_block_end_3(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_end_3(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\?>").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn html_block_end_4(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_end_4(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*>").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn html_block_end_5(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_end_5(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\]\]>").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }
 
-pub fn open_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn open_code_fence(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[^`\r\n\x00]*[\r\n]").unwrap();
     }
-
-    let c = match RE.captures(&line[from..]) {
-        Some(c) => c,
-        None => return None,
-    };
-
-    c.get(1).map(|m| m.end() - m.start())
+    captures(&RE, line, from, 1)
 }
 
-pub fn close_code_fence(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn close_code_fence(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[ \t]*[\r\n]").unwrap();
     }
-
-    let c = match RE.captures(&line[from..]) {
-        Some(c) => c,
-        None => return None,
-    };
-
-    c.get(1).map(|m| m.end() - m.start())
+    captures(&RE, line, from, 1)
 }
 
 lazy_static! {
@@ -88,7 +89,7 @@ lazy_static! {
     static ref BLOCK_TAG_NAMES_PIPED: String = BLOCK_TAG_NAMES.join("|");
 }
 
-pub fn html_block_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_start(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE1: Regex = Regex::new(r"<(script|pre|style)([ \t\v\f\r\n]|>)").unwrap();
         static ref RE2: Regex = Regex::new(r"<!--").unwrap();
@@ -99,17 +100,17 @@ pub fn html_block_start(line: &mut Vec<u8>, from: usize) -> Option<usize> {
             &format!(r"</?({})([ \t\v\f\r\n]|/?>)", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
-    if RE1.is_match(&line[from..]) {
+    if is_match(&RE1, line, from) {
         Some(1)
-    } else if RE2.is_match(&line[from..]) {
+    } else if is_match(&RE2, line, from) {
         Some(2)
-    } else if RE3.is_match(&line[from..]) {
+    } else if is_match(&RE3, line, from) {
         Some(3)
-    } else if RE4.is_match(&line[from..]) {
+    } else if is_match(&RE4, line, from) {
         Some(4)
-    } else if RE5.is_match(&line[from..]) {
+    } else if is_match(&RE5, line, from) {
         Some(5)
-    } else if RE6.is_match(&line[from..]) {
+    } else if is_match(&RE6, line, from) {
         Some(6)
     } else {
         None
@@ -130,13 +131,13 @@ lazy_static! {
     static ref OPEN_TAG: String = format!(r"(?:{}{}*{}*/?>)", *TAG_NAME, *ATTRIBUTE, *SPACE_CHAR);
 }
 
-pub fn html_block_start_7(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn html_block_start_7(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             &format!(r"<({}|{})[\t\n\f ]*[\r\n]", *OPEN_TAG, *CLOSE_TAG)).unwrap();
     }
 
-    if RE.is_match(&line[from..]) {
+    if is_match(&RE, line, from) {
         Some(7)
     } else {
         None
@@ -148,23 +149,26 @@ pub enum SetextChar {
     Hyphen,
 }
 
-pub fn setext_heading_line(line: &mut Vec<u8>, from: usize) -> Option<SetextChar> {
+pub fn setext_heading_line(line: &mut Vec<char>, from: usize) -> Option<SetextChar> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(=+|-+)[ \t]*[\r\n]").unwrap();
     }
 
-    RE.find(&line[from..]).map(|m| if line[from] == '=' as u8 {
-        SetextChar::Equals
+    if is_match(&RE, line, from) {
+        if line[from] == '=' {
+            Some(SetextChar::Equals)
+        } else {
+            Some(SetextChar::Hyphen)
+        }
     } else {
-        SetextChar::Hyphen
-    })
+        None
+    }
 }
 
-pub fn thematic_break(line: &mut Vec<u8>, from: usize) -> Option<usize> {
+pub fn thematic_break(line: &mut Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             r"((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n]").unwrap();
     }
-
-    RE.find(&line[from..]).map(|m| m.end() - m.start())
+    search(&RE, line, from)
 }

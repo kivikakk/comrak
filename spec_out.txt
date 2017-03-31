@@ -185,7 +185,7 @@ Example 46 (lines 923-931) ATX headings
 
 Example 49 (lines 961-969) ATX headings
 program returned error code 101
-thread 'main' panicked at 'attempt to subtract with overflow', src/main.rs:1325
+thread 'main' panicked at 'attempt to subtract with overflow', src/main.rs:1331
 note: Run with `RUST_BACKTRACE=1` for a backtrace.
 Example 54 (lines 1063-1076) Setext headings
     Foo

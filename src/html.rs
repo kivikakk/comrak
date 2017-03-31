@@ -85,17 +85,20 @@ impl HtmlFormatter {
             &NodeValue::CodeBlock(ref ncb) => {
                 self.cr();
                 write!(self, "<pre><code").unwrap();
-                if ncb.info != "" {
-                    write!(self, " class=\"language-{}\"", ncb.info).unwrap();
+                if ncb.info.len() > 0 {
+                    write!(self,
+                           " class=\"language-{}\"",
+                           ncb.info.iter().collect::<String>())
+                        .unwrap();
                 }
                 write!(self,
                        ">{}</code></pre>\n",
-                       String::from_utf8(ncb.literal.clone()).unwrap())
+                       ncb.literal.iter().collect::<String>())
                     .unwrap();
             }
             &NodeValue::HtmlBlock(ref nhb) => {
                 self.cr();
-                self.write(&nhb.literal).unwrap();
+                self.write(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
                 self.cr();
             }
             &NodeValue::CustomBlock => {
@@ -125,7 +128,7 @@ impl HtmlFormatter {
             }
             &NodeValue::Text(ref literal) => {
                 // TODO: escape HTML
-                self.write(&literal).unwrap();
+                self.write(literal.iter().collect::<String>().as_bytes()).unwrap();
             }
             &NodeValue::LineBreak => {
                 write!(self, "<br />\n").unwrap();
