@@ -3,6 +3,10 @@
 exec 1>&2
 set -e
 
+if [ "$SKIP_PRECOMMIT_HOOK" = 1 ]; then
+	exit 0
+fi
+
 if [ "$(git status --porcelain README.md | cut -b2-2 | tr -d '[:space:]')" != "" ]; then
 	echo "README.md has unstaged changes, commit hook cannot run"
 	exit 1

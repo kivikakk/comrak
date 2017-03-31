@@ -707,7 +707,9 @@ impl<'a> Parser<'a> {
                 ast.content.push(' ');
             }
         }
-        ast.content.extend_from_slice(&line[self.offset..]);
+        if self.offset < line.len() {
+            ast.content.extend_from_slice(&line[self.offset..]);
+        }
     }
 
     fn finish(&mut self) -> &'a Node<'a, AstCell> {

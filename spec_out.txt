@@ -183,22 +183,6 @@ Example 46 (lines 923-931) ATX headings
 +<h2>foo #\##</h2>
 +<h1>foo \#</h1>
 
-Example 49 (lines 961-969) ATX headings
-program returned error code 101
-thread 'main' panicked at 'slice index starts at 2 but ends at 1', src/libcore/slice/mod.rs:664
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: core::slice::slice_index_order_fail
-   1: <core::ops::Range<usize> as core::slice::SliceIndex<T>>::index
-   2: <core::ops::RangeFrom<usize> as core::slice::SliceIndex<T>>::index
-   3: core::slice::<impl core::ops::Index<I> for [T]>::index
-   4: <collections::vec::Vec<T> as core::ops::Index<core::ops::RangeFrom<usize>>>::index
-   5: comrak::Parser::add_line
-   6: comrak::Parser::add_text_to_container
-   7: comrak::Parser::process_line
-   8: comrak::Parser::feed
-   9: comrak::parse_document
-  10: comrak::main
 Example 54 (lines 1063-1076) Setext headings
     Foo
     ---
@@ -3297,4 +3281,4 @@ bar">
 +<p><a href="foo<br />
  bar"></p>
 
-335 passed, 281 failed, 5 errored, 0 skipped
+336 passed, 281 failed, 4 errored, 0 skipped
