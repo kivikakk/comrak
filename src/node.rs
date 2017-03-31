@@ -15,7 +15,7 @@ pub enum NodeValue {
     Heading(NodeHeading),
     ThematicBreak,
 
-    Text(Vec<u8>),
+    Text(Vec<char>),
     SoftBreak,
     LineBreak,
     Code,
@@ -34,7 +34,7 @@ pub struct NodeList {
     pub padding: usize,
     pub start: usize,
     pub delimiter: ListDelimType,
-    pub bullet_char: u8,
+    pub bullet_char: char,
     pub tight: bool,
 }
 
@@ -67,11 +67,11 @@ impl Default for ListDelimType {
 #[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
     pub fenced: bool,
-    pub fence_char: u8,
+    pub fence_char: char,
     pub fence_length: usize,
     pub fence_offset: usize,
-    pub info: String,
-    pub literal: Vec<u8>,
+    pub info: Vec<char>,
+    pub literal: Vec<char>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -83,7 +83,7 @@ pub struct NodeHeading {
 #[derive(Debug, Clone)]
 pub struct NodeHtmlBlock {
     pub block_type: u8,
-    pub literal: Vec<u8>,
+    pub literal: Vec<char>,
 }
 
 
@@ -121,7 +121,7 @@ impl NodeValue {
         }
     }
 
-    pub fn text(&mut self) -> Option<&mut Vec<u8>> {
+    pub fn text(&mut self) -> Option<&mut Vec<char>> {
         match self {
             &mut NodeValue::Text(ref mut t) => Some(t),
             _ => None,
@@ -132,7 +132,7 @@ impl NodeValue {
 #[derive(Debug)]
 pub struct Ast {
     pub value: NodeValue,
-    pub content: Vec<u8>,
+    pub content: Vec<char>,
     pub start_line: u32,
     pub start_column: usize,
     pub end_line: u32,

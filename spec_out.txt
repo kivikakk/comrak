@@ -183,10 +183,6 @@ Example 46 (lines 923-931) ATX headings
 +<h2>foo #\##</h2>
 +<h1>foo \#</h1>
 
-Example 49 (lines 961-969) ATX headings
-program returned error code 101
-thread 'main' panicked at 'attempt to subtract with overflow', src/main.rs:1325
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
 Example 54 (lines 1063-1076) Setext headings
     Foo
     ---
@@ -1537,7 +1533,19 @@ foo *\**
 Example 412 (lines 6776-6780) Emphasis and strong emphasis
 program returned error code 101
 thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
+   1: comrak::Subject::insert_emph
+   2: comrak::Parser::process_emphasis
+   3: comrak::Parser::parse_inlines
+   4: comrak::Parser::process_inlines_node
+   5: comrak::Parser::process_inlines_node
+   6: comrak::Parser::process_inlines
+   7: comrak::Parser::finalize_document
+   8: comrak::Parser::finish
+   9: comrak::parse_document
+  10: comrak::main
 Example 413 (lines 6783-6787) Emphasis and strong emphasis
 foo *****
 
@@ -1559,7 +1567,19 @@ foo **\***
 Example 415 (lines 6797-6801) Emphasis and strong emphasis
 program returned error code 101
 thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
+   1: comrak::Subject::insert_emph
+   2: comrak::Parser::process_emphasis
+   3: comrak::Parser::parse_inlines
+   4: comrak::Parser::process_inlines_node
+   5: comrak::Parser::process_inlines_node
+   6: comrak::Parser::process_inlines
+   7: comrak::Parser::finalize_document
+   8: comrak::Parser::finish
+   9: comrak::parse_document
+  10: comrak::main
 Example 420 (lines 6836-6840) Emphasis and strong emphasis
 **foo***
 
@@ -1599,7 +1619,19 @@ foo _\__
 Example 424 (lines 6867-6871) Emphasis and strong emphasis
 program returned error code 101
 thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
+   1: comrak::Subject::insert_emph
+   2: comrak::Parser::process_emphasis
+   3: comrak::Parser::parse_inlines
+   4: comrak::Parser::process_inlines_node
+   5: comrak::Parser::process_inlines_node
+   6: comrak::Parser::process_inlines
+   7: comrak::Parser::finalize_document
+   8: comrak::Parser::finish
+   9: comrak::parse_document
+  10: comrak::main
 Example 425 (lines 6874-6878) Emphasis and strong emphasis
 foo _____
 
@@ -1621,7 +1653,19 @@ foo __\___
 Example 427 (lines 6888-6892) Emphasis and strong emphasis
 program returned error code 101
 thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/libcollections/vec.rs:1426
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: <collections::vec::Vec<T> as core::ops::Index<usize>>::index
+   1: comrak::Subject::insert_emph
+   2: comrak::Parser::process_emphasis
+   3: comrak::Parser::parse_inlines
+   4: comrak::Parser::process_inlines_node
+   5: comrak::Parser::process_inlines_node
+   6: comrak::Parser::process_inlines
+   7: comrak::Parser::finalize_document
+   8: comrak::Parser::finish
+   9: comrak::parse_document
+  10: comrak::main
 Example 432 (lines 6927-6931) Emphasis and strong emphasis
 __foo___
 
@@ -3237,4 +3281,4 @@ bar">
 +<p><a href="foo<br />
  bar"></p>
 
-335 passed, 281 failed, 5 errored, 0 skipped
+336 passed, 281 failed, 4 errored, 0 skipped
