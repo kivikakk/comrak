@@ -83,6 +83,7 @@ struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
 }
 
+#[derive(Clone)]
 struct Reference {
     url: Vec<char>,
     title: Vec<char>,
@@ -884,6 +885,7 @@ impl<'a> Parser<'a> {
             arena: self.arena,
             input: node.data.borrow().content.clone(),
             pos: 0,
+            refmap: &mut self.refmap,
             delimiters: vec![],
             brackets: vec![],
             backticks: [0; MAXBACKTICKS + 1],
@@ -914,6 +916,7 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         arena: arena,
         input: content.to_vec(),
         pos: 0,
+        refmap: refmap,
         delimiters: vec![],
         brackets: vec![],
         backticks: [0; MAXBACKTICKS + 1],
@@ -921,9 +924,10 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     };
 
     let lab = match subj.link_label() {
-        Some(lab) => if lab.len() == 0 { return None } else { lab },
-        None => return None,
-    }.to_vec();
+            Some(lab) => if lab.len() == 0 { return None } else { lab },
+            None => return None,
+        }
+        .to_vec();
 
     if subj.peek_char() != Some(&':') {
         return None;
@@ -965,17 +969,19 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         }
     }
 
-    refmap.insert(lab, Reference {
-        url: url,
-        title: title,
-    });
+    subj.refmap.insert(lab,
+                       Reference {
+                           url: clean_url(&url),
+                           title: clean_title(&title),
+                       });
     Some(subj.pos)
 }
 
-struct Subject<'a> {
+struct Subject<'a, 'b> {
     arena: &'a Arena<Node<'a, AstCell>>,
     input: Vec<char>,
     pos: usize,
+    refmap: &'b mut HashMap<Vec<char>, Reference>,
     delimiters: Vec<Delimiter<'a>>,
     brackets: Vec<Bracket<'a>>,
     backticks: [usize; MAXBACKTICKS + 1],
@@ -999,7 +1005,7 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
-impl<'a> Subject<'a> {
+impl<'a, 'b> Subject<'a, 'b> {
     fn parse_inline(&mut self, node: &'a Node<'a, AstCell>) -> bool {
         let new_inl: Option<&'a Node<'a, AstCell>>;
         let c = match self.peek_char() {
@@ -1182,7 +1188,7 @@ impl<'a> Subject<'a> {
         self.pos >= self.input.len()
     }
 
-    fn peek_char<'b>(&'b self) -> Option<&'b char> {
+    fn peek_char<'x>(&'x self) -> Option<&'x char> {
         self.input.get(self.pos).map(|c| {
             assert!(*c > '\0');
             c
@@ -1565,6 +1571,37 @@ impl<'a> Subject<'a> {
             } else {
                 self.pos = after_link_text_pos;
             }
+        }
+
+        let mut lab = match self.link_label() {
+            Some(lab) => {
+                if lab.len() == 0 {
+                    None
+                } else {
+                    Some(lab.to_vec())
+                }
+            }
+            None => None,
+        };
+
+        if !lab.is_some() {
+            self.pos = initial_pos;
+        }
+
+        if !lab.is_some() && !self.brackets[brackets_len - 1].bracket_after {
+            lab = Some(self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]
+                .to_vec());
+        }
+
+        let reff: Option<Reference> = if let Some(lab) = lab {
+            self.refmap.get(&lab).map(|c| c.clone())
+        } else {
+            None
+        };
+
+        if let Some(reff) = reff {
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
+            return None;
         }
 
         self.brackets.pop();
