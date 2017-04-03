@@ -6,7 +6,7 @@ use ::{NodeValue, Node, AstCell, ListType, std};
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>) -> String {
     let mut f = HtmlFormatter::new();
-    f.format(root);
+    f.format(root, false);
     String::from_utf8(f.v).unwrap()
 }
 
@@ -102,19 +102,31 @@ impl HtmlFormatter {
         }
     }
 
-    fn format_children<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+    fn format_children<'a>(&mut self, node: &'a Node<'a, AstCell>, plain: bool) {
         for n in node.children() {
-            self.format(n);
+            self.format(n, plain);
         }
     }
 
-    fn format<'a>(&mut self, node: &'a Node<'a, AstCell>) {
-        self.format_node(node, true);
-        self.format_children(node);
-        self.format_node(node, false);
+    fn format<'a>(&mut self, node: &'a Node<'a, AstCell>, plain: bool) {
+        if plain {
+            match &node.data.borrow().value {
+                &NodeValue::Text(ref literal) |
+                &NodeValue::Code(ref literal) |
+                &NodeValue::HtmlInline(ref literal) => self.escape(literal),
+                &NodeValue::LineBreak |
+                &NodeValue::SoftBreak => self.v.push(' ' as u8),
+                _ => (),
+            }
+            self.format_children(node, true);
+        } else {
+            let new_plain = self.format_node(node, true);
+            self.format_children(node, new_plain);
+            self.format_node(node, false);
+        }
     }
 
-    fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) {
+    fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
         match &node.data.borrow().value {
             &NodeValue::Document => (),
             &NodeValue::BlockQuote => {
@@ -274,6 +286,7 @@ impl HtmlFormatter {
                     write!(self, "<img src=\"").unwrap();
                     self.escape_href(&nl.url);
                     write!(self, "\" alt=\"").unwrap();
+                    return true;
                 } else {
                     if nl.title.len() > 0 {
                         write!(self, "\" title=\"").unwrap();
@@ -283,5 +296,6 @@ impl HtmlFormatter {
                 }
             }
         }
+        false
     }
 }

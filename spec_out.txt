@@ -789,15 +789,6 @@ Example 475 (lines 7373-7377) Links
 -<p><a href="/url%C2%A0%22title%22">link</a></p>
 +<p><a href="/url&#xc2;&#xa0;&#x22;title&#x22;">link</a></p>
 
-Example 488 (lines 7496-7500) Links
-![[[foo](uri1)](uri2)](uri3)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="uri3" alt="[foo](uri2)" /></p>
-+<p><img src="uri3" alt="[<a href="uri1">foo</a>](uri2)" /></p>
-
 Example 494 (lines 7547-7551) Links
 [foo<http://example.com/?search=](uri)>
 
@@ -1309,24 +1300,6 @@ Example 541 (lines 8140-8146) Images
 +<p>![foo <em>bar</em>]</p>
 +<p>[foo <em>bar</em>]: train.jpg &quot;train &amp; tracks&quot;</p>
 
-Example 542 (lines 8149-8153) Images
-![foo ![bar](/url)](/url2)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url2" alt="foo bar" /></p>
-+<p><img src="/url2" alt="foo <img src="/url" alt="bar" />" /></p>
-
-Example 543 (lines 8156-8160) Images
-![foo [bar](/url)](/url2)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url2" alt="foo bar" /></p>
-+<p><img src="/url2" alt="foo <a href="/url">bar</a>" /></p>
-
 Example 544 (lines 8170-8176) Images
 ![foo *bar*][]
 
@@ -1493,4 +1466,4 @@ Example 571 (lines 8446-8450) Autolinks
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 +<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
-507 passed, 114 failed, 0 errored, 0 skipped
+510 passed, 111 failed, 0 errored, 0 skipped
