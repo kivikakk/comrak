@@ -67,7 +67,7 @@ const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 struct Parser<'a> {
     arena: &'a Arena<Node<'a, AstCell>>,
-    refmap: HashMap<String, Reference>,
+    refmap: HashMap<Vec<char>, Reference>,
     root: &'a Node<'a, AstCell>,
     current: &'a Node<'a, AstCell>,
     line_number: u32,
@@ -737,18 +737,18 @@ impl<'a> Parser<'a> {
 
     fn finalize_document(&mut self) {
         while !self.current.same_node(self.root) {
-            self.current = self.finalize(&self.current).unwrap();
+            self.current = self.finalize(self.current).unwrap();
         }
 
         self.finalize(self.root);
         self.process_inlines();
     }
 
-    fn finalize(&self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
+    fn finalize(&mut self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
-    fn finalize_borrowed(&self,
+    fn finalize_borrowed(&mut self,
                          node: &'a Node<'a, AstCell>,
                          ast: &mut Ast)
                          -> Option<&'a Node<'a, AstCell>> {
@@ -780,10 +780,12 @@ impl<'a> Parser<'a> {
         let content = &mut ast.content;
         let mut pos = 0;
 
+        let parent = node.parent();
+
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
                 while content.get(0) == Some(&'[') &&
-                      unwrap_into(parse_reference_inline(self.arena, content, &self.refmap),
+                      unwrap_into(parse_reference_inline(self.arena, content, &mut self.refmap),
                                   &mut pos) {
                     for i in 0..pos {
                         content.remove(0);
@@ -860,7 +862,7 @@ impl<'a> Parser<'a> {
             _ => (),
         }
 
-        node.parent()
+        parent
     }
 
     fn process_inlines(&mut self) {
@@ -906,7 +908,7 @@ impl<'a> Parser<'a> {
 
 fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                               content: &[char],
-                              refmap: &HashMap<String, Reference>)
+                              refmap: &mut HashMap<Vec<char>, Reference>)
                               -> Option<usize> {
     let mut subj = Subject {
         arena: arena,
@@ -921,9 +923,53 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     let lab = match subj.link_label() {
         Some(lab) => if lab.len() == 0 { return None } else { lab },
         None => return None,
+    }.to_vec();
+
+    if subj.peek_char() != Some(&':') {
+        return None;
+    }
+
+    subj.pos += 1;
+    subj.spnl();
+    let matchlen = match manual_scan_link_url(&subj.input[subj.pos..]) {
+        Some(matchlen) => matchlen,
+        None => return None,
+    };
+    let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
+    subj.pos += matchlen;
+
+    let beforetitle = subj.pos;
+    subj.spnl();
+    let title = match scanners::link_title(&subj.input[subj.pos..]) {
+        Some(matchlen) => {
+            let t = &subj.input[subj.pos..subj.pos + matchlen];
+            subj.pos += matchlen;
+            t.to_vec()
+        }
+        _ => {
+            subj.pos = beforetitle;
+            vec![]
+        }
     };
 
-    None
+    subj.skip_spaces();
+    if !subj.skip_line_end() {
+        if title.len() > 0 {
+            subj.pos = beforetitle;
+            subj.skip_spaces();
+            if !subj.skip_line_end() {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    refmap.insert(lab, Reference {
+        url: url,
+        title: title,
+    });
+    Some(subj.pos)
 }
 
 struct Subject<'a> {
@@ -1603,6 +1649,13 @@ impl<'a> Subject<'a> {
         } else {
             self.pos = startpos;
             None
+        }
+    }
+
+    fn spnl(&mut self) {
+        self.skip_spaces();
+        if self.skip_line_end() {
+            self.skip_spaces();
         }
     }
 }
