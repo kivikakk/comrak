@@ -18,7 +18,7 @@ pub enum NodeValue {
     Text(Vec<char>),
     SoftBreak,
     LineBreak,
-    Code,
+    Code(Vec<char>),
     HtmlInline,
     CustomInline,
     Emph,

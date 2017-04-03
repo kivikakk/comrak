@@ -161,9 +161,10 @@ impl HtmlFormatter {
                 // TODO: if HARDBREAKS option set.
                 write!(self, "\n").unwrap();
             }
-            &NodeValue::Code => {
-                assert!(false)
-                // TODO
+            &NodeValue::Code(ref literal) => {
+                write!(self, "<code>").unwrap();
+                self.escape(literal);
+                write!(self, "</code>").unwrap();
             }
             &NodeValue::HtmlInline => {
                 assert!(false)

@@ -178,5 +178,6 @@ fn html_block_7() {
 
 #[test]
 fn backticks() {
-    compare("Some `code\\` yep.", "<p>Some <code>code\\</code> yep.</p>");
+    compare("Some `code\\` yep.\n",
+            "<p>Some <code>code\\</code> yep.</p>\n");
 }
