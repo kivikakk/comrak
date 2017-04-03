@@ -58,6 +58,7 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 
 const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
+const MAXBACKTICKS: usize = 80;
 
 struct Parser<'a> {
     arena: &'a Arena<Node<'a, AstCell>>,
@@ -874,6 +875,8 @@ impl<'a> Parser<'a> {
             input: node.data.borrow().content.clone(),
             pos: 0,
             delimiters: vec![],
+            backticks: [0; MAXBACKTICKS + 1],
+            scanned_for_backticks: false,
         };
         rtrim(&mut subj.input);
 
@@ -1017,6 +1020,7 @@ impl<'a> Parser<'a> {
         match c {
             '\0' => return false,
             '\r' | '\n' => new_inl = Some(subj.handle_newline()),
+            '`' => new_inl = Some(subj.handle_backticks()),
             '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c)),
             // TODO
             _ => {
@@ -1079,6 +1083,8 @@ struct Subject<'a> {
     input: Vec<char>,
     pos: usize,
     delimiters: Vec<Delimiter<'a>>,
+    backticks: [usize; MAXBACKTICKS + 1],
+    scanned_for_backticks: bool,
 }
 
 impl<'a> Subject<'a> {
@@ -1104,9 +1110,9 @@ impl<'a> Subject<'a> {
                 '_',
                 '*',
                 '"',
+                '`',
                 /* TODO
                 '\\',
-                '`',
                 '&',
                 '[',
                 ']',
@@ -1138,6 +1144,60 @@ impl<'a> Subject<'a> {
             make_inline(self.arena, NodeValue::LineBreak)
         } else {
             make_inline(self.arena, NodeValue::SoftBreak)
+        }
+    }
+
+    fn take_while(&mut self, c: char) -> Vec<char> {
+        let mut v = vec![];
+        while self.peek_char().map_or(false, |&ch| ch == c) {
+            v.push(self.input[self.pos]);
+            self.pos += 1;
+        }
+        v
+    }
+
+    fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
+        if openticklength > MAXBACKTICKS {
+            return None;
+        }
+
+        if self.scanned_for_backticks && self.backticks[openticklength] <= self.pos {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != '`') {
+                self.pos += 1;
+            }
+            if self.pos >= self.input.len() {
+                self.scanned_for_backticks = true;
+                return None;
+            }
+            let numticks = self.take_while('`').len();
+            if numticks <= MAXBACKTICKS {
+                self.backticks[numticks] = self.pos - numticks;
+            }
+            if numticks == openticklength {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    fn handle_backticks(&mut self) -> &'a Node<'a, AstCell> {
+        let openticks = self.take_while('`');
+        let startpos = self.pos;
+        let endpos = self.scan_to_closing_backtick(openticks.len());
+
+        match endpos {
+            None => {
+                self.pos = startpos;
+                return make_inline(self.arena, NodeValue::Text(openticks));
+            }
+            Some(endpos) => {
+                let mut buf = self.input[startpos..endpos - openticks.len()].to_vec();
+                normalize_whitespace(&mut buf);
+                make_inline(self.arena, NodeValue::Code(buf))
+            }
         }
     }
 
@@ -1525,4 +1585,27 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter &&
     list_data.bullet_char == item_data.bullet_char
+}
+
+fn normalize_whitespace(v: &mut Vec<char>) {
+    let mut last_char_was_space = false;
+    let mut r = 0;
+    let mut w = 0;
+
+    while r < v.len() {
+        if isspace(&v[r]) {
+            if !last_char_was_space {
+                v[w] = ' ';
+                w += 1;
+                last_char_was_space = true;
+            }
+        } else {
+            v[w] = v[r];
+            w += 1;
+            last_char_was_space = false;
+        }
+        r += 1;
+    }
+
+    v.truncate(w);
 }

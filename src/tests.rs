@@ -25,7 +25,15 @@ fn compare(input: &str, expected: &str) {
 
 #[test]
 fn basic() {
-    compare("My **document**.\n\nIt's mine.\n\n> Yes.\n\n## Hi!\n\nOkay.\n",
+    compare(concat!("My **document**.\n",
+                    "\n",
+                    "It's mine.\n",
+                    "\n",
+                    "> Yes.\n",
+                    "\n",
+                    "## Hi!\n",
+                    "\n",
+                    "Okay.\n"),
             concat!("<p>My <strong>document</strong>.</p>\n",
                     "<p>It's mine.</p>\n",
                     "<blockquote>\n",
@@ -37,39 +45,53 @@ fn basic() {
 
 #[test]
 fn codefence() {
-    compare("``` rust\nfn main<'a>();\n```\n",
+    compare(concat!("``` rust\n", "fn main<'a>();\n", "```\n"),
             concat!("<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n",
                     "</code></pre>\n"));
 }
 
 #[test]
 fn lists() {
-    compare("2. Hello.\n3. Hi.\n",
+    compare(concat!("2. Hello.\n", "3. Hi.\n"),
             concat!("<ol start=\"2\">\n",
                     "<li>Hello.</li>\n",
                     "<li>Hi.</li>\n",
                     "</ol>\n"));
 
-    compare("- Hello.\n- Hi.\n",
+    compare(concat!("- Hello.\n", "- Hi.\n"),
             concat!("<ul>\n", "<li>Hello.</li>\n", "<li>Hi.</li>\n", "</ul>\n"));
 }
 
 #[test]
 fn thematic_breaks() {
-    compare("---\n\n- - -\n\n\n_        _   _\n",
+    compare(concat!("---\n", "\n", "- - -\n", "\n", "\n", "_        _   _\n"),
             concat!("<hr />\n", "<hr />\n", "<hr />\n"));
 }
 
 #[test]
 fn setext_heading() {
-    compare("Hi\n==\n\nOk\n-----\n",
+    compare(concat!("Hi\n", "==\n", "\n", "Ok\n", "-----\n"),
             concat!("<h1>Hi</h1>\n", "<h2>Ok</h2>\n"));
 }
 
 #[test]
 fn html_block_1() {
-    compare("<script\n*ok* </script> *ok*\n\n*ok*\n\n*ok*\n\n\
-<pre x>\n*ok*\n</style>\n*ok*\n<style>\n*ok*\n</style>\n\n*ok*\n",
+    compare(concat!("<script\n",
+                    "*ok* </script> *ok*\n",
+                    "\n",
+                    "*ok*\n",
+                    "\n",
+                    "*ok*\n",
+                    "\n",
+                    "<pre x>\n",
+                    "*ok*\n",
+                    "</style>\n",
+                    "*ok*\n",
+                    "<style>\n",
+                    "*ok*\n",
+                    "</style>\n",
+                    "\n",
+                    "*ok*\n"),
             concat!("<script\n",
                     "*ok* </script> *ok*\n",
                     "<p><em>ok</em></p>\n",
@@ -86,7 +108,7 @@ fn html_block_1() {
 
 #[test]
 fn html_block_2() {
-    compare("   <!-- abc\n\nok --> *hi*\n*hi*\n",
+    compare(concat!("   <!-- abc\n", "\n", "ok --> *hi*\n", "*hi*\n"),
             concat!("   <!-- abc\n",
                     "\n",
                     "ok --> *hi*\n",
@@ -95,19 +117,24 @@ fn html_block_2() {
 
 #[test]
 fn html_block_3() {
-    compare(" <? o\nk ?> *a*\n*a*\n",
+    compare(concat!(" <? o\n", "k ?> *a*\n", "*a*\n"),
             concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"));
 }
 
 #[test]
 fn html_block_4() {
-    compare("<!X >\nok\n<!X\num > h\nok\n",
+    compare(concat!("<!X >\n", "ok\n", "<!X\n", "um > h\n", "ok\n"),
             concat!("<!X >\n", "<p>ok</p>\n", "<!X\n", "um > h\n", "<p>ok</p>\n"));
 }
 
 #[test]
 fn html_block_5() {
-    compare("<![CDATA[\n\nhm >\n*ok*\n]]> *ok*\n*ok*\n",
+    compare(concat!("<![CDATA[\n",
+                    "\n",
+                    "hm >\n",
+                    "*ok*\n",
+                    "]]> *ok*\n",
+                    "*ok*\n"),
             concat!("<![CDATA[\n",
                     "\n",
                     "hm >\n",
@@ -118,7 +145,7 @@ fn html_block_5() {
 
 #[test]
 fn html_block_6() {
-    compare(" </table>\n*x*\n\nok\n\n<li\n*x*\n",
+    compare(concat!(" </table>\n", "*x*\n", "\n", "ok\n", "\n", "<li\n", "*x*\n"),
             concat!(" </table>\n", "*x*\n", "<p>ok</p>\n", "<li\n", "*x*\n"));
 }
 
@@ -126,7 +153,15 @@ fn html_block_6() {
 fn html_block_7() {
     // XXX: relies too much on entity conversion and inlines
     //
-    // compare("<a b >\nok\n\n<a b=>\nok\n\n<a b \n<a b> c\nok\n",
+    // compare(concat!("<a b >\n",
+    // "ok\n",
+    // "\n",
+    // "<a b=>\n",
+    // "ok\n",
+    // "\n",
+    // "<a b \n",
+    // "<a b> c\n",
+    // "ok\n"),
     // concat!("<a b >\n",
     // "ok\n",
     // "<p>&lt;a b=&gt;\n",
@@ -137,6 +172,12 @@ fn html_block_7() {
     //
 
 
-    compare("<a b c=x d='y' z=\"f\" >\nok\n\nok\n",
+    compare(concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "\n", "ok\n"),
             concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "<p>ok</p>\n"));
+}
+
+#[test]
+fn backticks() {
+    compare("Some `code\\` yep.\n",
+            "<p>Some <code>code\\</code> yep.</p>\n");
 }

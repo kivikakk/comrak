@@ -51,8 +51,12 @@ impl HtmlFormatter {
 
         for c in buffer {
             match ESCAPE_TABLE.get(c) {
-                Some(s) => { self.write(s.as_bytes()).unwrap(); },
-                None => { write!(self, "{}", c).unwrap(); },
+                Some(s) => {
+                    self.write(s.as_bytes()).unwrap();
+                }
+                None => {
+                    write!(self, "{}", c).unwrap();
+                }
             };
         }
     }
@@ -157,9 +161,10 @@ impl HtmlFormatter {
                 // TODO: if HARDBREAKS option set.
                 write!(self, "\n").unwrap();
             }
-            &NodeValue::Code => {
-                assert!(false)
-                // TODO
+            &NodeValue::Code(ref literal) => {
+                write!(self, "<code>").unwrap();
+                self.escape(literal);
+                write!(self, "</code>").unwrap();
             }
             &NodeValue::HtmlInline => {
                 assert!(false)
