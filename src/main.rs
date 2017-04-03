@@ -800,16 +800,15 @@ impl<'a> Parser<'a> {
                     }
                     assert!(pos < content.len());
 
-                    // TODO: unescape HTML, etc.
-                    let mut tmp = content[0..pos].to_vec();
+                    let mut tmp = entity::unescape_html(&content[..pos]);
                     trim(&mut tmp);
+                    unescape(&mut tmp);
                     ncb.info = tmp;
 
-                    // TODO: boundscheck lol
-                    if content[pos] == '\r' {
+                    if content.get(pos) == Some(&'\r') {
                         pos += 1;
                     }
-                    if content[pos] == '\n' {
+                    if content.get(pos) == Some(&'\n') {
                         pos += 1;
                     }
 
@@ -1715,4 +1714,24 @@ fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
 
     buf.extend_from_slice(&entity::unescape_html(&url_vec));
     buf
+}
+
+fn unescape(v: &mut Vec<char>) {
+    let mut r = 0;
+    let mut w = 0;
+    let sz = v.len();
+
+    while r < sz {
+        if v[r] == '\\' && r + 1 < sz && ispunct(&v[r + 1]) {
+            r += 1;
+        }
+        if r >= sz {
+            break;
+        }
+        v[w] = v[r];
+        w += 1;
+        r += 1;
+    }
+
+    v.truncate(w);
 }

@@ -754,18 +754,6 @@ Example 298 (lines 5458-5464) Backslash escapes
 +<p>[foo]</p>
 +<p>[foo]: /bar* &quot;ti*tle&quot;</p>
 
-Example 299 (lines 5467-5474) Backslash escapes
-``` foo\+bar
-foo
-```
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<pre><code class="language-foo+bar">foo
-+<pre><code class="language-foo\+bar">foo
- </code></pre>
-
 Example 307 (lines 5576-5580) Entity and numeric character references
 [foo](/f&ouml;&ouml; "f&ouml;&ouml;")
 
@@ -786,18 +774,6 @@ Example 308 (lines 5583-5589) Entity and numeric character references
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 +<p>[foo]</p>
 +<p>[foo]: /föö &quot;föö&quot;</p>
-
-Example 309 (lines 5592-5599) Entity and numeric character references
-``` f&ouml;&ouml;
-foo
-```
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<pre><code class="language-föö">foo
-+<pre><code class="language-f&amp;ouml;&amp;ouml;">foo
- </code></pre>
 
 Example 313 (lines 5644-5648) Code spans
 `` foo ` bar  ``
@@ -1909,4 +1885,4 @@ Example 571 (lines 8446-8450) Autolinks
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 +<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
-464 passed, 157 failed, 0 errored, 0 skipped
+466 passed, 155 failed, 0 errored, 0 skipped
