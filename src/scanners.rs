@@ -26,49 +26,49 @@ pub fn atx_heading_start(line: &Vec<char>, from: usize) -> Option<usize> {
     search(&RE, line, from)
 }
 
-pub fn html_block_end_1(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_1(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*</(script|pre|style)>").unwrap();
     }
     search(&RE, line, from)
 }
 
-pub fn html_block_end_2(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_2(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*-->").unwrap();
     }
     search(&RE, line, from)
 }
 
-pub fn html_block_end_3(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_3(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\?>").unwrap();
     }
     search(&RE, line, from)
 }
 
-pub fn html_block_end_4(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_4(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*>").unwrap();
     }
     search(&RE, line, from)
 }
 
-pub fn html_block_end_5(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_5(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\]\]>").unwrap();
     }
     search(&RE, line, from)
 }
 
-pub fn open_code_fence(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn open_code_fence(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[^`\r\n\x00]*[\r\n]").unwrap();
     }
     captures(&RE, line, from, 1)
 }
 
-pub fn close_code_fence(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn close_code_fence(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[ \t]*[\r\n]").unwrap();
     }
@@ -89,7 +89,7 @@ lazy_static! {
     static ref BLOCK_TAG_NAMES_PIPED: String = BLOCK_TAG_NAMES.join("|");
 }
 
-pub fn html_block_start(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_start(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE1: Regex = Regex::new(r"<(script|pre|style)([ \t\v\f\r\n]|>)").unwrap();
         static ref RE2: Regex = Regex::new(r"<!--").unwrap();
@@ -131,7 +131,7 @@ lazy_static! {
     static ref OPEN_TAG: String = format!(r"(?:{}{}*{}*/?>)", *TAG_NAME, *ATTRIBUTE, *SPACE_CHAR);
 }
 
-pub fn html_block_start_7(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_start_7(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             &format!(r"<({}|{})[\t\n\f ]*[\r\n]", *OPEN_TAG, *CLOSE_TAG)).unwrap();
@@ -149,7 +149,7 @@ pub enum SetextChar {
     Hyphen,
 }
 
-pub fn setext_heading_line(line: &mut Vec<char>, from: usize) -> Option<SetextChar> {
+pub fn setext_heading_line(line: &Vec<char>, from: usize) -> Option<SetextChar> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(=+|-+)[ \t]*[\r\n]").unwrap();
     }
@@ -165,10 +165,23 @@ pub fn setext_heading_line(line: &mut Vec<char>, from: usize) -> Option<SetextCh
     }
 }
 
-pub fn thematic_break(line: &mut Vec<char>, from: usize) -> Option<usize> {
+pub fn thematic_break(line: &Vec<char>, from: usize) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             r"((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n]").unwrap();
     }
+    search(&RE, line, from)
+}
+
+lazy_static! {
+    static ref SCHEME: &'static str = r"[A-Za-z][A-Za-z0-9.+-]{1,31}";
+}
+
+pub fn autolink_uri(line: &Vec<char>, from: usize) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            &format!(r"{}:[^\x00-\x20<>]*>", *SCHEME)).unwrap();
+    }
+
     search(&RE, line, from)
 }

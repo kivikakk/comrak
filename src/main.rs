@@ -27,7 +27,7 @@ pub use html::format_document;
 use arena_tree::Node;
 use ctype::{isspace, ispunct, isdigit};
 use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
-           NodeHtmlBlock, make_block};
+           NodeHtmlBlock, NodeLink, make_block};
 
 fn main() {
     let mut buf = vec![];
@@ -1026,6 +1026,7 @@ impl<'a> Parser<'a> {
             '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c)),
             '\\' => new_inl = Some(subj.handle_backslash()),
             '&' => new_inl = Some(subj.handle_entity()),
+            '<' => new_inl = Some(subj.handle_pointy_brace()),
             // TODO
             _ => {
                 let endpos = subj.find_special_char();
@@ -1117,10 +1118,10 @@ impl<'a> Subject<'a> {
                 '`',
                 '\\',
                 '&',
+                '<',
                 /* TODO
                 '[',
                 ']',
-                '<',
                 '!',
                 */
                 ].iter().cloned().collect();
@@ -1396,6 +1397,18 @@ impl<'a> Subject<'a> {
             }
         }
     }
+
+    fn handle_pointy_brace(&mut self) -> &'a Node<'a, AstCell> {
+        self.pos += 1;
+
+        if let Some(matchlen) = scanners::autolink_uri(&self.input, self.pos) {
+            let inl = make_autolink(self.arena, &self.input[self.pos..self.pos + matchlen - 1], AutolinkType::URI);
+            self.pos += matchlen;
+            return inl;
+        }
+
+        make_inline(self.arena, NodeValue::Text(vec!['<']))
+    }
 }
 
 struct Delimiter<'a> {
@@ -1649,4 +1662,36 @@ fn normalize_whitespace(v: &mut Vec<char>) {
     }
 
     v.truncate(w);
+}
+
+#[derive(PartialEq)]
+enum AutolinkType {
+    URI,
+    Email,
+}
+
+fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>, url: &[char], kind: AutolinkType) -> &'a Node<'a, AstCell> {
+    let inl = make_inline(arena, NodeValue::Link(NodeLink {
+        url: clean_autolink(url, kind),
+        title: vec![],
+    }));
+    inl.append(make_inline(arena, NodeValue::Text(entity::unescape_html(url))));
+    inl
+}
+
+fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
+    let mut url_vec = url.to_vec();
+    trim(&mut url_vec);
+
+    if url_vec.len() == 0 {
+        return url_vec;
+    }
+
+    let mut buf = vec![];
+    if kind == AutolinkType::Email {
+        buf.extend_from_slice(&['m', 'a', 'i', 'l', 't', 'o', ':']);
+    }
+
+    buf.extend_from_slice(&entity::unescape_html(&url_vec));
+    buf
 }

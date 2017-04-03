@@ -206,3 +206,9 @@ fn entities() {
             concat!("<p>This is &amp;, ©, ™, &amp;trade;, &amp;xyz;, \u{2242}\u{338}.</p>\n",
                     "<p>∞ ∞</p>\n"));
 }
+
+#[test]
+fn pointy_brace() {
+    compare("URI autolink: <https://www.pixiv.net>\n",
+            "<p>URI autolink: <a href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n");
+}

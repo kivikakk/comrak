@@ -944,7 +944,7 @@ Example 295 (lines 5434-5438) Backslash escapes
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
-+<p>&lt;http://example.com?find=*&gt;</p>
++<p><a href="http://example.com?find=&#x5c;*">http://example.com?find=\*</a></p>
 
 Example 297 (lines 5451-5455) Backslash escapes
 [foo](/bar\* "ti\*tle")
@@ -1057,7 +1057,7 @@ Example 325 (lines 5778-5782) Code spans
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="http://foo.bar.%60baz">http://foo.bar.`baz</a>`</p>
-+<p>&lt;http://foo.bar.<code>baz&gt;</code></p>
++<p><a href="http://foo.bar.&#x60;baz">http://foo.bar.`baz</a>`</p>
 
 Example 331 (lines 6037-6041) Emphasis and strong emphasis
 * a *
@@ -1319,24 +1319,6 @@ __<a href="__">
 @@ -1 +1 @@
 -<p>__<a href="__"></p>
 +__<a href="__">
-
-Example 454 (lines 7099-7103) Emphasis and strong emphasis
-**a<http://foo.bar/?q=**>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>**a<a href="http://foo.bar/?q=**">http://foo.bar/?q=**</a></p>
-+<p><strong>a&lt;http://foo.bar/?q=</strong>&gt;</p>
-
-Example 455 (lines 7106-7110) Emphasis and strong emphasis
-__a<http://foo.bar/?q=__>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>__a<a href="http://foo.bar/?q=__">http://foo.bar/?q=__</a></p>
-+<p><strong>a&lt;http://foo.bar/?q=</strong>&gt;</p>
 
 Example 456 (lines 7185-7189) Links
 [link](/uri "title")
@@ -1634,7 +1616,7 @@ Example 494 (lines 7547-7551) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
-+<p>[foo&lt;http://example.com/?search=](uri)&gt;</p>
++<p>[foo<a href="http://example.com/?search=&#x5d;(uri)">http://example.com/?search=](uri)</a></p>
 
 Example 495 (lines 7582-7588) Links
 [foo][bar]
@@ -1776,7 +1758,7 @@ Example 506 (lines 7700-7706) Links
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
-+<p>[foo&lt;http://example.com/?search=][ref]&gt;</p>
++<p>[foo<a href="http://example.com/?search=&#x5d;&#x5b;ref&#x5d;">http://example.com/?search=][ref]</a></p>
 +<p>[ref]: /uri</p>
 
 Example 507 (lines 7711-7717) Links
@@ -2360,78 +2342,6 @@ Example 561 (lines 8339-8345) Images
 +<p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
-Example 562 (lines 8372-8376) Autolinks
-<http://foo.bar.baz>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://foo.bar.baz">http://foo.bar.baz</a></p>
-+<p>&lt;http://foo.bar.baz&gt;</p>
-
-Example 563 (lines 8379-8383) Autolinks
-<http://foo.bar.baz/test?q=hello&id=22&boolean>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean">http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean</a></p>
-+<p>&lt;http://foo.bar.baz/test?q=hello&amp;id=22&amp;boolean&gt;</p>
-
-Example 564 (lines 8386-8390) Autolinks
-<irc://foo.bar:2233/baz>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="irc://foo.bar:2233/baz">irc://foo.bar:2233/baz</a></p>
-+<p>&lt;irc://foo.bar:2233/baz&gt;</p>
-
-Example 565 (lines 8395-8399) Autolinks
-<MAILTO:FOO@BAR.BAZ>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="MAILTO:FOO@BAR.BAZ">MAILTO:FOO@BAR.BAZ</a></p>
-+<p>&lt;MAILTO:FOO@BAR.BAZ&gt;</p>
-
-Example 566 (lines 8407-8411) Autolinks
-<a+b+c:d>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="a+b+c:d">a+b+c:d</a></p>
-+<p>&lt;a+b+c:d&gt;</p>
-
-Example 567 (lines 8414-8418) Autolinks
-<made-up-scheme://foo,bar>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="made-up-scheme://foo,bar">made-up-scheme://foo,bar</a></p>
-+<p>&lt;made-up-scheme://foo,bar&gt;</p>
-
-Example 568 (lines 8421-8425) Autolinks
-<http://../>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://../">http://../</a></p>
-+<p>&lt;http://../&gt;</p>
-
-Example 569 (lines 8428-8432) Autolinks
-<localhost:5001/foo>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="localhost:5001/foo">localhost:5001/foo</a></p>
-+<p>&lt;localhost:5001/foo&gt;</p>
-
 Example 571 (lines 8446-8450) Autolinks
 <http://example.com/\[\>
 
@@ -2439,7 +2349,7 @@ Example 571 (lines 8446-8450) Autolinks
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
-+<p>&lt;http://example.com/[&gt;</p>
++<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
 Example 572 (lines 8468-8472) Autolinks
 <foo@bar.example.com>
@@ -2622,4 +2532,4 @@ bar">
 +<p>&lt;a href=&quot;foo<br />
 +bar&quot;&gt;</p>
 
-398 passed, 223 failed, 0 errored, 0 skipped
+408 passed, 213 failed, 0 errored, 0 skipped

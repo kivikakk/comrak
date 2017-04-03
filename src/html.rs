@@ -24,6 +24,16 @@ impl Write for HtmlFormatter {
     }
 }
 
+lazy_static! {
+    static ref HREF_SAFE: [bool; 256] = {
+        let mut a = [false; 256];
+        for &c in "-_.+!*'(),%#@?=;:/,+&$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".as_bytes() {
+            a[c as usize] = true;
+        }
+        a
+    };
+}
+
 impl HtmlFormatter {
     fn new() -> Self {
         HtmlFormatter { v: vec![] }
@@ -36,7 +46,7 @@ impl HtmlFormatter {
         }
     }
 
-    fn escape(&mut self, buffer: &Vec<char>) {
+    fn escape(&mut self, buffer: &[char]) {
         lazy_static! {
             static ref ESCAPE_TABLE: BTreeMap<char, &'static str> = BTreeMap::from_iter(
                 vec![('"', "&quot;"),
@@ -58,6 +68,36 @@ impl HtmlFormatter {
                     write!(self, "{}", c).unwrap();
                 }
             };
+        }
+    }
+
+    fn escape_href(&mut self, buffer: &[char]) {
+        let s = buffer.into_iter().collect::<String>();
+        let src = s.as_bytes();
+        let size = src.len();
+        let mut i = 0;
+
+        while i < size {
+            let org = i;
+            while i < size && HREF_SAFE[src[i] as usize] {
+                i += 1;
+            }
+
+            if i > org {
+                self.v.extend_from_slice(&src[org..i]);
+            }
+
+            if i >= size {
+                break
+            }
+
+            match src[i] as char {
+                '&' => write!(self, "&amp;").unwrap(),
+                '\'' => write!(self, "&#x27;").unwrap(),
+                _ => write!(self, "&#x{:x};", src[i]).unwrap(),
+            }
+
+            i += 1;
         }
     }
 
@@ -184,9 +224,16 @@ impl HtmlFormatter {
                 self.format_children(node);
                 write!(self, "</em>").unwrap();
             }
-            &NodeValue::Link => {
-                assert!(false)
-                // TODO
+            &NodeValue::Link(ref nl) => {
+                write!(self, "<a href=\"").unwrap();
+                self.escape_href(&nl.url);
+                if nl.title.len() > 0 {
+                    write!(self, "\" title=\"").unwrap();
+                    self.escape(&nl.title);
+                }
+                write!(self, "\">").unwrap();
+                self.format_children(node);
+                write!(self, "</a>").unwrap();
             }
             &NodeValue::Image => {
                 assert!(false)

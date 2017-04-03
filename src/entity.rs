@@ -82,3 +82,39 @@ fn lookup(text: &str) -> Option<Vec<char>> {
         }
     }
 }
+
+pub fn unescape_html(src: &[char]) -> Vec<char> {
+    let mut i = 0;
+    let mut v: Vec<char> = vec![];
+    let size = src.len();
+
+    while i < size {
+        let org = i;
+        while i < size && src[i] != '&' {
+            i += 1;
+        }
+
+        if i > org {
+            if org == 0 && i >= size {
+                return src.to_vec();
+            }
+
+            v.extend_from_slice(&src[org..i]);
+        }
+
+        if i >= size {
+            return v;
+        }
+
+        i += 1;
+        match unescape(&src[i..]) {
+            Some((chs, size)) => {
+                v.extend_from_slice(&chs);
+                i += size;
+            }
+            None => v.push('&'),
+        }
+    }
+
+    v
+}

@@ -23,8 +23,14 @@ pub enum NodeValue {
     CustomInline,
     Emph,
     Strong,
-    Link,
+    Link(NodeLink),
     Image,
+}
+
+#[derive(Debug, Clone)]
+pub struct NodeLink {
+    pub url: Vec<char>,
+    pub title: Vec<char>,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -190,7 +196,7 @@ impl<'a> Node<'a, AstCell> {
             NodeValue::Heading(..) |
             NodeValue::Emph |
             NodeValue::Strong |
-            NodeValue::Link |
+            NodeValue::Link(..) |
             NodeValue::Image |
             NodeValue::CustomInline => !child.block(),
 
