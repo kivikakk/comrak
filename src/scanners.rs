@@ -1,12 +1,12 @@
 use regex::Regex;
 
-fn search(re: &Regex, line: &Vec<char>, from: usize) -> Option<usize> {
-    let s: String = line[from..].iter().collect();
+fn search(re: &Regex, line: &[char]) -> Option<usize> {
+    let s: String = line.iter().collect();
     re.find(&s).map(|m| m.as_str().chars().count())
 }
 
-fn captures(re: &Regex, line: &Vec<char>, from: usize, ix: usize) -> Option<usize> {
-    let s: String = line[from..].iter().collect();
+fn captures(re: &Regex, line: &[char], ix: usize) -> Option<usize> {
+    let s: String = line.iter().collect();
     let c = match re.captures(&s) {
         Some(c) => c,
         None => return None,
@@ -14,65 +14,65 @@ fn captures(re: &Regex, line: &Vec<char>, from: usize, ix: usize) -> Option<usiz
     c.get(ix).map(|m| m.as_str().chars().count())
 }
 
-fn is_match(re: &Regex, line: &Vec<char>, from: usize) -> bool {
-    let s: String = line[from..].iter().collect();
+fn is_match(re: &Regex, line: &[char]) -> bool {
+    let s: String = line.iter().collect();
     re.is_match(&s)
 }
 
-pub fn atx_heading_start(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn atx_heading_start(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"#{1,6}([ \t]+|[\r\n])").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn html_block_end_1(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_1(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*</(script|pre|style)>").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn html_block_end_2(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_2(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*-->").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn html_block_end_3(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_3(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\?>").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn html_block_end_4(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_4(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*>").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn html_block_end_5(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_end_5(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r".*\]\]>").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
-pub fn open_code_fence(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn open_code_fence(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[^`\r\n\x00]*[\r\n]").unwrap();
     }
-    captures(&RE, line, from, 1)
+    captures(&RE, line, 1)
 }
 
-pub fn close_code_fence(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn close_code_fence(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(```+|~~~+)[ \t]*[\r\n]").unwrap();
     }
-    captures(&RE, line, from, 1)
+    captures(&RE, line, 1)
 }
 
 lazy_static! {
@@ -89,7 +89,7 @@ lazy_static! {
     static ref BLOCK_TAG_NAMES_PIPED: String = BLOCK_TAG_NAMES.join("|");
 }
 
-pub fn html_block_start(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_start(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE1: Regex = Regex::new(r"<(script|pre|style)([ \t\v\f\r\n]|>)").unwrap();
         static ref RE2: Regex = Regex::new(r"<!--").unwrap();
@@ -100,17 +100,17 @@ pub fn html_block_start(line: &Vec<char>, from: usize) -> Option<usize> {
             &format!(r"</?({})([ \t\v\f\r\n]|/?>)", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
-    if is_match(&RE1, line, from) {
+    if is_match(&RE1, line) {
         Some(1)
-    } else if is_match(&RE2, line, from) {
+    } else if is_match(&RE2, line) {
         Some(2)
-    } else if is_match(&RE3, line, from) {
+    } else if is_match(&RE3, line) {
         Some(3)
-    } else if is_match(&RE4, line, from) {
+    } else if is_match(&RE4, line) {
         Some(4)
-    } else if is_match(&RE5, line, from) {
+    } else if is_match(&RE5, line) {
         Some(5)
-    } else if is_match(&RE6, line, from) {
+    } else if is_match(&RE6, line) {
         Some(6)
     } else {
         None
@@ -131,13 +131,13 @@ lazy_static! {
     static ref OPEN_TAG: String = format!(r"(?:{}{}*{}*/?>)", *TAG_NAME, *ATTRIBUTE, *SPACE_CHAR);
 }
 
-pub fn html_block_start_7(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn html_block_start_7(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             &format!(r"<({}|{})[\t\n\f ]*[\r\n]", *OPEN_TAG, *CLOSE_TAG)).unwrap();
     }
 
-    if is_match(&RE, line, from) {
+    if is_match(&RE, line) {
         Some(7)
     } else {
         None
@@ -149,13 +149,13 @@ pub enum SetextChar {
     Hyphen,
 }
 
-pub fn setext_heading_line(line: &Vec<char>, from: usize) -> Option<SetextChar> {
+pub fn setext_heading_line(line: &[char]) -> Option<SetextChar> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(=+|-+)[ \t]*[\r\n]").unwrap();
     }
 
-    if is_match(&RE, line, from) {
-        if line[from] == '=' {
+    if is_match(&RE, line) {
+        if line[0] == '=' {
             Some(SetextChar::Equals)
         } else {
             Some(SetextChar::Hyphen)
@@ -165,23 +165,23 @@ pub fn setext_heading_line(line: &Vec<char>, from: usize) -> Option<SetextChar> 
     }
 }
 
-pub fn thematic_break(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn thematic_break(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             r"((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n]").unwrap();
     }
-    search(&RE, line, from)
+    search(&RE, line)
 }
 
 lazy_static! {
     static ref SCHEME: &'static str = r"[A-Za-z][A-Za-z0-9.+-]{1,31}";
 }
 
-pub fn autolink_uri(line: &Vec<char>, from: usize) -> Option<usize> {
+pub fn autolink_uri(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             &format!(r"{}:[^\x00-\x20<>]*>", *SCHEME)).unwrap();
     }
 
-    search(&RE, line, from)
+    search(&RE, line)
 }

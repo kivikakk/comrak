@@ -317,7 +317,7 @@ impl<'a> Parser<'a> {
                 *container =
                     self.add_child(*container, NodeValue::BlockQuote, blockquote_startpos + 1);
             } else if !indented &&
-                      unwrap_into(scanners::atx_heading_start(line, self.first_nonspace),
+                      unwrap_into(scanners::atx_heading_start(&line[self.first_nonspace..]),
                                   &mut matched) {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
@@ -341,7 +341,7 @@ impl<'a> Parser<'a> {
                 });
 
             } else if !indented &&
-                      unwrap_into(scanners::open_code_fence(line, self.first_nonspace),
+                      unwrap_into(scanners::open_code_fence(&line[self.first_nonspace..]),
                                   &mut matched) {
                 let first_nonspace = self.first_nonspace;
                 let offset = self.offset;
@@ -357,12 +357,12 @@ impl<'a> Parser<'a> {
                     self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented &&
-                      unwrap_into(scanners::html_block_start(line, self.first_nonspace),
+                      unwrap_into(scanners::html_block_start(&line[self.first_nonspace..]),
                                   &mut matched) ||
                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => false,
                 _ => {
-                    unwrap_into(scanners::html_block_start_7(line, self.first_nonspace),
+                    unwrap_into(scanners::html_block_start_7(&line[self.first_nonspace..]),
                                 &mut matched)
                 }
             } {
@@ -376,7 +376,7 @@ impl<'a> Parser<'a> {
             } else if !indented &&
                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => {
-                    unwrap_into(scanners::setext_heading_line(line, self.first_nonspace),
+                    unwrap_into(scanners::setext_heading_line(&line[self.first_nonspace..]),
                                 &mut sc)
                 }
                 _ => false,
@@ -394,7 +394,7 @@ impl<'a> Parser<'a> {
                       match (&container.data.borrow().value, all_matched) {
                 (&NodeValue::Paragraph, false) => false,
                 _ => {
-                    unwrap_into(scanners::thematic_break(line, self.first_nonspace),
+                    unwrap_into(scanners::thematic_break(&line[self.first_nonspace..]),
                                 &mut matched)
                 }
             } {
@@ -559,7 +559,7 @@ impl<'a> Parser<'a> {
         let matched = if self.indent <= 3 &&
                          peek_at(line, self.first_nonspace)
             .map_or(false, |&c| c == ncb.fence_char) {
-            scanners::close_code_fence(line, self.first_nonspace).unwrap_or(0)
+            scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
         };
@@ -659,11 +659,11 @@ impl<'a> Parser<'a> {
                     self.add_line(container, line);
 
                     let matches_end_condition = match nhb.block_type {
-                        1 => scanners::html_block_end_1(line, self.first_nonspace).is_some(),
-                        2 => scanners::html_block_end_2(line, self.first_nonspace).is_some(),
-                        3 => scanners::html_block_end_3(line, self.first_nonspace).is_some(),
-                        4 => scanners::html_block_end_4(line, self.first_nonspace).is_some(),
-                        5 => scanners::html_block_end_5(line, self.first_nonspace).is_some(),
+                        1 => scanners::html_block_end_1(&line[self.first_nonspace..]).is_some(),
+                        2 => scanners::html_block_end_2(&line[self.first_nonspace..]).is_some(),
+                        3 => scanners::html_block_end_3(&line[self.first_nonspace..]).is_some(),
+                        4 => scanners::html_block_end_4(&line[self.first_nonspace..]).is_some(),
+                        5 => scanners::html_block_end_5(&line[self.first_nonspace..]).is_some(),
                         _ => false,
                     };
 
@@ -1401,7 +1401,7 @@ impl<'a> Subject<'a> {
     fn handle_pointy_brace(&mut self) -> &'a Node<'a, AstCell> {
         self.pos += 1;
 
-        if let Some(matchlen) = scanners::autolink_uri(&self.input, self.pos) {
+        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
             let inl = make_autolink(self.arena, &self.input[self.pos..self.pos + matchlen - 1], AutolinkType::URI);
             self.pos += matchlen;
             return inl;
