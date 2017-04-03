@@ -883,7 +883,7 @@ impl<'a> Parser<'a> {
         };
         rtrim(&mut subj.input);
 
-        while !subj.eof() && self.parse_inline(&mut subj, node) {}
+        while !subj.eof() && subj.parse_inline(node) {}
 
         subj.process_emphasis(-1);
 
@@ -895,62 +895,6 @@ impl<'a> Parser<'a> {
         while subj.brackets.len() > 0 {
             subj.brackets.pop();
         }
-    }
-
-    fn parse_inline(&mut self, subj: &mut Subject<'a>, node: &'a Node<'a, AstCell>) -> bool {
-        let new_inl: Option<&'a Node<'a, AstCell>>;
-        let c = match subj.peek_char() {
-            None => return false,
-            Some(ch) => *ch as char,
-        };
-
-        match c {
-            '\0' => return false,
-            '\r' | '\n' => new_inl = Some(subj.handle_newline()),
-            '`' => new_inl = Some(subj.handle_backticks()),
-            '\\' => new_inl = Some(subj.handle_backslash()),
-            '&' => new_inl = Some(subj.handle_entity()),
-            '<' => new_inl = Some(subj.handle_pointy_brace()),
-            '*' | '_' | '\'' | '"' => new_inl = Some(subj.handle_delim(c)),
-            // TODO: smart characters. Eh.
-            //'-' => new_inl => Some(subj.handle_hyphen()),
-            //'.' => new_inl => Some(subj.handle_period()),
-            '[' => {
-                subj.pos += 1;
-                let inl = make_inline(self.arena, NodeValue::Text(vec!['[']));
-                new_inl = Some(inl);
-                subj.push_bracket(false, inl);
-            },
-            ']' => new_inl = subj.handle_close_bracket(),
-            '!' => {
-                subj.pos += 1;
-                if subj.peek_char() == Some(&'[') {
-                    subj.pos += 1;
-                    let inl = make_inline(self.arena, NodeValue::Text(vec!['!', '[']));
-                    new_inl = Some(inl);
-                    subj.push_bracket(true, inl);
-                } else {
-                    new_inl = Some(make_inline(self.arena, NodeValue::Text(vec!['!'])));
-                }
-            },
-            _ => {
-                let endpos = subj.find_special_char();
-                let mut contents = subj.input[subj.pos..endpos].to_vec();
-                subj.pos = endpos;
-
-                if subj.peek_char().map_or(false, is_line_end_char) {
-                    rtrim(&mut contents);
-                }
-
-                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
-            }
-        }
-
-        if let Some(inl) = new_inl {
-            node.append(inl);
-        }
-
-        true
     }
 }
 
@@ -982,6 +926,62 @@ struct Bracket<'a> {
 }
 
 impl<'a> Subject<'a> {
+    fn parse_inline(&mut self, node: &'a Node<'a, AstCell>) -> bool {
+        let new_inl: Option<&'a Node<'a, AstCell>>;
+        let c = match self.peek_char() {
+            None => return false,
+            Some(ch) => *ch as char,
+        };
+
+        match c {
+            '\0' => return false,
+            '\r' | '\n' => new_inl = Some(self.handle_newline()),
+            '`' => new_inl = Some(self.handle_backticks()),
+            '\\' => new_inl = Some(self.handle_backslash()),
+            '&' => new_inl = Some(self.handle_entity()),
+            '<' => new_inl = Some(self.handle_pointy_brace()),
+            '*' | '_' | '\'' | '"' => new_inl = Some(self.handle_delim(c)),
+            // TODO: smart characters. Eh.
+            //'-' => new_inl => Some(self.handle_hyphen()),
+            //'.' => new_inl => Some(self.handle_period()),
+            '[' => {
+                self.pos += 1;
+                let inl = make_inline(self.arena, NodeValue::Text(vec!['[']));
+                new_inl = Some(inl);
+                self.push_bracket(false, inl);
+            },
+            ']' => new_inl = self.handle_close_bracket(),
+            '!' => {
+                self.pos += 1;
+                if self.peek_char() == Some(&'[') {
+                    self.pos += 1;
+                    let inl = make_inline(self.arena, NodeValue::Text(vec!['!', '[']));
+                    new_inl = Some(inl);
+                    self.push_bracket(true, inl);
+                } else {
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(vec!['!'])));
+                }
+            },
+            _ => {
+                let endpos = self.find_special_char();
+                let mut contents = self.input[self.pos..endpos].to_vec();
+                self.pos = endpos;
+
+                if self.peek_char().map_or(false, is_line_end_char) {
+                    rtrim(&mut contents);
+                }
+
+                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
+            }
+        }
+
+        if let Some(inl) = new_inl {
+            node.append(inl);
+        }
+
+        true
+    }
+
     fn process_emphasis(&mut self, stack_bottom: i32) {
         let mut closer = self.delimiters.len() as i32 - 1;
         let mut openers_bottom: Vec<[i32; 128]> = vec![];
