@@ -197,3 +197,12 @@ fn backslashes() {
                     "See?</p>\n",
                     "<p>Ga\\rbage.</p>\n"));
 }
+
+#[test]
+fn entities() {
+    compare(concat!("This is &amp;, &copy;, &trade;, \\&trade;, &xyz;, &NotEqualTilde;.\n",
+                    "\n",
+                    "&#8734; &#x221e;\n"),
+            concat!("<p>This is &amp;, ©, ™, &amp;trade;, &amp;xyz;, \u{2242}\u{338}.</p>\n",
+                    "<p>∞ ∞</p>\n"));
+}

@@ -10,6 +10,8 @@ mod scanners;
 mod html;
 mod ctype;
 mod node;
+mod entity;
+mod entity_data;
 #[cfg(test)]
 mod tests;
 
@@ -1023,6 +1025,7 @@ impl<'a> Parser<'a> {
             '`' => new_inl = Some(subj.handle_backticks()),
             '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c)),
             '\\' => new_inl = Some(subj.handle_backslash()),
+            '&' => new_inl = Some(subj.handle_entity()),
             // TODO
             _ => {
                 let endpos = subj.find_special_char();
@@ -1113,8 +1116,8 @@ impl<'a> Subject<'a> {
                 '"',
                 '`',
                 '\\',
-                /* TODO
                 '&',
+                /* TODO
                 '[',
                 ']',
                 '<',
@@ -1380,6 +1383,18 @@ impl<'a> Subject<'a> {
             seen_line_end_char = true;
         }
         seen_line_end_char || self.eof()
+    }
+
+    fn handle_entity(&mut self) -> &'a Node<'a, AstCell> {
+        self.pos += 1;
+
+        match entity::unescape(&self.input[self.pos..]) {
+            None => make_inline(self.arena, NodeValue::Text(vec!['&'])),
+            Some((entity, len)) => {
+                self.pos += len;
+                make_inline(self.arena, NodeValue::Text(entity))
+            }
+        }
     }
 }
 

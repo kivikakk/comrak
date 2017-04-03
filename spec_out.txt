@@ -979,39 +979,6 @@ foo
 +<pre><code class="language-foo\+bar">foo
  </code></pre>
 
-Example 300 (lines 5494-5502) Entity and numeric character references
-&nbsp; &amp; &copy; &AElig; &Dcaron;
-&frac34; &HilbertSpace; &DifferentialD;
-&ClockwiseContourIntegral; &ngE;
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,3 @@
--<p>  &amp; © Æ Ď
--¾ ℋ ⅆ
--∲ ≧̸</p>
-+<p>&amp;nbsp; &amp;amp; &amp;copy; &amp;AElig; &amp;Dcaron;
-+&amp;frac34; &amp;HilbertSpace; &amp;DifferentialD;
-+&amp;ClockwiseContourIntegral; &amp;ngE;</p>
-
-Example 301 (lines 5513-5517) Entity and numeric character references
-&#35; &#1234; &#992; &#98765432; &#0;
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p># Ӓ Ϡ � �</p>
-+<p>&amp;#35; &amp;#1234; &amp;#992; &amp;#98765432; &amp;#0;</p>
-
-Example 302 (lines 5526-5530) Entity and numeric character references
-&#X22; &#XD06; &#xcab;
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>&quot; ആ ಫ</p>
-+<p>&amp;#X22; &amp;#XD06; &amp;#xcab;</p>
-
 Example 307 (lines 5576-5580) Entity and numeric character references
 [foo](/f&ouml;&ouml; "f&ouml;&ouml;")
 
@@ -1019,7 +986,7 @@ Example 307 (lines 5576-5580) Entity and numeric character references
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-+<p>[foo](/f&amp;ouml;&amp;ouml; &quot;f&amp;ouml;&amp;ouml;&quot;)</p>
++<p>[foo](/föö &quot;föö&quot;)</p>
 
 Example 308 (lines 5583-5589) Entity and numeric character references
 [foo]
@@ -1031,7 +998,7 @@ Example 308 (lines 5583-5589) Entity and numeric character references
 @@ -1 +1,2 @@
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
 +<p>[foo]</p>
-+<p>[foo]: /f&amp;ouml;&amp;ouml; &quot;f&amp;ouml;&amp;ouml;&quot;</p>
++<p>[foo]: /föö &quot;föö&quot;</p>
 
 Example 309 (lines 5592-5599) Entity and numeric character references
 ``` f&ouml;&ouml;
@@ -1497,7 +1464,7 @@ Example 471 (lines 7329-7333) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="foo%20b%C3%A4">link</a></p>
-+<p>[link](foo%20b&amp;auml;)</p>
++<p>[link](foo%20bä)</p>
 
 Example 472 (lines 7340-7344) Links
 [link]("title")
@@ -1530,7 +1497,7 @@ Example 474 (lines 7363-7367) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/url" title="title &quot;&quot;">link</a></p>
-+<p>[link](/url &quot;title &quot;&amp;quot;&quot;)</p>
++<p>[link](/url &quot;title &quot;&quot;&quot;)</p>
 
 Example 475 (lines 7373-7377) Links
 [link](/url "title")
@@ -2655,4 +2622,4 @@ bar">
 +<p>&lt;a href=&quot;foo<br />
 +bar&quot;&gt;</p>
 
-395 passed, 226 failed, 0 errored, 0 skipped
+398 passed, 223 failed, 0 errored, 0 skipped
