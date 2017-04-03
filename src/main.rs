@@ -1402,7 +1402,17 @@ impl<'a> Subject<'a> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
-            let inl = make_autolink(self.arena, &self.input[self.pos..self.pos + matchlen - 1], AutolinkType::URI);
+            let inl = make_autolink(self.arena,
+                                    &self.input[self.pos..self.pos + matchlen - 1],
+                                    AutolinkType::URI);
+            self.pos += matchlen;
+            return inl;
+        }
+
+        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
+            let inl = make_autolink(self.arena,
+                                    &self.input[self.pos..self.pos + matchlen - 1],
+                                    AutolinkType::Email);
             self.pos += matchlen;
             return inl;
         }
@@ -1670,11 +1680,15 @@ enum AutolinkType {
     Email,
 }
 
-fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>, url: &[char], kind: AutolinkType) -> &'a Node<'a, AstCell> {
-    let inl = make_inline(arena, NodeValue::Link(NodeLink {
-        url: clean_autolink(url, kind),
-        title: vec![],
-    }));
+fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+                     url: &[char],
+                     kind: AutolinkType)
+                     -> &'a Node<'a, AstCell> {
+    let inl = make_inline(arena,
+                          NodeValue::Link(NodeLink {
+                              url: clean_autolink(url, kind),
+                              title: vec![],
+                          }));
     inl.append(make_inline(arena, NodeValue::Text(entity::unescape_html(url))));
     inl
 }

@@ -27,7 +27,8 @@ impl Write for HtmlFormatter {
 lazy_static! {
     static ref HREF_SAFE: [bool; 256] = {
         let mut a = [false; 256];
-        for &c in "-_.+!*'(),%#@?=;:/,+&$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".as_bytes() {
+        for &c in concat!("-_.+!*'(),%#@?=;:/,+&$abcdefghijkl",
+        "mnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").as_bytes() {
             a[c as usize] = true;
         }
         a
@@ -88,7 +89,7 @@ impl HtmlFormatter {
             }
 
             if i >= size {
-                break
+                break;
             }
 
             match src[i] as char {

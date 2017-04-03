@@ -137,11 +137,7 @@ pub fn html_block_start_7(line: &[char]) -> Option<usize> {
             &format!(r"<({}|{})[\t\n\f ]*[\r\n]", *OPEN_TAG, *CLOSE_TAG)).unwrap();
     }
 
-    if is_match(&RE, line) {
-        Some(7)
-    } else {
-        None
-    }
+    if is_match(&RE, line) { Some(7) } else { None }
 }
 
 pub enum SetextChar {
@@ -181,6 +177,21 @@ pub fn autolink_uri(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             &format!(r"{}:[^\x00-\x20<>]*>", *SCHEME)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn autolink_email(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            concat!(
+            r"[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
+            r"@",
+            r"[a-zA-Z0-9]",
+            r"([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?",
+            r"(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*",
+            r">")).unwrap();
     }
 
     search(&RE, line)

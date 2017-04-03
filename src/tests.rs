@@ -209,6 +209,11 @@ fn entities() {
 
 #[test]
 fn pointy_brace() {
-    compare("URI autolink: <https://www.pixiv.net>\n",
-            "<p>URI autolink: <a href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n");
+    compare(concat!("URI autolink: <https://www.pixiv.net>\n",
+                    "\n",
+                    "Email autolink: <bill@microsoft.com>\n"),
+            concat!("<p>URI autolink: <a \
+                     href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
+                    "<p>Email autolink: <a \
+                     href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n"));
 }

@@ -2351,23 +2351,14 @@ Example 571 (lines 8446-8450) Autolinks
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 +<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
-Example 572 (lines 8468-8472) Autolinks
-<foo@bar.example.com>
+Example 574 (lines 8484-8488) Autolinks
+<foo\+@bar.example.com>
 
 --- expected HTML
 +++ actual HTML
 @@ -1 +1 @@
--<p><a href="mailto:foo@bar.example.com">foo@bar.example.com</a></p>
-+<p>&lt;foo@bar.example.com&gt;</p>
-
-Example 573 (lines 8475-8479) Autolinks
-<foo+special@Bar.baz-bar0.com>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
-+<p>&lt;foo+special@Bar.baz-bar0.com&gt;</p>
+-<p>&lt;foo+@bar.example.com&gt;</p>
++<p><a href="mailto:foo&#x5c;+@bar.example">foo\+@bar.example</a>com&gt;</p>
 
 Example 581 (lines 8610-8614) Raw HTML
 <a><bab><c2c>
@@ -2532,4 +2523,4 @@ bar">
 +<p>&lt;a href=&quot;foo<br />
 +bar&quot;&gt;</p>
 
-408 passed, 213 failed, 0 errored, 0 skipped
+409 passed, 212 failed, 0 errored, 0 skipped
