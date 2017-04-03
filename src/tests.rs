@@ -151,26 +151,22 @@ fn html_block_6() {
 
 #[test]
 fn html_block_7() {
-    // XXX: relies too much on entity conversion and inlines
-    //
-    // compare(concat!("<a b >\n",
-    // "ok\n",
-    // "\n",
-    // "<a b=>\n",
-    // "ok\n",
-    // "\n",
-    // "<a b \n",
-    // "<a b> c\n",
-    // "ok\n"),
-    // concat!("<a b >\n",
-    // "ok\n",
-    // "<p>&lt;a b=&gt;\n",
-    // "ok</p>\n",
-    // "<p>&lt;a b\n",
-    // "<a b> c\n",
-    // "ok</p>\n"));
-    //
-
+    compare(concat!("<a b >\n",
+                    "ok\n",
+                    "\n",
+                    "<a b=>\n",
+                    "ok\n",
+                    "\n",
+                    "<a b \n",
+                    "<a b> c\n",
+                    "ok\n"),
+            concat!("<a b >\n",
+                    "ok\n",
+                    "<p>&lt;a b=&gt;\n",
+                    "ok</p>\n",
+                    "<p>&lt;a b\n",
+                    "<a b> c\n",
+                    "ok</p>\n"));
 
     compare(concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "\n", "ok\n"),
             concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "<p>ok</p>\n"));
