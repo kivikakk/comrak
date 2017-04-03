@@ -13,8 +13,8 @@ if [ "$(git status --porcelain README.md | cut -b2-2 | tr -d '[:space:]')" != ""
 fi
 
 
-cargo build
-(cd vendor/CommonMark; RUST_BACKTRACE=1 python3 test/spec_tests.py --program=../../target/debug/comrak || true) > spec_out.txt
+CARGO_TARGET_DIR=/tmp/comrak_test cargo build
+(cd vendor/CommonMark; RUST_BACKTRACE=1 python3 test/spec_tests.py --program=/tmp/comrak_test/debug/comrak || true) > spec_out.txt
 r=$(tail -n 1 spec_out.txt | sed -e 's/ passed, /,/' -e 's/ failed, /,/' -e 's/ errored, /,/' -e 's/ skipped//')
 passed=$(echo "$r" | cut -f1 -d,)
 failed=$(echo "$r" | cut -f2 -d,)
