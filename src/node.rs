@@ -24,7 +24,7 @@ pub enum NodeValue {
     Emph,
     Strong,
     Link(NodeLink),
-    Image,
+    Image(NodeLink),
 }
 
 #[derive(Debug, Clone)]
@@ -197,7 +197,7 @@ impl<'a> Node<'a, AstCell> {
             NodeValue::Emph |
             NodeValue::Strong |
             NodeValue::Link(..) |
-            NodeValue::Image |
+            NodeValue::Image(..) |
             NodeValue::CustomInline => !child.block(),
 
             _ => false,

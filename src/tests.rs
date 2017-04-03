@@ -226,3 +226,10 @@ fn pointy_brace() {
                     "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
                     "</ul>\n"));
 }
+
+#[test]
+fn links() {
+    compare(concat!("Where are you [going](https://microsoft.com (today))?\n"),
+            concat!("<p>Where are you <a href=\"https://microsoft.com\" \
+                     title=\"today\">going</a>?</p>\n"));
+}

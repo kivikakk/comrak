@@ -235,7 +235,7 @@ impl HtmlFormatter {
                 self.format_children(node);
                 write!(self, "</a>").unwrap();
             }
-            &NodeValue::Image => {
+            &NodeValue::Image(..) => {
                 assert!(false)
                 // TODO
             }

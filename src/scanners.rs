@@ -21,56 +21,56 @@ fn is_match(re: &Regex, line: &[char]) -> bool {
 
 pub fn atx_heading_start(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A#{1,6}([ \t]+|[\r\n])").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:#{1,6}([ \t]+|[\r\n]))").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn html_block_end_1(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A.*</(script|pre|style)>").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:.*</(script|pre|style)>)").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn html_block_end_2(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A.*-->").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:.*-->)").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn html_block_end_3(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A.*\?>").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:.*\?>)").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn html_block_end_4(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A.*>").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:.*>)").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn html_block_end_5(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A.*\]\]>").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:.*\]\]>)").unwrap();
     }
     search(&RE, line)
 }
 
 pub fn open_code_fence(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(```+|~~~+)[^`\r\n\x00]*[\r\n]").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:(```+|~~~+)[^`\r\n\x00]*[\r\n])").unwrap();
     }
     captures(&RE, line, 1)
 }
 
 pub fn close_code_fence(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(```+|~~~+)[ \t]*[\r\n]").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:(```+|~~~+)[ \t]*[\r\n])").unwrap();
     }
     captures(&RE, line, 1)
 }
@@ -91,13 +91,13 @@ lazy_static! {
 
 pub fn html_block_start(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE1: Regex = Regex::new(r"\A<(script|pre|style)([ \t\v\f\r\n]|>)").unwrap();
-        static ref RE2: Regex = Regex::new(r"\A<!--").unwrap();
-        static ref RE3: Regex = Regex::new(r"\A<\?").unwrap();
-        static ref RE4: Regex = Regex::new(r"\A<![A-Z]").unwrap();
-        static ref RE5: Regex = Regex::new(r"\A<!\[CDATA\[").unwrap();
+        static ref RE1: Regex = Regex::new(r"\A(?:<(script|pre|style)([ \t\v\f\r\n]|>))").unwrap();
+        static ref RE2: Regex = Regex::new(r"\A(?:<!--)").unwrap();
+        static ref RE3: Regex = Regex::new(r"\A(?:<\?)").unwrap();
+        static ref RE4: Regex = Regex::new(r"\A(?:<![A-Z])").unwrap();
+        static ref RE5: Regex = Regex::new(r"\A(?:<!\[CDATA\[)").unwrap();
         static ref RE6: Regex = Regex::new(
-            &format!(r"\A</?({})([ \t\v\f\r\n]|/?>)", *BLOCK_TAG_NAMES_PIPED)).unwrap();
+            &format!(r"\A(?:</?({})([ \t\v\f\r\n]|/?>))", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
     if is_match(&RE1, line) {
@@ -141,7 +141,7 @@ lazy_static! {
 pub fn html_block_start_7(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
-            &format!(r"\A<({}|{})[\t\n\f ]*[\r\n]", *OPEN_TAG, *CLOSE_TAG)).unwrap();
+            &format!(r"\A(?:<({}|{})[\t\n\f ]*[\r\n])", *OPEN_TAG, *CLOSE_TAG)).unwrap();
     }
 
     if is_match(&RE, line) { Some(7) } else { None }
@@ -154,7 +154,7 @@ pub enum SetextChar {
 
 pub fn setext_heading_line(line: &[char]) -> Option<SetextChar> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(=+|-+)[ \t]*[\r\n]").unwrap();
+        static ref RE: Regex = Regex::new(r"\A(?:(=+|-+)[ \t]*[\r\n])").unwrap();
     }
 
     if is_match(&RE, line) {
@@ -171,7 +171,7 @@ pub fn setext_heading_line(line: &[char]) -> Option<SetextChar> {
 pub fn thematic_break(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
-            r"\A((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n]").unwrap();
+            r"\A(?:((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n])").unwrap();
     }
     search(&RE, line)
 }
@@ -183,7 +183,7 @@ lazy_static! {
 pub fn autolink_uri(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
-            &format!(r"\A{}:[^\x00-\x20<>]*>", *SCHEME)).unwrap();
+            &format!(r"\A(?:{}:[^\x00-\x20<>]*>)", *SCHEME)).unwrap();
     }
 
     search(&RE, line)
@@ -193,12 +193,14 @@ pub fn autolink_email(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             concat!(
-            r"\A[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
+            r"\A(?:",
+            "[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
             r"@",
             r"[a-zA-Z0-9]",
             r"([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?",
             r"(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*",
-            r">")).unwrap();
+            r">",
+            r")")).unwrap();
     }
 
     search(&RE, line)
@@ -206,7 +208,26 @@ pub fn autolink_email(line: &[char]) -> Option<usize> {
 
 pub fn html_tag(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(&format!(r"\A{}", *HTML_TAG)).unwrap();
+        static ref RE: Regex = Regex::new(&format!(r"\A(?:{})", *HTML_TAG)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn spacechars(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\A(?:[ \t\v\f\r\n]+)").unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn link_title(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref ESCAPED_CHAR: &'static str = r##"\\[!"#$%&'()*+,./:;<=>?@\[\\\]^_`{|}~-]"##;
+        static ref RE: Regex = Regex::new(
+            &format!(r#"\A(?:"({}|[^"\x00])*"|'({}|[^'\x00])*'|\(({}|[^)\x00]*)*\))"#,
+            *ESCAPED_CHAR, *ESCAPED_CHAR, *ESCAPED_CHAR)).unwrap();
     }
 
     search(&RE, line)
