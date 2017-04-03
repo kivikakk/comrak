@@ -209,20 +209,20 @@ fn pointy_brace() {
                     "\n",
                     "Email autolink: <bill@microsoft.com>\n",
                     "\n",
-                    "* Inline <em>tag</em>.\n",
-                    "* Inline <!-- comment -->.\n",
-                    "* Inline <? processing instruction ?>.\n",
-                    "* Inline <!DECLARATION OKAY>.\n",
+                    "* Inline <em>tag</em> **ha**.\n",
+                    "* Inline <!-- comment --> **ha**.\n",
+                    "* Inline <? processing instruction ?> **ha**.\n",
+                    "* Inline <!DECLARATION OKAY> **ha**.\n",
                     "* Inline <![CDATA[ok]ha **ha** ]]> **ha**.\n"),
             concat!("<p>URI autolink: <a \
                      href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
                     "<p>Email autolink: <a \
                      href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
                     "<ul>\n",
-                    "<li>Inline <em>tag</em>.</li>\n",
-                    "<li>Inline <!-- comment -->.</li>\n",
-                    "<li>Inline <? processing instruction ?>.</li>\n",
-                    "<li>Inline <!DECLARATION OKAY>.</li>\n",
+                    "<li>Inline <em>tag</em> <strong>ha</strong>.</li>\n",
+                    "<li>Inline <!-- comment --> <strong>ha</strong>.</li>\n",
+                    "<li>Inline <? processing instruction ?> <strong>ha</strong>.</li>\n",
+                    "<li>Inline <!DECLARATION OKAY> <strong>ha</strong>.</li>\n",
                     "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
                     "</ul>\n"));
 }
