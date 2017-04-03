@@ -229,7 +229,16 @@ fn pointy_brace() {
 
 #[test]
 fn links() {
-    compare(concat!("Where are you [going](https://microsoft.com (today))?\n"),
+    compare(concat!("Where are you [going](https://microsoft.com (today))?\n",
+                    "\n",
+                    "[Where am I?](/here)\n"),
             concat!("<p>Where are you <a href=\"https://microsoft.com\" \
-                     title=\"today\">going</a>?</p>\n"));
+                     title=\"today\">going</a>?</p>\n",
+                    "<p><a href=\"/here\">Where am I?</a></p>\n"));
+}
+
+#[test]
+fn images() {
+    compare(concat!("I am ![eating [things](/url)](http://i.imgur.com/QqK1vq7.png).\n"),
+    concat!("<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" />.</p>\n"));
 }

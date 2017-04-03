@@ -249,10 +249,8 @@ Example 157 (lines 2743-2749) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">foo</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]: /url &quot;title&quot;</p>
 +<p>[foo]</p>
 
@@ -265,10 +263,8 @@ Example 158 (lines 2752-2760) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,6 @@
+@@ -1 +1,4 @@
 -<p><a href="/url" title="the title">foo</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]:
 +/url<br />
 +'the title'</p>
@@ -281,10 +277,8 @@ Example 159 (lines 2763-2769) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[Foo*bar]]:my_(url) 'title (with parens)'</p>
 +<p>[Foo*bar]]</p>
 
@@ -297,10 +291,8 @@ Example 160 (lines 2772-2780) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,6 @@
+@@ -1 +1,4 @@
 -<p><a href="my%20url" title="title">Foo bar</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[Foo bar]:
 +&lt;my%20url&gt;
 +'title'</p>
@@ -317,10 +309,8 @@ line2
 
 --- expected HTML
 +++ actual HTML
-@@ -1,5 +1,8 @@
+@@ -1,5 +1,6 @@
 -<p><a href="/url" title="
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]: /url '
  title
  line1
@@ -328,22 +318,6 @@ line2
 -">foo</a></p>
 +'</p>
 +<p>[foo]</p>
-
-Example 162 (lines 2804-2814) Link reference definitions
-[foo]: /url 'title
-
-with blank line'
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,5 @@
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
- <p>[foo]: /url 'title</p>
- <p>with blank line'</p>
- <p>[foo]</p>
 
 Example 163 (lines 2819-2826) Link reference definitions
 [foo]:
@@ -353,26 +327,11 @@ Example 163 (lines 2819-2826) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,3 @@
 -<p><a href="/url">foo</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]:
 +/url</p>
 +<p>[foo]</p>
-
-Example 164 (lines 2831-2838) Link reference definitions
-[foo]:
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,4 @@
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
- <p>[foo]:</p>
- <p>[foo]</p>
 
 Example 165 (lines 2844-2850) Link reference definitions
 [foo]: /url\bar\*baz "foo\"bar\baz"
@@ -381,10 +340,8 @@ Example 165 (lines 2844-2850) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]: /url\bar*baz &quot;foo&quot;bar\baz&quot;</p>
 +<p>[foo]</p>
 
@@ -395,10 +352,8 @@ Example 166 (lines 2855-2861) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="url">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
 +<p>[foo]: url</p>
 
@@ -410,11 +365,8 @@ Example 167 (lines 2867-2874) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,6 @@
+@@ -1 +1,3 @@
 -<p><a href="first">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
 +<p>[foo]: first
 +[foo]: second</p>
@@ -426,10 +378,8 @@ Example 168 (lines 2880-2886) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url">Foo</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[FOO]: /url</p>
 +<p>[Foo]</p>
 
@@ -440,10 +390,8 @@ Example 169 (lines 2889-2895) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[ΑΓΩ]: /φου</p>
 +<p>[αγω]</p>
 
@@ -452,8 +400,7 @@ Example 170 (lines 2901-2904) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -0,0 +1,2 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -0,0 +1 @@
 +<p>[foo]: /url</p>
 
 Example 171 (lines 2909-2916) Link reference definitions
@@ -464,22 +411,12 @@ bar
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,4 @@
 -<p>bar</p>
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[
 +foo
 +]: /url
 +bar</p>
-
-Example 172 (lines 2922-2926) Link reference definitions
-[foo]: /url "title" ok
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some(':'), sps is 0, n is 0
- <p>[foo]: /url &quot;title&quot; ok</p>
 
 Example 173 (lines 2931-2936) Link reference definitions
 [foo]: /url
@@ -487,9 +424,8 @@ Example 173 (lines 2931-2936) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
+@@ -1 +1,2 @@
 -<p>&quot;title&quot; ok</p>
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]: /url
 +&quot;title&quot; ok</p>
 
@@ -505,36 +441,6 @@ Example 174 (lines 2942-2950) Link reference definitions
  </code></pre>
 -<p>[foo]</p>
 
-Example 175 (lines 2956-2966) Link reference definitions
-```
-[foo]: /url
-```
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,4 @@
-+peek char is None, sps is 0, n is 0
- <pre><code>[foo]: /url
- </code></pre>
- <p>[foo]</p>
-
-Example 176 (lines 2971-2980) Link reference definitions
-Foo
-[bar]: /baz
-
-[bar]
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,5 @@
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
- <p>Foo
- [bar]: /baz</p>
- <p>[bar]</p>
-
 Example 177 (lines 2986-2995) Link reference definitions
 # [Foo]
 [foo]: /url
@@ -542,10 +448,8 @@ Example 177 (lines 2986-2995) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,5 @@
 -<h1><a href="/url">Foo</a></h1>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<h1>[Foo]</h1>
 +<p>[foo]: /url</p>
  <blockquote>
@@ -564,16 +468,10 @@ Example 178 (lines 3001-3014) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1,3 +1,13 @@
+@@ -1,3 +1,7 @@
 -<p><a href="/foo-url" title="foo">foo</a>,
 -<a href="/bar-url" title="bar">bar</a>,
 -<a href="/baz-url">baz</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(','), sps is 0, n is 0
-+peek char is Some(','), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]: /foo-url &quot;foo&quot;
 +[bar]: /bar-url
 +&quot;bar&quot;
@@ -589,10 +487,8 @@ Example 179 (lines 3022-3030) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1,3 +1,6 @@
+@@ -1,3 +1,4 @@
 -<p><a href="/url">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
  <blockquote>
 +<p>[foo]: /url</p>
@@ -788,11 +684,7 @@ Example 276 (lines 5118-5136) Lists
 
 --- expected HTML
 +++ actual HTML
-@@ -1,9 +1,11 @@
-+peek char is Some(':'), sps is 0, n is 0
- <ul>
- <li>
- <p>a</p>
+@@ -4,6 +4,7 @@
  </li>
  <li>
  <p>b</p>
@@ -817,10 +709,8 @@ Example 298 (lines 5458-5464) Backslash escapes
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/bar*" title="ti*tle">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
 +<p>[foo]: /bar* &quot;ti*tle&quot;</p>
 
@@ -840,10 +730,8 @@ Example 308 (lines 5583-5589) Entity and numeric character references
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
 +<p>[foo]: /föö &quot;föö&quot;</p>
 
@@ -864,46 +752,6 @@ Example 331 (lines 6037-6041) Emphasis and strong emphasis
 @@ -1 +1 @@
 -<p>* a *</p>
 +<p><em> a </em></p>
-
-Example 460 (lines 7220-7224) Links
-[link](/my uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some('('), sps is 0, n is 3
- <p>[link](/my uri)</p>
-
-Example 461 (lines 7227-7231) Links
-[link](</my uri>)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some('('), sps is 0, n is 0
- <p>[link](&lt;/my uri&gt;)</p>
-
-Example 462 (lines 7234-7240) Links
-[link](foo
-bar)
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,3 @@
-+peek char is Some('('), sps is 0, n is 3
- <p>[link](foo
- bar)</p>
-
-Example 463 (lines 7243-7249) Links
-[link](<foo
-bar>)
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,3 @@
-+peek char is Some('('), sps is 0, n is 0
- <p>[link](<foo
- bar>)</p>
 
 Example 470 (lines 7313-7317) Links
 [link](foo\bar)
@@ -941,70 +789,6 @@ Example 475 (lines 7373-7377) Links
 -<p><a href="/url%C2%A0%22title%22">link</a></p>
 +<p><a href="/url&#xc2;&#xa0;&#x22;title&#x22;">link</a></p>
 
-Example 476 (lines 7382-7386) Links
-[link](/url "title "and" title")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some('('), sps is 0, n is 4
- <p>[link](/url &quot;title &quot;and&quot; title&quot;)</p>
-
-Example 479 (lines 7426-7430) Links
-[link] (/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some(' '), sps is 0, n is 0
- <p>[link] (/uri)</p>
-
-Example 480 (lines 7436-7440) Links
-[link [foo [bar]]](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
- <p><a href="/uri">link [foo [bar]]</a></p>
-
-Example 481 (lines 7443-7447) Links
-[link] bar](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is Some(' '), sps is 0, n is 0
- <p>[link] bar](/uri)</p>
-
-Example 485 (lines 7473-7477) Links
-[![moon](moon.jpg)](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
-+<p><a href="/uri">!<a href="moon.jpg">moon</a></a></p>
-
-Example 486 (lines 7482-7486) Links
-[foo [bar](/uri)](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>[foo <a href="/uri">bar</a>](/uri)</p>
-+<p><a href="/uri">foo <a href="/uri">bar</a></a></p>
-
-Example 487 (lines 7489-7493) Links
-[foo *[bar [baz](/uri)](/uri)*](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
-+<p><a href="/uri">foo <em><a href="/uri">bar <a href="/uri">baz</a></a></em></a></p>
-
 Example 488 (lines 7496-7500) Links
 ![[[foo](uri1)](uri2)](uri3)
 
@@ -1012,16 +796,7 @@ Example 488 (lines 7496-7500) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><img src="uri3" alt="[foo](uri2)" /></p>
-+<p>!<a href="uri3"><a href="uri2"><a href="uri1">foo</a></a></a></p>
-
-Example 491 (lines 7523-7527) Links
-*foo [bar* baz]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
-+peek char is None, sps is 0, n is 0
- <p><em>foo [bar</em> baz]</p>
++<p><img src="uri3" alt="[<a href="uri1">foo</a>](uri2)" /></p>
 
 Example 494 (lines 7547-7551) Links
 [foo<http://example.com/?search=](uri)>
@@ -1039,11 +814,8 @@ Example 495 (lines 7582-7588) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][bar]</p>
 +<p>[bar]: /url &quot;title&quot;</p>
 
@@ -1054,13 +826,8 @@ Example 496 (lines 7597-7603) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,7 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">link [foo [bar]]</a></p>
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[link [foo [bar]]][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1071,11 +838,8 @@ Example 497 (lines 7606-7612) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">link [bar</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[link [bar][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1086,11 +850,8 @@ Example 498 (lines 7617-7623) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[link <em>foo <strong>bar</strong> <code>#</code></em>][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1101,12 +862,9 @@ Example 499 (lines 7626-7632) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+<p>[!<a href="moon.jpg">moon</a>][ref]</p>
++<p>[<img src="moon.jpg" alt="moon" />][ref]</p>
 +<p>[ref]: /uri</p>
 
 Example 500 (lines 7637-7643) Links
@@ -1116,11 +874,8 @@ Example 500 (lines 7637-7643) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo <a href="/uri">bar</a>][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1131,13 +886,8 @@ Example 501 (lines 7646-7652) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,7 @@
+@@ -1 +1,2 @@
 -<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some('*'), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo <em>bar [baz][ref]</em>][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1148,11 +898,8 @@ Example 502 (lines 7661-7667) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p>*<a href="/uri">foo*</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p><em>[foo</em>][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1163,11 +910,8 @@ Example 503 (lines 7670-7676) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">foo *bar</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo *bar][ref]</p>
 +<p>[ref]: /uri</p>
 
@@ -1178,8 +922,7 @@ Example 504 (lines 7682-7688) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p>[foo <bar attr="][ref]"></p>
 +<p>[ref]: /uri</p>
 
@@ -1190,8 +933,7 @@ Example 505 (lines 7691-7697) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p>[foo<code>][ref]</code></p>
 +<p>[ref]: /uri</p>
 
@@ -1202,9 +944,8 @@ Example 506 (lines 7700-7706) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
+@@ -1 +1,2 @@
 -<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo<a href="http://example.com/?search=&#x5d;&#x5b;ref&#x5d;">http://example.com/?search=][ref]</a></p>
 +<p>[ref]: /uri</p>
 
@@ -1215,11 +956,8 @@ Example 507 (lines 7711-7717) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][BaR]</p>
 +<p>[bar]: /url &quot;title&quot;</p>
 
@@ -1230,11 +968,8 @@ Example 508 (lines 7722-7728) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url">Толпой</a> is a Russian word.</p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some(' '), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[Толпой][Толпой] is a Russian word.</p>
 +<p>[ТОЛПОЙ]: /url</p>
 
@@ -1246,11 +981,8 @@ Example 509 (lines 7734-7741) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,6 @@
+@@ -1 +1,3 @@
 -<p><a href="/url">Baz</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[Foo
 +bar]: /url</p>
 +<p>[Baz][Foo bar]</p>
@@ -1262,11 +994,8 @@ Example 510 (lines 7747-7753) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p>[foo] <a href="/url" title="title">bar</a></p>
-+peek char is Some(' '), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo] [bar]</p>
 +<p>[bar]: /url &quot;title&quot;</p>
 
@@ -1278,10 +1007,7 @@ Example 511 (lines 7756-7764) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1,2 +1,6 @@
-+peek char is Some('\n'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1,2 +1,3 @@
  <p>[foo]
 -<a href="/url" title="title">bar</a></p>
 +[bar]</p>
@@ -1296,12 +1022,8 @@ Example 512 (lines 7797-7805) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,7 @@
+@@ -1 +1,3 @@
 -<p><a href="/url1">bar</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo]: /url1</p>
 +<p>[foo]: /url2</p>
 +<p>[bar][foo]</p>
@@ -1313,59 +1035,9 @@ Example 513 (lines 7812-7818) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p>[bar][foo!]</p>
 +<p>[foo!]: /url</p>
-
-Example 514 (lines 7824-7831) Links
-[foo][ref[]
-
-[ref[]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,5 @@
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>[foo][ref[]</p>
- <p>[ref[]: /uri</p>
-
-Example 515 (lines 7834-7841) Links
-[foo][ref[bar]]
-
-[ref[bar]]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,7 @@
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>[foo][ref[bar]]</p>
- <p>[ref[bar]]: /uri</p>
-
-Example 516 (lines 7844-7851) Links
-[[[foo]]]
-
-[[[foo]]]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,8 @@
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>[[[foo]]]</p>
- <p>[[[foo]]]: /url</p>
 
 Example 517 (lines 7854-7860) Links
 [foo][ref\[]
@@ -1374,11 +1046,8 @@ Example 517 (lines 7854-7860) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][ref[]</p>
 +<p>[ref[]: /uri</p>
 
@@ -1389,41 +1058,10 @@ Example 518 (lines 7865-7871) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/uri">bar\</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[bar\]: /uri</p>
 +<p>[bar\]</p>
-
-Example 519 (lines 7876-7883) Links
-[]
-
-[]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,4 @@
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>[]</p>
- <p>[]: /uri</p>
-
-Example 520 (lines 7886-7897) Links
-[
- ]
-
-[
- ]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,5 @@
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>[
- ]</p>
- <p>[
 
 Example 521 (lines 7909-7915) Links
 [foo][]
@@ -1432,11 +1070,8 @@ Example 521 (lines 7909-7915) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1447,11 +1082,8 @@ Example 522 (lines 7918-7924) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[<em>foo</em> bar][]</p>
 +<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
 
@@ -1462,11 +1094,8 @@ Example 523 (lines 7929-7935) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">Foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[Foo][]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1478,11 +1107,8 @@ Example 524 (lines 7942-7950) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1,2 +1,6 @@
+@@ -1,2 +1,3 @@
 -<p><a href="/url" title="title">foo</a>
-+peek char is Some(' '), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]
  []</p>
 +<p>[foo]: /url &quot;title&quot;</p>
@@ -1494,10 +1120,8 @@ Example 525 (lines 7962-7968) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1508,10 +1132,8 @@ Example 526 (lines 7971-7977) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[<em>foo</em> bar]</p>
 +<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
 
@@ -1522,11 +1144,8 @@ Example 527 (lines 7980-7986) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[[<em>foo</em> bar]]</p>
 +<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
 
@@ -1537,10 +1156,8 @@ Example 528 (lines 7989-7995) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p>[[bar <a href="/url">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[[bar [foo]</p>
 +<p>[foo]: /url</p>
 
@@ -1551,10 +1168,8 @@ Example 529 (lines 8000-8006) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url" title="title">Foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[Foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1565,10 +1180,8 @@ Example 530 (lines 8011-8017) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url">foo</a> bar</p>
-+peek char is Some(' '), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo] bar</p>
 +<p>[foo]: /url</p>
 
@@ -1579,8 +1192,7 @@ Example 531 (lines 8023-8029) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p>[foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1591,10 +1203,8 @@ Example 532 (lines 8035-8041) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p>*<a href="/url">foo*</a></p>
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
 +<p>[foo*]: /url</p>
 +<p><em>[foo</em>]</p>
 
@@ -1606,12 +1216,8 @@ Example 533 (lines 8047-8054) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,7 @@
+@@ -1 +1,3 @@
 -<p><a href="/url2">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][bar]</p>
 +<p>[foo]: /url1
 +[bar]: /url2</p>
@@ -1623,11 +1229,8 @@ Example 534 (lines 8056-8062) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><a href="/url1">foo</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][]</p>
 +<p>[foo]: /url1</p>
 
@@ -1638,8 +1241,7 @@ Example 535 (lines 8066-8072) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p><a href="">foo</a></p>
 +<p>[foo]: /url1</p>
 
@@ -1650,10 +1252,8 @@ Example 536 (lines 8074-8080) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><a href="/url1">foo</a>(not a link)</p>
-+peek char is Some('('), sps is 0, n is 3
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo](not a link)</p>
 +<p>[foo]: /url1</p>
 
@@ -1664,12 +1264,8 @@ Example 537 (lines 8085-8091) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,6 @@
+@@ -1 +1,2 @@
 -<p>[foo]<a href="/url">bar</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][bar][baz]</p>
 +<p>[baz]: /url</p>
 
@@ -1681,13 +1277,8 @@ Example 538 (lines 8097-8104) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,8 @@
+@@ -1 +1,3 @@
 -<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][bar][baz]</p>
 +<p>[baz]: /url1
 +[bar]: /url2</p>
@@ -1700,25 +1291,11 @@ Example 539 (lines 8110-8117) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,8 @@
+@@ -1 +1,3 @@
 -<p>[foo]<a href="/url1">bar</a></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>[foo][bar][baz]</p>
 +<p>[baz]: /url1
 +[foo]: /url2</p>
-
-Example 540 (lines 8133-8137) Images
-![foo](/url "title")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="foo" title="title" /></p>
-+<p>!<a href="/url" title="title">foo</a></p>
 
 Example 541 (lines 8140-8146) Images
 ![foo *bar*]
@@ -1727,10 +1304,8 @@ Example 541 (lines 8140-8146) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo <em>bar</em>]</p>
 +<p>[foo <em>bar</em>]: train.jpg &quot;train &amp; tracks&quot;</p>
 
@@ -1741,7 +1316,7 @@ Example 542 (lines 8149-8153) Images
 +++ actual HTML
 @@ -1 +1 @@
 -<p><img src="/url2" alt="foo bar" /></p>
-+<p>!<a href="/url2">foo !<a href="/url">bar</a></a></p>
++<p><img src="/url2" alt="foo <img src="/url" alt="bar" />" /></p>
 
 Example 543 (lines 8156-8160) Images
 ![foo [bar](/url)](/url2)
@@ -1750,7 +1325,7 @@ Example 543 (lines 8156-8160) Images
 +++ actual HTML
 @@ -1 +1 @@
 -<p><img src="/url2" alt="foo bar" /></p>
-+<p>!<a href="/url2">foo <a href="/url">bar</a></a></p>
++<p><img src="/url2" alt="foo <a href="/url">bar</a>" /></p>
 
 Example 544 (lines 8170-8176) Images
 ![foo *bar*][]
@@ -1759,11 +1334,8 @@ Example 544 (lines 8170-8176) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo <em>bar</em>][]</p>
 +<p>[foo <em>bar</em>]: train.jpg &quot;train &amp; tracks&quot;</p>
 
@@ -1774,49 +1346,10 @@ Example 545 (lines 8179-8185) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo <em>bar</em>][foobar]</p>
 +<p>[FOOBAR]: train.jpg &quot;train &amp; tracks&quot;</p>
-
-Example 546 (lines 8188-8192) Images
-![foo](train.jpg)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="train.jpg" alt="foo" /></p>
-+<p>!<a href="train.jpg">foo</a></p>
-
-Example 547 (lines 8195-8199) Images
-My ![foo bar](/path/to/train.jpg  "title"   )
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
-+<p>My !<a href="/path/to/train.jpg" title="title">foo bar</a></p>
-
-Example 548 (lines 8202-8206) Images
-![foo](<url>)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="url" alt="foo" /></p>
-+<p>!<a href="url">foo</a></p>
-
-Example 549 (lines 8209-8213) Images
-![](/url)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="" /></p>
-+<p>!<a href="/url"></a></p>
 
 Example 550 (lines 8218-8224) Images
 ![foo][bar]
@@ -1825,11 +1358,8 @@ Example 550 (lines 8218-8224) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo][bar]</p>
 +<p>[bar]: /url</p>
 
@@ -1840,11 +1370,8 @@ Example 551 (lines 8227-8233) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo][bar]</p>
 +<p>[BAR]: /url</p>
 
@@ -1855,11 +1382,8 @@ Example 552 (lines 8238-8244) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo" title="title" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo][]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1870,11 +1394,8 @@ Example 553 (lines 8247-8253) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo bar" title="title" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![<em>foo</em> bar][]</p>
 +<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
 
@@ -1885,11 +1406,8 @@ Example 554 (lines 8258-8264) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,5 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="Foo" title="title" /></p>
-+peek char is Some('['), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![Foo][]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1901,11 +1419,8 @@ Example 555 (lines 8270-8278) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1,2 +1,6 @@
+@@ -1,2 +1,3 @@
 -<p><img src="/url" alt="foo" title="title" />
-+peek char is Some(' '), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo]
  []</p>
 +<p>[foo]: /url &quot;title&quot;</p>
@@ -1917,10 +1432,8 @@ Example 556 (lines 8283-8289) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo" title="title" /></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1931,27 +1444,10 @@ Example 557 (lines 8292-8298) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="foo bar" title="title" /></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![<em>foo</em> bar]</p>
 +<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
-
-Example 558 (lines 8303-8310) Images
-![[foo]]
-
-[[foo]]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,6 @@
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is None, sps is 0, n is 0
-+peek char is Some(']'), sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
- <p>![[foo]]</p>
- <p>[[foo]]: /url &quot;title&quot;</p>
 
 Example 559 (lines 8315-8321) Images
 ![Foo]
@@ -1960,10 +1456,8 @@ Example 559 (lines 8315-8321) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p><img src="/url" alt="Foo" title="title" /></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![Foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1974,8 +1468,7 @@ Example 560 (lines 8327-8333) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
-+peek char is Some(':'), sps is 0, n is 0
+@@ -1 +1,2 @@
  <p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -1986,10 +1479,8 @@ Example 561 (lines 8339-8345) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,4 @@
+@@ -1 +1,2 @@
 -<p>!<a href="/url" title="title">foo</a></p>
-+peek char is None, sps is 0, n is 0
-+peek char is Some(':'), sps is 0, n is 0
 +<p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
@@ -2002,4 +1493,4 @@ Example 571 (lines 8446-8450) Autolinks
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 +<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
-479 passed, 142 failed, 0 errored, 0 skipped
+507 passed, 114 failed, 0 errored, 0 skipped

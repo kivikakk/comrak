@@ -922,6 +922,17 @@ impl<'a> Parser<'a> {
                 subj.push_bracket(false, inl);
             },
             ']' => new_inl = subj.handle_close_bracket(),
+            '!' => {
+                subj.pos += 1;
+                if subj.peek_char() == Some(&'[') {
+                    subj.pos += 1;
+                    let inl = make_inline(self.arena, NodeValue::Text(vec!['!', '[']));
+                    new_inl = Some(inl);
+                    subj.push_bracket(true, inl);
+                } else {
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(vec!['!'])));
+                }
+            },
             _ => {
                 let endpos = subj.find_special_char();
                 let mut contents = subj.input[subj.pos..endpos].to_vec();
@@ -959,10 +970,8 @@ struct Delimiter<'a> {
     delim_char: char,
     can_open: bool,
     can_close: bool,
-    active: bool,
 }
 
-#[derive(Clone)] // XXX
 struct Bracket<'a> {
     previous_delimiter: i32,
     inl_text: &'a Node<'a, AstCell>,
@@ -1120,9 +1129,7 @@ impl<'a> Subject<'a> {
                 '<',
                 '[',
                 ']',
-                /* TODO
                 '!',
-                */
                 ].iter().cloned().collect();
         }
 
@@ -1281,7 +1288,6 @@ impl<'a> Subject<'a> {
             delim_char: c,
             can_open: can_open,
             can_close: can_close,
-            active: false,
         });
     }
 
@@ -1487,11 +1493,6 @@ impl<'a> Subject<'a> {
             }
         }
 
-        println!("peek char is {:?}, sps is {:?}, n is {:?}",
-                 self.peek_char(),
-                 sps,
-                 n);
-
         self.brackets.pop();
         self.pos = initial_pos;
         Some(make_inline(self.arena, NodeValue::Text(vec![']'])))
@@ -1509,7 +1510,7 @@ impl<'a> Subject<'a> {
                                   NodeValue::Link(nl)
                               });
 
-        let brackets_len = self.brackets.len();
+        let mut brackets_len = self.brackets.len();
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
         let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
         while let Some(tmp) = tmpch {
@@ -1520,9 +1521,20 @@ impl<'a> Subject<'a> {
         let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
         self.process_emphasis(previous_delimiter);
         self.brackets.pop();
+        brackets_len -= 1;
 
         if !is_image {
-            // TODO
+            let mut i = brackets_len as i32 - 1;
+            while i >= 0 {
+                if !self.brackets[i as usize].image {
+                    if !self.brackets[i as usize].active {
+                        break;
+                    } else {
+                        self.brackets[i as usize].active = false;
+                    }
+                }
+                i -= 1;
+            }
         }
     }
 }

@@ -235,9 +235,16 @@ impl HtmlFormatter {
                 self.format_children(node);
                 write!(self, "</a>").unwrap();
             }
-            &NodeValue::Image(..) => {
-                assert!(false)
-                // TODO
+            &NodeValue::Image(ref nl) => {
+                write!(self, "<img src=\"").unwrap();
+                self.escape_href(&nl.url);
+                write!(self, "\" alt=\"").unwrap();
+                self.format_children(node); // TODO: plain
+                if nl.title.len() > 0 {
+                    write!(self, "\" title=\"").unwrap();
+                    self.escape(&nl.title);
+                }
+                write!(self, "\" />").unwrap();
             }
         }
     }
