@@ -193,3 +193,14 @@ pub fn clean_title(title: &[char]) -> Vec<char> {
     unescape(&mut b);
     b
 }
+
+pub fn is_blank(s: &[char]) -> bool {
+    for c in s {
+        match *c {
+            '\r' | '\n' => return true,
+            ' ' | '\t' => (),
+            _ => return false,
+        }
+    }
+    true
+}

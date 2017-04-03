@@ -18,7 +18,7 @@ mod tests;
 
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::io::Read;
 use std::mem;
 
@@ -63,9 +63,11 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
 const MAXBACKTICKS: usize = 80;
+const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 struct Parser<'a> {
     arena: &'a Arena<Node<'a, AstCell>>,
+    refmap: HashMap<String, Reference>,
     root: &'a Node<'a, AstCell>,
     current: &'a Node<'a, AstCell>,
     line_number: u32,
@@ -81,6 +83,11 @@ struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
 }
 
+struct Reference {
+    url: Vec<char>,
+    title: Vec<char>,
+}
+
 impl<'a> Parser<'a> {
     fn new(arena: &'a Arena<Node<'a, AstCell>>,
            root: &'a Node<'a, AstCell>,
@@ -88,6 +95,7 @@ impl<'a> Parser<'a> {
            -> Parser<'a> {
         Parser {
             arena: arena,
+            refmap: HashMap::new(),
             root: root,
             current: root,
             line_number: 0,
@@ -770,22 +778,20 @@ impl<'a> Parser<'a> {
         }
 
         let content = &mut ast.content;
+        let mut pos = 0;
 
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
-                // TODO: remove reference links
-                /*
-                    while (cmark_strbuf_at(node_content, 0) == '[' &&
-                           (pos = cmark_parse_reference_inline(parser->mem, node_content,
-                                                               parser->refmap))) {
-
-                      cmark_strbuf_drop(node_content, pos);
+                while content.get(0) == Some(&'[') &&
+                      unwrap_into(parse_reference_inline(self.arena, content, &self.refmap),
+                                  &mut pos) {
+                    for i in 0..pos {
+                        content.remove(0);
                     }
-                    if (is_blank(node_content, 0)) {
-                      // remove blank node (former reference def)
-                      cmark_node_free(b);
-                    }
-                */
+                }
+                if is_blank(content) {
+                    node.detach();
+                }
             }
             &mut NodeValue::CodeBlock(ref mut ncb) => {
                 if !ncb.fenced {
@@ -896,6 +902,28 @@ impl<'a> Parser<'a> {
             subj.brackets.pop();
         }
     }
+}
+
+fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+                              content: &[char],
+                              refmap: &HashMap<String, Reference>)
+                              -> Option<usize> {
+    let mut subj = Subject {
+        arena: arena,
+        input: content.to_vec(),
+        pos: 0,
+        delimiters: vec![],
+        brackets: vec![],
+        backticks: [0; MAXBACKTICKS + 1],
+        scanned_for_backticks: false,
+    };
+
+    let lab = match subj.link_label() {
+        Some(lab) => if lab.len() == 0 { return None } else { lab },
+        None => return None,
+    };
+
+    None
 }
 
 struct Subject<'a> {
@@ -1537,6 +1565,46 @@ impl<'a> Subject<'a> {
             }
         }
     }
+
+    fn link_label(&mut self) -> Option<&[char]> {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&'[') {
+            return None;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        let mut c = '\0';
+        while unwrap_into_copy(self.peek_char(), &mut c) && c != '[' && c != ']' {
+            if c == '\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, ispunct) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return None;
+            }
+        }
+
+        if c == ']' {
+            let raw_label = &self.input[startpos + 1..self.pos];
+            trim_slice(raw_label);
+            self.pos += 1;
+            Some(raw_label)
+        } else {
+            self.pos = startpos;
+            None
+        }
+    }
 }
 
 fn manual_scan_link_url(input: &[char]) -> Option<usize> {
@@ -1694,6 +1762,16 @@ fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
     match t {
         Some(v) => {
             *out = v;
+            true
+        }
+        _ => false,
+    }
+}
+
+fn unwrap_into_copy<T: Copy>(t: Option<&T>, out: &mut T) -> bool {
+    match t {
+        Some(v) => {
+            *out = *v;
             true
         }
         _ => false,

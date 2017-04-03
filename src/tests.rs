@@ -243,3 +243,13 @@ fn images() {
             concat!("<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" \
                      />.</p>\n"));
 }
+
+#[test]
+fn reference_links() {
+    compare(concat!("This [is] [legit], [very][honestly] legit.\n",
+                    "\n",
+                    "[legit]: ok\n",
+                    "[honestly]: sure \"hm\"\n"),
+            concat!("<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" \
+                     title=\"hm\">very</a> legit.</p>\n"));
+}
