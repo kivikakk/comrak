@@ -185,17 +185,6 @@ Heading
  </code></pre>
 -<hr />
 
-Example 106 (lines 1860-1866) Fenced code blocks
-``` ```
-aaa
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p><code></code>
-+<p><code> </code>
- aaa</p>
-
 Example 111 (lines 1934-1945) Fenced code blocks
 ~~~~    ruby startline=3 $%@#$
 def foo(x)
@@ -211,17 +200,6 @@ end
    return 3
  end
  </code></pre>
-
-Example 113 (lines 1958-1964) Fenced code blocks
-``` aa ```
-foo
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p><code>aa</code>
-+<p><code> aa </code>
- foo</p>
 
 Example 149 (lines 2547-2555) HTML blocks
   <div>
@@ -264,97 +242,6 @@ Example 156 (lines 2695-2716) HTML blocks
    </tr>
  </table>
 
-Example 157 (lines 2743-2749) Link reference definitions
-[foo]: /url "title"
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url" title="title">foo</a></p>
-+<p>[foo]: /url &quot;title&quot;</p>
-+<p>[foo]</p>
-
-Example 158 (lines 2752-2760) Link reference definitions
-   [foo]: 
-      /url  
-           'the title'  
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,4 @@
--<p><a href="/url" title="the title">foo</a></p>
-+<p>[foo]:
-+/url<br />
-+'the title'</p>
-+<p>[foo]</p>
-
-Example 159 (lines 2763-2769) Link reference definitions
-[Foo*bar\]]:my_(url) 'title (with parens)'
-
-[Foo*bar\]]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
-+<p>[Foo*bar]]:my_(url) 'title (with parens)'</p>
-+<p>[Foo*bar]]</p>
-
-Example 160 (lines 2772-2780) Link reference definitions
-[Foo bar]:
-<my%20url>
-'title'
-
-[Foo bar]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,4 @@
--<p><a href="my%20url" title="title">Foo bar</a></p>
-+<p>[Foo bar]:
-+&lt;my%20url&gt;
-+'title'</p>
-+<p>[Foo bar]</p>
-
-Example 161 (lines 2785-2799) Link reference definitions
-[foo]: /url '
-title
-line1
-line2
-'
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1,5 +1,6 @@
--<p><a href="/url" title="
-+<p>[foo]: /url '
- title
- line1
- line2
--">foo</a></p>
-+'</p>
-+<p>[foo]</p>
-
-Example 163 (lines 2819-2826) Link reference definitions
-[foo]:
-/url
-
-[foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,3 @@
--<p><a href="/url">foo</a></p>
-+<p>[foo]:
-+/url</p>
-+<p>[foo]</p>
-
 Example 165 (lines 2844-2850) Link reference definitions
 [foo]: /url\bar\*baz "foo\"bar\baz"
 
@@ -362,22 +249,9 @@ Example 165 (lines 2844-2850) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
-+<p>[foo]: /url\bar*baz &quot;foo&quot;bar\baz&quot;</p>
-+<p>[foo]</p>
-
-Example 166 (lines 2855-2861) Link reference definitions
-[foo]
-
-[foo]: url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="url">foo</a></p>
-+<p>[foo]</p>
-+<p>[foo]: url</p>
++<p><a href="/url&#x5c;bar*baz" title="foo&quot;bar\baz">foo</a></p>
 
 Example 167 (lines 2867-2874) Link reference definitions
 [foo]
@@ -387,11 +261,9 @@ Example 167 (lines 2867-2874) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
+@@ -1 +1 @@
 -<p><a href="first">foo</a></p>
-+<p>[foo]</p>
-+<p>[foo]: first
-+[foo]: second</p>
++<p><a href="second">foo</a></p>
 
 Example 168 (lines 2880-2886) Link reference definitions
 [FOO]: /url
@@ -400,9 +272,8 @@ Example 168 (lines 2880-2886) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url">Foo</a></p>
-+<p>[FOO]: /url</p>
 +<p>[Foo]</p>
 
 Example 169 (lines 2889-2895) Link reference definitions
@@ -412,44 +283,9 @@ Example 169 (lines 2889-2895) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
-+<p>[ΑΓΩ]: /φου</p>
 +<p>[αγω]</p>
-
-Example 170 (lines 2901-2904) Link reference definitions
-[foo]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -0,0 +1 @@
-+<p>[foo]: /url</p>
-
-Example 171 (lines 2909-2916) Link reference definitions
-[
-foo
-]: /url
-bar
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,4 @@
--<p>bar</p>
-+<p>[
-+foo
-+]: /url
-+bar</p>
-
-Example 173 (lines 2931-2936) Link reference definitions
-[foo]: /url
-"title" ok
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>&quot;title&quot; ok</p>
-+<p>[foo]: /url
-+&quot;title&quot; ok</p>
 
 Example 174 (lines 2942-2950) Link reference definitions
     [foo]: /url "title"
@@ -470,50 +306,11 @@ Example 177 (lines 2986-2995) Link reference definitions
 
 --- expected HTML
 +++ actual HTML
-@@ -1,4 +1,5 @@
+@@ -1,4 +1,4 @@
 -<h1><a href="/url">Foo</a></h1>
 +<h1>[Foo]</h1>
-+<p>[foo]: /url</p>
  <blockquote>
  <p>bar</p>
- </blockquote>
-
-Example 178 (lines 3001-3014) Link reference definitions
-[foo]: /foo-url "foo"
-[bar]: /bar-url
-  "bar"
-[baz]: /baz-url
-
-[foo],
-[bar],
-[baz]
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,7 @@
--<p><a href="/foo-url" title="foo">foo</a>,
--<a href="/bar-url" title="bar">bar</a>,
--<a href="/baz-url">baz</a></p>
-+<p>[foo]: /foo-url &quot;foo&quot;
-+[bar]: /bar-url
-+&quot;bar&quot;
-+[baz]: /baz-url</p>
-+<p>[foo],
-+[bar],
-+[baz]</p>
-
-Example 179 (lines 3022-3030) Link reference definitions
-[foo]
-
-> [foo]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,4 @@
--<p><a href="/url">foo</a></p>
-+<p>[foo]</p>
- <blockquote>
-+<p>[foo]: /url</p>
  </blockquote>
 
 Example 186 (lines 3121-3128) Paragraphs
@@ -697,33 +494,6 @@ with two lines.
  </li>
  </ol>
 
-Example 276 (lines 5118-5136) Lists
-- a
-- b
-
-  [ref]: /url
-- d
-
---- expected HTML
-+++ actual HTML
-@@ -4,6 +4,7 @@
- </li>
- <li>
- <p>b</p>
-+<p>[ref]: /url</p>
- </li>
- <li>
- <p>d</p>
-
-Example 292 (lines 5409-5413) Backslash escapes
-`` \[\` ``
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><code>\[\`</code></p>
-+<p><code> \[\` </code></p>
-
 Example 295 (lines 5434-5438) Backslash escapes
 <http://example.com?find=\*>
 
@@ -733,27 +503,6 @@ Example 295 (lines 5434-5438) Backslash escapes
 -<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
 +<p><a href="http://example.com?find=&#x5c;*">http://example.com?find=\*</a></p>
 
-Example 297 (lines 5451-5455) Backslash escapes
-[foo](/bar\* "ti\*tle")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/bar*" title="ti*tle">foo</a></p>
-+<p>[foo](/bar* &quot;ti*tle&quot;)</p>
-
-Example 298 (lines 5458-5464) Backslash escapes
-[foo]
-
-[foo]: /bar\* "ti\*tle"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/bar*" title="ti*tle">foo</a></p>
-+<p>[foo]</p>
-+<p>[foo]: /bar* &quot;ti*tle&quot;</p>
-
 Example 307 (lines 5576-5580) Entity and numeric character references
 [foo](/f&ouml;&ouml; "f&ouml;&ouml;")
 
@@ -761,7 +510,7 @@ Example 307 (lines 5576-5580) Entity and numeric character references
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-+<p>[foo](/föö &quot;föö&quot;)</p>
++<p><a href="/f&#xc3;&#xb6;&#xc3;&#xb6;" title="föö">foo</a></p>
 
 Example 308 (lines 5583-5589) Entity and numeric character references
 [foo]
@@ -770,39 +519,9 @@ Example 308 (lines 5583-5589) Entity and numeric character references
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/f%C3%B6%C3%B6" title="föö">foo</a></p>
-+<p>[foo]</p>
-+<p>[foo]: /föö &quot;föö&quot;</p>
-
-Example 313 (lines 5644-5648) Code spans
-`` foo ` bar  ``
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><code>foo ` bar</code></p>
-+<p><code> foo ` bar </code></p>
-
-Example 314 (lines 5654-5658) Code spans
-` `` `
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><code>``</code></p>
-+<p><code> `` </code></p>
-
-Example 315 (lines 5663-5669) Code spans
-``
-foo
-``
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><code>foo</code></p>
-+<p><code> foo </code></p>
++<p><a href="/f&#xc3;&#xb6;&#xc3;&#xb6;" title="föö">foo</a></p>
 
 Example 325 (lines 5778-5782) Code spans
 <http://foo.bar.`baz>`
@@ -822,158 +541,6 @@ Example 331 (lines 6037-6041) Emphasis and strong emphasis
 -<p>* a *</p>
 +<p><em> a </em></p>
 
-Example 381 (lines 6513-6517) Emphasis and strong emphasis
-*foo [bar](/url)*
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><em>foo <a href="/url">bar</a></em></p>
-+<p><em>foo [bar](/url)</em></p>
-
-Example 393 (lines 6621-6625) Emphasis and strong emphasis
-*foo [*bar*](/url)*
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><em>foo <a href="/url"><em>bar</em></a></em></p>
-+<p><em>foo [<em>bar</em>](/url)</em></p>
-
-Example 396 (lines 6650-6654) Emphasis and strong emphasis
-**foo [bar](/url)**
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><strong>foo <a href="/url">bar</a></strong></p>
-+<p><strong>foo [bar](/url)</strong></p>
-
-Example 407 (lines 6736-6740) Emphasis and strong emphasis
-**foo [*bar*](/url)**
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><strong>foo <a href="/url"><em>bar</em></a></strong></p>
-+<p><strong>foo [<em>bar</em>](/url)</strong></p>
-
-Example 447 (lines 7050-7054) Emphasis and strong emphasis
-*[bar*](/url)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>*<a href="/url">bar*</a></p>
-+<p><em>[bar</em>](/url)</p>
-
-Example 448 (lines 7057-7061) Emphasis and strong emphasis
-_foo [bar_](/url)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>_foo <a href="/url">bar_</a></p>
-+<p><em>foo [bar</em>](/url)</p>
-
-Example 456 (lines 7185-7189) Links
-[link](/uri "title")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri" title="title">link</a></p>
-+<p>[link](/uri &quot;title&quot;)</p>
-
-Example 457 (lines 7194-7198) Links
-[link](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri">link</a></p>
-+<p>[link](/uri)</p>
-
-Example 458 (lines 7203-7207) Links
-[link]()
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="">link</a></p>
-+<p>[link]()</p>
-
-Example 459 (lines 7210-7214) Links
-[link](<>)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="">link</a></p>
-+<p>[link](&lt;&gt;)</p>
-
-Example 464 (lines 7253-7257) Links
-[link](\(foo\))
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="(foo)">link</a></p>
-+<p>[link]((foo))</p>
-
-Example 465 (lines 7262-7266) Links
-[link](foo(and(bar)))
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="foo(and(bar))">link</a></p>
-+<p>[link](foo(and(bar)))</p>
-
-Example 466 (lines 7271-7275) Links
-[link](foo\(and\(bar\))
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="foo(and(bar)">link</a></p>
-+<p>[link](foo(and(bar))</p>
-
-Example 467 (lines 7278-7282) Links
-[link](<foo(and(bar)>)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="foo(and(bar)">link</a></p>
-+<p>[link](&lt;foo(and(bar)&gt;)</p>
-
-Example 468 (lines 7288-7292) Links
-[link](foo\)\:)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="foo):">link</a></p>
-+<p>[link](foo):)</p>
-
-Example 469 (lines 7297-7307) Links
-[link](#fragment)
-
-[link](http://example.com#fragment)
-
-[link](http://example.com?foo=3#frag)
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,3 @@
--<p><a href="#fragment">link</a></p>
--<p><a href="http://example.com#fragment">link</a></p>
--<p><a href="http://example.com?foo=3#frag">link</a></p>
-+<p>[link](#fragment)</p>
-+<p>[link](http://example.com#fragment)</p>
-+<p>[link](http://example.com?foo=3#frag)</p>
-
 Example 470 (lines 7313-7317) Links
 [link](foo\bar)
 
@@ -981,7 +548,7 @@ Example 470 (lines 7313-7317) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="foo%5Cbar">link</a></p>
-+<p>[link](foo\bar)</p>
++<p><a href="foo&#x5c;bar">link</a></p>
 
 Example 471 (lines 7329-7333) Links
 [link](foo%20b&auml;)
@@ -990,7 +557,7 @@ Example 471 (lines 7329-7333) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="foo%20b%C3%A4">link</a></p>
-+<p>[link](foo%20bä)</p>
++<p><a href="foo%20b&#xc3;&#xa4;">link</a></p>
 
 Example 472 (lines 7340-7344) Links
 [link]("title")
@@ -999,31 +566,7 @@ Example 472 (lines 7340-7344) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="%22title%22">link</a></p>
-+<p>[link](&quot;title&quot;)</p>
-
-Example 473 (lines 7349-7357) Links
-[link](/url "title")
-[link](/url 'title')
-[link](/url (title))
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,3 @@
--<p><a href="/url" title="title">link</a>
--<a href="/url" title="title">link</a>
--<a href="/url" title="title">link</a></p>
-+<p>[link](/url &quot;title&quot;)
-+[link](/url 'title')
-+[link](/url (title))</p>
-
-Example 474 (lines 7363-7367) Links
-[link](/url "title \"&quot;")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url" title="title &quot;&quot;">link</a></p>
-+<p>[link](/url &quot;title &quot;&quot;&quot;)</p>
++<p><a href="&#x22;title&#x22;">link</a></p>
 
 Example 475 (lines 7373-7377) Links
 [link](/url "title")
@@ -1032,117 +575,7 @@ Example 475 (lines 7373-7377) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/url%C2%A0%22title%22">link</a></p>
-+<p>[link](/url &quot;title&quot;)</p>
-
-Example 477 (lines 7391-7395) Links
-[link](/url 'title "and" title')
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url" title="title &quot;and&quot; title">link</a></p>
-+<p>[link](/url 'title &quot;and&quot; title')</p>
-
-Example 478 (lines 7415-7420) Links
-[link](   /uri
-  "title"  )
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri" title="title">link</a></p>
-+<p>[link](   /uri
-+&quot;title&quot;  )</p>
-
-Example 480 (lines 7436-7440) Links
-[link [foo [bar]]](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri">link [foo [bar]]</a></p>
-+<p>[link [foo [bar]]](/uri)</p>
-
-Example 482 (lines 7450-7454) Links
-[link [bar](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>[link <a href="/uri">bar</a></p>
-+<p>[link [bar](/uri)</p>
-
-Example 483 (lines 7457-7461) Links
-[link \[bar](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri">link [bar</a></p>
-+<p>[link [bar](/uri)</p>
-
-Example 484 (lines 7466-7470) Links
-[link *foo **bar** `#`*](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
-+<p>[link <em>foo <strong>bar</strong> <code>#</code></em>](/uri)</p>
-
-Example 485 (lines 7473-7477) Links
-[![moon](moon.jpg)](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
-+<p>[![moon](moon.jpg)](/uri)</p>
-
-Example 486 (lines 7482-7486) Links
-[foo [bar](/uri)](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>[foo <a href="/uri">bar</a>](/uri)</p>
-+<p>[foo [bar](/uri)](/uri)</p>
-
-Example 487 (lines 7489-7493) Links
-[foo *[bar [baz](/uri)](/uri)*](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>[foo <em>[bar <a href="/uri">baz</a>](/uri)</em>](/uri)</p>
-+<p>[foo <em>[bar [baz](/uri)](/uri)</em>](/uri)</p>
-
-Example 488 (lines 7496-7500) Links
-![[[foo](uri1)](uri2)](uri3)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="uri3" alt="[foo](uri2)" /></p>
-+<p>![[[foo](uri1)](uri2)](uri3)</p>
-
-Example 489 (lines 7506-7510) Links
-*[foo*](/uri)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>*<a href="/uri">foo*</a></p>
-+<p><em>[foo</em>](/uri)</p>
-
-Example 490 (lines 7513-7517) Links
-[foo *bar](baz*)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="baz*">foo *bar</a></p>
-+<p>[foo <em>bar](baz</em>)</p>
++<p><a href="/url&#xc2;&#xa0;&#x22;title&#x22;">link</a></p>
 
 Example 494 (lines 7547-7551) Links
 [foo<http://example.com/?search=](uri)>
@@ -1153,136 +586,6 @@ Example 494 (lines 7547-7551) Links
 -<p>[foo<a href="http://example.com/?search=%5D(uri)">http://example.com/?search=](uri)</a></p>
 +<p>[foo<a href="http://example.com/?search=&#x5d;(uri)">http://example.com/?search=](uri)</a></p>
 
-Example 495 (lines 7582-7588) Links
-[foo][bar]
-
-[bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url" title="title">foo</a></p>
-+<p>[foo][bar]</p>
-+<p>[bar]: /url &quot;title&quot;</p>
-
-Example 496 (lines 7597-7603) Links
-[link [foo [bar]]][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">link [foo [bar]]</a></p>
-+<p>[link [foo [bar]]][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 497 (lines 7606-7612) Links
-[link \[bar][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">link [bar</a></p>
-+<p>[link [bar][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 498 (lines 7617-7623) Links
-[link *foo **bar** `#`*][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">link <em>foo <strong>bar</strong> <code>#</code></em></a></p>
-+<p>[link <em>foo <strong>bar</strong> <code>#</code></em>][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 499 (lines 7626-7632) Links
-[![moon](moon.jpg)][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri"><img src="moon.jpg" alt="moon" /></a></p>
-+<p>[![moon](moon.jpg)][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 500 (lines 7637-7643) Links
-[foo [bar](/uri)][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[foo <a href="/uri">bar</a>]<a href="/uri">ref</a></p>
-+<p>[foo [bar](/uri)][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 501 (lines 7646-7652) Links
-[foo *bar [baz][ref]*][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[foo <em>bar <a href="/uri">baz</a></em>]<a href="/uri">ref</a></p>
-+<p>[foo <em>bar [baz][ref]</em>][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 502 (lines 7661-7667) Links
-*[foo*][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>*<a href="/uri">foo*</a></p>
-+<p><em>[foo</em>][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 503 (lines 7670-7676) Links
-[foo *bar][ref]
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">foo *bar</a></p>
-+<p>[foo *bar][ref]</p>
-+<p>[ref]: /uri</p>
-
-Example 504 (lines 7682-7688) Links
-[foo <bar attr="][ref]">
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
- <p>[foo <bar attr="][ref]"></p>
-+<p>[ref]: /uri</p>
-
-Example 505 (lines 7691-7697) Links
-[foo`][ref]`
-
-[ref]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
- <p>[foo<code>][ref]</code></p>
-+<p>[ref]: /uri</p>
-
 Example 506 (lines 7700-7706) Links
 [foo<http://example.com/?search=][ref]>
 
@@ -1290,10 +593,9 @@ Example 506 (lines 7700-7706) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p>[foo<a href="http://example.com/?search=%5D%5Bref%5D">http://example.com/?search=][ref]</a></p>
 +<p>[foo<a href="http://example.com/?search=&#x5d;&#x5b;ref&#x5d;">http://example.com/?search=][ref]</a></p>
-+<p>[ref]: /uri</p>
 
 Example 507 (lines 7711-7717) Links
 [foo][BaR]
@@ -1302,10 +604,9 @@ Example 507 (lines 7711-7717) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url" title="title">foo</a></p>
 +<p>[foo][BaR]</p>
-+<p>[bar]: /url &quot;title&quot;</p>
 
 Example 508 (lines 7722-7728) Links
 [Толпой][Толпой] is a Russian word.
@@ -1314,10 +615,9 @@ Example 508 (lines 7722-7728) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url">Толпой</a> is a Russian word.</p>
 +<p>[Толпой][Толпой] is a Russian word.</p>
-+<p>[ТОЛПОЙ]: /url</p>
 
 Example 509 (lines 7734-7741) Links
 [Foo
@@ -1327,37 +627,9 @@ Example 509 (lines 7734-7741) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
+@@ -1 +1 @@
 -<p><a href="/url">Baz</a></p>
-+<p>[Foo
-+bar]: /url</p>
 +<p>[Baz][Foo bar]</p>
-
-Example 510 (lines 7747-7753) Links
-[foo] [bar]
-
-[bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[foo] <a href="/url" title="title">bar</a></p>
-+<p>[foo] [bar]</p>
-+<p>[bar]: /url &quot;title&quot;</p>
-
-Example 511 (lines 7756-7764) Links
-[foo]
-[bar]
-
-[bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,3 @@
- <p>[foo]
--<a href="/url" title="title">bar</a></p>
-+[bar]</p>
-+<p>[bar]: /url &quot;title&quot;</p>
 
 Example 512 (lines 7797-7805) Links
 [foo]: /url1
@@ -1368,46 +640,26 @@ Example 512 (lines 7797-7805) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,3 @@
+@@ -1 +1 @@
 -<p><a href="/url1">bar</a></p>
-+<p>[foo]: /url1</p>
-+<p>[foo]: /url2</p>
-+<p>[bar][foo]</p>
++<p><a href="/url2">bar</a></p>
 
-Example 513 (lines 7812-7818) Links
-[bar][foo\!]
+Example 520 (lines 7886-7897) Links
+[
+ ]
 
-[foo!]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
- <p>[bar][foo!]</p>
-+<p>[foo!]: /url</p>
-
-Example 517 (lines 7854-7860) Links
-[foo][ref\[]
-
-[ref\[]: /uri
+[
+ ]: /uri
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">foo</a></p>
-+<p>[foo][ref[]</p>
-+<p>[ref[]: /uri</p>
-
-Example 518 (lines 7865-7871) Links
-[bar\\]: /uri
-
-[bar\\]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/uri">bar\</a></p>
-+<p>[bar\]: /uri</p>
-+<p>[bar\]</p>
+@@ -1,4 +1,2 @@
+-<p>[
+-]</p>
+-<p>[
+-]: /uri</p>
++<p><a href="/uri">
++</a></p>
 
 Example 521 (lines 7909-7915) Links
 [foo][]
@@ -1416,10 +668,9 @@ Example 521 (lines 7909-7915) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url" title="title">foo</a></p>
-+<p>[foo][]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
++<p><a href="/url" title="title">foo</a>[]</p>
 
 Example 522 (lines 7918-7924) Links
 [*foo* bar][]
@@ -1428,10 +679,9 @@ Example 522 (lines 7918-7924) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-+<p>[<em>foo</em> bar][]</p>
-+<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
++<p><a href="/url" title="title"><em>foo</em> bar</a>[]</p>
 
 Example 523 (lines 7929-7935) Links
 [Foo][]
@@ -1440,72 +690,9 @@ Example 523 (lines 7929-7935) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url" title="title">Foo</a></p>
 +<p>[Foo][]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 524 (lines 7942-7950) Links
-[foo] 
-[]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,3 @@
--<p><a href="/url" title="title">foo</a>
-+<p>[foo]
- []</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 525 (lines 7962-7968) Links
-[foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url" title="title">foo</a></p>
-+<p>[foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 526 (lines 7971-7977) Links
-[*foo* bar]
-
-[*foo* bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url" title="title"><em>foo</em> bar</a></p>
-+<p>[<em>foo</em> bar]</p>
-+<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
-
-Example 527 (lines 7980-7986) Links
-[[*foo* bar]]
-
-[*foo* bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[<a href="/url" title="title"><em>foo</em> bar</a>]</p>
-+<p>[[<em>foo</em> bar]]</p>
-+<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
-
-Example 528 (lines 7989-7995) Links
-[[bar [foo]
-
-[foo]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[[bar <a href="/url">foo</a></p>
-+<p>[[bar [foo]</p>
-+<p>[foo]: /url</p>
 
 Example 529 (lines 8000-8006) Links
 [Foo]
@@ -1514,59 +701,9 @@ Example 529 (lines 8000-8006) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url" title="title">Foo</a></p>
 +<p>[Foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 530 (lines 8011-8017) Links
-[foo] bar
-
-[foo]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url">foo</a> bar</p>
-+<p>[foo] bar</p>
-+<p>[foo]: /url</p>
-
-Example 531 (lines 8023-8029) Links
-\[foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
- <p>[foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 532 (lines 8035-8041) Links
-[foo*]: /url
-
-*[foo*]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>*<a href="/url">foo*</a></p>
-+<p>[foo*]: /url</p>
-+<p><em>[foo</em>]</p>
-
-Example 533 (lines 8047-8054) Links
-[foo][bar]
-
-[foo]: /url1
-[bar]: /url2
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,3 @@
--<p><a href="/url2">foo</a></p>
-+<p>[foo][bar]</p>
-+<p>[foo]: /url1
-+[bar]: /url2</p>
 
 Example 534 (lines 8056-8062) Links
 [foo][]
@@ -1575,113 +712,9 @@ Example 534 (lines 8056-8062) Links
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><a href="/url1">foo</a></p>
-+<p>[foo][]</p>
-+<p>[foo]: /url1</p>
-
-Example 535 (lines 8066-8072) Links
-[foo]()
-
-[foo]: /url1
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="">foo</a></p>
-+<p>[foo]()</p>
-+<p>[foo]: /url1</p>
-
-Example 536 (lines 8074-8080) Links
-[foo](not a link)
-
-[foo]: /url1
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><a href="/url1">foo</a>(not a link)</p>
-+<p>[foo](not a link)</p>
-+<p>[foo]: /url1</p>
-
-Example 537 (lines 8085-8091) Links
-[foo][bar][baz]
-
-[baz]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>[foo]<a href="/url">bar</a></p>
-+<p>[foo][bar][baz]</p>
-+<p>[baz]: /url</p>
-
-Example 538 (lines 8097-8104) Links
-[foo][bar][baz]
-
-[baz]: /url1
-[bar]: /url2
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,3 @@
--<p><a href="/url2">foo</a><a href="/url1">baz</a></p>
-+<p>[foo][bar][baz]</p>
-+<p>[baz]: /url1
-+[bar]: /url2</p>
-
-Example 539 (lines 8110-8117) Links
-[foo][bar][baz]
-
-[baz]: /url1
-[foo]: /url2
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,3 @@
--<p>[foo]<a href="/url1">bar</a></p>
-+<p>[foo][bar][baz]</p>
-+<p>[baz]: /url1
-+[foo]: /url2</p>
-
-Example 540 (lines 8133-8137) Images
-![foo](/url "title")
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="foo" title="title" /></p>
-+<p>![foo](/url &quot;title&quot;)</p>
-
-Example 541 (lines 8140-8146) Images
-![foo *bar*]
-
-[foo *bar*]: train.jpg "train & tracks"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+<p>![foo <em>bar</em>]</p>
-+<p>[foo <em>bar</em>]: train.jpg &quot;train &amp; tracks&quot;</p>
-
-Example 542 (lines 8149-8153) Images
-![foo ![bar](/url)](/url2)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url2" alt="foo bar" /></p>
-+<p>![foo ![bar](/url)](/url2)</p>
-
-Example 543 (lines 8156-8160) Images
-![foo [bar](/url)](/url2)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url2" alt="foo bar" /></p>
-+<p>![foo [bar](/url)](/url2)</p>
++<p><a href="/url1">foo</a>[]</p>
 
 Example 544 (lines 8170-8176) Images
 ![foo *bar*][]
@@ -1690,10 +723,9 @@ Example 544 (lines 8170-8176) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+<p>![foo <em>bar</em>][]</p>
-+<p>[foo <em>bar</em>]: train.jpg &quot;train &amp; tracks&quot;</p>
++<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" />[]</p>
 
 Example 545 (lines 8179-8185) Images
 ![foo *bar*][foobar]
@@ -1702,58 +734,9 @@ Example 545 (lines 8179-8185) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 +<p>![foo <em>bar</em>][foobar]</p>
-+<p>[FOOBAR]: train.jpg &quot;train &amp; tracks&quot;</p>
-
-Example 546 (lines 8188-8192) Images
-![foo](train.jpg)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="train.jpg" alt="foo" /></p>
-+<p>![foo](train.jpg)</p>
-
-Example 547 (lines 8195-8199) Images
-My ![foo bar](/path/to/train.jpg  "title"   )
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>My <img src="/path/to/train.jpg" alt="foo bar" title="title" /></p>
-+<p>My ![foo bar](/path/to/train.jpg  &quot;title&quot;   )</p>
-
-Example 548 (lines 8202-8206) Images
-![foo](<url>)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="url" alt="foo" /></p>
-+<p>![foo](<url>)</p>
-
-Example 549 (lines 8209-8213) Images
-![](/url)
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="" /></p>
-+<p>![](/url)</p>
-
-Example 550 (lines 8218-8224) Images
-![foo][bar]
-
-[bar]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><img src="/url" alt="foo" /></p>
-+<p>![foo][bar]</p>
-+<p>[bar]: /url</p>
 
 Example 551 (lines 8227-8233) Images
 ![foo][bar]
@@ -1762,10 +745,9 @@ Example 551 (lines 8227-8233) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="/url" alt="foo" /></p>
 +<p>![foo][bar]</p>
-+<p>[BAR]: /url</p>
 
 Example 552 (lines 8238-8244) Images
 ![foo][]
@@ -1774,10 +756,9 @@ Example 552 (lines 8238-8244) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="/url" alt="foo" title="title" /></p>
-+<p>![foo][]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
++<p><img src="/url" alt="foo" title="title" />[]</p>
 
 Example 553 (lines 8247-8253) Images
 ![*foo* bar][]
@@ -1786,10 +767,9 @@ Example 553 (lines 8247-8253) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="/url" alt="foo bar" title="title" /></p>
-+<p>![<em>foo</em> bar][]</p>
-+<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
++<p><img src="/url" alt="foo bar" title="title" />[]</p>
 
 Example 554 (lines 8258-8264) Images
 ![Foo][]
@@ -1798,48 +778,9 @@ Example 554 (lines 8258-8264) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="/url" alt="Foo" title="title" /></p>
 +<p>![Foo][]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 555 (lines 8270-8278) Images
-![foo] 
-[]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,3 @@
--<p><img src="/url" alt="foo" title="title" />
-+<p>![foo]
- []</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 556 (lines 8283-8289) Images
-![foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><img src="/url" alt="foo" title="title" /></p>
-+<p>![foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 557 (lines 8292-8298) Images
-![*foo* bar]
-
-[*foo* bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p><img src="/url" alt="foo bar" title="title" /></p>
-+<p>![<em>foo</em> bar]</p>
-+<p>[<em>foo</em> bar]: /url &quot;title&quot;</p>
 
 Example 559 (lines 8315-8321) Images
 ![Foo]
@@ -1848,33 +789,9 @@ Example 559 (lines 8315-8321) Images
 
 --- expected HTML
 +++ actual HTML
-@@ -1 +1,2 @@
+@@ -1 +1 @@
 -<p><img src="/url" alt="Foo" title="title" /></p>
 +<p>![Foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 560 (lines 8327-8333) Images
-!\[foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
- <p>![foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
-
-Example 561 (lines 8339-8345) Images
-\![foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1,2 @@
--<p>!<a href="/url" title="title">foo</a></p>
-+<p>![foo]</p>
-+<p>[foo]: /url &quot;title&quot;</p>
 
 Example 571 (lines 8446-8450) Autolinks
 <http://example.com/\[\>
@@ -1885,4 +802,4 @@ Example 571 (lines 8446-8450) Autolinks
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
 +<p><a href="http://example.com/&#x5c;&#x5b;&#x5c;">http://example.com/\[\</a></p>
 
-466 passed, 155 failed, 0 errored, 0 skipped
+560 passed, 61 failed, 0 errored, 0 skipped

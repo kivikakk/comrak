@@ -142,3 +142,65 @@ pub fn trim(line: &mut Vec<char>) {
     ltrim(line);
     rtrim(line);
 }
+
+pub fn trim_slice(mut i: &[char]) -> &[char] {
+    let mut len = i.len();
+    while len > 0 && isspace(&i[0]) {
+        i = &i[1..];
+        len -= 1;
+    }
+    while len > 0 && isspace(&i[len - 1]) {
+        i = &i[..len - 1];
+        len -= 1;
+    }
+    i
+}
+
+pub fn clean_url(url: &[char]) -> Vec<char> {
+    let url = trim_slice(url);
+
+    let url_len = url.len();
+    if url_len == 0 {
+        return vec![];
+    }
+
+    let mut b = if url[0] == '<' && url[url_len - 1] == '>' {
+        entity::unescape_html(&url[1..url_len - 1])
+    } else {
+        entity::unescape_html(url)
+    };
+
+    unescape(&mut b);
+    b
+}
+
+pub fn clean_title(title: &[char]) -> Vec<char> {
+    let title_len = title.len();
+    if title_len == 0 {
+        return vec![];
+    }
+
+    let first = title[0];
+    let last = title[title_len - 1];
+
+    let mut b = if (first == '\'' && last == '\'') || (first == '(' && last == ')') ||
+                   (first == '"' && last == '"') {
+        entity::unescape_html(&title[1..title_len - 1])
+    } else {
+        entity::unescape_html(title)
+    };
+
+    unescape(&mut b);
+    b
+}
+
+pub fn is_blank(s: &[char]) -> bool {
+    for c in s {
+        match *c {
+            '\r' | '\n' => return true,
+            ' ' | '\t' => (),
+            _ => return false,
+        }
+    }
+    true
+}

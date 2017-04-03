@@ -18,7 +18,7 @@ mod tests;
 
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::io::Read;
 use std::mem;
 
@@ -63,9 +63,11 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 const TAB_STOP: usize = 8;
 const CODE_INDENT: usize = 4;
 const MAXBACKTICKS: usize = 80;
+const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 struct Parser<'a> {
     arena: &'a Arena<Node<'a, AstCell>>,
+    refmap: HashMap<Vec<char>, Reference>,
     root: &'a Node<'a, AstCell>,
     current: &'a Node<'a, AstCell>,
     line_number: u32,
@@ -81,6 +83,12 @@ struct Parser<'a> {
     last_buffer_ended_with_cr: bool,
 }
 
+#[derive(Clone)]
+struct Reference {
+    url: Vec<char>,
+    title: Vec<char>,
+}
+
 impl<'a> Parser<'a> {
     fn new(arena: &'a Arena<Node<'a, AstCell>>,
            root: &'a Node<'a, AstCell>,
@@ -88,6 +96,7 @@ impl<'a> Parser<'a> {
            -> Parser<'a> {
         Parser {
             arena: arena,
+            refmap: HashMap::new(),
             root: root,
             current: root,
             line_number: 0,
@@ -559,8 +568,7 @@ impl<'a> Parser<'a> {
         }
 
         let matched = if self.indent <= 3 &&
-                         line.get(self.first_nonspace)
-            .map_or(false, |&c| c == ncb.fence_char) {
+                         line.get(self.first_nonspace) == Some(&ncb.fence_char) {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -730,18 +738,18 @@ impl<'a> Parser<'a> {
 
     fn finalize_document(&mut self) {
         while !self.current.same_node(self.root) {
-            self.current = self.finalize(&self.current).unwrap();
+            self.current = self.finalize(self.current).unwrap();
         }
 
         self.finalize(self.root);
         self.process_inlines();
     }
 
-    fn finalize(&self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
+    fn finalize(&mut self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
-    fn finalize_borrowed(&self,
+    fn finalize_borrowed(&mut self,
                          node: &'a Node<'a, AstCell>,
                          ast: &mut Ast)
                          -> Option<&'a Node<'a, AstCell>> {
@@ -771,22 +779,22 @@ impl<'a> Parser<'a> {
         }
 
         let content = &mut ast.content;
+        let mut pos = 0;
+
+        let parent = node.parent();
 
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
-                // TODO: remove reference links
-                /*
-                    while (cmark_strbuf_at(node_content, 0) == '[' &&
-                           (pos = cmark_parse_reference_inline(parser->mem, node_content,
-                                                               parser->refmap))) {
-
-                      cmark_strbuf_drop(node_content, pos);
+                while content.get(0) == Some(&'[') &&
+                      unwrap_into(parse_reference_inline(self.arena, content, &mut self.refmap),
+                                  &mut pos) {
+                    for i in 0..pos {
+                        content.remove(0);
                     }
-                    if (is_blank(node_content, 0)) {
-                      // remove blank node (former reference def)
-                      cmark_node_free(b);
-                    }
-                */
+                }
+                if is_blank(content) {
+                    node.detach();
+                }
             }
             &mut NodeValue::CodeBlock(ref mut ncb) => {
                 if !ncb.fenced {
@@ -855,7 +863,7 @@ impl<'a> Parser<'a> {
             _ => (),
         }
 
-        node.parent()
+        parent
     }
 
     fn process_inlines(&mut self) {
@@ -877,22 +885,185 @@ impl<'a> Parser<'a> {
             arena: self.arena,
             input: node.data.borrow().content.clone(),
             pos: 0,
+            refmap: &mut self.refmap,
             delimiters: vec![],
+            brackets: vec![],
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
         };
         rtrim(&mut subj.input);
 
-        while !subj.eof() && self.parse_inline(&mut subj, node) {}
+        while !subj.eof() && subj.parse_inline(node) {}
 
-        self.process_emphasis(&mut subj, -1);
-        // TODO
-        // while subj.last_delim { subj.pop_bracket() }
-        // while subj.last_bracket { subj.pop_bracket() }
+        subj.process_emphasis(-1);
+
+        while subj.delimiters.len() > 0 {
+            // XXX ???
+            assert!(false);
+            subj.brackets.pop();
+        }
+        while subj.brackets.len() > 0 {
+            subj.brackets.pop();
+        }
+    }
+}
+
+fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+                              content: &[char],
+                              refmap: &mut HashMap<Vec<char>, Reference>)
+                              -> Option<usize> {
+    let mut subj = Subject {
+        arena: arena,
+        input: content.to_vec(),
+        pos: 0,
+        refmap: refmap,
+        delimiters: vec![],
+        brackets: vec![],
+        backticks: [0; MAXBACKTICKS + 1],
+        scanned_for_backticks: false,
+    };
+
+    let lab = match subj.link_label() {
+            Some(lab) => if lab.len() == 0 { return None } else { lab },
+            None => return None,
+        }
+        .to_vec();
+
+    if subj.peek_char() != Some(&':') {
+        return None;
     }
 
-    fn process_emphasis(&mut self, subj: &mut Subject<'a>, stack_bottom: i32) {
-        let mut closer = subj.delimiters.len() as i32 - 1;
+    subj.pos += 1;
+    subj.spnl();
+    let matchlen = match manual_scan_link_url(&subj.input[subj.pos..]) {
+        Some(matchlen) => matchlen,
+        None => return None,
+    };
+    let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
+    subj.pos += matchlen;
+
+    let beforetitle = subj.pos;
+    subj.spnl();
+    let title = match scanners::link_title(&subj.input[subj.pos..]) {
+        Some(matchlen) => {
+            let t = &subj.input[subj.pos..subj.pos + matchlen];
+            subj.pos += matchlen;
+            t.to_vec()
+        }
+        _ => {
+            subj.pos = beforetitle;
+            vec![]
+        }
+    };
+
+    subj.skip_spaces();
+    if !subj.skip_line_end() {
+        if title.len() > 0 {
+            subj.pos = beforetitle;
+            subj.skip_spaces();
+            if !subj.skip_line_end() {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    subj.refmap.insert(lab,
+                       Reference {
+                           url: clean_url(&url),
+                           title: clean_title(&title),
+                       });
+    Some(subj.pos)
+}
+
+struct Subject<'a, 'b> {
+    arena: &'a Arena<Node<'a, AstCell>>,
+    input: Vec<char>,
+    pos: usize,
+    refmap: &'b mut HashMap<Vec<char>, Reference>,
+    delimiters: Vec<Delimiter<'a>>,
+    brackets: Vec<Bracket<'a>>,
+    backticks: [usize; MAXBACKTICKS + 1],
+    scanned_for_backticks: bool,
+}
+
+struct Delimiter<'a> {
+    inl: &'a Node<'a, AstCell>,
+    position: usize,
+    delim_char: char,
+    can_open: bool,
+    can_close: bool,
+}
+
+struct Bracket<'a> {
+    previous_delimiter: i32,
+    inl_text: &'a Node<'a, AstCell>,
+    position: usize,
+    image: bool,
+    active: bool,
+    bracket_after: bool,
+}
+
+impl<'a, 'b> Subject<'a, 'b> {
+    fn parse_inline(&mut self, node: &'a Node<'a, AstCell>) -> bool {
+        let new_inl: Option<&'a Node<'a, AstCell>>;
+        let c = match self.peek_char() {
+            None => return false,
+            Some(ch) => *ch as char,
+        };
+
+        match c {
+            '\0' => return false,
+            '\r' | '\n' => new_inl = Some(self.handle_newline()),
+            '`' => new_inl = Some(self.handle_backticks()),
+            '\\' => new_inl = Some(self.handle_backslash()),
+            '&' => new_inl = Some(self.handle_entity()),
+            '<' => new_inl = Some(self.handle_pointy_brace()),
+            '*' | '_' | '\'' | '"' => new_inl = Some(self.handle_delim(c)),
+            // TODO: smart characters. Eh.
+            //'-' => new_inl => Some(self.handle_hyphen()),
+            //'.' => new_inl => Some(self.handle_period()),
+            '[' => {
+                self.pos += 1;
+                let inl = make_inline(self.arena, NodeValue::Text(vec!['[']));
+                new_inl = Some(inl);
+                self.push_bracket(false, inl);
+            },
+            ']' => new_inl = self.handle_close_bracket(),
+            '!' => {
+                self.pos += 1;
+                if self.peek_char() == Some(&'[') {
+                    self.pos += 1;
+                    let inl = make_inline(self.arena, NodeValue::Text(vec!['!', '[']));
+                    new_inl = Some(inl);
+                    self.push_bracket(true, inl);
+                } else {
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(vec!['!'])));
+                }
+            },
+            _ => {
+                let endpos = self.find_special_char();
+                let mut contents = self.input[self.pos..endpos].to_vec();
+                self.pos = endpos;
+
+                if self.peek_char().map_or(false, is_line_end_char) {
+                    rtrim(&mut contents);
+                }
+
+                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
+            }
+        }
+
+        if let Some(inl) = new_inl {
+            node.append(inl);
+        }
+
+        true
+    }
+
+    fn process_emphasis(&mut self, stack_bottom: i32) {
+        let mut closer = self.delimiters.len() as i32 - 1;
         let mut openers_bottom: Vec<[i32; 128]> = vec![];
         for i in 0..3 {
             let mut a = [-1; 128];
@@ -907,28 +1078,28 @@ impl<'a> Parser<'a> {
             closer -= 1;
         }
 
-        while closer != -1 && (closer as usize) < subj.delimiters.len() {
-            if subj.delimiters[closer as usize].can_close {
+        while closer != -1 && (closer as usize) < self.delimiters.len() {
+            if self.delimiters[closer as usize].can_close {
                 let mut opener = closer - 1;
                 let mut opener_found = false;
 
                 while opener != -1 && opener != stack_bottom &&
                       opener !=
-                      openers_bottom[subj.delimiters[closer as usize]
+                      openers_bottom[self.delimiters[closer as usize]
                     .inl
                     .data
                     .borrow_mut()
                     .value
                     .text()
                     .unwrap()
-                    .len() % 3][subj.delimiters[closer as usize]
+                    .len() % 3][self.delimiters[closer as usize]
                     .delim_char as usize] {
-                    if subj.delimiters[opener as usize].can_open &&
-                       subj.delimiters[opener as usize].delim_char ==
-                       subj.delimiters[closer as usize].delim_char {
-                        let odd_match = (subj.delimiters[closer as usize].can_open ||
-                                         subj.delimiters[opener as usize].can_close) &&
-                                        ((subj.delimiters[opener as usize]
+                    if self.delimiters[opener as usize].can_open &&
+                       self.delimiters[opener as usize].delim_char ==
+                       self.delimiters[closer as usize].delim_char {
+                        let odd_match = (self.delimiters[closer as usize].can_open ||
+                                         self.delimiters[opener as usize].can_close) &&
+                                        ((self.delimiters[opener as usize]
                             .inl
                             .data
                             .borrow_mut()
@@ -936,7 +1107,7 @@ impl<'a> Parser<'a> {
                             .text()
                             .unwrap()
                             .len() +
-                                          subj.delimiters[closer as usize]
+                                          self.delimiters[closer as usize]
                             .inl
                             .data
                             .borrow_mut()
@@ -953,18 +1124,18 @@ impl<'a> Parser<'a> {
                 }
                 let old_closer = closer;
 
-                if subj.delimiters[closer as usize].delim_char == '*' ||
-                   subj.delimiters[closer as usize].delim_char == '_' {
+                if self.delimiters[closer as usize].delim_char == '*' ||
+                   self.delimiters[closer as usize].delim_char == '_' {
                     if opener_found {
-                        closer = subj.insert_emph(opener, closer);
+                        closer = self.insert_emph(opener, closer);
                     } else {
                         closer += 1;
                     }
-                } else if subj.delimiters[closer as usize].delim_char == '\'' {
-                    *subj.delimiters[closer as usize].inl.data.borrow_mut().value.text().unwrap() =
+                } else if self.delimiters[closer as usize].delim_char == '\'' {
+                    *self.delimiters[closer as usize].inl.data.borrow_mut().value.text().unwrap() =
                         "’".chars().collect();
                     if opener_found {
-                        *subj.delimiters[opener as usize]
+                        *self.delimiters[opener as usize]
                             .inl
                             .data
                             .borrow_mut()
@@ -973,11 +1144,11 @@ impl<'a> Parser<'a> {
                             .unwrap() = "‘".chars().collect();
                     }
                     closer += 1;
-                } else if subj.delimiters[closer as usize].delim_char == '"' {
-                    *subj.delimiters[closer as usize].inl.data.borrow_mut().value.text().unwrap() =
+                } else if self.delimiters[closer as usize].delim_char == '"' {
+                    *self.delimiters[closer as usize].inl.data.borrow_mut().value.text().unwrap() =
                         "”".chars().collect();
                     if opener_found {
-                        *subj.delimiters[opener as usize]
+                        *self.delimiters[opener as usize]
                             .inl
                             .data
                             .borrow_mut()
@@ -988,7 +1159,7 @@ impl<'a> Parser<'a> {
                     closer += 1;
                 }
                 if !opener_found {
-                    let ix = subj.delimiters[old_closer as usize]
+                    let ix = self.delimiters[old_closer as usize]
                         .inl
                         .data
                         .borrow_mut()
@@ -996,10 +1167,10 @@ impl<'a> Parser<'a> {
                         .text()
                         .unwrap()
                         .len() % 3;
-                    openers_bottom[ix][subj.delimiters[old_closer as usize].delim_char as usize] =
+                    openers_bottom[ix][self.delimiters[old_closer as usize].delim_char as usize] =
                         old_closer - 1;
-                    if !subj.delimiters[old_closer as usize].can_open {
-                        subj.delimiters.remove(old_closer as usize);
+                    if !self.delimiters[old_closer as usize].can_open {
+                        self.delimiters.remove(old_closer as usize);
                     }
                 }
             } else {
@@ -1008,104 +1179,20 @@ impl<'a> Parser<'a> {
         }
 
         // TODO truncate instead!
-        while subj.delimiters.len() > (stack_bottom + 1) as usize {
-            subj.delimiters.pop();
+        while self.delimiters.len() > (stack_bottom + 1) as usize {
+            self.delimiters.pop();
         }
     }
 
-    fn parse_inline(&mut self, subj: &mut Subject<'a>, node: &'a Node<'a, AstCell>) -> bool {
-        let new_inl: Option<&'a Node<'a, AstCell>>;
-        let c = match subj.peek_char() {
-            None => return false,
-            Some(ch) => *ch as char,
-        };
-
-        match c {
-            '\0' => return false,
-            '\r' | '\n' => new_inl = Some(subj.handle_newline()),
-            '`' => new_inl = Some(subj.handle_backticks()),
-            '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c)),
-            '\\' => new_inl = Some(subj.handle_backslash()),
-            '&' => new_inl = Some(subj.handle_entity()),
-            '<' => new_inl = Some(subj.handle_pointy_brace()),
-            // TODO
-            _ => {
-                let endpos = subj.find_special_char();
-                let mut contents = subj.input[subj.pos..endpos].to_vec();
-                subj.pos = endpos;
-
-                if subj.peek_char().map_or(false, is_line_end_char) {
-                    rtrim(&mut contents);
-                }
-
-                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
-            }
-        }
-
-        if let Some(inl) = new_inl {
-            node.append(inl);
-        }
-
-        true
-    }
-}
-
-// typedef struct subject{
-// cmark_mem *mem;
-// cmark_chunk input;
-// bufsize_t pos;
-// cmark_reference_map *refmap;
-// delimiter *last_delim;
-// bracket *last_bracket;
-// bufsize_t backticks[MAXBACKTICKS + 1];
-// bool scanned_for_backticks;
-// } subject;
-//
-// typedef struct bracket {
-// struct bracket *previous;
-// struct delimiter *previous_delimiter;
-// cmark_node *inl_text;
-// bufsize_t position;
-// bool image;
-// bool active;
-// bool bracket_after;
-// } bracket;
-//
-// typedef struct delimiter {
-// struct delimiter *previous;
-// struct delimiter *next;
-// cmark_node *inl_text;
-// bufsize_t length;
-// int position;
-// unsigned char delim_char;
-// int can_open;
-// int can_close;
-// int active;
-// } delimiter;
-//
-
-struct Subject<'a> {
-    arena: &'a Arena<Node<'a, AstCell>>,
-    input: Vec<char>,
-    pos: usize,
-    delimiters: Vec<Delimiter<'a>>,
-    backticks: [usize; MAXBACKTICKS + 1],
-    scanned_for_backticks: bool,
-}
-
-impl<'a> Subject<'a> {
     fn eof(&self) -> bool {
         self.pos >= self.input.len()
     }
 
-    fn peek_char<'b>(&'b self) -> Option<&'b char> {
-        if self.eof() {
-            return None;
-        }
-
-        let ref c = self.input[self.pos];
-        assert!(*c > '\0');
-        Some(c)
+    fn peek_char<'x>(&'x self) -> Option<&'x char> {
+        self.input.get(self.pos).map(|c| {
+            assert!(*c > '\0');
+            c
+        })
     }
 
     fn find_special_char(&self) -> usize {
@@ -1120,11 +1207,9 @@ impl<'a> Subject<'a> {
                 '\\',
                 '&',
                 '<',
-                /* TODO
                 '[',
                 ']',
                 '!',
-                */
                 ].iter().cloned().collect();
         }
 
@@ -1155,7 +1240,7 @@ impl<'a> Subject<'a> {
 
     fn take_while(&mut self, c: char) -> Vec<char> {
         let mut v = vec![];
-        while self.peek_char().map_or(false, |&ch| ch == c) {
+        while self.peek_char() == Some(&c) {
             v.push(self.input[self.pos]);
             self.pos += 1;
         }
@@ -1201,6 +1286,7 @@ impl<'a> Subject<'a> {
             }
             Some(endpos) => {
                 let mut buf = self.input[startpos..endpos - openticks.len()].to_vec();
+                trim(&mut buf);
                 normalize_whitespace(&mut buf);
                 make_inline(self.arena, NodeValue::Code(buf))
             }
@@ -1230,7 +1316,6 @@ impl<'a> Subject<'a> {
     }
 
     fn scan_delims(&mut self, c: char) -> (usize, bool, bool) {
-        // Elided: a bunch of UTF-8 processing stuff.
         let before_char = if self.pos == 0 {
             '\n'
         } else {
@@ -1242,7 +1327,7 @@ impl<'a> Subject<'a> {
             numdelims += 1;
             self.pos += 1;
         } else {
-            while self.peek_char().map_or(false, |&x| x == c) {
+            while self.peek_char() == Some(&c) {
                 numdelims += 1;
                 self.pos += 1;
             }
@@ -1283,7 +1368,6 @@ impl<'a> Subject<'a> {
             delim_char: c,
             can_open: can_open,
             can_close: can_close,
-            active: false,
         });
     }
 
@@ -1376,11 +1460,11 @@ impl<'a> Subject<'a> {
 
     fn skip_line_end(&mut self) -> bool {
         let mut seen_line_end_char = false;
-        if self.peek_char().map_or(false, |&ch| ch == '\r') {
+        if self.peek_char() == Some(&'\r') {
             self.pos += 1;
             seen_line_end_char = true;
         }
-        if self.peek_char().map_or(false, |&ch| ch == '\n') {
+        if self.peek_char() == Some(&'\n') {
             self.pos += 1;
             seen_line_end_char = true;
         }
@@ -1427,15 +1511,233 @@ impl<'a> Subject<'a> {
 
         make_inline(self.arena, NodeValue::Text(vec!['<']))
     }
+
+    fn push_bracket(&mut self, image: bool, inl_text: &'a Node<'a, AstCell>) {
+        let len = self.brackets.len();
+        if len > 0 {
+            self.brackets[len - 1].bracket_after = true;
+        }
+        self.brackets.push(Bracket {
+            previous_delimiter: self.delimiters.len() as i32 - 1,
+            inl_text: inl_text,
+            position: self.pos,
+            image: image,
+            active: true,
+            bracket_after: false,
+        });
+    }
+
+    fn handle_close_bracket(&mut self) -> Option<&'a Node<'a, AstCell>> {
+        self.pos += 1;
+        let initial_pos = self.pos;
+
+        let brackets_len = self.brackets.len();
+        if brackets_len == 0 {
+            return Some(make_inline(self.arena, NodeValue::Text(vec![']'])));
+        }
+
+        if !self.brackets[brackets_len - 1].active {
+            self.brackets.pop();
+            return Some(make_inline(self.arena, NodeValue::Text(vec![']'])));
+        }
+
+        let is_image = self.brackets[brackets_len - 1].image;
+        let after_link_text_pos = self.pos;
+
+        let mut sps = 0;
+        let mut n = 0;
+        if self.peek_char() == Some(&'(') &&
+           {
+            sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
+            unwrap_into(manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
+                        &mut n)
+        } {
+            let starturl = self.pos + 1 + sps;
+            let endurl = starturl + n;
+            let starttitle = endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
+            let endtitle = if starttitle == endurl {
+                starttitle
+            } else {
+                starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
+            };
+            let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
+
+            if self.input.get(endall) == Some(&')') {
+                self.pos = endall + 1;
+                let url = clean_url(&self.input[starturl..endurl]);
+                let title = clean_title(&self.input[starttitle..endtitle]);
+                self.close_bracket_match(is_image, url, title);
+                return None;
+            } else {
+                self.pos = after_link_text_pos;
+            }
+        }
+
+        let mut lab = match self.link_label() {
+            Some(lab) => {
+                if lab.len() == 0 {
+                    None
+                } else {
+                    Some(lab.to_vec())
+                }
+            }
+            None => None,
+        };
+
+        if !lab.is_some() {
+            self.pos = initial_pos;
+        }
+
+        if !lab.is_some() && !self.brackets[brackets_len - 1].bracket_after {
+            lab = Some(self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]
+                .to_vec());
+        }
+
+        let reff: Option<Reference> = if let Some(lab) = lab {
+            self.refmap.get(&lab).map(|c| c.clone())
+        } else {
+            None
+        };
+
+        if let Some(reff) = reff {
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
+            return None;
+        }
+
+        self.brackets.pop();
+        self.pos = initial_pos;
+        Some(make_inline(self.arena, NodeValue::Text(vec![']'])))
+    }
+
+    fn close_bracket_match(&mut self, is_image: bool, url: Vec<char>, title: Vec<char>) {
+        let nl = NodeLink {
+            url: url,
+            title: title,
+        };
+        let inl = make_inline(self.arena,
+                              if is_image {
+                                  NodeValue::Image(nl)
+                              } else {
+                                  NodeValue::Link(nl)
+                              });
+
+        let mut brackets_len = self.brackets.len();
+        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
+        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        while let Some(tmp) = tmpch {
+            tmpch = tmp.next_sibling();
+            inl.append(tmp);
+        }
+        self.brackets[brackets_len - 1].inl_text.detach();
+        let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
+        self.process_emphasis(previous_delimiter);
+        self.brackets.pop();
+        brackets_len -= 1;
+
+        if !is_image {
+            let mut i = brackets_len as i32 - 1;
+            while i >= 0 {
+                if !self.brackets[i as usize].image {
+                    if !self.brackets[i as usize].active {
+                        break;
+                    } else {
+                        self.brackets[i as usize].active = false;
+                    }
+                }
+                i -= 1;
+            }
+        }
+    }
+
+    fn link_label(&mut self) -> Option<&[char]> {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&'[') {
+            return None;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        let mut c = '\0';
+        while unwrap_into_copy(self.peek_char(), &mut c) && c != '[' && c != ']' {
+            if c == '\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, ispunct) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return None;
+            }
+        }
+
+        if c == ']' {
+            let raw_label = &self.input[startpos + 1..self.pos];
+            trim_slice(raw_label);
+            self.pos += 1;
+            Some(raw_label)
+        } else {
+            self.pos = startpos;
+            None
+        }
+    }
+
+    fn spnl(&mut self) {
+        self.skip_spaces();
+        if self.skip_line_end() {
+            self.skip_spaces();
+        }
+    }
 }
 
-struct Delimiter<'a> {
-    inl: &'a Node<'a, AstCell>,
-    position: usize,
-    delim_char: char,
-    can_open: bool,
-    can_close: bool,
-    active: bool,
+fn manual_scan_link_url(input: &[char]) -> Option<usize> {
+    let len = input.len();
+    let mut i = 0;
+    let mut nb_p = 0;
+
+    if i < len && input[i] == '<' {
+        i += 1;
+        while i < len {
+            if input[i] == '>' {
+                i += 1;
+                break;
+            } else if input[i] == '\\' {
+                i += 2;
+            } else if isspace(&input[i]) {
+                return None;
+            } else {
+                i += 1;
+            }
+        }
+    } else {
+        while i < len {
+            if input[i] == '\\' {
+                i += 2;
+            } else if input[i] == '(' {
+                nb_p += 1;
+                i += 1;
+            } else if input[i] == ')' {
+                if nb_p == 0 {
+                    break;
+                }
+                nb_p -= 1;
+                i += 1;
+            } else if isspace(&input[i]) {
+                break;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    if i >= len { None } else { Some(i) }
 }
 
 fn make_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>, value: NodeValue) -> &'a Node<'a, AstCell> {
@@ -1550,6 +1852,16 @@ fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
     match t {
         Some(v) => {
             *out = v;
+            true
+        }
+        _ => false,
+    }
+}
+
+fn unwrap_into_copy<T: Copy>(t: Option<&T>, out: &mut T) -> bool {
+    match t {
+        Some(v) => {
+            *out = *v;
             true
         }
         _ => false,
