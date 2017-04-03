@@ -1022,6 +1022,7 @@ impl<'a> Parser<'a> {
             '\r' | '\n' => new_inl = Some(subj.handle_newline()),
             '`' => new_inl = Some(subj.handle_backticks()),
             '*' | '_' | '"' => new_inl = Some(subj.handle_delim(c)),
+            '\\' => new_inl = Some(subj.handle_backslash()),
             // TODO
             _ => {
                 let endpos = subj.find_special_char();
@@ -1111,8 +1112,8 @@ impl<'a> Subject<'a> {
                 '*',
                 '"',
                 '`',
-                /* TODO
                 '\\',
+                /* TODO
                 '&',
                 '[',
                 ']',
@@ -1354,6 +1355,31 @@ impl<'a> Subject<'a> {
         } else {
             -1
         }
+    }
+
+    fn handle_backslash(&mut self) -> &'a Node<'a, AstCell> {
+        self.pos += 1;
+        if self.peek_char().map_or(false, ispunct) {
+            self.pos += 1;
+            return make_inline(self.arena, NodeValue::Text(vec![self.input[self.pos - 1]]));
+        } else if !self.eof() && self.skip_line_end() {
+            return make_inline(self.arena, NodeValue::LineBreak);
+        } else {
+            return make_inline(self.arena, NodeValue::Text(vec!['\\']));
+        }
+    }
+
+    fn skip_line_end(&mut self) -> bool {
+        let mut seen_line_end_char = false;
+        if self.peek_char().map_or(false, |&ch| ch == '\r') {
+            self.pos += 1;
+            seen_line_end_char = true;
+        }
+        if self.peek_char().map_or(false, |&ch| ch == '\n') {
+            self.pos += 1;
+            seen_line_end_char = true;
+        }
+        seen_line_end_char || self.eof()
     }
 }
 

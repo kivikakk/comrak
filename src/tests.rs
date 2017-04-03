@@ -181,3 +181,19 @@ fn backticks() {
     compare("Some `code\\` yep.\n",
             "<p>Some <code>code\\</code> yep.</p>\n");
 }
+
+#[test]
+fn backslashes() {
+    compare(concat!("Some \\`fake code\\`.\n",
+                    "\n",
+                    "Some fake linebreaks: \\\n",
+                    "\\\n",
+                    "See?\n",
+                    "\n",
+                    "Ga\\rbage.\n"),
+            concat!("<p>Some `fake code`.</p>\n",
+                    "<p>Some fake linebreaks: <br />\n",
+                    "<br />\n",
+                    "See?</p>\n",
+                    "<p>Ga\\rbage.</p>\n"));
+}

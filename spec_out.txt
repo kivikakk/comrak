@@ -159,30 +159,6 @@ Example 35 (lines 812-816) ATX headings
 -<p>## foo</p>
 +<h2>foo</h2>
 
-Example 36 (lines 821-825) ATX headings
-# foo *bar* \*baz\*
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<h1>foo <em>bar</em> *baz*</h1>
-+<h1>foo <em>bar</em> \<em>baz\</em></h1>
-
-Example 46 (lines 923-931) ATX headings
-### foo \###
-## foo #\##
-# foo \#
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,3 @@
--<h3>foo ###</h3>
--<h2>foo ###</h2>
--<h1>foo #</h1>
-+<h3>foo \###</h3>
-+<h2>foo #\##</h2>
-+<h1>foo \#</h1>
-
 Example 54 (lines 1063-1076) Setext headings
     Foo
     ---
@@ -225,16 +201,6 @@ Example 69 (lines 1260-1267) Setext headings
  <pre><code>foo
  </code></pre>
 -<hr />
-
-Example 71 (lines 1284-1289) Setext headings
-\> foo
-------
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<h2>&gt; foo</h2>
-+<h2>\&gt; foo</h2>
 
 Example 75 (lines 1364-1374) Setext headings
 Foo
@@ -458,8 +424,8 @@ Example 159 (lines 2763-2769) Link reference definitions
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
-+<p>[Foo*bar\]]:my_(url) 'title (with parens)'</p>
-+<p>[Foo*bar\]]</p>
++<p>[Foo*bar]]:my_(url) 'title (with parens)'</p>
++<p>[Foo*bar]]</p>
 
 Example 160 (lines 2772-2780) Link reference definitions
 [Foo bar]:
@@ -521,7 +487,7 @@ Example 165 (lines 2844-2850) Link reference definitions
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p><a href="/url%5Cbar*baz" title="foo&quot;bar\baz">foo</a></p>
-+<p>[foo]: /url\bar\*baz &quot;foo\&quot;bar\baz&quot;</p>
++<p>[foo]: /url\bar*baz &quot;foo&quot;bar\baz&quot;</p>
 +<p>[foo]</p>
 
 Example 166 (lines 2855-2861) Link reference definitions
@@ -939,15 +905,6 @@ Example 283 (lines 5260-5274) Lists
 -</li>
 -</ol>
 
-Example 287 (lines 5345-5349) Backslash escapes
-\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>!&quot;#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~</p>
-+<p>\!\&quot;\#\$\%\&amp;\'\(\)\*\+\,\-\.\/\:\;\&lt;\=\&gt;\?\@\[\\\]\^\_\`\{\|\}\~</p>
-
 Example 289 (lines 5365-5383) Backslash escapes
 \*not emphasized*
 \<br/> not a tag
@@ -960,43 +917,16 @@ Example 289 (lines 5365-5383) Backslash escapes
 
 --- expected HTML
 +++ actual HTML
-@@ -1,8 +1,8 @@
--<p>*not emphasized*
--&lt;br/&gt; not a tag
--[not a link](/foo)
--`not code`
--1. not a list
+@@ -3,6 +3,6 @@
+ [not a link](/foo)
+ `not code`
+ 1. not a list
 -* not a list
 -# not a heading
 -[foo]: /url &quot;not a reference&quot;</p>
-+<p>\<em>not emphasized</em>
-+\&lt;br/&gt; not a tag
-+\[not a link](/foo)
-+\<code>not code</code>
-+1\. not a list
-+\* not a list</p>
++* not a list</p>
 +<h1>not a heading</h1>
-+<p>\[foo]: /url &quot;not a reference&quot;</p>
-
-Example 290 (lines 5388-5392) Backslash escapes
-\\*emphasis*
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>\<em>emphasis</em></p>
-+<p>\\<em>emphasis</em></p>
-
-Example 291 (lines 5397-5403) Backslash escapes
-foo\
-bar
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p>foo<br />
-+<p>foo\
- bar</p>
++<p>[foo]: /url &quot;not a reference&quot;</p>
 
 Example 292 (lines 5409-5413) Backslash escapes
 `` \[\` ``
@@ -1014,7 +944,7 @@ Example 295 (lines 5434-5438) Backslash escapes
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="http://example.com?find=%5C*">http://example.com?find=\*</a></p>
-+<p>&lt;http://example.com?find=\*&gt;</p>
++<p>&lt;http://example.com?find=*&gt;</p>
 
 Example 297 (lines 5451-5455) Backslash escapes
 [foo](/bar\* "ti\*tle")
@@ -1023,7 +953,7 @@ Example 297 (lines 5451-5455) Backslash escapes
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/bar*" title="ti*tle">foo</a></p>
-+<p>[foo](/bar\* &quot;ti\*tle&quot;)</p>
++<p>[foo](/bar* &quot;ti*tle&quot;)</p>
 
 Example 298 (lines 5458-5464) Backslash escapes
 [foo]
@@ -1035,7 +965,7 @@ Example 298 (lines 5458-5464) Backslash escapes
 @@ -1 +1,2 @@
 -<p><a href="/bar*" title="ti*tle">foo</a></p>
 +<p>[foo]</p>
-+<p>[foo]: /bar\* &quot;ti\*tle&quot;</p>
++<p>[foo]: /bar* &quot;ti*tle&quot;</p>
 
 Example 299 (lines 5467-5474) Backslash escapes
 ``` foo\+bar
@@ -1252,15 +1182,6 @@ foo ***
 -<p>foo ***</p>
 +<hr />
 
-Example 411 (lines 6769-6773) Emphasis and strong emphasis
-foo *\**
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>foo <em>*</em></p>
-+<p>foo <em>\</em>*</p>
-
 Example 413 (lines 6783-6787) Emphasis and strong emphasis
 foo *****
 
@@ -1305,15 +1226,6 @@ foo ___
 @@ -1 +1 @@
 -<p>foo ___</p>
 +<hr />
-
-Example 423 (lines 6860-6864) Emphasis and strong emphasis
-foo _\__
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>foo <em>_</em></p>
-+<p>foo <em>\</em>_</p>
 
 Example 425 (lines 6874-6878) Emphasis and strong emphasis
 foo _____
@@ -1514,7 +1426,7 @@ Example 464 (lines 7253-7257) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="(foo)">link</a></p>
-+<p>[link](\(foo\))</p>
++<p>[link]((foo))</p>
 
 Example 465 (lines 7262-7266) Links
 [link](foo(and(bar)))
@@ -1532,7 +1444,7 @@ Example 466 (lines 7271-7275) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="foo(and(bar)">link</a></p>
-+<p>[link](foo\(and\(bar\))</p>
++<p>[link](foo(and(bar))</p>
 
 Example 467 (lines 7278-7282) Links
 [link](<foo(and(bar)>)
@@ -1550,7 +1462,7 @@ Example 468 (lines 7288-7292) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="foo):">link</a></p>
-+<p>[link](foo\)\:)</p>
++<p>[link](foo):)</p>
 
 Example 469 (lines 7297-7307) Links
 [link](#fragment)
@@ -1618,7 +1530,7 @@ Example 474 (lines 7363-7367) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/url" title="title &quot;&quot;">link</a></p>
-+<p>[link](/url &quot;title \&quot;&amp;quot;&quot;)</p>
++<p>[link](/url &quot;title &quot;&amp;quot;&quot;)</p>
 
 Example 475 (lines 7373-7377) Links
 [link](/url "title")
@@ -1674,7 +1586,7 @@ Example 483 (lines 7457-7461) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/uri">link [bar</a></p>
-+<p>[link \[bar](/uri)</p>
++<p>[link [bar](/uri)</p>
 
 Example 484 (lines 7466-7470) Links
 [link *foo **bar** `#`*](/uri)
@@ -1790,7 +1702,7 @@ Example 497 (lines 7606-7612) Links
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p><a href="/uri">link [bar</a></p>
-+<p>[link \[bar][ref]</p>
++<p>[link [bar][ref]</p>
 +<p>[ref]: /uri</p>
 
 Example 498 (lines 7617-7623) Links
@@ -1987,8 +1899,7 @@ Example 513 (lines 7812-7818) Links
 --- expected HTML
 +++ actual HTML
 @@ -1 +1,2 @@
--<p>[bar][foo!]</p>
-+<p>[bar][foo\!]</p>
+ <p>[bar][foo!]</p>
 +<p>[foo!]: /url</p>
 
 Example 517 (lines 7854-7860) Links
@@ -2000,8 +1911,8 @@ Example 517 (lines 7854-7860) Links
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p><a href="/uri">foo</a></p>
-+<p>[foo][ref\[]</p>
-+<p>[ref\[]: /uri</p>
++<p>[foo][ref[]</p>
++<p>[ref[]: /uri</p>
 
 Example 518 (lines 7865-7871) Links
 [bar\\]: /uri
@@ -2012,8 +1923,8 @@ Example 518 (lines 7865-7871) Links
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p><a href="/uri">bar\</a></p>
-+<p>[bar\\]: /uri</p>
-+<p>[bar\\]</p>
++<p>[bar\]: /uri</p>
++<p>[bar\]</p>
 
 Example 521 (lines 7909-7915) Links
 [foo][]
@@ -2145,8 +2056,7 @@ Example 531 (lines 8023-8029) Links
 --- expected HTML
 +++ actual HTML
 @@ -1 +1,2 @@
--<p>[foo]</p>
-+<p>\[foo]</p>
+ <p>[foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
 Example 532 (lines 8035-8041) Links
@@ -2468,8 +2378,7 @@ Example 560 (lines 8327-8333) Images
 --- expected HTML
 +++ actual HTML
 @@ -1 +1,2 @@
--<p>![foo]</p>
-+<p>!\[foo]</p>
+ <p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
 Example 561 (lines 8339-8345) Images
@@ -2481,7 +2390,7 @@ Example 561 (lines 8339-8345) Images
 +++ actual HTML
 @@ -1 +1,2 @@
 -<p>!<a href="/url" title="title">foo</a></p>
-+<p>\![foo]</p>
++<p>![foo]</p>
 +<p>[foo]: /url &quot;title&quot;</p>
 
 Example 562 (lines 8372-8376) Autolinks
@@ -2563,7 +2472,7 @@ Example 571 (lines 8446-8450) Autolinks
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="http://example.com/%5C%5B%5C">http://example.com/\[\</a></p>
-+<p>&lt;http://example.com/\[\&gt;</p>
++<p>&lt;http://example.com/[&gt;</p>
 
 Example 572 (lines 8468-8472) Autolinks
 <foo@bar.example.com>
@@ -2582,15 +2491,6 @@ Example 573 (lines 8475-8479) Autolinks
 @@ -1 +1 @@
 -<p><a href="mailto:foo+special@Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a></p>
 +<p>&lt;foo+special@Bar.baz-bar0.com&gt;</p>
-
-Example 574 (lines 8484-8488) Autolinks
-<foo\+@bar.example.com>
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>&lt;foo+@bar.example.com&gt;</p>
-+<p>&lt;foo\+@bar.example.com&gt;</p>
 
 Example 581 (lines 8610-8614) Raw HTML
 <a><bab><c2c>
@@ -2731,48 +2631,6 @@ foo <a href="\*">
 -<p>foo <a href="\*"></p>
 +foo <a href="\*">
 
-Example 601 (lines 8798-8802) Raw HTML
-<a href="\"">
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>&lt;a href=&quot;&quot;&quot;&gt;</p>
-+<p>&lt;a href=&quot;\&quot;&quot;&gt;</p>
-
-Example 603 (lines 8824-8830) Hard line breaks
-foo\
-baz
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p>foo<br />
-+<p>foo\
- baz</p>
-
-Example 606 (lines 8855-8861) Hard line breaks
-foo\
-     bar
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p>foo<br />
-+<p>foo\
- bar</p>
-
-Example 608 (lines 8876-8882) Hard line breaks
-*foo\
-bar*
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p><em>foo<br />
-+<p><em>foo\
- bar</em></p>
-
 Example 611 (lines 8905-8911) Hard line breaks
 <a href="foo  
 bar">
@@ -2794,7 +2652,7 @@ bar">
 @@ -1,2 +1,2 @@
 -<p><a href="foo\
 -bar"></p>
-+<p>&lt;a href=&quot;foo\
++<p>&lt;a href=&quot;foo<br />
 +bar&quot;&gt;</p>
 
-382 passed, 239 failed, 0 errored, 0 skipped
+395 passed, 226 failed, 0 errored, 0 skipped
