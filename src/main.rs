@@ -60,7 +60,7 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     parser.finish()
 }
 
-const TAB_STOP: usize = 8;
+const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
