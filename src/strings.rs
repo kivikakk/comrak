@@ -1,0 +1,144 @@
+use ::{ispunct, isspace, AutolinkType, entity};
+
+pub fn unescape(v: &mut Vec<char>) {
+    let mut r = 0;
+    let mut w = 0;
+    let sz = v.len();
+
+    while r < sz {
+        if v[r] == '\\' && r + 1 < sz && ispunct(&v[r + 1]) {
+            r += 1;
+        }
+        if r >= sz {
+            break;
+        }
+        v[w] = v[r];
+        w += 1;
+        r += 1;
+    }
+
+    v.truncate(w);
+}
+
+pub fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
+    let mut url_vec = url.to_vec();
+    trim(&mut url_vec);
+
+    if url_vec.len() == 0 {
+        return url_vec;
+    }
+
+    let mut buf = vec![];
+    if kind == AutolinkType::Email {
+        buf.extend_from_slice(&['m', 'a', 'i', 'l', 't', 'o', ':']);
+    }
+
+    buf.extend_from_slice(&entity::unescape_html(&url_vec));
+    buf
+}
+
+pub fn normalize_whitespace(v: &mut Vec<char>) {
+    let mut last_char_was_space = false;
+    let mut r = 0;
+    let mut w = 0;
+
+    while r < v.len() {
+        if isspace(&v[r]) {
+            if !last_char_was_space {
+                v[w] = ' ';
+                w += 1;
+                last_char_was_space = true;
+            }
+        } else {
+            v[w] = v[r];
+            w += 1;
+            last_char_was_space = false;
+        }
+        r += 1;
+    }
+
+    v.truncate(w);
+}
+
+pub fn remove_trailing_blank_lines(line: &mut Vec<char>) {
+    let mut i = line.len() - 1;
+    loop {
+        let c = line[i];
+
+        if c != ' ' && c != '\t' && !is_line_end_char(&c) {
+            break;
+        }
+
+        if i == 0 {
+            line.clear();
+            return;
+        }
+
+        i -= 1;
+    }
+
+    for i in i..line.len() {
+        let c = line[i];
+
+        if !is_line_end_char(&c) {
+            continue;
+        }
+
+        line.truncate(i);
+        break;
+    }
+}
+
+pub fn is_line_end_char(ch: &char) -> bool {
+    match ch {
+        &'\n' | &'\r' => true,
+        _ => false,
+    }
+}
+
+pub fn is_space_or_tab(ch: &char) -> bool {
+    match ch {
+        &'\t' | &' ' => true,
+        _ => false,
+    }
+}
+
+pub fn chop_trailing_hashtags(line: &mut Vec<char>) {
+    rtrim(line);
+
+    let orig_n = line.len() - 1;
+    let mut n = orig_n;
+
+    while line[n] == '#' {
+        if n == 0 {
+            return;
+        }
+        n -= 1;
+    }
+
+    if n != orig_n && is_space_or_tab(&line[n]) {
+        line.truncate(n);
+        rtrim(line);
+    }
+}
+
+pub fn rtrim(line: &mut Vec<char>) {
+    let mut len = line.len();
+    while len > 0 && isspace(&line[len - 1]) {
+        line.pop();
+        len -= 1;
+    }
+}
+
+pub fn ltrim(line: &mut Vec<char>) {
+    let mut len = line.len();
+    while len > 0 && isspace(&line[0]) {
+        line.remove(0);
+        len -= 1;
+    }
+}
+
+pub fn trim(line: &mut Vec<char>) {
+    ltrim(line);
+    rtrim(line);
+}

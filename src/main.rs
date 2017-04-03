@@ -12,6 +12,7 @@ mod ctype;
 mod node;
 mod entity;
 mod entity_data;
+mod strings;
 #[cfg(test)]
 mod tests;
 
@@ -28,6 +29,7 @@ use arena_tree::Node;
 use ctype::{isspace, ispunct, isdigit};
 use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
            NodeHtmlBlock, NodeLink, make_block};
+use strings::*;
 
 fn main() {
     let mut buf = vec![];
@@ -162,7 +164,7 @@ impl<'a> Parser<'a> {
         self.first_nonspace_column = self.column;
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
 
-        while let Some(&c) = peek_at(line, self.first_nonspace) {
+        while let Some(&c) = line.get(self.first_nonspace) {
             match c {
                 ' ' => {
                     self.first_nonspace += 1;
@@ -183,7 +185,7 @@ impl<'a> Parser<'a> {
         }
 
         self.indent = self.first_nonspace_column - self.column;
-        self.blank = peek_at(line, self.first_nonspace).map_or(false, is_line_end_char);
+        self.blank = line.get(self.first_nonspace).map_or(false, is_line_end_char);
     }
 
     fn process_line(&mut self, buffer: &[char]) {
@@ -307,11 +309,11 @@ impl<'a> Parser<'a> {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if !indented && peek_at(line, self.first_nonspace) == Some(&'>') {
+            if !indented && line.get(self.first_nonspace) == Some(&'>') {
                 let blockquote_startpos = self.first_nonspace;
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
-                if peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+                if line.get(self.offset).map_or(false, is_space_or_tab) {
                     self.advance_offset(line, 1, true);
                 }
                 *container =
@@ -330,7 +332,7 @@ impl<'a> Parser<'a> {
                     line[self.first_nonspace..].iter().position(|&c| c == '#').unwrap() +
                     self.first_nonspace;
                 let mut level = 0;
-                while peek_at(line, hashpos) == Some(&'#') {
+                while line.get(hashpos) == Some(&'#') {
                     level += 1;
                     hashpos += 1;
                 }
@@ -347,7 +349,7 @@ impl<'a> Parser<'a> {
                 let offset = self.offset;
                 let ncb = NodeCodeBlock {
                     fenced: true,
-                    fence_char: *peek_at(line, first_nonspace).unwrap(),
+                    fence_char: *line.get(first_nonspace).unwrap(),
                     fence_length: matched,
                     fence_offset: first_nonspace - offset,
                     info: vec![],
@@ -421,12 +423,12 @@ impl<'a> Parser<'a> {
                     (self.partially_consumed_tab, self.offset, self.column);
 
                 while self.column - save_column <= 5 &&
-                      peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+                      line.get(self.offset).map_or(false, is_space_or_tab) {
                     self.advance_offset(line, 1, true);
                 }
 
                 let i = self.column - save_column;
-                if i >= 5 || i < 1 || peek_at(line, self.offset).map_or(false, is_line_end_char) {
+                if i >= 5 || i < 1 || line.get(self.offset).map_or(false, is_line_end_char) {
                     nl.padding = matched + 1;
                     self.offset = save_offset;
                     self.column = save_column;
@@ -476,7 +478,7 @@ impl<'a> Parser<'a> {
 
     fn advance_offset(&mut self, line: &mut Vec<char>, mut count: usize, columns: bool) {
         while count > 0 {
-            match peek_at(line, self.offset) {
+            match line.get(self.offset) {
                 None => break,
                 Some(&'\t') => {
                     let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
@@ -505,10 +507,10 @@ impl<'a> Parser<'a> {
 
     fn parse_block_quote_prefix(&mut self, line: &mut Vec<char>) -> bool {
         let indent = self.indent;
-        if indent <= 3 && peek_at(line, self.first_nonspace) == Some(&'>') {
+        if indent <= 3 && line.get(self.first_nonspace) == Some(&'>') {
             self.advance_offset(line, indent + 1, true);
 
-            if peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+            if line.get(self.offset).map_or(false, is_space_or_tab) {
                 self.advance_offset(line, 1, true);
             }
 
@@ -557,7 +559,7 @@ impl<'a> Parser<'a> {
         }
 
         let matched = if self.indent <= 3 &&
-                         peek_at(line, self.first_nonspace)
+                         line.get(self.first_nonspace)
             .map_or(false, |&c| c == ncb.fence_char) {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
@@ -573,7 +575,7 @@ impl<'a> Parser<'a> {
         }
 
         let mut i = ncb.fence_offset;
-        while i > 0 && peek_at(line, self.offset).map_or(false, is_space_or_tab) {
+        while i > 0 && line.get(self.offset).map_or(false, is_space_or_tab) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -1436,64 +1438,6 @@ struct Delimiter<'a> {
     active: bool,
 }
 
-fn is_line_end_char(ch: &char) -> bool {
-    match ch {
-        &'\n' | &'\r' => true,
-        _ => false,
-    }
-}
-
-fn is_space_or_tab(ch: &char) -> bool {
-    match ch {
-        &'\t' | &' ' => true,
-        _ => false,
-    }
-}
-
-fn peek_at<T>(line: &mut Vec<T>, i: usize) -> Option<&T> {
-    line.get(i)
-}
-
-fn chop_trailing_hashtags(line: &mut Vec<char>) {
-    rtrim(line);
-
-    let orig_n = line.len() - 1;
-    let mut n = orig_n;
-
-    while line[n] == '#' {
-        if n == 0 {
-            return;
-        }
-        n -= 1;
-    }
-
-    if n != orig_n && is_space_or_tab(&line[n]) {
-        line.truncate(n);
-        rtrim(line);
-    }
-}
-
-fn rtrim(line: &mut Vec<char>) {
-    let mut len = line.len();
-    while len > 0 && isspace(&line[len - 1]) {
-        line.pop();
-        len -= 1;
-    }
-}
-
-fn ltrim(line: &mut Vec<char>) {
-    let mut len = line.len();
-    while len > 0 && isspace(&line[0]) {
-        line.remove(0);
-        len -= 1;
-    }
-}
-
-fn trim(line: &mut Vec<char>) {
-    ltrim(line);
-    rtrim(line);
-}
-
 fn make_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>, value: NodeValue) -> &'a Node<'a, AstCell> {
     let ast = Ast {
         value: value,
@@ -1512,7 +1456,7 @@ fn parse_list_marker(line: &mut Vec<char>,
                      mut pos: usize,
                      interrupts_paragraph: bool)
                      -> Option<(usize, NodeList)> {
-    let mut c = match peek_at(line, pos) {
+    let mut c = match line.get(pos) {
         Some(c) => *c,
         _ => return None,
     };
@@ -1520,16 +1464,16 @@ fn parse_list_marker(line: &mut Vec<char>,
 
     if c == '*' || c == '-' || c == '+' {
         pos += 1;
-        if !peek_at(line, pos).map_or(false, isspace) {
+        if !line.get(pos).map_or(false, isspace) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while peek_at(line, i).map_or(false, is_space_or_tab) {
+            while line.get(i).map_or(false, is_space_or_tab) {
                 i += 1;
             }
-            if peek_at(line, i) == Some(&'\n') {
+            if line.get(i) == Some(&'\n') {
                 return None;
             }
         }
@@ -1549,11 +1493,11 @@ fn parse_list_marker(line: &mut Vec<char>,
         let mut digits = 0;
 
         loop {
-            start = (10 * start) + (*peek_at(line, pos).unwrap() as u32 - '0' as u32) as usize;
+            start = (10 * start) + (*line.get(pos).unwrap() as u32 - '0' as u32) as usize;
             pos += 1;
             digits += 1;
 
-            if !(digits < 9 && peek_at(line, pos).map_or(false, isdigit)) {
+            if !(digits < 9 && line.get(pos).map_or(false, isdigit)) {
                 break;
             }
         }
@@ -1562,23 +1506,23 @@ fn parse_list_marker(line: &mut Vec<char>,
             return None;
         }
 
-        c = peek_at(line, pos).map_or('\0', |&c| c);
+        c = line.get(pos).map_or('\0', |&c| c);
         if c != '.' && c != ')' {
             return None;
         }
 
         pos += 1;
 
-        if !peek_at(line, pos).map_or(false, isspace) {
+        if !line.get(pos).map_or(false, isspace) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while peek_at(line, i).map_or(false, is_space_or_tab) {
+            while line.get(i).map_or(false, is_space_or_tab) {
                 i += 1;
             }
-            if peek_at(line, i).map_or(false, is_line_end_char) {
+            if line.get(i).map_or(false, is_line_end_char) {
                 return None;
             }
         }
@@ -1600,35 +1544,6 @@ fn parse_list_marker(line: &mut Vec<char>,
     }
 
     None
-}
-
-fn remove_trailing_blank_lines(line: &mut Vec<char>) {
-    let mut i = line.len() - 1;
-    loop {
-        let c = line[i];
-
-        if c != ' ' && c != '\t' && !is_line_end_char(&c) {
-            break;
-        }
-
-        if i == 0 {
-            line.clear();
-            return;
-        }
-
-        i -= 1;
-    }
-
-    for i in i..line.len() {
-        let c = line[i];
-
-        if !is_line_end_char(&c) {
-            continue;
-        }
-
-        line.truncate(i);
-        break;
-    }
 }
 
 fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
@@ -1657,31 +1572,8 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.bullet_char == item_data.bullet_char
 }
 
-fn normalize_whitespace(v: &mut Vec<char>) {
-    let mut last_char_was_space = false;
-    let mut r = 0;
-    let mut w = 0;
-
-    while r < v.len() {
-        if isspace(&v[r]) {
-            if !last_char_was_space {
-                v[w] = ' ';
-                w += 1;
-                last_char_was_space = true;
-            }
-        } else {
-            v[w] = v[r];
-            w += 1;
-            last_char_was_space = false;
-        }
-        r += 1;
-    }
-
-    v.truncate(w);
-}
-
 #[derive(PartialEq)]
-enum AutolinkType {
+pub enum AutolinkType {
     URI,
     Email,
 }
@@ -1697,41 +1589,4 @@ fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                           }));
     inl.append(make_inline(arena, NodeValue::Text(entity::unescape_html(url))));
     inl
-}
-
-fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
-    let mut url_vec = url.to_vec();
-    trim(&mut url_vec);
-
-    if url_vec.len() == 0 {
-        return url_vec;
-    }
-
-    let mut buf = vec![];
-    if kind == AutolinkType::Email {
-        buf.extend_from_slice(&['m', 'a', 'i', 'l', 't', 'o', ':']);
-    }
-
-    buf.extend_from_slice(&entity::unescape_html(&url_vec));
-    buf
-}
-
-fn unescape(v: &mut Vec<char>) {
-    let mut r = 0;
-    let mut w = 0;
-    let sz = v.len();
-
-    while r < sz {
-        if v[r] == '\\' && r + 1 < sz && ispunct(&v[r + 1]) {
-            r += 1;
-        }
-        if r >= sz {
-            break;
-        }
-        v[w] = v[r];
-        w += 1;
-        r += 1;
-    }
-
-    v.truncate(w);
 }
