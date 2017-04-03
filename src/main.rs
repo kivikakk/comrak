@@ -990,7 +990,6 @@ struct Subject<'a, 'b> {
 
 struct Delimiter<'a> {
     inl: &'a Node<'a, AstCell>,
-    position: usize,
     delim_char: char,
     can_open: bool,
     can_close: bool,
@@ -1364,7 +1363,6 @@ impl<'a, 'b> Subject<'a, 'b> {
                       inl: &'a Node<'a, AstCell>) {
         self.delimiters.push(Delimiter {
             inl: inl,
-            position: 0,
             delim_char: c,
             can_open: can_open,
             can_close: can_close,

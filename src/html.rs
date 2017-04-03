@@ -95,7 +95,7 @@ impl HtmlFormatter {
             match src[i] as char {
                 '&' => write!(self, "&amp;").unwrap(),
                 '\'' => write!(self, "&#x27;").unwrap(),
-                _ => write!(self, "&#x{:x};", src[i]).unwrap(),
+                _ => write!(self, "%{:02X}", src[i]).unwrap(),
             }
 
             i += 1;
