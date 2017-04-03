@@ -211,9 +211,22 @@ fn entities() {
 fn pointy_brace() {
     compare(concat!("URI autolink: <https://www.pixiv.net>\n",
                     "\n",
-                    "Email autolink: <bill@microsoft.com>\n"),
+                    "Email autolink: <bill@microsoft.com>\n",
+                    "\n",
+                    "* Inline <em>tag</em>.\n",
+                    "* Inline <!-- comment -->.\n",
+                    "* Inline <? processing instruction ?>.\n",
+                    "* Inline <!DECLARATION OKAY>.\n",
+                    "* Inline <![CDATA[ok]ha **ha** ]]> **ha**.\n"),
             concat!("<p>URI autolink: <a \
                      href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
                     "<p>Email autolink: <a \
-                     href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n"));
+                     href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
+                    "<ul>\n",
+                    "<li>Inline <em>tag</em>.</li>\n",
+                    "<li>Inline <!-- comment -->.</li>\n",
+                    "<li>Inline <? processing instruction ?>.</li>\n",
+                    "<li>Inline <!DECLARATION OKAY>.</li>\n",
+                    "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
+                    "</ul>\n"));
 }

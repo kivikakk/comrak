@@ -19,7 +19,7 @@ pub enum NodeValue {
     SoftBreak,
     LineBreak,
     Code(Vec<char>),
-    HtmlInline,
+    HtmlInline(Vec<char>),
     CustomInline,
     Emph,
     Strong,

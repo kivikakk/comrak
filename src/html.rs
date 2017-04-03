@@ -207,9 +207,8 @@ impl HtmlFormatter {
                 self.escape(literal);
                 write!(self, "</code>").unwrap();
             }
-            &NodeValue::HtmlInline => {
-                assert!(false)
-                // TODO
+            &NodeValue::HtmlInline(ref literal) => {
+                write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
             }
             &NodeValue::CustomInline => {
                 assert!(false)
