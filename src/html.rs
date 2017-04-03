@@ -109,71 +109,87 @@ impl HtmlFormatter {
     }
 
     fn format<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+        self.format_node(node, true);
+        self.format_children(node);
+        self.format_node(node, false);
+    }
+
+    fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) {
         match &node.data.borrow().value {
-            &NodeValue::Document => {
-                self.format_children(node);
-            }
+            &NodeValue::Document => (),
             &NodeValue::BlockQuote => {
-                self.cr();
-                write!(self, "<blockquote>\n").unwrap();
-                self.format_children(node);
-                self.cr();
-                write!(self, "</blockquote>\n").unwrap()
+                if entering {
+                    self.cr();
+                    write!(self, "<blockquote>\n").unwrap();
+                } else {
+                    self.cr();
+                    write!(self, "</blockquote>\n").unwrap();
+                }
             }
             &NodeValue::List(ref nl) => {
-                self.cr();
-                if nl.list_type == ListType::Bullet {
-                    write!(self, "<ul>\n").unwrap();
-                } else if nl.start == 1 {
-                    write!(self, "<ol>\n").unwrap();
+                if entering {
+                    self.cr();
+                    if nl.list_type == ListType::Bullet {
+                        write!(self, "<ul>\n").unwrap();
+                    } else if nl.start == 1 {
+                        write!(self, "<ol>\n").unwrap();
+                    } else {
+                        write!(self, "<ol start=\"{}\">\n", nl.start).unwrap();
+                    }
                 } else {
-                    write!(self, "<ol start=\"{}\">\n", nl.start).unwrap();
-                }
-
-                self.format_children(node);
-
-                if nl.list_type == ListType::Bullet {
-                    write!(self, "</ul>\n").unwrap();
-                } else {
-                    write!(self, "</ol>\n").unwrap();
+                    if nl.list_type == ListType::Bullet {
+                        write!(self, "</ul>\n").unwrap();
+                    } else {
+                        write!(self, "</ol>\n").unwrap();
+                    }
                 }
             }
             &NodeValue::Item(..) => {
-                self.cr();
-                write!(self, "<li>").unwrap();
-                self.format_children(node);
-                write!(self, "</li>\n").unwrap();
+                if entering {
+                    self.cr();
+                    write!(self, "<li>").unwrap();
+                } else {
+                    write!(self, "</li>\n").unwrap();
+                }
             }
             &NodeValue::Heading(ref nch) => {
-                self.cr();
-                write!(self, "<h{}>", nch.level).unwrap();
-                self.format_children(node);
-                write!(self, "</h{}>\n", nch.level).unwrap();
+                if entering {
+                    self.cr();
+                    write!(self, "<h{}>", nch.level).unwrap();
+                } else {
+                    write!(self, "</h{}>\n", nch.level).unwrap();
+                }
             }
             &NodeValue::CodeBlock(ref ncb) => {
-                self.cr();
-                write!(self, "<pre><code").unwrap();
-                if ncb.info.len() > 0 {
-                    write!(self, " class=\"language-").unwrap();
-                    self.escape(&ncb.info);
-                    write!(self, "\"").unwrap();
+                if entering {
+                    self.cr();
+                    write!(self, "<pre><code").unwrap();
+                    if ncb.info.len() > 0 {
+                        write!(self, " class=\"language-").unwrap();
+                        self.escape(&ncb.info);
+                        write!(self, "\"").unwrap();
+                    }
+                    write!(self, ">").unwrap();
+                    self.escape(&ncb.literal);
+                    write!(self, "</code></pre>\n").unwrap();
                 }
-                write!(self, ">").unwrap();
-                self.escape(&ncb.literal);
-                write!(self, "</code></pre>\n").unwrap();
             }
             &NodeValue::HtmlBlock(ref nhb) => {
-                self.cr();
-                self.write(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
-                self.cr();
+                if entering {
+                    self.cr();
+                    self.write(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                    self.cr();
+                }
             }
             &NodeValue::CustomBlock => {
                 assert!(false)
                 // TODO
             }
             &NodeValue::ThematicBreak => {
-                self.cr();
-                write!(self, "<hr />\n").unwrap();
+                if entering {
+                    self.cr();
+                    write!(self, "<hr />\n").unwrap();
+                }
             }
             &NodeValue::Paragraph => {
                 let tight = match node.parent()
@@ -183,68 +199,88 @@ impl HtmlFormatter {
                     _ => false,
                 };
 
-                if !tight {
-                    self.cr();
-                    write!(self, "<p>").unwrap();
-                }
-                self.format_children(node);
-                if !tight {
-                    write!(self, "</p>\n").unwrap();
+                if entering {
+                    if !tight {
+                        self.cr();
+                        write!(self, "<p>").unwrap();
+                    }
+                } else {
+                    if !tight {
+                        write!(self, "</p>\n").unwrap();
+                    }
                 }
             }
             &NodeValue::Text(ref literal) => {
-                self.escape(literal);
+                if entering {
+                    self.escape(literal);
+                }
             }
             &NodeValue::LineBreak => {
-                write!(self, "<br />\n").unwrap();
+                if entering {
+                    write!(self, "<br />\n").unwrap();
+                }
             }
             &NodeValue::SoftBreak => {
                 // TODO: if HARDBREAKS option set.
-                write!(self, "\n").unwrap();
+                if entering {
+                    write!(self, "\n").unwrap();
+                }
             }
             &NodeValue::Code(ref literal) => {
-                write!(self, "<code>").unwrap();
-                self.escape(literal);
-                write!(self, "</code>").unwrap();
+                if entering {
+                    write!(self, "<code>").unwrap();
+                    self.escape(literal);
+                    write!(self, "</code>").unwrap();
+                }
             }
             &NodeValue::HtmlInline(ref literal) => {
-                write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
+                if entering {
+                    write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
+                }
             }
             &NodeValue::CustomInline => {
                 assert!(false)
                 // TODO
             }
             &NodeValue::Strong => {
-                write!(self, "<strong>").unwrap();
-                self.format_children(node);
-                write!(self, "</strong>").unwrap();
+                if entering {
+                    write!(self, "<strong>").unwrap();
+                } else {
+                    write!(self, "</strong>").unwrap();
+                }
             }
             &NodeValue::Emph => {
-                write!(self, "<em>").unwrap();
-                self.format_children(node);
-                write!(self, "</em>").unwrap();
+                if entering {
+                    write!(self, "<em>").unwrap();
+                } else {
+                    write!(self, "</em>").unwrap();
+                }
             }
             &NodeValue::Link(ref nl) => {
-                write!(self, "<a href=\"").unwrap();
-                self.escape_href(&nl.url);
-                if nl.title.len() > 0 {
-                    write!(self, "\" title=\"").unwrap();
-                    self.escape(&nl.title);
+                if entering {
+                    write!(self, "<a href=\"").unwrap();
+                    self.escape_href(&nl.url);
+                    if nl.title.len() > 0 {
+                        write!(self, "\" title=\"").unwrap();
+                        self.escape(&nl.title);
+                    }
+                    write!(self, "\">").unwrap();
+                } else {
+                    write!(self, "</a>").unwrap();
                 }
-                write!(self, "\">").unwrap();
-                self.format_children(node);
-                write!(self, "</a>").unwrap();
             }
             &NodeValue::Image(ref nl) => {
-                write!(self, "<img src=\"").unwrap();
-                self.escape_href(&nl.url);
-                write!(self, "\" alt=\"").unwrap();
-                self.format_children(node); // TODO: plain
-                if nl.title.len() > 0 {
-                    write!(self, "\" title=\"").unwrap();
-                    self.escape(&nl.title);
+                if entering {
+                    write!(self, "<img src=\"").unwrap();
+                    self.escape_href(&nl.url);
+                    write!(self, "\" alt=\"").unwrap();
+                } else {
+                    if nl.title.len() > 0 {
+                        write!(self, "\" title=\"").unwrap();
+                        self.escape(&nl.title);
+                    }
+                    write!(self, "\" />").unwrap();
                 }
-                write!(self, "\" />").unwrap();
             }
         }
     }

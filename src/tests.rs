@@ -240,5 +240,6 @@ fn links() {
 #[test]
 fn images() {
     compare(concat!("I am ![eating [things](/url)](http://i.imgur.com/QqK1vq7.png).\n"),
-    concat!("<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" />.</p>\n"));
+            concat!("<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" \
+                     />.</p>\n"));
 }
