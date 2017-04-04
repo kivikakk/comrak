@@ -926,7 +926,7 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         scanned_for_backticks: false,
     };
 
-    let lab = match subj.link_label() {
+    let mut lab = match subj.link_label() {
             Some(lab) => if lab.len() == 0 { return None } else { lab },
             None => return None,
         }
@@ -972,6 +972,7 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         }
     }
 
+    lab = downcase(&lab);
     subj.refmap.entry(lab).or_insert(Reference {
         url: clean_url(&url),
         title: clean_title(&title),
@@ -1593,7 +1594,8 @@ impl<'a, 'b> Subject<'a, 'b> {
                 .to_vec());
         }
 
-        let reff: Option<Reference> = if let Some(lab) = lab {
+        let reff: Option<Reference> = if let Some(mut lab) = lab {
+            lab = downcase(&lab);
             self.refmap.get(&lab).map(|c| c.clone())
         } else {
             None

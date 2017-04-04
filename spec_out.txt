@@ -1,39 +1,3 @@
-Example 168 (lines 2880-2886) Link reference definitions
-[FOO]: /url
-
-[Foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url">Foo</a></p>
-+<p>[Foo]</p>
-
-Example 169 (lines 2889-2895) Link reference definitions
-[ΑΓΩ]: /φου
-
-[αγω]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/%CF%86%CE%BF%CF%85">αγω</a></p>
-+<p>[αγω]</p>
-
-Example 177 (lines 2986-2995) Link reference definitions
-# [Foo]
-[foo]: /url
-> bar
-
---- expected HTML
-+++ actual HTML
-@@ -1,4 +1,4 @@
--<h1><a href="/url">Foo</a></h1>
-+<h1>[Foo]</h1>
- <blockquote>
- <p>bar</p>
- </blockquote>
-
 Example 331 (lines 6037-6041) Emphasis and strong emphasis
 * a *
 
@@ -42,28 +6,6 @@ Example 331 (lines 6037-6041) Emphasis and strong emphasis
 @@ -1 +1 @@
 -<p>* a *</p>
 +<p><em> a </em></p>
-
-Example 507 (lines 7711-7717) Links
-[foo][BaR]
-
-[bar]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url" title="title">foo</a></p>
-+<p>[foo][BaR]</p>
-
-Example 508 (lines 7722-7728) Links
-[Толпой][Толпой] is a Russian word.
-
-[ТОЛПОЙ]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url">Толпой</a> is a Russian word.</p>
-+<p>[Толпой][Толпой] is a Russian word.</p>
 
 Example 509 (lines 7734-7741) Links
 [Foo
@@ -125,18 +67,7 @@ Example 523 (lines 7929-7935) Links
 +++ actual HTML
 @@ -1 +1 @@
 -<p><a href="/url" title="title">Foo</a></p>
-+<p>[Foo][]</p>
-
-Example 529 (lines 8000-8006) Links
-[Foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url" title="title">Foo</a></p>
-+<p>[Foo]</p>
++<p><a href="/url" title="title">Foo</a>[]</p>
 
 Example 534 (lines 8056-8062) Links
 [foo][]
@@ -159,28 +90,6 @@ Example 544 (lines 8170-8176) Images
 @@ -1 +1 @@
 -<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
 +<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" />[]</p>
-
-Example 545 (lines 8179-8185) Images
-![foo *bar*][foobar]
-
-[FOOBAR]: train.jpg "train & tracks"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="train.jpg" alt="foo bar" title="train &amp; tracks" /></p>
-+<p>![foo <em>bar</em>][foobar]</p>
-
-Example 551 (lines 8227-8233) Images
-![foo][bar]
-
-[BAR]: /url
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="foo" /></p>
-+<p>![foo][bar]</p>
 
 Example 552 (lines 8238-8244) Images
 ![foo][]
@@ -213,17 +122,6 @@ Example 554 (lines 8258-8264) Images
 +++ actual HTML
 @@ -1 +1 @@
 -<p><img src="/url" alt="Foo" title="title" /></p>
-+<p>![Foo][]</p>
++<p><img src="/url" alt="Foo" title="title" />[]</p>
 
-Example 559 (lines 8315-8321) Images
-![Foo]
-
-[foo]: /url "title"
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><img src="/url" alt="Foo" title="title" /></p>
-+<p>![Foo]</p>
-
-601 passed, 20 failed, 0 errored, 0 skipped
+610 passed, 11 failed, 0 errored, 0 skipped

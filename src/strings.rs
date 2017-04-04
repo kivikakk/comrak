@@ -204,3 +204,11 @@ pub fn is_blank(s: &[char]) -> bool {
     }
     true
 }
+
+pub fn downcase(i: &[char]) -> Vec<char> {
+    let mut v = vec![];
+    for c in i {
+        v.extend(c.to_lowercase().collect::<Vec<_>>());
+    }
+    v
+}
