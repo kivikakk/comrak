@@ -368,7 +368,7 @@ impl<'a> Parser<'a> {
                     self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented &&
-                      unwrap_into(scanners::html_block_start(&line[self.first_nonspace..]),
+                      (unwrap_into(scanners::html_block_start(&line[self.first_nonspace..]),
                                   &mut matched) ||
                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => false,
@@ -376,7 +376,7 @@ impl<'a> Parser<'a> {
                     unwrap_into(scanners::html_block_start_7(&line[self.first_nonspace..]),
                                 &mut matched)
                 }
-            } {
+            }) {
                 let offset = self.first_nonspace + 1;
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,

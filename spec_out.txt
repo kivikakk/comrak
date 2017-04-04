@@ -1,21 +1,3 @@
-Example 79 (lines 1440-1451) Indented code blocks
-    <a/>
-    *hi*
-
-    - one
-
---- expected HTML
-+++ actual HTML
-@@ -1,5 +1,4 @@
--<pre><code>&lt;a/&gt;
--*hi*
--
--- one
-+    <a/>
-+    *hi*
-+<pre><code>- one
- </code></pre>
-
 Example 111 (lines 1934-1945) Fenced code blocks
 ~~~~    ruby startline=3 $%@#$
 def foo(x)
@@ -31,47 +13,6 @@ end
    return 3
  end
  </code></pre>
-
-Example 149 (lines 2547-2555) HTML blocks
-  <div>
-
-    <div>
-
---- expected HTML
-+++ actual HTML
-@@ -1,3 +1,2 @@
-   <div>
--<pre><code>&lt;div&gt;
--</code></pre>
-+    <div>
-
-Example 156 (lines 2695-2716) HTML blocks
-<table>
-
-  <tr>
-
-    <td>
-      Hi
-    </td>
-
-  </tr>
-
-</table>
-
---- expected HTML
-+++ actual HTML
-@@ -1,8 +1,7 @@
- <table>
-   <tr>
--<pre><code>&lt;td&gt;
--  Hi
--&lt;/td&gt;
--</code></pre>
-+    <td>
-+      Hi
-+    </td>
-   </tr>
- </table>
 
 Example 167 (lines 2867-2874) Link reference definitions
 [foo]
@@ -326,4 +267,4 @@ Example 559 (lines 8315-8321) Images
 -<p><img src="/url" alt="Foo" title="title" /></p>
 +<p>![Foo]</p>
 
-595 passed, 26 failed, 0 errored, 0 skipped
+598 passed, 23 failed, 0 errored, 0 skipped
