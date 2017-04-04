@@ -1,8 +1,9 @@
 [![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak)
-![Spec Status: 621/621](https://img.shields.io/badge/specs-621%2F621-brightgreen.svg)
+![Spec Status: 623/643](https://img.shields.io/badge/specs-623%2F643-yellow.svg)
 
-Porting [jgm's `cmark`](https://github.com/jgm/cmark) to Rust for fun.
+Porting [github's `cmark-gfm`](https://github.com/github/cmark) to Rust for fun.
 
-`cmark` itself is licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause),
+`cmark-gfm` itself is licensed under the
+[2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause),
 and is copyright (c) 2014, John MacFarlane -- see
-[COPYING](https://github.com/jgm/cmark/blob/118ebb338840d67005ee57ec39060d2b68f4ec7c/COPYING).
+[COPYING](https://github.com/github/cmark/blob/118ebb338840d67005ee57ec39060d2b68f4ec7c/COPYING).
