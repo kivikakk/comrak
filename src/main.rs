@@ -136,6 +136,7 @@ struct Reference {
     title: Vec<char>,
 }
 
+#[derive(Default)]
 pub struct ComrakOptions {
     hardbreaks: bool,
     github_pre_lang: bool,

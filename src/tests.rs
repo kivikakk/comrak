@@ -1,9 +1,10 @@
-use ::{Arena, parse_document, format_document};
+use ::{Arena, parse_document, format_document, ComrakOptions};
 
 fn parse(input: &[char]) -> String {
     let arena = Arena::new();
-    let ast = parse_document(&arena, input, 0);
-    format_document(ast)
+    let options = ComrakOptions::default();
+    let ast = parse_document(&arena, input, &options);
+    format_document(ast, &options)
 }
 
 fn compare(input: &str, expected: &str) {
