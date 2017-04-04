@@ -37,6 +37,6 @@ sed -i '' \
 	README.md
 
 git diff README.md
-git diff spec_out.txt | grep ^+
+git diff spec_out.txt | grep ^+ || true
 git add README.md
 git add spec_out.txt
