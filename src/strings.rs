@@ -205,10 +205,21 @@ pub fn is_blank(s: &[char]) -> bool {
     true
 }
 
-pub fn downcase(i: &[char]) -> Vec<char> {
+pub fn normalize_reference_label(i: &[char]) -> Vec<char> {
     let mut v = vec![];
+    let mut last_was_whitespace = false;
     for c in i {
-        v.extend(c.to_lowercase().collect::<Vec<_>>());
+        for e in c.to_lowercase() {
+            if e.is_whitespace() {
+                if !last_was_whitespace {
+                    last_was_whitespace = true;
+                    v.push(' ');
+                }
+            } else {
+                last_was_whitespace = false;
+                v.push(e);
+            }
+        }
     }
     v
 }

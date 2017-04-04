@@ -974,7 +974,7 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         }
     }
 
-    lab = downcase(&lab);
+    lab = normalize_reference_label(&lab);
     subj.refmap.entry(lab).or_insert(Reference {
         url: clean_url(&url),
         title: clean_title(&title),
@@ -1592,7 +1592,7 @@ impl<'a, 'b> Subject<'a, 'b> {
         }
 
         let reff: Option<Reference> = if found_label {
-            lab = downcase(&lab);
+            lab = normalize_reference_label(&lab);
             self.refmap.get(&lab).map(|c| c.clone())
         } else {
             None

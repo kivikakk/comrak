@@ -1,15 +1,3 @@
-Example 509 (lines 7734-7741) Links
-[Foo
-  bar]: /url
-
-[Baz][Foo bar]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url">Baz</a></p>
-+<p>[Baz][Foo bar]</p>
-
 Example 520 (lines 7886-7897) Links
 [
  ]
@@ -27,4 +15,4 @@ Example 520 (lines 7886-7897) Links
 +<p><a href="/uri">
 +</a></p>
 
-619 passed, 2 failed, 0 errored, 0 skipped
+620 passed, 1 failed, 0 errored, 0 skipped
