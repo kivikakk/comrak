@@ -1,15 +1,3 @@
-Example 167 (lines 2867-2874) Link reference definitions
-[foo]
-
-[foo]: first
-[foo]: second
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="first">foo</a></p>
-+<p><a href="second">foo</a></p>
-
 Example 168 (lines 2880-2886) Link reference definitions
 [FOO]: /url
 
@@ -88,19 +76,6 @@ Example 509 (lines 7734-7741) Links
 @@ -1 +1 @@
 -<p><a href="/url">Baz</a></p>
 +<p>[Baz][Foo bar]</p>
-
-Example 512 (lines 7797-7805) Links
-[foo]: /url1
-
-[foo]: /url2
-
-[bar][foo]
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="/url1">bar</a></p>
-+<p><a href="/url2">bar</a></p>
 
 Example 520 (lines 7886-7897) Links
 [
@@ -251,4 +226,4 @@ Example 559 (lines 8315-8321) Images
 -<p><img src="/url" alt="Foo" title="title" /></p>
 +<p>![Foo]</p>
 
-599 passed, 22 failed, 0 errored, 0 skipped
+601 passed, 20 failed, 0 errored, 0 skipped

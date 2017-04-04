@@ -369,8 +369,8 @@ impl<'a> Parser<'a> {
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented &&
                       (unwrap_into(scanners::html_block_start(&line[self.first_nonspace..]),
-                                  &mut matched) ||
-                      match &container.data.borrow().value {
+                                   &mut matched) ||
+                       match &container.data.borrow().value {
                 &NodeValue::Paragraph => false,
                 _ => {
                     unwrap_into(scanners::html_block_start_7(&line[self.first_nonspace..]),
@@ -972,11 +972,10 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         }
     }
 
-    subj.refmap.insert(lab,
-                       Reference {
-                           url: clean_url(&url),
-                           title: clean_title(&title),
-                       });
+    subj.refmap.entry(lab).or_insert(Reference {
+        url: clean_url(&url),
+        title: clean_title(&title),
+    });
     Some(subj.pos)
 }
 
