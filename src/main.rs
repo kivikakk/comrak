@@ -39,12 +39,27 @@ fn main() {
         .version("0.1.0")
         .author("Yuki Izumi <yuki@kivikakk.ee>")
         .about("CommonMark parser based on cmark")
+        .arg(clap::Arg::with_name("file")
+             .value_name("FILE")
+             .multiple(true)
+             .help("The CommonMark file to parse; or standard input if none passed"))
         .arg(clap::Arg::with_name("hardbreaks")
              .long("hardbreaks")
              .help("Treat newlines as hard line breaks"))
         .arg(clap::Arg::with_name("github-pre-lang")
              .long("github-pre-lang")
              .help("Use GitHub-style <pre lang> for code blocks"))
+        .arg(clap::Arg::with_name("list-extensions")
+             .long("list-extensions")
+             .help("List available extensions and quit"))
+        .arg(clap::Arg::with_name("extension")
+             .short("e")
+             .long("extension")
+             .takes_value(true)
+             .number_of_values(1)
+             .multiple(true)
+             .value_name("EXTENSION")
+             .help("Specify an extension name to use"))
         .get_matches();
 
     let options = ComrakOptions {
@@ -53,7 +68,17 @@ fn main() {
     };
 
     let mut buf = vec![];
-    std::io::stdin().read_to_end(&mut buf).unwrap();
+
+    match matches.values_of("file") {
+        None => { std::io::stdin().read_to_end(&mut buf).unwrap(); }
+        Some(fs) => {
+            for f in fs {
+                let mut io = std::fs::File::open(f).unwrap();
+                io.read_to_end(&mut buf).unwrap();
+            }
+        }
+    };
+
     let s = String::from_utf8(buf).unwrap();
     let chars: Vec<char> = s.chars().collect::<Vec<_>>();
 
