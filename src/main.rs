@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 
+extern crate unicode_categories;
 extern crate typed_arena;
 extern crate regex;
 #[macro_use]
@@ -22,6 +23,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::io::Read;
 use std::mem;
 
+use unicode_categories::UnicodeCategories;
 use typed_arena::Arena;
 
 pub use html::format_document;
@@ -1341,17 +1343,17 @@ impl<'a, 'b> Subject<'a, 'b> {
             self.input[self.pos]
         };
 
-        let left_flanking = numdelims > 0 && !isspace(&after_char) &&
-                            !(ispunct(&after_char) && !isspace(&before_char) &&
-                              !ispunct(&before_char));
-        let right_flanking = numdelims > 0 && !isspace(&before_char) &&
-                             !(ispunct(&before_char) && !isspace(&after_char) &&
-                               !ispunct(&after_char));
+        let left_flanking = numdelims > 0 && !after_char.is_whitespace() &&
+                            !(after_char.is_punctuation() && !before_char.is_whitespace() &&
+                              !before_char.is_punctuation());
+        let right_flanking = numdelims > 0 && !before_char.is_whitespace() &&
+                             !(before_char.is_punctuation() && !after_char.is_whitespace() &&
+                               !after_char.is_punctuation());
 
         if c == '_' {
             (numdelims,
-             left_flanking && (!right_flanking || ispunct(&before_char)),
-             right_flanking && (!left_flanking || ispunct(&after_char)))
+             left_flanking && (!right_flanking || before_char.is_punctuation()),
+             right_flanking && (!left_flanking || after_char.is_punctuation()))
         } else if c == '\'' || c == '"' {
             (numdelims, left_flanking && !right_flanking, right_flanking)
         } else {

@@ -1,12 +1,3 @@
-Example 331 (lines 6037-6041) Emphasis and strong emphasis
-* a *
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>* a *</p>
-+<p><em> a </em></p>
-
 Example 509 (lines 7734-7741) Links
 [Foo
   bar]: /url
@@ -36,4 +27,4 @@ Example 520 (lines 7886-7897) Links
 +<p><a href="/uri">
 +</a></p>
 
-618 passed, 3 failed, 0 errored, 0 skipped
+619 passed, 2 failed, 0 errored, 0 skipped
