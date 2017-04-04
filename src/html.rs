@@ -2,19 +2,20 @@ use std::io::Write;
 use std::iter::FromIterator;
 use std::collections::BTreeMap;
 
-use ::{NodeValue, Node, AstCell, ListType, std, isspace};
+use ::{NodeValue, Node, AstCell, ListType, std, isspace, ComrakOptions};
 
-pub fn format_document<'a>(root: &'a Node<'a, AstCell>) -> String {
-    let mut f = HtmlFormatter::new();
+pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
+    let mut f = HtmlFormatter::new(options);
     f.format(root, false);
     String::from_utf8(f.v).unwrap()
 }
 
-struct HtmlFormatter {
+struct HtmlFormatter<'o> {
     v: Vec<u8>,
+    options: &'o ComrakOptions,
 }
 
-impl Write for HtmlFormatter {
+impl<'o> Write for HtmlFormatter<'o> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.v.write(buf)
     }
@@ -35,9 +36,12 @@ lazy_static! {
     };
 }
 
-impl HtmlFormatter {
-    fn new() -> Self {
-        HtmlFormatter { v: vec![] }
+impl<'o> HtmlFormatter<'o> {
+    fn new(options: &'o ComrakOptions) -> Self {
+        HtmlFormatter {
+            v: vec![],
+            options: options,
+        }
     }
 
     fn cr(&mut self) {
@@ -175,17 +179,25 @@ impl HtmlFormatter {
             &NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     self.cr();
-                    write!(self, "<pre><code").unwrap();
-                    if ncb.info.len() > 0 {
-                        write!(self, " class=\"language-").unwrap();
+
+                    if ncb.info.len() == 0 {
+                        write!(self, "<pre><code>").unwrap();
+                    } else {
                         let mut first_tag = 0;
                         while first_tag < ncb.info.len() && !isspace(&ncb.info[first_tag]) {
                             first_tag += 1;
                         }
-                        self.escape(&ncb.info[..first_tag]);
-                        write!(self, "\"").unwrap();
+
+                        if self.options.github_pre_lang {
+                            write!(self, "<pre lang=\"").unwrap();
+                            self.escape(&ncb.info[..first_tag]);
+                            write!(self, "\"><code>").unwrap();
+                        } else {
+                            write!(self, "<pre><code class=\"language-").unwrap();
+                            self.escape(&ncb.info[..first_tag]);
+                            write!(self, "\">").unwrap();
+                        }
                     }
-                    write!(self, ">").unwrap();
                     self.escape(&ncb.literal);
                     write!(self, "</code></pre>\n").unwrap();
                 }
@@ -237,9 +249,12 @@ impl HtmlFormatter {
                 }
             }
             &NodeValue::SoftBreak => {
-                // TODO: if HARDBREAKS option set.
                 if entering {
-                    write!(self, "\n").unwrap();
+                    if self.options.hardbreaks {
+                        write!(self, "<br />\n").unwrap();
+                    } else {
+                        write!(self, "\n").unwrap();
+                    }
                 }
             }
             &NodeValue::Code(ref literal) => {

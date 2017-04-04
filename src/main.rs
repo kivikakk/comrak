@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 
+extern crate clap;
 extern crate unicode_categories;
 extern crate typed_arena;
 extern crate regex;
@@ -34,18 +35,36 @@ use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListTy
 use strings::*;
 
 fn main() {
+    let matches = clap::App::new("comrak")
+        .version("0.1.0")
+        .author("Yuki Izumi <yuki@kivikakk.ee>")
+        .about("CommonMark parser based on cmark")
+        .arg(clap::Arg::with_name("hardbreaks")
+             .long("hardbreaks")
+             .help("Treat newlines as hard line breaks"))
+        .arg(clap::Arg::with_name("github-pre-lang")
+             .long("github-pre-lang")
+             .help("Use GitHub-style <pre lang> for code blocks"))
+        .get_matches();
+
+    let options = ComrakOptions {
+        hardbreaks: matches.is_present("hardbreaks"),
+        github_pre_lang: matches.is_present("github-pre-lang"),
+    };
+
     let mut buf = vec![];
     std::io::stdin().read_to_end(&mut buf).unwrap();
     let s = String::from_utf8(buf).unwrap();
     let chars: Vec<char> = s.chars().collect::<Vec<_>>();
+
     let arena = Arena::new();
-    let n = parse_document(&arena, &chars, 0);
-    print!("{}", format_document(n));
+    let n = parse_document(&arena, &chars, &options);
+    print!("{}", format_document(n, &options));
 }
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                           buffer: &[char],
-                          options: u32)
+                          options: &ComrakOptions)
                           -> &'a Node<'a, AstCell> {
     let root: &'a Node<'a, AstCell> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
@@ -67,7 +86,7 @@ const CODE_INDENT: usize = 4;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-struct Parser<'a> {
+struct Parser<'a, 'o> {
     arena: &'a Arena<Node<'a, AstCell>>,
     refmap: HashMap<Vec<char>, Reference>,
     root: &'a Node<'a, AstCell>,
@@ -83,6 +102,7 @@ struct Parser<'a> {
     last_line_length: usize,
     linebuf: Vec<char>,
     last_buffer_ended_with_cr: bool,
+    options: &'o ComrakOptions,
 }
 
 #[derive(Clone)]
@@ -91,11 +111,16 @@ struct Reference {
     title: Vec<char>,
 }
 
-impl<'a> Parser<'a> {
+pub struct ComrakOptions {
+    hardbreaks: bool,
+    github_pre_lang: bool,
+}
+
+impl<'a, 'o> Parser<'a, 'o> {
     fn new(arena: &'a Arena<Node<'a, AstCell>>,
            root: &'a Node<'a, AstCell>,
-           options: u32)
-           -> Parser<'a> {
+           options: &'o ComrakOptions)
+           -> Parser<'a, 'o> {
         Parser {
             arena: arena,
             refmap: HashMap::new(),
@@ -112,6 +137,7 @@ impl<'a> Parser<'a> {
             last_line_length: 0,
             linebuf: vec![],
             last_buffer_ended_with_cr: false,
+            options: options,
         }
     }
 
@@ -984,11 +1010,11 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     Some(subj.pos)
 }
 
-struct Subject<'a, 'b> {
+struct Subject<'a, 'r> {
     arena: &'a Arena<Node<'a, AstCell>>,
     input: Vec<char>,
     pos: usize,
-    refmap: &'b mut HashMap<Vec<char>, Reference>,
+    refmap: &'r mut HashMap<Vec<char>, Reference>,
     delimiters: Vec<Delimiter<'a>>,
     brackets: Vec<Bracket<'a>>,
     backticks: [usize; MAXBACKTICKS + 1],
@@ -1011,7 +1037,7 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
-impl<'a, 'b> Subject<'a, 'b> {
+impl<'a, 'r> Subject<'a, 'r> {
     fn parse_inline(&mut self, node: &'a Node<'a, AstCell>) -> bool {
         let new_inl: Option<&'a Node<'a, AstCell>>;
         let c = match self.peek_char() {
