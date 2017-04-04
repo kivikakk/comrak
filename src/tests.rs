@@ -45,7 +45,7 @@ fn basic() {
 
 #[test]
 fn codefence() {
-    compare(concat!("``` rust\n", "fn main<'a>();\n", "```\n"),
+    compare(concat!("``` rust yum\n", "fn main<'a>();\n", "```\n"),
             concat!("<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n",
                     "</code></pre>\n"));
 }

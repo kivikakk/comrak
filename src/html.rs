@@ -2,7 +2,7 @@ use std::io::Write;
 use std::iter::FromIterator;
 use std::collections::BTreeMap;
 
-use ::{NodeValue, Node, AstCell, ListType, std};
+use ::{NodeValue, Node, AstCell, ListType, std, isspace};
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>) -> String {
     let mut f = HtmlFormatter::new();
@@ -178,7 +178,11 @@ impl HtmlFormatter {
                     write!(self, "<pre><code").unwrap();
                     if ncb.info.len() > 0 {
                         write!(self, " class=\"language-").unwrap();
-                        self.escape(&ncb.info);
+                        let mut first_tag = 0;
+                        while first_tag < ncb.info.len() && !isspace(&ncb.info[first_tag]) {
+                            first_tag += 1;
+                        }
+                        self.escape(&ncb.info[..first_tag]);
                         write!(self, "\"").unwrap();
                     }
                     write!(self, ">").unwrap();
