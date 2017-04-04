@@ -148,7 +148,7 @@ impl<'a> Parser<'a> {
             } else {
                 if eol < buffer.len() && buffer[eol] == '\0' {
                     self.linebuf.extend_from_slice(&buffer[0..eol]);
-                    self.linebuf.extend_from_slice(&['\u{fffd}']);
+                    self.linebuf.push('\u{fffd}');
                     eol += 1;
                 } else {
                     self.linebuf.extend_from_slice(&buffer[0..eol]);
@@ -558,13 +558,16 @@ impl<'a> Parser<'a> {
             }
             .unwrap();
 
-        if !ncb.fenced && self.indent >= CODE_INDENT {
-            self.advance_offset(line, CODE_INDENT, true);
-            return true;
-        } else if !ncb.fenced && self.blank {
-            let offset = self.first_nonspace - self.offset;
-            self.advance_offset(line, offset, false);
-            return true;
+        if !ncb.fenced {
+            if self.indent >= CODE_INDENT {
+                self.advance_offset(line, CODE_INDENT, true);
+                return true;
+            } else if self.blank {
+                let offset = self.first_nonspace - self.offset;
+                self.advance_offset(line, offset, false);
+                return true;
+            }
+            return false;
         }
 
         let matched = if self.indent <= 3 &&
