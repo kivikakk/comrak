@@ -67,7 +67,7 @@ impl<'o> HtmlFormatter<'o> {
         for c in buffer {
             match ESCAPE_TABLE.get(c) {
                 Some(s) => {
-                    self.write(s.as_bytes()).unwrap();
+                    self.write_all(s.as_bytes()).unwrap();
                 }
                 None => {
                     write!(self, "{}", c).unwrap();
@@ -205,7 +205,7 @@ impl<'o> HtmlFormatter<'o> {
             &NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr();
-                    self.write(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                    self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
                     self.cr();
                 }
             }

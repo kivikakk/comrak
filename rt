@@ -1,0 +1,2 @@
+#!/bin/bash
+(cd vendor/cmark-gfm/test/; python3 roundtrip_tests.py --program=../../../target/debug/comrak --spec=../../CommonMark/spec.txt)

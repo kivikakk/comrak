@@ -1,4 +1,5 @@
-use ::{Arena, parse_document, format_document, ComrakOptions};
+use ::{Arena, parse_document, ComrakOptions};
+use ::html::format_document;
 
 fn parse(input: &[char]) -> String {
     let arena = Arena::new();

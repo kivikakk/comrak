@@ -10,6 +10,7 @@ extern crate lazy_static;
 mod arena_tree;
 mod scanners;
 mod html;
+mod cm;
 mod ctype;
 mod node;
 mod entity;
@@ -27,7 +28,6 @@ use std::mem;
 use unicode_categories::UnicodeCategories;
 use typed_arena::Arena;
 
-pub use html::format_document;
 use arena_tree::Node;
 use ctype::{isspace, ispunct, isdigit};
 use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
@@ -40,26 +40,34 @@ fn main() {
         .author("Yuki Izumi <yuki@kivikakk.ee>")
         .about("CommonMark parser based on cmark")
         .arg(clap::Arg::with_name("file")
-             .value_name("FILE")
-             .multiple(true)
-             .help("The CommonMark file to parse; or standard input if none passed"))
+            .value_name("FILE")
+            .multiple(true)
+            .help("The CommonMark file to parse; or standard input if none passed"))
         .arg(clap::Arg::with_name("hardbreaks")
-             .long("hardbreaks")
-             .help("Treat newlines as hard line breaks"))
+            .long("hardbreaks")
+            .help("Treat newlines as hard line breaks"))
         .arg(clap::Arg::with_name("github-pre-lang")
-             .long("github-pre-lang")
-             .help("Use GitHub-style <pre lang> for code blocks"))
+            .long("github-pre-lang")
+            .help("Use GitHub-style <pre lang> for code blocks"))
         .arg(clap::Arg::with_name("list-extensions")
-             .long("list-extensions")
-             .help("List available extensions and quit"))
+            .long("list-extensions")
+            .help("List available extensions and quit"))
         .arg(clap::Arg::with_name("extension")
-             .short("e")
-             .long("extension")
-             .takes_value(true)
-             .number_of_values(1)
-             .multiple(true)
-             .value_name("EXTENSION")
-             .help("Specify an extension name to use"))
+            .short("e")
+            .long("extension")
+            .takes_value(true)
+            .number_of_values(1)
+            .multiple(true)
+            .value_name("EXTENSION")
+            .help("Specify an extension name to use"))
+        .arg(clap::Arg::with_name("format")
+            .short("t")
+            .long("to")
+            .takes_value(true)
+            .possible_values(&["html", "commonmark"])
+            .default_value("html")
+            .value_name("FORMAT")
+            .help("Specify output format"))
         .get_matches();
 
     let options = ComrakOptions {
@@ -70,7 +78,9 @@ fn main() {
     let mut buf = vec![];
 
     match matches.values_of("file") {
-        None => { std::io::stdin().read_to_end(&mut buf).unwrap(); }
+        None => {
+            std::io::stdin().read_to_end(&mut buf).unwrap();
+        }
         Some(fs) => {
             for f in fs {
                 let mut io = std::fs::File::open(f).unwrap();
@@ -79,12 +89,18 @@ fn main() {
         }
     };
 
-    let s = String::from_utf8(buf).unwrap();
-    let chars: Vec<char> = s.chars().collect::<Vec<_>>();
+    let chars: Vec<char> = String::from_utf8(buf).unwrap().chars().collect::<Vec<_>>();
 
     let arena = Arena::new();
-    let n = parse_document(&arena, &chars, &options);
-    print!("{}", format_document(n, &options));
+    let root = parse_document(&arena, &chars, &options);
+
+    let formatter = match matches.value_of("format") {
+        Some("html") => html::format_document,
+        Some("commonmark") => cm::format_document,
+        _ => panic!("unknown format"),
+    };
+
+    print!("{}", formatter(root, &options));
 }
 
 pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
