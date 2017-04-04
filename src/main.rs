@@ -1574,27 +1574,22 @@ impl<'a, 'b> Subject<'a, 'b> {
             }
         }
 
-        let mut lab = match self.link_label() {
-            Some(lab) => {
-                if lab.len() == 0 {
-                    None
-                } else {
-                    Some(lab.to_vec())
-                }
-            }
-            None => None,
+        let (mut lab, mut found_label) = match self.link_label() {
+            Some(lab) => (lab.to_vec(), true),
+            None => (vec![], false),
         };
 
-        if !lab.is_some() {
+        if !found_label {
             self.pos = initial_pos;
         }
 
-        if !lab.is_some() && !self.brackets[brackets_len - 1].bracket_after {
-            lab = Some(self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]
-                .to_vec());
+        if (!found_label || lab.len() == 0) && !self.brackets[brackets_len - 1].bracket_after {
+            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]
+                .to_vec();
+            found_label = true;
         }
 
-        let reff: Option<Reference> = if let Some(mut lab) = lab {
+        let reff: Option<Reference> = if found_label {
             lab = downcase(&lab);
             self.refmap.get(&lab).map(|c| c.clone())
         } else {
