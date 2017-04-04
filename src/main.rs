@@ -1588,8 +1588,7 @@ impl<'a, 'b> Subject<'a, 'b> {
         }
 
         if (!found_label || lab.len() == 0) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]
-                .to_vec();
+            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].to_vec();
             found_label = true;
         }
 
