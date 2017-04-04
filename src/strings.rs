@@ -206,6 +206,7 @@ pub fn is_blank(s: &[char]) -> bool {
 }
 
 pub fn normalize_reference_label(i: &[char]) -> Vec<char> {
+    let i = trim_slice(i);
     let mut v = vec![];
     let mut last_was_whitespace = false;
     for c in i {

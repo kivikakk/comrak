@@ -1,18 +1,1 @@
-Example 520 (lines 7886-7897) Links
-[
- ]
-
-[
- ]: /uri
-
---- expected HTML
-+++ actual HTML
-@@ -1,4 +1,2 @@
--<p>[
--]</p>
--<p>[
--]: /uri</p>
-+<p><a href="/uri">
-+</a></p>
-
-620 passed, 1 failed, 0 errored, 0 skipped
+621 passed, 0 failed, 0 errored, 0 skipped

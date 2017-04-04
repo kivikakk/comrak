@@ -975,10 +975,12 @@ fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     }
 
     lab = normalize_reference_label(&lab);
-    subj.refmap.entry(lab).or_insert(Reference {
-        url: clean_url(&url),
-        title: clean_title(&title),
-    });
+    if lab.len() > 0 {
+        subj.refmap.entry(lab).or_insert(Reference {
+            url: clean_url(&url),
+            title: clean_title(&title),
+        });
+    }
     Some(subj.pos)
 }
 
@@ -1678,8 +1680,7 @@ impl<'a, 'b> Subject<'a, 'b> {
         }
 
         if c == ']' {
-            let raw_label = &self.input[startpos + 1..self.pos];
-            trim_slice(raw_label);
+            let raw_label = trim_slice(&self.input[startpos + 1..self.pos]);
             self.pos += 1;
             Some(raw_label)
         } else {
