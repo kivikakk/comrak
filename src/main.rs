@@ -53,7 +53,7 @@ fn main() {
             .takes_value(true)
             .number_of_values(1)
             .multiple(true)
-            .possible_values(&["strikethrough"])
+            .possible_values(&["strikethrough", "tagfilter", "table", "autolink"])
             .value_name("EXTENSION")
             .help("Specify an extension name to use"))
         .arg(clap::Arg::with_name("format")
@@ -83,6 +83,9 @@ fn main() {
         width: matches.value_of("width").unwrap_or("0").parse().unwrap_or(0),
         normalize: matches.is_present("normalize"),
         ext_strikethrough: exts.remove("strikethrough"),
+        ext_tagfilter: exts.remove("tagfilter"),
+        ext_table: exts.remove("table"),
+        ext_autolink: exts.remove("autolink"),
     };
 
     assert!(exts.len() == 0);
@@ -170,8 +173,10 @@ pub struct ComrakOptions {
     github_pre_lang: bool,
     width: usize,
     normalize: bool,
-
     ext_strikethrough: bool,
+    ext_tagfilter: bool,
+    ext_table: bool,
+    ext_autolink: bool,
 }
 
 impl<'a, 'o> Parser<'a, 'o> {

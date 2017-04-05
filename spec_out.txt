@@ -1,73 +1,169 @@
 Example 189 (lines 3197-3214) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| foo | bar |
+| --- | --- |
+| baz | bim |
 
+--- expected HTML
++++ actual HTML
+@@ -1,12 +1,3 @@
+-<table>
+-<thead>
+-<tr>
+-<th>foo</th>
+-<th>bar</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td>baz</td>
+-<td>bim</td>
+-</tr></tbody></table>
++<p>| foo | bar |
++| --- | --- |
++| baz | bim |</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 190 (lines 3219-3236) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| abc | defghi |
+:-: | -----------:
+bar | baz
 
+--- expected HTML
++++ actual HTML
+@@ -1,12 +1,3 @@
+-<table>
+-<thead>
+-<tr>
+-<th align="center">abc</th>
+-<th align="right">defghi</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td align="center">bar</td>
+-<td align="right">baz</td>
+-</tr></tbody></table>
++<p>| abc | defghi |
++:-: | -----------:
++bar | baz</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 191 (lines 3241-3260) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| f\|oo  |
+| ------ |
+| b `\|` az |
+| b **\|** im |
 
+--- expected HTML
++++ actual HTML
+@@ -1,13 +1,4 @@
+-<table>
+-<thead>
+-<tr>
+-<th>f|oo</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td>b <code>|</code> az</td>
+-</tr>
+-<tr>
+-<td>b <strong>|</strong> im</td>
+-</tr></tbody></table>
++<p>| f|oo  |
++| ------ |
++| b <code>\|</code> az |
++| b <strong>|</strong> im |</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 192 (lines 3265-3286) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| abc | def |
+| --- | --- |
+| bar | baz |
+> bar
 
+--- expected HTML
++++ actual HTML
+@@ -1,15 +1,6 @@
+-<table>
+-<thead>
+-<tr>
+-<th>abc</th>
+-<th>def</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td>bar</td>
+-<td>baz</td>
+-</tr></tbody></table>
++<p>| abc | def |
++| --- | --- |
++| bar | baz |</p>
+ <blockquote>
+ <p>bar</p>
+ </blockquote>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 193 (lines 3288-3313) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| abc | def |
+| --- | --- |
+| bar | baz |
+bar
 
+bar
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+--- expected HTML
++++ actual HTML
+@@ -1,17 +1,5 @@
+-<table>
+-<thead>
+-<tr>
+-<th>abc</th>
+-<th>def</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td>bar</td>
+-<td>baz</td>
+-</tr>
+-<tr>
+-<td>bar</td>
+-<td></td>
+-</tr></tbody></table>
++<p>| abc | def |
++| --- | --- |
++| bar | baz |
++bar</p>
+ <p>bar</p>
 
-For more information try --help
-Example 194 (lines 3318-3326) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
-
-
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 195 (lines 3332-3354) Tables (extension)
-program returned error code 1
-error: 'table' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+| abc | def |
+| --- | --- |
+| bar |
+| bar | baz | boo |
 
+--- expected HTML
++++ actual HTML
+@@ -1,16 +1,4 @@
+-<table>
+-<thead>
+-<tr>
+-<th>abc</th>
+-<th>def</th>
+-</tr>
+-</thead>
+-<tbody>
+-<tr>
+-<td>bar</td>
+-<td></td>
+-</tr>
+-<tr>
+-<td>bar</td>
+-<td>baz</td>
+-</tr></tbody></table>
++<p>| abc | def |
++| --- | --- |
++| bar |
++| bar | baz | boo |</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 465 (lines 7369-7373) Strikethrough (extension)
 ~Hi~ Hello, world!
 
@@ -87,123 +183,149 @@ This ~text~~~~ is ~~~~curious~.
 +<p>This ~text~~~~ is ~~~~curious~.</p>
 
 Example 593 (lines 8838-8842) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+www.commonmark.org
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://www.commonmark.org">www.commonmark.org</a></p>
++<p>www.commonmark.org</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 594 (lines 8846-8850) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+Visit www.commonmark.org/help for more information.
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>Visit <a href="http://www.commonmark.org/help">www.commonmark.org/help</a> for more information.</p>
++<p>Visit www.commonmark.org/help for more information.</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 595 (lines 8858-8865) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+Visit www.commonmark.org.
 
+Visit www.commonmark.org/a.b.
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p>Visit <a href="http://www.commonmark.org">www.commonmark.org</a>.</p>
+-<p>Visit <a href="http://www.commonmark.org/a.b">www.commonmark.org/a.b</a>.</p>
++<p>Visit www.commonmark.org.</p>
++<p>Visit www.commonmark.org/a.b.</p>
 
-For more information try --help
 Example 596 (lines 8872-8879) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+www.google.com/search?q=Markup+(business)
 
+(www.google.com/search?q=Markup+(business))
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a></p>
+-<p>(<a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a>)</p>
++<p>www.google.com/search?q=Markup+(business)</p>
++<p>(www.google.com/search?q=Markup+(business))</p>
 
-For more information try --help
 Example 597 (lines 8885-8889) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+www.google.com/search?q=(business))+ok
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://www.google.com/search?q=(business))+ok">www.google.com/search?q=(business))+ok</a></p>
++<p>www.google.com/search?q=(business))+ok</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 598 (lines 8896-8903) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+www.google.com/search?q=commonmark&hl=en
 
+www.google.com/search?q=commonmark&hl;
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><a href="http://www.google.com/search?q=commonmark&amp;hl=en">www.google.com/search?q=commonmark&amp;hl=en</a></p>
+-<p><a href="http://www.google.com/search?q=commonmark">www.google.com/search?q=commonmark</a>&amp;hl;</p>
++<p>www.google.com/search?q=commonmark&amp;hl=en</p>
++<p>www.google.com/search?q=commonmark&amp;hl;</p>
 
-For more information try --help
 Example 599 (lines 8907-8911) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+www.commonmark.org/he<lp
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="http://www.commonmark.org/he">www.commonmark.org/he</a>&lt;lp</p>
++<p>www.commonmark.org/he&lt;lp</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 600 (lines 8918-8928) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+http://commonmark.org
 
+(Visit https://encrypted.google.com/search?q=Markup+(business))
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+Anonymous FTP is available at ftp://foo.bar.baz.
 
-For more information try --help
+--- expected HTML
++++ actual HTML
+@@ -1,3 +1,3 @@
+-<p><a href="http://commonmark.org">http://commonmark.org</a></p>
+-<p>(Visit <a href="https://encrypted.google.com/search?q=Markup+(business)">https://encrypted.google.com/search?q=Markup+(business)</a>)</p>
+-<p>Anonymous FTP is available at <a href="ftp://foo.bar.baz">ftp://foo.bar.baz</a>.</p>
++<p>http://commonmark.org</p>
++<p>(Visit https://encrypted.google.com/search?q=Markup+(business))</p>
++<p>Anonymous FTP is available at ftp://foo.bar.baz.</p>
+
 Example 601 (lines 8944-8948) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+foo@bar.baz
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><a href="mailto:foo@bar.baz">foo@bar.baz</a></p>
++<p>foo@bar.baz</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 602 (lines 8952-8956) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.
 
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p>hello@mail+xyz.example isn't valid, but <a href="mailto:hello+xyz@mail.example">hello+xyz@mail.example</a> is.</p>
++<p>hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.</p>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
-
-For more information try --help
 Example 603 (lines 8962-8975) Autolinks (extension)
-program returned error code 1
-error: 'autolink' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+a.b-c_d@a.b
 
+a.b-c_d@a.b.
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+a.b-c_d@a.b-
 
-For more information try --help
+a.b-c_d@a.b_
+
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+-<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a></p>
+-<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a>.</p>
++<p>a.b-c_d@a.b</p>
++<p>a.b-c_d@a.b.</p>
+ <p>a.b-c_d@a.b-</p>
+ <p>a.b-c_d@a.b_</p>
+
 Example 625 (lines 9273-9284) Disallowed Raw HTML (extension)
-program returned error code 1
-error: 'tagfilter' isn't a valid value for '--extension <EXTENSION>...'
-	[values: strikethrough]
+<strong> <title> <style> <em>
 
+<blockquote>
+  <xmp> is disallowed.
+</blockquote>
 
-USAGE:
-    comrak --extension <EXTENSION>... --to <FORMAT> --width <WIDTH>
+--- expected HTML
++++ actual HTML
+@@ -1,4 +1,4 @@
+-<p><strong> &lt;title> &lt;style> <em></p>
++<p><strong> <title> <style> <em></p>
+ <blockquote>
+-  &lt;xmp> is disallowed.
++  <xmp> is disallowed.
+ </blockquote>
 
-For more information try --help
-622 passed, 2 failed, 19 errored, 0 skipped
+623 passed, 20 failed, 0 errored, 0 skipped

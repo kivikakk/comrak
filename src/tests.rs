@@ -279,3 +279,35 @@ fn strikethrough() {
                       "<p>As is <del>this, okay</del>?</p>\n"),
               |opts| opts.ext_strikethrough = true);
 }
+
+#[test]
+fn table() {
+    html_opts(concat!("| a | b |\n", "|---|:-:|\n", "| c | d |\n"),
+              concat!("<table>\n",
+                      "<thead>\n",
+                      "<tr>\n",
+                      "<th>a</th>\n",
+                      "<th align=\"center\">b</th>\n",
+                      "</tr>\n",
+                      "</thead>\n",
+                      "<tbody>\n",
+                      "<tr>\n",
+                      "<td>c</td>\n",
+                      "<td align=\"center\">d</td>\n",
+                      "</tr></tbody></table>\n"),
+              |opts| opts.ext_table = true);
+}
+
+#[test]
+fn autolink() {
+    html_opts(concat!("www.autolink.com\n"),
+              concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn tagfilter() {
+    html_opts(concat!("<xmp>\n"),
+              concat!("<p>&lt;xmp></p>\n"),
+              |opts| opts.ext_tagfilter = true);
+}
