@@ -20,7 +20,7 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 fn html(input: &str, expected: &str) {
-    html_opts(input, expected, |opts| ());
+    html_opts(input, expected, |_| ());
 }
 
 fn html_opts<F>(input: &str, expected: &str, opts: F)
@@ -29,6 +29,7 @@ fn html_opts<F>(input: &str, expected: &str, opts: F)
     let arena = Arena::new();
     let mut options = ComrakOptions::default();
     options.normalize = true;
+    opts(&mut options);
 
     let root = parse_document(&arena, &input.chars().collect::<Vec<char>>(), &options);
     let output = html::format_document(&root, &options);

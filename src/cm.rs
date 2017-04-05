@@ -246,7 +246,7 @@ impl<'o> CommonMarkFormatter<'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::List(ref nl) => {
+            &NodeValue::List(..) => {
                 if !entering &&
                    match node.next_sibling() {
                     Some(next_sibling) => {
@@ -301,7 +301,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.write_all(&listmarker).unwrap();
                     }
                     self.begin_content = true;
-                    for i in 0..marker_width {
+                    for _ in 0..marker_width {
                         write!(self.prefix, " ").unwrap();
                     }
                 } else {
@@ -312,7 +312,7 @@ impl<'o> CommonMarkFormatter<'o> {
             }
             &NodeValue::Heading(ref nch) => {
                 if entering {
-                    for i in 0..nch.level {
+                    for _ in 0..nch.level {
                         write!(self, "#").unwrap();
                     }
                     write!(self, " ").unwrap();
@@ -352,7 +352,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.prefix.truncate(new_len);
                     } else {
                         let numticks = max(3, longest_backtick_sequence(&ncb.literal) + 1);
-                        for i in 0..numticks {
+                        for _ in 0..numticks {
                             write!(self, "`").unwrap();
                         }
                         if ncb.info.len() > 0 {
@@ -361,7 +361,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.cr();
                         write!(self, "{}", ncb.literal.iter().collect::<String>()).unwrap();
                         self.cr();
-                        for i in 0..numticks {
+                        for _ in 0..numticks {
                             write!(self, "`").unwrap();
                         }
                     }
@@ -418,7 +418,7 @@ impl<'o> CommonMarkFormatter<'o> {
             &NodeValue::Code(ref literal) => {
                 if entering {
                     let numticks = shortest_unused_backtick_sequence(literal);
-                    for i in 0..numticks {
+                    for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
                     if literal.len() == 0 || literal[0] == '`' {
@@ -430,7 +430,7 @@ impl<'o> CommonMarkFormatter<'o> {
                     if literal.len() == 0 || literal[literal.len() - 1] == '`' {
                         write!(self, " ").unwrap();
                     }
-                    for i in 0..numticks {
+                    for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
                 }
