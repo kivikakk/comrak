@@ -20,6 +20,12 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 fn html(input: &str, expected: &str) {
+    html_opts(input, expected, |opts| ());
+}
+
+fn html_opts<F>(input: &str, expected: &str, opts: F)
+    where F: Fn(&mut ComrakOptions)
+{
     let arena = Arena::new();
     let mut options = ComrakOptions::default();
     options.normalize = true;
@@ -263,4 +269,12 @@ fn reference_links() {
                  "[honestly]: sure \"hm\"\n"),
          concat!("<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> \
                   legit.</p>\n"));
+}
+
+#[test]
+fn strikethrough() {
+    html_opts(concat!("This is ~strikethru~.\n", "\n", "As is ~~this, okay~~?\n"),
+              concat!("<p>This is <del>strikethrough</del>.</p>\n",
+                      "<p>As is <del>this, okay</del>?</p>\n"),
+              |opts| opts.ext_strikethrough = true);
 }

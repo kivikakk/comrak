@@ -49,15 +49,13 @@ fn main() {
         .arg(clap::Arg::with_name("github-pre-lang")
             .long("github-pre-lang")
             .help("Use GitHub-style <pre lang> for code blocks"))
-        .arg(clap::Arg::with_name("list-extensions")
-            .long("list-extensions")
-            .help("List available extensions and quit"))
         .arg(clap::Arg::with_name("extension")
             .short("e")
             .long("extension")
             .takes_value(true)
             .number_of_values(1)
             .multiple(true)
+            .possible_values(&["strikethrough"])
             .value_name("EXTENSION")
             .help("Specify an extension name to use"))
         .arg(clap::Arg::with_name("format")
@@ -69,22 +67,27 @@ fn main() {
             .value_name("FORMAT")
             .help("Specify output format"))
         .arg(clap::Arg::with_name("width")
-             .long("width")
-             .takes_value(true)
-             .value_name("WIDTH")
-             .default_value("0")
-             .help("Specify wrap width (0 = nowrap)"))
+            .long("width")
+            .takes_value(true)
+            .value_name("WIDTH")
+            .default_value("0")
+            .help("Specify wrap width (0 = nowrap)"))
         .arg(clap::Arg::with_name("normalize")
-             .long("normalize")
-             .help("Consolidate adjacent text nodes"))
+            .long("normalize")
+            .help("Consolidate adjacent text nodes"))
         .get_matches();
+
+    let mut exts = matches.values_of("extension").map_or(BTreeSet::new(), |vals| vals.collect());
 
     let options = ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
         github_pre_lang: matches.is_present("github-pre-lang"),
         width: matches.value_of("width").unwrap_or("0").parse().unwrap_or(0),
         normalize: matches.is_present("normalize"),
+        ext_strikethrough: exts.remove("strikethrough"),
     };
+
+    assert!(exts.len() == 0);
 
     let mut buf = vec![];
 
@@ -169,6 +172,8 @@ pub struct ComrakOptions {
     github_pre_lang: bool,
     width: usize,
     normalize: bool,
+
+    ext_strikethrough: bool,
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
@@ -1011,10 +1016,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                             &NodeValue::Text(ref adj) => {
                                 root.extend(adj);
                                 ns.detach();
-                            },
+                            }
                             _ => break,
                         }
-                    },
+                    }
                     _ => break,
                 }
             }
