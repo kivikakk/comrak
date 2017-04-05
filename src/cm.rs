@@ -197,6 +197,33 @@ impl<'o> CommonMarkFormatter<'o> {
         self.format_node(node, false);
     }
 
+    fn get_in_tight_list_item<'a>(&self, node: &'a Node<'a, AstCell>) -> bool {
+        let tmp = match node.containing_block() {
+            Some(tmp) => tmp,
+            None => return false,
+        };
+
+        if let &NodeValue::Item(..) = &tmp.data.borrow().value {
+            if let &NodeValue::List(ref nl) = &tmp.parent().unwrap().data.borrow().value {
+                return nl.tight;
+            }
+            return false;
+        }
+
+        let parent = match tmp.parent() {
+            Some(parent) => parent,
+            None => return false,
+        };
+
+        if let &NodeValue::Item(..) = &parent.data.borrow().value {
+            if let &NodeValue::List(ref nl) = &parent.parent().unwrap().data.borrow().value {
+                return nl.tight;
+            }
+        }
+
+        return false;
+    }
+
     fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
         let allow_wrap = self.width > 0 && !self.options.hardbreaks;
 
@@ -204,27 +231,7 @@ impl<'o> CommonMarkFormatter<'o> {
             &NodeValue::Item(..) => true,
             _ => false,
         } && node.previous_sibling().is_none() && entering) {
-            let tmp = node.containing_block();
-            self.in_tight_list_item = match tmp {
-                None => false,
-                Some(tmp) => 
-                    match &tmp.data.borrow().value {
-                        &NodeValue::Item(..) => match &tmp.parent().unwrap().data.borrow().value {
-                            &NodeValue::List(ref nl) => nl.tight,
-                            _ => false,
-                        },
-                        _ => match tmp.parent() {
-                            Some(parent) => match &parent.data.borrow().value {
-                                &NodeValue::Item(..) => match &parent.parent().unwrap().data.borrow().value {
-                                    &NodeValue::List(ref nl) => nl.tight,
-                                    _ => false,
-                                },
-                                _ => false,
-                            },
-                            _ => false,
-                        }
-                    },
-            };
+            self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
         match &node.data.borrow().value {
