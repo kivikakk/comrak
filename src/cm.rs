@@ -6,7 +6,7 @@ use std::io::Write;
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
     let mut f = CommonMarkFormatter::new(options);
     f.format(root);
-    if f.v[f.v.len() - 1] != '\n' as u8 {
+    if f.v.len() > 0 && f.v[f.v.len() - 1] != '\n' as u8 {
         f.v.push('\n' as u8);
     }
     String::from_utf8(f.v).unwrap()
@@ -351,7 +351,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         let new_len = self.prefix.len() - 4;
                         self.prefix.truncate(new_len);
                     } else {
-                        let numticks = max(3, longest_backtick_sequence(&ncb.literal));
+                        let numticks = max(3, longest_backtick_sequence(&ncb.literal) + 1);
                         for i in 0..numticks {
                             write!(self, "`").unwrap();
                         }
@@ -541,6 +541,9 @@ fn longest_backtick_sequence(literal: &Vec<char>) -> usize {
             current = 0;
         }
     }
+    if current > longest {
+        longest = current;
+    }
     longest
 }
 
@@ -556,6 +559,10 @@ fn shortest_unused_backtick_sequence(literal: &Vec<char>) -> usize {
             }
             current = 0;
         }
+    }
+
+    if current > 0 {
+        used |= 1 << current;
     }
 
     let mut i = 0;
