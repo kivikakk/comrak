@@ -180,6 +180,15 @@ lazy_static! {
     static ref SCHEME: &'static str = r"[A-Za-z][A-Za-z0-9.+-]{1,31}";
 }
 
+pub fn scheme(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            &format!(r"\A(?:{}:)", *SCHEME)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
 pub fn autolink_uri(line: &[char]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(

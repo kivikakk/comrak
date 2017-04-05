@@ -218,6 +218,17 @@ impl<'a> Node<'a, AstCell> {
         }
         false
     }
+
+    pub fn containing_block(&'a self) -> Option<&'a Node<'a, AstCell>> {
+        let mut ch = Some(self);
+        while let Some(node) = ch {
+            if node.data.borrow().value.block() {
+                return Some(node);
+            }
+            ch = node.parent();
+        }
+        None
+    }
 }
 
 impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
