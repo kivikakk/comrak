@@ -34,6 +34,32 @@ lazy_static! {
         }
         a
     };
+
+    static ref TAGFILTER_BLACKLIST: Vec<Vec<char>> =
+        ["title", "textarea", "style", "xmp", "iframe",
+         "noembed", "noframes", "script", "plaintext"]
+        .iter().map(|s| s.chars().collect()).collect();
+}
+
+fn tagfilter(literal: &[char]) -> bool {
+    if literal.len() < 3 || literal[0] != '<' {
+        return false;
+    }
+
+    let mut i = 1;
+    if literal[i] == '/' {
+        i += 1;
+    }
+
+    for t in &*TAGFILTER_BLACKLIST {
+        let j = i + t.len();
+        if j < literal.len() && &literal[i..j] == t.as_slice() {
+            return isspace(&literal[j]) || literal[j] == '>' ||
+                   (literal[j] == '/' && literal.len() >= j + 2 && literal[j + 1] == '>');
+        }
+    }
+
+    false
 }
 
 impl<'o> HtmlFormatter<'o> {
@@ -205,6 +231,7 @@ impl<'o> HtmlFormatter<'o> {
             &NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr();
+                    // TODO: filter entire block
                     self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
                     self.cr();
                 }
@@ -266,7 +293,12 @@ impl<'o> HtmlFormatter<'o> {
             }
             &NodeValue::HtmlInline(ref literal) => {
                 if entering {
-                    write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
+                    if self.options.ext_tagfilter && tagfilter(literal) {
+                        write!(self, "&lt;{}", literal[1..].into_iter().collect::<String>())
+                            .unwrap();
+                    } else {
+                        write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
+                    }
                 }
             }
             &NodeValue::CustomInline => {

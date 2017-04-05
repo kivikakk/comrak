@@ -321,8 +321,7 @@ Example 625 (lines 9273-9284) Disallowed Raw HTML (extension)
 --- expected HTML
 +++ actual HTML
 @@ -1,4 +1,4 @@
--<p><strong> &lt;title> &lt;style> <em></p>
-+<p><strong> <title> <style> <em></p>
+ <p><strong> &lt;title> &lt;style> <em></p>
  <blockquote>
 -  &lt;xmp> is disallowed.
 +  <xmp> is disallowed.
