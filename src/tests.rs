@@ -21,7 +21,9 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 
 fn html(input: &str, expected: &str) {
     let arena = Arena::new();
-    let options = ComrakOptions::default();
+    let mut options = ComrakOptions::default();
+    options.normalize = true;
+
     let root = parse_document(&arena, &input.chars().collect::<Vec<char>>(), &options);
     let output = html::format_document(&root, &options);
     compare_strs(&output, expected, "regular");
@@ -191,14 +193,14 @@ fn backticks() {
 fn backslashes() {
     html(concat!("Some \\`fake code\\`.\n",
                  "\n",
-                 "Some fake linebreaks: \\\n",
-                 "\\\n",
+                 "Some fake linebreaks:\\\n",
+                 "Yes.\\\n",
                  "See?\n",
                  "\n",
                  "Ga\\rbage.\n"),
          concat!("<p>Some `fake code`.</p>\n",
-                 "<p>Some fake linebreaks: <br />\n",
-                 "<br />\n",
+                 "<p>Some fake linebreaks:<br />\n",
+                 "Yes.<br />\n",
                  "See?</p>\n",
                  "<p>Ga\\rbage.</p>\n"));
 }

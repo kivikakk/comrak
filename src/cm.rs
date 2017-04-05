@@ -17,7 +17,6 @@ struct CommonMarkFormatter<'o> {
     v: Vec<u8>,
     prefix: Vec<u8>,
     column: usize,
-    width: usize,
     need_cr: u8,
     last_breakable: usize,
     begin_line: bool,
@@ -52,7 +51,6 @@ impl<'o> CommonMarkFormatter<'o> {
             v: vec![],
             prefix: vec![],
             column: 0,
-            width: 80,
             need_cr: 0,
             last_breakable: 0,
             begin_line: true,
@@ -123,7 +121,7 @@ impl<'o> CommonMarkFormatter<'o> {
                 self.begin_content = self.begin_content && isdigit(&(buf[i] as char));
             }
 
-            if self.width > 0 && self.column > self.width && !self.begin_line &&
+            if self.options.width > 0 && self.column > self.options.width && !self.begin_line &&
                self.last_breakable > 0 {
                 let remainder = self.v[self.last_breakable + 1..].to_vec();
                 self.v.truncate(self.last_breakable);
@@ -192,9 +190,10 @@ impl<'o> CommonMarkFormatter<'o> {
     }
 
     fn format<'a>(&mut self, node: &'a Node<'a, AstCell>) {
-        self.format_node(node, true);
-        self.format_children(node);
-        self.format_node(node, false);
+        if self.format_node(node, true) {
+            self.format_children(node);
+            self.format_node(node, false);
+        }
     }
 
     fn get_in_tight_list_item<'a>(&self, node: &'a Node<'a, AstCell>) -> bool {
@@ -225,7 +224,7 @@ impl<'o> CommonMarkFormatter<'o> {
     }
 
     fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
-        let allow_wrap = self.width > 0 && !self.options.hardbreaks;
+        let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
         if !(match &node.data.borrow().value {
             &NodeValue::Item(..) => true,
@@ -409,7 +408,7 @@ impl<'o> CommonMarkFormatter<'o> {
             }
             &NodeValue::SoftBreak => {
                 if entering {
-                    if !self.no_linebreaks && self.width == 0 && !self.options.hardbreaks {
+                    if !self.no_linebreaks && self.options.width == 0 && !self.options.hardbreaks {
                         self.cr();
                     } else {
                         self.output(&[' ' as u8], allow_wrap, Escaping::Literal);

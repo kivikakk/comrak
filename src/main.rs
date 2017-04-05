@@ -68,11 +68,22 @@ fn main() {
             .default_value("html")
             .value_name("FORMAT")
             .help("Specify output format"))
+        .arg(clap::Arg::with_name("width")
+             .long("width")
+             .takes_value(true)
+             .value_name("WIDTH")
+             .default_value("0")
+             .help("Specify wrap width (0 = nowrap)"))
+        .arg(clap::Arg::with_name("normalize")
+             .long("normalize")
+             .help("Consolidate adjacent text nodes"))
         .get_matches();
 
     let options = ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
         github_pre_lang: matches.is_present("github-pre-lang"),
+        width: matches.value_of("width").unwrap_or("0").parse().unwrap_or(0),
+        normalize: matches.is_present("normalize"),
     };
 
     let mut buf = vec![];
@@ -156,6 +167,8 @@ struct Reference {
 pub struct ComrakOptions {
     hardbreaks: bool,
     github_pre_lang: bool,
+    width: usize,
+    normalize: bool,
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
@@ -806,6 +819,10 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         self.finalize_document();
 
+        if self.options.normalize {
+            self.consolidate_text_nodes(self.root);
+        }
+
         self.root
     }
 
@@ -977,6 +994,32 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
         while subj.brackets.len() > 0 {
             subj.brackets.pop();
+        }
+    }
+
+    fn consolidate_text_nodes(&mut self, node: &'a Node<'a, AstCell>) {
+        for n in node.children() {
+            loop {
+                match &mut n.data.borrow_mut().value {
+                    &mut NodeValue::Text(ref mut root) => {
+                        let ns = match n.next_sibling() {
+                            Some(ns) => ns,
+                            _ => break,
+                        };
+
+                        match &ns.data.borrow().value {
+                            &NodeValue::Text(ref adj) => {
+                                root.extend(adj);
+                                ns.detach();
+                            },
+                            _ => break,
+                        }
+                    },
+                    _ => break,
+                }
+            }
+
+            self.consolidate_text_nodes(n);
         }
     }
 }
