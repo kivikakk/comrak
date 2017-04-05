@@ -6,8 +6,9 @@ sudo apt-get install python3
 cargo build --verbose
 
 if [ x"$SPEC" = "xtrue" ]; then
-	cd vendor/CommonMark
-	python3 test/spec_tests.py --program=../../target/debug/comrak
+	cd vendor/cmark-gfm
+	python3 test/spec_tests.py --program=../../target/debug/comrak --spec=../CommonMark/spec.txt
+	python3 test/roundtrip_tests.py --program=../../target/debug/comrak --spec=../CommonMark/spec.txt
 else
 	cargo test --verbose
 fi
