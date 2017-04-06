@@ -34,3 +34,8 @@ pub fn isdigit(ch: &char) -> bool {
 pub fn isalpha(ch: &char) -> bool {
     (*ch as u32) < 0x80 && CMARK_CTYPE_CLASS[*ch as usize] == 4
 }
+
+pub fn isalnum(ch: &char) -> bool {
+    (*ch as u32) < 0x80 &&
+    (CMARK_CTYPE_CLASS[*ch as usize] == 3 || CMARK_CTYPE_CLASS[*ch as usize] == 4)
+}

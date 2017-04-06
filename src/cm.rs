@@ -1,10 +1,11 @@
-use ::{Node, AstCell, ComrakOptions, NodeValue, std, ListType, ListDelimType, NodeLink, scanners};
-use ::ctype::{isspace, isdigit, isalpha};
+use {std, Node, AstCell, ComrakOptions, NodeValue, ListType, ListDelimType, NodeLink, scanners};
+use node::TableAlignment;
+use ctype::{isspace, isdigit, isalpha};
 use std::cmp::max;
 use std::io::Write;
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
-    let mut f = CommonMarkFormatter::new(options);
+    let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
     if f.v.len() > 0 && f.v[f.v.len() - 1] != '\n' as u8 {
         f.v.push('\n' as u8);
@@ -12,7 +13,8 @@ pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions)
     String::from_utf8(f.v).unwrap()
 }
 
-struct CommonMarkFormatter<'o> {
+struct CommonMarkFormatter<'a, 'o> {
+    node: &'a Node<'a, AstCell>,
     options: &'o ComrakOptions,
     v: Vec<u8>,
     prefix: Vec<u8>,
@@ -23,6 +25,7 @@ struct CommonMarkFormatter<'o> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
+    custom_escape: Option<fn(&'a Node<'a, AstCell>, u8) -> bool>,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -33,7 +36,7 @@ enum Escaping {
     Title,
 }
 
-impl<'o> Write for CommonMarkFormatter<'o> {
+impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
         std::result::Result::Ok(buf.len())
@@ -44,9 +47,10 @@ impl<'o> Write for CommonMarkFormatter<'o> {
     }
 }
 
-impl<'o> CommonMarkFormatter<'o> {
-    fn new(options: &'o ComrakOptions) -> Self {
+impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
+    fn new(node: &'a Node<'a, AstCell>, options: &'o ComrakOptions) -> Self {
         CommonMarkFormatter {
+            node: node,
             options: options,
             v: vec![],
             prefix: vec![],
@@ -57,6 +61,7 @@ impl<'o> CommonMarkFormatter<'o> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
+            custom_escape: None,
         }
     }
 
@@ -88,6 +93,10 @@ impl<'o> CommonMarkFormatter<'o> {
             if self.begin_line {
                 self.v.extend(&self.prefix);
                 self.column = self.prefix.len();
+            }
+
+            if self.custom_escape.is_some() && self.custom_escape.unwrap()(self.node, buf[i]) {
+                self.v.push('\\' as u8);
             }
 
             let nextc = buf.get(i + 1);
@@ -183,20 +192,20 @@ impl<'o> CommonMarkFormatter<'o> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format_children<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+    fn format_children(&mut self, node: &'a Node<'a, AstCell>) {
         for n in node.children() {
             self.format(n);
         }
     }
 
-    fn format<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+    fn format(&mut self, node: &'a Node<'a, AstCell>) {
         if self.format_node(node, true) {
             self.format_children(node);
             self.format_node(node, false);
         }
     }
 
-    fn get_in_tight_list_item<'a>(&self, node: &'a Node<'a, AstCell>) -> bool {
+    fn get_in_tight_list_item(&self, node: &'a Node<'a, AstCell>) -> bool {
         let tmp = match node.containing_block() {
             Some(tmp) => tmp,
             None => return false,
@@ -223,7 +232,8 @@ impl<'o> CommonMarkFormatter<'o> {
         return false;
     }
 
-    fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
+    fn format_node(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
+        self.node = node;
         let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
         if !(match &node.data.borrow().value {
@@ -246,7 +256,7 @@ impl<'o> CommonMarkFormatter<'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::List(ref nl) => {
+            &NodeValue::List(..) => {
                 if !entering &&
                    match node.next_sibling() {
                     Some(next_sibling) => {
@@ -301,7 +311,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.write_all(&listmarker).unwrap();
                     }
                     self.begin_content = true;
-                    for i in 0..marker_width {
+                    for _ in 0..marker_width {
                         write!(self.prefix, " ").unwrap();
                     }
                 } else {
@@ -312,7 +322,7 @@ impl<'o> CommonMarkFormatter<'o> {
             }
             &NodeValue::Heading(ref nch) => {
                 if entering {
-                    for i in 0..nch.level {
+                    for _ in 0..nch.level {
                         write!(self, "#").unwrap();
                     }
                     write!(self, " ").unwrap();
@@ -352,7 +362,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.prefix.truncate(new_len);
                     } else {
                         let numticks = max(3, longest_backtick_sequence(&ncb.literal) + 1);
-                        for i in 0..numticks {
+                        for _ in 0..numticks {
                             write!(self, "`").unwrap();
                         }
                         if ncb.info.len() > 0 {
@@ -361,7 +371,7 @@ impl<'o> CommonMarkFormatter<'o> {
                         self.cr();
                         write!(self, "{}", ncb.literal.iter().collect::<String>()).unwrap();
                         self.cr();
-                        for i in 0..numticks {
+                        for _ in 0..numticks {
                             write!(self, "`").unwrap();
                         }
                     }
@@ -417,8 +427,8 @@ impl<'o> CommonMarkFormatter<'o> {
             }
             &NodeValue::Code(ref literal) => {
                 if entering {
-                    let numticks = shortest_unused_backtick_sequence(literal);
-                    for i in 0..numticks {
+                    let numticks = shortest_unused_sequence(literal, '`');
+                    for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
                     if literal.len() == 0 || literal[0] == '`' {
@@ -430,7 +440,7 @@ impl<'o> CommonMarkFormatter<'o> {
                     if literal.len() == 0 || literal[literal.len() - 1] == '`' {
                         write!(self, " ").unwrap();
                     }
-                    for i in 0..numticks {
+                    for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
                 }
@@ -471,6 +481,13 @@ impl<'o> CommonMarkFormatter<'o> {
                     self.write_all(&[emph_delim]).unwrap();
                 } else {
                     self.write_all(&[emph_delim]).unwrap();
+                }
+            }
+            &NodeValue::Strikethrough => {
+                if entering {
+                    write!(self, "~").unwrap();
+                } else {
+                    write!(self, "~").unwrap();
                 }
             }
             &NodeValue::Link(ref nl) => {
@@ -523,6 +540,57 @@ impl<'o> CommonMarkFormatter<'o> {
                     write!(self, ")").unwrap();
                 }
             }
+            &NodeValue::Table(..) => {
+                if entering {
+                    self.custom_escape = Some(table_escape);
+                } else {
+                    self.custom_escape = None;
+                }
+                self.blankline();
+            }
+            &NodeValue::TableRow(..) => {
+                if entering {
+                    self.cr();
+                    write!(self, "|").unwrap();
+                }
+            }
+            &NodeValue::TableCell => {
+                if entering {
+                    write!(self, " ").unwrap();
+                } else {
+                    write!(self, " |").unwrap();
+
+                    let ref row = node.parent().unwrap().data.borrow().value;
+                    let in_header = match row {
+                        &NodeValue::TableRow(header) => header,
+                        _ => panic!(),
+                    };
+
+                    if in_header && node.next_sibling().is_none() {
+                        let ref table =
+                            node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let alignments = match table {
+                            &NodeValue::Table(ref alignments) => alignments,
+                            _ => panic!(),
+                        };
+
+                        self.cr();
+                        write!(self, "|").unwrap();
+                        for a in alignments {
+                            write!(self,
+                                   " {} |",
+                                   match a {
+                                       &TableAlignment::Left => ":--",
+                                       &TableAlignment::Center => ":-:",
+                                       &TableAlignment::Right => "--:",
+                                       &TableAlignment::None => "---",
+                                   })
+                                .unwrap();
+                        }
+                        self.cr();
+                    }
+                }
+            }
         };
         true
     }
@@ -547,11 +615,11 @@ fn longest_backtick_sequence(literal: &Vec<char>) -> usize {
     longest
 }
 
-fn shortest_unused_backtick_sequence(literal: &Vec<char>) -> usize {
+fn shortest_unused_sequence(literal: &Vec<char>, f: char) -> usize {
     let mut used = 1;
     let mut current = 0;
     for c in literal {
-        if *c == '`' {
+        if *c == f {
             current += 1;
         } else {
             if current > 0 {
@@ -598,4 +666,13 @@ fn is_autolink<'a>(node: &'a Node<'a, AstCell>, nl: &NodeLink) -> bool {
     }
 
     real_url == link_text.as_slice()
+}
+
+fn table_escape<'a>(node: &'a Node<'a, AstCell>, c: u8) -> bool {
+    match &node.data.borrow().value {
+        &NodeValue::Table(..) |
+        &NodeValue::TableRow(..) |
+        &NodeValue::TableCell => false,
+        _ => c == '|' as u8,
+    }
 }

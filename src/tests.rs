@@ -20,9 +20,15 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 fn html(input: &str, expected: &str) {
+    html_opts(input, expected, |_| ());
+}
+
+fn html_opts<F>(input: &str, expected: &str, opts: F)
+    where F: Fn(&mut ComrakOptions)
+{
     let arena = Arena::new();
     let mut options = ComrakOptions::default();
-    options.normalize = true;
+    opts(&mut options);
 
     let root = parse_document(&arena, &input.chars().collect::<Vec<char>>(), &options);
     let output = html::format_document(&root, &options);
@@ -263,4 +269,61 @@ fn reference_links() {
                  "[honestly]: sure \"hm\"\n"),
          concat!("<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> \
                   legit.</p>\n"));
+}
+
+#[test]
+fn strikethrough() {
+    html_opts(concat!("This is ~strikethrough~.\n",
+                      "\n",
+                      "As is ~~this, okay~~?\n"),
+              concat!("<p>This is <del>strikethrough</del>.</p>\n",
+                      "<p>As is <del>this, okay</del>?</p>\n"),
+              |opts| opts.ext_strikethrough = true);
+}
+
+#[test]
+fn table() {
+    html_opts(concat!("| a | b |\n", "|---|:-:|\n", "| c | d |\n"),
+              concat!("<table>\n",
+                      "<thead>\n",
+                      "<tr>\n",
+                      "<th>a</th>\n",
+                      "<th align=\"center\">b</th>\n",
+                      "</tr>\n",
+                      "</thead>\n",
+                      "<tbody>\n",
+                      "<tr>\n",
+                      "<td>c</td>\n",
+                      "<td align=\"center\">d</td>\n",
+                      "</tr></tbody></table>\n"),
+              |opts| opts.ext_table = true);
+}
+
+#[test]
+fn autolink_www() {
+    html_opts(concat!("www.autolink.com\n"),
+              concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn autolink_email() {
+    html_opts(concat!("john@smith.com\n"),
+              concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn autolink_scheme() {
+    html_opts(concat!("https://google.com/search\n"),
+              concat!("<p><a href=\"https://google.com/search\">https://google.\
+                       com/search</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn tagfilter() {
+    html_opts(concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
+              concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
+              |opts| opts.ext_tagfilter = true);
 }

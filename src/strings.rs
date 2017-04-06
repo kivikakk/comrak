@@ -1,4 +1,5 @@
-use ::{ispunct, isspace, AutolinkType, entity};
+use ::{ispunct, isspace, entity};
+use inlines::AutolinkType;
 
 pub fn unescape(v: &mut Vec<char>) {
     let mut r = 0;
