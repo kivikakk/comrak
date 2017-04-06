@@ -15,7 +15,12 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 
         while i < len {
             match contents[i] {
-                ':' => (),
+                ':' => {
+                    post_org = url_match(arena, &contents, i);
+                    if post_org.is_some() {
+                        break;
+                    }
+                }
                 'w' => {
                     post_org = www_match(arena, &contents, i);
                     if post_org.is_some() {
@@ -29,7 +34,8 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         }
 
         match post_org {
-            Some((post, skip)) => {
+            Some((post, reverse, skip)) => {
+                i -= reverse;
                 node.insert_after(post);
                 if i + skip < len {
                     let remain = contents[i + skip..].to_vec();
@@ -47,7 +53,7 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                  contents: &[char],
                  i: usize)
-                 -> Option<(&'a Node<'a, AstCell>, usize)> {
+                 -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
     lazy_static! {
         static ref WWW_DELIMS: BTreeSet<char> = BTreeSet::from_iter(vec![
                                                                     '*', '_', '~', '(', '[']);
@@ -70,7 +76,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         link_end += 1;
     }
 
-    let link_end = autolink_delim(&contents[i..], link_end);
+    link_end = autolink_delim(&contents[i..], link_end);
 
     let mut url = vec!['h', 't', 't', 'p', ':', '/', '/'];
     url.extend_from_slice(&contents[i..link_end + i]);
@@ -82,7 +88,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                           }));
 
     inl.append(make_inline(arena, NodeValue::Text(contents[i..link_end + i].to_vec())));
-    Some((inl, link_end))
+    Some((inl, 0, link_end))
 }
 
 fn check_domain(data: &[char]) -> Option<usize> {
@@ -176,4 +182,54 @@ fn autolink_delim(data: &[char], mut link_end: usize) -> usize {
     }
 
     link_end
+}
+
+fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+                 contents: &[char],
+                 i: usize)
+                 -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
+    lazy_static! {
+        static ref SCHEMES: Vec<Vec<char>> =
+            vec![vec!['h', 't', 't', 'p'],
+            vec!['h', 't', 't', 'p', 's'],
+            vec!['f', 't', 'p']];
+    }
+
+    let data = &contents[i..];
+    let size = contents.len() - i;
+
+    if size < 4 || data[1] != '/' || data[2] != '/' {
+        return None;
+    }
+
+    let mut rewind = 0;
+    while rewind < i && isalpha(&contents[i - rewind - 1]) {
+        rewind += 1;
+    }
+
+    if !SCHEMES.iter()
+        .any(|s| size + rewind >= s.len() && &contents[i - rewind..i] == s.as_slice()) {
+        return None;
+    }
+
+    let mut link_end = match check_domain(&data[3..]) {
+        None => return None,
+        Some(link_end) => link_end,
+    };
+
+    while link_end < size && !isspace(&data[link_end]) {
+        link_end += 1;
+    }
+
+    link_end = autolink_delim(&data, link_end);
+
+    let url = contents[i - rewind..i + link_end].to_vec();
+    let inl = make_inline(arena,
+                          NodeValue::Link(NodeLink {
+                              url: url.clone(),
+                              title: vec![],
+                          }));
+
+    inl.append(make_inline(arena, NodeValue::Text(url)));
+    Some((inl, rewind, rewind + link_end))
 }
