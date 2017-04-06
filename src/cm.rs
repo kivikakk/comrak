@@ -5,7 +5,7 @@ use std::cmp::max;
 use std::io::Write;
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
-    let mut f = CommonMarkFormatter::new(options);
+    let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
     if f.v.len() > 0 && f.v[f.v.len() - 1] != '\n' as u8 {
         f.v.push('\n' as u8);
@@ -13,7 +13,8 @@ pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions)
     String::from_utf8(f.v).unwrap()
 }
 
-struct CommonMarkFormatter<'o> {
+struct CommonMarkFormatter<'a, 'o> {
+    node: &'a Node<'a, AstCell>,
     options: &'o ComrakOptions,
     v: Vec<u8>,
     prefix: Vec<u8>,
@@ -24,6 +25,7 @@ struct CommonMarkFormatter<'o> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
+    custom_escape: Option<fn(&'a Node<'a, AstCell>, u8) -> bool>,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -34,7 +36,7 @@ enum Escaping {
     Title,
 }
 
-impl<'o> Write for CommonMarkFormatter<'o> {
+impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
         std::result::Result::Ok(buf.len())
@@ -45,9 +47,10 @@ impl<'o> Write for CommonMarkFormatter<'o> {
     }
 }
 
-impl<'o> CommonMarkFormatter<'o> {
-    fn new(options: &'o ComrakOptions) -> Self {
+impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
+    fn new(node: &'a Node<'a, AstCell>, options: &'o ComrakOptions) -> Self {
         CommonMarkFormatter {
+            node: node,
             options: options,
             v: vec![],
             prefix: vec![],
@@ -58,6 +61,7 @@ impl<'o> CommonMarkFormatter<'o> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
+            custom_escape: None,
         }
     }
 
@@ -89,6 +93,10 @@ impl<'o> CommonMarkFormatter<'o> {
             if self.begin_line {
                 self.v.extend(&self.prefix);
                 self.column = self.prefix.len();
+            }
+
+            if self.custom_escape.is_some() && self.custom_escape.unwrap()(self.node, buf[i]) {
+                self.v.push('\\' as u8);
             }
 
             let nextc = buf.get(i + 1);
@@ -184,20 +192,20 @@ impl<'o> CommonMarkFormatter<'o> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format_children<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+    fn format_children(&mut self, node: &'a Node<'a, AstCell>) {
         for n in node.children() {
             self.format(n);
         }
     }
 
-    fn format<'a>(&mut self, node: &'a Node<'a, AstCell>) {
+    fn format(&mut self, node: &'a Node<'a, AstCell>) {
         if self.format_node(node, true) {
             self.format_children(node);
             self.format_node(node, false);
         }
     }
 
-    fn get_in_tight_list_item<'a>(&self, node: &'a Node<'a, AstCell>) -> bool {
+    fn get_in_tight_list_item(&self, node: &'a Node<'a, AstCell>) -> bool {
         let tmp = match node.containing_block() {
             Some(tmp) => tmp,
             None => return false,
@@ -224,7 +232,8 @@ impl<'o> CommonMarkFormatter<'o> {
         return false;
     }
 
-    fn format_node<'a>(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
+    fn format_node(&mut self, node: &'a Node<'a, AstCell>, entering: bool) -> bool {
+        self.node = node;
         let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
         if !(match &node.data.borrow().value {
@@ -532,6 +541,11 @@ impl<'o> CommonMarkFormatter<'o> {
                 }
             }
             &NodeValue::Table(..) => {
+                if entering {
+                    self.custom_escape = Some(table_escape);
+                } else {
+                    self.custom_escape = None;
+                }
                 self.blankline();
             }
             &NodeValue::TableRow(..) => {
@@ -652,4 +666,13 @@ fn is_autolink<'a>(node: &'a Node<'a, AstCell>, nl: &NodeLink) -> bool {
     }
 
     real_url == link_text.as_slice()
+}
+
+fn table_escape<'a>(node: &'a Node<'a, AstCell>, c: u8) -> bool {
+    match &node.data.borrow().value {
+        &NodeValue::Table(..) |
+        &NodeValue::TableRow(..) |
+        &NodeValue::TableCell => false,
+        _ => c == '|' as u8,
+    }
 }
