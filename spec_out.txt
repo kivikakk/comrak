@@ -164,41 +164,4 @@ Example 195 (lines 3332-3354) Tables (extension)
 +| bar |
 +| bar | baz | boo |</p>
 
-Example 601 (lines 8944-8948) Autolinks (extension)
-foo@bar.baz
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="mailto:foo@bar.baz">foo@bar.baz</a></p>
-+<p>foo@bar.baz</p>
-
-Example 602 (lines 8952-8956) Autolinks (extension)
-hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>hello@mail+xyz.example isn't valid, but <a href="mailto:hello+xyz@mail.example">hello+xyz@mail.example</a> is.</p>
-+<p>hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.</p>
-
-Example 603 (lines 8962-8975) Autolinks (extension)
-a.b-c_d@a.b
-
-a.b-c_d@a.b.
-
-a.b-c_d@a.b-
-
-a.b-c_d@a.b_
-
---- expected HTML
-+++ actual HTML
-@@ -1,4 +1,4 @@
--<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a></p>
--<p><a href="mailto:a.b-c_d@a.b">a.b-c_d@a.b</a>.</p>
-+<p>a.b-c_d@a.b</p>
-+<p>a.b-c_d@a.b.</p>
- <p>a.b-c_d@a.b-</p>
- <p>a.b-c_d@a.b_</p>
-
-634 passed, 9 failed, 0 errored, 0 skipped
+637 passed, 6 failed, 0 errored, 0 skipped

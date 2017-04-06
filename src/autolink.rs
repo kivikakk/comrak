@@ -1,7 +1,7 @@
 use unicode_categories::UnicodeCategories;
 use std::iter::FromIterator;
 use {Node, AstCell, NodeValue, BTreeSet, Arena, NodeLink};
-use ctype::{isspace, isalpha};
+use ctype::{isspace, isalpha, isalnum};
 use inlines::make_inline;
 
 pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
@@ -27,7 +27,12 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                         break;
                     }
                 }
-                '@' => (),
+                '@' => {
+                    post_org = email_match(arena, &contents, i);
+                    if post_org.is_some() {
+                        break;
+                    }
+                }
                 _ => (),
             }
             i += 1;
@@ -195,10 +200,9 @@ fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
             vec!['f', 't', 'p']];
     }
 
-    let data = &contents[i..];
-    let size = contents.len() - i;
+    let size = contents.len();
 
-    if size < 4 || data[1] != '/' || data[2] != '/' {
+    if size - i < 4 || contents[i + 1] != '/' || contents[i + 2] != '/' {
         return None;
     }
 
@@ -208,20 +212,20 @@ fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     }
 
     if !SCHEMES.iter()
-        .any(|s| size + rewind >= s.len() && &contents[i - rewind..i] == s.as_slice()) {
+        .any(|s| size - i + rewind >= s.len() && &contents[i - rewind..i] == s.as_slice()) {
         return None;
     }
 
-    let mut link_end = match check_domain(&data[3..]) {
+    let mut link_end = match check_domain(&contents[i + 3..]) {
         None => return None,
         Some(link_end) => link_end,
     };
 
-    while link_end < size && !isspace(&data[link_end]) {
+    while link_end < size - i && !isspace(&contents[i + link_end]) {
         link_end += 1;
     }
 
-    link_end = autolink_delim(&data, link_end);
+    link_end = autolink_delim(&contents[i..], link_end);
 
     let url = contents[i - rewind..i + link_end].to_vec();
     let inl = make_inline(arena,
@@ -231,5 +235,78 @@ fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                           }));
 
     inl.append(make_inline(arena, NodeValue::Text(url)));
+    Some((inl, rewind, rewind + link_end))
+}
+
+fn email_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+                   contents: &[char],
+                   i: usize)
+                   -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
+    lazy_static! {
+        static ref EMAIL_OK_SET: BTreeSet<char> = BTreeSet::from_iter(
+            vec!['.', '+', '-', '_']);
+    }
+
+    let size = contents.len();
+
+    let mut rewind = 0;
+    let mut ns = 0;
+
+    while rewind < i {
+        let c = contents[i - rewind - 1];
+
+        if isalnum(&c) || EMAIL_OK_SET.contains(&c) {
+            rewind += 1;
+            continue;
+        }
+
+        if c == '/' {
+            ns += 1;
+        }
+
+        break;
+    }
+
+    if rewind == 0 || ns > 0 {
+        return None;
+    }
+
+    let mut link_end = 0;
+    let mut nb = 0;
+    let mut np = 0;
+
+    while link_end < size - i {
+        let c = contents[i + link_end];
+
+        if isalnum(&c) {
+            // empty
+        } else if c == '@' {
+            nb += 1;
+        } else if c == '.' && link_end < size - i - 1 {
+            np += 1;
+        } else if c != '-' && c != '_' {
+            break;
+        }
+
+        link_end += 1;
+    }
+
+    if link_end < 2 || nb != 1 || np == 0 ||
+       (!isalpha(&contents[i + link_end - 1]) && contents[i + link_end - 1] != '.') {
+        return None;
+    }
+
+    link_end = autolink_delim(&contents[i..], link_end);
+
+    let mut url = vec!['m', 'a', 'i', 'l', 't', 'o', ':'];
+    url.extend_from_slice(&contents[i - rewind..link_end + i]);
+
+    let inl = make_inline(arena,
+                          NodeValue::Link(NodeLink {
+                              url: url,
+                              title: vec![],
+                          }));
+
+    inl.append(make_inline(arena, NodeValue::Text(contents[i - rewind..link_end + i].to_vec())));
     Some((inl, rewind, rewind + link_end))
 }
