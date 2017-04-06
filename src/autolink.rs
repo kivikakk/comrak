@@ -57,23 +57,23 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
         return None;
     }
 
-    if contents.len() - org < 4 || &contents[org..org + 4] != &['w', 'w', 'w', '.'] {
+    if contents.len() - i < 4 || &contents[i..i + 4] != &['w', 'w', 'w', '.'] {
         return None;
     }
 
-    let mut link_end = match check_domain(&contents[org..]) {
+    let mut link_end = match check_domain(&contents[i..]) {
         None => return None,
         Some(link_end) => link_end,
     };
 
-    while org + link_end < contents.len() && !isspace(&contents[org + link_end]) {
+    while i + link_end < contents.len() && !isspace(&contents[i + link_end]) {
         link_end += 1;
     }
 
-    let link_end = autolink_delim(&contents[org..], link_end);
+    let link_end = autolink_delim(&contents[i..], link_end);
 
     let mut url = vec!['h', 't', 't', 'p', ':', '/', '/'];
-    url.extend_from_slice(&contents[org..link_end + org]);
+    url.extend_from_slice(&contents[i..link_end + i]);
 
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
@@ -82,7 +82,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                           }));
 
     inl.append(make_inline(arena,
-                           NodeValue::Text(contents[org..link_end + org].to_vec())));
+                           NodeValue::Text(contents[i..link_end + i].to_vec())));
     Some((inl, link_end))
 }
 

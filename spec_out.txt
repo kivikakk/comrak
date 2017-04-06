@@ -164,28 +164,6 @@ Example 195 (lines 3332-3354) Tables (extension)
 +| bar |
 +| bar | baz | boo |</p>
 
-Example 594 (lines 8846-8850) Autolinks (extension)
-Visit www.commonmark.org/help for more information.
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>Visit <a href="http://www.commonmark.org/help">www.commonmark.org/help</a> for more information.</p>
-+<p>Visit www.commonmark.org/help for more information.</p>
-
-Example 595 (lines 8858-8865) Autolinks (extension)
-Visit www.commonmark.org.
-
-Visit www.commonmark.org/a.b.
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
--<p>Visit <a href="http://www.commonmark.org">www.commonmark.org</a>.</p>
--<p>Visit <a href="http://www.commonmark.org/a.b">www.commonmark.org/a.b</a>.</p>
-+<p>Visit www.commonmark.org.</p>
-+<p>Visit www.commonmark.org/a.b.</p>
-
 Example 596 (lines 8872-8879) Autolinks (extension)
 www.google.com/search?q=Markup+(business)
 
@@ -264,4 +242,4 @@ a.b-c_d@a.b_
  <p>a.b-c_d@a.b-</p>
  <p>a.b-c_d@a.b_</p>
 
-629 passed, 14 failed, 0 errored, 0 skipped
+631 passed, 12 failed, 0 errored, 0 skipped
