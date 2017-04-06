@@ -884,7 +884,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
                 while content.get(0) == Some(&'[') &&
-                      unwrap_into(parse_reference_inline(self.arena, content, &mut self.refmap),
+                      unwrap_into(self.parse_reference_inline(content),
                                   &mut pos) {
                     for _ in 0..pos {
                         content.remove(0);
@@ -980,7 +980,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_inlines(&mut self, node: &'a Node<'a, AstCell>) {
         let mut subj =
-            inlines::Subject::new(self.arena, &node.data.borrow().content, &mut self.refmap);
+            inlines::Subject::new(self.arena, self.options, &node.data.borrow().content, &mut self.refmap);
 
         rtrim(&mut subj.input);
 
@@ -1016,68 +1016,65 @@ impl<'a, 'o> Parser<'a, 'o> {
             self.consolidate_text_nodes(n);
         }
     }
-}
 
-fn parse_reference_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
-                              content: &[char],
-                              refmap: &mut HashMap<Vec<char>, Reference>)
-                              -> Option<usize> {
-    let mut subj = inlines::Subject::new(arena, content, refmap);
+    fn parse_reference_inline(&mut self, content: &[char]) -> Option<usize> {
+        let mut subj = inlines::Subject::new(self.arena, self.options, content, &mut self.refmap);
 
-    let mut lab = match subj.link_label() {
-            Some(lab) => if lab.len() == 0 { return None } else { lab },
-            None => return None,
-        }
-        .to_vec();
-
-    if subj.peek_char() != Some(&':') {
-        return None;
-    }
-
-    subj.pos += 1;
-    subj.spnl();
-    let matchlen = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
-        Some(matchlen) => matchlen,
-        None => return None,
-    };
-    let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
-    subj.pos += matchlen;
-
-    let beforetitle = subj.pos;
-    subj.spnl();
-    let title = match scanners::link_title(&subj.input[subj.pos..]) {
-        Some(matchlen) => {
-            let t = &subj.input[subj.pos..subj.pos + matchlen];
-            subj.pos += matchlen;
-            t.to_vec()
-        }
-        _ => {
-            subj.pos = beforetitle;
-            vec![]
-        }
-    };
-
-    subj.skip_spaces();
-    if !subj.skip_line_end() {
-        if title.len() > 0 {
-            subj.pos = beforetitle;
-            subj.skip_spaces();
-            if !subj.skip_line_end() {
-                return None;
+        let mut lab = match subj.link_label() {
+                Some(lab) => if lab.len() == 0 { return None } else { lab },
+                None => return None,
             }
-        } else {
+            .to_vec();
+
+        if subj.peek_char() != Some(&':') {
             return None;
         }
-    }
 
-    lab = normalize_reference_label(&lab);
-    if lab.len() > 0 {
-        subj.refmap.entry(lab).or_insert(Reference {
-            url: clean_url(&url),
-            title: clean_title(&title),
-        });
+        subj.pos += 1;
+        subj.spnl();
+        let matchlen = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
+            Some(matchlen) => matchlen,
+            None => return None,
+        };
+        let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
+        subj.pos += matchlen;
+
+        let beforetitle = subj.pos;
+        subj.spnl();
+        let title = match scanners::link_title(&subj.input[subj.pos..]) {
+            Some(matchlen) => {
+                let t = &subj.input[subj.pos..subj.pos + matchlen];
+                subj.pos += matchlen;
+                t.to_vec()
+            }
+            _ => {
+                subj.pos = beforetitle;
+                vec![]
+            }
+        };
+
+        subj.skip_spaces();
+        if !subj.skip_line_end() {
+            if title.len() > 0 {
+                subj.pos = beforetitle;
+                subj.skip_spaces();
+                if !subj.skip_line_end() {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        lab = normalize_reference_label(&lab);
+        if lab.len() > 0 {
+            subj.refmap.entry(lab).or_insert(Reference {
+                url: clean_url(&url),
+                title: clean_title(&title),
+            });
+        }
+        Some(subj.pos)
     }
-    Some(subj.pos)
 }
 
 fn parse_list_marker(line: &mut Vec<char>,

@@ -2,12 +2,13 @@ use unicode_categories::UnicodeCategories;
 
 use std::cell::RefCell;
 use {Arena, Node, AstCell, unwrap_into, unwrap_into_copy, entity, NodeValue, Ast, NodeLink,
-     isspace, MAX_LINK_LABEL_LENGTH, ispunct, Reference, scanners, MAXBACKTICKS};
+     isspace, MAX_LINK_LABEL_LENGTH, ispunct, Reference, scanners, MAXBACKTICKS, ComrakOptions};
 use strings::*;
 use std::collections::{BTreeSet, HashMap};
 
-pub struct Subject<'a, 'r> {
+pub struct Subject<'a, 'r, 'o> {
     pub arena: &'a Arena<Node<'a, AstCell>>,
+    options: &'o ComrakOptions,
     pub input: Vec<char>,
     pub pos: usize,
     pub refmap: &'r mut HashMap<Vec<char>, Reference>,
@@ -33,13 +34,15 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
-impl<'a, 'r> Subject<'a, 'r> {
+impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     pub fn new(arena: &'a Arena<Node<'a, AstCell>>,
+               options: &'o ComrakOptions,
                input: &[char],
                refmap: &'r mut HashMap<Vec<char>, Reference>)
                -> Self {
         Subject {
             arena: arena,
+            options: options,
             input: input.to_vec(),
             pos: 0,
             refmap: refmap,
@@ -91,15 +94,19 @@ impl<'a, 'r> Subject<'a, 'r> {
                 }
             },
             _ => {
-                let endpos = self.find_special_char();
-                let mut contents = self.input[self.pos..endpos].to_vec();
-                self.pos = endpos;
+                if self.options.ext_strikethrough && c == '~' {
+                    new_inl = Some(self.handle_delim('~'));
+                } else {
+                    let endpos = self.find_special_char();
+                    let mut contents = self.input[self.pos..endpos].to_vec();
+                    self.pos = endpos;
 
-                if self.peek_char().map_or(false, is_line_end_char) {
-                    rtrim(&mut contents);
+                    if self.peek_char().map_or(false, is_line_end_char) {
+                        rtrim(&mut contents);
+                    }
+
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
                 }
-
-                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
             }
         }
 
@@ -173,7 +180,8 @@ impl<'a, 'r> Subject<'a, 'r> {
                 let old_closer = closer;
 
                 if self.delimiters[closer as usize].delim_char == '*' ||
-                   self.delimiters[closer as usize].delim_char == '_' {
+                   self.delimiters[closer as usize].delim_char == '_' ||
+                   (self.options.ext_strikethrough && self.delimiters[closer as usize].delim_char == '~') {
                     if opener_found {
                         closer = self.insert_emph(opener, closer);
                     } else {
@@ -263,6 +271,9 @@ impl<'a, 'r> Subject<'a, 'r> {
 
         for n in self.pos..self.input.len() {
             if SPECIAL_CHARS.contains(&self.input[n]) {
+                return n;
+            }
+            if self.options.ext_strikethrough && self.input[n] == '~' {
                 return n;
             }
         }
@@ -419,6 +430,7 @@ impl<'a, 'r> Subject<'a, 'r> {
     }
 
     pub fn insert_emph(&mut self, opener: i32, mut closer: i32) -> i32 {
+        let opener_char = self.delimiters[opener as usize].inl.data.borrow_mut().value.text().unwrap()[0];
         let mut opener_num_chars =
             self.delimiters[opener as usize].inl.data.borrow_mut().value.text().unwrap().len();
         let mut closer_num_chars =
@@ -431,6 +443,12 @@ impl<'a, 'r> Subject<'a, 'r> {
 
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
+
+        if self.options.ext_strikethrough && opener_char == '~' {
+            opener_num_chars = 0;
+            closer_num_chars = 0;
+        }
+
         self.delimiters[opener as usize]
             .inl
             .data
@@ -457,7 +475,9 @@ impl<'a, 'r> Subject<'a, 'r> {
         }
 
         let emph = make_inline(self.arena,
-                               if use_delims == 1 {
+                               if self.options.ext_strikethrough && opener_char == '~' {
+                                   NodeValue::Strikethrough
+                               } else if use_delims == 1 {
                                    NodeValue::Emph
                                } else {
                                    NodeValue::Strong

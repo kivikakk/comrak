@@ -337,6 +337,13 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</em>").unwrap();
                 }
             }
+            &NodeValue::Strikethrough => {
+                if entering {
+                    write!(self, "<del>").unwrap();
+                } else {
+                    write!(self, "</del>").unwrap();
+                }
+            }
             &NodeValue::Link(ref nl) => {
                 if entering {
                     write!(self, "<a href=\"").unwrap();

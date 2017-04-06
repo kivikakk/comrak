@@ -274,7 +274,7 @@ fn reference_links() {
 
 #[test]
 fn strikethrough() {
-    html_opts(concat!("This is ~strikethru~.\n", "\n", "As is ~~this, okay~~?\n"),
+    html_opts(concat!("This is ~strikethrough~.\n", "\n", "As is ~~this, okay~~?\n"),
               concat!("<p>This is <del>strikethrough</del>.</p>\n",
                       "<p>As is <del>this, okay</del>?</p>\n"),
               |opts| opts.ext_strikethrough = true);

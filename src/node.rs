@@ -23,6 +23,7 @@ pub enum NodeValue {
     CustomInline,
     Emph,
     Strong,
+    Strikethrough,
     Link(NodeLink),
     Image(NodeLink),
 }

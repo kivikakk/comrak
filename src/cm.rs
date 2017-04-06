@@ -417,7 +417,7 @@ impl<'o> CommonMarkFormatter<'o> {
             }
             &NodeValue::Code(ref literal) => {
                 if entering {
-                    let numticks = shortest_unused_backtick_sequence(literal);
+                    let numticks = shortest_unused_sequence(literal, '`');
                     for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
@@ -471,6 +471,13 @@ impl<'o> CommonMarkFormatter<'o> {
                     self.write_all(&[emph_delim]).unwrap();
                 } else {
                     self.write_all(&[emph_delim]).unwrap();
+                }
+            }
+            &NodeValue::Strikethrough => {
+                if entering {
+                    write!(self, "~").unwrap();
+                } else {
+                    write!(self, "~").unwrap();
                 }
             }
             &NodeValue::Link(ref nl) => {
@@ -547,11 +554,11 @@ fn longest_backtick_sequence(literal: &Vec<char>) -> usize {
     longest
 }
 
-fn shortest_unused_backtick_sequence(literal: &Vec<char>) -> usize {
+fn shortest_unused_sequence(literal: &Vec<char>, f: char) -> usize {
     let mut used = 1;
     let mut current = 0;
     for c in literal {
-        if *c == '`' {
+        if *c == f {
             current += 1;
         } else {
             if current > 0 {

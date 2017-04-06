@@ -164,24 +164,6 @@ Example 195 (lines 3332-3354) Tables (extension)
 +| bar |
 +| bar | baz | boo |</p>
 
-Example 465 (lines 7369-7373) Strikethrough (extension)
-~Hi~ Hello, world!
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><del>Hi</del> Hello, world!</p>
-+<p>~Hi~ Hello, world!</p>
-
-Example 466 (lines 7378-7382) Strikethrough (extension)
-This ~text~~~~ is ~~~~curious~.
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p>This <del>text</del> is <del>curious</del>.</p>
-+<p>This ~text~~~~ is ~~~~curious~.</p>
-
 Example 593 (lines 8838-8842) Autolinks (extension)
 www.commonmark.org
 
@@ -311,4 +293,4 @@ a.b-c_d@a.b_
  <p>a.b-c_d@a.b-</p>
  <p>a.b-c_d@a.b_</p>
 
-624 passed, 19 failed, 0 errored, 0 skipped
+626 passed, 17 failed, 0 errored, 0 skipped
