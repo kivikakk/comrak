@@ -530,6 +530,9 @@ impl<'o> CommonMarkFormatter<'o> {
                     write!(self, ")").unwrap();
                 }
             }
+            &NodeValue::Table(..) |
+            &NodeValue::TableRow(..) |
+            &NodeValue::TableCell => panic!(),
         };
         true
     }

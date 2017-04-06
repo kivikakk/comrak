@@ -233,10 +233,54 @@ pub fn spacechars(line: &[char]) -> Option<usize> {
 
 pub fn link_title(line: &[char]) -> Option<usize> {
     lazy_static! {
-        static ref ESCAPED_CHAR: &'static str = r##"\\[!"#$%&'()*+,./:;<=>?@\[\\\]^_`{|}~-]"##;
         static ref RE: Regex = Regex::new(
             &format!(r#"\A(?:"({}|[^"\x00])*"|'({}|[^'\x00])*'|\(({}|[^)\x00]*)*\))"#,
             *ESCAPED_CHAR, *ESCAPED_CHAR, *ESCAPED_CHAR)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+lazy_static! {
+    static ref ESCAPED_CHAR: &'static str = r##"(?:\\[!"#$%&'()*+,./:;<=>?@\[\\\]^_`{|}~-])"##;
+    static ref TABLE_SPACECHAR: &'static str = r"(?:[ \t\v\f])";
+    static ref TABLE_NEWLINE: &'static str = r"(?:\r?\n)";
+    static ref TABLE_MARKER: String = format!(r"(?:{}*:?-+:?{}*)",
+    *TABLE_SPACECHAR, *TABLE_SPACECHAR);
+    static ref TABLE_CELL: String = format!(r"(?:({}|[^|\r\n])*)", *ESCAPED_CHAR);
+}
+
+pub fn table_start(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            &format!(r"\A\|?{}(\|{})*\|?{}*{}",
+            *TABLE_MARKER, *TABLE_MARKER, *TABLE_SPACECHAR, *TABLE_NEWLINE)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn table_cell(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(&format!(r"\A{}", *TABLE_CELL)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn table_cell_end(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            &format!(r"\A\|{}*{}?", *TABLE_SPACECHAR, *TABLE_NEWLINE)).unwrap();
+    }
+
+    search(&RE, line)
+}
+
+pub fn table_row_end(line: &[char]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(
+            &format!(r"\A{}*{}", *TABLE_SPACECHAR, *TABLE_NEWLINE)).unwrap();
     }
 
     search(&RE, line)

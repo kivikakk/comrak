@@ -307,6 +307,7 @@ fn email_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                               title: vec![],
                           }));
 
-    inl.append(make_inline(arena, NodeValue::Text(contents[i - rewind..link_end + i].to_vec())));
+    inl.append(make_inline(arena,
+                           NodeValue::Text(contents[i - rewind..link_end + i].to_vec())));
     Some((inl, rewind, rewind + link_end))
 }

@@ -16,6 +16,7 @@ mod entity_data;
 mod strings;
 mod inlines;
 mod autolink;
+mod table;
 #[cfg(test)]
 mod tests;
 
@@ -139,7 +140,7 @@ const CODE_INDENT: usize = 4;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-struct Parser<'a, 'o> {
+pub struct Parser<'a, 'o> {
     arena: &'a Arena<Node<'a, AstCell>>,
     refmap: HashMap<Vec<char>, Reference>,
     root: &'a Node<'a, AstCell>,
@@ -366,6 +367,18 @@ impl<'a, 'o> Parser<'a, 'o> {
                             break 'done;
                         }
                     }
+                    NodeValue::Table(..) => {
+                        if !table::matches(&line[self.first_nonspace..]) {
+                            break 'done;
+                        }
+                        continue;
+                    }
+                    NodeValue::TableRow(..) => {
+                        break 'done;
+                    }
+                    NodeValue::TableCell => {
+                        break 'done;
+                    }
                     _ => {}
                 }
             }
@@ -561,7 +574,24 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
             } else {
-                break;
+                let mut new_container = None;
+
+                if !indented && self.options.ext_table {
+                    new_container = table::try_opening_block(self, *container, line);
+                }
+
+                match new_container {
+                    Some((new_container, replace)) => {
+                        if replace {
+                            container.insert_after(new_container);
+                            container.detach();
+                            *container = new_container;
+                        } else {
+                            *container = new_container;
+                        }
+                    }
+                    _ => break,
+                }
             }
 
             if container.data.borrow().value.accepts_lines() {
@@ -572,7 +602,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn advance_offset(&mut self, line: &mut Vec<char>, mut count: usize, columns: bool) {
+    fn advance_offset(&mut self, line: &[char], mut count: usize, columns: bool) {
         while count > 0 {
             match line.get(self.offset) {
                 None => break,

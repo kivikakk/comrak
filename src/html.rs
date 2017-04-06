@@ -2,7 +2,8 @@ use std::io::Write;
 use std::iter::FromIterator;
 use std::collections::BTreeMap;
 
-use ::{NodeValue, Node, AstCell, ListType, std, isspace, ComrakOptions};
+use {NodeValue, Node, AstCell, ListType, std, isspace, ComrakOptions};
+use node::TableAlignment;
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
     let mut f = HtmlFormatter::new(options);
@@ -369,6 +370,80 @@ impl<'o> HtmlFormatter<'o> {
                         self.escape(&nl.title);
                     }
                     write!(self, "\" />").unwrap();
+                }
+            }
+            &NodeValue::Table(..) => {
+                if entering {
+                    self.cr();
+                    write!(self, "<table>\n").unwrap();
+                } else {
+                    if !node.last_child().unwrap().same_node(node.first_child().unwrap()) {
+                        write!(self, "</tbody>").unwrap();
+                    }
+                    write!(self, "</table>\n").unwrap();
+                }
+            }
+            &NodeValue::TableRow(header) => {
+                if entering {
+                    self.cr();
+                    if header {
+                        write!(self, "<thead>").unwrap();
+                        self.cr();
+                    }
+                    write!(self, "<tr>").unwrap();
+                } else {
+                    self.cr();
+                    write!(self, "</tr>").unwrap();
+                    if header {
+                        self.cr();
+                        write!(self, "</thead>").unwrap();
+                        self.cr();
+                        write!(self, "<tbody>").unwrap();
+                    }
+                }
+            }
+            &NodeValue::TableCell => {
+                let ref row = node.parent().unwrap().data.borrow().value;
+                let in_header = match row {
+                    &NodeValue::TableRow(header) => header,
+                    _ => panic!(),
+                };
+
+                let ref table = node.parent().unwrap().parent().unwrap().data.borrow().value;
+                let alignments = match table {
+                    &NodeValue::Table(ref alignments) => alignments,
+                    _ => panic!(),
+                };
+
+                if entering {
+                    self.cr();
+                    if in_header {
+                        write!(self, "<th").unwrap();
+                    } else {
+                        write!(self, "<td").unwrap();
+                    }
+
+                    let mut start = node.parent().unwrap().first_child().unwrap();
+                    let mut i = 0;
+                    while !start.same_node(node) {
+                        i += 1;
+                        start = start.next_sibling().unwrap();
+                    }
+
+                    match alignments[i] {
+                        TableAlignment::Left => write!(self, " align=\"left\"").unwrap(),
+                        TableAlignment::Right => write!(self, " align=\"right\"").unwrap(),
+                        TableAlignment::Center => write!(self, " align=\"center\"").unwrap(),
+                        TableAlignment::None => (),
+                    }
+
+                    write!(self, ">").unwrap();
+                } else {
+                    if in_header {
+                        write!(self, "</th>").unwrap();
+                    } else {
+                        write!(self, "</td>").unwrap();
+                    }
                 }
             }
         }

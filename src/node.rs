@@ -14,6 +14,9 @@ pub enum NodeValue {
     Paragraph,
     Heading(NodeHeading),
     ThematicBreak,
+    Table(Vec<TableAlignment>),
+    TableRow(bool),
+    TableCell,
 
     Text(Vec<char>),
     SoftBreak,
@@ -26,6 +29,14 @@ pub enum NodeValue {
     Strikethrough,
     Link(NodeLink),
     Image(NodeLink),
+}
+
+#[derive(Debug, Clone)]
+pub enum TableAlignment {
+    None,
+    Left,
+    Center,
+    Right,
 }
 
 #[derive(Debug, Clone)]
@@ -106,7 +117,10 @@ impl NodeValue {
             &NodeValue::CustomBlock |
             &NodeValue::Paragraph |
             &NodeValue::Heading(..) |
-            &NodeValue::ThematicBreak => true,
+            &NodeValue::ThematicBreak |
+            &NodeValue::Table(..) |
+            &NodeValue::TableRow(..) |
+            &NodeValue::TableCell => true,
             _ => false,
         }
     }
@@ -123,7 +137,8 @@ impl NodeValue {
     pub fn contains_inlines(&self) -> bool {
         match self {
             &NodeValue::Paragraph |
-            &NodeValue::Heading(..) => true,
+            &NodeValue::Heading(..) |
+            &NodeValue::TableCell => true,
             _ => false,
         }
     }
@@ -136,7 +151,7 @@ impl NodeValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ast {
     pub value: NodeValue,
     pub content: Vec<char>,
@@ -200,6 +215,34 @@ impl<'a> Node<'a, AstCell> {
             NodeValue::Link(..) |
             NodeValue::Image(..) |
             NodeValue::CustomInline => !child.block(),
+
+            NodeValue::Table(..) => {
+                match child {
+                    &NodeValue::TableRow(..) => true,
+                    _ => false,
+                }
+            }
+
+            NodeValue::TableRow(..) => {
+                match child {
+                    &NodeValue::TableCell => true,
+                    _ => false,
+                }
+            }
+
+            NodeValue::TableCell => {
+                match child {
+                    &NodeValue::Text(..) |
+                    &NodeValue::Code(..) |
+                    &NodeValue::Emph |
+                    &NodeValue::Strong |
+                    &NodeValue::Link(..) |
+                    &NodeValue::Image(..) |
+                    &NodeValue::Strikethrough |
+                    &NodeValue::HtmlInline(..) => true,
+                    _ => false,
+                }
+            }
 
             _ => false,
         }
