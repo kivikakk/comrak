@@ -1,5 +1,6 @@
-use ::{Node, AstCell, ComrakOptions, NodeValue, std, ListType, ListDelimType, NodeLink, scanners};
-use ::ctype::{isspace, isdigit, isalpha};
+use {std, Node, AstCell, ComrakOptions, NodeValue, ListType, ListDelimType, NodeLink, scanners};
+use node::TableAlignment;
+use ctype::{isspace, isdigit, isalpha};
 use std::cmp::max;
 use std::io::Write;
 
@@ -530,9 +531,52 @@ impl<'o> CommonMarkFormatter<'o> {
                     write!(self, ")").unwrap();
                 }
             }
-            &NodeValue::Table(..) |
-            &NodeValue::TableRow(..) |
-            &NodeValue::TableCell => panic!(),
+            &NodeValue::Table(..) => {
+                self.blankline();
+            }
+            &NodeValue::TableRow(..) => {
+                if entering {
+                    self.cr();
+                    write!(self, "|").unwrap();
+                }
+            }
+            &NodeValue::TableCell => {
+                if entering {
+                    write!(self, " ").unwrap();
+                } else {
+                    write!(self, " |").unwrap();
+
+                    let ref row = node.parent().unwrap().data.borrow().value;
+                    let in_header = match row {
+                        &NodeValue::TableRow(header) => header,
+                        _ => panic!(),
+                    };
+
+                    if in_header && node.next_sibling().is_none() {
+                        let ref table =
+                            node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let alignments = match table {
+                            &NodeValue::Table(ref alignments) => alignments,
+                            _ => panic!(),
+                        };
+
+                        self.cr();
+                        write!(self, "|").unwrap();
+                        for a in alignments {
+                            write!(self,
+                                   " {} |",
+                                   match a {
+                                       &TableAlignment::Left => ":--",
+                                       &TableAlignment::Center => ":-:",
+                                       &TableAlignment::Right => "--:",
+                                       &TableAlignment::None => "---",
+                                   })
+                                .unwrap();
+                        }
+                        self.cr();
+                    }
+                }
+            }
         };
         true
     }
