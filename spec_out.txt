@@ -164,18 +164,6 @@ Example 195 (lines 3332-3354) Tables (extension)
 +| bar |
 +| bar | baz | boo |</p>
 
-Example 596 (lines 8872-8879) Autolinks (extension)
-www.google.com/search?q=Markup+(business)
-
-(www.google.com/search?q=Markup+(business))
-
---- expected HTML
-+++ actual HTML
-@@ -1,2 +1,2 @@
- <p><a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a></p>
--<p>(<a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a>)</p>
-+<p>(www.google.com/search?q=Markup+(business))</p>
-
 Example 598 (lines 8896-8903) Autolinks (extension)
 www.google.com/search?q=commonmark&hl=en
 
@@ -242,4 +230,4 @@ a.b-c_d@a.b_
  <p>a.b-c_d@a.b-</p>
  <p>a.b-c_d@a.b_</p>
 
-631 passed, 12 failed, 0 errored, 0 skipped
+632 passed, 11 failed, 0 errored, 0 skipped

@@ -53,7 +53,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                                                                     '*', '_', '~', '(', '[']);
     }
 
-    if i > org && !isspace(&contents[i - 1]) && WWW_DELIMS.contains(&contents[i - 1]) {
+    if i > org && !isspace(&contents[i - 1]) && !WWW_DELIMS.contains(&contents[i - 1]) {
         return None;
     }
 
