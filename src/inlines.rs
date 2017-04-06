@@ -2,8 +2,7 @@ use unicode_categories::UnicodeCategories;
 
 use std::cell::RefCell;
 use {Arena, Node, AstCell, unwrap_into, unwrap_into_copy, entity, NodeValue, Ast, NodeLink,
-     isspace, MAX_LINK_LABEL_LENGTH, ispunct, Reference, scanners, MAXBACKTICKS, ComrakOptions,
-     autolink};
+     isspace, MAX_LINK_LABEL_LENGTH, ispunct, Reference, scanners, MAXBACKTICKS, ComrakOptions};
 use strings::*;
 use std::collections::{BTreeSet, HashMap};
 
@@ -106,8 +105,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                         rtrim(&mut contents);
                     }
 
-                    self.append_text(node, contents);
-                    new_inl = None;
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
                 }
             }
         }
@@ -117,19 +115,6 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
 
         true
-    }
-
-    fn in_bracket(&self) -> bool {
-        self.brackets.iter().any(|b| b.active)
-    }
-
-    fn append_text(&mut self, node: &'a Node<'a, AstCell>, contents: Vec<char>) {
-        if self.options.ext_autolink && !self.in_bracket() {
-            autolink::process_autolinks(self.arena, node, contents);
-            return;
-        }
-
-        node.append(make_inline(self.arena, NodeValue::Text(contents)));
     }
 
     pub fn process_emphasis(&mut self, stack_bottom: i32) {

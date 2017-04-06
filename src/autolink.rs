@@ -6,19 +6,18 @@ use inlines::make_inline;
 
 pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                              node: &'a Node<'a, AstCell>,
-                             contents: Vec<char>) {
+                             contents: &mut Vec<char>) {
     let len = contents.len();
     let mut i = 0;
 
     while i < len {
-        let org = i;
         let mut post_org = None;
 
         while i < len {
             match contents[i] {
                 ':' => (),
                 'w' => {
-                    post_org = www_match(arena, &contents, org, i);
+                    post_org = www_match(arena, &contents, i);
                     if post_org.is_some() {
                         break;
                     }
@@ -29,14 +28,16 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
             i += 1;
         }
 
-        if i > org {
-            node.append(make_inline(arena, NodeValue::Text(contents[org..i].to_vec())));
-        }
-
         match post_org {
             Some((post, skip)) => {
-                node.append(post);
-                i += skip;
+                node.insert_after(post);
+                if i + skip < len {
+                    let remain = contents[i + skip..].to_vec();
+                    assert!(remain.len() > 0);
+                    post.insert_after(make_inline(arena, NodeValue::Text(remain)));
+                }
+                contents.truncate(i);
+                return;
             }
             None => (),
         }
@@ -44,8 +45,7 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 }
 
 fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
-                 contents: &Vec<char>,
-                 org: usize,
+                 contents: &[char],
                  i: usize)
                  -> Option<(&'a Node<'a, AstCell>, usize)> {
     lazy_static! {
@@ -53,7 +53,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                                                                     '*', '_', '~', '(', '[']);
     }
 
-    if i > org && !isspace(&contents[i - 1]) && !WWW_DELIMS.contains(&contents[i - 1]) {
+    if i > 0 && !isspace(&contents[i - 1]) && !WWW_DELIMS.contains(&contents[i - 1]) {
         return None;
     }
 
@@ -81,8 +81,7 @@ fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                               title: vec![],
                           }));
 
-    inl.append(make_inline(arena,
-                           NodeValue::Text(contents[i..link_end + i].to_vec())));
+    inl.append(make_inline(arena, NodeValue::Text(contents[i..link_end + i].to_vec())));
     Some((inl, link_end))
 }
 

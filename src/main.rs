@@ -71,9 +71,6 @@ fn main() {
             .value_name("WIDTH")
             .default_value("0")
             .help("Specify wrap width (0 = nowrap)"))
-        .arg(clap::Arg::with_name("normalize")
-            .long("normalize")
-            .help("Consolidate adjacent text nodes"))
         .get_matches();
 
     let mut exts = matches.values_of("extension").map_or(BTreeSet::new(), |vals| vals.collect());
@@ -82,7 +79,6 @@ fn main() {
         hardbreaks: matches.is_present("hardbreaks"),
         github_pre_lang: matches.is_present("github-pre-lang"),
         width: matches.value_of("width").unwrap_or("0").parse().unwrap_or(0),
-        normalize: matches.is_present("normalize"),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),
@@ -173,7 +169,6 @@ pub struct ComrakOptions {
     hardbreaks: bool,
     github_pre_lang: bool,
     width: usize,
-    normalize: bool,
     ext_strikethrough: bool,
     ext_tagfilter: bool,
     ext_table: bool,
@@ -828,9 +823,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         self.finalize_document();
 
-        if self.options.normalize {
-            self.consolidate_text_nodes(self.root);
-        }
+        self.consolidate_text_nodes(self.root);
 
         self.root
     }
@@ -994,13 +987,21 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn consolidate_text_nodes(&mut self, node: &'a Node<'a, AstCell>) {
-        for n in node.children() {
+        let mut nch = node.first_child();
+
+        while let Some(n) = nch {
+            let mut this_bracket = false;
             loop {
                 match &mut n.data.borrow_mut().value {
                     &mut NodeValue::Text(ref mut root) => {
                         let ns = match n.next_sibling() {
                             Some(ns) => ns,
-                            _ => break,
+                            _ => {
+                                if self.options.ext_autolink {
+                                    autolink::process_autolinks(self.arena, n, root);
+                                }
+                                break;
+                            }
                         };
 
                         match &ns.data.borrow().value {
@@ -1011,11 +1012,20 @@ impl<'a, 'o> Parser<'a, 'o> {
                             _ => break,
                         }
                     }
+                    &mut NodeValue::Link(..) |
+                    &mut NodeValue::Image(..) => {
+                        this_bracket = true;
+                        break;
+                    }
                     _ => break,
                 }
             }
 
-            self.consolidate_text_nodes(n);
+            if !this_bracket {
+                self.consolidate_text_nodes(n);
+            }
+
+            nch = n.next_sibling();
         }
     }
 

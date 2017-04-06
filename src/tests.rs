@@ -28,7 +28,6 @@ fn html_opts<F>(input: &str, expected: &str, opts: F)
 {
     let arena = Arena::new();
     let mut options = ComrakOptions::default();
-    options.normalize = true;
     opts(&mut options);
 
     let root = parse_document(&arena, &input.chars().collect::<Vec<char>>(), &options);
@@ -317,7 +316,8 @@ fn autolink_email() {
 #[test]
 fn autolink_scheme() {
     html_opts(concat!("https://google.com/search\n"),
-              concat!("<p><a href=\"https://google.com/search\">https://gogole.com/search</a></p>\n"),
+              concat!("<p><a href=\"https://google.com/search\">https://google.\
+                       com/search</a></p>\n"),
               |opts| opts.ext_autolink = true);
 }
 
