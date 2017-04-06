@@ -308,6 +308,6 @@ fn autolink() {
 #[test]
 fn tagfilter() {
     html_opts(concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
-              concat!("<p>hi &lt;xmp> ok</p>\n", "<p>&lt;xmp></p>\n"),
+              concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
               |opts| opts.ext_tagfilter = true);
 }

@@ -311,20 +311,4 @@ a.b-c_d@a.b_
  <p>a.b-c_d@a.b-</p>
  <p>a.b-c_d@a.b_</p>
 
-Example 625 (lines 9273-9284) Disallowed Raw HTML (extension)
-<strong> <title> <style> <em>
-
-<blockquote>
-  <xmp> is disallowed.
-</blockquote>
-
---- expected HTML
-+++ actual HTML
-@@ -1,4 +1,4 @@
- <p><strong> &lt;title> &lt;style> <em></p>
- <blockquote>
--  &lt;xmp> is disallowed.
-+  <xmp> is disallowed.
- </blockquote>
-
-623 passed, 20 failed, 0 errored, 0 skipped
+624 passed, 19 failed, 0 errored, 0 skipped

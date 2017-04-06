@@ -62,6 +62,21 @@ fn tagfilter(literal: &[char]) -> bool {
     false
 }
 
+fn tagfilter_block<W : Write>(input: &[char], mut w: &mut W) {
+    let mut i = 0;
+    let len = input.len();
+
+    while i < len {
+        if tagfilter(&input[i..]) {
+            write!(w, "&lt;").unwrap();
+        } else {
+            write!(w, "{}", input[i]).unwrap();
+        }
+
+        i += 1;
+    }
+}
+
 impl<'o> HtmlFormatter<'o> {
     fn new(options: &'o ComrakOptions) -> Self {
         HtmlFormatter {
@@ -231,8 +246,11 @@ impl<'o> HtmlFormatter<'o> {
             &NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr();
-                    // TODO: filter entire block
-                    self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                    if self.options.ext_tagfilter {
+                        tagfilter_block(&nhb.literal, self);
+                    } else {
+                        self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                    }
                     self.cr();
                 }
             }
