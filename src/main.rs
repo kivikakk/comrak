@@ -15,6 +15,7 @@ mod entity;
 mod entity_data;
 mod strings;
 mod inlines;
+mod autolink;
 #[cfg(test)]
 mod tests;
 
@@ -884,8 +885,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
                 while content.get(0) == Some(&'[') &&
-                      unwrap_into(self.parse_reference_inline(content),
-                                  &mut pos) {
+                      unwrap_into(self.parse_reference_inline(content), &mut pos) {
                     for _ in 0..pos {
                         content.remove(0);
                     }
@@ -979,8 +979,10 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_inlines(&mut self, node: &'a Node<'a, AstCell>) {
-        let mut subj =
-            inlines::Subject::new(self.arena, self.options, &node.data.borrow().content, &mut self.refmap);
+        let mut subj = inlines::Subject::new(self.arena,
+                                             self.options,
+                                             &node.data.borrow().content,
+                                             &mut self.refmap);
 
         rtrim(&mut subj.input);
 

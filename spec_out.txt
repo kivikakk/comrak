@@ -164,15 +164,6 @@ Example 195 (lines 3332-3354) Tables (extension)
 +| bar |
 +| bar | baz | boo |</p>
 
-Example 593 (lines 8838-8842) Autolinks (extension)
-www.commonmark.org
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://www.commonmark.org">www.commonmark.org</a></p>
-+<p>www.commonmark.org</p>
-
 Example 594 (lines 8846-8850) Autolinks (extension)
 Visit www.commonmark.org/help for more information.
 
@@ -203,19 +194,9 @@ www.google.com/search?q=Markup+(business)
 --- expected HTML
 +++ actual HTML
 @@ -1,2 +1,2 @@
--<p><a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a></p>
+ <p><a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a></p>
 -<p>(<a href="http://www.google.com/search?q=Markup+(business)">www.google.com/search?q=Markup+(business)</a>)</p>
-+<p>www.google.com/search?q=Markup+(business)</p>
 +<p>(www.google.com/search?q=Markup+(business))</p>
-
-Example 597 (lines 8885-8889) Autolinks (extension)
-www.google.com/search?q=(business))+ok
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://www.google.com/search?q=(business))+ok">www.google.com/search?q=(business))+ok</a></p>
-+<p>www.google.com/search?q=(business))+ok</p>
 
 Example 598 (lines 8896-8903) Autolinks (extension)
 www.google.com/search?q=commonmark&hl=en
@@ -226,18 +207,8 @@ www.google.com/search?q=commonmark&hl;
 +++ actual HTML
 @@ -1,2 +1,2 @@
 -<p><a href="http://www.google.com/search?q=commonmark&amp;hl=en">www.google.com/search?q=commonmark&amp;hl=en</a></p>
--<p><a href="http://www.google.com/search?q=commonmark">www.google.com/search?q=commonmark</a>&amp;hl;</p>
-+<p>www.google.com/search?q=commonmark&amp;hl=en</p>
-+<p>www.google.com/search?q=commonmark&amp;hl;</p>
-
-Example 599 (lines 8907-8911) Autolinks (extension)
-www.commonmark.org/he<lp
-
---- expected HTML
-+++ actual HTML
-@@ -1 +1 @@
--<p><a href="http://www.commonmark.org/he">www.commonmark.org/he</a>&lt;lp</p>
-+<p>www.commonmark.org/he&lt;lp</p>
++<p><a href="http://www.google.com/search?q=commonmark">www.google.com/search?q=commonmark</a>&amp;hl=en</p>
+ <p><a href="http://www.google.com/search?q=commonmark">www.google.com/search?q=commonmark</a>&amp;hl;</p>
 
 Example 600 (lines 8918-8928) Autolinks (extension)
 http://commonmark.org
@@ -293,4 +264,4 @@ a.b-c_d@a.b_
  <p>a.b-c_d@a.b-</p>
  <p>a.b-c_d@a.b_</p>
 
-626 passed, 17 failed, 0 errored, 0 skipped
+629 passed, 14 failed, 0 errored, 0 skipped

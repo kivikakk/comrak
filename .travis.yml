@@ -13,3 +13,6 @@ matrix:
   fast_finish: true
   allow_failures:
     - rust: stable
+notifications:
+  email:
+    on_failure: change

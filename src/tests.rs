@@ -274,7 +274,9 @@ fn reference_links() {
 
 #[test]
 fn strikethrough() {
-    html_opts(concat!("This is ~strikethrough~.\n", "\n", "As is ~~this, okay~~?\n"),
+    html_opts(concat!("This is ~strikethrough~.\n",
+                      "\n",
+                      "As is ~~this, okay~~?\n"),
               concat!("<p>This is <del>strikethrough</del>.</p>\n",
                       "<p>As is <del>this, okay</del>?</p>\n"),
               |opts| opts.ext_strikethrough = true);
@@ -299,9 +301,23 @@ fn table() {
 }
 
 #[test]
-fn autolink() {
+fn autolink_www() {
     html_opts(concat!("www.autolink.com\n"),
               concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn autolink_email() {
+    html_opts(concat!("john@smith.com\n"),
+              concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
+              |opts| opts.ext_autolink = true);
+}
+
+#[test]
+fn autolink_scheme() {
+    html_opts(concat!("https://google.com/search\n"),
+              concat!("<p><a href=\"https://google.com/search\">https://gogole.com/search</a></p>\n"),
               |opts| opts.ext_autolink = true);
 }
 

@@ -62,7 +62,7 @@ fn tagfilter(literal: &[char]) -> bool {
     false
 }
 
-fn tagfilter_block<W : Write>(input: &[char], mut w: &mut W) {
+fn tagfilter_block<W: Write>(input: &[char], mut w: &mut W) {
     let mut i = 0;
     let len = input.len();
 
