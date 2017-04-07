@@ -36,34 +36,34 @@ lazy_static! {
         a
     };
 
-    static ref TAGFILTER_BLACKLIST: Vec<Vec<char>> =
+    static ref TAGFILTER_BLACKLIST: [&'static str; 9] =
         ["title", "textarea", "style", "xmp", "iframe",
-         "noembed", "noframes", "script", "plaintext"]
-        .iter().map(|s| s.chars().collect()).collect();
+         "noembed", "noframes", "script", "plaintext"];
 }
 
-fn tagfilter(literal: &[char]) -> bool {
-    if literal.len() < 3 || literal[0] != '<' {
+fn tagfilter(literal: &str) -> bool {
+    if literal.len() < 3 || literal.as_bytes()[0] != '<' as u8 {
         return false;
     }
 
     let mut i = 1;
-    if literal[i] == '/' {
+    if literal.as_bytes()[i] == '/' as u8 {
         i += 1;
     }
 
-    for t in &*TAGFILTER_BLACKLIST {
+    for t in TAGFILTER_BLACKLIST.iter() {
         let j = i + t.len();
-        if j < literal.len() && &literal[i..j] == t.as_slice() {
-            return isspace(&literal[j]) || literal[j] == '>' ||
-                   (literal[j] == '/' && literal.len() >= j + 2 && literal[j + 1] == '>');
+        if j < literal.len() && &&literal[i..j] == t {
+            return isspace(&literal.as_bytes()[j]) || literal.as_bytes()[j] == '>' as u8 ||
+                   (literal.as_bytes()[j] == '/' as u8 && literal.len() >= j + 2 &&
+                    literal.as_bytes()[j + 1] == '>' as u8);
         }
     }
 
     false
 }
 
-fn tagfilter_block<W: Write>(input: &[char], mut w: &mut W) {
+fn tagfilter_block<W: Write>(input: &str, mut w: &mut W) {
     let mut i = 0;
     let len = input.len();
 
@@ -71,7 +71,7 @@ fn tagfilter_block<W: Write>(input: &[char], mut w: &mut W) {
         if tagfilter(&input[i..]) {
             write!(w, "&lt;").unwrap();
         } else {
-            write!(w, "{}", input[i]).unwrap();
+            w.write_all(&[input.as_bytes()[i]]).unwrap();
         }
 
         i += 1;
@@ -93,34 +93,33 @@ impl<'o> HtmlFormatter<'o> {
         }
     }
 
-    fn escape(&mut self, buffer: &[char]) {
+    fn escape(&mut self, buffer: &str) {
         lazy_static! {
-            static ref ESCAPE_TABLE: BTreeMap<char, &'static str> = BTreeMap::from_iter(
-                vec![('"', "&quot;"),
-                     ('&', "&amp;"),
+            static ref ESCAPE_TABLE: BTreeMap<u8, &'static str> = BTreeMap::from_iter(
+                vec![('"' as u8, "&quot;"),
+                     ('&' as u8, "&amp;"),
                      // Secure mode only:
                      // ('\'', "&#39;"),
                      // ('/', "&#47;"),
-                     ('<', "&lt;"),
-                     ('>', "&gt;"),
+                     ('<' as u8, "&lt;"),
+                     ('>' as u8, "&gt;"),
             ]);
         }
 
-        for c in buffer {
+        for c in buffer.as_bytes() {
             match ESCAPE_TABLE.get(c) {
                 Some(s) => {
                     self.write_all(s.as_bytes()).unwrap();
                 }
                 None => {
-                    write!(self, "{}", c).unwrap();
+                    self.write_all(&[*c]).unwrap();
                 }
             };
         }
     }
 
-    fn escape_href(&mut self, buffer: &[char]) {
-        let s = buffer.into_iter().collect::<String>();
-        let src = s.as_bytes();
+    fn escape_href(&mut self, buffer: &str) {
+        let src = buffer.as_bytes();
         let size = src.len();
         let mut i = 0;
 
@@ -226,7 +225,8 @@ impl<'o> HtmlFormatter<'o> {
                         write!(self, "<pre><code>").unwrap();
                     } else {
                         let mut first_tag = 0;
-                        while first_tag < ncb.info.len() && !isspace(&ncb.info[first_tag]) {
+                        while first_tag < ncb.info.len() &&
+                              !isspace(&ncb.info.as_bytes()[first_tag]) {
                             first_tag += 1;
                         }
 
@@ -250,7 +250,7 @@ impl<'o> HtmlFormatter<'o> {
                     if self.options.ext_tagfilter {
                         tagfilter_block(&nhb.literal, self);
                     } else {
-                        self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                        self.write_all(nhb.literal.as_bytes()).unwrap();
                     }
                     self.cr();
                 }
@@ -313,10 +313,9 @@ impl<'o> HtmlFormatter<'o> {
             &NodeValue::HtmlInline(ref literal) => {
                 if entering {
                     if self.options.ext_tagfilter && tagfilter(literal) {
-                        write!(self, "&lt;{}", literal[1..].into_iter().collect::<String>())
-                            .unwrap();
+                        write!(self, "&lt;{}", &literal[1..]).unwrap();
                     } else {
-                        write!(self, "{}", literal.into_iter().collect::<String>()).unwrap();
+                        write!(self, "{}", literal).unwrap();
                     }
                 }
             }

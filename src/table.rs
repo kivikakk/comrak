@@ -4,7 +4,7 @@ use node::TableAlignment;
 
 pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                  container: &'a Node<'a, AstCell>,
-                                 line: &[char])
+                                 line: &str)
                                  -> Option<(&'a Node<'a, AstCell>, bool)> {
     let x = container.data.borrow().value.clone();
     match x {
@@ -16,7 +16,7 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
 pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                   container: &'a Node<'a, AstCell>,
-                                  line: &[char])
+                                  line: &str)
                                   -> Option<(&'a Node<'a, AstCell>, bool)> {
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
         return Some((container, false));
@@ -35,8 +35,8 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
     let mut alignments = vec![];
     for cell in marker_row {
-        let left = cell.len() > 0 && cell[0] == ':';
-        let right = cell.len() > 0 && cell[cell.len() - 1] == ':';
+        let left = cell.len() > 0 && cell.as_bytes()[0] == ':' as u8;
+        let right = cell.len() > 0 && cell.as_bytes()[cell.len() - 1] == ':' as u8;
         alignments.push(if left && right {
             TableAlignment::Center
         } else if left {
@@ -67,7 +67,7 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                container: &'a Node<'a, AstCell>,
                                alignments: &Vec<TableAlignment>,
-                               line: &[char])
+                               line: &str)
                                -> Option<(&'a Node<'a, AstCell>, bool)> {
     if parser.blank {
         return None;
@@ -99,12 +99,12 @@ pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
     Some((new_row, false))
 }
 
-fn row(string: &[char]) -> Option<Vec<Vec<char>>> {
+fn row(string: &str) -> Option<Vec<String>> {
     let len = string.len();
     let mut v = vec![];
     let mut offset = 0;
 
-    if len > 0 && string[0] == '|' {
+    if len > 0 && string.as_bytes()[0] == '|' as u8 {
         offset += 1;
     }
 
@@ -138,23 +138,28 @@ fn row(string: &[char]) -> Option<Vec<Vec<char>>> {
     }
 }
 
-fn unescape_pipes(string: &[char]) -> Vec<char> {
-    let len = string.len();
-    let mut r = 0;
-    let mut v = vec![];
+fn unescape_pipes(string: &str) -> String {
+    let mut v = String::new();
+    let mut escaping = false;
 
-    while r < len {
-        if string[r] == '\\' && string.get(r + 1) == Some(&'|') {
-            r += 1;
+    for c in string.chars() {
+        if escaping {
+            v.push(c);
+            escaping = false;
+        } else if c == '\\' {
+            escaping = true;
+        } else {
+            v.push(c);
         }
+    }
 
-        v.push(string[r]);
-        r += 1;
+    if escaping {
+        v.push('\\');
     }
 
     v
 }
 
-pub fn matches(line: &[char]) -> bool {
+pub fn matches(line: &str) -> bool {
     row(line).is_some()
 }

@@ -2,27 +2,29 @@ use std::cmp::{min, Ordering};
 use std::char;
 use ::{isdigit, entity_data};
 
-fn isxdigit(ch: &char) -> bool {
-    "0123456789abcdefABCDEF".find(*ch).is_some()
+fn isxdigit(ch: &u8) -> bool {
+    (*ch >= '0' as u8 && *ch <= '9' as u8) || (*ch >= 'a' as u8 && *ch <= 'f' as u8) ||
+    (*ch >= 'A' as u8 && *ch <= 'F' as u8)
 }
 
-pub fn unescape(text: &[char]) -> Option<(Vec<char>, usize)> {
-    if text.len() >= 3 && text[0] == '#' {
+pub fn unescape(text: &str) -> Option<(String, usize)> {
+    if text.len() >= 3 && text.as_bytes()[0] == '#' as u8 {
         let mut codepoint: u32 = 0;
         let mut i = 0;
 
-        let num_digits = if isdigit(&text[1]) {
+        let num_digits = if isdigit(&text.as_bytes()[1]) {
             i = 1;
-            while i < text.len() && isdigit(&text[i]) {
-                codepoint = (codepoint * 10) + (text[i] as u32 - '0' as u32);
+            while i < text.len() && isdigit(&text.as_bytes()[i]) {
+                codepoint = (codepoint * 10) + (text.as_bytes()[i] as u32 - '0' as u32);
                 codepoint = min(codepoint, 0x110000);
                 i += 1;
             }
             i - 1
-        } else if text[1] == 'x' || text[1] == 'X' {
+        } else if text.as_bytes()[1] == 'x' as u8 ||
+                                   text.as_bytes()[1] == 'X' as u8 {
             i = 2;
-            while i < text.len() && isxdigit(&text[i]) {
-                codepoint = (codepoint * 16) + ((text[i] as u32 | 32) % 39 - 9);
+            while i < text.len() && isxdigit(&text.as_bytes()[i]) {
+                codepoint = (codepoint * 16) + ((text.as_bytes()[i] as u32 | 32) % 39 - 9);
                 codepoint = min(codepoint, 0x110000);
                 i += 1;
             }
@@ -31,30 +33,30 @@ pub fn unescape(text: &[char]) -> Option<(Vec<char>, usize)> {
             0
         };
 
-        if num_digits >= 1 && num_digits <= 8 && i < text.len() && text[i] == ';' {
+        if num_digits >= 1 && num_digits <= 8 && i < text.len() && text.as_bytes()[i] == ';' as u8 {
             if codepoint == 0 || (codepoint >= 0xD800 && codepoint <= 0xE000) ||
                codepoint >= 0x110000 {
                 codepoint = 0xFFFD;
             }
-            return Some((vec![char::from_u32(codepoint).unwrap_or('\u{FFFD}')], i + 1));
+            return Some((char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string(), i + 1));
         }
     }
 
     let size = min(text.len(), entity_data::MAX_LENGTH);
     for i in entity_data::MIN_LENGTH..size {
-        if text[i] == ' ' {
+        if text.as_bytes()[i] == ' ' as u8 {
             return None;
         }
 
-        if text[i] == ';' {
-            return lookup(&text[..i].into_iter().collect::<String>()).map(|e| (e, i + 1));
+        if text.as_bytes()[i] == ';' as u8 {
+            return lookup(&text[..i]).map(|e| (e.to_string(), i + 1));
         }
     }
 
     None
 }
 
-fn lookup(text: &str) -> Option<Vec<char>> {
+fn lookup(text: &str) -> Option<&'static str> {
     let mut i = entity_data::ENTITIES.len() / 2;
     let mut low = 0;
     let mut high = entity_data::ENTITIES.len() - 1;
@@ -62,7 +64,7 @@ fn lookup(text: &str) -> Option<Vec<char>> {
     loop {
         let cmp = text.cmp(entity_data::ENTITIES[i].0);
         if cmp == Ordering::Equal {
-            return Some(entity_data::ENTITIES[i].1.to_vec());
+            return Some(entity_data::ENTITIES[i].1);
         } else if cmp == Ordering::Less && i > low {
             let mut j = i - ((i - low) / 2);
             if j == i {
@@ -83,23 +85,23 @@ fn lookup(text: &str) -> Option<Vec<char>> {
     }
 }
 
-pub fn unescape_html(src: &[char]) -> Vec<char> {
+pub fn unescape_html(src: &str) -> String {
     let mut i = 0;
-    let mut v: Vec<char> = vec![];
+    let mut v = String::new();
     let size = src.len();
 
     while i < size {
         let org = i;
-        while i < size && src[i] != '&' {
+        while i < size && src.as_bytes()[i] != '&' as u8 {
             i += 1;
         }
 
         if i > org {
             if org == 0 && i >= size {
-                return src.to_vec();
+                return src.to_string();
             }
 
-            v.extend_from_slice(&src[org..i]);
+            v += &src[org..i];
         }
 
         if i >= size {
@@ -109,7 +111,7 @@ pub fn unescape_html(src: &[char]) -> Vec<char> {
         i += 1;
         match unescape(&src[i..]) {
             Some((chs, size)) => {
-                v.extend_from_slice(&chs);
+                v += &chs;
                 i += size;
             }
             None => v.push('&'),

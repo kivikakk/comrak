@@ -18,11 +18,11 @@ pub enum NodeValue {
     TableRow(bool),
     TableCell,
 
-    Text(Vec<char>),
+    Text(String),
     SoftBreak,
     LineBreak,
-    Code(Vec<char>),
-    HtmlInline(Vec<char>),
+    Code(String),
+    HtmlInline(String),
     CustomInline,
     Emph,
     Strong,
@@ -41,8 +41,8 @@ pub enum TableAlignment {
 
 #[derive(Debug, Clone)]
 pub struct NodeLink {
-    pub url: Vec<char>,
-    pub title: Vec<char>,
+    pub url: String,
+    pub title: String,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -52,7 +52,7 @@ pub struct NodeList {
     pub padding: usize,
     pub start: usize,
     pub delimiter: ListDelimType,
-    pub bullet_char: char,
+    pub bullet_char: u8,
     pub tight: bool,
 }
 
@@ -85,11 +85,11 @@ impl Default for ListDelimType {
 #[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
     pub fenced: bool,
-    pub fence_char: char,
+    pub fence_char: u8,
     pub fence_length: usize,
     pub fence_offset: usize,
-    pub info: Vec<char>,
-    pub literal: Vec<char>,
+    pub info: String,
+    pub literal: String,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -101,7 +101,7 @@ pub struct NodeHeading {
 #[derive(Debug, Clone)]
 pub struct NodeHtmlBlock {
     pub block_type: u8,
-    pub literal: Vec<char>,
+    pub literal: String,
 }
 
 
@@ -143,7 +143,7 @@ impl NodeValue {
         }
     }
 
-    pub fn text(&mut self) -> Option<&mut Vec<char>> {
+    pub fn text(&mut self) -> Option<&mut String> {
         match self {
             &mut NodeValue::Text(ref mut t) => Some(t),
             _ => None,
@@ -154,7 +154,7 @@ impl NodeValue {
 #[derive(Debug, Clone)]
 pub struct Ast {
     pub value: NodeValue,
-    pub content: Vec<char>,
+    pub content: String,
     pub start_line: u32,
     pub start_column: usize,
     pub end_line: u32,
@@ -166,7 +166,7 @@ pub struct Ast {
 pub fn make_block(value: NodeValue, start_line: u32, start_column: usize) -> Ast {
     Ast {
         value: value,
-        content: vec![],
+        content: String::new(),
         start_line: start_line,
         start_column: start_column,
         end_line: start_line,
