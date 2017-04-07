@@ -1,7 +1,7 @@
 use ::{ispunct, isspace, entity};
 use inlines::AutolinkType;
 
-pub fn unescape(v: &mut Vec<char>) {
+pub fn unescape(v: &mut String) {
     let mut r = 0;
     let mut w = 0;
     let sz = v.len();
@@ -21,7 +21,7 @@ pub fn unescape(v: &mut Vec<char>) {
     v.truncate(w);
 }
 
-pub fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
+pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
     let mut url_vec = url.to_vec();
     trim(&mut url_vec);
 
@@ -38,7 +38,7 @@ pub fn clean_autolink(url: &[char], kind: AutolinkType) -> Vec<char> {
     buf
 }
 
-pub fn normalize_whitespace(v: &mut Vec<char>) {
+pub fn normalize_whitespace(v: &mut String) {
     let mut last_char_was_space = false;
     let mut r = 0;
     let mut w = 0;
@@ -61,7 +61,7 @@ pub fn normalize_whitespace(v: &mut Vec<char>) {
     v.truncate(w);
 }
 
-pub fn remove_trailing_blank_lines(line: &mut Vec<char>) {
+pub fn remove_trailing_blank_lines(line: &mut String) {
     let mut i = line.len() - 1;
     loop {
         let c = line[i];
@@ -90,21 +90,21 @@ pub fn remove_trailing_blank_lines(line: &mut Vec<char>) {
     }
 }
 
-pub fn is_line_end_char(ch: &char) -> bool {
+pub fn is_line_end_char(ch: &u8) -> bool {
     match ch {
-        &'\n' | &'\r' => true,
+        &10 | &13 => true,
         _ => false,
     }
 }
 
-pub fn is_space_or_tab(ch: &char) -> bool {
+pub fn is_space_or_tab(ch: &u8) -> bool {
     match ch {
-        &'\t' | &' ' => true,
+        &9 | &32 => true,
         _ => false,
     }
 }
 
-pub fn chop_trailing_hashtags(line: &mut Vec<char>) {
+pub fn chop_trailing_hashtags(line: &mut String) {
     rtrim(line);
 
     let orig_n = line.len() - 1;
@@ -123,7 +123,7 @@ pub fn chop_trailing_hashtags(line: &mut Vec<char>) {
     }
 }
 
-pub fn rtrim(line: &mut Vec<char>) {
+pub fn rtrim(line: &mut String) {
     let mut len = line.len();
     while len > 0 && isspace(&line[len - 1]) {
         line.pop();
@@ -131,7 +131,7 @@ pub fn rtrim(line: &mut Vec<char>) {
     }
 }
 
-pub fn ltrim(line: &mut Vec<char>) {
+pub fn ltrim(line: &mut String) {
     let mut len = line.len();
     while len > 0 && isspace(&line[0]) {
         line.remove(0);
@@ -139,12 +139,12 @@ pub fn ltrim(line: &mut Vec<char>) {
     }
 }
 
-pub fn trim(line: &mut Vec<char>) {
+pub fn trim(line: &mut String) {
     ltrim(line);
     rtrim(line);
 }
 
-pub fn trim_slice(mut i: &[char]) -> &[char] {
+pub fn trim_slice(mut i: &str) -> &str {
     let mut len = i.len();
     while len > 0 && isspace(&i[0]) {
         i = &i[1..];
@@ -157,7 +157,7 @@ pub fn trim_slice(mut i: &[char]) -> &[char] {
     i
 }
 
-pub fn clean_url(url: &[char]) -> Vec<char> {
+pub fn clean_url(url: &str) -> String {
     let url = trim_slice(url);
 
     let url_len = url.len();
@@ -175,7 +175,7 @@ pub fn clean_url(url: &[char]) -> Vec<char> {
     b
 }
 
-pub fn clean_title(title: &[char]) -> Vec<char> {
+pub fn clean_title(title: &str) -> String {
     let title_len = title.len();
     if title_len == 0 {
         return vec![];
@@ -195,7 +195,7 @@ pub fn clean_title(title: &[char]) -> Vec<char> {
     b
 }
 
-pub fn is_blank(s: &[char]) -> bool {
+pub fn is_blank(s: &str) -> bool {
     for c in s {
         match *c {
             '\r' | '\n' => return true,
@@ -206,7 +206,7 @@ pub fn is_blank(s: &[char]) -> bool {
     true
 }
 
-pub fn normalize_reference_label(i: &[char]) -> Vec<char> {
+pub fn normalize_reference_label(i: &str) -> String {
     let i = trim_slice(i);
     let mut v = vec![];
     let mut last_was_whitespace = false;

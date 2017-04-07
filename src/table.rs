@@ -4,7 +4,7 @@ use node::TableAlignment;
 
 pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                  container: &'a Node<'a, AstCell>,
-                                 line: &[char])
+                                 line: &str)
                                  -> Option<(&'a Node<'a, AstCell>, bool)> {
     let x = container.data.borrow().value.clone();
     match x {
@@ -16,7 +16,7 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
 pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                   container: &'a Node<'a, AstCell>,
-                                  line: &[char])
+                                  line: &str)
                                   -> Option<(&'a Node<'a, AstCell>, bool)> {
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
         return Some((container, false));
@@ -67,7 +67,7 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                container: &'a Node<'a, AstCell>,
                                alignments: &Vec<TableAlignment>,
-                               line: &[char])
+                               line: &str)
                                -> Option<(&'a Node<'a, AstCell>, bool)> {
     if parser.blank {
         return None;
@@ -99,7 +99,7 @@ pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
     Some((new_row, false))
 }
 
-fn row(string: &[char]) -> Option<Vec<Vec<char>>> {
+fn row(string: &str) -> Option<Vec<String>> {
     let len = string.len();
     let mut v = vec![];
     let mut offset = 0;
@@ -138,7 +138,7 @@ fn row(string: &[char]) -> Option<Vec<Vec<char>>> {
     }
 }
 
-fn unescape_pipes(string: &[char]) -> Vec<char> {
+fn unescape_pipes(string: &str) -> String {
     let len = string.len();
     let mut r = 0;
     let mut v = vec![];
@@ -155,6 +155,6 @@ fn unescape_pipes(string: &[char]) -> Vec<char> {
     v
 }
 
-pub fn matches(line: &[char]) -> bool {
+pub fn matches(line: &str) -> bool {
     row(line).is_some()
 }

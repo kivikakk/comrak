@@ -6,7 +6,7 @@ fn isxdigit(ch: &char) -> bool {
     "0123456789abcdefABCDEF".find(*ch).is_some()
 }
 
-pub fn unescape(text: &[char]) -> Option<(Vec<char>, usize)> {
+pub fn unescape(text: &str) -> Option<(String, usize)> {
     if text.len() >= 3 && text[0] == '#' {
         let mut codepoint: u32 = 0;
         let mut i = 0;
@@ -54,7 +54,7 @@ pub fn unescape(text: &[char]) -> Option<(Vec<char>, usize)> {
     None
 }
 
-fn lookup(text: &str) -> Option<Vec<char>> {
+fn lookup(text: &str) -> Option<String> {
     let mut i = entity_data::ENTITIES.len() / 2;
     let mut low = 0;
     let mut high = entity_data::ENTITIES.len() - 1;
@@ -83,9 +83,9 @@ fn lookup(text: &str) -> Option<Vec<char>> {
     }
 }
 
-pub fn unescape_html(src: &[char]) -> Vec<char> {
+pub fn unescape_html(src: &str) -> String {
     let mut i = 0;
-    let mut v: Vec<char> = vec![];
+    let mut v: String = vec![];
     let size = src.len();
 
     while i < size {

@@ -9,9 +9,9 @@ use std::collections::{BTreeSet, HashMap};
 pub struct Subject<'a, 'r, 'o> {
     pub arena: &'a Arena<Node<'a, AstCell>>,
     options: &'o ComrakOptions,
-    pub input: Vec<char>,
+    pub input: String,
     pub pos: usize,
-    pub refmap: &'r mut HashMap<Vec<char>, Reference>,
+    pub refmap: &'r mut HashMap<String, Reference>,
     delimiters: Vec<Delimiter<'a>>,
     brackets: Vec<Bracket<'a>>,
     pub backticks: [usize; MAXBACKTICKS + 1],
@@ -37,8 +37,8 @@ struct Bracket<'a> {
 impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     pub fn new(arena: &'a Arena<Node<'a, AstCell>>,
                options: &'o ComrakOptions,
-               input: &[char],
-               refmap: &'r mut HashMap<Vec<char>, Reference>)
+               input: &str,
+               refmap: &'r mut HashMap<String, Reference>)
                -> Self {
         Subject {
             arena: arena,
@@ -245,11 +245,14 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         self.pos >= self.input.len()
     }
 
-    pub fn peek_char<'x>(&'x self) -> Option<&'x char> {
-        self.input.get(self.pos).map(|c| {
-            assert!(*c > '\0');
-            c
-        })
+    pub fn peek_char<'x>(&'x self) -> Option<&'x u8> {
+        if self.eof() {
+            None
+        } else {
+            let c = &self.input.as_bytes()[self.pos];
+            assert!(*c > 0);
+            Some(c)
+        }
     }
 
     pub fn find_special_char(&self) -> usize {
@@ -298,7 +301,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
     }
 
-    pub fn take_while(&mut self, c: char) -> Vec<char> {
+    pub fn take_while(&mut self, c: char) -> String {
         let mut v = vec![];
         while self.peek_char() == Some(&c) {
             v.push(self.input[self.pos]);
@@ -673,7 +676,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         Some(make_inline(self.arena, NodeValue::Text(vec![']'])))
     }
 
-    pub fn close_bracket_match(&mut self, is_image: bool, url: Vec<char>, title: Vec<char>) {
+    pub fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
         let nl = NodeLink {
             url: url,
             title: title,
@@ -713,7 +716,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
     }
 
-    pub fn link_label(&mut self) -> Option<&[char]> {
+    pub fn link_label(&mut self) -> Option<&str> {
         let startpos = self.pos;
 
         if self.peek_char() != Some(&'[') {
@@ -760,7 +763,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     }
 }
 
-pub fn manual_scan_link_url(input: &[char]) -> Option<usize> {
+pub fn manual_scan_link_url(input: &str) -> Option<usize> {
     let len = input.len();
     let mut i = 0;
     let mut nb_p = 0;
@@ -826,7 +829,7 @@ pub enum AutolinkType {
 }
 
 fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>,
-                     url: &[char],
+                     url: &str,
                      kind: AutolinkType)
                      -> &'a Node<'a, AstCell> {
     let inl = make_inline(arena,

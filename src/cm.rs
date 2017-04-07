@@ -596,7 +596,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 }
 
-fn longest_backtick_sequence(literal: &Vec<char>) -> usize {
+fn longest_backtick_sequence(literal: &String) -> usize {
     let mut longest = 0;
     let mut current = 0;
     for c in literal {
@@ -615,7 +615,7 @@ fn longest_backtick_sequence(literal: &Vec<char>) -> usize {
     longest
 }
 
-fn shortest_unused_sequence(literal: &Vec<char>, f: char) -> usize {
+fn shortest_unused_sequence(literal: &String, f: char) -> usize {
     let mut used = 1;
     let mut current = 0;
     for c in literal {
