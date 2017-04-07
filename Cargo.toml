@@ -3,9 +3,16 @@ name = "comrak"
 version = "0.1.0"
 authors = ["Yuki Izumi <kivikakk@github.com>"]
 
+[[bin]]
+name = "comrak"
+required-features = ["clap"]
+
 [dependencies]
 typed-arena = "1.2.0"
 regex = "0.2.1"
 lazy_static = "0.2.4"
 unicode_categories = "0.1.1"
-clap = "2.22.2"
+clap = { version = "2.22.2", optional = true }
+
+[features]
+default = ["clap"]

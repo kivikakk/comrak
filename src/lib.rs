@@ -1,4 +1,3 @@
-extern crate clap;
 extern crate unicode_categories;
 extern crate typed_arena;
 extern crate regex;
