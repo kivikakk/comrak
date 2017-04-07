@@ -1,1 +1,97 @@
-643 passed, 0 failed, 0 errored, 0 skipped
+Example 49 (lines 971-979) ATX headings
+program returned error code 101
+thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/main.rs:265
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: comrak::Parser::find_first_nonspace
+   1: comrak::Parser::add_text_to_container
+   2: comrak::Parser::process_line
+   3: comrak::Parser::feed
+   4: comrak::parse_document
+   5: comrak::main
+Example 106 (lines 1870-1876) Fenced code blocks
+``` ```
+aaa
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><code></code>
++<p><code> </code>
+ aaa</p>
+
+Example 113 (lines 1968-1974) Fenced code blocks
+``` aa ```
+foo
+
+--- expected HTML
++++ actual HTML
+@@ -1,2 +1,2 @@
+-<p><code>aa</code>
++<p><code> aa </code>
+ foo</p>
+
+Example 169 (lines 2899-2905) Link reference definitions
+program returned error code 101
+thread 'main' panicked at 'cannot remove a char from the end of a string', src/libcollections/string.rs:1098
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: collections::string::String::remove
+   1: comrak::Parser::finalize_borrowed
+   2: comrak::Parser::finalize
+   3: comrak::Parser::add_text_to_container
+   4: comrak::Parser::process_line
+   5: comrak::Parser::feed
+   6: comrak::parse_document
+   7: comrak::main
+Example 301 (lines 5656-5660) Backslash escapes
+`` \[\` ``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>\[\`</code></p>
++<p><code> \[\` </code></p>
+
+Example 322 (lines 5891-5895) Code spans
+`` foo ` bar  ``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo ` bar</code></p>
++<p><code> foo ` bar </code></p>
+
+Example 323 (lines 5901-5905) Code spans
+` `` `
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>``</code></p>
++<p><code> `` </code></p>
+
+Example 324 (lines 5910-5916) Code spans
+``
+foo
+``
+
+--- expected HTML
++++ actual HTML
+@@ -1 +1 @@
+-<p><code>foo</code></p>
++<p><code> foo </code></p>
+
+Example 520 (lines 8006-8012) Links
+program returned error code 101
+thread 'main' panicked at 'cannot remove a char from the end of a string', src/libcollections/string.rs:1098
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+stack backtrace:
+   0: collections::string::String::remove
+   1: comrak::Parser::finalize_borrowed
+   2: comrak::Parser::finalize
+   3: comrak::Parser::finalize_document
+   4: comrak::Parser::finish
+   5: comrak::parse_document
+   6: comrak::main
+634 passed, 6 failed, 3 errored, 0 skipped

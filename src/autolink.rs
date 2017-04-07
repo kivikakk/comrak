@@ -117,7 +117,12 @@ fn check_domain(data: &str) -> Option<usize> {
             return None;
         }
     }
-    None
+
+    if uscore1 == 0 && uscore2 == 0 && np > 0 {
+        Some(data.len())
+    } else {
+        None
+    }
 }
 
 fn is_valid_hostchar(ch: char) -> bool {
