@@ -1,5 +1,9 @@
 use std::cmp::min;
-use {Parser, Node, AstCell, NodeValue, scanners, trim};
+use parser::Parser;
+use arena_tree::Node;
+use node::{AstCell, NodeValue};
+use scanners;
+use strings::trim;
 use node::TableAlignment;
 
 pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,

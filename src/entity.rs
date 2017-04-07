@@ -1,6 +1,7 @@
 use std::cmp::{min, Ordering};
 use std::char;
-use ::{isdigit, entity_data};
+use ctype::isdigit;
+use entity_data;
 
 fn isxdigit(ch: &u8) -> bool {
     (*ch >= '0' as u8 && *ch <= '9' as u8) || (*ch >= 'a' as u8 && *ch <= 'f' as u8) ||

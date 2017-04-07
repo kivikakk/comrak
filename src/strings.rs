@@ -1,4 +1,5 @@
-use ::{ispunct, isspace, entity};
+use ctype::{ispunct, isspace};
+use entity;
 use inlines::AutolinkType;
 
 pub fn unescape(v: &mut String) {

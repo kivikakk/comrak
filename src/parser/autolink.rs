@@ -1,6 +1,9 @@
 use unicode_categories::UnicodeCategories;
 use std::iter::FromIterator;
-use {Node, AstCell, NodeValue, BTreeSet, Arena, NodeLink};
+use std::collections::BTreeSet;
+use typed_arena::Arena;
+use arena_tree::Node;
+use node::{AstCell, NodeValue, NodeLink};
 use ctype::{isspace, isalpha, isalnum};
 use inlines::make_inline;
 

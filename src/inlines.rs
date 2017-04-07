@@ -1,9 +1,15 @@
 use unicode_categories::UnicodeCategories;
 
 use std::cell::RefCell;
-use {Arena, Node, AstCell, unwrap_into, unwrap_into_copy, entity, NodeValue, Ast, NodeLink,
-     isspace, MAX_LINK_LABEL_LENGTH, ispunct, Reference, scanners, MAXBACKTICKS, ComrakOptions};
-use strings::*;
+use typed_arena::Arena;
+use arena_tree::Node;
+use node::{AstCell, NodeValue, Ast, NodeLink};
+use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, MAXBACKTICKS, Reference,
+             MAX_LINK_LABEL_LENGTH};
+use scanners;
+use ctype::{isspace, ispunct};
+use entity;
+use strings;
 use std::collections::{BTreeSet, HashMap};
 
 pub struct Subject<'a, 'r, 'o> {
@@ -101,8 +107,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                     let mut contents = self.input[self.pos..endpos].to_string();
                     self.pos = endpos;
 
-                    if self.peek_char().map_or(false, is_line_end_char) {
-                        rtrim(&mut contents);
+                    if self.peek_char().map_or(false, strings::is_line_end_char) {
+                        strings::rtrim(&mut contents);
                     }
 
                     new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
@@ -350,8 +356,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             }
             Some(endpos) => {
                 let mut buf: &str = &self.input[startpos..endpos - openticks.len()];
-                buf = trim_slice(buf);
-                let buf = normalize_whitespace(buf);
+                buf = strings::trim_slice(buf);
+                let buf = strings::normalize_whitespace(buf);
                 make_inline(self.arena, NodeValue::Code(buf))
             }
         }
@@ -649,8 +655,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
 
             if self.input.as_bytes()[endall] == ')' as u8 {
                 self.pos = endall + 1;
-                let url = clean_url(&self.input[starturl..endurl]);
-                let title = clean_title(&self.input[starttitle..endtitle]);
+                let url = strings::clean_url(&self.input[starturl..endurl]);
+                let title = strings::clean_title(&self.input[starttitle..endtitle]);
                 self.close_bracket_match(is_image, url, title);
                 return None;
             } else {
@@ -673,7 +679,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
 
         let reff: Option<Reference> = if found_label {
-            lab = normalize_reference_label(&lab);
+            lab = strings::normalize_reference_label(&lab);
             self.refmap.get(&lab).map(|c| c.clone())
         } else {
             None
@@ -759,7 +765,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
 
         if c == ']' as u8 {
-            let raw_label = trim_slice(&self.input[startpos + 1..self.pos]);
+            let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
             self.pos += 1;
             Some(raw_label)
         } else {
@@ -847,7 +853,7 @@ fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>,
                      -> &'a Node<'a, AstCell> {
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: clean_autolink(url, kind),
+                              url: strings::clean_autolink(url, kind),
                               title: String::new(),
                           }));
     inl.append(make_inline(arena, NodeValue::Text(entity::unescape_html(url))));
