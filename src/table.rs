@@ -35,8 +35,8 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
     let mut alignments = vec![];
     for cell in marker_row {
-        let left = cell.len() > 0 && cell[0] == ':';
-        let right = cell.len() > 0 && cell[cell.len() - 1] == ':';
+        let left = cell.len() > 0 && cell.as_bytes()[0] == ':' as u8;
+        let right = cell.len() > 0 && cell.as_bytes()[cell.len() - 1] == ':' as u8;
         alignments.push(if left && right {
             TableAlignment::Center
         } else if left {
@@ -104,7 +104,7 @@ fn row(string: &str) -> Option<Vec<String>> {
     let mut v = vec![];
     let mut offset = 0;
 
-    if len > 0 && string[0] == '|' {
+    if len > 0 && string.as_bytes()[0] == '|' as u8 {
         offset += 1;
     }
 
@@ -139,17 +139,22 @@ fn row(string: &str) -> Option<Vec<String>> {
 }
 
 fn unescape_pipes(string: &str) -> String {
-    let len = string.len();
-    let mut r = 0;
-    let mut v = vec![];
+    let mut v = String::new();
+    let mut escaping = false;
 
-    while r < len {
-        if string[r] == '\\' && string.get(r + 1) == Some(&'|') {
-            r += 1;
+    for c in string.chars() {
+        if escaping {
+            v.push(c);
+            escaping = false;
+        } else if c == '\\' {
+            escaping = true;
+        } else {
+            v.push(c);
         }
+    }
 
-        v.push(string[r]);
-        r += 1;
+    if escaping {
+        v.push('\\');
     }
 
     v

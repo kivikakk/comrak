@@ -110,7 +110,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     while buf.get(i + 1) == Some(&(' ' as u8)) {
                         i += 1;
                     }
-                    if !buf.get(i + 1).map_or(false, |&c| isdigit(&(c as char))) {
+                    if !buf.get(i + 1).map_or(false, |&c| isdigit(&c)) {
                         self.last_breakable = last_nonspace;
                     }
                 }
@@ -123,11 +123,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             } else if escaping == Escaping::Literal {
                 self.v.push(buf[i]);
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&(buf[i] as char));
+                self.begin_content = self.begin_content && isdigit(&buf[i]);
             } else {
                 self.outc(buf[i], escaping, nextc);
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&(buf[i] as char));
+                self.begin_content = self.begin_content && isdigit(&buf[i]);
             }
 
             if self.options.width > 0 && self.column > self.options.width && !self.begin_line &&
@@ -148,7 +148,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn outc(&mut self, c: u8, escaping: Escaping, nextc: Option<&u8>) {
-        let follows_digit = self.v.len() > 0 && isdigit(&(self.v[self.v.len() - 1] as char));
+        let follows_digit = self.v.len() > 0 && isdigit(&self.v[self.v.len() - 1]);
 
         let nextc = nextc.map_or(0, |&c| c);
 
@@ -158,22 +158,21 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
               (c == '*' as u8 || c == '_' as u8 || c == '[' as u8 || c == ']' as u8 ||
                c == '#' as u8 || c == '<' as u8 ||
                c == '>' as u8 || c == '\\' as u8 || c == '`' as u8 ||
-               c == '!' as u8 || (c == '&' as u8 && isalpha(&(nextc as char))) ||
+               c == '!' as u8 || (c == '&' as u8 && isalpha(&nextc)) ||
                (c == '!' as u8 && nextc == 0x5b) ||
                (self.begin_content && (c == '-' as u8 || c == '+' as u8 || c == '=' as u8) &&
                 !follows_digit) ||
                (self.begin_content && (c == '.' as u8 || c == ')' as u8) && follows_digit &&
-                (nextc == 0 || isspace(&(nextc as char)))))) ||
+                (nextc == 0 || isspace(&nextc))))) ||
              (escaping == Escaping::URL &&
-              (c == '`' as u8 || c == '<' as u8 || c == '>' as u8 || isspace(&(c as char)) ||
-               c == '\\' as u8 || c == ')' as u8 ||
-               c == '(' as u8)) ||
+              (c == '`' as u8 || c == '<' as u8 || c == '>' as u8 || isspace(&c) ||
+               c == '\\' as u8 || c == ')' as u8 || c == '(' as u8)) ||
              (escaping == Escaping::Title &&
               (c == '`' as u8 || c == '<' as u8 || c == '>' as u8 || c == '"' as u8 ||
                c == '\\' as u8)));
 
         if needs_escaping {
-            if isspace(&(c as char)) {
+            if isspace(&c) {
                 write!(self.v, "%{:2x}", c).unwrap();
                 self.column += 3;
             } else {
@@ -351,13 +350,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     }
 
                     if ncb.info.len() == 0 &&
-                       (ncb.literal.len() > 2 && !isspace(&ncb.literal[0]) &&
-                        !(isspace(&ncb.literal[ncb.literal.len() - 1]) &&
-                          isspace(&ncb.literal[ncb.literal.len() - 2]))) &&
+                       (ncb.literal.len() > 2 && !isspace(&ncb.literal.as_bytes()[0]) &&
+                        !(isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
+                          isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
                        !first_in_list_item {
                         write!(self, "    ").unwrap();
                         write!(self.prefix, "    ").unwrap();
-                        write!(self, "{}", ncb.literal.iter().collect::<String>()).unwrap();
+                        write!(self, "{}", ncb.literal).unwrap();
                         let new_len = self.prefix.len() - 4;
                         self.prefix.truncate(new_len);
                     } else {
@@ -366,10 +365,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                             write!(self, "`").unwrap();
                         }
                         if ncb.info.len() > 0 {
-                            write!(self, " {}", ncb.info.iter().collect::<String>()).unwrap();
+                            write!(self, " {}", ncb.info).unwrap();
                         }
                         self.cr();
-                        write!(self, "{}", ncb.literal.iter().collect::<String>()).unwrap();
+                        write!(self, "{}", ncb.literal).unwrap();
                         self.cr();
                         for _ in 0..numticks {
                             write!(self, "`").unwrap();
@@ -381,7 +380,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             &NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.blankline();
-                    self.write_all(nhb.literal.iter().collect::<String>().as_bytes()).unwrap();
+                    self.write_all(nhb.literal.as_bytes()).unwrap();
                     self.blankline();
                 }
             }
@@ -403,9 +402,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             &NodeValue::Text(ref literal) => {
                 if entering {
-                    self.output(literal.iter().collect::<String>().as_bytes(),
-                                allow_wrap,
-                                Escaping::Normal);
+                    self.output(literal.as_bytes(), allow_wrap, Escaping::Normal);
                 }
             }
             &NodeValue::LineBreak => {
@@ -427,17 +424,15 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             &NodeValue::Code(ref literal) => {
                 if entering {
-                    let numticks = shortest_unused_sequence(literal, '`');
+                    let numticks = shortest_unused_sequence(literal, '`' as u8);
                     for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
-                    if literal.len() == 0 || literal[0] == '`' {
+                    if literal.len() == 0 || literal.as_bytes()[0] == '`' as u8 {
                         write!(self, " ").unwrap();
                     }
-                    self.output(literal.iter().collect::<String>().as_bytes(),
-                                allow_wrap,
-                                Escaping::Literal);
-                    if literal.len() == 0 || literal[literal.len() - 1] == '`' {
+                    self.output(literal.as_bytes(), allow_wrap, Escaping::Literal);
+                    if literal.len() == 0 || literal.as_bytes()[literal.len() - 1] == '`' as u8 {
                         write!(self, " ").unwrap();
                     }
                     for _ in 0..numticks {
@@ -447,7 +442,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             &NodeValue::HtmlInline(ref literal) => {
                 if entering {
-                    self.write_all(literal.into_iter().collect::<String>().as_bytes()).unwrap();
+                    self.write_all(literal.as_bytes()).unwrap();
                 }
             }
             &NodeValue::CustomInline => {
@@ -494,11 +489,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if is_autolink(node, nl) {
                     if entering {
                         write!(self, "<").unwrap();
-                        if &nl.url[..7] == &['m', 'a', 'i', 'l', 't', 'o', ':'] {
-                            self.write_all(nl.url[7..].into_iter().collect::<String>().as_bytes())
-                                .unwrap();
+                        if &&nl.url[..7] == &"mailto:" {
+                            self.write_all(nl.url[7..].as_bytes()).unwrap();
                         } else {
-                            self.write_all(nl.url.iter().collect::<String>().as_bytes()).unwrap();
+                            self.write_all(nl.url.as_bytes()).unwrap();
                         }
                         write!(self, ">").unwrap();
                         return false;
@@ -508,14 +502,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         write!(self, "[").unwrap();
                     } else {
                         write!(self, "](").unwrap();
-                        self.output(nl.url.iter().collect::<String>().as_bytes(),
-                                    false,
-                                    Escaping::URL);
+                        self.output(nl.url.as_bytes(), false, Escaping::URL);
                         if nl.title.len() > 0 {
                             write!(self, " \"").unwrap();
-                            self.output(nl.title.iter().collect::<String>().as_bytes(),
-                                        false,
-                                        Escaping::Title);
+                            self.output(nl.title.as_bytes(), false, Escaping::Title);
                             write!(self, "\"").unwrap();
                         }
                         write!(self, ")").unwrap();
@@ -527,14 +517,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     write!(self, "![").unwrap();
                 } else {
                     write!(self, "](").unwrap();
-                    self.output(nl.url.iter().collect::<String>().as_bytes(),
-                                false,
-                                Escaping::URL);
+                    self.output(nl.url.as_bytes(), false, Escaping::URL);
                     if nl.title.len() > 0 {
                         self.output(&[' ' as u8, '"' as u8], allow_wrap, Escaping::Literal);
-                        self.output(nl.title.iter().collect::<String>().as_bytes(),
-                                    false,
-                                    Escaping::Title);
+                        self.output(nl.title.as_bytes(), false, Escaping::Title);
                         write!(self, "\"").unwrap();
                     }
                     write!(self, ")").unwrap();
@@ -596,11 +582,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 }
 
-fn longest_backtick_sequence(literal: &String) -> usize {
+fn longest_backtick_sequence(literal: &str) -> usize {
     let mut longest = 0;
     let mut current = 0;
-    for c in literal {
-        if *c == '`' {
+    for c in literal.as_bytes() {
+        if *c == '`' as u8 {
             current += 1;
         } else {
             if current > longest {
@@ -615,10 +601,10 @@ fn longest_backtick_sequence(literal: &String) -> usize {
     longest
 }
 
-fn shortest_unused_sequence(literal: &String, f: char) -> usize {
+fn shortest_unused_sequence(literal: &str, f: u8) -> usize {
     let mut used = 1;
     let mut current = 0;
-    for c in literal {
+    for c in literal.as_bytes() {
         if *c == f {
             current += 1;
         } else {
@@ -660,12 +646,12 @@ fn is_autolink<'a>(node: &'a Node<'a, AstCell>, nl: &NodeLink) -> bool {
         }
     };
 
-    let mut real_url = nl.url.as_slice();
-    if &real_url[..7] == &['m', 'a', 'i', 'l', 't', 'o', ':'] {
+    let mut real_url: &str = &nl.url;
+    if &&real_url[..7] == &"mailto:" {
         real_url = &real_url[7..];
     }
 
-    real_url == link_text.as_slice()
+    real_url == link_text
 }
 
 fn table_escape<'a>(node: &'a Node<'a, AstCell>, c: u8) -> bool {

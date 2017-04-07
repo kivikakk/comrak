@@ -166,7 +166,7 @@ pub struct Ast {
 pub fn make_block(value: NodeValue, start_line: u32, start_column: usize) -> Ast {
     Ast {
         value: value,
-        content: vec![],
+        content: String::new(),
         start_line: start_line,
         start_column: start_column,
         end_line: start_line,
