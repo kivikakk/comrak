@@ -10,23 +10,24 @@ use typed_arena::Arena;
 
 use arena_tree::Node;
 use ctype::{isspace, isdigit};
-use node::{NodeValue, Ast, AstCell, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
-           NodeHtmlBlock, make_block};
+use nodes::{NodeValue, Ast, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
+            NodeHtmlBlock, make_block, AstNode};
 use scanners;
 use strings;
 use entity;
 use inlines;
+use nodes;
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 pub const MAXBACKTICKS: usize = 80;
 pub const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>,
                           buffer: &str,
                           options: &ComrakOptions)
-                          -> &'a Node<'a, AstCell> {
-    let root: &'a Node<'a, AstCell> = arena.alloc(Node::new(RefCell::new(Ast {
+                          -> &'a AstNode<'a> {
+    let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
         content: String::new(),
         start_line: 0,
@@ -42,10 +43,10 @@ pub fn parse_document<'a>(arena: &'a Arena<Node<'a, AstCell>>,
 }
 
 pub struct Parser<'a, 'o> {
-    arena: &'a Arena<Node<'a, AstCell>>,
+    arena: &'a Arena<AstNode<'a>>,
     refmap: HashMap<String, Reference>,
-    root: &'a Node<'a, AstCell>,
-    current: &'a Node<'a, AstCell>,
+    root: &'a AstNode<'a>,
+    current: &'a AstNode<'a>,
     line_number: u32,
     offset: usize,
     column: usize,
@@ -61,13 +62,103 @@ pub struct Parser<'a, 'o> {
 }
 
 #[derive(Default)]
+/// Options for both parser and formatter functions.
 pub struct ComrakOptions {
+    /// Single newlines in the input translate into `<br />` tags in the output.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
+    ///            "<p>Hello.\nWorld.</p>\n");
+    ///
+    /// options.hardbreaks = true;
+    /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
+    ///            "<p>Hello.<br />\nWorld.</p>\n");
+    /// ```
     pub hardbreaks: bool,
+
+    /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
+    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    ///
+    /// options.github_pre_lang = true;
+    /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
+    ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
+    /// ```
     pub github_pre_lang: bool,
+
+    /// The wrap column when outputting CommonMark.
+    ///
+    /// ```
+    /// # extern crate typed_arena;
+    /// # extern crate comrak;
+    /// # use comrak::{parse_document, ComrakOptions, format_commonmark};
+    /// # fn main() {
+    /// # let arena = typed_arena::Arena::new();
+    /// let mut options = ComrakOptions::default();
+    /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
+    /// assert_eq!(format_commonmark(node, &options),
+    ///            "hello hello hello hello hello hello\n");
+    ///
+    /// options.width = 20;
+    /// assert_eq!(format_commonmark(node, &options),
+    ///            "hello hello hello\nhello hello hello\n");
+    /// # }
+    /// ```
     pub width: usize,
+
+    /// Enables the [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
+    /// from the GFM spec.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_strikethrough = true;
+    /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
+    ///            "<p>Hello <del>world</del> there.</p>\n");
+    /// ```
     pub ext_strikethrough: bool,
+
+    /// Enables the [tagfilter extension](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+    /// from the GFM spec.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_tagfilter = true;
+    /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
+    ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
+    /// ```
     pub ext_tagfilter: bool,
+
+    /// Enables the [table extension](https://github.github.com/gfm/#tables-extension-)
+    /// from the GFM spec.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_table = true;
+    /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
+    ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
+    ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr></tbody></table>\n");
+    /// ```
+
     pub ext_table: bool,
+    /// Enables the [autolink extension](https://github.github.com/gfm/#autolinks-extension-)
+    /// from the GFM spec.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_autolink = true;
+    /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
+    ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
+    /// ```
     pub ext_autolink: bool,
 }
 
@@ -79,8 +170,8 @@ pub struct Reference {
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
-    pub fn new(arena: &'a Arena<Node<'a, AstCell>>,
-               root: &'a Node<'a, AstCell>,
+    pub fn new(arena: &'a Arena<AstNode<'a>>,
+               root: &'a AstNode<'a>,
                options: &'o ComrakOptions)
                -> Parser<'a, 'o> {
         Parser {
@@ -230,13 +321,13 @@ impl<'a, 'o> Parser<'a, 'o> {
     fn check_open_blocks(&mut self,
                          line: &mut String,
                          all_matched: &mut bool)
-                         -> Option<&'a Node<'a, AstCell>> {
+                         -> Option<&'a AstNode<'a>> {
         let mut should_continue = true;
         *all_matched = false;
         let mut container = self.root;
 
         'done: loop {
-            while container.last_child_is_open() {
+            while nodes::last_child_is_open(container) {
                 container = container.last_child().unwrap();
                 let ast = &mut *container.data.borrow_mut();
 
@@ -304,7 +395,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn open_new_blocks(&mut self,
-                       container: &mut &'a Node<'a, AstCell>,
+                       container: &mut &'a AstNode<'a>,
                        line: &mut String,
                        all_matched: bool) {
         let mut matched: usize = 0;
@@ -552,7 +643,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_node_item_prefix(&mut self,
                               line: &mut String,
-                              container: &'a Node<'a, AstCell>,
+                              container: &'a AstNode<'a>,
                               nl: &NodeList)
                               -> bool {
         if self.indent >= nl.marker_offset + nl.padding {
@@ -569,7 +660,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_code_block_prefix(&mut self,
                                line: &mut String,
-                               container: &'a Node<'a, AstCell>,
+                               container: &'a AstNode<'a>,
                                ast: &mut Ast,
                                should_continue: &mut bool)
                                -> bool {
@@ -626,11 +717,11 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn add_child(&mut self,
-                 mut parent: &'a Node<'a, AstCell>,
+                 mut parent: &'a AstNode<'a>,
                  value: NodeValue,
                  start_column: usize)
-                 -> &'a Node<'a, AstCell> {
-        while !parent.can_contain_type(&value) {
+                 -> &'a AstNode<'a> {
+        while !nodes::can_contain_type(parent, &value) {
             parent = self.finalize(parent).unwrap();
         }
 
@@ -641,8 +732,8 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn add_text_to_container(&mut self,
-                             mut container: &'a Node<'a, AstCell>,
-                             last_matched_container: &'a Node<'a, AstCell>,
+                             mut container: &'a AstNode<'a>,
+                             last_matched_container: &'a AstNode<'a>,
                              line: &mut String) {
         self.find_first_nonspace(line);
 
@@ -734,7 +825,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn add_line(&mut self, node: &'a Node<'a, AstCell>, line: &mut String) {
+    fn add_line(&mut self, node: &'a AstNode<'a>, line: &mut String) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
@@ -749,7 +840,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    pub fn finish(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn finish(&mut self) -> &'a AstNode<'a> {
         if self.linebuf.len() > 0 {
             let linebuf = mem::replace(&mut self.linebuf, String::new());
             self.process_line(&linebuf);
@@ -771,14 +862,14 @@ impl<'a, 'o> Parser<'a, 'o> {
         self.process_inlines();
     }
 
-    fn finalize(&mut self, node: &'a Node<'a, AstCell>) -> Option<&'a Node<'a, AstCell>> {
+    fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
     fn finalize_borrowed(&mut self,
-                         node: &'a Node<'a, AstCell>,
+                         node: &'a AstNode<'a>,
                          ast: &mut Ast)
-                         -> Option<&'a Node<'a, AstCell>> {
+                         -> Option<&'a AstNode<'a>> {
         assert!(ast.open);
         ast.open = false;
 
@@ -870,7 +961,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
                     let mut subch = item.first_child();
                     while let Some(subitem) = subch {
-                        if subitem.ends_with_blank_line() &&
+                        if nodes::ends_with_blank_line(subitem) &&
                            (item.next_sibling().is_some() || subitem.next_sibling().is_some()) {
                             nl.tight = false;
                             break;
@@ -895,7 +986,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         self.process_inlines_node(self.root);
     }
 
-    fn process_inlines_node(&mut self, node: &'a Node<'a, AstCell>) {
+    fn process_inlines_node(&mut self, node: &'a AstNode<'a>) {
         if node.data.borrow().value.contains_inlines() {
             self.parse_inlines(node);
         }
@@ -905,7 +996,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn parse_inlines(&mut self, node: &'a Node<'a, AstCell>) {
+    fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
         let mut subj = inlines::Subject::new(self.arena,
                                              self.options,
                                              &node.data.borrow().content,
@@ -920,7 +1011,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         while subj.pop_bracket() {}
     }
 
-    fn consolidate_text_nodes(&mut self, node: &'a Node<'a, AstCell>) {
+    fn consolidate_text_nodes(&mut self, node: &'a AstNode<'a>) {
         let mut nch = node.first_child();
 
         while let Some(n) = nch {

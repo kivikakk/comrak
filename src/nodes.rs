@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::fmt::{Debug, Formatter, Result};
 use arena_tree::Node;
 
 #[derive(Debug, Clone)]
@@ -176,124 +175,99 @@ pub fn make_block(value: NodeValue, start_line: u32, start_column: usize) -> Ast
     }
 }
 
-pub type AstCell = RefCell<Ast>;
+pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
 
-impl<'a> Node<'a, AstCell> {
-    pub fn last_child_is_open(&self) -> bool {
-        self.last_child().map_or(false, |n| n.data.borrow().open)
+pub fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
+    node.last_child().map_or(false, |n| n.data.borrow().open)
+}
+
+pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
+    if let &NodeValue::Document = child {
+        return false;
     }
 
-    pub fn can_contain_type(&self, child: &NodeValue) -> bool {
-        if let &NodeValue::Document = child {
-            return false;
+    match node.data.borrow().value {
+        NodeValue::Document |
+        NodeValue::BlockQuote |
+        NodeValue::Item(..) => {
+            child.block() &&
+            match child {
+                &NodeValue::Item(..) => false,
+                _ => true,
+            }
         }
 
-        match self.data.borrow().value {
-            NodeValue::Document |
-            NodeValue::BlockQuote |
-            NodeValue::Item(..) => {
-                child.block() &&
-                match child {
-                    &NodeValue::Item(..) => false,
-                    _ => true,
-                }
+        NodeValue::List(..) => {
+            match child {
+                &NodeValue::Item(..) => true,
+                _ => false,
             }
-
-            NodeValue::List(..) => {
-                match child {
-                    &NodeValue::Item(..) => true,
-                    _ => false,
-                }
-            }
-
-            NodeValue::CustomBlock => true,
-
-            NodeValue::Paragraph |
-            NodeValue::Heading(..) |
-            NodeValue::Emph |
-            NodeValue::Strong |
-            NodeValue::Link(..) |
-            NodeValue::Image(..) |
-            NodeValue::CustomInline => !child.block(),
-
-            NodeValue::Table(..) => {
-                match child {
-                    &NodeValue::TableRow(..) => true,
-                    _ => false,
-                }
-            }
-
-            NodeValue::TableRow(..) => {
-                match child {
-                    &NodeValue::TableCell => true,
-                    _ => false,
-                }
-            }
-
-            NodeValue::TableCell => {
-                match child {
-                    &NodeValue::Text(..) |
-                    &NodeValue::Code(..) |
-                    &NodeValue::Emph |
-                    &NodeValue::Strong |
-                    &NodeValue::Link(..) |
-                    &NodeValue::Image(..) |
-                    &NodeValue::Strikethrough |
-                    &NodeValue::HtmlInline(..) => true,
-                    _ => false,
-                }
-            }
-
-            _ => false,
         }
-    }
 
-    pub fn ends_with_blank_line(&self) -> bool {
-        let mut it = Some(self);
-        while let Some(cur) = it {
-            if cur.data.borrow().last_line_blank {
-                return true;
-            }
-            match &cur.data.borrow().value {
-                &NodeValue::List(..) |
-                &NodeValue::Item(..) => it = cur.last_child(),
-                _ => it = None,
-            };
-        }
-        false
-    }
+        NodeValue::CustomBlock => true,
 
-    pub fn containing_block(&'a self) -> Option<&'a Node<'a, AstCell>> {
-        let mut ch = Some(self);
-        while let Some(node) = ch {
-            if node.data.borrow().value.block() {
-                return Some(node);
+        NodeValue::Paragraph |
+        NodeValue::Heading(..) |
+        NodeValue::Emph |
+        NodeValue::Strong |
+        NodeValue::Link(..) |
+        NodeValue::Image(..) |
+        NodeValue::CustomInline => !child.block(),
+
+        NodeValue::Table(..) => {
+            match child {
+                &NodeValue::TableRow(..) => true,
+                _ => false,
             }
-            ch = node.parent();
         }
-        None
+
+        NodeValue::TableRow(..) => {
+            match child {
+                &NodeValue::TableCell => true,
+                _ => false,
+            }
+        }
+
+        NodeValue::TableCell => {
+            match child {
+                &NodeValue::Text(..) |
+                &NodeValue::Code(..) |
+                &NodeValue::Emph |
+                &NodeValue::Strong |
+                &NodeValue::Link(..) |
+                &NodeValue::Image(..) |
+                &NodeValue::Strikethrough |
+                &NodeValue::HtmlInline(..) => true,
+                _ => false,
+            }
+        }
+
+        _ => false,
     }
 }
 
-impl<'a, T: Debug> Debug for Node<'a, RefCell<T>> {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        let mut ch = vec![];
-        let mut c = self.first_child();
-        while let Some(e) = c {
-            ch.push(e);
-            c = e.next_sibling();
+pub fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
+    let mut it = Some(node);
+    while let Some(cur) = it {
+        if cur.data.borrow().last_line_blank {
+            return true;
         }
-        write!(f, "[({:?}) {} children: {{", self.data.borrow(), ch.len())?;
-        let mut first = true;
-        for e in &ch {
-            if first {
-                first = false;
-            } else {
-                write!(f, ", ")?;
-            }
-            write!(f, "{:?}", e)?;
-        }
-        write!(f, "}}]")?;
-        Ok(())
+        match &cur.data.borrow().value {
+            &NodeValue::List(..) |
+            &NodeValue::Item(..) => it = cur.last_child(),
+            _ => it = None,
+        };
     }
+    false
+}
+
+pub fn containing_block<'a>(node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    let mut ch = Some(node);
+    while let Some(n) = ch {
+        if n.data.borrow().value.block() {
+            return Some(n);
+        }
+        ch = n.parent();
+    }
+    None
 }
