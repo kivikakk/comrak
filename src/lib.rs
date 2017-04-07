@@ -23,4 +23,10 @@ pub use typed_arena::Arena;
 pub use arena_tree::Node;
 pub use node::{AstCell, Ast, NodeValue};
 
-pub use parser::parse_document;
+pub use parser::{parse_document, ComrakOptions};
+
+pub fn markdown_to_html(md: &str, options: &ComrakOptions) -> String {
+    let arena = Arena::new();
+    let root = parse_document(&arena, md, options);
+    html::format_document(root, options)
+}
