@@ -28,7 +28,7 @@ pub static ENTITIES: [(&'static str, &'static str); {}] =
 for (i, (ent, bs)) in enumerate(entities):
     if i > 0:
         print('     ', end='')
-    print('("{}", "{}")'.format(ent, ', '.join(map(rust_hex, bs))), end='')
+    print('("{}", "{}")'.format(ent, ''.join(map(rust_hex, bs))), end='')
     if i < len(entities) - 1:
         print(',')
 

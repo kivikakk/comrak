@@ -313,10 +313,10 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         self.last_line_length = line.len();
-        if line.as_bytes()[self.last_line_length - 1] == '\n' as u8 {
+        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == '\n' as u8 {
             self.last_line_length -= 1;
         }
-        if line.as_bytes()[self.last_line_length - 1] == '\r' as u8 {
+        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == '\r' as u8 {
             self.last_line_length -= 1;
         }
     }
@@ -905,7 +905,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         match &mut ast.value {
             &mut NodeValue::Paragraph => {
-                while content.as_bytes()[0] == '[' as u8 &&
+                while content.len() > 0 && content.as_bytes()[0] == '[' as u8 &&
                       unwrap_into(self.parse_reference_inline(content), &mut pos) {
                     for _ in 0..pos {
                         content.remove(0);

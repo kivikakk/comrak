@@ -533,7 +533,6 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         self.pos += 1;
         if self.peek_char().map_or(false, ispunct) {
             self.pos += 1;
-            // TODO: handle Unicode here
             return make_inline(self.arena,
                                NodeValue::Text((self.input.as_bytes()[self.pos - 1] as char)
                                    .to_string()));
