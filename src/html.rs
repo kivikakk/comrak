@@ -1,9 +1,12 @@
+use std;
 use std::io::Write;
 use std::iter::FromIterator;
 use std::collections::BTreeMap;
 
-use {NodeValue, Node, AstCell, ListType, std, isspace, ComrakOptions};
-use node::TableAlignment;
+use arena_tree::Node;
+use node::{TableAlignment, NodeValue, AstCell, ListType};
+use parser::ComrakOptions;
+use ctype::isspace;
 
 pub fn format_document<'a>(root: &'a Node<'a, AstCell>, options: &ComrakOptions) -> String {
     let mut f = HtmlFormatter::new(options);

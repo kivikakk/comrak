@@ -1,4 +1,8 @@
-use {std, Node, AstCell, ComrakOptions, NodeValue, ListType, ListDelimType, NodeLink, scanners};
+use std;
+use arena_tree::Node;
+use node::{AstCell, NodeValue, ListType, ListDelimType, NodeLink};
+use scanners;
+use parser::ComrakOptions;
 use node::TableAlignment;
 use ctype::{isspace, isdigit, isalpha};
 use std::cmp::max;

@@ -2,10 +2,28 @@
 name = "comrak"
 version = "0.1.0"
 authors = ["Yuki Izumi <kivikakk@github.com>"]
+description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
+documentation = "https://docs.rs/comrak"
+homepage = "https://github.com/kivikakk/comrak"
+repository = "https://github.com/kivikakk/comrak"
+readme = "README.md"
+keywords = ["markdown", "commonmark"]
+license = "BSD-2-Clause"
+categories = ["text-processing", "parsing", "command-line-utilities"]
+
+[badges]
+travis-ci = { repository = "kivikakk/comrak" }
+
+[[bin]]
+name = "comrak"
+required-features = ["clap"]
 
 [dependencies]
 typed-arena = "1.2.0"
 regex = "0.2.1"
 lazy_static = "0.2.4"
 unicode_categories = "0.1.1"
-clap = "2.22.2"
+clap = { version = "2.22.2", optional = true }
+
+[features]
+default = ["clap"]
