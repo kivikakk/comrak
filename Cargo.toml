@@ -2,6 +2,17 @@
 name = "comrak"
 version = "0.1.0"
 authors = ["Yuki Izumi <kivikakk@github.com>"]
+description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
+documentation = "https://docs.rs/comrak"
+homepage = "https://github.com/kivikakk/comrak"
+repository = "https://github.com/kivikakk/comrak"
+readme = "README.md"
+keywords = ["markdown", "commonmark"]
+license = "BSD-2-Clause"
+categories = ["text-processing", "parsing", "command-line-utilities"]
+
+[badges]
+travis-ci = { repository = "kivikakk/comrak" }
 
 [[bin]]
 name = "comrak"
