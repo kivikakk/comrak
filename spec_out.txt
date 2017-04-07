@@ -1,14 +1,3 @@
-Example 49 (lines 971-979) ATX headings
-program returned error code 101
-thread 'main' panicked at 'index out of bounds: the len is 2 but the index is 2', src/main.rs:265
-note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
-stack backtrace:
-   0: comrak::Parser::find_first_nonspace
-   1: comrak::Parser::add_text_to_container
-   2: comrak::Parser::process_line
-   3: comrak::Parser::feed
-   4: comrak::parse_document
-   5: comrak::main
 Example 106 (lines 1870-1876) Fenced code blocks
 ``` ```
 aaa
@@ -94,4 +83,4 @@ stack backtrace:
    4: comrak::Parser::finish
    5: comrak::parse_document
    6: comrak::main
-634 passed, 6 failed, 3 errored, 0 skipped
+635 passed, 6 failed, 2 errored, 0 skipped

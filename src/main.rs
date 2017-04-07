@@ -262,6 +262,9 @@ impl<'a, 'o> Parser<'a, 'o> {
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
 
         loop {
+            if self.first_nonspace >= line.len() {
+                break;
+            }
             match line.as_bytes()[self.first_nonspace] {
                 32 => {
                     self.first_nonspace += 1;
@@ -281,7 +284,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         self.indent = self.first_nonspace_column - self.column;
-        self.blank = is_line_end_char(&line.as_bytes()[self.first_nonspace]);
+        self.blank = self.first_nonspace < line.len() && is_line_end_char(&line.as_bytes()[self.first_nonspace]);
     }
 
     fn process_line(&mut self, buffer: &str) {
