@@ -350,7 +350,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             }
             Some(endpos) => {
                 let mut buf: &str = &self.input[startpos..endpos - openticks.len()];
-                trim_slice(&mut buf);
+                buf = trim_slice(buf);
                 let buf = normalize_whitespace(buf);
                 make_inline(self.arena, NodeValue::Code(buf))
             }
