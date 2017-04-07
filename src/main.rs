@@ -910,8 +910,8 @@ impl<'a, 'o> Parser<'a, 'o> {
             &mut NodeValue::Paragraph => {
                 while content.len() > 0 && content.as_bytes()[0] == '[' as u8 &&
                       unwrap_into(self.parse_reference_inline(content), &mut pos) {
-                    for _ in 0..pos {
-                        content.remove(0);
+                    while pos > 0 {
+                        pos -= content.remove(0).len_utf8();
                     }
                 }
                 if is_blank(content) {
@@ -944,8 +944,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                         pos += 1;
                     }
 
-                    for _ in 0..pos {
-                        content.remove(0);
+                    while pos > 0 {
+                        pos -= content.remove(0).len_utf8();
                     }
                 }
                 ncb.literal = content.clone();
