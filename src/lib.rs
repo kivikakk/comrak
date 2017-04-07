@@ -10,6 +10,8 @@
 //!            "<p>Hello, <strong>世界</strong>!</p>\n");
 //! ```
 
+#![warn(missing_docs)]
+
 extern crate unicode_categories;
 extern crate typed_arena;
 extern crate arena_tree;
@@ -22,7 +24,7 @@ mod scanners;
 mod html;
 mod cm;
 mod ctype;
-mod nodes;
+pub mod nodes;
 mod entity;
 mod entity_data;
 mod strings;
@@ -31,7 +33,6 @@ mod inlines;
 mod tests;
 
 use typed_arena::Arena;
-pub use nodes::{AstNode, Ast, NodeValue};
 
 pub use parser::{parse_document, ComrakOptions};
 pub use html::format_document as format_html;

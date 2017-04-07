@@ -1,32 +1,92 @@
 use std::cell::RefCell;
 use arena_tree::Node;
 
+/// The core AST node enum.
 #[derive(Debug, Clone)]
 pub enum NodeValue {
+    /// The root of every CommonMark document.  Contains **blocks**.
     Document,
+
+    /// **Block**. A [block quote](https://github.github.com/gfm/#block-quotes).  Contains other
+    /// **blocks**.
+    ///
+    /// ``` md
+    /// > A block quote.
+    /// ```
     BlockQuote,
+
+    /// **Block**.  A [list](https://github.github.com/gfm/#lists).  Contains
+    /// [list items](https://github.github.com/gfm/#list-items).
+    ///
+    /// ``` md
+    /// * An unordered list
+    /// * Another item
+    ///
+    /// 1. An ordered list
+    /// 2. Another item
+    /// ```
     List(NodeList),
+
+    /// **Block**.  A [list item](https://github.github.com/gfm/#list-items).  Contains other
+    /// **blocks**.
     Item(NodeList),
+
+    /// **Block**. A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
+    /// or [indented](https://github.github.com/gfm/#indented-code-blocks).  Contains raw text
+    /// which is not parsed as Markdown, although is HTML escaped.
     CodeBlock(NodeCodeBlock),
+
+    /// **Block**. A [HTML block](https://github.github.com/gfm/#html-blocks).  Contains raw text
+    /// which is neither parsed as Markdown nor HTML escaped.
     HtmlBlock(NodeHtmlBlock),
+
+    /// **Block**. TODO.
     CustomBlock,
+
+    /// **Block**. A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains **inlines**.
     Paragraph,
+
+    /// **Block**. A heading; may be an [ATX heading](https://github.github.com/gfm/#atx-headings)
+    /// or a [setext heading](https://github.github.com/gfm/#setext-headings). Contains
+    /// **inlines**.
     Heading(NodeHeading),
+
+    /// **Block**. A [thematic break](https://github.github.com/gfm/#thematic-breaks).  Has no
+    /// children.
     ThematicBreak,
+
+    /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
+    /// Contains table rows.
     Table(Vec<TableAlignment>),
+
+    /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
+    /// Contains table cells.
     TableRow(bool),
+
+    /// **Block**.  A table cell.  Contains **inlines**.
     TableCell,
 
+    /// **Inline**
     Text(String),
+    /// **Inline**
     SoftBreak,
+    /// **Inline**
     LineBreak,
+    /// **Inline**
     Code(String),
+    /// **Inline**
     HtmlInline(String),
+    /// **Inline**
     CustomInline,
+    /// **Inline**
     Emph,
+    /// **Inline**
     Strong,
+    /// **Inline**
     Strikethrough,
+    /// **Inline**
     Link(NodeLink),
+    /// **Inline**
     Image(NodeLink),
 }
 
@@ -44,6 +104,7 @@ pub struct NodeLink {
     pub title: String,
 }
 
+/// Hi
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NodeList {
     pub list_type: ListType,
@@ -150,15 +211,30 @@ impl NodeValue {
     }
 }
 
+/// A single node in the CommonMark AST.  The struct contains metadata about the node's position in
+/// the original document, and the core enum, `NodeValue`.
 #[derive(Debug, Clone)]
 pub struct Ast {
+    /// The node value itself.
     pub value: NodeValue,
-    pub content: String,
+
+    /// The line in the input document the node starts at.
     pub start_line: u32,
+
+    /// The column in the input document the node starts at.
     pub start_column: usize,
+
+    /// The line in the input document the node ends at.
     pub end_line: u32,
+
+    /// The column in the input document the node ends at.
     pub end_column: usize,
+
+    #[doc(hidden)]
+    pub content: String,
+    #[doc(hidden)]
     pub open: bool,
+    #[doc(hidden)]
     pub last_line_blank: bool,
 }
 
