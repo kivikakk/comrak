@@ -3,7 +3,7 @@ use unicode_categories::UnicodeCategories;
 use std::cell::RefCell;
 use typed_arena::Arena;
 use arena_tree::Node;
-use node::{AstCell, NodeValue, Ast, NodeLink};
+use nodes::{NodeValue, Ast, NodeLink, AstNode};
 use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, MAXBACKTICKS, Reference,
              MAX_LINK_LABEL_LENGTH};
 use scanners;
@@ -13,7 +13,7 @@ use strings;
 use std::collections::{BTreeSet, HashMap};
 
 pub struct Subject<'a, 'r, 'o> {
-    pub arena: &'a Arena<Node<'a, AstCell>>,
+    pub arena: &'a Arena<AstNode<'a>>,
     options: &'o ComrakOptions,
     pub input: String,
     pub pos: usize,
@@ -25,7 +25,7 @@ pub struct Subject<'a, 'r, 'o> {
 }
 
 struct Delimiter<'a> {
-    inl: &'a Node<'a, AstCell>,
+    inl: &'a AstNode<'a>,
     delim_char: u8,
     can_open: bool,
     can_close: bool,
@@ -33,7 +33,7 @@ struct Delimiter<'a> {
 
 struct Bracket<'a> {
     previous_delimiter: i32,
-    inl_text: &'a Node<'a, AstCell>,
+    inl_text: &'a AstNode<'a>,
     position: usize,
     image: bool,
     active: bool,
@@ -41,7 +41,7 @@ struct Bracket<'a> {
 }
 
 impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
-    pub fn new(arena: &'a Arena<Node<'a, AstCell>>,
+    pub fn new(arena: &'a Arena<AstNode<'a>>,
                options: &'o ComrakOptions,
                input: &str,
                refmap: &'r mut HashMap<String, Reference>)
@@ -63,8 +63,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         self.brackets.pop().is_some()
     }
 
-    pub fn parse_inline(&mut self, node: &'a Node<'a, AstCell>) -> bool {
-        let new_inl: Option<&'a Node<'a, AstCell>>;
+    pub fn parse_inline(&mut self, node: &'a AstNode<'a>) -> bool {
+        let new_inl: Option<&'a AstNode<'a>>;
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -291,7 +291,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         self.input.len()
     }
 
-    pub fn handle_newline(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn handle_newline(&mut self) -> &'a AstNode<'a> {
         let nlpos = self.pos;
         if self.input.as_bytes()[self.pos] == '\r' as u8 {
             self.pos += 1;
@@ -344,7 +344,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
     }
 
-    pub fn handle_backticks(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn handle_backticks(&mut self) -> &'a AstNode<'a> {
         let openticks = self.take_while('`' as u8);
         let startpos = self.pos;
         let endpos = self.scan_to_closing_backtick(openticks.len());
@@ -372,7 +372,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         skipped
     }
 
-    pub fn handle_delim(&mut self, c: u8) -> &'a Node<'a, AstCell> {
+    pub fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = self.input[self.pos - numdelims..self.pos].to_string();
@@ -435,7 +435,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                           c: u8,
                           can_open: bool,
                           can_close: bool,
-                          inl: &'a Node<'a, AstCell>) {
+                          inl: &'a AstNode<'a>) {
         self.delimiters.push(Delimiter {
             inl: inl,
             delim_char: c,
@@ -535,7 +535,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
     }
 
-    pub fn handle_backslash(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn handle_backslash(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
         if self.peek_char().map_or(false, ispunct) {
             self.pos += 1;
@@ -562,7 +562,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         seen_line_end_char || self.eof()
     }
 
-    pub fn handle_entity(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn handle_entity(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
@@ -574,7 +574,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         }
     }
 
-    pub fn handle_pointy_brace(&mut self) -> &'a Node<'a, AstCell> {
+    pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -603,7 +603,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         make_inline(self.arena, NodeValue::Text("<".to_string()))
     }
 
-    pub fn push_bracket(&mut self, image: bool, inl_text: &'a Node<'a, AstCell>) {
+    pub fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
         let len = self.brackets.len();
         if len > 0 {
             self.brackets[len - 1].bracket_after = true;
@@ -618,7 +618,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         });
     }
 
-    pub fn handle_close_bracket(&mut self) -> Option<&'a Node<'a, AstCell>> {
+    pub fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -825,9 +825,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
     if i >= len { None } else { Some(i) }
 }
 
-pub fn make_inline<'a>(arena: &'a Arena<Node<'a, AstCell>>,
-                       value: NodeValue)
-                       -> &'a Node<'a, AstCell> {
+pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a AstNode<'a> {
     let ast = Ast {
         value: value,
         content: String::new(),
@@ -847,10 +845,10 @@ pub enum AutolinkType {
     Email,
 }
 
-fn make_autolink<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+fn make_autolink<'a>(arena: &'a Arena<AstNode<'a>>,
                      url: &str,
                      kind: AutolinkType)
-                     -> &'a Node<'a, AstCell> {
+                     -> &'a AstNode<'a> {
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
                               url: strings::clean_autolink(url, kind),

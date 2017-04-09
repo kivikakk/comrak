@@ -17,9 +17,11 @@ travis-ci = { repository = "kivikakk/comrak" }
 [[bin]]
 name = "comrak"
 required-features = ["clap"]
+doc = false
 
 [dependencies]
 typed-arena = "1.2.0"
+arena-tree = "0.3.0"
 regex = "0.2.1"
 lazy_static = "0.2.4"
 unicode_categories = "0.1.1"

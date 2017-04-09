@@ -1,15 +1,13 @@
 use std::cmp::min;
 use parser::Parser;
-use arena_tree::Node;
-use node::{AstCell, NodeValue};
+use nodes::{NodeValue, TableAlignment, AstNode};
 use scanners;
 use strings::trim;
-use node::TableAlignment;
 
 pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                                 container: &'a Node<'a, AstCell>,
+                                 container: &'a AstNode<'a>,
                                  line: &str)
-                                 -> Option<(&'a Node<'a, AstCell>, bool)> {
+                                 -> Option<(&'a AstNode<'a>, bool)> {
     let x = container.data.borrow().value.clone();
     match x {
         NodeValue::Paragraph => try_opening_header(parser, container, line),
@@ -19,9 +17,9 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
 }
 
 pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                                  container: &'a Node<'a, AstCell>,
+                                  container: &'a AstNode<'a>,
                                   line: &str)
-                                  -> Option<(&'a Node<'a, AstCell>, bool)> {
+                                  -> Option<(&'a AstNode<'a>, bool)> {
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
         return Some((container, false));
     }
@@ -69,10 +67,10 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
 
 pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                               container: &'a Node<'a, AstCell>,
+                               container: &'a AstNode<'a>,
                                alignments: &Vec<TableAlignment>,
                                line: &str)
-                               -> Option<(&'a Node<'a, AstCell>, bool)> {
+                               -> Option<(&'a AstNode<'a>, bool)> {
     if parser.blank {
         return None;
     }

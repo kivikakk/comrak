@@ -2,13 +2,12 @@ use unicode_categories::UnicodeCategories;
 use std::iter::FromIterator;
 use std::collections::BTreeSet;
 use typed_arena::Arena;
-use arena_tree::Node;
-use node::{AstCell, NodeValue, NodeLink};
+use nodes::{NodeValue, NodeLink, AstNode};
 use ctype::{isspace, isalpha, isalnum};
 use inlines::make_inline;
 
-pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
-                             node: &'a Node<'a, AstCell>,
+pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
+                             node: &'a AstNode<'a>,
                              contents: &mut String) {
     let len = contents.len();
     let mut i = 0;
@@ -58,10 +57,10 @@ pub fn process_autolinks<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     }
 }
 
-fn www_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
                  contents: &str,
                  i: usize)
-                 -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
+                 -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref WWW_DELIMS: BTreeSet<u8> = BTreeSet::from_iter(
             vec!['*' as u8, '_' as u8, '~' as u8, '(' as u8, '[' as u8]);
@@ -193,10 +192,10 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     link_end
 }
 
-fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
                  contents: &str,
                  i: usize)
-                 -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
+                 -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref SCHEMES: Vec<&'static str> =
             vec!["http", "https", "ftp"];
@@ -241,10 +240,10 @@ fn url_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
     Some((inl, rewind, rewind + link_end))
 }
 
-fn email_match<'a>(arena: &'a Arena<Node<'a, AstCell>>,
+fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
                    contents: &str,
                    i: usize)
-                   -> Option<(&'a Node<'a, AstCell>, usize, usize)> {
+                   -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref EMAIL_OK_SET: BTreeSet<u8> = BTreeSet::from_iter(
             vec!['.' as u8, '+' as u8, '-' as u8, '_' as u8]);

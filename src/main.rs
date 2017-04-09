@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate unicode_categories;
+extern crate arena_tree;
 extern crate typed_arena;
 extern crate regex;
 #[macro_use]
@@ -8,8 +9,7 @@ extern crate lazy_static;
 mod html;
 mod cm;
 mod parser;
-mod arena_tree;
-mod node;
+mod nodes;
 mod ctype;
 mod scanners;
 mod inlines;
