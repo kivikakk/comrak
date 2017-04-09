@@ -8,6 +8,7 @@ use ctype::{isspace, isdigit, isalpha};
 use std::cmp::max;
 use std::io::Write;
 
+/// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
@@ -391,10 +392,6 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::CustomBlock => {
-                assert!(false)
-                // TODO
-            }
             &NodeValue::ThematicBreak => {
                 if entering {
                     self.blankline();
@@ -451,10 +448,6 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if entering {
                     self.write_all(literal.as_bytes()).unwrap();
                 }
-            }
-            &NodeValue::CustomInline => {
-                assert!(false)
-                // TODO
             }
             &NodeValue::Strong => {
                 if entering {

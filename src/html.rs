@@ -7,6 +7,7 @@ use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
 use ctype::isspace;
 
+/// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
     let mut f = HtmlFormatter::new(options);
     f.format(root, false);
@@ -257,10 +258,6 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr();
                 }
             }
-            &NodeValue::CustomBlock => {
-                assert!(false)
-                // TODO
-            }
             &NodeValue::ThematicBreak => {
                 if entering {
                     self.cr();
@@ -320,10 +317,6 @@ impl<'o> HtmlFormatter<'o> {
                         write!(self, "{}", literal).unwrap();
                     }
                 }
-            }
-            &NodeValue::CustomInline => {
-                assert!(false)
-                // TODO
             }
             &NodeValue::Strong => {
                 if entering {

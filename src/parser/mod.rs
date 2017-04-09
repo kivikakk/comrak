@@ -23,6 +23,9 @@ const CODE_INDENT: usize = 4;
 pub const MAXBACKTICKS: usize = 80;
 pub const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
+/// Parse a Markdown document to an AST.
+///
+/// See the documentation of the crate root for an example.
 pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>,
                           buffer: &str,
                           options: &ComrakOptions)
@@ -64,7 +67,8 @@ pub struct Parser<'a, 'o> {
 #[derive(Default)]
 /// Options for both parser and formatter functions.
 pub struct ComrakOptions {
-    /// Single newlines in the input translate into `<br />` tags in the output.
+    /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
+    /// translate into hard line breaks in the output.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
@@ -112,7 +116,8 @@ pub struct ComrakOptions {
     /// ```
     pub width: usize,
 
-    /// Enables the [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
+    /// Enables the
+    /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
     ///
     /// ```
@@ -124,7 +129,8 @@ pub struct ComrakOptions {
     /// ```
     pub ext_strikethrough: bool,
 
-    /// Enables the [tagfilter extension](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+    /// Enables the
+    /// [tagfilter extension](https://github.github.com/gfm/#disallowed-raw-html-extension-)
     /// from the GFM spec.
     ///
     /// ```
