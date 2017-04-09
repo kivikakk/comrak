@@ -1,5 +1,5 @@
 //! A 100% [CommonMark](http://commonmark.org/) and [GFM](https://github.github.com/gfm/)
-//! compatible Markdown parser.
+//! compatible Markdown parser.  Source repository is at <https://github.com/kivikakk/comrak>.
 //!
 //! The design is based on [cmark](https://github.com/github/cmark), so familiarity with that will
 //! help.

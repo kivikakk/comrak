@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak)
 ![Spec Status: 643/643](https://img.shields.io/badge/specs-643%2F643-brightgreen.svg)
-![crates.io version](https://img.shields.io/crates/v/comrak.svg)
+[![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
+[![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
