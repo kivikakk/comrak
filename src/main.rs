@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate clap;
 extern crate unicode_categories;
 extern crate arena_tree;
@@ -23,7 +24,7 @@ use std::collections::BTreeSet;
 
 fn main() {
     let matches = clap::App::new("comrak")
-        .version("0.1.1")
+        .version(crate_version!())
         .author("Yuki Izumi <yuki@kivikakk.ee>")
         .about("CommonMark parser based on cmark")
         .arg(clap::Arg::with_name("file")
