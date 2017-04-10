@@ -23,7 +23,7 @@ use std::collections::BTreeSet;
 
 fn main() {
     let matches = clap::App::new("comrak")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Yuki Izumi <yuki@kivikakk.ee>")
         .about("CommonMark parser based on cmark")
         .arg(clap::Arg::with_name("file")
