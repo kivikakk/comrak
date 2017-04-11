@@ -327,3 +327,42 @@ fn tagfilter() {
               concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
               |opts| opts.ext_tagfilter = true);
 }
+
+#[test]
+fn tasklist() {
+    html_opts(concat!("* [ ] Red\n",
+                      "* [x] Green\n",
+                      "* [ ] Blue\n",
+                      "<!-- end list -->\n",
+                      "1. [ ] Bird\n",
+                      "2. [ ] McHale\n",
+                      "3. [x] Parish\n",
+                      "<!-- end list -->\n",
+                      "* [ ] Red\n",
+                      "  * [x] Green\n",
+                      "    * [ ] Blue\n"),
+              concat!("<ul>\n",
+                      "<li><input type=\"checkbox\" /> Red</li>\n",
+                      "<li><input type=\"checkbox\" checked=\"\" /> Green</li>\n",
+                      "<li><input type=\"checkbox\" /> Blue</li>\n",
+                      "</ul>\n",
+                      "<!-- end list -->\n",
+                      "<ol>\n",
+                      "<li><input type=\"checkbox\" /> Bird</li>\n",
+                      "<li><input type=\"checkbox\" /> McHale</li>\n",
+                      "<li><input type=\"checkbox\" checked=\"\" /> Parish</li>\n",
+                      "</ol>\n",
+                      "<!-- end list -->\n",
+                      "<ul>\n",
+                      "<li><input type=\"checkbox\" /> Red\n",
+                      "<ul>\n",
+                      "<li><input type=\"checkbox\" checked=\"\" /> Green\n",
+                      "<ul>\n",
+                      "<li><input type=\"checkbox\" /> Blue</li>\n",
+                      "</ul>\n",
+                      "</li>\n",
+                      "</ul>\n",
+                      "</li>\n",
+                      "</ul>\n"),
+              |opts| opts.ext_tasklist = true);
+}
