@@ -180,8 +180,8 @@ pub struct ComrakOptions {
     /// let mut options = ComrakOptions::default();
     /// options.ext_tasklist = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
-    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" /> Done</li>\n\
-    ///            <li><input type=\"checkbox\" /> Not done</li>\n</ul>\n");
+    ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Done</li>\n\
+    ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
     pub ext_tasklist: bool,
 
@@ -1124,9 +1124,9 @@ impl<'a, 'o> Parser<'a, 'o> {
         *text = text[end..].to_string();
         let checkbox = inlines::make_inline(self.arena,
                                             NodeValue::HtmlInline((if active {
-                                                    "<input type=\"checkbox\" checked=\"\" />"
+                                                    "<input type=\"checkbox\" disabled=\"\" checked=\"\" />"
                                                 } else {
-                                                    "<input type=\"checkbox\" />"
+                                                    "<input type=\"checkbox\" disabled=\"\" />"
                                                 })
                                                 .to_string()));
         node.insert_before(checkbox);
