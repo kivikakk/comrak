@@ -106,7 +106,7 @@ pub enum NodeValue {
 }
 
 /// Alignment of a single table cell.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum TableAlignment {
     /// Cell content is unaligned.
     None,

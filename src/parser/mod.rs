@@ -699,13 +699,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                                ast: &mut Ast,
                                should_continue: &mut bool)
                                -> bool {
-        let ncb = match ast.value {
-                NodeValue::CodeBlock(ref ncb) => Some(ncb.clone()),
-                _ => None,
-            }
-            .unwrap();
+        let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
+            NodeValue::CodeBlock(ref ncb) => (ncb.fenced, ncb.fence_char, ncb.fence_length, ncb.fence_offset),
+            _ => unreachable!(),
+        };
 
-        if !ncb.fenced {
+        if !fenced {
             if self.indent >= CODE_INDENT {
                 self.advance_offset(line, CODE_INDENT, true);
                 return true;
@@ -718,13 +717,13 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         let matched = if self.indent <= 3 &&
-                         line.as_bytes()[self.first_nonspace] == ncb.fence_char {
+                         line.as_bytes()[self.first_nonspace] == fence_char {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
         };
 
-        if matched >= ncb.fence_length {
+        if matched >= fence_length {
             *should_continue = false;
             self.advance_offset(line, matched, false);
             self.current = self.finalize_borrowed(container, ast).unwrap();
@@ -732,7 +731,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         }
 
-        let mut i = ncb.fence_offset;
+        let mut i = fence_offset;
         while i > 0 && strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
             self.advance_offset(line, 1, true);
             i -= 1;
@@ -809,16 +808,20 @@ impl<'a, 'o> Parser<'a, 'o> {
                 self.current = self.finalize(self.current).unwrap();
             }
 
-            // TODO: remove this awful clone
-            let node_type = container.data.borrow().value.clone();
-            match &node_type {
-                &NodeValue::CodeBlock(..) => {
+            let add_text_result = match &container.data.borrow().value {
+                &NodeValue::CodeBlock(..) => AddTextResult::CodeBlock,
+                &NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
+                _ => AddTextResult::Otherwise,
+            };
+
+            match &add_text_result {
+                &AddTextResult::CodeBlock => {
                     self.add_line(container, line);
                 }
-                &NodeValue::HtmlBlock(ref nhb) => {
+                &AddTextResult::HtmlBlock(block_type) => {
                     self.add_line(container, line);
 
-                    let matches_end_condition = match nhb.block_type {
+                    let matches_end_condition = match block_type {
                         1 => scanners::html_block_end_1(&line[self.first_nonspace..]).is_some(),
                         2 => scanners::html_block_end_2(&line[self.first_nonspace..]).is_some(),
                         3 => scanners::html_block_end_3(&line[self.first_nonspace..]).is_some(),
@@ -975,11 +978,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                         pos -= content.remove(0).len_utf8();
                     }
                 }
-                ncb.literal = content.clone();
+                mem::swap(&mut ncb.literal, content);
                 content.clear();
             }
             &mut NodeValue::HtmlBlock(ref mut nhb) => {
-                nhb.literal = content.clone();
+                mem::swap(&mut nhb.literal, content);
                 content.clear();
             }
             &mut NodeValue::List(ref mut nl) => {
@@ -1190,6 +1193,12 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
         Some(subj.pos)
     }
+}
+
+enum AddTextResult {
+    CodeBlock,
+    HtmlBlock(u8),
+    Otherwise,
 }
 
 fn parse_list_marker(line: &mut String,

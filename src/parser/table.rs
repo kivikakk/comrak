@@ -8,11 +8,15 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                  container: &'a AstNode<'a>,
                                  line: &str)
                                  -> Option<(&'a AstNode<'a>, bool)> {
-    let x = container.data.borrow().value.clone();
-    match x {
-        NodeValue::Paragraph => try_opening_header(parser, container, line),
-        NodeValue::Table(ref aligns) => try_opening_row(parser, container, aligns, line),
-        _ => None,
+    let aligns = match &container.data.borrow().value {
+        &NodeValue::Paragraph => None,
+        &NodeValue::Table(ref aligns) => Some(aligns.clone()),
+        _ => return None,
+    };
+
+    match aligns {
+        None => try_opening_header(parser, container, line),
+        Some(ref aligns) => try_opening_row(parser, container, aligns, line),
     }
 }
 
