@@ -6,6 +6,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::mem;
 
+use regex::Regex;
 use typed_arena::Arena;
 
 use arena_tree::Node;
@@ -154,6 +155,7 @@ pub struct ComrakOptions {
     ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr></tbody></table>\n");
     /// ```
     pub ext_table: bool,
+
     /// Enables the [autolink extension](https://github.github.com/gfm/#autolinks-extension-)
     /// from the GFM spec.
     ///
@@ -165,6 +167,18 @@ pub struct ComrakOptions {
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
     pub ext_autolink: bool,
+
+    /// Enables the tasklist Comrak extension
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_tasklist = true;
+    /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
+    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" /> Done</li>\n<li><input \
+    ///            type=\"checkbox\" /> Not done</li>\n</ul>\n");
+    /// ```
+    pub ext_tasklist: bool,
 }
 
 
@@ -852,9 +866,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         self.finalize_document();
-
-        self.consolidate_text_nodes(self.root);
-
+        self.postprocess_text_nodes(self.root);
         self.root
     }
 
@@ -1016,7 +1028,11 @@ impl<'a, 'o> Parser<'a, 'o> {
         while subj.pop_bracket() {}
     }
 
-    fn consolidate_text_nodes(&mut self, node: &'a AstNode<'a>) {
+    fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
+        lazy_static! {
+            static ref TASKLIST: Regex = Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap();
+        }
+
         let mut nch = node.first_child();
 
         while let Some(n) = nch {
@@ -1027,9 +1043,34 @@ impl<'a, 'o> Parser<'a, 'o> {
                         let ns = match n.next_sibling() {
                             Some(ns) => ns,
                             _ => {
+                                if self.options.ext_tasklist {
+                                    if let Some((active, end)) = TASKLIST.captures(root).map(|c| (c.get(2).unwrap().as_str() != " ", c.get(1).unwrap().end())) {
+                                        let parent = n.parent().unwrap();
+                                        if n.previous_sibling().is_none() && match &parent.data.borrow().value {
+                                            &NodeValue::Paragraph => true,
+                                            _ => false,
+                                        } {
+                                            if parent.previous_sibling().is_none() && match &parent.parent().unwrap().data.borrow().value {
+                                                &NodeValue::Item(..) => true,
+                                                _ => false,
+                                            } {
+                                                *root = root[end..].to_string();
+                                                let checkbox = inlines::make_inline(self.arena, NodeValue::HtmlInline(
+                                                        (if active {
+                                                            "<input type=\"checkbox\" checked=\"\" />"
+                                                        } else {
+                                                            "<input type=\"checkbox\" />"
+                                                        }).to_string()));
+                                                n.insert_before(checkbox);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if self.options.ext_autolink {
                                     autolink::process_autolinks(self.arena, n, root);
                                 }
+
                                 break;
                             }
                         };
@@ -1052,7 +1093,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             }
 
             if !this_bracket {
-                self.consolidate_text_nodes(n);
+                self.postprocess_text_nodes(n);
             }
 
             nch = n.next_sibling();
