@@ -89,7 +89,7 @@ assert_eq!(
 
 ## Legal
 
-Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Copyright (c) 2017, Yuki Izumi.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane -- see
 [COPYING](https://github.com/github/cmark/blob/118ebb338840d67005ee57ec39060d2b68f4ec7c/COPYING).
