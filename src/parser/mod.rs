@@ -179,6 +179,17 @@ pub struct ComrakOptions {
     ///            type=\"checkbox\" /> Not done</li>\n</ul>\n");
     /// ```
     pub ext_tasklist: bool,
+
+    /// Enables the superscript Comrak extension
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_superscript = true;
+    /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
+    ///            "<p>e = mc<sup>2</sup>.</p>\n");
+    /// ```
+    pub ext_superscript: bool,
 }
 
 
