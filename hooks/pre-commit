@@ -3,7 +3,7 @@
 exec 1>&2
 set -e
 
-if [ "$SKIP_PRECOMMIT_HOOK" = 1 ]; then
+if [ "$RUN_PRECOMMIT_HOOK" != 1 ]; then
 	exit 0
 fi
 
