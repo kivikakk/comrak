@@ -1,5 +1,6 @@
 mod table;
 mod autolink;
+mod inlines;
 
 use std::cell::RefCell;
 use std::cmp::min;
@@ -16,7 +17,6 @@ use nodes::{NodeValue, Ast, NodeCodeBlock, NodeHeading, NodeList, ListType, List
 use scanners;
 use strings;
 use entity;
-use inlines;
 use nodes;
 
 const TAB_STOP: usize = 4;
@@ -1300,4 +1300,10 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter &&
     list_data.bullet_char == item_data.bullet_char
+}
+
+#[derive(PartialEq)]
+pub enum AutolinkType {
+    URI,
+    Email,
 }

@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use typed_arena::Arena;
 use nodes::{NodeValue, NodeLink, AstNode};
 use ctype::{isspace, isalpha, isalnum};
-use inlines::make_inline;
+use parser::inlines::make_inline;
 
 pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
                              node: &'a AstNode<'a>,

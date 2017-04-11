@@ -78,7 +78,6 @@ pub mod nodes;
 mod entity;
 mod entity_data;
 mod strings;
-mod inlines;
 #[cfg(test)]
 mod tests;
 

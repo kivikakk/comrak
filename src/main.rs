@@ -13,7 +13,6 @@ mod parser;
 mod nodes;
 mod ctype;
 mod scanners;
-mod inlines;
 mod strings;
 mod entity;
 mod entity_data;

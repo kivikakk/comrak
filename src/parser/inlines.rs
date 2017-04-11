@@ -5,7 +5,7 @@ use typed_arena::Arena;
 use arena_tree::Node;
 use nodes::{NodeValue, Ast, NodeLink, AstNode};
 use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, MAXBACKTICKS, Reference,
-             MAX_LINK_LABEL_LENGTH};
+             MAX_LINK_LABEL_LENGTH, AutolinkType};
 use scanners;
 use ctype::{isspace, ispunct};
 use entity;
@@ -837,12 +837,6 @@ pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a A
         last_line_blank: false,
     };
     arena.alloc(Node::new(RefCell::new(ast)))
-}
-
-#[derive(PartialEq)]
-pub enum AutolinkType {
-    URI,
-    Email,
 }
 
 fn make_autolink<'a>(arena: &'a Arena<AstNode<'a>>,

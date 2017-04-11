@@ -1,6 +1,6 @@
 use ctype::{ispunct, isspace};
 use entity;
-use inlines::AutolinkType;
+use parser::AutolinkType;
 
 pub fn unescape(v: &mut String) {
     let mut r = 0;
