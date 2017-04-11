@@ -339,6 +339,13 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</del>").unwrap();
                 }
             }
+            &NodeValue::Superscript => {
+                if entering {
+                    write!(self, "<sup>").unwrap();
+                } else {
+                    write!(self, "</sup>").unwrap();
+                }
+            }
             &NodeValue::Link(ref nl) => {
                 if entering {
                     write!(self, "<a href=\"").unwrap();

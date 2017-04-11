@@ -485,6 +485,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     write!(self, "~").unwrap();
                 }
             }
+            &NodeValue::Superscript => {
+                if entering {
+                    write!(self, "^").unwrap();
+                } else {
+                    write!(self, "^").unwrap();
+                }
+            }
             &NodeValue::Link(ref nl) => {
                 if is_autolink(node, nl) {
                     if entering {

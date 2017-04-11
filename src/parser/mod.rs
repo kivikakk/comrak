@@ -1117,12 +1117,13 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         *text = text[end..].to_string();
-        let checkbox = inlines::make_inline(self.arena, NodeValue::HtmlInline(
-                (if active {
-                    "<input type=\"checkbox\" checked=\"\" />"
-                } else {
-                    "<input type=\"checkbox\" />"
-                }).to_string()));
+        let checkbox = inlines::make_inline(self.arena,
+                                            NodeValue::HtmlInline((if active {
+                                                    "<input type=\"checkbox\" checked=\"\" />"
+                                                } else {
+                                                    "<input type=\"checkbox\" />"
+                                                })
+                                                .to_string()));
         node.insert_before(checkbox);
     }
 

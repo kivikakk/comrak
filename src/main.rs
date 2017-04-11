@@ -42,7 +42,12 @@ fn main() {
             .takes_value(true)
             .number_of_values(1)
             .multiple(true)
-            .possible_values(&["strikethrough", "tagfilter", "table", "autolink", "tasklist", "superscript"])
+            .possible_values(&["strikethrough",
+                               "tagfilter",
+                               "table",
+                               "autolink",
+                               "tasklist",
+                               "superscript"])
             .value_name("EXTENSION")
             .help("Specify an extension name to use"))
         .arg(clap::Arg::with_name("format")
