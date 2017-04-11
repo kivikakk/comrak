@@ -49,22 +49,22 @@ fn basic() {
     html(
         concat!(
             "My **document**.\n",
-            "\n",
-            "It's mine.\n",
-            "\n",
-            "> Yes.\n",
-            "\n",
-            "## Hi!\n",
-            "\n",
+                 "\n",
+                 "It's mine.\n",
+                 "\n",
+                 "> Yes.\n",
+                 "\n",
+                 "## Hi!\n",
+                 "\n",
             "Okay.\n"
         ),
         concat!(
             "<p>My <strong>document</strong>.</p>\n",
-            "<p>It's mine.</p>\n",
-            "<blockquote>\n",
-            "<p>Yes.</p>\n",
-            "</blockquote>\n",
-            "<h2>Hi!</h2>\n",
+                 "<p>It's mine.</p>\n",
+                 "<blockquote>\n",
+                 "<p>Yes.</p>\n",
+                 "</blockquote>\n",
+                 "<h2>Hi!</h2>\n",
             "<p>Okay.</p>\n"
         ),
     );
@@ -87,8 +87,8 @@ fn lists() {
         concat!("2. Hello.\n", "3. Hi.\n"),
         concat!(
             "<ol start=\"2\">\n",
-            "<li>Hello.</li>\n",
-            "<li>Hi.</li>\n",
+                 "<li>Hello.</li>\n",
+                 "<li>Hi.</li>\n",
             "</ol>\n"
         ),
     );
@@ -120,34 +120,34 @@ fn html_block_1() {
     html(
         concat!(
             "<script>\n",
-            "*ok* </script> *ok*\n",
-            "\n",
-            "*ok*\n",
-            "\n",
-            "*ok*\n",
-            "\n",
-            "<pre x>\n",
-            "*ok*\n",
-            "</style>\n",
-            "*ok*\n",
-            "<style>\n",
-            "*ok*\n",
-            "</style>\n",
-            "\n",
+                 "*ok* </script> *ok*\n",
+                 "\n",
+                 "*ok*\n",
+                 "\n",
+                 "*ok*\n",
+                 "\n",
+                 "<pre x>\n",
+                 "*ok*\n",
+                 "</style>\n",
+                 "*ok*\n",
+                 "<style>\n",
+                 "*ok*\n",
+                 "</style>\n",
+                 "\n",
             "*ok*\n"
         ),
         concat!(
             "<script>\n",
-            "*ok* </script> *ok*\n",
-            "<p><em>ok</em></p>\n",
-            "<p><em>ok</em></p>\n",
-            "<pre x>\n",
-            "*ok*\n",
-            "</style>\n",
-            "<p><em>ok</em></p>\n",
-            "<style>\n",
-            "*ok*\n",
-            "</style>\n",
+                 "*ok* </script> *ok*\n",
+                 "<p><em>ok</em></p>\n",
+                 "<p><em>ok</em></p>\n",
+                 "<pre x>\n",
+                 "*ok*\n",
+                 "</style>\n",
+                 "<p><em>ok</em></p>\n",
+                 "<style>\n",
+                 "*ok*\n",
+                 "</style>\n",
             "<p><em>ok</em></p>\n"
         ),
     );
@@ -159,8 +159,8 @@ fn html_block_2() {
         concat!("   <!-- abc\n", "\n", "ok --> *hi*\n", "*hi*\n"),
         concat!(
             "   <!-- abc\n",
-            "\n",
-            "ok --> *hi*\n",
+                 "\n",
+                 "ok --> *hi*\n",
             "<p><em>hi</em></p>\n"
         ),
     );
@@ -187,18 +187,18 @@ fn html_block_5() {
     html(
         concat!(
             "<![CDATA[\n",
-            "\n",
-            "hm >\n",
-            "*ok*\n",
-            "]]> *ok*\n",
+                 "\n",
+                 "hm >\n",
+                 "*ok*\n",
+                 "]]> *ok*\n",
             "*ok*\n"
         ),
         concat!(
             "<![CDATA[\n",
-            "\n",
-            "hm >\n",
-            "*ok*\n",
-            "]]> *ok*\n",
+                 "\n",
+                 "hm >\n",
+                 "*ok*\n",
+                 "]]> *ok*\n",
             "<p><em>ok</em></p>\n"
         ),
     );
@@ -217,22 +217,22 @@ fn html_block_7() {
     html(
         concat!(
             "<a b >\n",
-            "ok\n",
-            "\n",
-            "<a b=>\n",
-            "ok\n",
-            "\n",
-            "<a b \n",
-            "<a b> c\n",
+                 "ok\n",
+                 "\n",
+                 "<a b=>\n",
+                 "ok\n",
+                 "\n",
+                 "<a b \n",
+                 "<a b> c\n",
             "ok\n"
         ),
         concat!(
             "<a b >\n",
-            "ok\n",
-            "<p>&lt;a b=&gt;\n",
-            "ok</p>\n",
-            "<p>&lt;a b\n",
-            "<a b> c\n",
+                 "ok\n",
+                 "<p>&lt;a b=&gt;\n",
+                 "ok</p>\n",
+                 "<p>&lt;a b\n",
+                 "<a b> c\n",
             "ok</p>\n"
         ),
     );
@@ -256,18 +256,18 @@ fn backslashes() {
     html(
         concat!(
             "Some \\`fake code\\`.\n",
-            "\n",
-            "Some fake linebreaks:\\\n",
-            "Yes.\\\n",
-            "See?\n",
-            "\n",
+                 "\n",
+                 "Some fake linebreaks:\\\n",
+                 "Yes.\\\n",
+                 "See?\n",
+                 "\n",
             "Ga\\rbage.\n"
         ),
         concat!(
             "<p>Some `fake code`.</p>\n",
-            "<p>Some fake linebreaks:<br />\n",
-            "Yes.<br />\n",
-            "See?</p>\n",
+                 "<p>Some fake linebreaks:<br />\n",
+                 "Yes.<br />\n",
+                 "See?</p>\n",
             "<p>Ga\\rbage.</p>\n"
         ),
     );
@@ -278,7 +278,7 @@ fn entities() {
     html(
         concat!(
             "This is &amp;, &copy;, &trade;, \\&trade;, &xyz;, &NotEqualTilde;.\n",
-            "\n",
+                 "\n",
             "&#8734; &#x221e;\n"
         ),
         concat!(
@@ -293,26 +293,26 @@ fn pointy_brace() {
     html(
         concat!(
             "URI autolink: <https://www.pixiv.net>\n",
-            "\n",
-            "Email autolink: <bill@microsoft.com>\n",
-            "\n",
-            "* Inline <em>tag</em> **ha**.\n",
-            "* Inline <!-- comment --> **ha**.\n",
-            "* Inline <? processing instruction ?> **ha**.\n",
-            "* Inline <!DECLARATION OKAY> **ha**.\n",
+                 "\n",
+                 "Email autolink: <bill@microsoft.com>\n",
+                 "\n",
+                 "* Inline <em>tag</em> **ha**.\n",
+                 "* Inline <!-- comment --> **ha**.\n",
+                 "* Inline <? processing instruction ?> **ha**.\n",
+                 "* Inline <!DECLARATION OKAY> **ha**.\n",
             "* Inline <![CDATA[ok]ha **ha** ]]> **ha**.\n"
         ),
         concat!(
             "<p>URI autolink: <a \
                   href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
-            "<p>Email autolink: <a \
+                 "<p>Email autolink: <a \
                   href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
-            "<ul>\n",
-            "<li>Inline <em>tag</em> <strong>ha</strong>.</li>\n",
-            "<li>Inline <!-- comment --> <strong>ha</strong>.</li>\n",
-            "<li>Inline <? processing instruction ?> <strong>ha</strong>.</li>\n",
-            "<li>Inline <!DECLARATION OKAY> <strong>ha</strong>.</li>\n",
-            "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
+                 "<ul>\n",
+                 "<li>Inline <em>tag</em> <strong>ha</strong>.</li>\n",
+                 "<li>Inline <!-- comment --> <strong>ha</strong>.</li>\n",
+                 "<li>Inline <? processing instruction ?> <strong>ha</strong>.</li>\n",
+                 "<li>Inline <!DECLARATION OKAY> <strong>ha</strong>.</li>\n",
+                 "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
             "</ul>\n"
         ),
     );
@@ -323,7 +323,7 @@ fn links() {
     html(
         concat!(
             "Where are you [going](https://microsoft.com (today))?\n",
-            "\n",
+                 "\n",
             "[Where am I?](/here)\n"
         ),
         concat!(
@@ -350,8 +350,8 @@ fn reference_links() {
     html(
         concat!(
             "This [is] [legit], [very][honestly] legit.\n",
-            "\n",
-            "[legit]: ok\n",
+                 "\n",
+                 "[legit]: ok\n",
             "[honestly]: sure \"hm\"\n"
         ),
         concat!(
@@ -366,7 +366,7 @@ fn strikethrough() {
     html_opts(
         concat!(
             "This is ~strikethrough~.\n",
-            "\n",
+                      "\n",
             "As is ~~this, okay~~?\n"
         ),
         concat!(
@@ -383,16 +383,16 @@ fn table() {
         concat!("| a | b |\n", "|---|:-:|\n", "| c | d |\n"),
         concat!(
             "<table>\n",
-            "<thead>\n",
-            "<tr>\n",
-            "<th>a</th>\n",
-            "<th align=\"center\">b</th>\n",
-            "</tr>\n",
-            "</thead>\n",
-            "<tbody>\n",
-            "<tr>\n",
-            "<td>c</td>\n",
-            "<td align=\"center\">d</td>\n",
+                      "<thead>\n",
+                      "<tr>\n",
+                      "<th>a</th>\n",
+                      "<th align=\"center\">b</th>\n",
+                      "</tr>\n",
+                      "</thead>\n",
+                      "<tbody>\n",
+                      "<tr>\n",
+                      "<td>c</td>\n",
+                      "<td align=\"center\">d</td>\n",
             "</tr></tbody></table>\n"
         ),
         |opts| opts.ext_table = true,
@@ -450,15 +450,15 @@ fn tasklist() {
     html_opts(
         concat!(
             "* [ ] Red\n",
-            "* [x] Green\n",
-            "* [ ] Blue\n",
-            "<!-- end list -->\n",
-            "1. [ ] Bird\n",
-            "2. [ ] McHale\n",
-            "3. [x] Parish\n",
-            "<!-- end list -->\n",
-            "* [ ] Red\n",
-            "  * [x] Green\n",
+                      "* [x] Green\n",
+                      "* [ ] Blue\n",
+                      "<!-- end list -->\n",
+                      "1. [ ] Bird\n",
+                      "2. [ ] McHale\n",
+                      "3. [x] Parish\n",
+                      "<!-- end list -->\n",
+                      "* [ ] Red\n",
+                      "  * [x] Green\n",
             "    * [ ] Blue\n"
         ),
         concat!(
@@ -466,24 +466,24 @@ fn tasklist() {
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
-            "</ul>\n",
-            "<!-- end list -->\n",
-            "<ol>\n",
+                      "</ul>\n",
+                      "<!-- end list -->\n",
+                      "<ol>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Bird</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> McHale</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Parish</li>\n",
-            "</ol>\n",
-            "<!-- end list -->\n",
-            "<ul>\n",
+                      "</ol>\n",
+                      "<!-- end list -->\n",
+                      "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Red\n",
-            "<ul>\n",
+                      "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green\n",
-            "<ul>\n",
+                      "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
-            "</ul>\n",
-            "</li>\n",
-            "</ul>\n",
-            "</li>\n",
+                      "</ul>\n",
+                      "</li>\n",
+                      "</ul>\n",
+                      "</li>\n",
             "</ul>\n"
         ),
         |opts| opts.ext_tasklist = true,
@@ -537,4 +537,33 @@ fn header_ids() {
         ),
         |opts| opts.ext_header_ids = Some("user-content-".to_owned()),
     );
+}
+
+fn footnotes() {
+    html_opts(concat!("Here is a footnote reference,[^1] and another.[^longnote]\n",
+                      "\n",
+                      "This is an inline note.^[This is inline.]\n",
+                      "\n",
+                      "[^1]: Here is the footnote.\n",
+                      "\n",
+                      "[^longnote]: Here's one with multiple blocks.\n",
+                      "\n",
+                      "    Subsequent paragraphs are indented.\n"),
+              concat!("<p>Here is a footnote reference,<a class=\"footnote-ref\" href=\"#fn1\" id=\"fnref1\">[1]</a> and another.<a class=\"footnote-ref\" href=\"#fn2\" id=\"fnref2\">[2]</a></p>\n",
+                      "<p>This is an inline note.<a class=\"footnote-ref\" href=\"#fn3\" id=\"fnref3\">[3]</a>\n",
+                      "<section class=\"footnotes\">\n",
+                      "<ol>\n",
+                      "<li id=\"fn1\">\n",
+                      "<p>Here is the footnote. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
+                      "</li>\n",
+                      "<li id=\"fn2\">\n",
+                      "<p>Here's one with multiple blocks.</p>\n",
+                      "<p>Subsequent paragraphs are indented. <a href=\"#fnref2\" class=\"footnote-backref\">↩</a></p>\n",
+                      "</li>\n",
+                      "<li id=\"fn3\">\n",
+                      "<p>This is inline. <a href=\"#fnref3\" class=\"footnote-backref\">↩</a></p>\n",
+                      "</li>\n",
+                      "</ol>\n",
+                      "</section>\n"),
+              |opts| ()); //opts.ext_footnotes = true);
 }
