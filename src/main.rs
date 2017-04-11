@@ -25,7 +25,7 @@ fn main() {
     let matches = clap::App::new("comrak")
         .version(crate_version!())
         .author("Yuki Izumi <yuki@kivikakk.ee>")
-        .about("CommonMark parser based on cmark")
+        .about("CommonMark parser with GitHub Flavored Markdown extensions")
         .arg(clap::Arg::with_name("file")
             .value_name("FILE")
             .multiple(true)

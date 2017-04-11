@@ -5,15 +5,19 @@
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
+* [Usage](#usage)
+* [Extensions](#extensions)
+* [Legal](#legal)
+
 ## Usage
 
 A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.1.1
+comrak 0.1.2
 Yuki Izumi <yuki@kivikakk.ee>
-CommonMark parser based on cmark
+CommonMark parser with GitHub Flavored Markdown extensions
 
 USAGE:
     comrak [FLAGS] [OPTIONS] [--] [<FILE>]
@@ -25,7 +29,7 @@ FLAGS:
     -V, --version            Prints version information
 
 OPTIONS:
-    -e, --extension <EXTENSION>...    Specify an extension name to use [values: strikethrough, tagfilter, table, autolink]
+    -e, --extension <EXTENSION>...    Specify an extension name to use [values: strikethrough, tagfilter, table, autolink, superscript]
     -t, --to <FORMAT>                 Specify output format [default: html]  [values: html, commonmark]
         --width <WIDTH>               Specify wrap width (0 = nowrap) [default: 0]
 
@@ -86,6 +90,23 @@ assert_eq!(
      <li>Certainly your input.</li>\n\
      </ol>\n");
 ```
+
+## Extensions
+
+Comrak supports the five extensions to CommonMark defined in the
+[GitHub Flavored Markdown Spec](https://github.github.com/gfm/):
+
+* [Tables](https://github.github.com/gfm/#tables-extension-)
+* [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
+* [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
+* [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
+* [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+
+as well as superscript.
+
+By default none are enabled; they are individually enabled with each parse by
+setting the appropriate values in the
+[`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
 
 ## Legal
 

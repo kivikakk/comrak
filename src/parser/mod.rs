@@ -168,7 +168,12 @@ pub struct ComrakOptions {
     /// ```
     pub ext_autolink: bool,
 
-    /// Enables the tasklist Comrak extension.
+    /// Enables the
+    /// [task list items extension](https://github.github.com/gfm/#task-list-items-extension-)
+    /// from the GFM spec.
+    ///
+    /// Note that the spec does not define the precise output, so only the bare essentials are
+    /// rendered.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
