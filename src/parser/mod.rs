@@ -168,19 +168,19 @@ pub struct ComrakOptions {
     /// ```
     pub ext_autolink: bool,
 
-    /// Enables the tasklist Comrak extension
+    /// Enables the tasklist Comrak extension.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
     /// options.ext_tasklist = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
-    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" /> Done</li>\n<li><input \
-    ///            type=\"checkbox\" /> Not done</li>\n</ul>\n");
+    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" /> Done</li>\n\
+    ///            <li><input type=\"checkbox\" /> Not done</li>\n</ul>\n");
     /// ```
     pub ext_tasklist: bool,
 
-    /// Enables the superscript Comrak extension
+    /// Enables the superscript Comrak extension.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
