@@ -1,5 +1,6 @@
 mod table;
 mod autolink;
+mod inlines;
 
 use std::cell::RefCell;
 use std::cmp::min;
@@ -16,7 +17,6 @@ use nodes::{NodeValue, Ast, NodeCodeBlock, NodeHeading, NodeList, ListType, List
 use scanners;
 use strings;
 use entity;
-use inlines;
 use nodes;
 
 const TAB_STOP: usize = 4;
@@ -179,6 +179,17 @@ pub struct ComrakOptions {
     ///            type=\"checkbox\" /> Not done</li>\n</ul>\n");
     /// ```
     pub ext_tasklist: bool,
+
+    /// Enables the superscript Comrak extension
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_superscript = true;
+    /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
+    ///            "<p>e = mc<sup>2</sup>.</p>\n");
+    /// ```
+    pub ext_superscript: bool,
 }
 
 
@@ -1106,12 +1117,13 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         *text = text[end..].to_string();
-        let checkbox = inlines::make_inline(self.arena, NodeValue::HtmlInline(
-                (if active {
-                    "<input type=\"checkbox\" checked=\"\" />"
-                } else {
-                    "<input type=\"checkbox\" />"
-                }).to_string()));
+        let checkbox = inlines::make_inline(self.arena,
+                                            NodeValue::HtmlInline((if active {
+                                                    "<input type=\"checkbox\" checked=\"\" />"
+                                                } else {
+                                                    "<input type=\"checkbox\" />"
+                                                })
+                                                .to_string()));
         node.insert_before(checkbox);
     }
 
@@ -1300,4 +1312,10 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter &&
     list_data.bullet_char == item_data.bullet_char
+}
+
+#[derive(PartialEq)]
+pub enum AutolinkType {
+    URI,
+    Email,
 }

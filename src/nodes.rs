@@ -94,6 +94,9 @@ pub enum NodeValue {
     /// per the GFM spec.
     Strikethrough,
 
+    /// **Inline**.  Superscript.  Enabled with `ext_superscript` option.
+    Superscript,
+
     /// **Inline**.  A [link](https://github.github.com/gfm/#links) to some URL, with possible
     /// title.
     Link(NodeLink),

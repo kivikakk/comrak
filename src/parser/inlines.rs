@@ -5,7 +5,7 @@ use typed_arena::Arena;
 use arena_tree::Node;
 use nodes::{NodeValue, Ast, NodeLink, AstNode};
 use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, MAXBACKTICKS, Reference,
-             MAX_LINK_LABEL_LENGTH};
+             MAX_LINK_LABEL_LENGTH, AutolinkType};
 use scanners;
 use ctype::{isspace, ispunct};
 use entity;
@@ -102,6 +102,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             _ => {
                 if self.options.ext_strikethrough && c == '~' {
                     new_inl = Some(self.handle_delim('~' as u8));
+                } else if self.options.ext_superscript && c == '^' {
+                    new_inl = Some(self.handle_delim('^' as u8));
                 } else {
                     let endpos = self.find_special_char();
                     let mut contents = self.input[self.pos..endpos].to_string();
@@ -188,7 +190,9 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                 if self.delimiters[closer as usize].delim_char == '*' as u8 ||
                    self.delimiters[closer as usize].delim_char == '_' as u8 ||
                    (self.options.ext_strikethrough &&
-                    self.delimiters[closer as usize].delim_char == '~' as u8) {
+                    self.delimiters[closer as usize].delim_char == '~' as u8) ||
+                   (self.options.ext_superscript &&
+                    self.delimiters[closer as usize].delim_char == '^' as u8) {
                     if opener_found {
                         closer = self.insert_emph(opener, closer);
                     } else {
@@ -284,6 +288,9 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                 return n;
             }
             if self.options.ext_strikethrough && self.input.as_bytes()[n] == '~' as u8 {
+                return n;
+            }
+            if self.options.ext_superscript && self.input.as_bytes()[n] == '^' as u8 {
                 return n;
             }
         }
@@ -499,6 +506,9 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         let emph = make_inline(self.arena,
                                if self.options.ext_strikethrough && opener_char == '~' as u8 {
                                    NodeValue::Strikethrough
+                               } else if self.options.ext_superscript &&
+                                         opener_char == '^' as u8 {
+                                   NodeValue::Superscript
                                } else if use_delims == 1 {
                                    NodeValue::Emph
                                } else {
@@ -837,12 +847,6 @@ pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a A
         last_line_blank: false,
     };
     arena.alloc(Node::new(RefCell::new(ast)))
-}
-
-#[derive(PartialEq)]
-pub enum AutolinkType {
-    URI,
-    Email,
 }
 
 fn make_autolink<'a>(arena: &'a Arena<AstNode<'a>>,

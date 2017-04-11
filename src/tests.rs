@@ -366,3 +366,10 @@ fn tasklist() {
                       "</ul>\n"),
               |opts| opts.ext_tasklist = true);
 }
+
+#[test]
+fn superscript() {
+    html_opts(concat!("e = mc^2^.\n"),
+              concat!("<p>e = mc<sup>2</sup>.</p>\n"),
+              |opts| opts.ext_superscript = true);
+}
