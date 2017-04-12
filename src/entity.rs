@@ -87,9 +87,9 @@ fn lookup(text: &str) -> Option<&'static str> {
 }
 
 pub fn unescape_html(src: &str) -> String {
-    let mut i = 0;
-    let mut v = String::new();
     let size = src.len();
+    let mut i = 0;
+    let mut v = String::with_capacity(size);
 
     while i < size {
         let org = i;

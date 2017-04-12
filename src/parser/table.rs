@@ -145,7 +145,7 @@ fn row(string: &str) -> Option<Vec<String>> {
 }
 
 fn unescape_pipes(string: &str) -> String {
-    let mut v = String::new();
+    let mut v = String::with_capacity(string.len());
     let mut escaping = false;
 
     for c in string.chars() {
