@@ -26,7 +26,7 @@ pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
         return url_string;
     }
 
-    let mut buf = String::new();
+    let mut buf = String::with_capacity(url_string.len());
     if kind == AutolinkType::Email {
         buf += "mailto:";
     }
@@ -37,7 +37,7 @@ pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
 
 pub fn normalize_whitespace(v: &str) -> String {
     let mut last_char_was_space = false;
-    let mut r = String::new();
+    let mut r = String::with_capacity(v.len());
 
     for c in v.chars() {
         if (c as u32) < 0x80 && isspace(&(c as u8)) {
@@ -202,7 +202,7 @@ pub fn is_blank(s: &str) -> bool {
 
 pub fn normalize_reference_label(i: &str) -> String {
     let i = trim_slice(i);
-    let mut v = String::new();
+    let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
     for c in i.chars() {
         for e in c.to_lowercase() {
