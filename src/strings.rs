@@ -7,7 +7,7 @@ pub fn unescape(v: &mut String) {
     let mut sz = v.len();
 
     while r < sz {
-        if v.as_bytes()[r] == '\\' as u8 && r + 1 < sz && ispunct(&v.as_bytes()[r + 1]) {
+        if v.as_bytes()[r] == b'\\' && r + 1 < sz && ispunct(&v.as_bytes()[r + 1]) {
             v.remove(r);
             sz -= 1;
         }
@@ -22,7 +22,7 @@ pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
     let mut url_string = url.to_string();
     trim(&mut url_string);
 
-    if url_string.len() == 0 {
+    if url_string.is_empty() {
         return url_string;
     }
 
@@ -59,7 +59,7 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
     loop {
         let c = line.as_bytes()[i];
 
-        if c != ' ' as u8 && c != '\t' as u8 && !is_line_end_char(&c) {
+        if c != b' ' && c != b'\t' && !is_line_end_char(&c) {
             break;
         }
 
@@ -84,15 +84,15 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
 }
 
 pub fn is_line_end_char(ch: &u8) -> bool {
-    match ch {
-        &10 | &13 => true,
+    match *ch {
+        10 | 13 => true,
         _ => false,
     }
 }
 
 pub fn is_space_or_tab(ch: &u8) -> bool {
-    match ch {
-        &9 | &32 => true,
+    match *ch {
+        9 | 32 => true,
         _ => false,
     }
 }
@@ -103,7 +103,7 @@ pub fn chop_trailing_hashtags(line: &mut String) {
     let orig_n = line.len() - 1;
     let mut n = orig_n;
 
-    while line.as_bytes()[n] == '#' as u8 {
+    while line.as_bytes()[n] == b'#' {
         if n == 0 {
             return;
         }
@@ -158,7 +158,7 @@ pub fn clean_url(url: &str) -> String {
         return String::new();
     }
 
-    let mut b = if url.as_bytes()[0] == '<' as u8 && url.as_bytes()[url_len - 1] == '>' as u8 {
+    let mut b = if url.as_bytes()[0] == b'<' && url.as_bytes()[url_len - 1] == b'>' {
         entity::unescape_html(&url[1..url_len - 1])
     } else {
         entity::unescape_html(url)
@@ -177,9 +177,9 @@ pub fn clean_title(title: &str) -> String {
     let first = title.as_bytes()[0];
     let last = title.as_bytes()[title_len - 1];
 
-    let mut b = if (first == '\'' as u8 && last == '\'' as u8) ||
-                   (first == '(' as u8 && last == ')' as u8) ||
-                   (first == '"' as u8 && last == '"' as u8) {
+    let mut b = if (first == b'\'' && last == b'\'') ||
+                   (first == b'(' && last == b')') ||
+                   (first == b'"' && last == b'"') {
         entity::unescape_html(&title[1..title_len - 1])
     } else {
         entity::unescape_html(title)

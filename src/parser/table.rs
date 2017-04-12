@@ -8,9 +8,9 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                  container: &'a AstNode<'a>,
                                  line: &str)
                                  -> Option<(&'a AstNode<'a>, bool)> {
-    let aligns = match &container.data.borrow().value {
-        &NodeValue::Paragraph => None,
-        &NodeValue::Table(ref aligns) => Some(aligns.clone()),
+    let aligns = match container.data.borrow().value {
+        NodeValue::Paragraph => None,
+        NodeValue::Table(ref aligns) => Some(aligns.clone()),
         _ => return None,
     };
 
@@ -41,8 +41,8 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
     let mut alignments = vec![];
     for cell in marker_row {
-        let left = cell.len() > 0 && cell.as_bytes()[0] == ':' as u8;
-        let right = cell.len() > 0 && cell.as_bytes()[cell.len() - 1] == ':' as u8;
+        let left = !cell.is_empty() && cell.as_bytes()[0] == b':';
+        let right = !cell.is_empty() && cell.as_bytes()[cell.len() - 1] == b':';
         alignments.push(if left && right {
             TableAlignment::Center
         } else if left {
@@ -72,7 +72,7 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 
 pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
                                container: &'a AstNode<'a>,
-                               alignments: &Vec<TableAlignment>,
+                               alignments: &[TableAlignment],
                                line: &str)
                                -> Option<(&'a AstNode<'a>, bool)> {
     if parser.blank {
@@ -110,7 +110,7 @@ fn row(string: &str) -> Option<Vec<String>> {
     let mut v = vec![];
     let mut offset = 0;
 
-    if len > 0 && string.as_bytes()[0] == '|' as u8 {
+    if len > 0 && string.as_bytes()[0] == b'|' {
         offset += 1;
     }
 
@@ -137,7 +137,7 @@ fn row(string: &str) -> Option<Vec<String>> {
         }
     }
 
-    if offset != len || v.len() == 0 {
+    if offset != len || v.is_empty() {
         None
     } else {
         Some(v)
