@@ -16,21 +16,21 @@ pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
         let mut post_org = None;
 
         while i < len {
-            match contents.as_bytes()[i] as char {
-                ':' => {
-                    post_org = url_match(arena, &contents, i);
+            match contents.as_bytes()[i] {
+                b':' => {
+                    post_org = url_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
                 }
-                'w' => {
-                    post_org = www_match(arena, &contents, i);
+                b'w' => {
+                    post_org = www_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
                 }
-                '@' => {
-                    post_org = email_match(arena, &contents, i);
+                b'@' => {
+                    post_org = email_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
@@ -40,19 +40,16 @@ pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
             i += 1;
         }
 
-        match post_org {
-            Some((post, reverse, skip)) => {
-                i -= reverse;
-                node.insert_after(post);
-                if i + skip < len {
-                    let remain = contents[i + skip..].to_string();
-                    assert!(remain.len() > 0);
-                    post.insert_after(make_inline(arena, NodeValue::Text(remain)));
-                }
-                contents.truncate(i);
-                return;
+        if let Some((post, reverse, skip)) = post_org {
+            i -= reverse;
+            node.insert_after(post);
+            if i + skip < len {
+                let remain = contents[i + skip..].to_string();
+                assert!(remain.len() > 0);
+                post.insert_after(make_inline(arena, NodeValue::Text(remain)));
             }
-            None => (),
+            contents.truncate(i);
+            return;
         }
     }
 }
@@ -63,7 +60,7 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
                  -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref WWW_DELIMS: BTreeSet<u8> = BTreeSet::from_iter(
-            vec!['*' as u8, '_' as u8, '~' as u8, '(' as u8, '[' as u8]);
+            vec![b'*', b'_', b'~', b'(', b'[']);
     }
 
     if i > 0 && !isspace(&contents.as_bytes()[i - 1]) &&
@@ -128,18 +125,18 @@ fn check_domain(data: &str) -> Option<usize> {
 }
 
 fn is_valid_hostchar(ch: char) -> bool {
-    return !ch.is_whitespace() && !ch.is_punctuation();
+    !ch.is_whitespace() && !ch.is_punctuation()
 }
 
 fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     lazy_static! {
         static ref LINK_END_ASSORTMENT: BTreeSet<u8> = BTreeSet::from_iter(
-            vec!['?' as u8, '!' as u8, '.' as u8, ',' as u8, ':' as u8, '*' as u8,
-            '_' as u8, '~' as u8, '\'' as u8, '"' as u8]);
+            vec![b'?', b'!', b'.', b',', b':', b'*',
+            b'_', b'~', b'\'', b'"']);
     }
 
     for i in 0..link_end {
-        if data.as_bytes()[i] == '<' as u8 {
+        if data.as_bytes()[i] == b'<' {
             link_end = i;
             break;
         }
@@ -148,22 +145,22 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     while link_end > 0 {
         let cclose = data.as_bytes()[link_end - 1];
 
-        let copen = if cclose == ')' as u8 {
-            Some('(' as u8)
+        let copen = if cclose == b')' {
+            Some(b'(')
         } else {
             None
         };
 
         if LINK_END_ASSORTMENT.contains(&cclose) {
             link_end -= 1;
-        } else if cclose == ';' as u8 {
+        } else if cclose == b';' {
             let mut new_end = link_end - 2;
 
             while new_end > 0 && isalpha(&data.as_bytes()[new_end]) {
                 new_end -= 1;
             }
 
-            if new_end < link_end - 2 && data.as_bytes()[new_end] == '&' as u8 {
+            if new_end < link_end - 2 && data.as_bytes()[new_end] == b'&' {
                 link_end = new_end;
             } else {
                 link_end -= 1;
@@ -203,8 +200,8 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let size = contents.len();
 
-    if size - i < 4 || contents.as_bytes()[i + 1] != '/' as u8 ||
-       contents.as_bytes()[i + 2] != '/' as u8 {
+    if size - i < 4 || contents.as_bytes()[i + 1] != b'/' ||
+       contents.as_bytes()[i + 2] != b'/' {
         return None;
     }
 
@@ -246,7 +243,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
                    -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref EMAIL_OK_SET: BTreeSet<u8> = BTreeSet::from_iter(
-            vec!['.' as u8, '+' as u8, '-' as u8, '_' as u8]);
+            vec![b'.', b'+', b'-', b'_']);
     }
 
     let size = contents.len();
@@ -262,7 +259,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
             continue;
         }
 
-        if c == '/' as u8 {
+        if c == b'/' {
             ns += 1;
         }
 
@@ -282,11 +279,11 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
         if isalnum(&c) {
             // empty
-        } else if c == '@' as u8 {
+        } else if c == b'@' {
             nb += 1;
-        } else if c == '.' as u8 && link_end < size - i - 1 {
+        } else if c == b'.' && link_end < size - i - 1 {
             np += 1;
-        } else if c != '-' as u8 && c != '_' as u8 {
+        } else if c != b'-' && c != b'_' {
             break;
         }
 
@@ -295,7 +292,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     if link_end < 2 || nb != 1 || np == 0 ||
        (!isalpha(&contents.as_bytes()[i + link_end - 1]) &&
-        contents.as_bytes()[i + link_end - 1] != '.' as u8) {
+        contents.as_bytes()[i + link_end - 1] != b'.') {
         return None;
     }
 

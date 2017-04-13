@@ -80,7 +80,7 @@ fn main() {
         ext_superscript: exts.remove("superscript"),
     };
 
-    assert!(exts.len() == 0);
+    assert!(exts.is_empty());
 
     let mut buf = vec![];
 

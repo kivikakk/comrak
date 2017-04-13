@@ -45,21 +45,21 @@ lazy_static! {
 }
 
 fn tagfilter(literal: &str) -> bool {
-    if literal.len() < 3 || literal.as_bytes()[0] != '<' as u8 {
+    if literal.len() < 3 || literal.as_bytes()[0] != b'<' {
         return false;
     }
 
     let mut i = 1;
-    if literal.as_bytes()[i] == '/' as u8 {
+    if literal.as_bytes()[i] == b'/' {
         i += 1;
     }
 
     for t in TAGFILTER_BLACKLIST.iter() {
         let j = i + t.len();
         if j < literal.len() && &&literal[i..j] == t {
-            return isspace(&literal.as_bytes()[j]) || literal.as_bytes()[j] == '>' as u8 ||
-                   (literal.as_bytes()[j] == '/' as u8 && literal.len() >= j + 2 &&
-                    literal.as_bytes()[j + 1] == '>' as u8);
+            return isspace(&literal.as_bytes()[j]) || literal.as_bytes()[j] == b'>' ||
+                   (literal.as_bytes()[j] == b'/' && literal.len() >= j + 2 &&
+                    literal.as_bytes()[j + 1] == b'>');
         }
     }
 
@@ -91,21 +91,21 @@ impl<'o> HtmlFormatter<'o> {
 
     fn cr(&mut self) {
         let l = self.v.len();
-        if l > 0 && self.v[l - 1] != '\n' as u8 {
-            self.v.push('\n' as u8);
+        if l > 0 && self.v[l - 1] != b'\n' {
+            self.v.push(b'\n');
         }
     }
 
     fn escape(&mut self, buffer: &str) {
         lazy_static! {
             static ref ESCAPE_TABLE: BTreeMap<u8, &'static str> = BTreeMap::from_iter(
-                vec![('"' as u8, "&quot;"),
-                     ('&' as u8, "&amp;"),
+                vec![(b'"', "&quot;"),
+                     (b'&', "&amp;"),
                      // Secure mode only:
                      // ('\'', "&#39;"),
                      // ('/', "&#47;"),
-                     ('<' as u8, "&lt;"),
-                     ('>' as u8, "&gt;"),
+                     (b'<', "&lt;"),
+                     (b'>', "&gt;"),
             ]);
         }
 
@@ -158,12 +158,12 @@ impl<'o> HtmlFormatter<'o> {
 
     fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) {
         if plain {
-            match &node.data.borrow().value {
-                &NodeValue::Text(ref literal) |
-                &NodeValue::Code(ref literal) |
-                &NodeValue::HtmlInline(ref literal) => self.escape(literal),
-                &NodeValue::LineBreak |
-                &NodeValue::SoftBreak => self.v.push(' ' as u8),
+            match node.data.borrow().value {
+                NodeValue::Text(ref literal) |
+                NodeValue::Code(ref literal) |
+                NodeValue::HtmlInline(ref literal) => self.escape(literal),
+                NodeValue::LineBreak |
+                NodeValue::SoftBreak => self.v.push(b' '),
                 _ => (),
             }
             self.format_children(node, true);
@@ -175,9 +175,9 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> bool {
-        match &node.data.borrow().value {
-            &NodeValue::Document => (),
-            &NodeValue::BlockQuote => {
+        match node.data.borrow().value {
+            NodeValue::Document => (),
+            NodeValue::BlockQuote => {
                 if entering {
                     self.cr();
                     write!(self, "<blockquote>\n").unwrap();
@@ -186,7 +186,7 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</blockquote>\n").unwrap();
                 }
             }
-            &NodeValue::List(ref nl) => {
+            NodeValue::List(ref nl) => {
                 if entering {
                     self.cr();
                     if nl.list_type == ListType::Bullet {
@@ -196,15 +196,13 @@ impl<'o> HtmlFormatter<'o> {
                     } else {
                         write!(self, "<ol start=\"{}\">\n", nl.start).unwrap();
                     }
+                } else if nl.list_type == ListType::Bullet {
+                    write!(self, "</ul>\n").unwrap();
                 } else {
-                    if nl.list_type == ListType::Bullet {
-                        write!(self, "</ul>\n").unwrap();
-                    } else {
-                        write!(self, "</ol>\n").unwrap();
-                    }
+                    write!(self, "</ol>\n").unwrap();
                 }
             }
-            &NodeValue::Item(..) => {
+            NodeValue::Item(..) => {
                 if entering {
                     self.cr();
                     write!(self, "<li>").unwrap();
@@ -212,7 +210,7 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</li>\n").unwrap();
                 }
             }
-            &NodeValue::Heading(ref nch) => {
+            NodeValue::Heading(ref nch) => {
                 if entering {
                     self.cr();
                     write!(self, "<h{}>", nch.level).unwrap();
@@ -220,11 +218,11 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</h{}>\n", nch.level).unwrap();
                 }
             }
-            &NodeValue::CodeBlock(ref ncb) => {
+            NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     self.cr();
 
-                    if ncb.info.len() == 0 {
+                    if ncb.info.is_empty() {
                         write!(self, "<pre><code>").unwrap();
                     } else {
                         let mut first_tag = 0;
@@ -247,7 +245,7 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</code></pre>\n").unwrap();
                 }
             }
-            &NodeValue::HtmlBlock(ref nhb) => {
+            NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr();
                     if self.options.ext_tagfilter {
@@ -258,17 +256,17 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr();
                 }
             }
-            &NodeValue::ThematicBreak => {
+            NodeValue::ThematicBreak => {
                 if entering {
                     self.cr();
                     write!(self, "<hr />\n").unwrap();
                 }
             }
-            &NodeValue::Paragraph => {
+            NodeValue::Paragraph => {
                 let tight = match node.parent()
-                    .and_then(|ref n| n.parent())
-                    .map(|ref n| n.data.borrow().value.clone()) {
-                    Some(NodeValue::List(ref nl)) => nl.tight,
+                    .and_then(|n| n.parent())
+                    .map(|n| n.data.borrow().value.clone()) {
+                    Some(NodeValue::List(nl)) => nl.tight,
                     _ => false,
                 };
 
@@ -277,23 +275,21 @@ impl<'o> HtmlFormatter<'o> {
                         self.cr();
                         write!(self, "<p>").unwrap();
                     }
-                } else {
-                    if !tight {
-                        write!(self, "</p>\n").unwrap();
-                    }
+                } else if !tight {
+                    write!(self, "</p>\n").unwrap();
                 }
             }
-            &NodeValue::Text(ref literal) => {
+            NodeValue::Text(ref literal) => {
                 if entering {
                     self.escape(literal);
                 }
             }
-            &NodeValue::LineBreak => {
+            NodeValue::LineBreak => {
                 if entering {
                     write!(self, "<br />\n").unwrap();
                 }
             }
-            &NodeValue::SoftBreak => {
+            NodeValue::SoftBreak => {
                 if entering {
                     if self.options.hardbreaks {
                         write!(self, "<br />\n").unwrap();
@@ -302,14 +298,14 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
             }
-            &NodeValue::Code(ref literal) => {
+            NodeValue::Code(ref literal) => {
                 if entering {
                     write!(self, "<code>").unwrap();
                     self.escape(literal);
                     write!(self, "</code>").unwrap();
                 }
             }
-            &NodeValue::HtmlInline(ref literal) => {
+            NodeValue::HtmlInline(ref literal) => {
                 if entering {
                     if self.options.ext_tagfilter && tagfilter(literal) {
                         write!(self, "&lt;{}", &literal[1..]).unwrap();
@@ -318,39 +314,39 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
             }
-            &NodeValue::Strong => {
+            NodeValue::Strong => {
                 if entering {
                     write!(self, "<strong>").unwrap();
                 } else {
                     write!(self, "</strong>").unwrap();
                 }
             }
-            &NodeValue::Emph => {
+            NodeValue::Emph => {
                 if entering {
                     write!(self, "<em>").unwrap();
                 } else {
                     write!(self, "</em>").unwrap();
                 }
             }
-            &NodeValue::Strikethrough => {
+            NodeValue::Strikethrough => {
                 if entering {
                     write!(self, "<del>").unwrap();
                 } else {
                     write!(self, "</del>").unwrap();
                 }
             }
-            &NodeValue::Superscript => {
+            NodeValue::Superscript => {
                 if entering {
                     write!(self, "<sup>").unwrap();
                 } else {
                     write!(self, "</sup>").unwrap();
                 }
             }
-            &NodeValue::Link(ref nl) => {
+            NodeValue::Link(ref nl) => {
                 if entering {
                     write!(self, "<a href=\"").unwrap();
                     self.escape_href(&nl.url);
-                    if nl.title.len() > 0 {
+                    if !nl.title.is_empty() {
                         write!(self, "\" title=\"").unwrap();
                         self.escape(&nl.title);
                     }
@@ -359,21 +355,21 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</a>").unwrap();
                 }
             }
-            &NodeValue::Image(ref nl) => {
+            NodeValue::Image(ref nl) => {
                 if entering {
                     write!(self, "<img src=\"").unwrap();
                     self.escape_href(&nl.url);
                     write!(self, "\" alt=\"").unwrap();
                     return true;
                 } else {
-                    if nl.title.len() > 0 {
+                    if !nl.title.is_empty() {
                         write!(self, "\" title=\"").unwrap();
                         self.escape(&nl.title);
                     }
                     write!(self, "\" />").unwrap();
                 }
             }
-            &NodeValue::Table(..) => {
+            NodeValue::Table(..) => {
                 if entering {
                     self.cr();
                     write!(self, "<table>\n").unwrap();
@@ -384,7 +380,7 @@ impl<'o> HtmlFormatter<'o> {
                     write!(self, "</table>\n").unwrap();
                 }
             }
-            &NodeValue::TableRow(header) => {
+            NodeValue::TableRow(header) => {
                 if entering {
                     self.cr();
                     if header {
@@ -403,16 +399,16 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
             }
-            &NodeValue::TableCell => {
-                let ref row = node.parent().unwrap().data.borrow().value;
-                let in_header = match row {
-                    &NodeValue::TableRow(header) => header,
+            NodeValue::TableCell => {
+                let row = &node.parent().unwrap().data.borrow().value;
+                let in_header = match *row {
+                    NodeValue::TableRow(header) => header,
                     _ => panic!(),
                 };
 
-                let ref table = node.parent().unwrap().parent().unwrap().data.borrow().value;
-                let alignments = match table {
-                    &NodeValue::Table(ref alignments) => alignments,
+                let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                let alignments = match *table {
+                    NodeValue::Table(ref alignments) => alignments,
                     _ => panic!(),
                 };
 
@@ -439,12 +435,10 @@ impl<'o> HtmlFormatter<'o> {
                     }
 
                     write!(self, ">").unwrap();
+                } else if in_header {
+                    write!(self, "</th>").unwrap();
                 } else {
-                    if in_header {
-                        write!(self, "</th>").unwrap();
-                    } else {
-                        write!(self, "</td>").unwrap();
-                    }
+                    write!(self, "</td>").unwrap();
                 }
             }
         }

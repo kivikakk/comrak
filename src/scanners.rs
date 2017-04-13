@@ -155,7 +155,7 @@ pub fn setext_heading_line(line: &str) -> Option<SetextChar> {
     }
 
     if is_match(&RE, line) {
-        if line.as_bytes()[0] == '=' as u8 {
+        if line.as_bytes()[0] == b'=' {
             Some(SetextChar::Equals)
         } else {
             Some(SetextChar::Hyphen)

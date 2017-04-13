@@ -230,12 +230,12 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     pub fn feed(&mut self, mut buffer: &str, eof: bool) {
-        if self.last_buffer_ended_with_cr && buffer.as_bytes()[0] == '\n' as u8 {
+        if self.last_buffer_ended_with_cr && buffer.as_bytes()[0] == b'\n' {
             buffer = &buffer[1..];
         }
         self.last_buffer_ended_with_cr = false;
 
-        while buffer.len() > 0 {
+        while !buffer.is_empty() {
             let mut process = false;
             let mut eol = 0;
             while eol < buffer.len() {
@@ -254,31 +254,29 @@ impl<'a, 'o> Parser<'a, 'o> {
             }
 
             if process {
-                if self.linebuf.len() > 0 {
+                if !self.linebuf.is_empty() {
                     self.linebuf += &buffer[0..eol];
                     let linebuf = mem::replace(&mut self.linebuf, String::new());
                     self.process_line(&linebuf);
                 } else {
                     self.process_line(&buffer[0..eol]);
                 }
+            } else if eol < buffer.len() && buffer.as_bytes()[eol] == b'\0' {
+                self.linebuf += &buffer[0..eol];
+                self.linebuf.push('\u{fffd}');
+                eol += 1;
             } else {
-                if eol < buffer.len() && buffer.as_bytes()[eol] == '\0' as u8 {
-                    self.linebuf += &buffer[0..eol];
-                    self.linebuf.push('\u{fffd}');
-                    eol += 1;
-                } else {
-                    self.linebuf += &buffer[0..eol];
-                }
+                self.linebuf += &buffer[0..eol];
             }
 
             buffer = &buffer[eol..];
-            if buffer.len() > 0 && buffer.as_bytes()[0] == '\r' as u8 {
+            if !buffer.is_empty() && buffer.as_bytes()[0] == b'\r' {
                 buffer = &buffer[1..];
-                if buffer.len() == 0 {
+                if buffer.is_empty() {
                     self.last_buffer_ended_with_cr = true;
                 }
             }
-            if buffer.len() > 0 && buffer.as_bytes()[0] == '\n' as u8 {
+            if !buffer.is_empty() && buffer.as_bytes()[0] == b'\n' {
                 buffer = &buffer[1..];
             }
         }
@@ -318,7 +316,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn process_line(&mut self, buffer: &str) {
         let mut line: String = buffer.into();
-        if line.len() == 0 || !strings::is_line_end_char(&line.as_bytes().last().unwrap()) {
+        if line.is_empty() || !strings::is_line_end_char(line.as_bytes().last().unwrap()) {
             line.push('\n');
         }
 
@@ -345,10 +343,10 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         self.last_line_length = line.len();
-        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == '\n' as u8 {
+        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == b'\n' {
             self.last_line_length -= 1;
         }
-        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == '\r' as u8 {
+        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == b'\r' {
             self.last_line_length -= 1;
         }
     }
@@ -436,20 +434,20 @@ impl<'a, 'o> Parser<'a, 'o> {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = match &self.current.data.borrow().value {
-            &NodeValue::Paragraph => true,
+        let mut maybe_lazy = match self.current.data.borrow().value {
+            NodeValue::Paragraph => true,
             _ => false,
         };
 
-        while match &container.data.borrow().value {
-            &NodeValue::CodeBlock(..) |
-            &NodeValue::HtmlBlock(..) => false,
+        while match container.data.borrow().value {
+            NodeValue::CodeBlock(..) |
+            NodeValue::HtmlBlock(..) => false,
             _ => true,
         } {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if !indented && line.as_bytes()[self.first_nonspace] == '>' as u8 {
+            if !indented && line.as_bytes()[self.first_nonspace] == b'>' {
                 let blockquote_startpos = self.first_nonspace;
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
@@ -469,10 +467,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                                             heading_startpos + 1);
 
                 let mut hashpos =
-                    line[self.first_nonspace..].bytes().position(|c| c == '#' as u8).unwrap() +
+                    line[self.first_nonspace..].bytes().position(|c| c == b'#').unwrap() +
                     self.first_nonspace;
                 let mut level = 0;
-                while line.as_bytes()[hashpos] == '#' as u8 {
+                while line.as_bytes()[hashpos] == b'#' {
                     level += 1;
                     hashpos += 1;
                 }
@@ -501,8 +499,8 @@ impl<'a, 'o> Parser<'a, 'o> {
             } else if !indented &&
                       (unwrap_into(scanners::html_block_start(&line[self.first_nonspace..]),
                                    &mut matched) ||
-                       match &container.data.borrow().value {
-                &NodeValue::Paragraph => false,
+                       match container.data.borrow().value {
+                NodeValue::Paragraph => false,
                 _ => {
                     unwrap_into(scanners::html_block_start_7(&line[self.first_nonspace..]),
                                 &mut matched)
@@ -515,9 +513,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                 };
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb), offset);
-            } else if !indented &&
-                      match &container.data.borrow().value {
-                &NodeValue::Paragraph => {
+            } else if !indented && match container.data.borrow().value {
+                NodeValue::Paragraph => {
                     unwrap_into(scanners::setext_heading_line(&line[self.first_nonspace..]),
                                 &mut sc)
                 }
@@ -532,8 +529,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 });
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
-            } else if !indented &&
-                      match (&container.data.borrow().value, all_matched) {
+            } else if !indented && match (&container.data.borrow().value, all_matched) {
                 (&NodeValue::Paragraph, false) => false,
                 _ => {
                     unwrap_into(scanners::thematic_break(&line[self.first_nonspace..]),
@@ -545,14 +541,14 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
             } else if (!indented ||
-                       match &container.data.borrow().value {
-                &NodeValue::List(..) => true,
+                       match container.data.borrow().value {
+                NodeValue::List(..) => true,
                 _ => false,
             }) &&
                       unwrap_into_2(parse_list_marker(line,
                                                       self.first_nonspace,
-                                                      match &container.data.borrow().value {
-                                                          &NodeValue::Paragraph => true,
+                                                      match container.data.borrow().value {
+                                                          NodeValue::Paragraph => true,
                                                           _ => false,
                                                       }),
                                     &mut matched,
@@ -583,8 +579,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                 nl.marker_offset = self.indent;
 
                 let offset = self.first_nonspace + 1;
-                if match &container.data.borrow().value {
-                    &NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
+                if match container.data.borrow().value {
+                    NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
                     _ => true,
                 } {
                     *container = self.add_child(*container, NodeValue::List(nl), offset);
@@ -605,11 +601,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
             } else {
-                let mut new_container = None;
-
-                if !indented && self.options.ext_table {
-                    new_container = table::try_opening_block(self, *container, line);
-                }
+                let new_container = if !indented && self.options.ext_table {
+                    table::try_opening_block(self, *container, line)
+                } else {
+                    None
+                };
 
                 match new_container {
                     Some((new_container, replace)) => {
@@ -663,7 +659,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_block_quote_prefix(&mut self, line: &mut String) -> bool {
         let indent = self.indent;
-        if indent <= 3 && line.as_bytes()[self.first_nonspace] == '>' as u8 {
+        if indent <= 3 && line.as_bytes()[self.first_nonspace] == b'>' {
             self.advance_offset(line, indent + 1, true);
 
             if strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
@@ -778,12 +774,12 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         container.data.borrow_mut().last_line_blank = self.blank &&
-                                                      match &container.data.borrow().value {
-            &NodeValue::BlockQuote |
-            &NodeValue::Heading(..) |
-            &NodeValue::ThematicBreak => false,
-            &NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
-            &NodeValue::Item(..) => {
+                                                      match container.data.borrow().value {
+            NodeValue::BlockQuote |
+            NodeValue::Heading(..) |
+            NodeValue::ThematicBreak => false,
+            NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
+            NodeValue::Item(..) => {
                 container.first_child().is_some() ||
                 container.data.borrow().start_line != self.line_number
             }
@@ -798,8 +794,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         if !self.current.same_node(last_matched_container) &&
            container.same_node(last_matched_container) && !self.blank &&
-           match &self.current.data.borrow().value {
-            &NodeValue::Paragraph => true,
+           match self.current.data.borrow().value {
+            NodeValue::Paragraph => true,
             _ => false,
         } {
             self.add_line(self.current, line);
@@ -808,17 +804,17 @@ impl<'a, 'o> Parser<'a, 'o> {
                 self.current = self.finalize(self.current).unwrap();
             }
 
-            let add_text_result = match &container.data.borrow().value {
-                &NodeValue::CodeBlock(..) => AddTextResult::CodeBlock,
-                &NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
+            let add_text_result = match container.data.borrow().value {
+                NodeValue::CodeBlock(..) => AddTextResult::CodeBlock,
+                NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 _ => AddTextResult::Otherwise,
             };
 
-            match &add_text_result {
-                &AddTextResult::CodeBlock => {
+            match add_text_result {
+                AddTextResult::CodeBlock => {
                     self.add_line(container, line);
                 }
-                &AddTextResult::HtmlBlock(block_type) => {
+                AddTextResult::HtmlBlock(block_type) => {
                     self.add_line(container, line);
 
                     let matches_end_condition = match block_type {
@@ -838,13 +834,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().value.accepts_lines() {
-                        match &container.data.borrow().value {
-                            &NodeValue::Heading(ref nh) => {
-                                if !nh.setext {
-                                    strings::chop_trailing_hashtags(line);
-                                }
+                        if let NodeValue::Heading(ref nh) = container.data.borrow().value {
+                            if !nh.setext {
+                                strings::chop_trailing_hashtags(line);
                             }
-                            _ => (),
                         };
                         let count = self.first_nonspace - self.offset;
                         self.advance_offset(line, count, false);
@@ -879,7 +872,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     pub fn finish(&mut self) -> &'a AstNode<'a> {
-        if self.linebuf.len() > 0 {
+        if !self.linebuf.is_empty() {
             let linebuf = mem::replace(&mut self.linebuf, String::new());
             self.process_line(&linebuf);
         }
@@ -909,21 +902,21 @@ impl<'a, 'o> Parser<'a, 'o> {
         assert!(ast.open);
         ast.open = false;
 
-        if self.linebuf.len() == 0 {
+        if !self.linebuf.is_empty() {
             ast.end_line = self.line_number;
             ast.end_column = self.last_line_length;
-        } else if match &ast.value {
-            &NodeValue::Document => true,
-            &NodeValue::CodeBlock(ref ncb) => ncb.fenced,
-            &NodeValue::Heading(ref nh) => nh.setext,
+        } else if match ast.value {
+            NodeValue::Document => true,
+            NodeValue::CodeBlock(ref ncb) => ncb.fenced,
+            NodeValue::Heading(ref nh) => nh.setext,
             _ => false,
         } {
             ast.end_line = self.line_number;
             ast.end_column = self.linebuf.len();
-            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == '\n' as u8 {
+            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == b'\n' {
                 ast.end_column -= 1;
             }
-            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == '\r' as u8 {
+            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == b'\r' {
                 ast.end_column -= 1;
             }
         } else {
@@ -936,9 +929,9 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         let parent = node.parent();
 
-        match &mut ast.value {
-            &mut NodeValue::Paragraph => {
-                while content.len() > 0 && content.as_bytes()[0] == '[' as u8 &&
+        match ast.value {
+             NodeValue::Paragraph => {
+                while !content.is_empty() && content.as_bytes()[0] == b'[' &&
                       unwrap_into(self.parse_reference_inline(content), &mut pos) {
                     while pos > 0 {
                         pos -= content.remove(0).len_utf8();
@@ -948,7 +941,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     node.detach();
                 }
             }
-            &mut NodeValue::CodeBlock(ref mut ncb) => {
+            NodeValue::CodeBlock(ref mut ncb) => {
                 if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
@@ -967,10 +960,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                     strings::unescape(&mut tmp);
                     ncb.info = tmp;
 
-                    if content.as_bytes()[pos] == '\r' as u8 {
+                    if content.as_bytes()[pos] == b'\r' {
                         pos += 1;
                     }
-                    if content.as_bytes()[pos] == '\n' as u8 {
+                    if content.as_bytes()[pos] == b'\n' {
                         pos += 1;
                     }
 
@@ -981,11 +974,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 mem::swap(&mut ncb.literal, content);
                 content.clear();
             }
-            &mut NodeValue::HtmlBlock(ref mut nhb) => {
+            NodeValue::HtmlBlock(ref mut nhb) => {
                 mem::swap(&mut nhb.literal, content);
                 content.clear();
             }
-            &mut NodeValue::List(ref mut nl) => {
+            NodeValue::List(ref mut nl) => {
                 nl.tight = true;
                 let mut ch = node.first_child();
 
@@ -1053,8 +1046,8 @@ impl<'a, 'o> Parser<'a, 'o> {
         while let Some(n) = nch {
             let mut this_bracket = false;
             loop {
-                match &mut n.data.borrow_mut().value {
-                    &mut NodeValue::Text(ref mut root) => {
+                match n.data.borrow_mut().value {
+                    NodeValue::Text(ref mut root) => {
                         let ns = match n.next_sibling() {
                             Some(ns) => ns,
                             _ => {
@@ -1063,16 +1056,16 @@ impl<'a, 'o> Parser<'a, 'o> {
                             }
                         };
 
-                        match &ns.data.borrow().value {
-                            &NodeValue::Text(ref adj) => {
+                        match ns.data.borrow().value {
+                            NodeValue::Text(ref adj) => {
                                 *root += adj;
                                 ns.detach();
                             }
                             _ => break,
                         }
                     }
-                    &mut NodeValue::Link(..) |
-                    &mut NodeValue::Image(..) => {
+                    NodeValue::Link(..) |
+                    NodeValue::Image(..) => {
                         this_bracket = true;
                         break;
                     }
@@ -1114,13 +1107,13 @@ impl<'a, 'o> Parser<'a, 'o> {
             return;
         }
 
-        match &parent.data.borrow().value {
-            &NodeValue::Paragraph => (),
+        match parent.data.borrow().value {
+            NodeValue::Paragraph => (),
             _ => return,
         }
 
-        match &parent.parent().unwrap().data.borrow().value {
-            &NodeValue::Item(..) => (),
+        match parent.parent().unwrap().data.borrow().value {
+            NodeValue::Item(..) => (),
             _ => return,
         }
 
@@ -1139,12 +1132,12 @@ impl<'a, 'o> Parser<'a, 'o> {
         let mut subj = inlines::Subject::new(self.arena, self.options, content, &mut self.refmap);
 
         let mut lab = match subj.link_label() {
-                Some(lab) => if lab.len() == 0 { return None } else { lab },
+                Some(lab) => if lab.is_empty() { return None } else { lab },
                 None => return None,
             }
             .to_string();
 
-        if subj.peek_char() != Some(&(':' as u8)) {
+        if subj.peek_char() != Some(&(b':')) {
             return None;
         }
 
@@ -1173,7 +1166,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         subj.skip_spaces();
         if !subj.skip_line_end() {
-            if title.len() > 0 {
+            if !title.is_empty() {
                 subj.pos = beforetitle;
                 subj.skip_spaces();
                 if !subj.skip_line_end() {
@@ -1185,7 +1178,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         lab = strings::normalize_reference_label(&lab);
-        if lab.len() > 0 {
+        if !lab.is_empty() {
             subj.refmap.entry(lab).or_insert(Reference {
                 url: strings::clean_url(&url),
                 title: strings::clean_title(&title),
@@ -1208,7 +1201,7 @@ fn parse_list_marker(line: &mut String,
     let mut c = line.as_bytes()[pos];
     let startpos = pos;
 
-    if c == '*' as u8 || c == '-' as u8 || c == '+' as u8 {
+    if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
         if !isspace(&line.as_bytes()[pos]) {
             return None;
@@ -1219,7 +1212,7 @@ fn parse_list_marker(line: &mut String,
             while strings::is_space_or_tab(&line.as_bytes()[i]) {
                 i += 1;
             }
-            if line.as_bytes()[i] == '\n' as u8 {
+            if line.as_bytes()[i] == b'\n' {
                 return None;
             }
         }
@@ -1239,7 +1232,7 @@ fn parse_list_marker(line: &mut String,
         let mut digits = 0;
 
         loop {
-            start = (10 * start) + (line.as_bytes()[pos] - '0' as u8) as usize;
+            start = (10 * start) + (line.as_bytes()[pos] - b'0') as usize;
             pos += 1;
             digits += 1;
 
@@ -1253,7 +1246,7 @@ fn parse_list_marker(line: &mut String,
         }
 
         c = line.as_bytes()[pos];
-        if c != '.' as u8 && c != ')' as u8 {
+        if c != b'.' && c != b')' {
             return None;
         }
 
@@ -1279,7 +1272,7 @@ fn parse_list_marker(line: &mut String,
                          marker_offset: 0,
                          padding: 0,
                          start: start,
-                         delimiter: if c == '.' as u8 {
+                         delimiter: if c == b'.' {
                              ListDelimType::Period
                          } else {
                              ListDelimType::Paren
@@ -1328,7 +1321,7 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.bullet_char == item_data.bullet_char
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AutolinkType {
     URI,
     Email,

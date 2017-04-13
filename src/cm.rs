@@ -12,8 +12,8 @@ use std::io::Write;
 pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
-    if f.v.len() > 0 && f.v[f.v.len() - 1] != '\n' as u8 {
-        f.v.push('\n' as u8);
+    if !f.v.is_empty() && f.v[f.v.len() - 1] != b'\n' {
+        f.v.push(b'\n');
     }
     String::from_utf8(f.v).unwrap()
 }
@@ -79,10 +79,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         let mut k = self.v.len() as i32 - 1;
         while self.need_cr > 0 {
-            if k < 0 || self.v[k as usize] == '\n' as u8 {
+            if k < 0 || self.v[k as usize] == b'\n' {
                 k -= 1;
             } else {
-                self.v.push('\n' as u8);
+                self.v.push(b'\n');
                 if self.need_cr > 1 {
                     self.v.extend(&self.prefix);
                 }
@@ -101,26 +101,26 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
 
             if self.custom_escape.is_some() && self.custom_escape.unwrap()(self.node, buf[i]) {
-                self.v.push('\\' as u8);
+                self.v.push(b'\\');
             }
 
             let nextc = buf.get(i + 1);
-            if buf[i] == ' ' as u8 && wrap {
+            if buf[i] == b' ' && wrap {
                 if !self.begin_line {
                     let last_nonspace = self.v.len();
-                    self.v.push(' ' as u8);
+                    self.v.push(b' ');
                     self.column += 1;
                     self.begin_line = false;
                     self.begin_content = false;
-                    while buf.get(i + 1) == Some(&(' ' as u8)) {
+                    while buf.get(i + 1) == Some(&(b' ')) {
                         i += 1;
                     }
                     if !buf.get(i + 1).map_or(false, |&c| isdigit(&c)) {
                         self.last_breakable = last_nonspace;
                     }
                 }
-            } else if buf[i] == '\n' as u8 {
-                self.v.push('\n' as u8);
+            } else if buf[i] == b'\n' {
+                self.v.push(b'\n');
                 self.column = 0;
                 self.begin_line = true;
                 self.begin_content = true;
@@ -140,7 +140,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                self.last_breakable > 0 {
                 let remainder = self.v[self.last_breakable + 1..].to_vec();
                 self.v.truncate(self.last_breakable);
-                self.v.push('\n' as u8);
+                self.v.push(b'\n');
                 self.v.extend(&self.prefix);
                 self.v.extend(&remainder);
                 self.column = self.prefix.len() + remainder.len();
@@ -154,28 +154,28 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn outc(&mut self, c: u8, escaping: Escaping, nextc: Option<&u8>) {
-        let follows_digit = self.v.len() > 0 && isdigit(&self.v[self.v.len() - 1]);
+        let follows_digit = !self.v.is_empty() && isdigit(&self.v[self.v.len() - 1]);
 
         let nextc = nextc.map_or(0, |&c| c);
 
         let needs_escaping =
             c < 0x80 && escaping != Escaping::Literal &&
             ((escaping == Escaping::Normal &&
-              (c == '*' as u8 || c == '_' as u8 || c == '[' as u8 || c == ']' as u8 ||
-               c == '#' as u8 || c == '<' as u8 ||
-               c == '>' as u8 || c == '\\' as u8 || c == '`' as u8 ||
-               c == '!' as u8 || (c == '&' as u8 && isalpha(&nextc)) ||
-               (c == '!' as u8 && nextc == 0x5b) ||
-               (self.begin_content && (c == '-' as u8 || c == '+' as u8 || c == '=' as u8) &&
+              (c == b'*' || c == b'_' || c == b'[' || c == b']' ||
+               c == b'#' || c == b'<' ||
+               c == b'>' || c == b'\\' || c == b'`' ||
+               c == b'!' || (c == b'&' && isalpha(&nextc)) ||
+               (c == b'!' && nextc == 0x5b) ||
+               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') &&
                 !follows_digit) ||
-               (self.begin_content && (c == '.' as u8 || c == ')' as u8) && follows_digit &&
+               (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
                 (nextc == 0 || isspace(&nextc))))) ||
              (escaping == Escaping::URL &&
-              (c == '`' as u8 || c == '<' as u8 || c == '>' as u8 || isspace(&c) ||
-               c == '\\' as u8 || c == ')' as u8 || c == '(' as u8)) ||
+              (c == b'`' || c == b'<' || c == b'>' || isspace(&c) ||
+               c == b'\\' || c == b')' || c == b'(')) ||
              (escaping == Escaping::Title &&
-              (c == '`' as u8 || c == '<' as u8 || c == '>' as u8 || c == '"' as u8 ||
-               c == '\\' as u8)));
+              (c == b'`' || c == b'<' || c == b'>' || c == b'"' ||
+               c == b'\\')));
 
         if needs_escaping {
             if isspace(&c) {
@@ -218,8 +218,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             None => return false,
         };
 
-        if let &NodeValue::Item(..) = &tmp.data.borrow().value {
-            if let &NodeValue::List(ref nl) = &tmp.parent().unwrap().data.borrow().value {
+        if let NodeValue::Item(..) = tmp.data.borrow().value {
+            if let NodeValue::List(ref nl) = tmp.parent().unwrap().data.borrow().value {
                 return nl.tight;
             }
             return false;
@@ -230,29 +230,29 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             None => return false,
         };
 
-        if let &NodeValue::Item(..) = &parent.data.borrow().value {
-            if let &NodeValue::List(ref nl) = &parent.parent().unwrap().data.borrow().value {
+        if let NodeValue::Item(..) = parent.data.borrow().value {
+            if let NodeValue::List(ref nl) = parent.parent().unwrap().data.borrow().value {
                 return nl.tight;
             }
         }
 
-        return false;
+        false
     }
 
     fn format_node(&mut self, node: &'a AstNode<'a>, entering: bool) -> bool {
         self.node = node;
         let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
-        if !(match &node.data.borrow().value {
-            &NodeValue::Item(..) => true,
+        if !(match node.data.borrow().value {
+            NodeValue::Item(..) => true,
             _ => false,
         } && node.previous_sibling().is_none() && entering) {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
-        match &node.data.borrow().value {
-            &NodeValue::Document => (),
-            &NodeValue::BlockQuote => {
+        match node.data.borrow().value {
+            NodeValue::Document => (),
+            NodeValue::BlockQuote => {
                 if entering {
                     write!(self, "> ").unwrap();
                     self.begin_content = true;
@@ -263,13 +263,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::List(..) => {
+            NodeValue::List(..) => {
                 if !entering &&
                    match node.next_sibling() {
                     Some(next_sibling) => {
-                        match &next_sibling.data.borrow().value {
-                            &NodeValue::CodeBlock(..) |
-                            &NodeValue::List(..) => true,
+                        match next_sibling.data.borrow().value {
+                            NodeValue::CodeBlock(..) |
+                            NodeValue::List(..) => true,
                             _ => false,
                         }
                     }
@@ -280,9 +280,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::Item(..) => {
-                let parent = match &node.parent().unwrap().data.borrow().value {
-                    &NodeValue::List(ref nl) => nl.clone(),
+            NodeValue::Item(..) => {
+                let parent = match node.parent().unwrap().data.borrow().value {
+                    NodeValue::List(ref nl) => nl.clone(),
                     _ => unreachable!(),
                 };
 
@@ -327,7 +327,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.cr();
                 }
             }
-            &NodeValue::Heading(ref nch) => {
+            NodeValue::Heading(ref nch) => {
                 if entering {
                     for _ in 0..nch.level {
                         write!(self, "#").unwrap();
@@ -340,13 +340,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::CodeBlock(ref ncb) => {
+            NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     let first_in_list_item = node.previous_sibling().is_none() &&
                                              match node.parent() {
                         Some(parent) => {
-                            match &parent.data.borrow().value {
-                                &NodeValue::Item(..) => true,
+                            match parent.data.borrow().value {
+                                NodeValue::Item(..) => true,
                                 _ => false,
                             }
                         }
@@ -357,7 +357,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         self.blankline();
                     }
 
-                    if ncb.info.len() == 0 &&
+                    if ncb.info.is_empty() &&
                        (ncb.literal.len() > 2 && !isspace(&ncb.literal.as_bytes()[0]) &&
                         !(isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
                           isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
@@ -372,7 +372,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         for _ in 0..numticks {
                             write!(self, "`").unwrap();
                         }
-                        if ncb.info.len() > 0 {
+                        if !ncb.info.is_empty() {
                             write!(self, " {}", ncb.info).unwrap();
                         }
                         self.cr();
@@ -385,31 +385,31 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.blankline();
                 }
             }
-            &NodeValue::HtmlBlock(ref nhb) => {
+            NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.blankline();
                     self.write_all(nhb.literal.as_bytes()).unwrap();
                     self.blankline();
                 }
             }
-            &NodeValue::ThematicBreak => {
+            NodeValue::ThematicBreak => {
                 if entering {
                     self.blankline();
                     write!(self, "-----").unwrap();
                     self.blankline();
                 }
             }
-            &NodeValue::Paragraph => {
+            NodeValue::Paragraph => {
                 if !entering {
                     self.blankline();
                 }
             }
-            &NodeValue::Text(ref literal) => {
+            NodeValue::Text(ref literal) => {
                 if entering {
                     self.output(literal.as_bytes(), allow_wrap, Escaping::Normal);
                 }
             }
-            &NodeValue::LineBreak => {
+            NodeValue::LineBreak => {
                 if entering {
                     if !self.options.hardbreaks {
                         write!(self, "  ").unwrap();
@@ -417,26 +417,26 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.cr();
                 }
             }
-            &NodeValue::SoftBreak => {
+            NodeValue::SoftBreak => {
                 if entering {
                     if !self.no_linebreaks && self.options.width == 0 && !self.options.hardbreaks {
                         self.cr();
                     } else {
-                        self.output(&[' ' as u8], allow_wrap, Escaping::Literal);
+                        self.output(&[b' '], allow_wrap, Escaping::Literal);
                     }
                 }
             }
-            &NodeValue::Code(ref literal) => {
+            NodeValue::Code(ref literal) => {
                 if entering {
-                    let numticks = shortest_unused_sequence(literal, '`' as u8);
+                    let numticks = shortest_unused_sequence(literal, b'`');
                     for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
-                    if literal.len() == 0 || literal.as_bytes()[0] == '`' as u8 {
+                    if literal.is_empty() || literal.as_bytes()[0] == b'`' {
                         write!(self, " ").unwrap();
                     }
                     self.output(literal.as_bytes(), allow_wrap, Escaping::Literal);
-                    if literal.len() == 0 || literal.as_bytes()[literal.len() - 1] == '`' as u8 {
+                    if literal.is_empty() || literal.as_bytes()[literal.len() - 1] == b'`' {
                         write!(self, " ").unwrap();
                     }
                     for _ in 0..numticks {
@@ -444,55 +444,51 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     }
                 }
             }
-            &NodeValue::HtmlInline(ref literal) => {
+            NodeValue::HtmlInline(ref literal) => {
                 if entering {
                     self.write_all(literal.as_bytes()).unwrap();
                 }
             }
-            &NodeValue::Strong => {
+            NodeValue::Strong => {
                 if entering {
                     write!(self, "**").unwrap();
                 } else {
                     write!(self, "**").unwrap();
                 }
             }
-            &NodeValue::Emph => {
+            NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
                     Some(parent) => {
-                        match &parent.data.borrow().value {
-                            &NodeValue::Emph => true,
+                        match parent.data.borrow().value {
+                            NodeValue::Emph => true,
                             _ => false,
                         }
                     }
                     _ => false,
                 } && node.next_sibling().is_none() &&
                                     node.previous_sibling().is_none() {
-                    '_' as u8
+                    b'_'
                 } else {
-                    '*' as u8
+                    b'*'
                 };
 
-                if entering {
-                    self.write_all(&[emph_delim]).unwrap();
-                } else {
-                    self.write_all(&[emph_delim]).unwrap();
-                }
+                self.write_all(&[emph_delim]).unwrap();
             }
-            &NodeValue::Strikethrough => {
+            NodeValue::Strikethrough => {
                 if entering {
                     write!(self, "~").unwrap();
                 } else {
                     write!(self, "~").unwrap();
                 }
             }
-            &NodeValue::Superscript => {
+            NodeValue::Superscript => {
                 if entering {
                     write!(self, "^").unwrap();
                 } else {
                     write!(self, "^").unwrap();
                 }
             }
-            &NodeValue::Link(ref nl) => {
+            NodeValue::Link(ref nl) => {
                 if is_autolink(node, nl) {
                     if entering {
                         write!(self, "<").unwrap();
@@ -504,36 +500,34 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         write!(self, ">").unwrap();
                         return false;
                     }
-                } else {
-                    if entering {
-                        write!(self, "[").unwrap();
-                    } else {
-                        write!(self, "](").unwrap();
-                        self.output(nl.url.as_bytes(), false, Escaping::URL);
-                        if nl.title.len() > 0 {
-                            write!(self, " \"").unwrap();
-                            self.output(nl.title.as_bytes(), false, Escaping::Title);
-                            write!(self, "\"").unwrap();
-                        }
-                        write!(self, ")").unwrap();
-                    }
-                }
-            }
-            &NodeValue::Image(ref nl) => {
-                if entering {
-                    write!(self, "![").unwrap();
+                } else if entering {
+                    write!(self, "[").unwrap();
                 } else {
                     write!(self, "](").unwrap();
                     self.output(nl.url.as_bytes(), false, Escaping::URL);
-                    if nl.title.len() > 0 {
-                        self.output(&[' ' as u8, '"' as u8], allow_wrap, Escaping::Literal);
+                    if !nl.title.is_empty() {
+                        write!(self, " \"").unwrap();
                         self.output(nl.title.as_bytes(), false, Escaping::Title);
                         write!(self, "\"").unwrap();
                     }
                     write!(self, ")").unwrap();
                 }
             }
-            &NodeValue::Table(..) => {
+            NodeValue::Image(ref nl) => {
+                if entering {
+                    write!(self, "![").unwrap();
+                } else {
+                    write!(self, "](").unwrap();
+                    self.output(nl.url.as_bytes(), false, Escaping::URL);
+                    if !nl.title.is_empty() {
+                        self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
+                        self.output(nl.title.as_bytes(), false, Escaping::Title);
+                        write!(self, "\"").unwrap();
+                    }
+                    write!(self, ")").unwrap();
+                }
+            }
+            NodeValue::Table(..) => {
                 if entering {
                     self.custom_escape = Some(table_escape);
                 } else {
@@ -541,29 +535,28 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
                 self.blankline();
             }
-            &NodeValue::TableRow(..) => {
+            NodeValue::TableRow(..) => {
                 if entering {
                     self.cr();
                     write!(self, "|").unwrap();
                 }
             }
-            &NodeValue::TableCell => {
+            NodeValue::TableCell => {
                 if entering {
                     write!(self, " ").unwrap();
                 } else {
                     write!(self, " |").unwrap();
 
-                    let ref row = node.parent().unwrap().data.borrow().value;
-                    let in_header = match row {
-                        &NodeValue::TableRow(header) => header,
+                    let row = &node.parent().unwrap().data.borrow().value;
+                    let in_header = match *row {
+                        NodeValue::TableRow(header) => header,
                         _ => panic!(),
                     };
 
                     if in_header && node.next_sibling().is_none() {
-                        let ref table =
-                            node.parent().unwrap().parent().unwrap().data.borrow().value;
-                        let alignments = match table {
-                            &NodeValue::Table(ref alignments) => alignments,
+                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let alignments = match *table {
+                            NodeValue::Table(ref alignments) => alignments,
                             _ => panic!(),
                         };
 
@@ -593,7 +586,7 @@ fn longest_backtick_sequence(literal: &str) -> usize {
     let mut longest = 0;
     let mut current = 0;
     for c in literal.as_bytes() {
-        if *c == '`' as u8 {
+        if *c == b'`' {
             current += 1;
         } else {
             if current > longest {
@@ -628,26 +621,26 @@ fn shortest_unused_sequence(literal: &str, f: u8) -> usize {
 
     let mut i = 0;
     while used & 1 != 0 {
-        used = used >> 1;
+        used >>= 1;
         i += 1;
     }
     i
 }
 
 fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
-    if nl.url.len() == 0 || scanners::scheme(&nl.url).is_none() {
+    if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
 
-    if nl.title.len() > 0 {
+    if !nl.title.is_empty() {
         return false;
     }
 
     let link_text = match node.first_child() {
         None => return false,
         Some(child) => {
-            match &child.data.borrow().value {
-                &NodeValue::Text(ref t) => t.clone(),
+            match child.data.borrow().value {
+                NodeValue::Text(ref t) => t.clone(),
                 _ => return false,
             }
         }
@@ -662,10 +655,10 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
 }
 
 fn table_escape<'a>(node: &'a AstNode<'a>, c: u8) -> bool {
-    match &node.data.borrow().value {
-        &NodeValue::Table(..) |
-        &NodeValue::TableRow(..) |
-        &NodeValue::TableCell => false,
-        _ => c == '|' as u8,
+    match node.data.borrow().value {
+        NodeValue::Table(..) |
+        NodeValue::TableRow(..) |
+        NodeValue::TableCell => false,
+        _ => c == b'|',
     }
 }
