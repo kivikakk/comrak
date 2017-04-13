@@ -242,39 +242,39 @@ pub struct NodeHtmlBlock {
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
-        match self {
-            &NodeValue::Document |
-            &NodeValue::BlockQuote |
-            &NodeValue::List(..) |
-            &NodeValue::Item(..) |
-            &NodeValue::CodeBlock(..) |
-            &NodeValue::HtmlBlock(..) |
-            &NodeValue::Paragraph |
-            &NodeValue::Heading(..) |
-            &NodeValue::ThematicBreak |
-            &NodeValue::Table(..) |
-            &NodeValue::TableRow(..) |
-            &NodeValue::TableCell => true,
+        match *self {
+            NodeValue::Document |
+            NodeValue::BlockQuote |
+            NodeValue::List(..) |
+            NodeValue::Item(..) |
+            NodeValue::CodeBlock(..) |
+            NodeValue::HtmlBlock(..) |
+            NodeValue::Paragraph |
+            NodeValue::Heading(..) |
+            NodeValue::ThematicBreak |
+            NodeValue::Table(..) |
+            NodeValue::TableRow(..) |
+            NodeValue::TableCell => true,
             _ => false,
         }
     }
 
     #[doc(hidden)]
     pub fn accepts_lines(&self) -> bool {
-        match self {
-            &NodeValue::Paragraph |
-            &NodeValue::Heading(..) |
-            &NodeValue::CodeBlock(..) => true,
+        match *self {
+            NodeValue::Paragraph |
+            NodeValue::Heading(..) |
+            NodeValue::CodeBlock(..) => true,
             _ => false,
         }
     }
 
     /// Indicates whether this node may contain inlines.
     pub fn contains_inlines(&self) -> bool {
-        match self {
-            &NodeValue::Paragraph |
-            &NodeValue::Heading(..) |
-            &NodeValue::TableCell => true,
+        match *self {
+            NodeValue::Paragraph |
+            NodeValue::Heading(..) |
+            NodeValue::TableCell => true,
             _ => false,
         }
     }
@@ -283,8 +283,8 @@ impl NodeValue {
     ///
     /// Convenience method.
     pub fn text(&mut self) -> Option<&mut String> {
-        match self {
-            &mut NodeValue::Text(ref mut t) => Some(t),
+        match *self {
+            NodeValue::Text(ref mut t) => Some(t),
             _ => None,
         }
     }
@@ -347,7 +347,7 @@ pub fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
 
 #[doc(hidden)]
 pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
-    if let &NodeValue::Document = child {
+    if let NodeValue::Document = *child {
         return false;
     }
 
@@ -356,15 +356,15 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::BlockQuote |
         NodeValue::Item(..) => {
             child.block() &&
-            match child {
-                &NodeValue::Item(..) => false,
+            match *child {
+                NodeValue::Item(..) => false,
                 _ => true,
             }
         }
 
         NodeValue::List(..) => {
-            match child {
-                &NodeValue::Item(..) => true,
+            match *child {
+                NodeValue::Item(..) => true,
                 _ => false,
             }
         }
@@ -377,29 +377,29 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::Image(..) => !child.block(),
 
         NodeValue::Table(..) => {
-            match child {
-                &NodeValue::TableRow(..) => true,
+            match *child {
+                NodeValue::TableRow(..) => true,
                 _ => false,
             }
         }
 
         NodeValue::TableRow(..) => {
-            match child {
-                &NodeValue::TableCell => true,
+            match *child {
+                NodeValue::TableCell => true,
                 _ => false,
             }
         }
 
         NodeValue::TableCell => {
-            match child {
-                &NodeValue::Text(..) |
-                &NodeValue::Code(..) |
-                &NodeValue::Emph |
-                &NodeValue::Strong |
-                &NodeValue::Link(..) |
-                &NodeValue::Image(..) |
-                &NodeValue::Strikethrough |
-                &NodeValue::HtmlInline(..) => true,
+            match *child {
+                NodeValue::Text(..) |
+                NodeValue::Code(..) |
+                NodeValue::Emph |
+                NodeValue::Strong |
+                NodeValue::Link(..) |
+                NodeValue::Image(..) |
+                NodeValue::Strikethrough |
+                NodeValue::HtmlInline(..) => true,
                 _ => false,
             }
         }
@@ -415,9 +415,9 @@ pub fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
         if cur.data.borrow().last_line_blank {
             return true;
         }
-        match &cur.data.borrow().value {
-            &NodeValue::List(..) |
-            &NodeValue::Item(..) => it = cur.last_child(),
+        match cur.data.borrow().value {
+            NodeValue::List(..) |
+            NodeValue::Item(..) => it = cur.last_child(),
             _ => it = None,
         };
     }
