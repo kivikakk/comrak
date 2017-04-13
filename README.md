@@ -115,3 +115,10 @@ Copyright (c) 2017, Yuki Izumi.  Licensed under the [2-Clause BSD License](https
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
 See [COPYING](COPYING) for all the details.
+
+## Contributors
+
+Thank you for PRs and issues opened!
+
+* [ConnyOnny](https://github.com/ConnyOnny)
+* [killercup](https://github.com/killercup)
