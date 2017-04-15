@@ -218,7 +218,7 @@ pub struct NodeCodeBlock {
 }
 
 /// The metadata of a heading.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct NodeHeading {
     /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
     pub level: u32,

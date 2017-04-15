@@ -44,11 +44,11 @@ enum Escaping {
 impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
-        std::result::Result::Ok(buf.len())
+        Ok(buf.len())
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        std::result::Result::Ok(())
+        Ok(())
     }
 }
 
@@ -282,7 +282,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Item(..) => {
                 let parent = match node.parent().unwrap().data.borrow().value {
-                    NodeValue::List(ref nl) => nl.clone(),
+                    NodeValue::List(ref nl) => *nl,
                     _ => unreachable!(),
                 };
 
@@ -492,7 +492,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if is_autolink(node, nl) {
                     if entering {
                         write!(self, "<").unwrap();
-                        if &&nl.url[..7] == &"mailto:" {
+                        if &nl.url[..7] == "mailto:" {
                             self.write_all(nl.url[7..].as_bytes()).unwrap();
                         } else {
                             self.write_all(nl.url.as_bytes()).unwrap();
@@ -565,11 +565,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         for a in alignments {
                             write!(self,
                                    " {} |",
-                                   match a {
-                                       &TableAlignment::Left => ":--",
-                                       &TableAlignment::Center => ":-:",
-                                       &TableAlignment::Right => "--:",
-                                       &TableAlignment::None => "---",
+                                   match *a {
+                                       TableAlignment::Left => ":--",
+                                       TableAlignment::Center => ":-:",
+                                       TableAlignment::Right => "--:",
+                                       TableAlignment::None => "---",
                                    })
                                 .unwrap();
                         }
@@ -647,7 +647,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
     };
 
     let mut real_url: &str = &nl.url;
-    if &&real_url[..7] == &"mailto:" {
+    if &real_url[..7] == "mailto:" {
         real_url = &real_url[7..];
     }
 

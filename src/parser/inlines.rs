@@ -553,16 +553,14 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     }
 
     pub fn skip_line_end(&mut self) -> bool {
-        let mut seen_line_end_char = false;
+	let old_pos = self.pos;
         if self.peek_char() == Some(&(b'\r')) {
             self.pos += 1;
-            seen_line_end_char = true;
         }
         if self.peek_char() == Some(&(b'\n')) {
             self.pos += 1;
-            seen_line_end_char = true;
         }
-        seen_line_end_char || self.eof()
+        self.pos > old_pos || self.eof()
     }
 
     pub fn handle_entity(&mut self) -> &'a AstNode<'a> {

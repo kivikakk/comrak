@@ -31,12 +31,12 @@ fn html_opts<F>(input: &str, expected: &str, opts: F)
     opts(&mut options);
 
     let root = parse_document(&arena, &input.chars().collect::<String>(), &options);
-    let output = html::format_document(&root, &options);
+    let output = html::format_document(root, &options);
     compare_strs(&output, expected, "regular");
 
-    let md = cm::format_document(&root, &options);
+    let md = cm::format_document(root, &options);
     let root = parse_document(&arena, &md.chars().collect::<String>(), &options);
-    let output_from_rt = html::format_document(&root, &options);
+    let output_from_rt = html::format_document(root, &options);
     compare_strs(&output_from_rt, expected, "roundtrip");
 }
 

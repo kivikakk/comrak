@@ -43,7 +43,7 @@ pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
             node.insert_after(post);
             if i + skip < len {
                 let remain = contents[i + skip..].to_string();
-                assert!(remain.len() > 0);
+                assert!(!remain.is_empty());
                 post.insert_after(make_inline(arena, NodeValue::Text(remain)));
             }
             contents.truncate(i);

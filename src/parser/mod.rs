@@ -65,7 +65,7 @@ pub struct Parser<'a, 'o> {
     options: &'o ComrakOptions,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone, Copy)]
 /// Options for both parser and formatter functions.
 pub struct ComrakOptions {
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
@@ -355,67 +355,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                          line: &mut String,
                          all_matched: &mut bool)
                          -> Option<&'a AstNode<'a>> {
-        let mut should_continue = true;
-        *all_matched = false;
-        let mut container = self.root;
+        let (new_all_matched, mut container, should_continue) = self.check_open_blocks_inner(self.root, line);
 
-        'done: loop {
-            while nodes::last_child_is_open(container) {
-                container = container.last_child().unwrap();
-                let ast = &mut *container.data.borrow_mut();
-
-                self.find_first_nonspace(line);
-
-                match ast.value {
-                    NodeValue::BlockQuote => {
-                        if !self.parse_block_quote_prefix(line) {
-                            break 'done;
-                        }
-                    }
-                    NodeValue::Item(ref nl) => {
-                        if !self.parse_node_item_prefix(line, container, nl) {
-                            break 'done;
-                        }
-                    }
-                    NodeValue::CodeBlock(..) => {
-                        if !self.parse_code_block_prefix(
-                            line, container, ast, &mut should_continue) {
-                            break 'done;
-                        }
-                    }
-                    NodeValue::Heading(..) => {
-                        break 'done;
-                    }
-                    NodeValue::HtmlBlock(ref nhb) => {
-                        if !self.parse_html_block_prefix(nhb.block_type) {
-                            break 'done;
-                        }
-                    }
-                    NodeValue::Paragraph => {
-                        if self.blank {
-                            break 'done;
-                        }
-                    }
-                    NodeValue::Table(..) => {
-                        if !table::matches(&line[self.first_nonspace..]) {
-                            break 'done;
-                        }
-                        continue;
-                    }
-                    NodeValue::TableRow(..) => {
-                        break 'done;
-                    }
-                    NodeValue::TableCell => {
-                        break 'done;
-                    }
-                    _ => {}
-                }
-            }
-
-            *all_matched = true;
-            break 'done;
-        }
-
+        *all_matched = new_all_matched;
         if !*all_matched {
             container = container.parent().unwrap();
         }
@@ -425,6 +367,60 @@ impl<'a, 'o> Parser<'a, 'o> {
         } else {
             Some(container)
         }
+    }
+
+    fn check_open_blocks_inner(&mut self, mut container: &'a AstNode<'a>, line: &mut String) -> (bool, &'a AstNode<'a>, bool) {
+        let mut should_continue = true;
+
+        while nodes::last_child_is_open(container) {
+            container = container.last_child().unwrap();
+            let ast = &mut *container.data.borrow_mut();
+
+            self.find_first_nonspace(line);
+
+            match ast.value {
+                NodeValue::BlockQuote => {
+                    if !self.parse_block_quote_prefix(line) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::Item(ref nl) => {
+                    if !self.parse_node_item_prefix(line, container, nl) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::CodeBlock(..) => {
+                    if !self.parse_code_block_prefix(
+                        line, container, ast, &mut should_continue) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::HtmlBlock(ref nhb) => {
+                    if !self.parse_html_block_prefix(nhb.block_type) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::Paragraph => {
+                    if self.blank {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::Table(..) => {
+                    if !table::matches(&line[self.first_nonspace..]) {
+                        return (false, container, should_continue);
+                    }
+                    continue;
+                }
+                NodeValue::Heading(..) |
+                NodeValue::TableRow(..) |
+                NodeValue::TableCell => {
+                    return (false, container, should_continue);
+                }
+                _ => {}
+            }
+        }
+
+        (true, container, should_continue)
     }
 
     fn open_new_blocks(&mut self,

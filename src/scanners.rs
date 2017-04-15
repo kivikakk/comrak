@@ -89,23 +89,23 @@ lazy_static! {
 pub fn html_block_start(line: &str) -> Option<usize> {
     lazy_static! {
         static ref RE1: Regex = Regex::new(r"\A(?:<(script|pre|style)([ \t\v\f\r\n]|>))").unwrap();
-        static ref RE2: Regex = Regex::new(r"\A(?:<!--)").unwrap();
-        static ref RE3: Regex = Regex::new(r"\A(?:<\?)").unwrap();
+        static ref STR2: &'static str = "<!--";
+        static ref STR3: &'static str = "<?";
         static ref RE4: Regex = Regex::new(r"\A(?:<![A-Z])").unwrap();
-        static ref RE5: Regex = Regex::new(r"\A(?:<!\[CDATA\[)").unwrap();
+        static ref STR5: &'static str = "<![CDATA[";
         static ref RE6: Regex = Regex::new(
             &format!(r"\A(?:</?({})([ \t\v\f\r\n]|/?>))", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
     if is_match(&RE1, line) {
         Some(1)
-    } else if is_match(&RE2, line) {
+    } else if line.starts_with(*STR2) {
         Some(2)
-    } else if is_match(&RE3, line) {
+    } else if line.starts_with(*STR3) {
         Some(3)
     } else if is_match(&RE4, line) {
         Some(4)
-    } else if is_match(&RE5, line) {
+    } else if line.starts_with(*STR5) {
         Some(5)
     } else if is_match(&RE6, line) {
         Some(6)
