@@ -1,6 +1,4 @@
 use unicode_categories::UnicodeCategories;
-use std::iter::FromIterator;
-use std::collections::BTreeSet;
 use typed_arena::Arena;
 use nodes::{NodeValue, NodeLink, AstNode};
 use ctype::{isspace, isalpha, isalnum};
@@ -59,12 +57,17 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
                  i: usize)
                  -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
-        static ref WWW_DELIMS: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'*', b'_', b'~', b'(', b'[']);
+        static ref WWW_DELIMS: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'*', b'_', b'~', b'(', b'['] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
     if i > 0 && !isspace(&contents.as_bytes()[i - 1]) &&
-       !WWW_DELIMS.contains(&contents.as_bytes()[i - 1]) {
+       !WWW_DELIMS[contents.as_bytes()[i - 1] as usize] {
         return None;
     }
 
@@ -130,9 +133,13 @@ fn is_valid_hostchar(ch: char) -> bool {
 
 fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     lazy_static! {
-        static ref LINK_END_ASSORTMENT: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'?', b'!', b'.', b',', b':', b'*',
-            b'_', b'~', b'\'', b'"']);
+        static ref LINK_END_ASSORTMENT: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"'] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
     for i in 0..link_end {
@@ -151,7 +158,7 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
             None
         };
 
-        if LINK_END_ASSORTMENT.contains(&cclose) {
+        if LINK_END_ASSORTMENT[cclose as usize] {
             link_end -= 1;
         } else if cclose == b';' {
             let mut new_end = link_end - 2;
@@ -242,8 +249,13 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
                    i: usize)
                    -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
-        static ref EMAIL_OK_SET: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'.', b'+', b'-', b'_']);
+        static ref EMAIL_OK_SET: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'.', b'+', b'-', b'_'] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
     let size = contents.len();
@@ -254,7 +266,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     while rewind < i {
         let c = contents.as_bytes()[i - rewind - 1];
 
-        if isalnum(&c) || EMAIL_OK_SET.contains(&c) {
+        if isalnum(&c) || EMAIL_OK_SET[c as usize] {
             rewind += 1;
             continue;
         }

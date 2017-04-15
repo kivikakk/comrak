@@ -10,7 +10,7 @@ use scanners;
 use ctype::{isspace, ispunct};
 use entity;
 use strings;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 pub struct Subject<'a, 'r, 'o> {
     pub arena: &'a Arena<AstNode<'a>>,
@@ -267,24 +267,17 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
 
     pub fn find_special_char(&self) -> usize {
         lazy_static! {
-            static ref SPECIAL_CHARS: BTreeSet<u8> =
-                [b'\n',
-                b'\r',
-                b'_',
-                b'*',
-                b'"',
-                b'`',
-                b'\\',
-                b'&',
-                b'<',
-                b'[',
-                b']',
-                b'!',
-                ].iter().cloned().collect();
+            static ref SPECIAL_CHARS: [bool; 256] = {
+                let mut sc = [false; 256];
+                for c in &[b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!'] {
+                    sc[*c as usize] = true;
+                }
+                sc
+            };
         }
 
         for n in self.pos..self.input.len() {
-            if SPECIAL_CHARS.contains(&self.input.as_bytes()[n]) {
+            if SPECIAL_CHARS[self.input.as_bytes()[n] as usize] {
                 return n;
             }
             if self.options.ext_strikethrough && self.input.as_bytes()[n] == b'~' {

@@ -1,7 +1,5 @@
 use std;
 use std::io::Write;
-use std::iter::FromIterator;
-use std::collections::BTreeMap;
 
 use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
@@ -97,27 +95,14 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape(&mut self, buffer: &str) {
-        lazy_static! {
-            static ref ESCAPE_TABLE: BTreeMap<u8, &'static str> = BTreeMap::from_iter(
-                vec![(b'"', "&quot;"),
-                     (b'&', "&amp;"),
-                     // Secure mode only:
-                     // ('\'', "&#39;"),
-                     // ('/', "&#47;"),
-                     (b'<', "&lt;"),
-                     (b'>', "&gt;"),
-            ]);
-        }
-
         for c in buffer.as_bytes() {
-            match ESCAPE_TABLE.get(c) {
-                Some(s) => {
-                    self.write_all(s.as_bytes()).unwrap();
-                }
-                None => {
-                    self.write_all(&[*c]).unwrap();
-                }
-            };
+            match *c {
+                b'"' => self.write_all(b"&quot;").unwrap(),
+                b'&' => self.write_all(b"&amp;").unwrap(),
+                b'<' => self.write_all(b"&lt;").unwrap(),
+                b'>' => self.write_all(b"&gt;").unwrap(),
+                _ => self.v.push(*c),
+            }
         }
     }
 
