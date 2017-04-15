@@ -1,8 +1,8 @@
-use unicode_categories::UnicodeCategories;
-use typed_arena::Arena;
-use nodes::{NodeValue, NodeLink, AstNode};
 use ctype::{isspace, isalpha, isalnum};
+use nodes::{NodeValue, NodeLink, AstNode};
 use parser::inlines::make_inline;
+use typed_arena::Arena;
+use unicode_categories::UnicodeCategories;
 
 pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
                              node: &'a AstNode<'a>,
@@ -91,9 +91,9 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url,
-                              title: String::new(),
-                          }));
+                                              url: url,
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena,
                            NodeValue::Text(contents[i..link_end + i].to_string())));
@@ -152,11 +152,7 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     while link_end > 0 {
         let cclose = data.as_bytes()[link_end - 1];
 
-        let copen = if cclose == b')' {
-            Some(b'(')
-        } else {
-            None
-        };
+        let copen = if cclose == b')' { Some(b'(') } else { None };
 
         if LINK_END_ASSORTMENT[cclose as usize] {
             link_end -= 1;
@@ -207,8 +203,7 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let size = contents.len();
 
-    if size - i < 4 || contents.as_bytes()[i + 1] != b'/' ||
-       contents.as_bytes()[i + 2] != b'/' {
+    if size - i < 4 || contents.as_bytes()[i + 1] != b'/' || contents.as_bytes()[i + 2] != b'/' {
         return None;
     }
 
@@ -217,8 +212,9 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
         rewind += 1;
     }
 
-    if !SCHEMES.iter()
-        .any(|s| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s) {
+    if !SCHEMES
+            .iter()
+            .any(|s| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s) {
         return None;
     }
 
@@ -236,9 +232,9 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
     let url = contents[i - rewind..i + link_end].to_string();
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url.clone(),
-                              title: String::new(),
-                          }));
+                                              url: url.clone(),
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena, NodeValue::Text(url)));
     Some((inl, rewind, rewind + link_end))
@@ -315,9 +311,9 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url,
-                              title: String::new(),
-                          }));
+                                              url: url,
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena,
                            NodeValue::Text(contents[i - rewind..link_end + i].to_string())));

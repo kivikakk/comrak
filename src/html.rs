@@ -1,6 +1,6 @@
+use ctype::isspace;
 use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
-use ctype::isspace;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
@@ -160,8 +160,7 @@ impl<'o> HtmlFormatter<'o> {
                 NodeValue::Text(ref literal) |
                 NodeValue::Code(ref literal) |
                 NodeValue::HtmlInline(ref literal) => self.escape(literal),
-                NodeValue::LineBreak |
-                NodeValue::SoftBreak => self.s.push(' '),
+                NodeValue::LineBreak | NodeValue::SoftBreak => self.s.push(' '),
                 _ => (),
             }
             self.format_children(node, true);
@@ -262,8 +261,8 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::Paragraph => {
                 let tight = match node.parent()
-                    .and_then(|n| n.parent())
-                    .map(|n| n.data.borrow().value.clone()) {
+                          .and_then(|n| n.parent())
+                          .map(|n| n.data.borrow().value.clone()) {
                     Some(NodeValue::List(nl)) => nl.tight,
                     _ => false,
                 };
@@ -373,7 +372,9 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr();
                     self.s += "<table>\n";
                 } else {
-                    if !node.last_child().unwrap().same_node(node.first_child().unwrap()) {
+                    if !node.last_child()
+                            .unwrap()
+                            .same_node(node.first_child().unwrap()) {
                         self.s += "</tbody>";
                     }
                     self.s += "</table>\n";
@@ -405,7 +406,13 @@ impl<'o> HtmlFormatter<'o> {
                     _ => panic!(),
                 };
 
-                let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                let table = &node.parent()
+                                 .unwrap()
+                                 .parent()
+                                 .unwrap()
+                                 .data
+                                 .borrow()
+                                 .value;
                 let alignments = match *table {
                     NodeValue::Table(ref alignments) => alignments,
                     _ => panic!(),

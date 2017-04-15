@@ -1,7 +1,7 @@
-use std::cmp::min;
-use parser::Parser;
 use nodes::{NodeValue, TableAlignment, AstNode};
+use parser::Parser;
 use scanners;
+use std::cmp::min;
 use strings::trim;
 
 pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
@@ -44,8 +44,8 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
         let left = !cell.is_empty() && cell.as_bytes()[0] == b':';
         let right = !cell.is_empty() && cell.as_bytes()[cell.len() - 1] == b':';
         alignments.push(if left && right {
-            TableAlignment::Center
-        } else if left {
+                            TableAlignment::Center
+                        } else if left {
             TableAlignment::Left
         } else if right {
             TableAlignment::Right

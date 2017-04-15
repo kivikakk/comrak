@@ -1,10 +1,10 @@
-use std;
-use nodes::{NodeValue, ListType, ListDelimType, NodeLink, AstNode};
-use scanners;
-use nodes;
-use parser::ComrakOptions;
-use nodes::TableAlignment;
 use ctype::{isspace, isdigit, isalpha};
+use nodes;
+use nodes::{NodeValue, ListType, ListDelimType, NodeLink, AstNode};
+use nodes::TableAlignment;
+use parser::ComrakOptions;
+use scanners;
+use std;
 use std::cmp::max;
 use std::io::Write;
 
@@ -161,21 +161,18 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let needs_escaping =
             c < 0x80 && escaping != Escaping::Literal &&
             ((escaping == Escaping::Normal &&
-              (c == b'*' || c == b'_' || c == b'[' || c == b']' ||
-               c == b'#' || c == b'<' ||
-               c == b'>' || c == b'\\' || c == b'`' ||
-               c == b'!' || (c == b'&' && isalpha(nextc)) ||
+              (c == b'*' || c == b'_' || c == b'[' || c == b']' || c == b'#' || c == b'<' ||
+               c == b'>' || c == b'\\' ||
+               c == b'`' || c == b'!' || (c == b'&' && isalpha(nextc)) ||
                (c == b'!' && nextc == 0x5b) ||
-               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') &&
-                !follows_digit) ||
+               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') && !follows_digit) ||
                (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
                 (nextc == 0 || isspace(nextc))))) ||
              (escaping == Escaping::URL &&
-              (c == b'`' || c == b'<' || c == b'>' || isspace(c) ||
-               c == b'\\' || c == b')' || c == b'(')) ||
+              (c == b'`' || c == b'<' || c == b'>' || isspace(c) || c == b'\\' || c == b')' ||
+               c == b'(')) ||
              (escaping == Escaping::Title &&
-              (c == b'`' || c == b'<' || c == b'>' || c == b'"' ||
-               c == b'\\')));
+              (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
 
         if needs_escaping {
             if isspace(c) {
@@ -244,9 +241,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
         if !(match node.data.borrow().value {
-            NodeValue::Item(..) => true,
-            _ => false,
-        } && node.previous_sibling().is_none() && entering) {
+                 NodeValue::Item(..) => true,
+                 _ => false,
+             } && node.previous_sibling().is_none() && entering) {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
@@ -266,15 +263,15 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::List(..) => {
                 if !entering &&
                    match node.next_sibling() {
-                    Some(next_sibling) => {
-                        match next_sibling.data.borrow().value {
-                            NodeValue::CodeBlock(..) |
-                            NodeValue::List(..) => true,
-                            _ => false,
-                        }
-                    }
-                    _ => false,
-                } {
+                       Some(next_sibling) => {
+                           match next_sibling.data.borrow().value {
+                               NodeValue::CodeBlock(..) |
+                               NodeValue::List(..) => true,
+                               _ => false,
+                           }
+                       }
+                       _ => false,
+                   } {
                     self.cr();
                     write!(self, "<!-- end list -->").unwrap();
                     self.blankline();
@@ -307,7 +304,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                                "."
                            },
                            if list_number < 10 { "  " } else { " " })
-                        .unwrap();
+                            .unwrap();
                     listmarker.len()
                 };
 
@@ -344,14 +341,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if entering {
                     let first_in_list_item = node.previous_sibling().is_none() &&
                                              match node.parent() {
-                        Some(parent) => {
-                            match parent.data.borrow().value {
-                                NodeValue::Item(..) => true,
-                                _ => false,
-                            }
-                        }
-                        _ => false,
-                    };
+                                                 Some(parent) => {
+                                                     match parent.data.borrow().value {
+                                                         NodeValue::Item(..) => true,
+                                                         _ => false,
+                                                     }
+                                                 }
+                                                 _ => false,
+                                             };
 
                     if !first_in_list_item {
                         self.blankline();
@@ -458,14 +455,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
-                    Some(parent) => {
-                        match parent.data.borrow().value {
-                            NodeValue::Emph => true,
-                            _ => false,
-                        }
-                    }
-                    _ => false,
-                } && node.next_sibling().is_none() &&
+                       Some(parent) => {
+                           match parent.data.borrow().value {
+                               NodeValue::Emph => true,
+                               _ => false,
+                           }
+                       }
+                       _ => false,
+                   } && node.next_sibling().is_none() &&
                                     node.previous_sibling().is_none() {
                     b'_'
                 } else {
@@ -554,7 +551,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     };
 
                     if in_header && node.next_sibling().is_none() {
-                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let table = &node.parent()
+                                         .unwrap()
+                                         .parent()
+                                         .unwrap()
+                                         .data
+                                         .borrow()
+                                         .value;
                         let alignments = match *table {
                             NodeValue::Table(ref alignments) => alignments,
                             _ => panic!(),
@@ -571,7 +574,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                                        TableAlignment::Right => "--:",
                                        TableAlignment::None => "---",
                                    })
-                                .unwrap();
+                                    .unwrap();
                         }
                         self.cr();
                     }

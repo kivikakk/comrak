@@ -1,6 +1,6 @@
-use ::{Arena, parse_document, ComrakOptions};
-use ::html;
-use ::cm;
+use {Arena, parse_document, ComrakOptions};
+use cm;
+use html;
 
 fn compare_strs(output: &str, expected: &str, kind: &str) {
     if output != expected {

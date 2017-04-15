@@ -1,11 +1,10 @@
-use std::cmp::{min, Ordering};
-use std::char;
 use ctype::isdigit;
 use entity_data;
+use std::char;
+use std::cmp::{min, Ordering};
 
 fn isxdigit(ch: &u8) -> bool {
-    (*ch >= b'0' && *ch <= b'9') || (*ch >= b'a' && *ch <= b'f') ||
-    (*ch >= b'A' && *ch <= b'F')
+    (*ch >= b'0' && *ch <= b'9') || (*ch >= b'a' && *ch <= b'f') || (*ch >= b'A' && *ch <= b'F')
 }
 
 pub fn unescape(text: &str) -> Option<(String, usize)> {
@@ -21,8 +20,7 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
                 i += 1;
             }
             i - 1
-        } else if text.as_bytes()[1] == b'x' ||
-                                   text.as_bytes()[1] == b'X' {
+        } else if text.as_bytes()[1] == b'x' || text.as_bytes()[1] == b'X' {
             i = 2;
             while i < text.len() && isxdigit(&text.as_bytes()[i]) {
                 codepoint = (codepoint * 16) + ((text.as_bytes()[i] as u32 | 32) % 39 - 9);
@@ -39,7 +37,10 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
                codepoint >= 0x110000 {
                 codepoint = 0xFFFD;
             }
-            return Some((char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string(), i + 1));
+            return Some((char::from_u32(codepoint)
+                             .unwrap_or('\u{FFFD}')
+                             .to_string(),
+                         i + 1));
         }
     }
 

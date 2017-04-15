@@ -177,8 +177,7 @@ pub fn clean_title(title: &str) -> String {
     let first = title.as_bytes()[0];
     let last = title.as_bytes()[title_len - 1];
 
-    let mut b = if (first == b'\'' && last == b'\'') ||
-                   (first == b'(' && last == b')') ||
+    let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')') ||
                    (first == b'"' && last == b'"') {
         entity::unescape_html(&title[1..title_len - 1])
     } else {
