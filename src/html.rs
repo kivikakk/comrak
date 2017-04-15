@@ -43,12 +43,31 @@ fn tagfilter(literal: &str) -> bool {
 }
 
 fn tagfilter_block(input: &str, mut o: &mut String) {
-    for (i, c) in input.char_indices() {
-        if c == '<' && tagfilter(&input[i..]) {
+    let src = input.as_bytes();
+    let size = src.len();
+    let mut i = 0;
+
+    while i < size {
+        let org = i;
+        while i < size && src[i] != b'<' {
+            i += 1;
+        }
+
+        if i > org {
+            *o += &input[org..i];
+        }
+
+        if i >= size {
+            break;
+        }
+
+        if tagfilter(&input[i..]) {
             *o += "&lt;";
         } else {
-            o.push(c);
+            o.push('<');
         }
+
+        i += 1;
     }
 }
 
