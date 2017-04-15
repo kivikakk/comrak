@@ -15,7 +15,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.1.2
+comrak 0.1.4
 Yuki Izumi <yuki@kivikakk.ee>
 CommonMark parser with GitHub Flavored Markdown extensions
 
