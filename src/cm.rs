@@ -1,10 +1,10 @@
-use std;
-use nodes::{NodeValue, ListType, ListDelimType, NodeLink, AstNode};
-use scanners;
-use nodes;
-use parser::ComrakOptions;
-use nodes::TableAlignment;
 use ctype::{isspace, isdigit, isalpha};
+use nodes;
+use nodes::{NodeValue, ListType, ListDelimType, NodeLink, AstNode};
+use nodes::TableAlignment;
+use parser::ComrakOptions;
+use scanners;
+use std;
 use std::cmp::max;
 use std::io::Write;
 
@@ -44,11 +44,11 @@ enum Escaping {
 impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
-        std::result::Result::Ok(buf.len())
+        Ok(buf.len())
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        std::result::Result::Ok(())
+        Ok(())
     }
 }
 
@@ -115,7 +115,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     while buf.get(i + 1) == Some(&(b' ')) {
                         i += 1;
                     }
-                    if !buf.get(i + 1).map_or(false, |&c| isdigit(&c)) {
+                    if !buf.get(i + 1).map_or(false, |&c| isdigit(c)) {
                         self.last_breakable = last_nonspace;
                     }
                 }
@@ -129,11 +129,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.v.push(buf[i]);
                 self.column += 1;
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&buf[i]);
+                self.begin_content = self.begin_content && isdigit(buf[i]);
             } else {
                 self.outc(buf[i], escaping, nextc);
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&buf[i]);
+                self.begin_content = self.begin_content && isdigit(buf[i]);
             }
 
             if self.options.width > 0 && self.column > self.options.width && !self.begin_line &&
@@ -154,31 +154,28 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn outc(&mut self, c: u8, escaping: Escaping, nextc: Option<&u8>) {
-        let follows_digit = !self.v.is_empty() && isdigit(&self.v[self.v.len() - 1]);
+        let follows_digit = !self.v.is_empty() && isdigit(self.v[self.v.len() - 1]);
 
         let nextc = nextc.map_or(0, |&c| c);
 
         let needs_escaping =
             c < 0x80 && escaping != Escaping::Literal &&
             ((escaping == Escaping::Normal &&
-              (c == b'*' || c == b'_' || c == b'[' || c == b']' ||
-               c == b'#' || c == b'<' ||
-               c == b'>' || c == b'\\' || c == b'`' ||
-               c == b'!' || (c == b'&' && isalpha(&nextc)) ||
+              (c == b'*' || c == b'_' || c == b'[' || c == b']' || c == b'#' || c == b'<' ||
+               c == b'>' || c == b'\\' ||
+               c == b'`' || c == b'!' || (c == b'&' && isalpha(nextc)) ||
                (c == b'!' && nextc == 0x5b) ||
-               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') &&
-                !follows_digit) ||
+               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') && !follows_digit) ||
                (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
-                (nextc == 0 || isspace(&nextc))))) ||
+                (nextc == 0 || isspace(nextc))))) ||
              (escaping == Escaping::URL &&
-              (c == b'`' || c == b'<' || c == b'>' || isspace(&c) ||
-               c == b'\\' || c == b')' || c == b'(')) ||
+              (c == b'`' || c == b'<' || c == b'>' || isspace(c) || c == b'\\' || c == b')' ||
+               c == b'(')) ||
              (escaping == Escaping::Title &&
-              (c == b'`' || c == b'<' || c == b'>' || c == b'"' ||
-               c == b'\\')));
+              (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
 
         if needs_escaping {
-            if isspace(&c) {
+            if isspace(c) {
                 write!(self.v, "%{:2x}", c).unwrap();
                 self.column += 3;
             } else {
@@ -244,9 +241,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
 
         if !(match node.data.borrow().value {
-            NodeValue::Item(..) => true,
-            _ => false,
-        } && node.previous_sibling().is_none() && entering) {
+                 NodeValue::Item(..) => true,
+                 _ => false,
+             } && node.previous_sibling().is_none() && entering) {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
@@ -266,15 +263,15 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::List(..) => {
                 if !entering &&
                    match node.next_sibling() {
-                    Some(next_sibling) => {
-                        match next_sibling.data.borrow().value {
-                            NodeValue::CodeBlock(..) |
-                            NodeValue::List(..) => true,
-                            _ => false,
-                        }
-                    }
-                    _ => false,
-                } {
+                       Some(next_sibling) => {
+                           match next_sibling.data.borrow().value {
+                               NodeValue::CodeBlock(..) |
+                               NodeValue::List(..) => true,
+                               _ => false,
+                           }
+                       }
+                       _ => false,
+                   } {
                     self.cr();
                     write!(self, "<!-- end list -->").unwrap();
                     self.blankline();
@@ -282,7 +279,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Item(..) => {
                 let parent = match node.parent().unwrap().data.borrow().value {
-                    NodeValue::List(ref nl) => nl.clone(),
+                    NodeValue::List(ref nl) => *nl,
                     _ => unreachable!(),
                 };
 
@@ -307,7 +304,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                                "."
                            },
                            if list_number < 10 { "  " } else { " " })
-                        .unwrap();
+                            .unwrap();
                     listmarker.len()
                 };
 
@@ -344,23 +341,23 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if entering {
                     let first_in_list_item = node.previous_sibling().is_none() &&
                                              match node.parent() {
-                        Some(parent) => {
-                            match parent.data.borrow().value {
-                                NodeValue::Item(..) => true,
-                                _ => false,
-                            }
-                        }
-                        _ => false,
-                    };
+                                                 Some(parent) => {
+                                                     match parent.data.borrow().value {
+                                                         NodeValue::Item(..) => true,
+                                                         _ => false,
+                                                     }
+                                                 }
+                                                 _ => false,
+                                             };
 
                     if !first_in_list_item {
                         self.blankline();
                     }
 
                     if ncb.info.is_empty() &&
-                       (ncb.literal.len() > 2 && !isspace(&ncb.literal.as_bytes()[0]) &&
-                        !(isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
-                          isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
+                       (ncb.literal.len() > 2 && !isspace(ncb.literal.as_bytes()[0]) &&
+                        !(isspace(ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
+                          isspace(ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
                        !first_in_list_item {
                         write!(self, "    ").unwrap();
                         write!(self.prefix, "    ").unwrap();
@@ -458,14 +455,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
-                    Some(parent) => {
-                        match parent.data.borrow().value {
-                            NodeValue::Emph => true,
-                            _ => false,
-                        }
-                    }
-                    _ => false,
-                } && node.next_sibling().is_none() &&
+                       Some(parent) => {
+                           match parent.data.borrow().value {
+                               NodeValue::Emph => true,
+                               _ => false,
+                           }
+                       }
+                       _ => false,
+                   } && node.next_sibling().is_none() &&
                                     node.previous_sibling().is_none() {
                     b'_'
                 } else {
@@ -492,7 +489,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if is_autolink(node, nl) {
                     if entering {
                         write!(self, "<").unwrap();
-                        if &&nl.url[..7] == &"mailto:" {
+                        if &nl.url[..7] == "mailto:" {
                             self.write_all(nl.url[7..].as_bytes()).unwrap();
                         } else {
                             self.write_all(nl.url.as_bytes()).unwrap();
@@ -554,7 +551,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     };
 
                     if in_header && node.next_sibling().is_none() {
-                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let table = &node.parent()
+                                         .unwrap()
+                                         .parent()
+                                         .unwrap()
+                                         .data
+                                         .borrow()
+                                         .value;
                         let alignments = match *table {
                             NodeValue::Table(ref alignments) => alignments,
                             _ => panic!(),
@@ -565,13 +568,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         for a in alignments {
                             write!(self,
                                    " {} |",
-                                   match a {
-                                       &TableAlignment::Left => ":--",
-                                       &TableAlignment::Center => ":-:",
-                                       &TableAlignment::Right => "--:",
-                                       &TableAlignment::None => "---",
+                                   match *a {
+                                       TableAlignment::Left => ":--",
+                                       TableAlignment::Center => ":-:",
+                                       TableAlignment::Right => "--:",
+                                       TableAlignment::None => "---",
                                    })
-                                .unwrap();
+                                    .unwrap();
                         }
                         self.cr();
                     }
@@ -647,7 +650,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
     };
 
     let mut real_url: &str = &nl.url;
-    if &&real_url[..7] == &"mailto:" {
+    if &real_url[..7] == "mailto:" {
         real_url = &real_url[7..];
     }
 

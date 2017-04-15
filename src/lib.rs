@@ -60,7 +60,20 @@
 //! # }
 //! ```
 
-#![warn(missing_docs)]
+#![deny(missing_docs,
+        missing_debug_implementations,
+	missing_copy_implementations,
+	trivial_casts,
+	trivial_numeric_casts,
+	unsafe_code,
+	unstable_features,
+	unused_import_braces,
+	unused_qualifications)]
+
+#![cfg_attr(feature = "dev", allow(unstable_features))]
+#![cfg_attr(feature = "dev", feature(plugin))]
+#![cfg_attr(feature = "dev", plugin(clippy))]
+#![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
 extern crate unicode_categories;
 extern crate typed_arena;
@@ -81,11 +94,11 @@ mod strings;
 #[cfg(test)]
 mod tests;
 
-use typed_arena::Arena;
+pub use cm::format_document as format_commonmark;
+pub use html::format_document as format_html;
 
 pub use parser::{parse_document, ComrakOptions};
-pub use html::format_document as format_html;
-pub use cm::format_document as format_commonmark;
+use typed_arena::Arena;
 
 /// Render Markdown to HTML.
 ///

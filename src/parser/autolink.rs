@@ -1,10 +1,8 @@
-use unicode_categories::UnicodeCategories;
-use std::iter::FromIterator;
-use std::collections::BTreeSet;
-use typed_arena::Arena;
-use nodes::{NodeValue, NodeLink, AstNode};
 use ctype::{isspace, isalpha, isalnum};
+use nodes::{NodeValue, NodeLink, AstNode};
 use parser::inlines::make_inline;
+use typed_arena::Arena;
+use unicode_categories::UnicodeCategories;
 
 pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
                              node: &'a AstNode<'a>,
@@ -45,7 +43,7 @@ pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
             node.insert_after(post);
             if i + skip < len {
                 let remain = contents[i + skip..].to_string();
-                assert!(remain.len() > 0);
+                assert!(!remain.is_empty());
                 post.insert_after(make_inline(arena, NodeValue::Text(remain)));
             }
             contents.truncate(i);
@@ -59,12 +57,17 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
                  i: usize)
                  -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
-        static ref WWW_DELIMS: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'*', b'_', b'~', b'(', b'[']);
+        static ref WWW_DELIMS: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'*', b'_', b'~', b'(', b'['] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
-    if i > 0 && !isspace(&contents.as_bytes()[i - 1]) &&
-       !WWW_DELIMS.contains(&contents.as_bytes()[i - 1]) {
+    if i > 0 && !isspace(contents.as_bytes()[i - 1]) &&
+       !WWW_DELIMS[contents.as_bytes()[i - 1] as usize] {
         return None;
     }
 
@@ -77,7 +80,7 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
         Some(link_end) => link_end,
     };
 
-    while i + link_end < contents.len() && !isspace(&contents.as_bytes()[i + link_end]) {
+    while i + link_end < contents.len() && !isspace(contents.as_bytes()[i + link_end]) {
         link_end += 1;
     }
 
@@ -88,9 +91,9 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url,
-                              title: String::new(),
-                          }));
+                                              url: url,
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena,
                            NodeValue::Text(contents[i..link_end + i].to_string())));
@@ -130,9 +133,13 @@ fn is_valid_hostchar(ch: char) -> bool {
 
 fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     lazy_static! {
-        static ref LINK_END_ASSORTMENT: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'?', b'!', b'.', b',', b':', b'*',
-            b'_', b'~', b'\'', b'"']);
+        static ref LINK_END_ASSORTMENT: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"'] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
     for i in 0..link_end {
@@ -145,18 +152,14 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     while link_end > 0 {
         let cclose = data.as_bytes()[link_end - 1];
 
-        let copen = if cclose == b')' {
-            Some(b'(')
-        } else {
-            None
-        };
+        let copen = if cclose == b')' { Some(b'(') } else { None };
 
-        if LINK_END_ASSORTMENT.contains(&cclose) {
+        if LINK_END_ASSORTMENT[cclose as usize] {
             link_end -= 1;
         } else if cclose == b';' {
             let mut new_end = link_end - 2;
 
-            while new_end > 0 && isalpha(&data.as_bytes()[new_end]) {
+            while new_end > 0 && isalpha(data.as_bytes()[new_end]) {
                 new_end -= 1;
             }
 
@@ -200,18 +203,18 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let size = contents.len();
 
-    if size - i < 4 || contents.as_bytes()[i + 1] != b'/' ||
-       contents.as_bytes()[i + 2] != b'/' {
+    if size - i < 4 || contents.as_bytes()[i + 1] != b'/' || contents.as_bytes()[i + 2] != b'/' {
         return None;
     }
 
     let mut rewind = 0;
-    while rewind < i && isalpha(&contents.as_bytes()[i - rewind - 1]) {
+    while rewind < i && isalpha(contents.as_bytes()[i - rewind - 1]) {
         rewind += 1;
     }
 
-    if !SCHEMES.iter()
-        .any(|s| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s) {
+    if !SCHEMES
+            .iter()
+            .any(|s| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s) {
         return None;
     }
 
@@ -220,7 +223,7 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
         Some(link_end) => link_end,
     };
 
-    while link_end < size - i && !isspace(&contents.as_bytes()[i + link_end]) {
+    while link_end < size - i && !isspace(contents.as_bytes()[i + link_end]) {
         link_end += 1;
     }
 
@@ -229,9 +232,9 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
     let url = contents[i - rewind..i + link_end].to_string();
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url.clone(),
-                              title: String::new(),
-                          }));
+                                              url: url.clone(),
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena, NodeValue::Text(url)));
     Some((inl, rewind, rewind + link_end))
@@ -242,8 +245,13 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
                    i: usize)
                    -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
-        static ref EMAIL_OK_SET: BTreeSet<u8> = BTreeSet::from_iter(
-            vec![b'.', b'+', b'-', b'_']);
+        static ref EMAIL_OK_SET: [bool; 256] = {
+            let mut sc = [false; 256];
+            for c in &[b'.', b'+', b'-', b'_'] {
+                sc[*c as usize] = true;
+            }
+            sc
+        };
     }
 
     let size = contents.len();
@@ -254,7 +262,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     while rewind < i {
         let c = contents.as_bytes()[i - rewind - 1];
 
-        if isalnum(&c) || EMAIL_OK_SET.contains(&c) {
+        if isalnum(c) || EMAIL_OK_SET[c as usize] {
             rewind += 1;
             continue;
         }
@@ -277,7 +285,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     while link_end < size - i {
         let c = contents.as_bytes()[i + link_end];
 
-        if isalnum(&c) {
+        if isalnum(c) {
             // empty
         } else if c == b'@' {
             nb += 1;
@@ -291,7 +299,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 
     if link_end < 2 || nb != 1 || np == 0 ||
-       (!isalpha(&contents.as_bytes()[i + link_end - 1]) &&
+       (!isalpha(contents.as_bytes()[i + link_end - 1]) &&
         contents.as_bytes()[i + link_end - 1] != b'.') {
         return None;
     }
@@ -303,9 +311,9 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
 
     let inl = make_inline(arena,
                           NodeValue::Link(NodeLink {
-                              url: url,
-                              title: String::new(),
-                          }));
+                                              url: url,
+                                              title: String::new(),
+                                          }));
 
     inl.append(make_inline(arena,
                            NodeValue::Text(contents[i - rewind..link_end + i].to_string())));
