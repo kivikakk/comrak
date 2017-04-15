@@ -115,7 +115,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     while buf.get(i + 1) == Some(&(b' ')) {
                         i += 1;
                     }
-                    if !buf.get(i + 1).map_or(false, |&c| isdigit(&c)) {
+                    if !buf.get(i + 1).map_or(false, |&c| isdigit(c)) {
                         self.last_breakable = last_nonspace;
                     }
                 }
@@ -129,11 +129,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.v.push(buf[i]);
                 self.column += 1;
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&buf[i]);
+                self.begin_content = self.begin_content && isdigit(buf[i]);
             } else {
                 self.outc(buf[i], escaping, nextc);
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(&buf[i]);
+                self.begin_content = self.begin_content && isdigit(buf[i]);
             }
 
             if self.options.width > 0 && self.column > self.options.width && !self.begin_line &&
@@ -154,7 +154,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn outc(&mut self, c: u8, escaping: Escaping, nextc: Option<&u8>) {
-        let follows_digit = !self.v.is_empty() && isdigit(&self.v[self.v.len() - 1]);
+        let follows_digit = !self.v.is_empty() && isdigit(self.v[self.v.len() - 1]);
 
         let nextc = nextc.map_or(0, |&c| c);
 
@@ -164,21 +164,21 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
               (c == b'*' || c == b'_' || c == b'[' || c == b']' ||
                c == b'#' || c == b'<' ||
                c == b'>' || c == b'\\' || c == b'`' ||
-               c == b'!' || (c == b'&' && isalpha(&nextc)) ||
+               c == b'!' || (c == b'&' && isalpha(nextc)) ||
                (c == b'!' && nextc == 0x5b) ||
                (self.begin_content && (c == b'-' || c == b'+' || c == b'=') &&
                 !follows_digit) ||
                (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
-                (nextc == 0 || isspace(&nextc))))) ||
+                (nextc == 0 || isspace(nextc))))) ||
              (escaping == Escaping::URL &&
-              (c == b'`' || c == b'<' || c == b'>' || isspace(&c) ||
+              (c == b'`' || c == b'<' || c == b'>' || isspace(c) ||
                c == b'\\' || c == b')' || c == b'(')) ||
              (escaping == Escaping::Title &&
               (c == b'`' || c == b'<' || c == b'>' || c == b'"' ||
                c == b'\\')));
 
         if needs_escaping {
-            if isspace(&c) {
+            if isspace(c) {
                 write!(self.v, "%{:2x}", c).unwrap();
                 self.column += 3;
             } else {
@@ -358,9 +358,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     }
 
                     if ncb.info.is_empty() &&
-                       (ncb.literal.len() > 2 && !isspace(&ncb.literal.as_bytes()[0]) &&
-                        !(isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
-                          isspace(&ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
+                       (ncb.literal.len() > 2 && !isspace(ncb.literal.as_bytes()[0]) &&
+                        !(isspace(ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
+                          isspace(ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
                        !first_in_list_item {
                         write!(self, "    ").unwrap();
                         write!(self.prefix, "    ").unwrap();

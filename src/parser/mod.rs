@@ -223,61 +223,65 @@ impl<'a, 'o> Parser<'a, 'o> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
-            linebuf: String::new(),
+            linebuf: String::with_capacity(80),
             last_buffer_ended_with_cr: false,
             options: options,
         }
     }
 
-    pub fn feed(&mut self, mut buffer: &str, eof: bool) {
-        if self.last_buffer_ended_with_cr && buffer.as_bytes()[0] == b'\n' {
-            buffer = &buffer[1..];
+    pub fn feed(&mut self, s: &str, eof: bool) {
+        let mut i = 0;
+        let buffer = s.as_bytes();
+        let sz = buffer.len();
+
+        if self.last_buffer_ended_with_cr && buffer[i] == b'\n' {
+            i += 1;
         }
         self.last_buffer_ended_with_cr = false;
 
-        while !buffer.is_empty() {
+        while i < sz {
             let mut process = false;
-            let mut eol = 0;
-            while eol < buffer.len() {
-                if strings::is_line_end_char(&buffer.as_bytes()[eol]) {
+            let mut eol = i;
+            while eol < sz {
+                if strings::is_line_end_char(buffer[eol]) {
                     process = true;
                     break;
                 }
-                if buffer.as_bytes()[eol] == 0 {
+                if buffer[eol] == 0 {
                     break;
                 }
                 eol += 1;
             }
 
-            if eol >= buffer.len() && eof {
+            if eol >= sz && eof {
                 process = true;
             }
 
             if process {
                 if !self.linebuf.is_empty() {
-                    self.linebuf += &buffer[0..eol];
-                    let linebuf = mem::replace(&mut self.linebuf, String::new());
+                    self.linebuf += &s[i..eol];
+                    let linebuf = mem::replace(&mut self.linebuf, String::with_capacity(80));
                     self.process_line(&linebuf);
                 } else {
-                    self.process_line(&buffer[0..eol]);
+                    self.process_line(&s[i..eol]);
                 }
-            } else if eol < buffer.len() && buffer.as_bytes()[eol] == b'\0' {
-                self.linebuf += &buffer[0..eol];
+            } else if eol < sz && buffer[eol] == b'\0' {
+                self.linebuf += &s[i..eol];
                 self.linebuf.push('\u{fffd}');
                 eol += 1;
             } else {
-                self.linebuf += &buffer[0..eol];
+                self.linebuf += &s[i..eol];
             }
 
-            buffer = &buffer[eol..];
-            if !buffer.is_empty() && buffer.as_bytes()[0] == b'\r' {
-                buffer = &buffer[1..];
-                if buffer.is_empty() {
+            i = eol;
+            if i < sz && buffer[i] == b'\r' {
+                i += 1;
+                if i == sz {
                     self.last_buffer_ended_with_cr = true;
                 }
             }
-            if !buffer.is_empty() && buffer.as_bytes()[0] == b'\n' {
-                buffer = &buffer[1..];
+            if i < sz && buffer[i] == b'\n' {
+                i += 1;
             }
         }
     }
@@ -311,12 +315,12 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         self.indent = self.first_nonspace_column - self.column;
         self.blank = self.first_nonspace < line.len() &&
-                     strings::is_line_end_char(&line.as_bytes()[self.first_nonspace]);
+                     strings::is_line_end_char(line.as_bytes()[self.first_nonspace]);
     }
 
     fn process_line(&mut self, buffer: &str) {
         let mut line: String = buffer.into();
-        if line.is_empty() || !strings::is_line_end_char(line.as_bytes().last().unwrap()) {
+        if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
             line.push('\n');
         }
 
@@ -447,7 +451,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let blockquote_startpos = self.first_nonspace;
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
-                if strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
+                if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
                 *container =
@@ -486,8 +490,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                     fence_char: line.as_bytes()[first_nonspace],
                     fence_length: matched,
                     fence_offset: first_nonspace - offset,
-                    info: String::new(),
-                    literal: String::new(),
+                    info: String::with_capacity(10),
+                    literal: String::with_capacity(80),
                 };
                 *container =
                     self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
@@ -505,7 +509,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let offset = self.first_nonspace + 1;
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
-                    literal: String::new(),
+                    literal: String::with_capacity(10),
                 };
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb), offset);
@@ -555,12 +559,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                     (self.partially_consumed_tab, self.offset, self.column);
 
                 while self.column - save_column <= 5 &&
-                      strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
+                      strings::is_space_or_tab(line.as_bytes()[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
 
                 let i = self.column - save_column;
-                if i >= 5 || i < 1 || strings::is_line_end_char(&line.as_bytes()[self.offset]) {
+                if i >= 5 || i < 1 || strings::is_line_end_char(line.as_bytes()[self.offset]) {
                     nl.padding = matched + 1;
                     self.offset = save_offset;
                     self.column = save_column;
@@ -592,7 +596,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     fence_length: 0,
                     fence_offset: 0,
                     info: String::new(),
-                    literal: String::new(),
+                    literal: String::with_capacity(80),
                 };
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
@@ -658,7 +662,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         if indent <= 3 && line.as_bytes()[self.first_nonspace] == b'>' {
             self.advance_offset(line, indent + 1, true);
 
-            if strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
+            if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
                 self.advance_offset(line, 1, true);
             }
 
@@ -724,7 +728,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(&line.as_bytes()[self.offset]) {
+        while i > 0 && strings::is_space_or_tab(line.as_bytes()[self.offset]) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -944,7 +948,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 } else {
                     let mut pos = 0;
                     while pos < content.len() {
-                        if strings::is_line_end_char(&content.as_bytes()[pos]) {
+                        if strings::is_line_end_char(content.as_bytes()[pos]) {
                             break;
                         }
                         pos += 1;
@@ -1199,13 +1203,13 @@ fn parse_list_marker(line: &mut String,
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !isspace(&line.as_bytes()[pos]) {
+        if !isspace(line.as_bytes()[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(&line.as_bytes()[i]) {
+            while strings::is_space_or_tab(line.as_bytes()[i]) {
                 i += 1;
             }
             if line.as_bytes()[i] == b'\n' {
@@ -1223,7 +1227,7 @@ fn parse_list_marker(line: &mut String,
                          bullet_char: c,
                          tight: false,
                      }));
-    } else if isdigit(&c) {
+    } else if isdigit(c) {
         let mut start: usize = 0;
         let mut digits = 0;
 
@@ -1232,7 +1236,7 @@ fn parse_list_marker(line: &mut String,
             pos += 1;
             digits += 1;
 
-            if !(digits < 9 && isdigit(&line.as_bytes()[pos])) {
+            if !(digits < 9 && isdigit(line.as_bytes()[pos])) {
                 break;
             }
         }
@@ -1248,16 +1252,16 @@ fn parse_list_marker(line: &mut String,
 
         pos += 1;
 
-        if !isspace(&line.as_bytes()[pos]) {
+        if !isspace(line.as_bytes()[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(&line.as_bytes()[i]) {
+            while strings::is_space_or_tab(line.as_bytes()[i]) {
                 i += 1;
             }
-            if strings::is_line_end_char(&line.as_bytes()[i]) {
+            if strings::is_line_end_char(line.as_bytes()[i]) {
                 return None;
             }
         }

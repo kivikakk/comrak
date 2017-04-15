@@ -13,7 +13,7 @@
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
-#![allow(doc_markdown, cyclomatic_complexity)]
+#![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
 #[macro_use]
 extern crate clap;
@@ -37,6 +37,7 @@ mod entity_data;
 use typed_arena::Arena;
 use std::io::Read;
 use std::collections::BTreeSet;
+use std::process;
 
 fn main() {
     let matches = clap::App::new("comrak")
@@ -99,24 +100,22 @@ fn main() {
 
     assert!(exts.is_empty());
 
-    let mut buf = vec![];
+    let mut s = String::with_capacity(2048);
 
     match matches.values_of("file") {
         None => {
-            std::io::stdin().read_to_end(&mut buf).unwrap();
+            std::io::stdin().read_to_string(&mut s).unwrap();
         }
         Some(fs) => {
             for f in fs {
                 let mut io = std::fs::File::open(f).unwrap();
-                io.read_to_end(&mut buf).unwrap();
+                io.read_to_string(&mut s).unwrap();
             }
         }
     };
 
-    let chars: String = String::from_utf8(buf).unwrap();
-
     let arena = Arena::new();
-    let root = parser::parse_document(&arena, &chars, &options);
+    let root = parser::parse_document(&arena, &s, &options);
 
     let formatter = match matches.value_of("format") {
         Some("html") => html::format_document,
@@ -125,4 +124,6 @@ fn main() {
     };
 
     print!("{}", formatter(root, &options));
+
+    process::exit(0);
 }

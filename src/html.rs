@@ -1,6 +1,3 @@
-use std;
-use std::io::Write;
-
 use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
 use ctype::isspace;
@@ -9,40 +6,21 @@ use ctype::isspace;
 pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
     let mut f = HtmlFormatter::new(options);
     f.format(root, false);
-    String::from_utf8(f.v).unwrap()
+    f.s
 }
 
 struct HtmlFormatter<'o> {
-    v: Vec<u8>,
+    s: String,
     options: &'o ComrakOptions,
 }
 
-impl<'o> Write for HtmlFormatter<'o> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.v.write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.v.flush()
-    }
-}
-
-lazy_static! {
-    static ref HREF_SAFE: [bool; 256] = {
-        let mut a = [false; 256];
-        for &c in concat!("-_.+!*'(),%#@?=;:/,+&$abcdefghijkl",
-        "mnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").as_bytes() {
-            a[c as usize] = true;
-        }
-        a
-    };
-
-    static ref TAGFILTER_BLACKLIST: [&'static str; 9] =
-        ["title", "textarea", "style", "xmp", "iframe",
-         "noembed", "noframes", "script", "plaintext"];
-}
-
 fn tagfilter(literal: &str) -> bool {
+    lazy_static! {
+        static ref TAGFILTER_BLACKLIST: [&'static str; 9] =
+            ["title", "textarea", "style", "xmp", "iframe",
+             "noembed", "noframes", "script", "plaintext"];
+    }
+
     if literal.len() < 3 || literal.as_bytes()[0] != b'<' {
         return false;
     }
@@ -53,9 +31,9 @@ fn tagfilter(literal: &str) -> bool {
     }
 
     for t in TAGFILTER_BLACKLIST.iter() {
-        let j = i + t.len();
-        if j < literal.len() && &&literal[i..j] == t {
-            return isspace(&literal.as_bytes()[j]) || literal.as_bytes()[j] == b'>' ||
+        if literal[i..].starts_with(t) {
+            let j = i + t.len();
+            return isspace(literal.as_bytes()[j]) || literal.as_bytes()[j] == b'>' ||
                    (literal.as_bytes()[j] == b'/' && literal.len() >= j + 2 &&
                     literal.as_bytes()[j + 1] == b'>');
         }
@@ -64,49 +42,84 @@ fn tagfilter(literal: &str) -> bool {
     false
 }
 
-fn tagfilter_block<W: Write>(input: &str, mut w: &mut W) {
-    let mut i = 0;
-    let len = input.len();
-
-    while i < len {
-        if tagfilter(&input[i..]) {
-            write!(w, "&lt;").unwrap();
+fn tagfilter_block(input: &str, mut o: &mut String) {
+    for (i, c) in input.char_indices() {
+        if c == '<' && tagfilter(&input[i..]) {
+            *o += "&lt;";
         } else {
-            w.write_all(&[input.as_bytes()[i]]).unwrap();
+            o.push(c);
         }
-
-        i += 1;
     }
 }
 
 impl<'o> HtmlFormatter<'o> {
     fn new(options: &'o ComrakOptions) -> Self {
         HtmlFormatter {
-            v: vec![],
+            s: String::with_capacity(1024),
             options: options,
         }
     }
 
     fn cr(&mut self) {
-        let l = self.v.len();
-        if l > 0 && self.v[l - 1] != b'\n' {
-            self.v.push(b'\n');
+        let l = self.s.len();
+        if l > 0 && self.s.as_bytes()[l - 1] != b'\n' {
+            self.s += "\n";
         }
     }
 
     fn escape(&mut self, buffer: &str) {
-        for c in buffer.as_bytes() {
-            match *c {
-                b'"' => self.write_all(b"&quot;").unwrap(),
-                b'&' => self.write_all(b"&amp;").unwrap(),
-                b'<' => self.write_all(b"&lt;").unwrap(),
-                b'>' => self.write_all(b"&gt;").unwrap(),
-                _ => self.v.push(*c),
+        lazy_static! {
+            static ref NEEDS_ESCAPED: [bool; 256] = {
+                let mut sc = [false; 256];
+                for &c in &['"', '&', '<', '>'] {
+                    sc[c as usize] = true;
+                }
+                sc
+            };
+        }
+
+        let src = buffer.as_bytes();
+        let size = src.len();
+        let mut i = 0;
+
+        while i < size {
+            let org = i;
+            while i < size && !NEEDS_ESCAPED[src[i] as usize] {
+                i += 1;
             }
+
+            if i > org {
+                self.s += &buffer[org..i];
+            }
+
+            if i >= size {
+                break;
+            }
+
+            match src[i] as char {
+                '"' => self.s += "&quot;",
+                '&' => self.s += "&amp;",
+                '<' => self.s += "&lt;",
+                '>' => self.s += "&gt;",
+                _ => unreachable!(),
+            }
+
+            i += 1;
         }
     }
 
     fn escape_href(&mut self, buffer: &str) {
+        lazy_static! {
+            static ref HREF_SAFE: [bool; 256] = {
+                let mut a = [false; 256];
+                for &c in concat!("-_.+!*'(),%#@?=;:/,+&$abcdefghijkl",
+                "mnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").as_bytes() {
+                    a[c as usize] = true;
+                }
+                a
+            };
+        }
+
         let src = buffer.as_bytes();
         let size = src.len();
         let mut i = 0;
@@ -118,7 +131,7 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             if i > org {
-                self.v.extend_from_slice(&src[org..i]);
+                self.s += &buffer[org..i];
             }
 
             if i >= size {
@@ -126,9 +139,9 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             match src[i] as char {
-                '&' => write!(self, "&amp;").unwrap(),
-                '\'' => write!(self, "&#x27;").unwrap(),
-                _ => write!(self, "%{:02X}", src[i]).unwrap(),
+                '&' => self.s += "&amp;",
+                '\'' => self.s += "&#x27;",
+                _ => self.s += &format!("%{:02X}", src[i]),
             }
 
             i += 1;
@@ -148,7 +161,7 @@ impl<'o> HtmlFormatter<'o> {
                 NodeValue::Code(ref literal) |
                 NodeValue::HtmlInline(ref literal) => self.escape(literal),
                 NodeValue::LineBreak |
-                NodeValue::SoftBreak => self.v.push(b' '),
+                NodeValue::SoftBreak => self.s.push(' '),
                 _ => (),
             }
             self.format_children(node, true);
@@ -165,42 +178,42 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::BlockQuote => {
                 if entering {
                     self.cr();
-                    write!(self, "<blockquote>\n").unwrap();
+                    self.s += "<blockquote>\n";
                 } else {
                     self.cr();
-                    write!(self, "</blockquote>\n").unwrap();
+                    self.s += "</blockquote>\n";
                 }
             }
             NodeValue::List(ref nl) => {
                 if entering {
                     self.cr();
                     if nl.list_type == ListType::Bullet {
-                        write!(self, "<ul>\n").unwrap();
+                        self.s += "<ul>\n";
                     } else if nl.start == 1 {
-                        write!(self, "<ol>\n").unwrap();
+                        self.s += "<ol>\n";
                     } else {
-                        write!(self, "<ol start=\"{}\">\n", nl.start).unwrap();
+                        self.s += &format!("<ol start=\"{}\">\n", nl.start);
                     }
                 } else if nl.list_type == ListType::Bullet {
-                    write!(self, "</ul>\n").unwrap();
+                    self.s += "</ul>\n";
                 } else {
-                    write!(self, "</ol>\n").unwrap();
+                    self.s += "</ol>\n";
                 }
             }
             NodeValue::Item(..) => {
                 if entering {
                     self.cr();
-                    write!(self, "<li>").unwrap();
+                    self.s += "<li>";
                 } else {
-                    write!(self, "</li>\n").unwrap();
+                    self.s += "</li>\n";
                 }
             }
             NodeValue::Heading(ref nch) => {
                 if entering {
                     self.cr();
-                    write!(self, "<h{}>", nch.level).unwrap();
+                    self.s += &format!("<h{}>", nch.level);
                 } else {
-                    write!(self, "</h{}>\n", nch.level).unwrap();
+                    self.s += &format!("</h{}>\n", nch.level);
                 }
             }
             NodeValue::CodeBlock(ref ncb) => {
@@ -208,35 +221,35 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr();
 
                     if ncb.info.is_empty() {
-                        write!(self, "<pre><code>").unwrap();
+                        self.s += "<pre><code>";
                     } else {
                         let mut first_tag = 0;
                         while first_tag < ncb.info.len() &&
-                              !isspace(&ncb.info.as_bytes()[first_tag]) {
+                              !isspace(ncb.info.as_bytes()[first_tag]) {
                             first_tag += 1;
                         }
 
                         if self.options.github_pre_lang {
-                            write!(self, "<pre lang=\"").unwrap();
+                            self.s += "<pre lang=\"";
                             self.escape(&ncb.info[..first_tag]);
-                            write!(self, "\"><code>").unwrap();
+                            self.s += "\"><code>";
                         } else {
-                            write!(self, "<pre><code class=\"language-").unwrap();
+                            self.s += "<pre><code class=\"language-";
                             self.escape(&ncb.info[..first_tag]);
-                            write!(self, "\">").unwrap();
+                            self.s += "\">";
                         }
                     }
                     self.escape(&ncb.literal);
-                    write!(self, "</code></pre>\n").unwrap();
+                    self.s += "</code></pre>\n";
                 }
             }
             NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr();
                     if self.options.ext_tagfilter {
-                        tagfilter_block(&nhb.literal, self);
+                        tagfilter_block(&nhb.literal, &mut self.s);
                     } else {
-                        self.write_all(nhb.literal.as_bytes()).unwrap();
+                        self.s += &nhb.literal;
                     }
                     self.cr();
                 }
@@ -244,7 +257,7 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::ThematicBreak => {
                 if entering {
                     self.cr();
-                    write!(self, "<hr />\n").unwrap();
+                    self.s += "<hr />\n";
                 }
             }
             NodeValue::Paragraph => {
@@ -258,10 +271,10 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     if !tight {
                         self.cr();
-                        write!(self, "<p>").unwrap();
+                        self.s += "<p>";
                     }
                 } else if !tight {
-                    write!(self, "</p>\n").unwrap();
+                    self.s += "</p>\n";
                 }
             }
             NodeValue::Text(ref literal) => {
@@ -271,116 +284,117 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::LineBreak => {
                 if entering {
-                    write!(self, "<br />\n").unwrap();
+                    self.s += "<br />\n";
                 }
             }
             NodeValue::SoftBreak => {
                 if entering {
                     if self.options.hardbreaks {
-                        write!(self, "<br />\n").unwrap();
+                        self.s += "<br />\n";
                     } else {
-                        write!(self, "\n").unwrap();
+                        self.s += "\n";
                     }
                 }
             }
             NodeValue::Code(ref literal) => {
                 if entering {
-                    write!(self, "<code>").unwrap();
+                    self.s += "<code>";
                     self.escape(literal);
-                    write!(self, "</code>").unwrap();
+                    self.s += "</code>";
                 }
             }
             NodeValue::HtmlInline(ref literal) => {
                 if entering {
                     if self.options.ext_tagfilter && tagfilter(literal) {
-                        write!(self, "&lt;{}", &literal[1..]).unwrap();
+                        self.s += "&lt;";
+                        self.s += &literal[1..];
                     } else {
-                        write!(self, "{}", literal).unwrap();
+                        self.s += literal;
                     }
                 }
             }
             NodeValue::Strong => {
                 if entering {
-                    write!(self, "<strong>").unwrap();
+                    self.s += "<strong>";
                 } else {
-                    write!(self, "</strong>").unwrap();
+                    self.s += "</strong>";
                 }
             }
             NodeValue::Emph => {
                 if entering {
-                    write!(self, "<em>").unwrap();
+                    self.s += "<em>";
                 } else {
-                    write!(self, "</em>").unwrap();
+                    self.s += "</em>";
                 }
             }
             NodeValue::Strikethrough => {
                 if entering {
-                    write!(self, "<del>").unwrap();
+                    self.s += "<del>";
                 } else {
-                    write!(self, "</del>").unwrap();
+                    self.s += "</del>";
                 }
             }
             NodeValue::Superscript => {
                 if entering {
-                    write!(self, "<sup>").unwrap();
+                    self.s += "<sup>";
                 } else {
-                    write!(self, "</sup>").unwrap();
+                    self.s += "</sup>";
                 }
             }
             NodeValue::Link(ref nl) => {
                 if entering {
-                    write!(self, "<a href=\"").unwrap();
+                    self.s += "<a href=\"";
                     self.escape_href(&nl.url);
                     if !nl.title.is_empty() {
-                        write!(self, "\" title=\"").unwrap();
+                        self.s += "\" title=\"";
                         self.escape(&nl.title);
                     }
-                    write!(self, "\">").unwrap();
+                    self.s += "\">";
                 } else {
-                    write!(self, "</a>").unwrap();
+                    self.s += "</a>";
                 }
             }
             NodeValue::Image(ref nl) => {
                 if entering {
-                    write!(self, "<img src=\"").unwrap();
+                    self.s += "<img src=\"";
                     self.escape_href(&nl.url);
-                    write!(self, "\" alt=\"").unwrap();
+                    self.s += "\" alt=\"";
                     return true;
                 } else {
                     if !nl.title.is_empty() {
-                        write!(self, "\" title=\"").unwrap();
+                        self.s += "\" title=\"";
                         self.escape(&nl.title);
                     }
-                    write!(self, "\" />").unwrap();
+                    self.s += "\" />";
                 }
             }
             NodeValue::Table(..) => {
                 if entering {
                     self.cr();
-                    write!(self, "<table>\n").unwrap();
+                    self.s += "<table>\n";
                 } else {
                     if !node.last_child().unwrap().same_node(node.first_child().unwrap()) {
-                        write!(self, "</tbody>").unwrap();
+                        self.s += "</tbody>";
                     }
-                    write!(self, "</table>\n").unwrap();
+                    self.s += "</table>\n";
                 }
             }
             NodeValue::TableRow(header) => {
                 if entering {
                     self.cr();
                     if header {
-                        write!(self, "<thead>").unwrap();
+                        self.s += "<thead>";
                         self.cr();
                     }
-                    write!(self, "<tr>").unwrap();
+                    self.s += "<tr>";
                 } else {
                     self.cr();
-                    write!(self, "</tr>").unwrap();
+                    self.s += "</tr>";
                     if header {
                         self.cr();
-                        write!(self, "</thead>").unwrap();
+                        self.s += "</thead>";
                         self.cr();
-                        write!(self, "<tbody>").unwrap();
+                        self.s += "<tbody>";
                     }
                 }
             }
@@ -400,9 +414,9 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     self.cr();
                     if in_header {
-                        write!(self, "<th").unwrap();
+                        self.s += "<th";
                     } else {
-                        write!(self, "<td").unwrap();
+                        self.s += "<td";
                     }
 
                     let mut start = node.parent().unwrap().first_child().unwrap();
@@ -413,17 +427,17 @@ impl<'o> HtmlFormatter<'o> {
                     }
 
                     match alignments[i] {
-                        TableAlignment::Left => write!(self, " align=\"left\"").unwrap(),
-                        TableAlignment::Right => write!(self, " align=\"right\"").unwrap(),
-                        TableAlignment::Center => write!(self, " align=\"center\"").unwrap(),
+                        TableAlignment::Left => self.s += " align=\"left\"",
+                        TableAlignment::Right => self.s += " align=\"right\"",
+                        TableAlignment::Center => self.s += " align=\"center\"",
                         TableAlignment::None => (),
                     }
 
-                    write!(self, ">").unwrap();
+                    self.s += ">";
                 } else if in_header {
-                    write!(self, "</th>").unwrap();
+                    self.s += "</th>";
                 } else {
-                    write!(self, "</td>").unwrap();
+                    self.s += "</td>";
                 }
             }
         }

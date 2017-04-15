@@ -66,7 +66,7 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
         };
     }
 
-    if i > 0 && !isspace(&contents.as_bytes()[i - 1]) &&
+    if i > 0 && !isspace(contents.as_bytes()[i - 1]) &&
        !WWW_DELIMS[contents.as_bytes()[i - 1] as usize] {
         return None;
     }
@@ -80,7 +80,7 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
         Some(link_end) => link_end,
     };
 
-    while i + link_end < contents.len() && !isspace(&contents.as_bytes()[i + link_end]) {
+    while i + link_end < contents.len() && !isspace(contents.as_bytes()[i + link_end]) {
         link_end += 1;
     }
 
@@ -163,7 +163,7 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
         } else if cclose == b';' {
             let mut new_end = link_end - 2;
 
-            while new_end > 0 && isalpha(&data.as_bytes()[new_end]) {
+            while new_end > 0 && isalpha(data.as_bytes()[new_end]) {
                 new_end -= 1;
             }
 
@@ -213,7 +213,7 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 
     let mut rewind = 0;
-    while rewind < i && isalpha(&contents.as_bytes()[i - rewind - 1]) {
+    while rewind < i && isalpha(contents.as_bytes()[i - rewind - 1]) {
         rewind += 1;
     }
 
@@ -227,7 +227,7 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
         Some(link_end) => link_end,
     };
 
-    while link_end < size - i && !isspace(&contents.as_bytes()[i + link_end]) {
+    while link_end < size - i && !isspace(contents.as_bytes()[i + link_end]) {
         link_end += 1;
     }
 
@@ -266,7 +266,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     while rewind < i {
         let c = contents.as_bytes()[i - rewind - 1];
 
-        if isalnum(&c) || EMAIL_OK_SET[c as usize] {
+        if isalnum(c) || EMAIL_OK_SET[c as usize] {
             rewind += 1;
             continue;
         }
@@ -289,7 +289,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     while link_end < size - i {
         let c = contents.as_bytes()[i + link_end];
 
-        if isalnum(&c) {
+        if isalnum(c) {
             // empty
         } else if c == b'@' {
             nb += 1;
@@ -303,7 +303,7 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 
     if link_end < 2 || nb != 1 || np == 0 ||
-       (!isalpha(&contents.as_bytes()[i + link_end - 1]) &&
+       (!isalpha(contents.as_bytes()[i + link_end - 1]) &&
         contents.as_bytes()[i + link_end - 1] != b'.') {
         return None;
     }

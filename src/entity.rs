@@ -13,9 +13,9 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
         let mut codepoint: u32 = 0;
         let mut i = 0;
 
-        let num_digits = if isdigit(&text.as_bytes()[1]) {
+        let num_digits = if isdigit(text.as_bytes()[1]) {
             i = 1;
-            while i < text.len() && isdigit(&text.as_bytes()[i]) {
+            while i < text.len() && isdigit(text.as_bytes()[i]) {
                 codepoint = (codepoint * 10) + (text.as_bytes()[i] as u32 - '0' as u32);
                 codepoint = min(codepoint, 0x110000);
                 i += 1;

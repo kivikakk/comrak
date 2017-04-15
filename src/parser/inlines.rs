@@ -22,6 +22,7 @@ pub struct Subject<'a, 'r, 'o> {
     brackets: Vec<Bracket<'a>>,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
+    special_chars: Vec<bool>,
 }
 
 struct Delimiter<'a> {
@@ -46,7 +47,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                input: &str,
                refmap: &'r mut HashMap<String, Reference>)
                -> Self {
-        Subject {
+        let mut s = Subject {
             arena: arena,
             options: options,
             input: input.to_string(),
@@ -56,7 +57,19 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             brackets: vec![],
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
+            special_chars: vec![],
+        };
+        s.special_chars.extend_from_slice(&[false; 256]);
+        for &c in &[b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!'] {
+            s.special_chars[c as usize] = true;
         }
+        if options.ext_strikethrough {
+            s.special_chars[b'~' as usize] = true;
+        }
+        if options.ext_superscript {
+            s.special_chars[b'^' as usize] = true;
+        }
+        s
     }
 
     pub fn pop_bracket(&mut self) -> bool {
@@ -109,7 +122,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                     let mut contents = self.input[self.pos..endpos].to_string();
                     self.pos = endpos;
 
-                    if self.peek_char().map_or(false, strings::is_line_end_char) {
+                    if self.peek_char().map_or(false, |&c| strings::is_line_end_char(c)) {
                         strings::rtrim(&mut contents);
                     }
 
@@ -266,24 +279,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     }
 
     pub fn find_special_char(&self) -> usize {
-        lazy_static! {
-            static ref SPECIAL_CHARS: [bool; 256] = {
-                let mut sc = [false; 256];
-                for c in &[b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!'] {
-                    sc[*c as usize] = true;
-                }
-                sc
-            };
-        }
-
         for n in self.pos..self.input.len() {
-            if SPECIAL_CHARS[self.input.as_bytes()[n] as usize] {
-                return n;
-            }
-            if self.options.ext_strikethrough && self.input.as_bytes()[n] == b'~' {
-                return n;
-            }
-            if self.options.ext_superscript && self.input.as_bytes()[n] == b'^' {
+            if self.special_chars[self.input.as_bytes()[n] as usize] {
                 return n;
             }
         }
@@ -309,7 +306,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
     }
 
     pub fn take_while(&mut self, c: u8) -> String {
-        let mut v = String::new();
+        let mut v = String::with_capacity(10);
         while self.peek_char() == Some(&c) {
             v.push(self.input.as_bytes()[self.pos] as char);
             self.pos += 1;
@@ -540,7 +537,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
 
     pub fn handle_backslash(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
-        if self.peek_char().map_or(false, ispunct) {
+        if self.peek_char().map_or(false, |&c| ispunct(c)) {
             self.pos += 1;
             make_inline(self.arena,
                         NodeValue::Text((self.input.as_bytes()[self.pos - 1] as char)
@@ -751,7 +748,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             if c == b'\\' {
                 self.pos += 1;
                 length += 1;
-                if self.peek_char().map_or(false, ispunct) {
+                if self.peek_char().map_or(false, |&c| ispunct(c)) {
                     self.pos += 1;
                     length += 1;
                 }
@@ -796,7 +793,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
                 break;
             } else if input.as_bytes()[i] == b'\\' {
                 i += 2;
-            } else if isspace(&input.as_bytes()[i]) {
+            } else if isspace(input.as_bytes()[i]) {
                 return None;
             } else {
                 i += 1;
@@ -815,7 +812,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
                 }
                 nb_p -= 1;
                 i += 1;
-            } else if isspace(&input.as_bytes()[i]) {
+            } else if isspace(input.as_bytes()[i]) {
                 break;
             } else {
                 i += 1;

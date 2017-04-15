@@ -19,22 +19,22 @@ const CMARK_CTYPE_CLASS: [u8; 256] = [
     /* f */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-pub fn isspace(ch: &u8) -> bool {
-    *ch < 0x80 && CMARK_CTYPE_CLASS[*ch as usize] == 1
+pub fn isspace(ch: u8) -> bool {
+    CMARK_CTYPE_CLASS[ch as usize] == 1
 }
 
-pub fn ispunct(ch: &u8) -> bool {
-    *ch < 0x80 && CMARK_CTYPE_CLASS[*ch as usize] == 2
+pub fn ispunct(ch: u8) -> bool {
+    CMARK_CTYPE_CLASS[ch as usize] == 2
 }
 
-pub fn isdigit(ch: &u8) -> bool {
-    *ch < 0x80 && CMARK_CTYPE_CLASS[*ch as usize] == 3
+pub fn isdigit(ch: u8) -> bool {
+    CMARK_CTYPE_CLASS[ch as usize] == 3
 }
 
-pub fn isalpha(ch: &u8) -> bool {
-    *ch < 0x80 && CMARK_CTYPE_CLASS[*ch as usize] == 4
+pub fn isalpha(ch: u8) -> bool {
+    CMARK_CTYPE_CLASS[ch as usize] == 4
 }
 
-pub fn isalnum(ch: &u8) -> bool {
-    *ch < 0x80 && (CMARK_CTYPE_CLASS[*ch as usize] == 3 || CMARK_CTYPE_CLASS[*ch as usize] == 4)
+pub fn isalnum(ch: u8) -> bool {
+    (CMARK_CTYPE_CLASS[ch as usize] == 3 || CMARK_CTYPE_CLASS[ch as usize] == 4)
 }
