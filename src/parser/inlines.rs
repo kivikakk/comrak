@@ -2,8 +2,7 @@ use arena_tree::Node;
 use ctype::{isspace, ispunct};
 use entity;
 use nodes::{NodeValue, Ast, NodeLink, AstNode};
-use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, MAXBACKTICKS, Reference,
-             MAX_LINK_LABEL_LENGTH, AutolinkType};
+use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, Reference, AutolinkType};
 use scanners;
 
 use std::cell::RefCell;
@@ -11,6 +10,9 @@ use std::collections::HashMap;
 use strings;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
+
+const MAXBACKTICKS: usize = 80;
+const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 pub struct Subject<'a, 'r, 'o> {
     pub arena: &'a Arena<AstNode<'a>>,

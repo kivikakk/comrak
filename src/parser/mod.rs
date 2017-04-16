@@ -9,7 +9,6 @@ use entity;
 use nodes;
 use nodes::{NodeValue, Ast, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
             NodeHtmlBlock, make_block, AstNode};
-
 use regex::Regex;
 use scanners;
 use std::cell::RefCell;
@@ -21,8 +20,6 @@ use typed_arena::Arena;
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
-pub const MAXBACKTICKS: usize = 80;
-pub const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 /// Parse a Markdown document to an AST.
 ///
@@ -322,7 +319,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn process_line(&mut self, line: &str) {
         let mut new_line: String;
-        let line = if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
+        let line = if line.is_empty() ||
+                      !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
             new_line = line.into();
             new_line.push('\n');
             &new_line
@@ -361,10 +359,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn check_open_blocks(&mut self,
-                         line: &str,
-                         all_matched: &mut bool)
-                         -> Option<&'a AstNode<'a>> {
+    fn check_open_blocks(&mut self, line: &str, all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
         let (new_all_matched, mut container, should_continue) =
             self.check_open_blocks_inner(self.root, line);
 
@@ -436,10 +431,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         (true, container, should_continue)
     }
 
-    fn open_new_blocks(&mut self,
-                       container: &mut &'a AstNode<'a>,
-                       line: &str,
-                       all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &str, all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
