@@ -262,6 +262,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                     self.linebuf += &s[i..eol];
                     let linebuf = mem::replace(&mut self.linebuf, String::with_capacity(80));
                     self.process_line(&linebuf);
+                } else if sz > eol && buffer[eol] == b'\n' {
+                    self.process_line(&s[i..eol + 1]);
                 } else {
                     self.process_line(&s[i..eol]);
                 }
@@ -286,7 +288,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn find_first_nonspace(&mut self, line: &mut String) {
+    fn find_first_nonspace(&mut self, line: &str) {
         self.first_nonspace = self.offset;
         self.first_nonspace_column = self.column;
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
@@ -318,11 +320,15 @@ impl<'a, 'o> Parser<'a, 'o> {
                      strings::is_line_end_char(line.as_bytes()[self.first_nonspace]);
     }
 
-    fn process_line(&mut self, buffer: &str) {
-        let mut line: String = buffer.into();
-        if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
-            line.push('\n');
-        }
+    fn process_line(&mut self, line: &str) {
+        let mut new_line: String;
+        let line = if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
+            new_line = line.into();
+            new_line.push('\n');
+            &new_line
+        } else {
+            line
+        };
 
         self.offset = 0;
         self.column = 0;
@@ -336,13 +342,13 @@ impl<'a, 'o> Parser<'a, 'o> {
         self.line_number += 1;
 
         let mut all_matched = true;
-        if let Some(last_matched_container) = self.check_open_blocks(&mut line, &mut all_matched) {
+        if let Some(last_matched_container) = self.check_open_blocks(line, &mut all_matched) {
             let mut container = last_matched_container;
             let current = self.current;
-            self.open_new_blocks(&mut container, &mut line, all_matched);
+            self.open_new_blocks(&mut container, line, all_matched);
 
             if current.same_node(self.current) {
-                self.add_text_to_container(container, last_matched_container, &mut line);
+                self.add_text_to_container(container, last_matched_container, line);
             }
         }
 
@@ -356,7 +362,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn check_open_blocks(&mut self,
-                         line: &mut String,
+                         line: &str,
                          all_matched: &mut bool)
                          -> Option<&'a AstNode<'a>> {
         let (new_all_matched, mut container, should_continue) =
@@ -376,7 +382,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn check_open_blocks_inner(&mut self,
                                mut container: &'a AstNode<'a>,
-                               line: &mut String)
+                               line: &str)
                                -> (bool, &'a AstNode<'a>, bool) {
         let mut should_continue = true;
 
@@ -432,7 +438,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn open_new_blocks(&mut self,
                        container: &mut &'a AstNode<'a>,
-                       line: &mut String,
+                       line: &str,
                        all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
@@ -665,7 +671,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn parse_block_quote_prefix(&mut self, line: &mut String) -> bool {
+    fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
         let indent = self.indent;
         if indent <= 3 && line.as_bytes()[self.first_nonspace] == b'>' {
             self.advance_offset(line, indent + 1, true);
@@ -681,7 +687,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_node_item_prefix(&mut self,
-                              line: &mut String,
+                              line: &str,
                               container: &'a AstNode<'a>,
                               nl: &NodeList)
                               -> bool {
@@ -698,7 +704,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_code_block_prefix(&mut self,
-                               line: &mut String,
+                               line: &str,
                                container: &'a AstNode<'a>,
                                ast: &mut Ast,
                                should_continue: &mut bool)
@@ -773,7 +779,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     fn add_text_to_container(&mut self,
                              mut container: &'a AstNode<'a>,
                              last_matched_container: &'a AstNode<'a>,
-                             line: &mut String) {
+                             line: &str) {
         self.find_first_nonspace(line);
 
         if self.blank {
@@ -844,14 +850,15 @@ impl<'a, 'o> Parser<'a, 'o> {
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().value.accepts_lines() {
+                        let mut line: String = line.into();
                         if let NodeValue::Heading(ref nh) = container.data.borrow().value {
                             if !nh.setext {
-                                strings::chop_trailing_hashtags(line);
+                                strings::chop_trailing_hashtags(&mut line);
                             }
                         };
                         let count = self.first_nonspace - self.offset;
-                        self.advance_offset(line, count, false);
-                        self.add_line(container, line);
+                        self.advance_offset(&line, count, false);
+                        self.add_line(container, &line);
                     } else {
                         let start_column = self.first_nonspace + 1;
                         container = self.add_child(container, NodeValue::Paragraph, start_column);
@@ -866,7 +873,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &mut String) {
+    fn add_line(&mut self, node: &'a AstNode<'a>, line: &str) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
@@ -1206,7 +1213,7 @@ enum AddTextResult {
     Otherwise,
 }
 
-fn parse_list_marker(line: &mut String,
+fn parse_list_marker(line: &str,
                      mut pos: usize,
                      interrupts_paragraph: bool)
                      -> Option<(usize, NodeList)> {
