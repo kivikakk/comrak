@@ -23,39 +23,27 @@ pub fn atx_heading_start(line: &str) -> Option<usize> {
     search(&RE, line)
 }
 
-pub fn html_block_end_1(line: &str) -> Option<usize> {
+pub fn html_block_end_1(line: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\A(?:.*</(script|pre|style)>)").unwrap();
     }
-    search(&RE, line)
+    RE.is_match(line)
 }
 
-pub fn html_block_end_2(line: &str) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:.*-->)").unwrap();
-    }
-    search(&RE, line)
+pub fn html_block_end_2(line: &str) -> bool {
+    line.contains("-->")
 }
 
-pub fn html_block_end_3(line: &str) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:.*\?>)").unwrap();
-    }
-    search(&RE, line)
+pub fn html_block_end_3(line: &str) -> bool {
+    line.contains("?>")
 }
 
-pub fn html_block_end_4(line: &str) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:.*>)").unwrap();
-    }
-    search(&RE, line)
+pub fn html_block_end_4(line: &str) -> bool {
+    line.contains(">")
 }
 
-pub fn html_block_end_5(line: &str) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:.*\]\]>)").unwrap();
-    }
-    search(&RE, line)
+pub fn html_block_end_5(line: &str) -> bool {
+    line.contains("]]>")
 }
 
 pub fn open_code_fence(line: &str) -> Option<usize> {

@@ -826,11 +826,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                     self.add_line(container, line);
 
                     let matches_end_condition = match block_type {
-                        1 => scanners::html_block_end_1(&line[self.first_nonspace..]).is_some(),
-                        2 => scanners::html_block_end_2(&line[self.first_nonspace..]).is_some(),
-                        3 => scanners::html_block_end_3(&line[self.first_nonspace..]).is_some(),
-                        4 => scanners::html_block_end_4(&line[self.first_nonspace..]).is_some(),
-                        5 => scanners::html_block_end_5(&line[self.first_nonspace..]).is_some(),
+                        1 => scanners::html_block_end_1(&line[self.first_nonspace..]),
+                        2 => scanners::html_block_end_2(&line[self.first_nonspace..]),
+                        3 => scanners::html_block_end_3(&line[self.first_nonspace..]),
+                        4 => scanners::html_block_end_4(&line[self.first_nonspace..]),
+                        5 => scanners::html_block_end_5(&line[self.first_nonspace..]),
                         _ => false,
                     };
 
