@@ -40,10 +40,10 @@ use std::process;
 use typed_arena::Arena;
 
 fn main() {
-    let matches = clap::App::new("comrak")
+    let matches = clap::App::new(crate_name!())
         .version(crate_version!())
-        .author("Yuki Izumi <yuki@kivikakk.ee>")
-        .about("CommonMark parser with GitHub Flavored Markdown extensions")
+        .author(crate_authors!())
+        .about(crate_description!())
         .arg(clap::Arg::with_name("file")
                  .value_name("FILE")
                  .multiple(true)
