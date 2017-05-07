@@ -122,3 +122,4 @@ Thank you for PRs and issues opened!
 
 * [ConnyOnny](https://github.com/ConnyOnny)
 * [killercup](https://github.com/killercup)
+* [bovarysme](https://github.com/bovarysme)
