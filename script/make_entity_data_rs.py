@@ -1,6 +1,6 @@
 # Creates data structures for binary lookup table of entities,
 # using python's html5 entity data.
-# Usage: python3 tools/make_entity_data_rs.py > src/entity_data.rs
+# Usage: python3 script/make_entity_data_rs.py > src/entity_data.rs
 
 def rust_hex(e):
     return "\\u{{{}}}".format(hex(ord(e))[2:])
