@@ -2,7 +2,7 @@
 
 pub const MIN_LENGTH: usize = 2;
 pub const MAX_LENGTH: usize = 31;
-pub static ENTITIES: [(&str, &str); 2125] =
+pub static ENTITIES: [(&'static str, &'static str); 2125] =
     [("AElig", "\u{c6}"),
      ("AMP", "\u{26}"),
      ("Aacute", "\u{c1}"),
