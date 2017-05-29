@@ -15,6 +15,7 @@
 #![cfg_attr(feature = "dev", plugin(clippy))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
+extern crate entities;
 #[macro_use]
 extern crate clap;
 extern crate unicode_categories;

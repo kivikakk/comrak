@@ -79,6 +79,7 @@ extern crate unicode_categories;
 extern crate typed_arena;
 extern crate arena_tree;
 extern crate regex;
+extern crate entities;
 #[macro_use]
 extern crate lazy_static;
 

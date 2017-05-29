@@ -3,6 +3,8 @@ use entity_data;
 use std::char;
 use std::cmp::{min, Ordering};
 
+use entities::ENTITIES;
+
 fn isxdigit(ch: &u8) -> bool {
     (*ch >= b'0' && *ch <= b'9') || (*ch >= b'a' && *ch <= b'f') || (*ch >= b'A' && *ch <= b'F')
 }
@@ -58,32 +60,18 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
     None
 }
 
-fn lookup(text: &str) -> Option<&'static str> {
-    let mut i = entity_data::ENTITIES.len() / 2;
-    let mut low = 0;
-    let mut high = entity_data::ENTITIES.len() - 1;
+fn lookup(text: &str) -> Option<&str> {
+    let entity_str = format!("&{};", text);
 
-    loop {
-        let cmp = text.cmp(entity_data::ENTITIES[i].0);
-        if cmp == Ordering::Equal {
-            return Some(entity_data::ENTITIES[i].1);
-        } else if cmp == Ordering::Less && i > low {
-            let mut j = i - ((i - low) / 2);
-            if j == i {
-                j -= 1;
-            }
-            high = i - 1;
-            i = j;
-        } else if cmp == Ordering::Greater && i < high {
-            let mut j = i + ((high - i) / 2);
-            if j == i {
-                j += 1;
-            }
-            low = i + 1;
-            i = j;
-        } else {
-            return None;
+    let entity = ENTITIES
+        .iter()
+        .find(|e| e.entity == entity_str);
+
+    match entity {
+        Some(e) => {
+            Some(e.characters)
         }
+        None => None
     }
 }
 
