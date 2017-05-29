@@ -1,9 +1,11 @@
 use ctype::isdigit;
-use entity_data;
 use std::char;
-use std::cmp::{min, Ordering};
+use std::cmp::min;
 
 use entities::ENTITIES;
+
+pub const ENTITY_MIN_LENGTH: usize = 2;
+pub const ENTITY_MAX_LENGTH: usize = 31;
 
 fn isxdigit(ch: &u8) -> bool {
     (*ch >= b'0' && *ch <= b'9') || (*ch >= b'a' && *ch <= b'f') || (*ch >= b'A' && *ch <= b'F')
@@ -46,8 +48,8 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
         }
     }
 
-    let size = min(text.len(), entity_data::MAX_LENGTH);
-    for i in entity_data::MIN_LENGTH..size {
+    let size = min(text.len(), ENTITY_MAX_LENGTH);
+    for i in ENTITY_MIN_LENGTH..size {
         if text.as_bytes()[i] == b' ' {
             return None;
         }
