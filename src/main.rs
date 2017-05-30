@@ -15,6 +15,7 @@
 #![cfg_attr(feature = "dev", plugin(clippy))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
+extern crate entities;
 #[macro_use]
 extern crate clap;
 extern crate unicode_categories;
@@ -32,7 +33,6 @@ mod ctype;
 mod scanners;
 mod strings;
 mod entity;
-mod entity_data;
 
 use std::collections::BTreeSet;
 use std::io::Read;
