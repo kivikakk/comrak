@@ -143,14 +143,12 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
 
     pub fn process_emphasis(&mut self, stack_bottom: i32) {
         let mut closer = self.delimiters.len() as i32 - 1;
-        let mut openers_bottom: Vec<[i32; 128]> = vec![];
-        for _ in 0..3 {
-            let mut a = [-1; 128];
-            a['*' as usize] = stack_bottom;
-            a['_' as usize] = stack_bottom;
-            a['\'' as usize] = stack_bottom;
-            a['"' as usize] = stack_bottom;
-            openers_bottom.push(a)
+        let mut openers_bottom: [[i32; 128]; 3] = [[-1; 128]; 3];
+        for i in 0..3 {
+            openers_bottom[i]['*' as usize] = stack_bottom;
+            openers_bottom[i]['_' as usize] = stack_bottom;
+            openers_bottom[i]['\'' as usize] = stack_bottom;
+            openers_bottom[i]['"' as usize] = stack_bottom;
         }
 
         while closer != -1 && closer - 1 > stack_bottom {
@@ -272,10 +270,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             }
         }
 
-        // TODO truncate instead!
-        while self.delimiters.len() > (stack_bottom + 1) as usize {
-            self.delimiters.pop();
-        }
+        self.delimiters.truncate((stack_bottom + 1) as usize);
     }
 
     pub fn eof(&self) -> bool {
