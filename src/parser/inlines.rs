@@ -3,6 +3,7 @@ use ctype::{isspace, ispunct};
 use entity;
 use nodes::{NodeValue, Ast, NodeLink, AstNode};
 use parser::{unwrap_into, unwrap_into_copy, ComrakOptions, Reference, AutolinkType};
+use remstack::RemStack;
 use scanners;
 
 use std::cell::RefCell;
@@ -20,7 +21,7 @@ pub struct Subject<'a, 'r, 'o> {
     pub input: String,
     pub pos: usize,
     pub refmap: &'r mut HashMap<String, Reference>,
-    delimiters: Vec<Delimiter<'a>>,
+    delimiters: RemStack<Delimiter<'a>>,
     brackets: Vec<Bracket<'a>>,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -55,7 +56,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             input: input.to_string(),
             pos: 0,
             refmap: refmap,
-            delimiters: vec![],
+            delimiters: RemStack::new(),
             brackets: vec![],
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,

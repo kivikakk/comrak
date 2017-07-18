@@ -33,6 +33,7 @@ mod ctype;
 mod scanners;
 mod strings;
 mod entity;
+mod remstack;
 
 use std::collections::BTreeSet;
 use std::io::Read;
