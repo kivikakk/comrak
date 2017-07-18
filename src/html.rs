@@ -31,7 +31,7 @@ fn tagfilter(literal: &str) -> bool {
     }
 
     for t in TAGFILTER_BLACKLIST.iter() {
-        if literal[i..].starts_with(t) {
+        if literal[i..].to_string().to_lowercase().starts_with(t) {
             let j = i + t.len();
             return isspace(literal.as_bytes()[j]) || literal.as_bytes()[j] == b'>' ||
                    (literal.as_bytes()[j] == b'/' && literal.len() >= j + 2 &&
