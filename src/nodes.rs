@@ -282,7 +282,17 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&mut self) -> Option<&mut String> {
+    pub fn text(&self) -> Option<&String> {
+        match *self {
+            NodeValue::Text(ref t) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// Return a mutable reference to the text of a `Text` inline, if this node is one.
+    ///
+    /// Convenience method.
+    pub fn text_mut(&mut self) -> Option<&mut String> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,

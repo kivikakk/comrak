@@ -151,8 +151,8 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             openers_bottom[i]['"' as usize] = stack_bottom;
         }
 
-        while closer != -1 && closer - 1 > stack_bottom {
-            closer -= 1;
+        if closer != -1 {
+            closer = stack_bottom + 1;
         }
 
         while closer != -1 && (closer as usize) < self.delimiters.len() {
@@ -165,7 +165,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                       openers_bottom[self.delimiters[closer as usize]
                           .inl
                           .data
-                          .borrow_mut()
+                          .borrow()
                           .value
                           .text()
                           .unwrap()
@@ -179,7 +179,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                                         ((self.delimiters[opener as usize]
                                               .inl
                                               .data
-                                              .borrow_mut()
+                                              .borrow()
                                               .value
                                               .text()
                                               .unwrap()
@@ -187,7 +187,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                                           self.delimiters[closer as usize]
                                               .inl
                                               .data
-                                              .borrow_mut()
+                                              .borrow()
                                               .value
                                               .text()
                                               .unwrap()
@@ -219,7 +219,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                          .data
                          .borrow_mut()
                          .value
-                         .text()
+                         .text_mut()
                          .unwrap() = "’".to_string();
                     if opener_found {
                         *self.delimiters[opener as usize]
@@ -227,7 +227,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                              .data
                              .borrow_mut()
                              .value
-                             .text()
+                             .text_mut()
                              .unwrap() = "‘".to_string();
                     }
                     closer += 1;
@@ -237,7 +237,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                          .data
                          .borrow_mut()
                          .value
-                         .text()
+                         .text_mut()
                          .unwrap() = "”".to_string();
                     if opener_found {
                         *self.delimiters[opener as usize]
@@ -245,7 +245,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                              .data
                              .borrow_mut()
                              .value
-                             .text()
+                             .text_mut()
                              .unwrap() = "“".to_string();
                     }
                     closer += 1;
@@ -254,7 +254,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
                     let ix = self.delimiters[old_closer as usize]
                         .inl
                         .data
-                        .borrow_mut()
+                        .borrow()
                         .value
                         .text()
                         .unwrap()
@@ -456,7 +456,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         let opener_char = self.delimiters[opener as usize]
             .inl
             .data
-            .borrow_mut()
+            .borrow()
             .value
             .text()
             .unwrap()
@@ -465,7 +465,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         let mut opener_num_chars = self.delimiters[opener as usize]
             .inl
             .data
-            .borrow_mut()
+            .borrow()
             .value
             .text()
             .unwrap()
@@ -473,7 +473,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
         let mut closer_num_chars = self.delimiters[closer as usize]
             .inl
             .data
-            .borrow_mut()
+            .borrow()
             .value
             .text()
             .unwrap()
@@ -497,7 +497,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             .data
             .borrow_mut()
             .value
-            .text()
+            .text_mut()
             .unwrap()
             .truncate(opener_num_chars);
         self.delimiters[closer as usize]
@@ -505,7 +505,7 @@ impl<'a, 'r, 'o> Subject<'a, 'r, 'o> {
             .data
             .borrow_mut()
             .value
-            .text()
+            .text_mut()
             .unwrap()
             .truncate(closer_num_chars);
 
