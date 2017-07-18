@@ -40,7 +40,7 @@ impl<T> RemStack<T> {
     }
 
     fn index_probe(&self, idx: usize) -> Option<usize> {
-        if idx > self.vec.len() {
+        if idx >= self.vec.len() {
             return None;
         }
 
