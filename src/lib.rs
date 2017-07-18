@@ -90,7 +90,7 @@ mod cm;
 mod ctype;
 pub mod nodes;
 mod entity;
-mod remstack;
+pub mod remstack;
 mod strings;
 #[cfg(test)]
 mod tests;
