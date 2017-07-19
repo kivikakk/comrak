@@ -131,8 +131,7 @@ impl<'o> HtmlFormatter<'o> {
         lazy_static! {
             static ref HREF_SAFE: [bool; 256] = {
                 let mut a = [false; 256];
-                for &c in concat!("-_.+!*'(),%#@?=;:/,+&$abcdefghijkl",
-                "mnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").as_bytes() {
+                for &c in b"-_.+!*'(),%#@?=;:/,+&$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
                     a[c as usize] = true;
                 }
                 a

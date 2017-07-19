@@ -158,11 +158,11 @@ impl<'a, 'r, 'o, 'd> Subject<'a, 'r, 'o, 'd> {
     pub fn process_emphasis(&mut self, stack_bottom: Option<&'d Delimiter<'a, 'd>>) {
         let mut closer = self.last_delimiter;
         let mut openers_bottom: [[Option<&'d Delimiter<'a, 'd>>; 128]; 3] = [[None; 128]; 3];
-        for i in 0..3 {
-            openers_bottom[i]['*' as usize] = stack_bottom;
-            openers_bottom[i]['_' as usize] = stack_bottom;
-            openers_bottom[i]['\'' as usize] = stack_bottom;
-            openers_bottom[i]['"' as usize] = stack_bottom;
+        for i in &mut openers_bottom {
+            i['*' as usize] = stack_bottom;
+            i['_' as usize] = stack_bottom;
+            i['\'' as usize] = stack_bottom;
+            i['"' as usize] = stack_bottom;
         }
 
         while closer.is_some() && !Self::del_ref_eq(closer.unwrap().prev.get(), stack_bottom) {

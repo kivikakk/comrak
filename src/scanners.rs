@@ -39,7 +39,7 @@ pub fn html_block_end_3(line: &str) -> bool {
 }
 
 pub fn html_block_end_4(line: &str) -> bool {
-    line.contains(">")
+    line.contains('>')
 }
 
 pub fn html_block_end_5(line: &str) -> bool {
