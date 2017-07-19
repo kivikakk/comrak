@@ -1035,16 +1035,18 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
+        let delimiter_arena = Arena::new();
         let mut subj = inlines::Subject::new(self.arena,
                                              self.options,
                                              &node.data.borrow().content,
-                                             &mut self.refmap);
+                                             &mut self.refmap,
+                                             &delimiter_arena);
 
         strings::rtrim(&mut subj.input);
 
         while !subj.eof() && subj.parse_inline(node) {}
 
-        subj.process_emphasis(-1);
+        subj.process_emphasis(None);
 
         while subj.pop_bracket() {}
     }
@@ -1138,7 +1140,8 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
-        let mut subj = inlines::Subject::new(self.arena, self.options, content, &mut self.refmap);
+        let delimiter_arena = Arena::new();
+        let mut subj = inlines::Subject::new(self.arena, self.options, content, &mut self.refmap, &delimiter_arena);
 
         let mut lab = match subj.link_label() {
                 Some(lab) => if lab.is_empty() { return None } else { lab },
