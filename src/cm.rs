@@ -137,7 +137,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
 
             if self.options.width > 0 && self.column > self.options.width && !self.begin_line &&
-               self.last_breakable > 0 {
+                self.last_breakable > 0
+            {
                 let remainder = self.v[self.last_breakable + 1..].to_vec();
                 self.v.truncate(self.last_breakable);
                 self.v.push(b'\n');
@@ -158,21 +159,22 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         let nextc = nextc.map_or(0, |&c| c);
 
-        let needs_escaping =
-            c < 0x80 && escaping != Escaping::Literal &&
+        let needs_escaping = c < 0x80 && escaping != Escaping::Literal &&
             ((escaping == Escaping::Normal &&
-              (c == b'*' || c == b'_' || c == b'[' || c == b']' || c == b'#' || c == b'<' ||
-               c == b'>' || c == b'\\' ||
-               c == b'`' || c == b'!' || (c == b'&' && isalpha(nextc)) ||
-               (c == b'!' && nextc == 0x5b) ||
-               (self.begin_content && (c == b'-' || c == b'+' || c == b'=') && !follows_digit) ||
-               (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
-                (nextc == 0 || isspace(nextc))))) ||
-             (escaping == Escaping::URL &&
-              (c == b'`' || c == b'<' || c == b'>' || isspace(c) || c == b'\\' || c == b')' ||
-               c == b'(')) ||
-             (escaping == Escaping::Title &&
-              (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
+                  (c == b'*' || c == b'_' || c == b'[' || c == b']' || c == b'#' || c == b'<' ||
+                       c == b'>' ||
+                       c == b'\\' || c == b'`' || c == b'!' ||
+                       (c == b'&' && isalpha(nextc)) ||
+                       (c == b'!' && nextc == 0x5b) ||
+                       (self.begin_content && (c == b'-' || c == b'+' || c == b'=') &&
+                            !follows_digit) ||
+                       (self.begin_content && (c == b'.' || c == b')') && follows_digit &&
+                            (nextc == 0 || isspace(nextc))))) ||
+                 (escaping == Escaping::URL &&
+                      (c == b'`' || c == b'<' || c == b'>' || isspace(c) || c == b'\\' ||
+                           c == b')' || c == b'(')) ||
+                 (escaping == Escaping::Title &&
+                      (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
 
         if needs_escaping {
             if isspace(c) {
@@ -243,7 +245,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         if !(match node.data.borrow().value {
                  NodeValue::Item(..) => true,
                  _ => false,
-             } && node.previous_sibling().is_none() && entering) {
+             } && node.previous_sibling().is_none() && entering)
+        {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
@@ -262,16 +265,17 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::List(..) => {
                 if !entering &&
-                   match node.next_sibling() {
-                       Some(next_sibling) => {
-                           match next_sibling.data.borrow().value {
-                               NodeValue::CodeBlock(..) |
-                               NodeValue::List(..) => true,
-                               _ => false,
-                           }
-                       }
-                       _ => false,
-                   } {
+                    match node.next_sibling() {
+                        Some(next_sibling) => {
+                            match next_sibling.data.borrow().value {
+                                NodeValue::CodeBlock(..) |
+                                NodeValue::List(..) => true,
+                                _ => false,
+                            }
+                        }
+                        _ => false,
+                    }
+                {
                     self.cr();
                     write!(self, "<!-- end list -->").unwrap();
                     self.blankline();
@@ -295,16 +299,17 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         tmpch = tmp;
                         list_number += 1;
                     }
-                    write!(listmarker,
-                           "{}{}{}",
-                           list_number,
-                           if list_delim == ListDelimType::Paren {
-                               ")"
-                           } else {
-                               "."
-                           },
-                           if list_number < 10 { "  " } else { " " })
-                            .unwrap();
+                    write!(
+                        listmarker,
+                        "{}{}{}",
+                        list_number,
+                        if list_delim == ListDelimType::Paren {
+                            ")"
+                        } else {
+                            "."
+                        },
+                        if list_number < 10 { "  " } else { " " }
+                    ).unwrap();
                     listmarker.len()
                 };
 
@@ -340,25 +345,26 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     let first_in_list_item = node.previous_sibling().is_none() &&
-                                             match node.parent() {
-                                                 Some(parent) => {
-                                                     match parent.data.borrow().value {
-                                                         NodeValue::Item(..) => true,
-                                                         _ => false,
-                                                     }
-                                                 }
-                                                 _ => false,
-                                             };
+                        match node.parent() {
+                            Some(parent) => {
+                                match parent.data.borrow().value {
+                                    NodeValue::Item(..) => true,
+                                    _ => false,
+                                }
+                            }
+                            _ => false,
+                        };
 
                     if !first_in_list_item {
                         self.blankline();
                     }
 
                     if ncb.info.is_empty() &&
-                       (ncb.literal.len() > 2 && !isspace(ncb.literal.as_bytes()[0]) &&
-                        !(isspace(ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
-                          isspace(ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
-                       !first_in_list_item {
+                        (ncb.literal.len() > 2 && !isspace(ncb.literal.as_bytes()[0]) &&
+                             !(isspace(ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
+                                   isspace(ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
+                        !first_in_list_item
+                    {
                         write!(self, "    ").unwrap();
                         write!(self.prefix, "    ").unwrap();
                         write!(self, "{}", ncb.literal).unwrap();
@@ -455,15 +461,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
-                       Some(parent) => {
-                           match parent.data.borrow().value {
-                               NodeValue::Emph => true,
-                               _ => false,
-                           }
-                       }
-                       _ => false,
-                   } && node.next_sibling().is_none() &&
-                                    node.previous_sibling().is_none() {
+                    Some(parent) => {
+                        match parent.data.borrow().value {
+                            NodeValue::Emph => true,
+                            _ => false,
+                        }
+                    }
+                    _ => false,
+                } && node.next_sibling().is_none() &&
+                    node.previous_sibling().is_none()
+                {
                     b'_'
                 } else {
                     b'*'
@@ -551,13 +558,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     };
 
                     if in_header && node.next_sibling().is_none() {
-                        let table = &node.parent()
-                                         .unwrap()
-                                         .parent()
-                                         .unwrap()
-                                         .data
-                                         .borrow()
-                                         .value;
+                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
                         let alignments = match *table {
                             NodeValue::Table(ref alignments) => alignments,
                             _ => panic!(),
@@ -566,15 +567,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         self.cr();
                         write!(self, "|").unwrap();
                         for a in alignments {
-                            write!(self,
-                                   " {} |",
-                                   match *a {
-                                       TableAlignment::Left => ":--",
-                                       TableAlignment::Center => ":-:",
-                                       TableAlignment::Right => "--:",
-                                       TableAlignment::None => "---",
-                                   })
-                                    .unwrap();
+                            write!(
+                                self,
+                                " {} |",
+                                match *a {
+                                    TableAlignment::Left => ":--",
+                                    TableAlignment::Center => ":-:",
+                                    TableAlignment::Right => "--:",
+                                    TableAlignment::None => "---",
+                                }
+                            ).unwrap();
                         }
                         self.cr();
                     }

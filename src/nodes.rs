@@ -366,10 +366,10 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::BlockQuote |
         NodeValue::Item(..) => {
             child.block() &&
-            match *child {
-                NodeValue::Item(..) => false,
-                _ => true,
-            }
+                match *child {
+                    NodeValue::Item(..) => false,
+                    _ => true,
+                }
         }
 
         NodeValue::List(..) => {

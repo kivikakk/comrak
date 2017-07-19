@@ -1,8 +1,8 @@
 use ctype::isdigit;
-use std::char;
-use std::cmp::min;
 
 use entities::ENTITIES;
+use std::char;
+use std::cmp::min;
 
 pub const ENTITY_MIN_LENGTH: usize = 2;
 pub const ENTITY_MAX_LENGTH: usize = 31;
@@ -38,13 +38,14 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
 
         if num_digits >= 1 && num_digits <= 8 && i < text.len() && text.as_bytes()[i] == b';' {
             if codepoint == 0 || (codepoint >= 0xD800 && codepoint <= 0xE000) ||
-               codepoint >= 0x110000 {
+                codepoint >= 0x110000
+            {
                 codepoint = 0xFFFD;
             }
-            return Some((char::from_u32(codepoint)
-                             .unwrap_or('\u{FFFD}')
-                             .to_string(),
-                         i + 1));
+            return Some((
+                char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string(),
+                i + 1,
+            ));
         }
     }
 
@@ -65,15 +66,11 @@ pub fn unescape(text: &str) -> Option<(String, usize)> {
 fn lookup(text: &str) -> Option<&str> {
     let entity_str = format!("&{};", text);
 
-    let entity = ENTITIES
-        .iter()
-        .find(|e| e.entity == entity_str);
+    let entity = ENTITIES.iter().find(|e| e.entity == entity_str);
 
     match entity {
-        Some(e) => {
-            Some(e.characters)
-        }
-        None => None
+        Some(e) => Some(e.characters),
+        None => None,
     }
 }
 

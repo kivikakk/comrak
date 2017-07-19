@@ -4,9 +4,11 @@ use parser::inlines::make_inline;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
-                             node: &'a AstNode<'a>,
-                             contents: &mut String) {
+pub fn process_autolinks<'a>(
+    arena: &'a Arena<AstNode<'a>>,
+    node: &'a AstNode<'a>,
+    contents: &mut String,
+) {
     let len = contents.len();
     let mut i = 0;
 
@@ -52,10 +54,11 @@ pub fn process_autolinks<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 }
 
-fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
-                 contents: &str,
-                 i: usize)
-                 -> Option<(&'a AstNode<'a>, usize, usize)> {
+fn www_match<'a>(
+    arena: &'a Arena<AstNode<'a>>,
+    contents: &str,
+    i: usize,
+) -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref WWW_DELIMS: [bool; 256] = {
             let mut sc = [false; 256];
@@ -67,7 +70,8 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 
     if i > 0 && !isspace(contents.as_bytes()[i - 1]) &&
-       !WWW_DELIMS[contents.as_bytes()[i - 1] as usize] {
+        !WWW_DELIMS[contents.as_bytes()[i - 1] as usize]
+    {
         return None;
     }
 
@@ -89,14 +93,18 @@ fn www_match<'a>(arena: &'a Arena<AstNode<'a>>,
     let mut url = "http://".to_string();
     url += &contents[i..link_end + i];
 
-    let inl = make_inline(arena,
-                          NodeValue::Link(NodeLink {
-                                              url: url,
-                                              title: String::new(),
-                                          }));
+    let inl = make_inline(
+        arena,
+        NodeValue::Link(NodeLink {
+            url: url,
+            title: String::new(),
+        }),
+    );
 
-    inl.append(make_inline(arena,
-                           NodeValue::Text(contents[i..link_end + i].to_string())));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(contents[i..link_end + i].to_string()),
+    ));
     Some((inl, 0, link_end))
 }
 
@@ -192,10 +200,11 @@ fn autolink_delim(data: &str, mut link_end: usize) -> usize {
     link_end
 }
 
-fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
-                 contents: &str,
-                 i: usize)
-                 -> Option<(&'a AstNode<'a>, usize, usize)> {
+fn url_match<'a>(
+    arena: &'a Arena<AstNode<'a>>,
+    contents: &str,
+    i: usize,
+) -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref SCHEMES: Vec<&'static str> =
             vec!["http", "https", "ftp"];
@@ -212,9 +221,10 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
         rewind += 1;
     }
 
-    if !SCHEMES
-            .iter()
-            .any(|s| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s) {
+    if !SCHEMES.iter().any(|s| {
+        size - i + rewind >= s.len() && &&contents[i - rewind..i] == s
+    })
+    {
         return None;
     }
 
@@ -230,20 +240,23 @@ fn url_match<'a>(arena: &'a Arena<AstNode<'a>>,
     link_end = autolink_delim(&contents[i..], link_end);
 
     let url = contents[i - rewind..i + link_end].to_string();
-    let inl = make_inline(arena,
-                          NodeValue::Link(NodeLink {
-                                              url: url.clone(),
-                                              title: String::new(),
-                                          }));
+    let inl = make_inline(
+        arena,
+        NodeValue::Link(NodeLink {
+            url: url.clone(),
+            title: String::new(),
+        }),
+    );
 
     inl.append(make_inline(arena, NodeValue::Text(url)));
     Some((inl, rewind, rewind + link_end))
 }
 
-fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
-                   contents: &str,
-                   i: usize)
-                   -> Option<(&'a AstNode<'a>, usize, usize)> {
+fn email_match<'a>(
+    arena: &'a Arena<AstNode<'a>>,
+    contents: &str,
+    i: usize,
+) -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
         static ref EMAIL_OK_SET: [bool; 256] = {
             let mut sc = [false; 256];
@@ -299,8 +312,9 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     }
 
     if link_end < 2 || nb != 1 || np == 0 ||
-       (!isalpha(contents.as_bytes()[i + link_end - 1]) &&
-        contents.as_bytes()[i + link_end - 1] != b'.') {
+        (!isalpha(contents.as_bytes()[i + link_end - 1]) &&
+             contents.as_bytes()[i + link_end - 1] != b'.')
+    {
         return None;
     }
 
@@ -309,13 +323,19 @@ fn email_match<'a>(arena: &'a Arena<AstNode<'a>>,
     let mut url = "mailto:".to_string();
     url += &contents[i - rewind..link_end + i];
 
-    let inl = make_inline(arena,
-                          NodeValue::Link(NodeLink {
-                                              url: url,
-                                              title: String::new(),
-                                          }));
+    let inl = make_inline(
+        arena,
+        NodeValue::Link(NodeLink {
+            url: url,
+            title: String::new(),
+        }),
+    );
 
-    inl.append(make_inline(arena,
-                           NodeValue::Text(contents[i - rewind..link_end + i].to_string())));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(
+            contents[i - rewind..link_end + i].to_string(),
+        ),
+    ));
     Some((inl, rewind, rewind + link_end))
 }

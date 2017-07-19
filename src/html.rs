@@ -34,8 +34,8 @@ fn tagfilter(literal: &str) -> bool {
         if literal[i..].to_string().to_lowercase().starts_with(t) {
             let j = i + t.len();
             return isspace(literal.as_bytes()[j]) || literal.as_bytes()[j] == b'>' ||
-                   (literal.as_bytes()[j] == b'/' && literal.len() >= j + 2 &&
-                    literal.as_bytes()[j + 1] == b'>');
+                (literal.as_bytes()[j] == b'/' && literal.len() >= j + 2 &&
+                     literal.as_bytes()[j + 1] == b'>');
         }
     }
 
@@ -242,7 +242,8 @@ impl<'o> HtmlFormatter<'o> {
                     } else {
                         let mut first_tag = 0;
                         while first_tag < ncb.info.len() &&
-                              !isspace(ncb.info.as_bytes()[first_tag]) {
+                            !isspace(ncb.info.as_bytes()[first_tag])
+                        {
                             first_tag += 1;
                         }
 
@@ -278,9 +279,9 @@ impl<'o> HtmlFormatter<'o> {
                 }
             }
             NodeValue::Paragraph => {
-                let tight = match node.parent()
-                          .and_then(|n| n.parent())
-                          .map(|n| n.data.borrow().value.clone()) {
+                let tight = match node.parent().and_then(|n| n.parent()).map(|n| {
+                    n.data.borrow().value.clone()
+                }) {
                     Some(NodeValue::List(nl)) => nl.tight,
                     _ => false,
                 };
@@ -390,9 +391,10 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr();
                     self.s += "<table>\n";
                 } else {
-                    if !node.last_child()
-                            .unwrap()
-                            .same_node(node.first_child().unwrap()) {
+                    if !node.last_child().unwrap().same_node(
+                        node.first_child().unwrap(),
+                    )
+                    {
                         self.s += "</tbody>";
                     }
                     self.s += "</table>\n";
@@ -424,13 +426,7 @@ impl<'o> HtmlFormatter<'o> {
                     _ => panic!(),
                 };
 
-                let table = &node.parent()
-                                 .unwrap()
-                                 .parent()
-                                 .unwrap()
-                                 .data
-                                 .borrow()
-                                 .value;
+                let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
                 let alignments = match *table {
                     NodeValue::Table(ref alignments) => alignments,
                     _ => panic!(),

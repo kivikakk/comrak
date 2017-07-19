@@ -4,10 +4,11 @@ use scanners;
 use std::cmp::min;
 use strings::trim;
 
-pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                                 container: &'a AstNode<'a>,
-                                 line: &str)
-                                 -> Option<(&'a AstNode<'a>, bool)> {
+pub fn try_opening_block<'a, 'o>(
+    parser: &mut Parser<'a, 'o>,
+    container: &'a AstNode<'a>,
+    line: &str,
+) -> Option<(&'a AstNode<'a>, bool)> {
     let aligns = match container.data.borrow().value {
         NodeValue::Paragraph => None,
         NodeValue::Table(ref aligns) => Some(aligns.clone()),
@@ -20,10 +21,11 @@ pub fn try_opening_block<'a, 'o>(parser: &mut Parser<'a, 'o>,
     }
 }
 
-pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                                  container: &'a AstNode<'a>,
-                                  line: &str)
-                                  -> Option<(&'a AstNode<'a>, bool)> {
+pub fn try_opening_header<'a, 'o>(
+    parser: &mut Parser<'a, 'o>,
+    container: &'a AstNode<'a>,
+    line: &str,
+) -> Option<(&'a AstNode<'a>, bool)> {
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
         return Some((container, false));
     }
@@ -44,8 +46,8 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
         let left = !cell.is_empty() && cell.as_bytes()[0] == b':';
         let right = !cell.is_empty() && cell.as_bytes()[cell.len() - 1] == b':';
         alignments.push(if left && right {
-                            TableAlignment::Center
-                        } else if left {
+            TableAlignment::Center
+        } else if left {
             TableAlignment::Left
         } else if right {
             TableAlignment::Right
@@ -70,32 +72,39 @@ pub fn try_opening_header<'a, 'o>(parser: &mut Parser<'a, 'o>,
 }
 
 
-pub fn try_opening_row<'a, 'o>(parser: &mut Parser<'a, 'o>,
-                               container: &'a AstNode<'a>,
-                               alignments: &[TableAlignment],
-                               line: &str)
-                               -> Option<(&'a AstNode<'a>, bool)> {
+pub fn try_opening_row<'a, 'o>(
+    parser: &mut Parser<'a, 'o>,
+    container: &'a AstNode<'a>,
+    alignments: &[TableAlignment],
+    line: &str,
+) -> Option<(&'a AstNode<'a>, bool)> {
     if parser.blank {
         return None;
     }
     let this_row = row(line).unwrap();
-    let new_row = parser.add_child(container,
-                                   NodeValue::TableRow(false),
-                                   container.data.borrow().start_column);
+    let new_row = parser.add_child(
+        container,
+        NodeValue::TableRow(false),
+        container.data.borrow().start_column,
+    );
 
     let mut i = 0;
     while i < min(alignments.len(), this_row.len()) {
-        let cell = parser.add_child(new_row,
-                                    NodeValue::TableCell,
-                                    container.data.borrow().start_column);
+        let cell = parser.add_child(
+            new_row,
+            NodeValue::TableCell,
+            container.data.borrow().start_column,
+        );
         cell.data.borrow_mut().content = this_row[i].clone();
         i += 1;
     }
 
     while i < alignments.len() {
-        parser.add_child(new_row,
-                         NodeValue::TableCell,
-                         container.data.borrow().start_column);
+        parser.add_child(
+            new_row,
+            NodeValue::TableCell,
+            container.data.borrow().start_column,
+        );
         i += 1;
     }
 
