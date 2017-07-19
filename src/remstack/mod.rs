@@ -22,7 +22,7 @@ impl<T> Debug for Slot<T> where T : Debug {
 }
 
 /// A stack with O(1) random access and amortized O(1) random removal,
-/// pronounced 'removable stack'.
+/// pronounced 'rem stack'.
 pub struct RemStack<T> {
     vec: Vec<Slot<T>>,
 }
@@ -51,7 +51,7 @@ impl<T> RemStack<T> {
         self.vec.push(Slot::Occupied { val: val })
     }
 
-    /// Removes the last element from a removable stack and returns it, or
+    /// Removes the last element from a rem stack and returns it, or
     /// `None` if it is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.prune_top();
@@ -61,7 +61,7 @@ impl<T> RemStack<T> {
         })
     }
 
-    /// Shortens the removable stack, keeping the first `len` slots.
+    /// Shortens the rem stack, keeping the first `len` slots.
     ///
     /// Note that slots are retained rather than elements; if the first `len`
     /// slots are vacant, no elements will remain after truncation.
@@ -85,7 +85,7 @@ impl<T> RemStack<T> {
         }
     }
 
-    /// Return the first element found in the removable stack from slot position
+    /// Return the first element found in the rem stack from slot position
     /// `idx` onward, or `None` if out of bounds.
     pub fn get(&self, idx: usize) -> Option<&T> {
         self.index_probe(idx).map(|idx| match self.vec[idx] {
@@ -94,7 +94,7 @@ impl<T> RemStack<T> {
         })
     }
 
-    /// Return a mutable reference to the first element found in the removable
+    /// Return a mutable reference to the first element found in the rem
     /// stack from slot position `idx` onward, or `None` if out of bounds.
     pub fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
         self.index_probe(idx).map(move |idx| match self.vec[idx] {
@@ -112,7 +112,7 @@ impl<T> RemStack<T> {
         self.prune_top();
     }
 
-    /// Return the number of slots in the removable stack's underlying vector.
+    /// Return the number of slots in the rem stack's underlying vector.
     pub fn len(&self) -> usize {
         self.vec.len()
     }
