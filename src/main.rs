@@ -19,12 +19,12 @@ extern crate entities;
 #[macro_use]
 extern crate clap;
 extern crate unicode_categories;
-extern crate arena_tree;
 extern crate typed_arena;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 
+mod arena_tree;
 mod html;
 mod cm;
 mod parser;
