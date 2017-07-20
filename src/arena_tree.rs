@@ -13,23 +13,6 @@ or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
 If you need mutability in the node’s `data`,
 make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
-## Example
-
-```rust
-extern crate typed_arena;
-extern crate arena_tree;
-use std::cell::RefCell;
-
-let arena = typed_arena::Arena::new();
-let a = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
-let b = arena.alloc(arena_tree::Node::new(RefCell::new(String::new())));
-a.append(b);
-b.data.borrow_mut().push_str("content");
-assert_eq!(a.descendants().map(|node| node.data.borrow().clone()).collect::<Vec<_>>(), [
-    "".to_string(), "content".to_string()
-]);
-```
-
 */
 
 #![allow(dead_code)]
