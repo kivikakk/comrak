@@ -116,7 +116,7 @@ fn setext_heading() {
 fn html_block_1() {
     html(
         concat!(
-            "<script\n",
+            "<script>\n",
             "*ok* </script> *ok*\n",
             "\n",
             "*ok*\n",
@@ -134,7 +134,7 @@ fn html_block_1() {
             "*ok*\n"
         ),
         concat!(
-            "<script\n",
+            "<script>\n",
             "*ok* </script> *ok*\n",
             "<p><em>ok</em></p>\n",
             "<p><em>ok</em></p>\n",
