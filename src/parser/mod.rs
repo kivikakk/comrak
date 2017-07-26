@@ -1103,10 +1103,12 @@ impl<'a, 'o> Parser<'a, 'o> {
             loop {
                 match n.data.borrow_mut().value {
                     NodeValue::Text(ref mut root) => {
-                        self.postprocess_text_node(n, root);
                         let ns = match n.next_sibling() {
                             Some(ns) => ns,
-                            _ => break
+                            _ => {
+                                self.postprocess_text_node(n, root);
+                                break;
+                            }
                         };
 
                         match ns.data.borrow().value {
@@ -1114,7 +1116,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                                 *root += adj;
                                 ns.detach();
                             }
-                            _ => break,
+                            _ => {
+                                self.postprocess_text_node(n, root);
+                                break;
+                            }
                         }
                     }
                     NodeValue::Link(..) |
