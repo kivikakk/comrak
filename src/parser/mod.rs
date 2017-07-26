@@ -1103,12 +1103,10 @@ impl<'a, 'o> Parser<'a, 'o> {
             loop {
                 match n.data.borrow_mut().value {
                     NodeValue::Text(ref mut root) => {
+                        self.postprocess_text_node(n, root);
                         let ns = match n.next_sibling() {
                             Some(ns) => ns,
-                            _ => {
-                                self.postprocess_text_node(n, root);
-                                break;
-                            }
+                            _ => break
                         };
 
                         match ns.data.borrow().value {
