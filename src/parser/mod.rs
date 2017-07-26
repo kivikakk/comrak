@@ -1116,7 +1116,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                                 *root += adj;
                                 ns.detach();
                             }
-                            _ => break,
+                            _ => {
+                                self.postprocess_text_node(n, root);
+                                break;
+                            }
                         }
                     }
                     NodeValue::Link(..) |

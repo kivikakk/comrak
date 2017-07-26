@@ -423,6 +423,19 @@ fn autolink_scheme() {
 }
 
 #[test]
+fn autolink_scheme_multiline() {
+    html_opts(
+        concat!("https://google.com/search\nhttps://www.google.com/maps"),
+        concat!(
+            "<p><a href=\"https://google.com/search\">https://google.\
+                       com/search</a>\n<a href=\"https://www.google.com/maps\">\
+                       https://www.google.com/maps</a></p>\n"
+        ),
+        |opts| opts.ext_autolink = true,
+    );
+}
+
+#[test]
 fn tagfilter() {
     html_opts(concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
               concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
