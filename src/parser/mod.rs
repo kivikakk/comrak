@@ -1078,15 +1078,15 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
         let delimiter_arena = Arena::new();
+        let node_data = node.data.borrow();
+        let content = strings::rtrim_slice(&node_data.content);
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
-            &node.data.borrow().content,
+            content,
             &mut self.refmap,
             &delimiter_arena,
         );
-
-        strings::rtrim(&mut subj.input);
 
         while !subj.eof() && subj.parse_inline(node) {}
 

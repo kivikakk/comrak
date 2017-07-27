@@ -137,14 +137,20 @@ pub fn trim(line: &mut String) {
     rtrim(line);
 }
 
+pub fn rtrim_slice(mut i: &str) -> &str {
+    let mut len = i.len();
+    while len > 0 && isspace(i.as_bytes()[len - 1]) {
+        i = &i[..len - 1];
+        len -= 1;
+    }
+    i
+}
+
 pub fn trim_slice(mut i: &str) -> &str {
+    i = rtrim_slice(i);
     let mut len = i.len();
     while len > 0 && isspace(i.as_bytes()[0]) {
         i = &i[1..];
-        len -= 1;
-    }
-    while len > 0 && isspace(i.as_bytes()[len - 1]) {
-        i = &i[..len - 1];
         len -= 1;
     }
     i

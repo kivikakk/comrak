@@ -15,10 +15,10 @@ use unicode_categories::UnicodeCategories;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o ComrakOptions,
-    pub input: String,
+    pub input: &'i str,
     pub pos: usize,
     pub refmap: &'r mut HashMap<String, Reference>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
@@ -47,18 +47,18 @@ struct Bracket<'a: 'd, 'd> {
     bracket_after: bool,
 }
 
-impl<'a, 'r, 'o, 'd> Subject<'a, 'r, 'o, 'd> {
+impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
         options: &'o ComrakOptions,
-        input: &str,
+        input: &'i str,
         refmap: &'r mut HashMap<String, Reference>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
         let mut s = Subject {
             arena: arena,
             options: options,
-            input: input.to_string(),
+            input: input,
             pos: 0,
             refmap: refmap,
             delimiter_arena: delimiter_arena,
