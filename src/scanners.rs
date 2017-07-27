@@ -85,6 +85,10 @@ pub fn html_block_start(line: &str) -> Option<usize> {
             &format!(r"\A(?:</?({})([ \t\v\f\r\n]|/?>))", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
+    if !line.starts_with("<") {
+        return None;
+    }
+
     if is_match(&RE1, line) {
         Some(1)
     } else if line.starts_with(*STR2) {
