@@ -1,0 +1,3 @@
+### 0.1.8
+
+* Fix possible DoS in link parsing (#33, Demi Obenour).
