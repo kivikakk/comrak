@@ -1,7 +1,7 @@
 [package]
 name = "comrak"
-version = "0.1.6"
-authors = ["Yuki Izumi <kivikakk@github.com>"]
+version = "0.1.7"
+authors = ["Ashe Connor <kivikakk@github.com>"]
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
 homepage = "https://github.com/kivikakk/comrak"

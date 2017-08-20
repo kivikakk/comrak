@@ -15,8 +15,8 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.1.6
-Yuki Izumi <yuki@kivikakk.ee>
+comrak 0.1.7
+Ashe Connor <ashe@kivikakk.ee>
 CommonMark parser with GitHub Flavored Markdown extensions
 
 USAGE:
@@ -110,7 +110,7 @@ setting the appropriate values in the
 
 ## Legal
 
-Copyright (c) 2017, Yuki Izumi.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Copyright (c) 2017, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
