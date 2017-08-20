@@ -488,6 +488,25 @@ fn tasklist() {
 }
 
 #[test]
+fn tasklist_32() {
+    html_opts(
+        concat!(
+            "- [ ] List item 1\n",
+            "- [ ] This list item is **bold**\n",
+            "- [x] There is some `code` here\n"
+        ),
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" /> List item 1</li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" /> This list item is <strong>bold</strong></li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> There is some <code>code</code> here</li>\n",
+            "</ul>\n"
+        ),
+        |opts| opts.ext_tasklist = true,
+    );
+}
+
+#[test]
 fn superscript() {
     html_opts(concat!("e = mc^2^.\n"),
               concat!("<p>e = mc<sup>2</sup>.</p>\n"),
