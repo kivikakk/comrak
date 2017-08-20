@@ -859,13 +859,14 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
     if i < len && input.as_bytes()[i] == b'<' {
         i += 1;
         while i < len {
-            if input.as_bytes()[i] == b'>' {
+            let b = input.as_bytes()[i];
+            if b == b'>' {
                 i += 1;
                 break;
-            } else if input.as_bytes()[i] == b'\\' {
+            } else if b == b'\\' {
                 i += 2;
-            } else if isspace(input.as_bytes()[i]) {
-                return None;
+            } else if isspace(b) || b == b'<' {
+                return None
             } else {
                 i += 1;
             }
@@ -877,6 +878,9 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
             } else if input.as_bytes()[i] == b'(' {
                 nb_p += 1;
                 i += 1;
+                if nb_p > 32 {
+                    return None
+                }
             } else if input.as_bytes()[i] == b')' {
                 if nb_p == 0 {
                     break;
