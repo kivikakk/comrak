@@ -75,7 +75,7 @@ fn www_match<'a>(
         return None;
     }
 
-    if contents.len() - i < 4 || &contents[i..i + 4] != "www." {
+    if !contents[i..].starts_with("www.") {
         return None;
     }
 

@@ -720,7 +720,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             };
             let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
-            if self.input.as_bytes()[endall] == b')' {
+            if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
                 self.pos = endall + 1;
                 let url = strings::clean_url(&self.input[starturl..endurl]);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
