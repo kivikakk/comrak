@@ -1,3 +1,8 @@
+### 0.1.9
+
+* Multibyte character fix for autolink (#35, Shaquille Johnson).
+* Resolve panics with tables in awkward situations (#36).
+
 ### 0.1.8
 
 * Fix possible DoS in link parsing (#33, Demi Obenour).
