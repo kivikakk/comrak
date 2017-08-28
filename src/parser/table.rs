@@ -1,6 +1,9 @@
-use nodes::{NodeValue, TableAlignment, AstNode};
+use arena_tree::Node;
+
+use nodes::{NodeValue, TableAlignment, AstNode, make_block};
 use parser::Parser;
 use scanners;
+use std::cell::RefCell;
 use std::cmp::min;
 use strings::trim;
 
@@ -21,7 +24,7 @@ pub fn try_opening_block<'a, 'o>(
     }
 }
 
-pub fn try_opening_header<'a, 'o>(
+fn try_opening_header<'a, 'o>(
     parser: &mut Parser<'a, 'o>,
     container: &'a AstNode<'a>,
     line: &str,
@@ -57,7 +60,9 @@ pub fn try_opening_header<'a, 'o>(
     }
 
     let start_column = container.data.borrow().start_column;
-    let table = parser.add_child(container, NodeValue::Table(alignments), start_column);
+    let child = make_block(NodeValue::Table(alignments), parser.line_number, start_column);
+    let table = parser.arena.alloc(Node::new(RefCell::new(child)));
+    container.append(table);
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start_column);
     for header_str in header_row {
@@ -72,7 +77,7 @@ pub fn try_opening_header<'a, 'o>(
 }
 
 
-pub fn try_opening_row<'a, 'o>(
+fn try_opening_row<'a, 'o>(
     parser: &mut Parser<'a, 'o>,
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
