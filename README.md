@@ -123,3 +123,7 @@ Thank you for PRs and issues opened!
 * [ConnyOnny](https://github.com/ConnyOnny)
 * [killercup](https://github.com/killercup)
 * [bovarysme](https://github.com/bovarysme)
+* [gjtorikian](https://github.com/gjtorikian)
+* [SSJohns](https://github.com/SSJohns)
+* [zeantsoi](https://github.com/zeantsoi)
+* [DemiMarie](https://github.com/DemiMarie)
