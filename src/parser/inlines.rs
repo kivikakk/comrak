@@ -866,7 +866,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
             } else if b == b'\\' {
                 i += 2;
             } else if isspace(b) || b == b'<' {
-                return None
+                return None;
             } else {
                 i += 1;
             }
@@ -879,7 +879,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<usize> {
                 nb_p += 1;
                 i += 1;
                 if nb_p > 32 {
-                    return None
+                    return None;
                 }
             } else if input.as_bytes()[i] == b')' {
                 if nb_p == 0 {

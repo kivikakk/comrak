@@ -80,10 +80,11 @@ iter_nodes(root, &|node| {
     }
 });
 
-let html: String = format_html(root, &ComrakOptions::default());
+let mut html = vec![];
+format_html(root, &ComrakOptions::default(), &mut html).unwrap();
 
 assert_eq!(
-    html,
+    String::from_utf8(html).unwrap(),
     "<p>This is your input.</p>\n\
      <ol>\n\
      <li>Also your input.</li>\n\

@@ -1,18 +1,83 @@
 use ctype::isspace;
 use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
+use std::cell::Cell;
+use std::io::{self, Write};
 
 /// Formats an AST as HTML, modified by the given options.
-pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
-    let mut f = HtmlFormatter::new(options);
-    f.format(root, false);
-    f.s
+pub fn format_document<'a>(
+    root: &'a AstNode<'a>,
+    options: &ComrakOptions,
+    output: &mut Write,
+) -> io::Result<()> {
+    let mut writer = WriteWithLast {
+        output: output,
+        last_was_lf: Cell::new(true),
+    };
+    let mut f = HtmlFormatter::new(options, &mut writer);
+    try!(f.format(root, false));
+    Ok(())
 }
 
+pub struct WriteWithLast<'w> {
+    output: &'w mut Write,
+    pub last_was_lf: Cell<bool>,
+}
+
+impl<'w> Write for WriteWithLast<'w> {
+    fn flush(&mut self) -> io::Result<()> {
+        self.output.flush()
+    }
+
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let l = buf.len();
+        if l > 0 {
+            self.last_was_lf.set(buf[l - 1] == 10);
+        }
+        self.output.write(buf)
+    }
+}
+
+
 struct HtmlFormatter<'o> {
-    s: String,
+    output: &'o mut WriteWithLast<'o>,
     options: &'o ComrakOptions,
 }
+
+const NEEDS_ESCAPED : [bool; 256] = [
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, true,  false, false, false, true,  false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, true, false, true, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false,
+];
 
 fn tagfilter(literal: &str) -> bool {
     lazy_static! {
@@ -42,7 +107,7 @@ fn tagfilter(literal: &str) -> bool {
     false
 }
 
-fn tagfilter_block(input: &str, mut o: &mut String) {
+fn tagfilter_block(input: &str, o: &mut Write) -> io::Result<()> {
     let src = input.as_bytes();
     let size = src.len();
     let mut i = 0;
@@ -54,7 +119,7 @@ fn tagfilter_block(input: &str, mut o: &mut String) {
         }
 
         if i > org {
-            *o += &input[org..i];
+            try!(o.write_all(&src[org..i]));
         }
 
         if i >= size {
@@ -62,41 +127,33 @@ fn tagfilter_block(input: &str, mut o: &mut String) {
         }
 
         if tagfilter(&input[i..]) {
-            *o += "&lt;";
+            try!(o.write_all(b"&lt;"));
         } else {
-            o.push('<');
+            try!(o.write_all(b"<"));
         }
 
         i += 1;
     }
+
+    Ok(())
 }
 
 impl<'o> HtmlFormatter<'o> {
-    fn new(options: &'o ComrakOptions) -> Self {
+    fn new(options: &'o ComrakOptions, output: &'o mut WriteWithLast<'o>) -> Self {
         HtmlFormatter {
-            s: String::with_capacity(1024),
             options: options,
+            output: output,
         }
     }
 
-    fn cr(&mut self) {
-        let l = self.s.len();
-        if l > 0 && self.s.as_bytes()[l - 1] != b'\n' {
-            self.s += "\n";
+    fn cr(&mut self) -> io::Result<()> {
+        if !self.output.last_was_lf.get() {
+            try!(self.output.write_all(b"\n"));
         }
+        Ok(())
     }
 
-    fn escape(&mut self, buffer: &str) {
-        lazy_static! {
-            static ref NEEDS_ESCAPED: [bool; 256] = {
-                let mut sc = [false; 256];
-                for &c in &['"', '&', '<', '>'] {
-                    sc[c as usize] = true;
-                }
-                sc
-            };
-        }
-
+    fn escape(&mut self, buffer: &str) -> io::Result<()> {
         let src = buffer.as_bytes();
         let size = src.len();
         let mut i = 0;
@@ -108,7 +165,7 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             if i > org {
-                self.s += &buffer[org..i];
+                try!(self.output.write_all(&src[org..i]));
             }
 
             if i >= size {
@@ -116,18 +173,28 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             match src[i] as char {
-                '"' => self.s += "&quot;",
-                '&' => self.s += "&amp;",
-                '<' => self.s += "&lt;",
-                '>' => self.s += "&gt;",
+                '"' => {
+                    try!(self.output.write_all(b"&quot;"));
+                }
+                '&' => {
+                    try!(self.output.write_all(b"&amp;"));
+                }
+                '<' => {
+                    try!(self.output.write_all(b"&lt;"));
+                }
+                '>' => {
+                    try!(self.output.write_all(b"&gt;"));
+                }
                 _ => unreachable!(),
             }
 
             i += 1;
         }
+
+        Ok(())
     }
 
-    fn escape_href(&mut self, buffer: &str) {
+    fn escape_href(&mut self, buffer: &str) -> io::Result<()> {
         lazy_static! {
             static ref HREF_SAFE: [bool; 256] = {
                 let mut a = [false; 256];
@@ -149,7 +216,7 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             if i > org {
-                self.s += &buffer[org..i];
+                try!(self.output.write_all(&src[org..i]));
             }
 
             if i >= size {
@@ -157,88 +224,101 @@ impl<'o> HtmlFormatter<'o> {
             }
 
             match src[i] as char {
-                '&' => self.s += "&amp;",
-                '\'' => self.s += "&#x27;",
-                _ => self.s += &format!("%{:02X}", src[i]),
+                '&' => {
+                    try!(self.output.write_all(b"&amp;"));
+                }
+                '\'' => {
+                    try!(self.output.write_all(b"&#x27;"));
+                }
+                _ => try!(write!(self.output, "%{:02X}", src[i])),
             }
 
             i += 1;
         }
+
+        Ok(())
     }
 
-    fn format_children<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) {
+    fn format_children<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
         for n in node.children() {
-            self.format(n, plain);
+            try!(self.format(n, plain));
         }
+        Ok(())
     }
 
-    fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) {
+    fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
         if plain {
             match node.data.borrow().value {
                 NodeValue::Text(ref literal) |
                 NodeValue::Code(ref literal) |
-                NodeValue::HtmlInline(ref literal) => self.escape(literal),
-                NodeValue::LineBreak | NodeValue::SoftBreak => self.s.push(' '),
+                NodeValue::HtmlInline(ref literal) => {
+                    try!(self.escape(literal));
+                }
+                NodeValue::LineBreak | NodeValue::SoftBreak => {
+                    try!(self.output.write_all(b" "));
+                }
                 _ => (),
             }
-            self.format_children(node, true);
+            try!(self.format_children(node, true));
         } else {
-            let new_plain = self.format_node(node, true);
-            self.format_children(node, new_plain);
-            self.format_node(node, false);
+            let new_plain = try!(self.format_node(node, true));
+            try!(self.format_children(node, new_plain));
+            try!(self.format_node(node, false));
         }
+
+        Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> bool {
+    fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> io::Result<bool> {
         match node.data.borrow().value {
             NodeValue::Document => (),
             NodeValue::BlockQuote => {
                 if entering {
-                    self.cr();
-                    self.s += "<blockquote>\n";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"<blockquote>\n"));
                 } else {
-                    self.cr();
-                    self.s += "</blockquote>\n";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"</blockquote>\n"));
                 }
             }
             NodeValue::List(ref nl) => {
                 if entering {
-                    self.cr();
+                    try!(self.cr());
                     if nl.list_type == ListType::Bullet {
-                        self.s += "<ul>\n";
+                        try!(self.output.write_all(b"<ul>\n"));
                     } else if nl.start == 1 {
-                        self.s += "<ol>\n";
+                        try!(self.output.write_all(b"<ol>\n"));
                     } else {
-                        self.s += &format!("<ol start=\"{}\">\n", nl.start);
+                        try!(write!(self.output, "<ol start=\"{}\">\n", nl.start));
                     }
                 } else if nl.list_type == ListType::Bullet {
-                    self.s += "</ul>\n";
+                    try!(self.output.write_all(b"</ul>\n"));
                 } else {
-                    self.s += "</ol>\n";
+                    try!(self.output.write_all(b"</ol>\n"));
                 }
             }
             NodeValue::Item(..) => {
                 if entering {
-                    self.cr();
-                    self.s += "<li>";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"<li>"));
                 } else {
-                    self.s += "</li>\n";
+                    try!(self.output.write_all(b"</li>\n"));
                 }
             }
             NodeValue::Heading(ref nch) => {
                 if entering {
-                    self.cr();
-                    self.s += &format!("<h{}>", nch.level);
+                    try!(self.cr());
+                    try!(write!(self.output, "<h{}>", nch.level));
                 } else {
-                    self.s += &format!("</h{}>\n", nch.level);
+                    try!(write!(self.output, "</h{}>\n", nch.level));
                 }
             }
             NodeValue::CodeBlock(ref ncb) => {
                 if entering {
-                    self.cr();
+                    try!(self.cr());
 
                     if ncb.info.is_empty() {
-                        self.s += "<pre><code>";
+                        try!(self.output.write_all(b"<pre><code>"));
                     } else {
                         let mut first_tag = 0;
                         while first_tag < ncb.info.len() &&
@@ -248,34 +328,34 @@ impl<'o> HtmlFormatter<'o> {
                         }
 
                         if self.options.github_pre_lang {
-                            self.s += "<pre lang=\"";
-                            self.escape(&ncb.info[..first_tag]);
-                            self.s += "\"><code>";
+                            try!(self.output.write_all(b"<pre lang=\""));
+                            try!(self.escape(&ncb.info[..first_tag]));
+                            try!(self.output.write_all(b"\"><code>"));
                         } else {
-                            self.s += "<pre><code class=\"language-";
-                            self.escape(&ncb.info[..first_tag]);
-                            self.s += "\">";
+                            try!(self.output.write_all(b"<pre><code class=\"language-"));
+                            try!(self.escape(&ncb.info[..first_tag]));
+                            try!(self.output.write_all(b"\">"));
                         }
                     }
-                    self.escape(&ncb.literal);
-                    self.s += "</code></pre>\n";
+                    try!(self.escape(&ncb.literal));
+                    try!(self.output.write_all(b"</code></pre>\n"));
                 }
             }
             NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
-                    self.cr();
+                    try!(self.cr());
                     if self.options.ext_tagfilter {
-                        tagfilter_block(&nhb.literal, &mut self.s);
+                        try!(tagfilter_block(&nhb.literal, &mut self.output));
                     } else {
-                        self.s += &nhb.literal;
+                        try!(self.output.write_all(nhb.literal.as_bytes()));
                     }
-                    self.cr();
+                    try!(self.cr());
                 }
             }
             NodeValue::ThematicBreak => {
                 if entering {
-                    self.cr();
-                    self.s += "<hr />\n";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"<hr />\n"));
                 }
             }
             NodeValue::Paragraph => {
@@ -288,134 +368,134 @@ impl<'o> HtmlFormatter<'o> {
 
                 if entering {
                     if !tight {
-                        self.cr();
-                        self.s += "<p>";
+                        try!(self.cr());
+                        try!(self.output.write_all(b"<p>"));
                     }
                 } else if !tight {
-                    self.s += "</p>\n";
+                    try!(self.output.write_all(b"</p>\n"));
                 }
             }
             NodeValue::Text(ref literal) => {
                 if entering {
-                    self.escape(literal);
+                    try!(self.escape(literal));
                 }
             }
             NodeValue::LineBreak => {
                 if entering {
-                    self.s += "<br />\n";
+                    try!(self.output.write_all(b"<br />\n"));
                 }
             }
             NodeValue::SoftBreak => {
                 if entering {
                     if self.options.hardbreaks {
-                        self.s += "<br />\n";
+                        try!(self.output.write_all(b"<br />\n"));
                     } else {
-                        self.s += "\n";
+                        try!(self.output.write_all(b"\n"));
                     }
                 }
             }
             NodeValue::Code(ref literal) => {
                 if entering {
-                    self.s += "<code>";
-                    self.escape(literal);
-                    self.s += "</code>";
+                    try!(self.output.write_all(b"<code>"));
+                    try!(self.escape(literal));
+                    try!(self.output.write_all(b"</code>"));
                 }
             }
             NodeValue::HtmlInline(ref literal) => {
                 if entering {
                     if self.options.ext_tagfilter && tagfilter(literal) {
-                        self.s += "&lt;";
-                        self.s += &literal[1..];
+                        try!(self.output.write_all(b"&lt;"));
+                        try!(self.output.write_all(literal[1..].as_bytes()));
                     } else {
-                        self.s += literal;
+                        try!(self.output.write_all(literal.as_bytes()));
                     }
                 }
             }
             NodeValue::Strong => {
                 if entering {
-                    self.s += "<strong>";
+                    try!(self.output.write_all(b"<strong>"));
                 } else {
-                    self.s += "</strong>";
+                    try!(self.output.write_all(b"</strong>"));
                 }
             }
             NodeValue::Emph => {
                 if entering {
-                    self.s += "<em>";
+                    try!(self.output.write_all(b"<em>"));
                 } else {
-                    self.s += "</em>";
+                    try!(self.output.write_all(b"</em>"));
                 }
             }
             NodeValue::Strikethrough => {
                 if entering {
-                    self.s += "<del>";
+                    try!(self.output.write_all(b"<del>"));
                 } else {
-                    self.s += "</del>";
+                    try!(self.output.write_all(b"</del>"));
                 }
             }
             NodeValue::Superscript => {
                 if entering {
-                    self.s += "<sup>";
+                    try!(self.output.write_all(b"<sup>"));
                 } else {
-                    self.s += "</sup>";
+                    try!(self.output.write_all(b"</sup>"));
                 }
             }
             NodeValue::Link(ref nl) => {
                 if entering {
-                    self.s += "<a href=\"";
-                    self.escape_href(&nl.url);
+                    try!(self.output.write_all(b"<a href=\""));
+                    try!(self.escape_href(&nl.url));
                     if !nl.title.is_empty() {
-                        self.s += "\" title=\"";
-                        self.escape(&nl.title);
+                        try!(self.output.write_all(b"\" title=\""));
+                        try!(self.escape(&nl.title));
                     }
-                    self.s += "\">";
+                    try!(self.output.write_all(b"\">"));
                 } else {
-                    self.s += "</a>";
+                    try!(self.output.write_all(b"</a>"));
                 }
             }
             NodeValue::Image(ref nl) => {
                 if entering {
-                    self.s += "<img src=\"";
-                    self.escape_href(&nl.url);
-                    self.s += "\" alt=\"";
-                    return true;
+                    try!(self.output.write_all(b"<img src=\""));
+                    try!(self.escape_href(&nl.url));
+                    try!(self.output.write_all(b"\" alt=\""));
+                    return Ok(true);
                 } else {
                     if !nl.title.is_empty() {
-                        self.s += "\" title=\"";
-                        self.escape(&nl.title);
+                        try!(self.output.write_all(b"\" title=\""));
+                        try!(self.escape(&nl.title));
                     }
-                    self.s += "\" />";
+                    try!(self.output.write_all(b"\" />"));
                 }
             }
             NodeValue::Table(..) => {
                 if entering {
-                    self.cr();
-                    self.s += "<table>\n";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"<table>\n"));
                 } else {
                     if !node.last_child().unwrap().same_node(
                         node.first_child().unwrap(),
                     )
                     {
-                        self.s += "</tbody>";
+                        try!(self.output.write_all(b"</tbody>"));
                     }
-                    self.s += "</table>\n";
+                    try!(self.output.write_all(b"</table>\n"));
                 }
             }
             NodeValue::TableRow(header) => {
                 if entering {
-                    self.cr();
+                    try!(self.cr());
                     if header {
-                        self.s += "<thead>";
-                        self.cr();
+                        try!(self.output.write_all(b"<thead>"));
+                        try!(self.cr());
                     }
-                    self.s += "<tr>";
+                    try!(self.output.write_all(b"<tr>"));
                 } else {
-                    self.cr();
-                    self.s += "</tr>";
+                    try!(self.cr());
+                    try!(self.output.write_all(b"</tr>"));
                     if header {
-                        self.cr();
-                        self.s += "</thead>";
-                        self.cr();
-                        self.s += "<tbody>";
+                        try!(self.cr());
+                        try!(self.output.write_all(b"</thead>"));
+                        try!(self.cr());
+                        try!(self.output.write_all(b"<tbody>"));
                     }
                 }
             }
@@ -433,11 +513,11 @@ impl<'o> HtmlFormatter<'o> {
                 };
 
                 if entering {
-                    self.cr();
+                    try!(self.cr());
                     if in_header {
-                        self.s += "<th";
+                        try!(self.output.write_all(b"<th"));
                     } else {
-                        self.s += "<td";
+                        try!(self.output.write_all(b"<td"));
                     }
 
                     let mut start = node.parent().unwrap().first_child().unwrap();
@@ -448,20 +528,26 @@ impl<'o> HtmlFormatter<'o> {
                     }
 
                     match alignments[i] {
-                        TableAlignment::Left => self.s += " align=\"left\"",
-                        TableAlignment::Right => self.s += " align=\"right\"",
-                        TableAlignment::Center => self.s += " align=\"center\"",
+                        TableAlignment::Left => {
+                            try!(self.output.write_all(b" align=\"left\""));
+                        }
+                        TableAlignment::Right => {
+                            try!(self.output.write_all(b" align=\"right\""));
+                        }
+                        TableAlignment::Center => {
+                            try!(self.output.write_all(b" align=\"center\""));
+                        }
                         TableAlignment::None => (),
                     }
 
-                    self.s += ">";
+                    try!(self.output.write_all(b">"));
                 } else if in_header {
-                    self.s += "</th>";
+                    try!(self.output.write_all(b"</th>"));
                 } else {
-                    self.s += "</td>";
+                    try!(self.output.write_all(b"</td>"));
                 }
             }
         }
-        false
+        Ok(false)
     }
 }

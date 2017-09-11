@@ -6,16 +6,21 @@ use parser::ComrakOptions;
 use scanners;
 use std;
 use std::cmp::max;
-use std::io::Write;
+use std::io::{self, Write};
 
 /// Formats an AST as CommonMark, modified by the given options.
-pub fn format_document<'a>(root: &'a AstNode<'a>, options: &ComrakOptions) -> String {
+pub fn format_document<'a>(
+    root: &'a AstNode<'a>,
+    options: &ComrakOptions,
+    output: &mut Write,
+) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
     if !f.v.is_empty() && f.v[f.v.len() - 1] != b'\n' {
         f.v.push(b'\n');
     }
-    String::from_utf8(f.v).unwrap()
+    try!(output.write_all(&f.v));
+    Ok(())
 }
 
 struct CommonMarkFormatter<'a, 'o> {

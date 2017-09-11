@@ -32,13 +32,16 @@ where
     opts(&mut options);
 
     let root = parse_document(&arena, &input.chars().collect::<String>(), &options);
-    let output = html::format_document(root, &options);
-    compare_strs(&output, expected, "regular");
+    let mut output = vec![];
+    html::format_document(root, &options, &mut output).unwrap();
+    compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
-    let md = cm::format_document(root, &options);
-    let root = parse_document(&arena, &md.chars().collect::<String>(), &options);
-    let output_from_rt = html::format_document(root, &options);
-    compare_strs(&output_from_rt, expected, "roundtrip");
+    let mut md = vec![];
+    cm::format_document(root, &options, &mut md).unwrap();
+    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let mut output_from_rt = vec![];
+    html::format_document(root, &options, &mut output_from_rt).unwrap();
+    compare_strs(&String::from_utf8(output_from_rt).unwrap(), expected, "roundtrip");
 }
 
 #[test]

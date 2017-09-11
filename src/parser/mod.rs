@@ -104,11 +104,15 @@ pub struct ComrakOptions {
     /// # let arena = typed_arena::Arena::new();
     /// let mut options = ComrakOptions::default();
     /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
-    /// assert_eq!(format_commonmark(node, &options),
+    /// let mut output = vec![];
+    /// format_commonmark(node, &options, &mut output).unwrap();
+    /// assert_eq!(String::from_utf8(output).unwrap(),
     ///            "hello hello hello hello hello hello\n");
     ///
     /// options.width = 20;
-    /// assert_eq!(format_commonmark(node, &options),
+    /// let mut output = vec![];
+    /// format_commonmark(node, &options, &mut output).unwrap();
+    /// assert_eq!(String::from_utf8(output).unwrap(),
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
     /// ```
