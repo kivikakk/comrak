@@ -419,7 +419,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 make_inline(self.arena, NodeValue::Text(openticks))
             }
             Some(endpos) => {
-                let mut buf: &str = &self.input[startpos..endpos - openticks.len()];
+                let mut buf = &self.input[startpos..endpos - openticks.len()];
                 buf = strings::trim_slice(buf);
                 let buf = strings::normalize_whitespace(buf);
                 make_inline(self.arena, NodeValue::Code(buf))
