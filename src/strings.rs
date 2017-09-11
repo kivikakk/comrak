@@ -224,7 +224,6 @@ pub fn normalize_reference_label(i: &[u8]) -> Vec<u8> {
     let i = trim_slice(i);
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
-    // TODO
     for c in unsafe { str::from_utf8_unchecked(i) }.chars() {
         for e in c.to_lowercase() {
             if e.is_whitespace() {

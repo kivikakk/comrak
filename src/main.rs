@@ -145,7 +145,7 @@ fn main() {
     }
 
     let arena = Arena::new();
-    let root = parser::parse_document(&arena, &s, &options);
+    let root = parser::parse_document(&arena, &String::from_utf8(s).unwrap(), &options);
 
     let formatter = match matches.value_of("format") {
         Some("html") => html::format_document,

@@ -28,7 +28,7 @@
 //!
 //! let root = parse_document(
 //!     &arena,
-//!     b"This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
+//!     "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
 //!     &ComrakOptions::default());
 //!
 //! fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
@@ -107,7 +107,7 @@ use typed_arena::Arena;
 /// See the documentation of the crate root for an example.
 pub fn markdown_to_html(md: &str, options: &ComrakOptions) -> String {
     let arena = Arena::new();
-    let root = parse_document(&arena, md.as_bytes(), options);
+    let root = parse_document(&arena, md, options);
     let mut s = Vec::new();
     format_html(root, options, &mut s).unwrap();
     String::from_utf8(s).unwrap()

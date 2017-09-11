@@ -60,7 +60,7 @@ let arena = Arena::new();
 
 let root = parse_document(
     &arena,
-    b"This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
+    "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
     &ComrakOptions::default());
 
 fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)

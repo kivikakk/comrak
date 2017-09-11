@@ -26,7 +26,7 @@ const CODE_INDENT: usize = 4;
 /// See the documentation of the crate root for an example.
 pub fn parse_document<'a>(
     arena: &'a Arena<AstNode<'a>>,
-    buffer: &[u8],
+    buffer: &str,
     options: &ComrakOptions,
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
@@ -40,7 +40,7 @@ pub fn parse_document<'a>(
         last_line_blank: false,
     })));
     let mut parser = Parser::new(arena, root, options);
-    parser.feed(buffer, true);
+    parser.feed(buffer.as_bytes(), true);
     parser.finish()
 }
 
@@ -104,7 +104,7 @@ pub struct ComrakOptions {
     /// # fn main() {
     /// # let arena = typed_arena::Arena::new();
     /// let mut options = ComrakOptions::default();
-    /// let node = parse_document(&arena, b"hello hello hello hello hello hello", &options);
+    /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
     /// let mut output = vec![];
     /// format_commonmark(node, &options, &mut output).unwrap();
     /// assert_eq!(String::from_utf8(output).unwrap(),
