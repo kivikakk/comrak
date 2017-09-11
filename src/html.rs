@@ -108,18 +108,17 @@ fn tagfilter(literal: &[u8]) -> bool {
 }
 
 fn tagfilter_block(input: &[u8], o: &mut Write) -> io::Result<()> {
-    let src = input;
-    let size = src.len();
+    let size = input.len();
     let mut i = 0;
 
     while i < size {
         let org = i;
-        while i < size && src[i] != b'<' {
+        while i < size && input[i] != b'<' {
             i += 1;
         }
 
         if i > org {
-            try!(o.write_all(&src[org..i]));
+            try!(o.write_all(&input[org..i]));
         }
 
         if i >= size {
@@ -154,25 +153,24 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        let src = buffer;
-        let size = src.len();
+        let size = buffer.len();
         let mut i = 0;
 
         while i < size {
             let org = i;
-            while i < size && !NEEDS_ESCAPED[src[i] as usize] {
+            while i < size && !NEEDS_ESCAPED[buffer[i] as usize] {
                 i += 1;
             }
 
             if i > org {
-                try!(self.output.write_all(&src[org..i]));
+                try!(self.output.write_all(&buffer[org..i]));
             }
 
             if i >= size {
                 break;
             }
 
-            match src[i] as char {
+            match buffer[i] as char {
                 '"' => {
                     try!(self.output.write_all(b"&quot;"));
                 }
@@ -208,32 +206,31 @@ impl<'o> HtmlFormatter<'o> {
             };
         }
 
-        let src = buffer;
-        let size = src.len();
+        let size = buffer.len();
         let mut i = 0;
 
         while i < size {
             let org = i;
-            while i < size && HREF_SAFE[src[i] as usize] {
+            while i < size && HREF_SAFE[buffer[i] as usize] {
                 i += 1;
             }
 
             if i > org {
-                try!(self.output.write_all(&src[org..i]));
+                try!(self.output.write_all(&buffer[org..i]));
             }
 
             if i >= size {
                 break;
             }
 
-            match src[i] as char {
+            match buffer[i] as char {
                 '&' => {
                     try!(self.output.write_all(b"&amp;"));
                 }
                 '\'' => {
                     try!(self.output.write_all(b"&#x27;"));
                 }
-                _ => try!(write!(self.output, "%{:02X}", src[i])),
+                _ => try!(write!(self.output, "%{:02X}", buffer[i])),
             }
 
             i += 1;

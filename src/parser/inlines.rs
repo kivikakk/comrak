@@ -373,14 +373,12 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
     }
 
-    pub fn take_while(&mut self, c: u8) -> Vec<u8> {
-        let mut v = Vec::with_capacity(10);
-        // TODO
+    pub fn take_while(&mut self, c: u8) -> usize {
+        let start_pos = self.pos;
         while self.peek_char() == Some(&c) {
-            v.push(self.input[self.pos]);
             self.pos += 1;
         }
-        v
+        self.pos - start_pos
     }
 
     pub fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
@@ -400,7 +398,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 self.scanned_for_backticks = true;
                 return None;
             }
-            let numticks = self.take_while(b'`').len();
+            let numticks = self.take_while(b'`');
             if numticks <= MAXBACKTICKS {
                 self.backticks[numticks] = self.pos - numticks;
             }
@@ -413,15 +411,15 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     pub fn handle_backticks(&mut self) -> &'a AstNode<'a> {
         let openticks = self.take_while(b'`');
         let startpos = self.pos;
-        let endpos = self.scan_to_closing_backtick(openticks.len());
+        let endpos = self.scan_to_closing_backtick(openticks);
 
         match endpos {
             None => {
                 self.pos = startpos;
-                make_inline(self.arena, NodeValue::Text(openticks))
+                make_inline(self.arena, NodeValue::Text(vec![b'`'; openticks]))
             }
             Some(endpos) => {
-                let mut buf = &self.input[startpos..endpos - openticks.len()];
+                let mut buf = &self.input[startpos..endpos - openticks];
                 buf = strings::trim_slice(buf);
                 let buf = strings::normalize_whitespace(buf);
                 make_inline(self.arena, NodeValue::Code(buf))
