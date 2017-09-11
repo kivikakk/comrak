@@ -1,3 +1,9 @@
+### 0.2.0
+
+* The formatters no longer produce Strings themeselves; you must specify an
+  output stream.
+* Speed up whitespace normalisation.
+
 ### 0.1.9
 
 * Multibyte character fix for autolink (#35, Shaquille Johnson).
