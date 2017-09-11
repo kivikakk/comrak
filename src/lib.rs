@@ -28,7 +28,7 @@
 //!
 //! let root = parse_document(
 //!     &arena,
-//!     "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
+//!     b"This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
 //!     &ComrakOptions::default());
 //!
 //! fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
@@ -42,7 +42,8 @@
 //! iter_nodes(root, &|node| {
 //!     match &mut node.data.borrow_mut().value {
 //!         &mut NodeValue::Text(ref mut text) => {
-//!             *text = text.replace("my", "your");
+//!             let orig = std::mem::replace(text, vec![]);
+//!             *text = String::from_utf8(orig).unwrap().replace("my", "your").as_bytes().to_vec();
 //!         }
 //!         _ => (),
 //!     }
@@ -81,6 +82,7 @@ extern crate regex;
 extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate twoway;
 
 mod arena_tree;
 mod parser;
@@ -105,7 +107,7 @@ use typed_arena::Arena;
 /// See the documentation of the crate root for an example.
 pub fn markdown_to_html(md: &str, options: &ComrakOptions) -> String {
     let arena = Arena::new();
-    let root = parse_document(&arena, md, options);
+    let root = parse_document(&arena, md.as_bytes(), options);
     let mut s = Vec::new();
     format_html(root, options, &mut s).unwrap();
     String::from_utf8(s).unwrap()

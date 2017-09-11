@@ -31,14 +31,14 @@ where
     let mut options = ComrakOptions::default();
     opts(&mut options);
 
-    let root = parse_document(&arena, &input.chars().collect::<String>(), &options);
+    let root = parse_document(&arena, input.as_bytes(), &options);
     let mut output = vec![];
     html::format_document(root, &options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
-    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let root = parse_document(&arena, &md, &options);
     let mut output_from_rt = vec![];
     html::format_document(root, &options, &mut output_from_rt).unwrap();
     compare_strs(&String::from_utf8(output_from_rt).unwrap(), expected, "roundtrip");

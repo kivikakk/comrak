@@ -365,14 +365,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     }
 
                     if ncb.info.is_empty() &&
-                        (ncb.literal.len() > 2 && !isspace(ncb.literal.as_bytes()[0]) &&
-                             !(isspace(ncb.literal.as_bytes()[ncb.literal.len() - 1]) &&
-                                   isspace(ncb.literal.as_bytes()[ncb.literal.len() - 2]))) &&
+                        (ncb.literal.len() > 2 && !isspace(ncb.literal[0]) &&
+                             !(isspace(ncb.literal[ncb.literal.len() - 1]) &&
+                                   isspace(ncb.literal[ncb.literal.len() - 2]))) &&
                         !first_in_list_item
                     {
                         write!(self, "    ").unwrap();
                         write!(self.prefix, "    ").unwrap();
-                        write!(self, "{}", ncb.literal).unwrap();
+                        self.write_all(&ncb.literal).unwrap();
                         let new_len = self.prefix.len() - 4;
                         self.prefix.truncate(new_len);
                     } else {
@@ -381,10 +381,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                             write!(self, "`").unwrap();
                         }
                         if !ncb.info.is_empty() {
-                            write!(self, " {}", ncb.info).unwrap();
+                            write!(self, " ").unwrap();
+                            self.write_all(&ncb.info).unwrap();
                         }
                         self.cr();
-                        write!(self, "{}", ncb.literal).unwrap();
+                        self.write_all(&ncb.literal).unwrap();
                         self.cr();
                         for _ in 0..numticks {
                             write!(self, "`").unwrap();
@@ -396,7 +397,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.blankline();
-                    self.write_all(nhb.literal.as_bytes()).unwrap();
+                    self.write_all(&nhb.literal).unwrap();
                     self.blankline();
                 }
             }
@@ -414,7 +415,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Text(ref literal) => {
                 if entering {
-                    self.output(literal.as_bytes(), allow_wrap, Escaping::Normal);
+                    self.output(literal, allow_wrap, Escaping::Normal);
                 }
             }
             NodeValue::LineBreak => {
@@ -440,11 +441,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     for _ in 0..numticks {
                         write!(self, "`").unwrap();
                     }
-                    if literal.is_empty() || literal.as_bytes()[0] == b'`' {
+                    if literal.is_empty() || literal[0] == b'`' {
                         write!(self, " ").unwrap();
                     }
-                    self.output(literal.as_bytes(), allow_wrap, Escaping::Literal);
-                    if literal.is_empty() || literal.as_bytes()[literal.len() - 1] == b'`' {
+                    self.output(literal, allow_wrap, Escaping::Literal);
+                    if literal.is_empty() || literal[literal.len() - 1] == b'`' {
                         write!(self, " ").unwrap();
                     }
                     for _ in 0..numticks {
@@ -454,7 +455,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::HtmlInline(ref literal) => {
                 if entering {
-                    self.write_all(literal.as_bytes()).unwrap();
+                    self.write_all(literal).unwrap();
                 }
             }
             NodeValue::Strong => {
@@ -501,10 +502,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if is_autolink(node, nl) {
                     if entering {
                         write!(self, "<").unwrap();
-                        if &nl.url[..7] == "mailto:" {
-                            self.write_all(nl.url[7..].as_bytes()).unwrap();
+                        if &nl.url[..7] == b"mailto:" {
+                            self.write_all(&nl.url[7..]).unwrap();
                         } else {
-                            self.write_all(nl.url.as_bytes()).unwrap();
+                            self.write_all(&nl.url).unwrap();
                         }
                         write!(self, ">").unwrap();
                         return false;
@@ -513,10 +514,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     write!(self, "[").unwrap();
                 } else {
                     write!(self, "](").unwrap();
-                    self.output(nl.url.as_bytes(), false, Escaping::URL);
+                    self.output(&nl.url, false, Escaping::URL);
                     if !nl.title.is_empty() {
                         write!(self, " \"").unwrap();
-                        self.output(nl.title.as_bytes(), false, Escaping::Title);
+                        self.output(&nl.title, false, Escaping::Title);
                         write!(self, "\"").unwrap();
                     }
                     write!(self, ")").unwrap();
@@ -527,10 +528,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     write!(self, "![").unwrap();
                 } else {
                     write!(self, "](").unwrap();
-                    self.output(nl.url.as_bytes(), false, Escaping::URL);
+                    self.output(&nl.url, false, Escaping::URL);
                     if !nl.title.is_empty() {
                         self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
-                        self.output(nl.title.as_bytes(), false, Escaping::Title);
+                        self.output(&nl.title, false, Escaping::Title);
                         write!(self, "\"").unwrap();
                     }
                     write!(self, ")").unwrap();
@@ -592,10 +593,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 }
 
-fn longest_backtick_sequence(literal: &str) -> usize {
+fn longest_backtick_sequence(literal: &[u8]) -> usize {
     let mut longest = 0;
     let mut current = 0;
-    for c in literal.as_bytes() {
+    for c in literal {
         if *c == b'`' {
             current += 1;
         } else {
@@ -611,10 +612,10 @@ fn longest_backtick_sequence(literal: &str) -> usize {
     longest
 }
 
-fn shortest_unused_sequence(literal: &str, f: u8) -> usize {
+fn shortest_unused_sequence(literal: &[u8], f: u8) -> usize {
     let mut used = 1;
     let mut current = 0;
-    for c in literal.as_bytes() {
+    for c in literal {
         if *c == f {
             current += 1;
         } else {
@@ -656,12 +657,12 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
         }
     };
 
-    let mut real_url: &str = &nl.url;
-    if &real_url[..7] == "mailto:" {
+    let mut real_url: &[u8] = &nl.url;
+    if &real_url[..7] == b"mailto:" {
         real_url = &real_url[7..];
     }
 
-    real_url == link_text
+    real_url == &*link_text
 }
 
 fn table_escape<'a>(node: &'a AstNode<'a>, c: u8) -> bool {

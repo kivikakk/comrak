@@ -60,7 +60,7 @@ let arena = Arena::new();
 
 let root = parse_document(
     &arena,
-    "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
+    b"This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
     &ComrakOptions::default());
 
 fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
@@ -74,7 +74,8 @@ fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
 iter_nodes(root, &|node| {
     match &mut node.data.borrow_mut().value {
         &mut NodeValue::Text(ref mut text) => {
-            *text = text.replace("my", "your");
+            let orig = std::mem::replace(text, vec![]);
+            *text = String::from_utf8(orig).unwrap().replace("my", "your").as_bytes().to_vec();
         }
         _ => (),
     }

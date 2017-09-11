@@ -22,6 +22,7 @@ extern crate typed_arena;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
+extern crate twoway;
 
 mod arena_tree;
 mod html;
@@ -125,16 +126,16 @@ fn main() {
 
     assert!(exts.is_empty());
 
-    let mut s = String::with_capacity(2048);
+    let mut s: Vec<u8> = Vec::with_capacity(2048);
 
     match matches.values_of("file") {
         None => {
-            std::io::stdin().read_to_string(&mut s).unwrap();
+            std::io::stdin().read_to_end(&mut s).unwrap();
         }
         Some(fs) => {
             for f in fs {
                 let mut io = std::fs::File::open(f).unwrap();
-                io.read_to_string(&mut s).unwrap();
+                io.read_to_end(&mut s).unwrap();
             }
         }
     };
@@ -158,22 +159,22 @@ fn main() {
 }
 
 fn init_scanners() {
-    scanners::atx_heading_start("");
-    scanners::html_block_end_1("");
-    scanners::open_code_fence("");
-    scanners::close_code_fence("");
-    scanners::html_block_start("");
-    scanners::html_block_start_7("");
-    scanners::setext_heading_line("");
-    scanners::thematic_break("");
-    scanners::scheme("");
-    scanners::autolink_uri("");
-    scanners::autolink_email("");
-    scanners::html_tag("");
-    scanners::spacechars("");
-    scanners::link_title("");
-    scanners::table_start("");
-    scanners::table_cell("");
-    scanners::table_cell_end("");
-    scanners::table_row_end("");
+    scanners::atx_heading_start(b"");
+    scanners::html_block_end_1(b"");
+    scanners::open_code_fence(b"");
+    scanners::close_code_fence(b"");
+    scanners::html_block_start(b"");
+    scanners::html_block_start_7(b"");
+    scanners::setext_heading_line(b"");
+    scanners::thematic_break(b"");
+    scanners::scheme(b"");
+    scanners::autolink_uri(b"");
+    scanners::autolink_email(b"");
+    scanners::html_tag(b"");
+    scanners::spacechars(b"");
+    scanners::link_title(b"");
+    scanners::table_start(b"");
+    scanners::table_cell(b"");
+    scanners::table_cell_end(b"");
+    scanners::table_row_end(b"");
 }

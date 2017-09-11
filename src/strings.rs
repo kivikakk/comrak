@@ -1,13 +1,14 @@
 use ctype::{ispunct, isspace};
 use entity;
 use parser::AutolinkType;
+use std::str;
 
-pub fn unescape(v: &mut String) {
+pub fn unescape(v: &mut Vec<u8>) {
     let mut r = 0;
     let mut sz = v.len();
 
     while r < sz {
-        if v.as_bytes()[r] == b'\\' && r + 1 < sz && ispunct(v.as_bytes()[r + 1]) {
+        if v[r] == b'\\' && r + 1 < sz && ispunct(v[r + 1]) {
             v.remove(r);
             sz -= 1;
         }
@@ -18,63 +19,59 @@ pub fn unescape(v: &mut String) {
     }
 }
 
-pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
-    let mut url_string = url.to_string();
-    trim(&mut url_string);
+pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
+    let mut url_vec = url.to_vec();
+    trim(&mut url_vec);
 
-    if url_string.is_empty() {
-        return url_string;
+    if url_vec.is_empty() {
+        return url_vec;
     }
 
-    let mut buf = String::with_capacity(url_string.len());
+    let mut buf = Vec::with_capacity(url_vec.len());
     if kind == AutolinkType::Email {
-        buf += "mailto:";
+        buf.extend_from_slice(b"mailto:");
     }
 
-    buf += &entity::unescape_html(&url_string);
+    buf.extend_from_slice(&entity::unescape_html(&url_vec));
     buf
 }
 
-pub fn normalize_whitespace(v: &str) -> String {
+pub fn normalize_whitespace(v: &[u8]) -> Vec<u8> {
     let mut last_char_was_space = false;
-    let b = v.as_bytes();
-    let mut r = String::with_capacity(v.len());
-    unsafe {
-        let mut ro = r.as_mut_vec();
+    let b = v;
+    let mut r = Vec::with_capacity(v.len());
+    let mut org = 0;
+    let len = v.len();
+    while org < len {
+        let mut i = org;
 
-        let mut org = 0;
-        let len = v.len();
-        while org < len {
-            let mut i = org;
-
-            while i < len && !isspace(b[i]) {
-                i += 1;
-            }
-
-            if i > org {
-                ro.extend_from_slice(&b[org..i]);
-                last_char_was_space = false;
-            }
-
-            if i < len {
-                if !last_char_was_space {
-                    ro.push(32);
-                    last_char_was_space = true;
-                }
-                i += 1;
-            }
-
-            org = i;
+        while i < len && !isspace(b[i]) {
+            i += 1;
         }
+
+        if i > org {
+            r.extend_from_slice(&b[org..i]);
+            last_char_was_space = false;
+        }
+
+        if i < len {
+            if !last_char_was_space {
+                r.push(b' ');
+                last_char_was_space = true;
+            }
+            i += 1;
+        }
+
+        org = i;
     }
 
     r
 }
 
-pub fn remove_trailing_blank_lines(line: &mut String) {
+pub fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
     let mut i = line.len() - 1;
     loop {
-        let c = line.as_bytes()[i];
+        let c = line[i];
 
         if c != b' ' && c != b'\t' && !is_line_end_char(c) {
             break;
@@ -89,7 +86,7 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
     }
 
     for i in i..line.len() {
-        let c = line.as_bytes()[i];
+        let c = line[i];
 
         if !is_line_end_char(c) {
             continue;
@@ -114,74 +111,74 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     }
 }
 
-pub fn chop_trailing_hashtags(line: &mut String) {
+pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {
     rtrim(line);
 
     let orig_n = line.len() - 1;
     let mut n = orig_n;
 
-    while line.as_bytes()[n] == b'#' {
+    while line[n] == b'#' {
         if n == 0 {
             return;
         }
         n -= 1;
     }
 
-    if n != orig_n && is_space_or_tab(line.as_bytes()[n]) {
+    if n != orig_n && is_space_or_tab(line[n]) {
         line.truncate(n);
         rtrim(line);
     }
 }
 
-pub fn rtrim(line: &mut String) {
+pub fn rtrim(line: &mut Vec<u8>) {
     let mut len = line.len();
-    while len > 0 && isspace(line.as_bytes()[len - 1]) {
+    while len > 0 && isspace(line[len - 1]) {
         line.pop();
         len -= 1;
     }
 }
 
-pub fn ltrim(line: &mut String) {
+pub fn ltrim(line: &mut Vec<u8>) {
     let mut len = line.len();
-    while len > 0 && isspace(line.as_bytes()[0]) {
+    while len > 0 && isspace(line[0]) {
         line.remove(0);
         len -= 1;
     }
 }
 
-pub fn trim(line: &mut String) {
+pub fn trim(line: &mut Vec<u8>) {
     ltrim(line);
     rtrim(line);
 }
 
-pub fn rtrim_slice(mut i: &str) -> &str {
+pub fn rtrim_slice(mut i: &[u8]) -> &[u8] {
     let mut len = i.len();
-    while len > 0 && isspace(i.as_bytes()[len - 1]) {
+    while len > 0 && isspace(i[len - 1]) {
         i = &i[..len - 1];
         len -= 1;
     }
     i
 }
 
-pub fn trim_slice(mut i: &str) -> &str {
+pub fn trim_slice(mut i: &[u8]) -> &[u8] {
     i = rtrim_slice(i);
     let mut len = i.len();
-    while len > 0 && isspace(i.as_bytes()[0]) {
+    while len > 0 && isspace(i[0]) {
         i = &i[1..];
         len -= 1;
     }
     i
 }
 
-pub fn clean_url(url: &str) -> String {
+pub fn clean_url(url: &[u8]) -> Vec<u8> {
     let url = trim_slice(url);
 
     let url_len = url.len();
     if url_len == 0 {
-        return String::new();
+        return vec![];
     }
 
-    let mut b = if url.as_bytes()[0] == b'<' && url.as_bytes()[url_len - 1] == b'>' {
+    let mut b = if url[0] == b'<' && url[url_len - 1] == b'>' {
         entity::unescape_html(&url[1..url_len - 1])
     } else {
         entity::unescape_html(url)
@@ -191,14 +188,14 @@ pub fn clean_url(url: &str) -> String {
     b
 }
 
-pub fn clean_title(title: &str) -> String {
+pub fn clean_title(title: &[u8]) -> Vec<u8> {
     let title_len = title.len();
     if title_len == 0 {
-        return String::new();
+        return vec![];
     }
 
-    let first = title.as_bytes()[0];
-    let last = title.as_bytes()[title_len - 1];
+    let first = title[0];
+    let last = title[title_len - 1];
 
     let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')') ||
         (first == b'"' && last == b'"')
@@ -212,9 +209,9 @@ pub fn clean_title(title: &str) -> String {
     b
 }
 
-pub fn is_blank(s: &str) -> bool {
-    for c in s.as_bytes() {
-        match *c {
+pub fn is_blank(s: &[u8]) -> bool {
+    for &c in s {
+        match c {
             10 | 13 => return true,
             32 | 9 => (),
             _ => return false,
@@ -223,11 +220,12 @@ pub fn is_blank(s: &str) -> bool {
     true
 }
 
-pub fn normalize_reference_label(i: &str) -> String {
+pub fn normalize_reference_label(i: &[u8]) -> Vec<u8> {
     let i = trim_slice(i);
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
-    for c in i.chars() {
+    // TODO
+    for c in unsafe { str::from_utf8_unchecked(i) }.chars() {
         for e in c.to_lowercase() {
             if e.is_whitespace() {
                 if !last_was_whitespace {
@@ -240,5 +238,5 @@ pub fn normalize_reference_label(i: &str) -> String {
             }
         }
     }
-    v
+    v.into_bytes()
 }

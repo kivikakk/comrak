@@ -67,7 +67,7 @@ pub enum NodeValue {
 
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
-    Text(String),
+    Text(Vec<u8>),
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
     /// the `hardbreaks` option is set in `ComrakOptions` during formatting, it will be formatted
@@ -78,10 +78,10 @@ pub enum NodeValue {
     LineBreak,
 
     /// **Inline**.  A [code span](https://github.github.com/gfm/#code-spans).
-    Code(String),
+    Code(Vec<u8>),
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
-    HtmlInline(String),
+    HtmlInline(Vec<u8>),
 
     /// **Inline**.  [Emphasised](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
@@ -125,13 +125,13 @@ pub enum TableAlignment {
 #[derive(Debug, Clone)]
 pub struct NodeLink {
     /// The URL for the link destination or image source.
-    pub url: String,
+    pub url: Vec<u8>,
 
     /// The title for the link or image.
     ///
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
-    pub title: String,
+    pub title: Vec<u8>,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
@@ -209,12 +209,12 @@ pub struct NodeCodeBlock {
 
     /// For fenced code blocks, the [info string](https://github.github.com/gfm/#info-string) after
     /// the opening fence, if any.
-    pub info: String,
+    pub info: Vec<u8>,
 
     /// The literal contents of the code block.  As the contents are not interpreted as Markdown at
     /// all, they are contained within this structure, rather than inserted into a child inline of
     /// any kind.
-    pub literal: String,
+    pub literal: Vec<u8>,
 }
 
 /// The metadata of a heading.
@@ -235,7 +235,7 @@ pub struct NodeHtmlBlock {
 
     /// The literal contents of the HTML block.  Per NodeCodeBlock, the content is included here
     /// rather than in any inline.
-    pub literal: String,
+    pub literal: Vec<u8>,
 }
 
 
@@ -282,7 +282,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&String> {
+    pub fn text(&self) -> Option<&Vec<u8>> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
@@ -292,7 +292,7 @@ impl NodeValue {
     /// Return a mutable reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&mut String> {
+    pub fn text_mut(&mut self) -> Option<&mut Vec<u8>> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,
@@ -322,7 +322,7 @@ pub struct Ast {
     pub end_column: usize,
 
     #[doc(hidden)]
-    pub content: String,
+    pub content: Vec<u8>,
     #[doc(hidden)]
     pub open: bool,
     #[doc(hidden)]
@@ -333,7 +333,7 @@ pub struct Ast {
 pub fn make_block(value: NodeValue, start_line: u32, start_column: usize) -> Ast {
     Ast {
         value: value,
-        content: String::new(),
+        content: vec![],
         start_line: start_line,
         start_column: start_column,
         end_line: start_line,
