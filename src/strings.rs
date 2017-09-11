@@ -37,17 +37,34 @@ pub fn clean_autolink(url: &str, kind: AutolinkType) -> String {
 
 pub fn normalize_whitespace(v: &str) -> String {
     let mut last_char_was_space = false;
+    let b = v.as_bytes();
     let mut r = String::with_capacity(v.len());
+    unsafe {
+        let mut ro = r.as_mut_vec();
 
-    for c in v.chars() {
-        if (c as u32) < 0x80 && isspace(c as u8) {
-            if !last_char_was_space {
-                r.push(' ');
-                last_char_was_space = true;
+        let mut org = 0;
+        let len = v.len();
+        while org < len {
+            let mut i = org;
+
+            while i < len && !isspace(b[i]) {
+                i += 1;
             }
-        } else {
-            r.push(c);
-            last_char_was_space = false;
+
+            if i > org {
+                ro.extend_from_slice(&b[org..i]);
+                last_char_was_space = false;
+            }
+
+            if i < len {
+                if !last_char_was_space {
+                    ro.push(32);
+                    last_char_was_space = true;
+                }
+                i += 1;
+            }
+
+            org = i;
         }
     }
 
