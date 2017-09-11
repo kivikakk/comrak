@@ -61,6 +61,11 @@ fn main() {
                 .help("Use GitHub-style <pre lang> for code blocks"),
         )
         .arg(
+            clap::Arg::with_name("prepare-regexes")
+                .long("prepare-regexes")
+                .help("Prepare regexes up front for benchmarking"),
+        )
+        .arg(
             clap::Arg::with_name("extension")
                 .short("e")
                 .long("extension")
@@ -135,6 +140,10 @@ fn main() {
         }
     };
 
+    if matches.is_present("prepare-regexes") {
+        init_scanners();
+    }
+
     let arena = Arena::new();
     let root = parser::parse_document(&arena, &s, &options);
 
@@ -147,4 +156,25 @@ fn main() {
     formatter(root, &options, &mut std::io::stdout()).unwrap();
 
     process::exit(0);
+}
+
+fn init_scanners() {
+    scanners::atx_heading_start("");
+    scanners::html_block_end_1("");
+    scanners::open_code_fence("");
+    scanners::close_code_fence("");
+    scanners::html_block_start("");
+    scanners::html_block_start_7("");
+    scanners::setext_heading_line("");
+    scanners::thematic_break("");
+    scanners::scheme("");
+    scanners::autolink_uri("");
+    scanners::autolink_email("");
+    scanners::html_tag("");
+    scanners::spacechars("");
+    scanners::link_title("");
+    scanners::table_start("");
+    scanners::table_cell("");
+    scanners::table_cell_end("");
+    scanners::table_row_end("");
 }
