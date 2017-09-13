@@ -8,12 +8,13 @@ use entity;
 use nodes;
 use nodes::{NodeValue, Ast, NodeCodeBlock, NodeHeading, NodeList, ListType, ListDelimType,
             NodeHtmlBlock, make_block, AstNode};
-use regex::Regex;
+use regex::bytes::Regex;
 use scanners;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::mem;
+use std::str;
 use strings;
 use typed_arena::Arena;
 
@@ -30,7 +31,7 @@ pub fn parse_document<'a>(
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
-        content: String::new(),
+        content: vec![],
         start_line: 0,
         start_column: 0,
         end_line: 0,
@@ -39,13 +40,13 @@ pub fn parse_document<'a>(
         last_line_blank: false,
     })));
     let mut parser = Parser::new(arena, root, options);
-    parser.feed(buffer, true);
+    parser.feed(buffer.as_bytes(), true);
     parser.finish()
 }
 
 pub struct Parser<'a, 'o> {
     arena: &'a Arena<AstNode<'a>>,
-    refmap: HashMap<String, Reference>,
+    refmap: HashMap<Vec<u8>, Reference>,
     root: &'a AstNode<'a>,
     current: &'a AstNode<'a>,
     line_number: u32,
@@ -57,7 +58,7 @@ pub struct Parser<'a, 'o> {
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: usize,
-    linebuf: String,
+    linebuf: Vec<u8>,
     last_buffer_ended_with_cr: bool,
     options: &'o ComrakOptions,
 }
@@ -201,8 +202,8 @@ pub struct ComrakOptions {
 
 #[derive(Clone)]
 pub struct Reference {
-    pub url: String,
-    pub title: String,
+    pub url: Vec<u8>,
+    pub title: Vec<u8>,
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
@@ -225,15 +226,15 @@ impl<'a, 'o> Parser<'a, 'o> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
-            linebuf: String::with_capacity(80),
+            linebuf: Vec::with_capacity(80),
             last_buffer_ended_with_cr: false,
             options: options,
         }
     }
 
-    pub fn feed(&mut self, s: &str, eof: bool) {
+    pub fn feed(&mut self, s: &[u8], eof: bool) {
         let mut i = 0;
-        let buffer = s.as_bytes();
+        let buffer = s;
         let sz = buffer.len();
 
         if self.last_buffer_ended_with_cr && buffer[i] == b'\n' {
@@ -261,8 +262,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             if process {
                 if !self.linebuf.is_empty() {
-                    self.linebuf += &s[i..eol];
-                    let linebuf = mem::replace(&mut self.linebuf, String::with_capacity(80));
+                    self.linebuf.extend_from_slice(&s[i..eol]);
+                    let linebuf = mem::replace(&mut self.linebuf, Vec::with_capacity(80));
                     self.process_line(&linebuf);
                 } else if sz > eol && buffer[eol] == b'\n' {
                     self.process_line(&s[i..eol + 1]);
@@ -270,11 +271,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                     self.process_line(&s[i..eol]);
                 }
             } else if eol < sz && buffer[eol] == b'\0' {
-                self.linebuf += &s[i..eol];
-                self.linebuf.push('\u{fffd}');
+                self.linebuf.extend_from_slice(&s[i..eol]);
+                self.linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
                 eol += 1;
             } else {
-                self.linebuf += &s[i..eol];
+                self.linebuf.extend_from_slice(&s[i..eol]);
             }
 
             i = eol;
@@ -290,7 +291,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn find_first_nonspace(&mut self, line: &str) {
+    fn find_first_nonspace(&mut self, line: &[u8]) {
         self.first_nonspace = self.offset;
         self.first_nonspace_column = self.column;
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
@@ -299,7 +300,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             if self.first_nonspace >= line.len() {
                 break;
             }
-            match line.as_bytes()[self.first_nonspace] {
+            match line[self.first_nonspace] {
                 32 => {
                     self.first_nonspace += 1;
                     self.first_nonspace_column += 1;
@@ -319,15 +320,15 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         self.indent = self.first_nonspace_column - self.column;
         self.blank = self.first_nonspace < line.len() &&
-            strings::is_line_end_char(line.as_bytes()[self.first_nonspace]);
+            strings::is_line_end_char(line[self.first_nonspace]);
     }
 
-    fn process_line(&mut self, line: &str) {
-        let mut new_line: String;
+    fn process_line(&mut self, line: &[u8]) {
+        let mut new_line: Vec<u8>;
         let line =
-            if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
+            if line.is_empty() || !strings::is_line_end_char(*line.last().unwrap()) {
                 new_line = line.into();
-                new_line.push('\n');
+                new_line.push(b'\n');
                 &new_line
             } else {
                 line
@@ -338,7 +339,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         self.blank = false;
         self.partially_consumed_tab = false;
 
-        if self.line_number == 0 && line.len() >= 3 && line.chars().next().unwrap() == '\u{feff}' {
+        if self.line_number == 0 && line.len() >= 3 && unsafe { str::from_utf8_unchecked(line) }.chars().next().unwrap() == '\u{feff}' {
             self.offset += 3;
         }
 
@@ -356,15 +357,15 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         self.last_line_length = line.len();
-        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == b'\n' {
+        if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\n' {
             self.last_line_length -= 1;
         }
-        if self.last_line_length > 0 && line.as_bytes()[self.last_line_length - 1] == b'\r' {
+        if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\r' {
             self.last_line_length -= 1;
         }
     }
 
-    fn check_open_blocks(&mut self, line: &str, all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
+    fn check_open_blocks(&mut self, line: &[u8], all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
         let (new_all_matched, mut container, should_continue) =
             self.check_open_blocks_inner(self.root, line);
 
@@ -383,7 +384,7 @@ impl<'a, 'o> Parser<'a, 'o> {
     fn check_open_blocks_inner(
         &mut self,
         mut container: &'a AstNode<'a>,
-        line: &str,
+        line: &[u8],
     ) -> (bool, &'a AstNode<'a>, bool) {
         let mut should_continue = true;
 
@@ -437,7 +438,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         (true, container, should_continue)
     }
 
-    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &str, all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
@@ -455,11 +456,11 @@ impl<'a, 'o> Parser<'a, 'o> {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if !indented && line.as_bytes()[self.first_nonspace] == b'>' {
+            if !indented && line[self.first_nonspace] == b'>' {
                 let blockquote_startpos = self.first_nonspace;
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
-                if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+                if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
                 *container =
@@ -480,11 +481,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 );
 
                 let mut hashpos = line[self.first_nonspace..]
-                    .bytes()
-                    .position(|c| c == b'#')
+                    .iter()
+                    .position(|&c| c == b'#')
                     .unwrap() + self.first_nonspace;
                 let mut level = 0;
-                while line.as_bytes()[hashpos] == b'#' {
+                while line[hashpos] == b'#' {
                     level += 1;
                     hashpos += 1;
                 }
@@ -504,11 +505,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let offset = self.offset;
                 let ncb = NodeCodeBlock {
                     fenced: true,
-                    fence_char: line.as_bytes()[first_nonspace],
+                    fence_char: line[first_nonspace],
                     fence_length: matched,
                     fence_offset: first_nonspace - offset,
-                    info: String::with_capacity(10),
-                    literal: String::with_capacity(80),
+                    info: Vec::with_capacity(10),
+                    literal: Vec::with_capacity(80),
                 };
                 *container =
                     self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
@@ -531,7 +532,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let offset = self.first_nonspace + 1;
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
-                    literal: String::with_capacity(10),
+                    literal: Vec::with_capacity(10),
                 };
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb), offset);
@@ -594,13 +595,13 @@ impl<'a, 'o> Parser<'a, 'o> {
                     (self.partially_consumed_tab, self.offset, self.column);
 
                 while self.column - save_column <= 5 &&
-                    strings::is_space_or_tab(line.as_bytes()[self.offset])
+                    strings::is_space_or_tab(line[self.offset])
                 {
                     self.advance_offset(line, 1, true);
                 }
 
                 let i = self.column - save_column;
-                if i >= 5 || i < 1 || strings::is_line_end_char(line.as_bytes()[self.offset]) {
+                if i >= 5 || i < 1 || strings::is_line_end_char(line[self.offset]) {
                     nl.padding = matched + 1;
                     self.offset = save_offset;
                     self.column = save_column;
@@ -632,8 +633,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                     fence_char: 0,
                     fence_length: 0,
                     fence_offset: 0,
-                    info: String::new(),
-                    literal: String::with_capacity(80),
+                    info: vec![],
+                    literal: Vec::with_capacity(80),
                 };
                 let offset = self.offset + 1;
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
@@ -666,9 +667,9 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn advance_offset(&mut self, line: &str, mut count: usize, columns: bool) {
+    fn advance_offset(&mut self, line: &[u8], mut count: usize, columns: bool) {
         while count > 0 {
-            match line.as_bytes()[self.offset] {
+            match line[self.offset] {
                 9 => {
                     let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
                     if columns {
@@ -694,12 +695,12 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
+    fn parse_block_quote_prefix(&mut self, line: &[u8]) -> bool {
         let indent = self.indent;
-        if indent <= 3 && line.as_bytes()[self.first_nonspace] == b'>' {
+        if indent <= 3 && line[self.first_nonspace] == b'>' {
             self.advance_offset(line, indent + 1, true);
 
-            if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+            if strings::is_space_or_tab(line[self.offset]) {
                 self.advance_offset(line, 1, true);
             }
 
@@ -711,7 +712,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_node_item_prefix(
         &mut self,
-        line: &str,
+        line: &[u8],
         container: &'a AstNode<'a>,
         nl: &NodeList,
     ) -> bool {
@@ -729,7 +730,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn parse_code_block_prefix(
         &mut self,
-        line: &str,
+        line: &[u8],
         container: &'a AstNode<'a>,
         ast: &mut Ast,
         should_continue: &mut bool,
@@ -758,7 +759,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             return false;
         }
 
-        let matched = if self.indent <= 3 && line.as_bytes()[self.first_nonspace] == fence_char {
+        let matched = if self.indent <= 3 && line[self.first_nonspace] == fence_char {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -773,7 +774,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+        while i > 0 && strings::is_space_or_tab(line[self.offset]) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -811,7 +812,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         &mut self,
         mut container: &'a AstNode<'a>,
         last_matched_container: &'a AstNode<'a>,
-        line: &str,
+        line: &[u8],
     ) {
         self.find_first_nonspace(line);
 
@@ -883,7 +884,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().value.accepts_lines() {
-                        let mut line: String = line.into();
+                        let mut line: Vec<u8> = line.into();
                         if let NodeValue::Heading(ref nh) = container.data.borrow().value {
                             if !nh.setext {
                                 strings::chop_trailing_hashtags(&mut line);
@@ -906,24 +907,24 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &str) {
+    fn add_line(&mut self, node: &'a AstNode<'a>, line: &[u8]) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
             for _ in 0..chars_to_tab {
-                ast.content.push(' ');
+                ast.content.push(b' ');
             }
         }
         if self.offset < line.len() {
-            ast.content += &line[self.offset..];
+            ast.content.extend_from_slice(&line[self.offset..]);
         }
     }
 
     pub fn finish(&mut self) -> &'a AstNode<'a> {
         if !self.linebuf.is_empty() {
-            let linebuf = mem::replace(&mut self.linebuf, String::new());
+            let linebuf = mem::replace(&mut self.linebuf, vec![]);
             self.process_line(&linebuf);
         }
 
@@ -965,10 +966,10 @@ impl<'a, 'o> Parser<'a, 'o> {
         {
             ast.end_line = self.line_number;
             ast.end_column = self.linebuf.len();
-            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == b'\n' {
+            if ast.end_column > 0 && self.linebuf[ast.end_column - 1] == b'\n' {
                 ast.end_column -= 1;
             }
-            if ast.end_column > 0 && self.linebuf.as_bytes()[ast.end_column - 1] == b'\r' {
+            if ast.end_column > 0 && self.linebuf[ast.end_column - 1] == b'\r' {
                 ast.end_column -= 1;
             }
         } else {
@@ -983,11 +984,13 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         match ast.value {
             NodeValue::Paragraph => {
-                while !content.is_empty() && content.as_bytes()[0] == b'[' &&
+                while !content.is_empty() && content[0] == b'[' &&
                     unwrap_into(self.parse_reference_inline(content), &mut pos)
                 {
                     while pos > 0 {
-                        pos -= content.remove(0).len_utf8();
+                        // TODO
+                        content.remove(0);
+                        pos -= 1;
                     }
                 }
                 if strings::is_blank(content) {
@@ -997,11 +1000,11 @@ impl<'a, 'o> Parser<'a, 'o> {
             NodeValue::CodeBlock(ref mut ncb) => {
                 if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
-                    content.push('\n');
+                    content.push(b'\n');
                 } else {
                     let mut pos = 0;
                     while pos < content.len() {
-                        if strings::is_line_end_char(content.as_bytes()[pos]) {
+                        if strings::is_line_end_char(content[pos]) {
                             break;
                         }
                         pos += 1;
@@ -1013,15 +1016,17 @@ impl<'a, 'o> Parser<'a, 'o> {
                     strings::unescape(&mut tmp);
                     ncb.info = tmp;
 
-                    if content.as_bytes()[pos] == b'\r' {
+                    if content[pos] == b'\r' {
                         pos += 1;
                     }
-                    if content.as_bytes()[pos] == b'\n' {
+                    if content[pos] == b'\n' {
                         pos += 1;
                     }
 
+                    // TODO
                     while pos > 0 {
-                        pos -= content.remove(0).len_utf8();
+                        content.remove(0);
+                        pos -= 1;
                     }
                 }
                 mem::swap(&mut ncb.literal, content);
@@ -1116,7 +1121,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
                         match ns.data.borrow().value {
                             NodeValue::Text(ref adj) => {
-                                *root += adj;
+                                root.extend_from_slice(adj);
                                 ns.detach();
                             }
                             _ => {
@@ -1142,7 +1147,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
         if self.options.ext_tasklist {
             self.process_tasklist(node, text);
         }
@@ -1153,14 +1158,14 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     }
 
-    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
         lazy_static! {
             static ref TASKLIST: Regex = Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap();
         }
 
         let (active, end) = match TASKLIST.captures(text) {
             None => return,
-            Some(c) => (c.get(2).unwrap().as_str() != " ", c.get(1).unwrap().end()),
+            Some(c) => (c.get(2).unwrap().as_bytes() != b" ", c.get(1).unwrap().end()),
         };
 
         let parent = node.parent().unwrap();
@@ -1178,21 +1183,21 @@ impl<'a, 'o> Parser<'a, 'o> {
             _ => return,
         }
 
-        *text = text[end..].to_string();
+        *text = text[end..].to_vec();
         let checkbox = inlines::make_inline(
             self.arena,
             NodeValue::HtmlInline(
-                (if active {
-                     "<input type=\"checkbox\" disabled=\"\" checked=\"\" />"
-                 } else {
-                     "<input type=\"checkbox\" disabled=\"\" />"
-                 }).to_string(),
+                if active {
+                    b"<input type=\"checkbox\" disabled=\"\" checked=\"\" />".to_vec()
+                } else {
+                    b"<input type=\"checkbox\" disabled=\"\" />".to_vec()
+                }
             ),
         );
         node.insert_before(checkbox);
     }
 
-    fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
+    fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
         let delimiter_arena = Arena::new();
         let mut subj = inlines::Subject::new(
             self.arena,
@@ -1202,10 +1207,10 @@ impl<'a, 'o> Parser<'a, 'o> {
             &delimiter_arena,
         );
 
-        let mut lab = match subj.link_label() {
+        let mut lab: Vec<u8> = match subj.link_label() {
             Some(lab) => if lab.is_empty() { return None } else { lab },
             None => return None,
-        }.to_string();
+        }.to_vec();
 
         if subj.peek_char() != Some(&(b':')) {
             return None;
@@ -1217,7 +1222,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             Some(matchlen) => matchlen,
             None => return None,
         };
-        let url = subj.input[subj.pos..subj.pos + matchlen].to_string();
+        let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
         subj.pos += matchlen;
 
         let beforetitle = subj.pos;
@@ -1226,11 +1231,11 @@ impl<'a, 'o> Parser<'a, 'o> {
             Some(matchlen) => {
                 let t = &subj.input[subj.pos..subj.pos + matchlen];
                 subj.pos += matchlen;
-                t.to_string()
+                t.to_vec()
             }
             _ => {
                 subj.pos = beforetitle;
-                String::new()
+                vec![]
             }
         };
 
@@ -1249,7 +1254,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         lab = strings::normalize_reference_label(&lab);
         if !lab.is_empty() {
-            subj.refmap.entry(lab).or_insert(Reference {
+            subj.refmap.entry(lab.to_vec()).or_insert(Reference {
                 url: strings::clean_url(&url),
                 title: strings::clean_title(&title),
             });
@@ -1265,25 +1270,25 @@ enum AddTextResult {
 }
 
 fn parse_list_marker(
-    line: &str,
+    line: &[u8],
     mut pos: usize,
     interrupts_paragraph: bool,
 ) -> Option<(usize, NodeList)> {
-    let mut c = line.as_bytes()[pos];
+    let mut c = line[pos];
     let startpos = pos;
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !isspace(line.as_bytes()[pos]) {
+        if !isspace(line[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(line.as_bytes()[i]) {
+            while strings::is_space_or_tab(line[i]) {
                 i += 1;
             }
-            if line.as_bytes()[i] == b'\n' {
+            if line[i] == b'\n' {
                 return None;
             }
         }
@@ -1305,11 +1310,11 @@ fn parse_list_marker(
         let mut digits = 0;
 
         loop {
-            start = (10 * start) + (line.as_bytes()[pos] - b'0') as usize;
+            start = (10 * start) + (line[pos] - b'0') as usize;
             pos += 1;
             digits += 1;
 
-            if !(digits < 9 && isdigit(line.as_bytes()[pos])) {
+            if !(digits < 9 && isdigit(line[pos])) {
                 break;
             }
         }
@@ -1318,23 +1323,23 @@ fn parse_list_marker(
             return None;
         }
 
-        c = line.as_bytes()[pos];
+        c = line[pos];
         if c != b'.' && c != b')' {
             return None;
         }
 
         pos += 1;
 
-        if !isspace(line.as_bytes()[pos]) {
+        if !isspace(line[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(line.as_bytes()[i]) {
+            while strings::is_space_or_tab(line[i]) {
                 i += 1;
             }
-            if strings::is_line_end_char(line.as_bytes()[i]) {
+            if strings::is_line_end_char(line[i]) {
                 return None;
             }
         }

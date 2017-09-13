@@ -42,7 +42,8 @@
 //! iter_nodes(root, &|node| {
 //!     match &mut node.data.borrow_mut().value {
 //!         &mut NodeValue::Text(ref mut text) => {
-//!             *text = text.replace("my", "your");
+//!             let orig = std::mem::replace(text, vec![]);
+//!             *text = String::from_utf8(orig).unwrap().replace("my", "your").as_bytes().to_vec();
 //!         }
 //!         _ => (),
 //!     }
@@ -81,6 +82,7 @@ extern crate regex;
 extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate twoway;
 
 mod arena_tree;
 mod parser;
