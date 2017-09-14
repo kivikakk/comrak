@@ -984,15 +984,17 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         match ast.value {
             NodeValue::Paragraph => {
-                while !content.is_empty() && content[0] == b'[' &&
-                    unwrap_into(self.parse_reference_inline(content), &mut pos)
+                let mut seeked = 0;
                 {
-                    while pos > 0 {
-                        // TODO
-                        content.remove(0);
-                        pos -= 1;
+                    let mut seek: &[u8] = &*content;
+                    while !seek.is_empty() && seek[0] == b'[' &&
+                        unwrap_into(self.parse_reference_inline(seek), &mut pos)
+                    {
+                        seek = &seek[pos..];
+                        seeked += pos;
                     }
                 }
+                *content = content[seeked..].to_vec();
                 if strings::is_blank(content) {
                     node.detach();
                 }
@@ -1023,11 +1025,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                         pos += 1;
                     }
 
-                    // TODO
-                    while pos > 0 {
-                        content.remove(0);
-                        pos -= 1;
-                    }
+                    *content = content[pos..].to_vec();
                 }
                 mem::swap(&mut ncb.literal, content);
                 content.clear();
