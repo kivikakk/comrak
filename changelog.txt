@@ -1,3 +1,7 @@
+### 0.2.2
+
+* Fix for pathological reference link parsing.
+
 ### 0.2.1
 
 * Speed optimisations.
