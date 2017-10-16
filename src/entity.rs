@@ -65,7 +65,7 @@ pub fn unescape(text: &[u8]) -> Option<(Vec<u8>, usize)> {
 }
 
 fn lookup(text: &[u8]) -> Option<&[u8]> {
-    let entity_str = format!("&{};", unsafe {str::from_utf8_unchecked(text) });
+    let entity_str = format!("&{};", unsafe { str::from_utf8_unchecked(text) });
 
     let entity = ENTITIES.iter().find(|e| e.entity == entity_str);
 

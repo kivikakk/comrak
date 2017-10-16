@@ -103,6 +103,15 @@ fn main() {
                 .default_value("0")
                 .help("Specify wrap width (0 = nowrap)"),
         )
+        .arg(
+            clap::Arg::with_name("header-ids")
+                .long("header-ids")
+                .takes_value(true)
+                .value_name("PREFIX")
+                .help(
+                    "Use the Comrak header IDs extension, with the given ID prefix",
+                ),
+        )
         .get_matches();
 
     let mut exts = matches.values_of("extension").map_or(
@@ -122,6 +131,7 @@ fn main() {
         ext_autolink: exts.remove("autolink"),
         ext_tasklist: exts.remove("tasklist"),
         ext_superscript: exts.remove("superscript"),
+        ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
     };
 
     assert!(exts.is_empty());

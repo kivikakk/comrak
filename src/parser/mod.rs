@@ -63,7 +63,7 @@ pub struct Parser<'a, 'o> {
     options: &'o ComrakOptions,
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone)]
 /// Options for both parser and formatter functions.
 pub struct ComrakOptions {
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
@@ -197,6 +197,17 @@ pub struct ComrakOptions {
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
     /// ```
     pub ext_superscript: bool,
+
+    /// Enables the header IDs Comrak extension.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.ext_header_ids = Some("user-content-".to_string());
+    /// assert_eq!(markdown_to_html("# README\n", &options),
+    ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
+    /// ```
+    pub ext_header_ids: Option<String>,
 }
 
 

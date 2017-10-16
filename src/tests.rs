@@ -515,3 +515,26 @@ fn superscript() {
               concat!("<p>e = mc<sup>2</sup>.</p>\n"),
               |opts| opts.ext_superscript = true);
 }
+
+#[test]
+fn header_ids() {
+    html_opts(
+        concat!(
+            "# Hi.\n",
+            "## Hi 1.\n",
+            "### Hi.\n",
+            "#### Hello.\n",
+            "##### Hi.\n",
+            "###### Hello.\n"
+        ),
+        concat!(
+            "<h1><a href=\"#hi\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi\"></a>Hi.</h1>\n",
+            "<h2><a href=\"#hi-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-1\"></a>Hi 1.</h2>\n",
+            "<h3><a href=\"#hi-2\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-2\"></a>Hi.</h3>\n",
+            "<h4><a href=\"#hello\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello\"></a>Hello.</h4>\n",
+            "<h5><a href=\"#hi-3\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-3\"></a>Hi.</h5>\n",
+            "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n"
+        ),
+        |opts| opts.ext_header_ids = Some("user-content-".to_owned()),
+    );
+}

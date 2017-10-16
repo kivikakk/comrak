@@ -1,7 +1,10 @@
 use ctype::isspace;
 use nodes::{TableAlignment, NodeValue, ListType, AstNode};
 use parser::ComrakOptions;
+use regex::Regex;
+use std::borrow::Cow;
 use std::cell::Cell;
+use std::collections::HashSet;
 use std::io::{self, Write};
 
 /// Formats an AST as HTML, modified by the given options.
@@ -42,6 +45,7 @@ impl<'w> Write for WriteWithLast<'w> {
 struct HtmlFormatter<'o> {
     output: &'o mut WriteWithLast<'o>,
     options: &'o ComrakOptions,
+    seen_anchors: HashSet<String>,
 }
 
 const NEEDS_ESCAPED : [bool; 256] = [
@@ -142,6 +146,7 @@ impl<'o> HtmlFormatter<'o> {
         HtmlFormatter {
             options: options,
             output: output,
+            seen_anchors: HashSet::new(),
         }
     }
 
@@ -269,6 +274,19 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
+    fn collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+        match node.data.borrow().value {
+            NodeValue::Text(ref literal) |
+            NodeValue::Code(ref literal) => output.extend_from_slice(literal),
+            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
+            _ => {
+                for n in node.children() {
+                    self.collect_text(n, output);
+                }
+            }
+        }
+    }
+
     fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> io::Result<bool> {
         match node.data.borrow().value {
             NodeValue::Document => (),
@@ -306,9 +324,48 @@ impl<'o> HtmlFormatter<'o> {
                 }
             }
             NodeValue::Heading(ref nch) => {
+                lazy_static! {
+                    static ref REJECTED_CHARS: Regex = Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap();
+                }
+
                 if entering {
                     try!(self.cr());
                     try!(write!(self.output, "<h{}>", nch.level));
+
+                    if let Some(ref prefix) = self.options.ext_header_ids {
+                        let mut text_content = Vec::with_capacity(20);
+                        self.collect_text(node, &mut text_content);
+
+                        let mut id = String::from_utf8(text_content).unwrap();
+                        id = id.to_lowercase();
+                        id = REJECTED_CHARS.replace(&id, "").to_string();
+                        id = id.replace(' ', "-");
+
+                        let mut uniq = 0;
+                        id = loop {
+                            let anchor = if uniq == 0 {
+                                Cow::from(&*id)
+                            } else {
+                                Cow::from(format!("{}-{}", &id, uniq))
+                            };
+
+                            if !self.seen_anchors.contains(&*anchor) {
+                                break anchor.to_string();
+                            }
+
+                            uniq += 1;
+                        };
+
+                        self.seen_anchors.insert(id.clone());
+
+                        try!(write!(
+                            self.output,
+                            "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                            id,
+                            prefix,
+                            id
+                        ));
+                    }
                 } else {
                     try!(write!(self.output, "</h{}>\n", nch.level));
                 }
