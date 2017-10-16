@@ -1,3 +1,7 @@
+### 0.2.3
+
+* Added header IDs extension.
+
 ### 0.2.2
 
 * Fix for pathological reference link parsing.
