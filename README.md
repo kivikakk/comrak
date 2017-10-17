@@ -129,3 +129,8 @@ Thank you for PRs and issues opened!
 * [SSJohns](https://github.com/SSJohns)
 * [zeantsoi](https://github.com/zeantsoi)
 * [DemiMarie](https://github.com/DemiMarie)
+* [ivanceras](https://github.com/ivanceras)
+* [anthonynguyen](https://github.com/anthonynguyen)
+* [JordanMilne](https://github.com/JordanMilne)
+* [carols10cents](https://github.com/carols10cents)
+* [treiff](https://github.com/treiff)
