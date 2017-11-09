@@ -220,7 +220,7 @@ pub fn is_blank(s: &[u8]) -> bool {
     true
 }
 
-pub fn normalize_reference_label(i: &[u8]) -> Vec<u8> {
+pub fn normalize_label(i: &[u8]) -> Vec<u8> {
     let i = trim_slice(i);
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;

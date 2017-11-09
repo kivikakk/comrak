@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::HashSet;
 use std::io::{self, Write};
+use std::str;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -570,9 +571,16 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::FootnoteDefinition(_) => {
                 try!(self.output.write_all(b"def"));
             }
-            NodeValue::FootnoteReference(_) => {
-                try!(self.output.write_all(b"ref"));
-            }
+            NodeValue::FootnoteReference(ref r) => if entering {
+                let r = str::from_utf8(r).unwrap();
+                try!(write!(
+                    self.output,
+                    "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">[{}]</a></sup>",
+                    r,
+                    r,
+                    r
+                ));
+            },
         }
         Ok(false)
     }

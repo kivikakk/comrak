@@ -555,7 +555,7 @@ fn header_ids() {
 fn footnotes() {
     html_opts(
         concat!(
-            "Here is a footnote reference,[^1] and another.[^longnote]\n",
+            "Here is a[^nowhere] footnote reference,[^1] and another.[^longnote]\n",
             "\n",
             "This is another note.[^note]\n",
             "\n",
@@ -574,11 +574,11 @@ fn footnotes() {
             "[^unused]: This is not used.\n"
         ),
         concat!(
-            "<p>Here is a footnote reference,<a class=\"footnote-ref\" href=\"#fn1\" \
-             id=\"fnref1\">[1]</a> and another.<a class=\"footnote-ref\" \
-             href=\"#fn2\" id=\"fnref2\">[2]</a></p>\n",
-            "<p>This is another note.<a class=\"footnote-ref\" href=\"#fn3\" \
-             id=\"fnref3\">[3]</a></p>\n",
+            "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\">\"<a href=\"#fn1\" \
+             id=\"fnref1\">[1]</a></sup> and another.<sup class=\"footnote-ref\"><a \
+             href=\"#fn2\" id=\"fnref2\">[2]</a></sup></p>\n",
+            "<p>This is another note.<sup class=\"footnote-ref\"><a href=\"#fn3\" \
+             id=\"fnref3\">[3]</a></sup></p>\n",
             "<p>This is regular content.</p>\n",
             "<section class=\"footnotes\">\n",
             "<ol>\n",

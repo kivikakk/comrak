@@ -738,7 +738,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
 
         let reff: Option<Reference> = if found_label {
-            lab = strings::normalize_reference_label(&lab);
+            lab = strings::normalize_label(&lab);
             self.refmap.get(&lab).cloned()
         } else {
             None
@@ -760,7 +760,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             } {
             let text = text.unwrap();
             if text.len() > 1 && text[0] == b'^' {
-                let inl = make_inline(self.arena, NodeValue::FootnoteReference(text));
+                let inl = make_inline(self.arena, NodeValue::FootnoteReference(text[1..].to_vec()));
                 self.brackets[brackets_len - 1].inl_text.insert_before(inl);
                 self.brackets[brackets_len - 1]
                     .inl_text

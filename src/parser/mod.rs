@@ -227,6 +227,11 @@ pub struct Reference {
     pub title: Vec<u8>,
 }
 
+#[derive(Default)]
+struct FootnoteDefinition {
+    ix: Option<u32>,
+}
+
 impl<'a, 'o> Parser<'a, 'o> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
@@ -450,6 +455,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 }
                 NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell => {
                     return (false, container, should_continue);
+                }
+                NodeValue::FootnoteDefinition(..) => {
+                    if !self.parse_footnote_definition_block_prefix(line) {
+                        return (false, container, should_continue);
+                    }
                 }
                 _ => {}
             }
@@ -722,6 +732,17 @@ impl<'a, 'o> Parser<'a, 'o> {
         false
     }
 
+    fn parse_footnote_definition_block_prefix(&mut self, line: &[u8]) -> bool {
+        if self.indent >= 4 {
+            self.advance_offset(line, 4, true);
+            true
+        } else if line == b"\n" || line == b"\r\n" {
+            true
+        } else {
+            false
+        }
+    }
+
     fn parse_node_item_prefix(
         &mut self,
         line: &[u8],
@@ -946,6 +967,9 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         self.finalize(self.root);
         self.process_inlines();
+        if self.options.ext_footnotes {
+            self.process_footnotes();
+        }
     }
 
     fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
@@ -1106,6 +1130,65 @@ impl<'a, 'o> Parser<'a, 'o> {
         while subj.pop_bracket() {}
     }
 
+    fn process_footnotes(&mut self) {
+        let mut map = HashMap::new();
+        Self::find_footnote_definitions(self.root, &mut map);
+
+        let mut ix = 0;
+        Self::find_footnote_references(self.root, &mut map, &mut ix);
+    }
+
+    fn find_footnote_definitions(
+        node: &'a AstNode<'a>,
+        map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
+    ) {
+        match node.data.borrow().value {
+            NodeValue::FootnoteDefinition(ref name) => {
+                map.insert(
+                    strings::normalize_label(name),
+                    FootnoteDefinition::default(),
+                );
+            }
+            _ => for n in node.children() {
+                Self::find_footnote_definitions(n, map);
+            },
+        }
+    }
+
+    fn find_footnote_references(
+        node: &'a AstNode<'a>,
+        mut map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
+        ix: &mut u32,
+    ) {
+        let mut ast = node.data.borrow_mut();
+        let mut replace = None;
+        match ast.value {
+            NodeValue::FootnoteReference(ref mut name) => {
+                if let Some(ref mut footnote) = map.get_mut(name) {
+                    if footnote.ix.is_none() {
+                        *ix += 1;
+                        footnote.ix = Some(*ix);
+                    }
+
+                    *name = format!("{}", footnote.ix.unwrap()).into_bytes();
+                } else {
+                    replace = Some(name.clone());
+                }
+            }
+            _ => for n in node.children() {
+                Self::find_footnote_references(n, map, ix);
+            },
+        }
+
+        if let Some(mut label) = replace {
+            label.insert(0, b'[');
+            label.insert(1, b'^');
+            let len = label.len();
+            label.insert(len, b']');
+            ast.value = NodeValue::Text(label);
+        }
+    }
+
     fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
         let mut nch = node.first_child();
 
@@ -1258,7 +1341,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             }
         }
 
-        lab = strings::normalize_reference_label(&lab);
+        lab = strings::normalize_label(&lab);
         if !lab.is_empty() {
             subj.refmap.entry(lab.to_vec()).or_insert(Reference {
                 url: strings::clean_url(&url),
