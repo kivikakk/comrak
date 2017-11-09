@@ -48,6 +48,7 @@ struct HtmlFormatter<'o> {
     seen_anchors: HashSet<String>,
 }
 
+#[rustfmt_skip]
 const NEEDS_ESCAPED : [bool; 256] = [
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
