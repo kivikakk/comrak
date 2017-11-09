@@ -54,6 +54,9 @@ pub enum NodeValue {
     /// children.
     ThematicBreak,
 
+    /// **Block**. A footnote definition.  Contains other **blocks**.
+    FootnoteDefinition(Vec<u8>),
+
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
     Table(Vec<TableAlignment>),
@@ -103,6 +106,9 @@ pub enum NodeValue {
 
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
+
+    /// **Inline**.
+    FootnoteReference(Vec<u8>),
 }
 
 /// Alignment of a single table cell.
@@ -241,6 +247,7 @@ impl NodeValue {
         match *self {
             NodeValue::Document |
             NodeValue::BlockQuote |
+            NodeValue::FootnoteDefinition(_) |
             NodeValue::List(..) |
             NodeValue::Item(..) |
             NodeValue::CodeBlock(..) |
@@ -351,7 +358,10 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
     }
 
     match node.data.borrow().value {
-        NodeValue::Document | NodeValue::BlockQuote | NodeValue::Item(..) => {
+        NodeValue::Document |
+        NodeValue::BlockQuote |
+        NodeValue::FootnoteDefinition(_) |
+        NodeValue::Item(..) => {
             child.block() && match *child {
                 NodeValue::Item(..) => false,
                 _ => true,

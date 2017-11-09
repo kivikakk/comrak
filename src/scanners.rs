@@ -170,6 +170,13 @@ pub fn thematic_break(line: &[u8]) -> Option<usize> {
     search(&RE, line)
 }
 
+pub fn footnote_definition(line: &[u8]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\A\[\^[^\]\r\n\x00\t]+\]:[ \t]*").unwrap();
+    }
+    search(&RE, line)
+}
+
 lazy_static! {
     static ref SCHEME: &'static str = r"[A-Za-z][A-Za-z0-9.+-]{1,31}";
 }

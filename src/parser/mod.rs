@@ -213,6 +213,10 @@ pub struct ComrakOptions {
     ///
     /// For usage, see `src/tests.rs`.  The extension is modelled after
     /// [Kramdown](https://kramdown.gettalong.org/syntax.html#footnotes).
+    ///
+    /// ```
+    /// assert!(false);
+    /// ```
     pub ext_footnotes: bool,
 }
 
@@ -570,6 +574,21 @@ impl<'a, 'o> Parser<'a, 'o> {
                 *container = self.add_child(*container, NodeValue::ThematicBreak, offset);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
+            } else if !indented && self.options.ext_footnotes
+                && unwrap_into(
+                    scanners::footnote_definition(&line[self.first_nonspace..]),
+                    &mut matched,
+                ) {
+                let mut c = &line[self.first_nonspace + 2..self.first_nonspace + 2 + matched];
+                c = c.split(|&e| e == b']').next().unwrap();
+                let offset = self.first_nonspace + matched - self.offset;
+                self.advance_offset(line, offset, false);
+                let offset = self.first_nonspace + matched + 1;
+                *container = self.add_child(
+                    *container,
+                    NodeValue::FootnoteDefinition(c.to_vec()),
+                    offset,
+                );
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
                 _ => false,

@@ -539,6 +539,12 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.cr();
                 }
             },
+            NodeValue::FootnoteDefinition(_) => {
+                write!(self, "def").unwrap();
+            }
+            NodeValue::FootnoteReference(_) => {
+                write!(self, "ref").unwrap();
+            }
         };
         true
     }

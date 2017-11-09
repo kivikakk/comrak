@@ -48,7 +48,7 @@ struct HtmlFormatter<'o> {
     seen_anchors: HashSet<String>,
 }
 
-#[rustfmt_skip]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 const NEEDS_ESCAPED : [bool; 256] = [
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
@@ -566,6 +566,12 @@ impl<'o> HtmlFormatter<'o> {
                 } else {
                     try!(self.output.write_all(b"</td>"));
                 }
+            }
+            NodeValue::FootnoteDefinition(_) => {
+                try!(self.output.write_all(b"def"));
+            }
+            NodeValue::FootnoteReference(_) => {
+                try!(self.output.write_all(b"ref"));
             }
         }
         Ok(false)

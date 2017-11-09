@@ -749,6 +749,32 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             return None;
         }
 
+        let mut text: Option<Vec<u8>> = None;
+        if self.options.ext_footnotes
+            && match self.brackets[brackets_len - 1].inl_text.next_sibling() {
+                Some(n) => {
+                    text = n.data.borrow().value.text().cloned();
+                    text.is_some() && n.next_sibling().is_none()
+                }
+                _ => false,
+            } {
+            let text = text.unwrap();
+            if text.len() > 1 && text[0] == b'^' {
+                let inl = make_inline(self.arena, NodeValue::FootnoteReference(text));
+                self.brackets[brackets_len - 1].inl_text.insert_before(inl);
+                self.brackets[brackets_len - 1]
+                    .inl_text
+                    .next_sibling()
+                    .unwrap()
+                    .detach();
+                self.brackets[brackets_len - 1].inl_text.detach();
+                let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
+                self.process_emphasis(previous_delimiter);
+                self.brackets.pop();
+                return None;
+            }
+        }
+
         self.brackets.pop();
         self.pos = initial_pos;
         Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())))
