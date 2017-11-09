@@ -197,8 +197,8 @@ pub fn clean_title(title: &[u8]) -> Vec<u8> {
     let first = title[0];
     let last = title[title_len - 1];
 
-    let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')') ||
-        (first == b'"' && last == b'"')
+    let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')')
+        || (first == b'"' && last == b'"')
     {
         entity::unescape_html(&title[1..title_len - 1])
     } else {

@@ -1,5 +1,5 @@
 use ctype::isspace;
-use nodes::{TableAlignment, NodeValue, ListType, AstNode};
+use nodes::{AstNode, ListType, NodeValue, TableAlignment};
 use parser::ComrakOptions;
 use regex::Regex;
 use std::borrow::Cow;
@@ -100,11 +100,13 @@ fn tagfilter(literal: &[u8]) -> bool {
     }
 
     for t in TAGFILTER_BLACKLIST.iter() {
-        if unsafe { String::from_utf8_unchecked(literal[i..].to_vec()) }.to_lowercase().starts_with(t) {
+        if unsafe { String::from_utf8_unchecked(literal[i..].to_vec()) }
+            .to_lowercase()
+            .starts_with(t)
+        {
             let j = i + t.len();
-            return isspace(literal[j]) || literal[j] == b'>' ||
-                (literal[j] == b'/' && literal.len() >= j + 2 &&
-                     literal[j + 1] == b'>');
+            return isspace(literal[j]) || literal[j] == b'>'
+                || (literal[j] == b'/' && literal.len() >= j + 2 && literal[j + 1] == b'>');
         }
     }
 
@@ -276,53 +278,46 @@ impl<'o> HtmlFormatter<'o> {
 
     fn collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
         match node.data.borrow().value {
-            NodeValue::Text(ref literal) |
-            NodeValue::Code(ref literal) => output.extend_from_slice(literal),
-            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
-            _ => {
-                for n in node.children() {
-                    self.collect_text(n, output);
-                }
+            NodeValue::Text(ref literal) | NodeValue::Code(ref literal) => {
+                output.extend_from_slice(literal)
             }
+            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
+            _ => for n in node.children() {
+                self.collect_text(n, output);
+            },
         }
     }
 
     fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> io::Result<bool> {
         match node.data.borrow().value {
             NodeValue::Document => (),
-            NodeValue::BlockQuote => {
-                if entering {
-                    try!(self.cr());
-                    try!(self.output.write_all(b"<blockquote>\n"));
+            NodeValue::BlockQuote => if entering {
+                try!(self.cr());
+                try!(self.output.write_all(b"<blockquote>\n"));
+            } else {
+                try!(self.cr());
+                try!(self.output.write_all(b"</blockquote>\n"));
+            },
+            NodeValue::List(ref nl) => if entering {
+                try!(self.cr());
+                if nl.list_type == ListType::Bullet {
+                    try!(self.output.write_all(b"<ul>\n"));
+                } else if nl.start == 1 {
+                    try!(self.output.write_all(b"<ol>\n"));
                 } else {
-                    try!(self.cr());
-                    try!(self.output.write_all(b"</blockquote>\n"));
+                    try!(write!(self.output, "<ol start=\"{}\">\n", nl.start));
                 }
-            }
-            NodeValue::List(ref nl) => {
-                if entering {
-                    try!(self.cr());
-                    if nl.list_type == ListType::Bullet {
-                        try!(self.output.write_all(b"<ul>\n"));
-                    } else if nl.start == 1 {
-                        try!(self.output.write_all(b"<ol>\n"));
-                    } else {
-                        try!(write!(self.output, "<ol start=\"{}\">\n", nl.start));
-                    }
-                } else if nl.list_type == ListType::Bullet {
-                    try!(self.output.write_all(b"</ul>\n"));
-                } else {
-                    try!(self.output.write_all(b"</ol>\n"));
-                }
-            }
-            NodeValue::Item(..) => {
-                if entering {
-                    try!(self.cr());
-                    try!(self.output.write_all(b"<li>"));
-                } else {
-                    try!(self.output.write_all(b"</li>\n"));
-                }
-            }
+            } else if nl.list_type == ListType::Bullet {
+                try!(self.output.write_all(b"</ul>\n"));
+            } else {
+                try!(self.output.write_all(b"</ol>\n"));
+            },
+            NodeValue::Item(..) => if entering {
+                try!(self.cr());
+                try!(self.output.write_all(b"<li>"));
+            } else {
+                try!(self.output.write_all(b"</li>\n"));
+            },
             NodeValue::Heading(ref nch) => {
                 lazy_static! {
                     static ref REJECTED_CHARS: Regex = Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap();
@@ -370,55 +365,48 @@ impl<'o> HtmlFormatter<'o> {
                     try!(write!(self.output, "</h{}>\n", nch.level));
                 }
             }
-            NodeValue::CodeBlock(ref ncb) => {
-                if entering {
-                    try!(self.cr());
+            NodeValue::CodeBlock(ref ncb) => if entering {
+                try!(self.cr());
 
-                    if ncb.info.is_empty() {
-                        try!(self.output.write_all(b"<pre><code>"));
-                    } else {
-                        let mut first_tag = 0;
-                        while first_tag < ncb.info.len() &&
-                            !isspace(ncb.info[first_tag])
-                        {
-                            first_tag += 1;
-                        }
+                if ncb.info.is_empty() {
+                    try!(self.output.write_all(b"<pre><code>"));
+                } else {
+                    let mut first_tag = 0;
+                    while first_tag < ncb.info.len() && !isspace(ncb.info[first_tag]) {
+                        first_tag += 1;
+                    }
 
-                        if self.options.github_pre_lang {
-                            try!(self.output.write_all(b"<pre lang=\""));
-                            try!(self.escape(&ncb.info[..first_tag]));
-                            try!(self.output.write_all(b"\"><code>"));
-                        } else {
-                            try!(self.output.write_all(b"<pre><code class=\"language-"));
-                            try!(self.escape(&ncb.info[..first_tag]));
-                            try!(self.output.write_all(b"\">"));
-                        }
-                    }
-                    try!(self.escape(&ncb.literal));
-                    try!(self.output.write_all(b"</code></pre>\n"));
-                }
-            }
-            NodeValue::HtmlBlock(ref nhb) => {
-                if entering {
-                    try!(self.cr());
-                    if self.options.ext_tagfilter {
-                        try!(tagfilter_block(&nhb.literal, &mut self.output));
+                    if self.options.github_pre_lang {
+                        try!(self.output.write_all(b"<pre lang=\""));
+                        try!(self.escape(&ncb.info[..first_tag]));
+                        try!(self.output.write_all(b"\"><code>"));
                     } else {
-                        try!(self.output.write_all(&nhb.literal));
+                        try!(self.output.write_all(b"<pre><code class=\"language-"));
+                        try!(self.escape(&ncb.info[..first_tag]));
+                        try!(self.output.write_all(b"\">"));
                     }
-                    try!(self.cr());
                 }
-            }
-            NodeValue::ThematicBreak => {
-                if entering {
-                    try!(self.cr());
-                    try!(self.output.write_all(b"<hr />\n"));
+                try!(self.escape(&ncb.literal));
+                try!(self.output.write_all(b"</code></pre>\n"));
+            },
+            NodeValue::HtmlBlock(ref nhb) => if entering {
+                try!(self.cr());
+                if self.options.ext_tagfilter {
+                    try!(tagfilter_block(&nhb.literal, &mut self.output));
+                } else {
+                    try!(self.output.write_all(&nhb.literal));
                 }
-            }
+                try!(self.cr());
+            },
+            NodeValue::ThematicBreak => if entering {
+                try!(self.cr());
+                try!(self.output.write_all(b"<hr />\n"));
+            },
             NodeValue::Paragraph => {
-                let tight = match node.parent().and_then(|n| n.parent()).map(|n| {
-                    n.data.borrow().value.clone()
-                }) {
+                let tight = match node.parent()
+                    .and_then(|n| n.parent())
+                    .map(|n| n.data.borrow().value.clone())
+                {
                     Some(NodeValue::List(nl)) => nl.tight,
                     _ => false,
                 };
@@ -432,130 +420,104 @@ impl<'o> HtmlFormatter<'o> {
                     try!(self.output.write_all(b"</p>\n"));
                 }
             }
-            NodeValue::Text(ref literal) => {
-                if entering {
-                    try!(self.escape(literal));
-                }
-            }
-            NodeValue::LineBreak => {
-                if entering {
+            NodeValue::Text(ref literal) => if entering {
+                try!(self.escape(literal));
+            },
+            NodeValue::LineBreak => if entering {
+                try!(self.output.write_all(b"<br />\n"));
+            },
+            NodeValue::SoftBreak => if entering {
+                if self.options.hardbreaks {
                     try!(self.output.write_all(b"<br />\n"));
-                }
-            }
-            NodeValue::SoftBreak => {
-                if entering {
-                    if self.options.hardbreaks {
-                        try!(self.output.write_all(b"<br />\n"));
-                    } else {
-                        try!(self.output.write_all(b"\n"));
-                    }
-                }
-            }
-            NodeValue::Code(ref literal) => {
-                if entering {
-                    try!(self.output.write_all(b"<code>"));
-                    try!(self.escape(literal));
-                    try!(self.output.write_all(b"</code>"));
-                }
-            }
-            NodeValue::HtmlInline(ref literal) => {
-                if entering {
-                    if self.options.ext_tagfilter && tagfilter(literal) {
-                        try!(self.output.write_all(b"&lt;"));
-                        try!(self.output.write_all(&literal[1..]));
-                    } else {
-                        try!(self.output.write_all(literal));
-                    }
-                }
-            }
-            NodeValue::Strong => {
-                if entering {
-                    try!(self.output.write_all(b"<strong>"));
                 } else {
-                    try!(self.output.write_all(b"</strong>"));
+                    try!(self.output.write_all(b"\n"));
                 }
-            }
-            NodeValue::Emph => {
-                if entering {
-                    try!(self.output.write_all(b"<em>"));
+            },
+            NodeValue::Code(ref literal) => if entering {
+                try!(self.output.write_all(b"<code>"));
+                try!(self.escape(literal));
+                try!(self.output.write_all(b"</code>"));
+            },
+            NodeValue::HtmlInline(ref literal) => if entering {
+                if self.options.ext_tagfilter && tagfilter(literal) {
+                    try!(self.output.write_all(b"&lt;"));
+                    try!(self.output.write_all(&literal[1..]));
                 } else {
-                    try!(self.output.write_all(b"</em>"));
+                    try!(self.output.write_all(literal));
                 }
-            }
-            NodeValue::Strikethrough => {
-                if entering {
-                    try!(self.output.write_all(b"<del>"));
-                } else {
-                    try!(self.output.write_all(b"</del>"));
+            },
+            NodeValue::Strong => if entering {
+                try!(self.output.write_all(b"<strong>"));
+            } else {
+                try!(self.output.write_all(b"</strong>"));
+            },
+            NodeValue::Emph => if entering {
+                try!(self.output.write_all(b"<em>"));
+            } else {
+                try!(self.output.write_all(b"</em>"));
+            },
+            NodeValue::Strikethrough => if entering {
+                try!(self.output.write_all(b"<del>"));
+            } else {
+                try!(self.output.write_all(b"</del>"));
+            },
+            NodeValue::Superscript => if entering {
+                try!(self.output.write_all(b"<sup>"));
+            } else {
+                try!(self.output.write_all(b"</sup>"));
+            },
+            NodeValue::Link(ref nl) => if entering {
+                try!(self.output.write_all(b"<a href=\""));
+                try!(self.escape_href(&nl.url));
+                if !nl.title.is_empty() {
+                    try!(self.output.write_all(b"\" title=\""));
+                    try!(self.escape(&nl.title));
                 }
-            }
-            NodeValue::Superscript => {
-                if entering {
-                    try!(self.output.write_all(b"<sup>"));
-                } else {
-                    try!(self.output.write_all(b"</sup>"));
+                try!(self.output.write_all(b"\">"));
+            } else {
+                try!(self.output.write_all(b"</a>"));
+            },
+            NodeValue::Image(ref nl) => if entering {
+                try!(self.output.write_all(b"<img src=\""));
+                try!(self.escape_href(&nl.url));
+                try!(self.output.write_all(b"\" alt=\""));
+                return Ok(true);
+            } else {
+                if !nl.title.is_empty() {
+                    try!(self.output.write_all(b"\" title=\""));
+                    try!(self.escape(&nl.title));
                 }
-            }
-            NodeValue::Link(ref nl) => {
-                if entering {
-                    try!(self.output.write_all(b"<a href=\""));
-                    try!(self.escape_href(&nl.url));
-                    if !nl.title.is_empty() {
-                        try!(self.output.write_all(b"\" title=\""));
-                        try!(self.escape(&nl.title));
-                    }
-                    try!(self.output.write_all(b"\">"));
-                } else {
-                    try!(self.output.write_all(b"</a>"));
+                try!(self.output.write_all(b"\" />"));
+            },
+            NodeValue::Table(..) => if entering {
+                try!(self.cr());
+                try!(self.output.write_all(b"<table>\n"));
+            } else {
+                if !node.last_child()
+                    .unwrap()
+                    .same_node(node.first_child().unwrap())
+                {
+                    try!(self.output.write_all(b"</tbody>"));
                 }
-            }
-            NodeValue::Image(ref nl) => {
-                if entering {
-                    try!(self.output.write_all(b"<img src=\""));
-                    try!(self.escape_href(&nl.url));
-                    try!(self.output.write_all(b"\" alt=\""));
-                    return Ok(true);
-                } else {
-                    if !nl.title.is_empty() {
-                        try!(self.output.write_all(b"\" title=\""));
-                        try!(self.escape(&nl.title));
-                    }
-                    try!(self.output.write_all(b"\" />"));
-                }
-            }
-            NodeValue::Table(..) => {
-                if entering {
+                try!(self.output.write_all(b"</table>\n"));
+            },
+            NodeValue::TableRow(header) => if entering {
+                try!(self.cr());
+                if header {
+                    try!(self.output.write_all(b"<thead>"));
                     try!(self.cr());
-                    try!(self.output.write_all(b"<table>\n"));
-                } else {
-                    if !node.last_child().unwrap().same_node(
-                        node.first_child().unwrap(),
-                    )
-                    {
-                        try!(self.output.write_all(b"</tbody>"));
-                    }
-                    try!(self.output.write_all(b"</table>\n"));
                 }
-            }
-            NodeValue::TableRow(header) => {
-                if entering {
+                try!(self.output.write_all(b"<tr>"));
+            } else {
+                try!(self.cr());
+                try!(self.output.write_all(b"</tr>"));
+                if header {
                     try!(self.cr());
-                    if header {
-                        try!(self.output.write_all(b"<thead>"));
-                        try!(self.cr());
-                    }
-                    try!(self.output.write_all(b"<tr>"));
-                } else {
+                    try!(self.output.write_all(b"</thead>"));
                     try!(self.cr());
-                    try!(self.output.write_all(b"</tr>"));
-                    if header {
-                        try!(self.cr());
-                        try!(self.output.write_all(b"</thead>"));
-                        try!(self.cr());
-                        try!(self.output.write_all(b"<tbody>"));
-                    }
+                    try!(self.output.write_all(b"<tbody>"));
                 }
-            }
+            },
             NodeValue::TableCell => {
                 let row = &node.parent().unwrap().data.borrow().value;
                 let in_header = match *row {

@@ -1,5 +1,4 @@
 use ctype::isdigit;
-
 use entities::ENTITIES;
 use std::char;
 use std::cmp::min;
@@ -38,13 +37,16 @@ pub fn unescape(text: &[u8]) -> Option<(Vec<u8>, usize)> {
         };
 
         if num_digits >= 1 && num_digits <= 8 && i < text.len() && text[i] == b';' {
-            if codepoint == 0 || (codepoint >= 0xD800 && codepoint <= 0xE000) ||
-                codepoint >= 0x110000
+            if codepoint == 0 || (codepoint >= 0xD800 && codepoint <= 0xE000)
+                || codepoint >= 0x110000
             {
                 codepoint = 0xFFFD;
             }
             return Some((
-                char::from_u32(codepoint).unwrap_or('\u{FFFD}').to_string().into_bytes(),
+                char::from_u32(codepoint)
+                    .unwrap_or('\u{FFFD}')
+                    .to_string()
+                    .into_bytes(),
                 i + 1,
             ));
         }
