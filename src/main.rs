@@ -46,8 +46,8 @@ fn main() {
         .about(crate_description!())
         .arg(
             clap::Arg::with_name("file")
-                .value_name("FILE")
-                .multiple(true)
+            .value_name("FILE")
+            .multiple(true)
                 .help(
                     "The CommonMark file to parse; or standard input if none passed",
                 ),
@@ -57,7 +57,7 @@ fn main() {
         ))
         .arg(
             clap::Arg::with_name("github-pre-lang")
-                .long("github-pre-lang")
+            .long("github-pre-lang")
                 .help("Use GitHub-style <pre lang> for code blocks"),
         )
         .arg(
@@ -67,40 +67,41 @@ fn main() {
         )
         .arg(
             clap::Arg::with_name("extension")
-                .short("e")
-                .long("extension")
-                .takes_value(true)
-                .number_of_values(1)
-                .multiple(true)
-                .possible_values(
-                    &[
-                        "strikethrough",
-                        "tagfilter",
-                        "table",
-                        "autolink",
-                        "tasklist",
-                        "superscript",
-                    ],
-                )
-                .value_name("EXTENSION")
+            .short("e")
+            .long("extension")
+            .takes_value(true)
+            .number_of_values(1)
+            .multiple(true)
+            .possible_values(
+                &[
+                    "strikethrough",
+                    "tagfilter",
+                    "table",
+                    "autolink",
+                    "tasklist",
+                    "superscript",
+                    "footnotes",
+                ],
+            )
+            .value_name("EXTENSION")
                 .help("Specify an extension name to use"),
         )
         .arg(
             clap::Arg::with_name("format")
-                .short("t")
-                .long("to")
-                .takes_value(true)
-                .possible_values(&["html", "commonmark"])
-                .default_value("html")
-                .value_name("FORMAT")
+            .short("t")
+            .long("to")
+            .takes_value(true)
+            .possible_values(&["html", "commonmark"])
+            .default_value("html")
+            .value_name("FORMAT")
                 .help("Specify output format"),
         )
         .arg(
             clap::Arg::with_name("width")
-                .long("width")
-                .takes_value(true)
-                .value_name("WIDTH")
-                .default_value("0")
+            .long("width")
+            .takes_value(true)
+            .value_name("WIDTH")
+            .default_value("0")
                 .help("Specify wrap width (0 = nowrap)"),
         )
         .arg(
@@ -132,6 +133,7 @@ fn main() {
         ext_tasklist: exts.remove("tasklist"),
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
+        ext_footnotes: exts.remove("footnotes"),
     };
 
     assert!(exts.is_empty());

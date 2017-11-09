@@ -539,6 +539,7 @@ fn header_ids() {
     );
 }
 
+#[test]
 fn footnotes() {
     html_opts(concat!("Here is a footnote reference,[^1] and another.[^longnote]\n",
                       "\n",
@@ -549,21 +550,27 @@ fn footnotes() {
                       "[^longnote]: Here's one with multiple blocks.\n",
                       "\n",
                       "    Subsequent paragraphs are indented.\n"),
-              concat!("<p>Here is a footnote reference,<a class=\"footnote-ref\" href=\"#fn1\" id=\"fnref1\">[1]</a> and another.<a class=\"footnote-ref\" href=\"#fn2\" id=\"fnref2\">[2]</a></p>\n",
-                      "<p>This is an inline note.<a class=\"footnote-ref\" href=\"#fn3\" id=\"fnref3\">[3]</a>\n",
+              concat!("<p>Here is a footnote reference,<a class=\"footnote-ref\" href=\"#fn1\" \
+                       id=\"fnref1\">[1]</a> and another.<a class=\"footnote-ref\" \
+                       href=\"#fn2\" id=\"fnref2\">[2]</a></p>\n",
+                      "<p>This is an inline note.<a class=\"footnote-ref\" href=\"#fn3\" \
+                       id=\"fnref3\">[3]</a>\n",
                       "<section class=\"footnotes\">\n",
                       "<ol>\n",
                       "<li id=\"fn1\">\n",
-                      "<p>Here is the footnote. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
+                      "<p>Here is the footnote. <a href=\"#fnref1\" \
+                       class=\"footnote-backref\">↩</a></p>\n",
                       "</li>\n",
                       "<li id=\"fn2\">\n",
                       "<p>Here's one with multiple blocks.</p>\n",
-                      "<p>Subsequent paragraphs are indented. <a href=\"#fnref2\" class=\"footnote-backref\">↩</a></p>\n",
+                      "<p>Subsequent paragraphs are indented. <a href=\"#fnref2\" \
+                       class=\"footnote-backref\">↩</a></p>\n",
                       "</li>\n",
                       "<li id=\"fn3\">\n",
-                      "<p>This is inline. <a href=\"#fnref3\" class=\"footnote-backref\">↩</a></p>\n",
+                      "<p>This is inline. <a href=\"#fnref3\" \
+                       class=\"footnote-backref\">↩</a></p>\n",
                       "</li>\n",
                       "</ol>\n",
                       "</section>\n"),
-              |opts| ()); //opts.ext_footnotes = true);
+              |opts| opts.ext_footnotes = true);
 }
