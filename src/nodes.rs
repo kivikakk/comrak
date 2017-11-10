@@ -54,7 +54,8 @@ pub enum NodeValue {
     /// children.
     ThematicBreak,
 
-    /// **Block**. A footnote definition.  Contains other **blocks**.
+    /// **Block**. A footnote definition.  The `Vec<u8>` is the footnote's name.
+    /// Contains other **blocks**.
     FootnoteDefinition(Vec<u8>),
 
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
@@ -107,7 +108,7 @@ pub enum NodeValue {
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
 
-    /// **Inline**.
+    /// **Inline**.  A footnote reference; the `Vec<u8>` is the referent footnote's name.
     FootnoteReference(Vec<u8>),
 }
 

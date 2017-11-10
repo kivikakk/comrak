@@ -3,8 +3,6 @@
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
        trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
-#![cfg_attr(feature = "dev", feature(plugin))]
-#![cfg_attr(feature = "dev", plugin(clippy))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
 #[macro_use]
@@ -102,6 +100,11 @@ fn main() {
                 .value_name("PREFIX")
                 .help("Use the Comrak header IDs extension, with the given ID prefix"),
         )
+        .arg(
+            clap::Arg::with_name("footnotes")
+                .long("footnotes")
+                .help("Parse footnotes"),
+        )
         .get_matches();
 
     let mut exts = matches
@@ -123,7 +126,7 @@ fn main() {
         ext_tasklist: exts.remove("tasklist"),
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-        ext_footnotes: exts.remove("footnotes"),
+        ext_footnotes: matches.is_present("footnotes"),
     };
 
     assert!(exts.is_empty());
