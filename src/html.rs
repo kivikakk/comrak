@@ -523,6 +523,11 @@ impl<'o> HtmlFormatter<'o> {
                 if header {
                     try!(self.output.write_all(b"<thead>"));
                     try!(self.cr());
+                } else if let Some(n) = node.previous_sibling() {
+                    if let NodeValue::TableRow(true) = n.data.borrow().value {
+                        try!(self.output.write_all(b"<tbody>"));
+                        try!(self.cr());
+                    }
                 }
                 try!(self.output.write_all(b"<tr>"));
             } else {
@@ -531,8 +536,6 @@ impl<'o> HtmlFormatter<'o> {
                 if header {
                     try!(self.cr());
                     try!(self.output.write_all(b"</thead>"));
-                    try!(self.cr());
-                    try!(self.output.write_all(b"<tbody>"));
                 }
             },
             NodeValue::TableCell => {
