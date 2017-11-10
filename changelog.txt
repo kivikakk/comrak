@@ -1,3 +1,7 @@
+### 0.2.4
+
+* Added footnotes support.
+
 ### 0.2.3
 
 * Added header IDs extension.
