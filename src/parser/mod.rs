@@ -125,8 +125,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_strikethrough = true;
+    /// let options = ComrakOptions {
+    ///   ext_strikethrough: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
     ///            "<p>Hello <del>world</del> there.</p>\n");
     /// ```
@@ -138,8 +140,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_tagfilter = true;
+    /// let options = ComrakOptions {
+    ///   ext_tagfilter: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
@@ -150,8 +154,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_table = true;
+    /// let options = ComrakOptions {
+    ///   ext_table: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
     ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr></tbody></table>\n");
@@ -163,8 +169,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_autolink = true;
+    /// let options = ComrakOptions {
+    ///   ext_autolink: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
@@ -179,8 +187,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_tasklist = true;
+    /// let options = ComrakOptions {
+    ///   ext_tasklist: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
     ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
@@ -191,8 +201,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_superscript = true;
+    /// let options = ComrakOptions {
+    ///   ext_superscript: true,
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
     /// ```
@@ -202,8 +214,10 @@ pub struct ComrakOptions {
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
-    /// options.ext_header_ids = Some("user-content-".to_string());
+    /// let options = ComrakOptions {
+    ///   ext_header_ids: Some("user-content-".to_string()),
+    ///   ..ComrakOptions::default()
+    /// };
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
@@ -215,7 +229,13 @@ pub struct ComrakOptions {
     /// [Kramdown](https://kramdown.gettalong.org/syntax.html#footnotes).
     ///
     /// ```
-    /// assert!(false);
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let options = ComrakOptions {
+    ///   ext_footnotes: true,
+    ///   ..ComrakOptions::default()
+    /// };
+    /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
+    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">[1]</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
     pub ext_footnotes: bool,
 }
@@ -736,10 +756,8 @@ impl<'a, 'o> Parser<'a, 'o> {
         if self.indent >= 4 {
             self.advance_offset(line, 4, true);
             true
-        } else if line == b"\n" || line == b"\r\n" {
-            true
         } else {
-            false
+            line == b"\n" || line == b"\r\n"
         }
     }
 
@@ -1140,7 +1158,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         if ix > 0 {
             let mut v = map.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
-            for f in v.into_iter() {
+            for f in v {
                 if f.ix.is_some() {
                     self.root.append(f.node);
                 }
