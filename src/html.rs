@@ -20,6 +20,9 @@ pub fn format_document<'a>(
     };
     let mut f = HtmlFormatter::new(options, &mut writer);
     try!(f.format(root, false));
+    if f.footnote_ix > 0 {
+        try!(f.output.write_all(b"</ol>\n</section>\n"));
+    }
     Ok(())
 }
 
@@ -47,6 +50,8 @@ struct HtmlFormatter<'o> {
     output: &'o mut WriteWithLast<'o>,
     options: &'o ComrakOptions,
     seen_anchors: HashSet<String>,
+    footnote_ix: u32,
+    written_footnote_ix: u32,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -151,6 +156,8 @@ impl<'o> HtmlFormatter<'o> {
             options: options,
             output: output,
             seen_anchors: HashSet::new(),
+            footnote_ix: 0,
+            written_footnote_ix: 0,
         }
     }
 
@@ -413,13 +420,21 @@ impl<'o> HtmlFormatter<'o> {
                     _ => false,
                 };
 
-                if entering {
-                    if !tight {
+                if !tight {
+                    if entering {
                         try!(self.cr());
                         try!(self.output.write_all(b"<p>"));
+                    } else {
+                        if match node.parent().unwrap().data.borrow().value {
+                            NodeValue::FootnoteDefinition(..) => true,
+                            _ => false,
+                        } && node.next_sibling().is_none()
+                        {
+                            try!(self.output.write_all(b" "));
+                            try!(self.put_footnote_backref());
+                        }
+                        try!(self.output.write_all(b"</p>\n"));
                     }
-                } else if !tight {
-                    try!(self.output.write_all(b"</p>\n"));
                 }
             }
             NodeValue::Text(ref literal) => if entering {
@@ -568,9 +583,21 @@ impl<'o> HtmlFormatter<'o> {
                     try!(self.output.write_all(b"</td>"));
                 }
             }
-            NodeValue::FootnoteDefinition(_) => {
-                try!(self.output.write_all(b"def"));
-            }
+            NodeValue::FootnoteDefinition(_) => if entering {
+                if self.footnote_ix == 0 {
+                    try!(
+                        self.output
+                            .write_all(b"<section class=\"footnotes\">\n<ol>\n")
+                    );
+                }
+                self.footnote_ix += 1;
+                try!(write!(self.output, "<li id=\"fn{}\">\n", self.footnote_ix));
+            } else {
+                if try!(self.put_footnote_backref()) {
+                    try!(self.output.write_all(b"\n"));
+                }
+                try!(self.output.write_all(b"</li>\n"));
+            },
             NodeValue::FootnoteReference(ref r) => if entering {
                 let r = str::from_utf8(r).unwrap();
                 try!(write!(
@@ -583,5 +610,19 @@ impl<'o> HtmlFormatter<'o> {
             },
         }
         Ok(false)
+    }
+
+    fn put_footnote_backref(&mut self) -> io::Result<bool> {
+        if self.written_footnote_ix >= self.footnote_ix {
+            return Ok(false);
+        }
+
+        self.written_footnote_ix = self.footnote_ix;
+        try!(write!(
+            self.output,
+            "<a href=\"#fnref{}\" class=\"footnote-backref\">↩</a>",
+            self.footnote_ix
+        ));
+        Ok(true)
     }
 }

@@ -227,9 +227,9 @@ pub struct Reference {
     pub title: Vec<u8>,
 }
 
-#[derive(Default)]
-struct FootnoteDefinition {
+struct FootnoteDefinition<'a> {
     ix: Option<u32>,
+    node: &'a AstNode<'a>,
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
@@ -1136,17 +1136,31 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         let mut ix = 0;
         Self::find_footnote_references(self.root, &mut map, &mut ix);
+
+        if ix > 0 {
+            let mut v = map.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+            v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
+            for f in v.into_iter() {
+                if f.ix.is_some() {
+                    self.root.append(f.node);
+                }
+            }
+        }
     }
 
     fn find_footnote_definitions(
         node: &'a AstNode<'a>,
-        map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
+        map: &mut HashMap<Vec<u8>, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref name) => {
+                node.detach();
                 map.insert(
                     strings::normalize_label(name),
-                    FootnoteDefinition::default(),
+                    FootnoteDefinition {
+                        ix: None,
+                        node: node,
+                    },
                 );
             }
             _ => for n in node.children() {

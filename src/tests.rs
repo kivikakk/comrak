@@ -574,7 +574,7 @@ fn footnotes() {
             "[^unused]: This is not used.\n"
         ),
         concat!(
-            "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\">\"<a href=\"#fn1\" \
+            "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\"><a href=\"#fn1\" \
              id=\"fnref1\">[1]</a></sup> and another.<sup class=\"footnote-ref\"><a \
              href=\"#fn2\" id=\"fnref2\">[2]</a></sup></p>\n",
             "<p>This is another note.<sup class=\"footnote-ref\"><a href=\"#fn3\" \
@@ -588,7 +588,7 @@ fn footnotes() {
             "</li>\n",
             "<li id=\"fn2\">\n",
             "<p>Here's one with multiple blocks.</p>\n",
-            "<p>Subsequent paragraphs are indented.<p>\n",
+            "<p>Subsequent paragraphs are indented.</p>\n",
             "<pre><code>code\n",
             "</code></pre>\n",
             "<a href=\"#fnref2\" class=\"footnote-backref\">↩</a>\n",
