@@ -589,7 +589,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     scanners::footnote_definition(&line[self.first_nonspace..]),
                     &mut matched,
                 ) {
-                let mut c = &line[self.first_nonspace + 2..self.first_nonspace + 2 + matched];
+                let mut c = &line[self.first_nonspace + 2..self.first_nonspace + matched];
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
