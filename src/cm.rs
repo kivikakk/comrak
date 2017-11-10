@@ -36,6 +36,7 @@ struct CommonMarkFormatter<'a, 'o> {
     no_linebreaks: bool,
     in_tight_list_item: bool,
     custom_escape: Option<fn(&'a AstNode<'a>, u8) -> bool>,
+    footnote_ix: u32,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -72,6 +73,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             no_linebreaks: false,
             in_tight_list_item: false,
             custom_escape: None,
+            footnote_ix: 0,
         }
     }
 
@@ -539,12 +541,20 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.cr();
                 }
             },
-            NodeValue::FootnoteDefinition(_) => {
-                write!(self, "def").unwrap();
-            }
-            NodeValue::FootnoteReference(_) => {
-                write!(self, "ref").unwrap();
-            }
+            NodeValue::FootnoteDefinition(_) => if entering {
+                self.footnote_ix += 1;
+                let footnote_ix = self.footnote_ix;
+                write!(self, "[^{}]:\n", footnote_ix).unwrap();
+                write!(self.prefix, "    ").unwrap();
+            } else {
+                let new_len = self.prefix.len() - 4;
+                self.prefix.truncate(new_len);
+            },
+            NodeValue::FootnoteReference(ref r) => if entering {
+                self.write_all(b"[^").unwrap();
+                self.write_all(r).unwrap();
+                self.write_all(b"]").unwrap();
+            },
         };
         true
     }
