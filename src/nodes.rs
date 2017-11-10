@@ -54,6 +54,9 @@ pub enum NodeValue {
     /// children.
     ThematicBreak,
 
+    /// **Block**. A footnote definition.  Contains other **blocks**.
+    FootnoteDefinition(Vec<u8>),
+
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
     Table(Vec<TableAlignment>),
@@ -103,6 +106,9 @@ pub enum NodeValue {
 
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
+
+    /// **Inline**.
+    FootnoteReference(Vec<u8>),
 }
 
 /// Alignment of a single table cell.
@@ -140,11 +146,9 @@ pub struct NodeList {
     /// The kind of list (bullet (unordered) or ordered).
     pub list_type: ListType,
 
-    #[doc(hidden)]
-    pub marker_offset: usize,
+    #[doc(hidden)] pub marker_offset: usize,
 
-    #[doc(hidden)]
-    pub padding: usize,
+    #[doc(hidden)] pub padding: usize,
 
     /// For ordered lists, the ordinal the list starts at.
     pub start: usize,
@@ -204,8 +208,7 @@ pub struct NodeCodeBlock {
     /// For fenced code blocks, the length of the fence.
     pub fence_length: usize,
 
-    #[doc(hidden)]
-    pub fence_offset: usize,
+    #[doc(hidden)] pub fence_offset: usize,
 
     /// For fenced code blocks, the [info string](https://github.github.com/gfm/#info-string) after
     /// the opening fence, if any.
@@ -230,8 +233,7 @@ pub struct NodeHeading {
 /// The metadata of an included HTML block.
 #[derive(Debug, Clone)]
 pub struct NodeHtmlBlock {
-    #[doc(hidden)]
-    pub block_type: u8,
+    #[doc(hidden)] pub block_type: u8,
 
     /// The literal contents of the HTML block.  Per NodeCodeBlock, the content is included here
     /// rather than in any inline.
@@ -245,6 +247,7 @@ impl NodeValue {
         match *self {
             NodeValue::Document |
             NodeValue::BlockQuote |
+            NodeValue::FootnoteDefinition(_) |
             NodeValue::List(..) |
             NodeValue::Item(..) |
             NodeValue::CodeBlock(..) |
@@ -262,9 +265,7 @@ impl NodeValue {
     #[doc(hidden)]
     pub fn accepts_lines(&self) -> bool {
         match *self {
-            NodeValue::Paragraph |
-            NodeValue::Heading(..) |
-            NodeValue::CodeBlock(..) => true,
+            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..) => true,
             _ => false,
         }
     }
@@ -272,9 +273,7 @@ impl NodeValue {
     /// Indicates whether this node may contain inlines.
     pub fn contains_inlines(&self) -> bool {
         match *self {
-            NodeValue::Paragraph |
-            NodeValue::Heading(..) |
-            NodeValue::TableCell => true,
+            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::TableCell => true,
             _ => false,
         }
     }
@@ -321,12 +320,9 @@ pub struct Ast {
     /// The column in the input document the node ends at.
     pub end_column: usize,
 
-    #[doc(hidden)]
-    pub content: Vec<u8>,
-    #[doc(hidden)]
-    pub open: bool,
-    #[doc(hidden)]
-    pub last_line_blank: bool,
+    #[doc(hidden)] pub content: Vec<u8>,
+    #[doc(hidden)] pub open: bool,
+    #[doc(hidden)] pub last_line_blank: bool,
 }
 
 #[doc(hidden)]
@@ -364,20 +360,18 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
     match node.data.borrow().value {
         NodeValue::Document |
         NodeValue::BlockQuote |
+        NodeValue::FootnoteDefinition(_) |
         NodeValue::Item(..) => {
-            child.block() &&
-                match *child {
-                    NodeValue::Item(..) => false,
-                    _ => true,
-                }
-        }
-
-        NodeValue::List(..) => {
-            match *child {
-                NodeValue::Item(..) => true,
-                _ => false,
+            child.block() && match *child {
+                NodeValue::Item(..) => false,
+                _ => true,
             }
         }
+
+        NodeValue::List(..) => match *child {
+            NodeValue::Item(..) => true,
+            _ => false,
+        },
 
         NodeValue::Paragraph |
         NodeValue::Heading(..) |
@@ -386,33 +380,27 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::Link(..) |
         NodeValue::Image(..) => !child.block(),
 
-        NodeValue::Table(..) => {
-            match *child {
-                NodeValue::TableRow(..) => true,
-                _ => false,
-            }
-        }
+        NodeValue::Table(..) => match *child {
+            NodeValue::TableRow(..) => true,
+            _ => false,
+        },
 
-        NodeValue::TableRow(..) => {
-            match *child {
-                NodeValue::TableCell => true,
-                _ => false,
-            }
-        }
+        NodeValue::TableRow(..) => match *child {
+            NodeValue::TableCell => true,
+            _ => false,
+        },
 
-        NodeValue::TableCell => {
-            match *child {
-                NodeValue::Text(..) |
-                NodeValue::Code(..) |
-                NodeValue::Emph |
-                NodeValue::Strong |
-                NodeValue::Link(..) |
-                NodeValue::Image(..) |
-                NodeValue::Strikethrough |
-                NodeValue::HtmlInline(..) => true,
-                _ => false,
-            }
-        }
+        NodeValue::TableCell => match *child {
+            NodeValue::Text(..) |
+            NodeValue::Code(..) |
+            NodeValue::Emph |
+            NodeValue::Strong |
+            NodeValue::Link(..) |
+            NodeValue::Image(..) |
+            NodeValue::Strikethrough |
+            NodeValue::HtmlInline(..) => true,
+            _ => false,
+        },
 
         _ => false,
     }
@@ -426,8 +414,7 @@ pub fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
             return true;
         }
         match cur.data.borrow().value {
-            NodeValue::List(..) |
-            NodeValue::Item(..) => it = cur.last_child(),
+            NodeValue::List(..) | NodeValue::Item(..) => it = cur.last_child(),
             _ => it = None,
         };
     }

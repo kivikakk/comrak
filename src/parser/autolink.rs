@@ -1,9 +1,9 @@
-use ctype::{isspace, isalpha, isalnum};
-use nodes::{NodeValue, NodeLink, AstNode};
+use ctype::{isalnum, isalpha, isspace};
+use nodes::{AstNode, NodeLink, NodeValue};
 use parser::inlines::make_inline;
+use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
-use std::str;
 
 pub fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
@@ -70,8 +70,7 @@ fn www_match<'a>(
         };
     }
 
-    if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize]
-    {
+    if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
         return None;
     }
 
@@ -309,9 +308,8 @@ fn email_match<'a>(
         link_end += 1;
     }
 
-    if link_end < 2 || nb != 1 || np == 0 ||
-        (!isalpha(contents[i + link_end - 1]) &&
-             contents[i + link_end - 1] != b'.')
+    if link_end < 2 || nb != 1 || np == 0
+        || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
     {
         return None;
     }
@@ -331,9 +329,7 @@ fn email_match<'a>(
 
     inl.append(make_inline(
         arena,
-        NodeValue::Text(
-            contents[i - rewind..link_end + i].to_vec(),
-        ),
+        NodeValue::Text(contents[i - rewind..link_end + i].to_vec()),
     ));
     Some((inl, rewind, rewind + link_end))
 }

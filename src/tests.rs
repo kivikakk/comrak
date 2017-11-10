@@ -1,4 +1,4 @@
-use {Arena, parse_document, ComrakOptions};
+use {parse_document, Arena, ComrakOptions};
 use cm;
 use html;
 
@@ -41,7 +41,11 @@ where
     let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
     let mut output_from_rt = vec![];
     html::format_document(root, &options, &mut output_from_rt).unwrap();
-    compare_strs(&String::from_utf8(output_from_rt).unwrap(), expected, "roundtrip");
+    compare_strs(
+        &String::from_utf8(output_from_rt).unwrap(),
+        expected,
+        "roundtrip",
+    );
 }
 
 #[test]
@@ -304,9 +308,9 @@ fn pointy_brace() {
         ),
         concat!(
             "<p>URI autolink: <a \
-                  href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
+             href=\"https://www.pixiv.net\">https://www.pixiv.net</a></p>\n",
             "<p>Email autolink: <a \
-                  href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
+             href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
             "<ul>\n",
             "<li>Inline <em>tag</em> <strong>ha</strong>.</li>\n",
             "<li>Inline <!-- comment --> <strong>ha</strong>.</li>\n",
@@ -328,7 +332,7 @@ fn links() {
         ),
         concat!(
             "<p>Where are you <a href=\"https://microsoft.com\" \
-                  title=\"today\">going</a>?</p>\n",
+             title=\"today\">going</a>?</p>\n",
             "<p><a href=\"/here\">Where am I?</a></p>\n"
         ),
     );
@@ -340,7 +344,7 @@ fn images() {
         concat!("I am ![eating [things](/url)](http://i.imgur.com/QqK1vq7.png).\n"),
         concat!(
             "<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" \
-                  />.</p>\n"
+             />.</p>\n"
         ),
     );
 }
@@ -356,7 +360,7 @@ fn reference_links() {
         ),
         concat!(
             "<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> \
-                  legit.</p>\n"
+             legit.</p>\n"
         ),
     );
 }
@@ -401,16 +405,20 @@ fn table() {
 
 #[test]
 fn autolink_www() {
-    html_opts(concat!("www.autolink.com\n"),
-              concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
-              |opts| opts.ext_autolink = true);
+    html_opts(
+        concat!("www.autolink.com\n"),
+        concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
+        |opts| opts.ext_autolink = true,
+    );
 }
 
 #[test]
 fn autolink_email() {
-    html_opts(concat!("john@smith.com\n"),
-              concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
-              |opts| opts.ext_autolink = true);
+    html_opts(
+        concat!("john@smith.com\n"),
+        concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
+        |opts| opts.ext_autolink = true,
+    );
 }
 
 #[test]
@@ -419,7 +427,7 @@ fn autolink_scheme() {
         concat!("https://google.com/search\n"),
         concat!(
             "<p><a href=\"https://google.com/search\">https://google.\
-                       com/search</a></p>\n"
+             com/search</a></p>\n"
         ),
         |opts| opts.ext_autolink = true,
     );
@@ -431,8 +439,8 @@ fn autolink_scheme_multiline() {
         concat!("https://google.com/search\nhttps://www.google.com/maps"),
         concat!(
             "<p><a href=\"https://google.com/search\">https://google.\
-                       com/search</a>\n<a href=\"https://www.google.com/maps\">\
-                       https://www.google.com/maps</a></p>\n"
+             com/search</a>\n<a href=\"https://www.google.com/maps\">\
+             https://www.google.com/maps</a></p>\n"
         ),
         |opts| opts.ext_autolink = true,
     );
@@ -440,9 +448,11 @@ fn autolink_scheme_multiline() {
 
 #[test]
 fn tagfilter() {
-    html_opts(concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
-              concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
-              |opts| opts.ext_tagfilter = true);
+    html_opts(
+        concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
+        concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
+        |opts| opts.ext_tagfilter = true,
+    );
 }
 
 #[test]
@@ -511,9 +521,11 @@ fn tasklist_32() {
 
 #[test]
 fn superscript() {
-    html_opts(concat!("e = mc^2^.\n"),
-              concat!("<p>e = mc<sup>2</sup>.</p>\n"),
-              |opts| opts.ext_superscript = true);
+    html_opts(
+        concat!("e = mc^2^.\n"),
+        concat!("<p>e = mc<sup>2</sup>.</p>\n"),
+        |opts| opts.ext_superscript = true,
+    );
 }
 
 #[test]
@@ -536,5 +548,58 @@ fn header_ids() {
             "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n"
         ),
         |opts| opts.ext_header_ids = Some("user-content-".to_owned()),
+    );
+}
+
+#[test]
+fn footnotes() {
+    html_opts(
+        concat!(
+            "Here is a[^nowhere] footnote reference,[^1] and another.[^longnote]\n",
+            "\n",
+            "This is another note.[^note]\n",
+            "\n",
+            "[^note]: Hi.\n",
+            "\n",
+            "[^1]: Here is the footnote.\n",
+            "\n",
+            "[^longnote]: Here's one with multiple blocks.\n",
+            "\n",
+            "    Subsequent paragraphs are indented.\n",
+            "\n",
+            "        code\n",
+            "\n",
+            "This is regular content.\n",
+            "\n",
+            "[^unused]: This is not used.\n"
+        ),
+        concat!(
+            "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\"><a href=\"#fn1\" \
+             id=\"fnref1\">[1]</a></sup> and another.<sup class=\"footnote-ref\"><a \
+             href=\"#fn2\" id=\"fnref2\">[2]</a></sup></p>\n",
+            "<p>This is another note.<sup class=\"footnote-ref\"><a href=\"#fn3\" \
+             id=\"fnref3\">[3]</a></sup></p>\n",
+            "<p>This is regular content.</p>\n",
+            "<section class=\"footnotes\">\n",
+            "<ol>\n",
+            "<li id=\"fn1\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref1\" \
+             class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn2\">\n",
+            "<p>Here's one with multiple blocks.</p>\n",
+            "<p>Subsequent paragraphs are indented.</p>\n",
+            "<pre><code>code\n",
+            "</code></pre>\n",
+            "<a href=\"#fnref2\" class=\"footnote-backref\">↩</a>\n",
+            "</li>\n",
+            "<li id=\"fn3\">\n",
+            "<p>Hi. <a href=\"#fnref3\" \
+             class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+        |opts| opts.ext_footnotes = true,
     );
 }

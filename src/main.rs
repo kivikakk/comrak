@@ -1,28 +1,21 @@
 //! The `comrak` binary.
 
-#![deny(missing_docs,
-        missing_debug_implementations,
-	missing_copy_implementations,
-	trivial_casts,
-	trivial_numeric_casts,
-	unstable_features,
-	unused_import_braces,
-	unused_qualifications)]
-
+#![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+       trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
-extern crate entities;
 #[macro_use]
 extern crate clap;
-extern crate unicode_categories;
-extern crate typed_arena;
-extern crate regex;
+extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate regex;
 extern crate twoway;
+extern crate typed_arena;
+extern crate unicode_categories;
 
 mod arena_tree;
 mod html;
@@ -48,13 +41,13 @@ fn main() {
             clap::Arg::with_name("file")
                 .value_name("FILE")
                 .multiple(true)
-                .help(
-                    "The CommonMark file to parse; or standard input if none passed",
-                ),
+                .help("The CommonMark file to parse; or standard input if none passed"),
         )
-        .arg(clap::Arg::with_name("hardbreaks").long("hardbreaks").help(
-            "Treat newlines as hard line breaks",
-        ))
+        .arg(
+            clap::Arg::with_name("hardbreaks")
+                .long("hardbreaks")
+                .help("Treat newlines as hard line breaks"),
+        )
         .arg(
             clap::Arg::with_name("github-pre-lang")
                 .long("github-pre-lang")
@@ -72,16 +65,15 @@ fn main() {
                 .takes_value(true)
                 .number_of_values(1)
                 .multiple(true)
-                .possible_values(
-                    &[
-                        "strikethrough",
-                        "tagfilter",
-                        "table",
-                        "autolink",
-                        "tasklist",
-                        "superscript",
-                    ],
-                )
+                .possible_values(&[
+                    "strikethrough",
+                    "tagfilter",
+                    "table",
+                    "autolink",
+                    "tasklist",
+                    "superscript",
+                    "footnotes",
+                ])
                 .value_name("EXTENSION")
                 .help("Specify an extension name to use"),
         )
@@ -108,23 +100,22 @@ fn main() {
                 .long("header-ids")
                 .takes_value(true)
                 .value_name("PREFIX")
-                .help(
-                    "Use the Comrak header IDs extension, with the given ID prefix",
-                ),
+                .help("Use the Comrak header IDs extension, with the given ID prefix"),
         )
         .get_matches();
 
-    let mut exts = matches.values_of("extension").map_or(
-        BTreeSet::new(),
-        |vals| vals.collect(),
-    );
+    let mut exts = matches
+        .values_of("extension")
+        .map_or(BTreeSet::new(), |vals| vals.collect());
 
     let options = parser::ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
         github_pre_lang: matches.is_present("github-pre-lang"),
-        width: matches.value_of("width").unwrap_or("0").parse().unwrap_or(
-            0,
-        ),
+        width: matches
+            .value_of("width")
+            .unwrap_or("0")
+            .parse()
+            .unwrap_or(0),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),
@@ -132,6 +123,7 @@ fn main() {
         ext_tasklist: exts.remove("tasklist"),
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
+        ext_footnotes: exts.remove("footnotes"),
     };
 
     assert!(exts.is_empty());
@@ -142,12 +134,10 @@ fn main() {
         None => {
             std::io::stdin().read_to_end(&mut s).unwrap();
         }
-        Some(fs) => {
-            for f in fs {
-                let mut io = std::fs::File::open(f).unwrap();
-                io.read_to_end(&mut s).unwrap();
-            }
-        }
+        Some(fs) => for f in fs {
+            let mut io = std::fs::File::open(f).unwrap();
+            io.read_to_end(&mut s).unwrap();
+        },
     };
 
     if matches.is_present("prepare-regexes") {

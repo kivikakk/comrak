@@ -62,27 +62,20 @@
 //! # }
 //! ```
 
-#![deny(missing_docs,
-        missing_debug_implementations,
-	missing_copy_implementations,
-	trivial_casts,
-	trivial_numeric_casts,
-	unstable_features,
-	unused_import_braces,
-	unused_qualifications)]
-
+#![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+       trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
-extern crate unicode_categories;
-extern crate typed_arena;
-extern crate regex;
 extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate regex;
 extern crate twoway;
+extern crate typed_arena;
+extern crate unicode_categories;
 
 mod arena_tree;
 mod parser;
@@ -98,7 +91,6 @@ mod tests;
 
 pub use cm::format_document as format_commonmark;
 pub use html::format_document as format_html;
-
 pub use parser::{parse_document, ComrakOptions};
 use typed_arena::Arena;
 

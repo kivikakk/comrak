@@ -134,7 +134,11 @@ pub fn html_block_start_7(line: &[u8]) -> Option<usize> {
             &format!(r"\A(?:<({}|{})[\t\n\f ]*[\r\n])", *OPEN_TAG, *CLOSE_TAG)).unwrap();
     }
 
-    if is_match(&RE, line) { Some(7) } else { None }
+    if is_match(&RE, line) {
+        Some(7)
+    } else {
+        None
+    }
 }
 
 pub enum SetextChar {
@@ -162,6 +166,13 @@ pub fn thematic_break(line: &[u8]) -> Option<usize> {
     lazy_static! {
         static ref RE: Regex = Regex::new(
             r"\A(?:((\*[ \t]*){3,}|(_[ \t]*){3,}|(-[ \t]*){3,})[ \t]*[\r\n])").unwrap();
+    }
+    search(&RE, line)
+}
+
+pub fn footnote_definition(line: &[u8]) -> Option<usize> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\A\[\^[^\]\r\n\x00\t]+\]:[ \t]*").unwrap();
     }
     search(&RE, line)
 }

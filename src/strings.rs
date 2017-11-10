@@ -197,8 +197,8 @@ pub fn clean_title(title: &[u8]) -> Vec<u8> {
     let first = title[0];
     let last = title[title_len - 1];
 
-    let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')') ||
-        (first == b'"' && last == b'"')
+    let mut b = if (first == b'\'' && last == b'\'') || (first == b'(' && last == b')')
+        || (first == b'"' && last == b'"')
     {
         entity::unescape_html(&title[1..title_len - 1])
     } else {
@@ -220,7 +220,7 @@ pub fn is_blank(s: &[u8]) -> bool {
     true
 }
 
-pub fn normalize_reference_label(i: &[u8]) -> Vec<u8> {
+pub fn normalize_label(i: &[u8]) -> Vec<u8> {
     let i = trim_slice(i);
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
