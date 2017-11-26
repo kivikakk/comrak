@@ -125,7 +125,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             ']' => new_inl = self.handle_close_bracket(),
             '!' => {
                 self.pos += 1;
-                if self.peek_char() == Some(&(b'[')) {
+                if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
                     let inl = make_inline(self.arena, NodeValue::Text(b"![".to_vec()));
                     new_inl = Some(inl);
@@ -323,15 +323,23 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
     }
 
+    #[inline]
     pub fn eof(&self) -> bool {
         self.pos >= self.input.len()
     }
 
+
+    #[inline]
     pub fn peek_char(&self) -> Option<&u8> {
-        if self.eof() {
+        self.peek_char_n(0)
+    }
+
+    #[inline]
+    fn peek_char_n(&self, n: usize) -> Option<&u8> {
+        if self.pos + n >= self.input.len() {
             None
         } else {
-            let c = &self.input[self.pos];
+            let c = &self.input[self.pos + n];
             assert!(*c > 0);
             Some(c)
         }
