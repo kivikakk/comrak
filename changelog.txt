@@ -1,3 +1,8 @@
+### 0.2.5
+
+* Fixed a bug where an exclamation mark "!" followed by a footnote would be
+  eaten by the parser.
+
 ### 0.2.4
 
 * Added footnotes support.
