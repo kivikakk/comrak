@@ -1189,7 +1189,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
     fn find_footnote_references(
         node: &'a AstNode<'a>,
-        mut map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
+        map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
         ix: &mut u32,
     ) {
         let mut ast = node.data.borrow_mut();

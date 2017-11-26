@@ -603,3 +603,25 @@ fn footnotes() {
         |opts| opts.ext_footnotes = true,
     );
 }
+
+#[test]
+fn footnote_does_not_eat_exclamation() {
+    html_opts(
+        concat!("Here's my footnote![^a]\n",
+                "\n",
+                "[^a]: Yep.\n"
+        ),
+        concat!(
+            "<p>Here's my footnote!<sup class=\"footnote-ref\"><a href=\"#fn1\" \
+             id=\"fnref1\">[1]</a></sup></p>\n",
+            "<section class=\"footnotes\">\n",
+            "<ol>\n",
+            "<li id=\"fn1\">\n",
+            "<p>Yep. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+        |opts| opts.ext_footnotes = true,
+    );
+}
