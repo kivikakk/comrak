@@ -1,3 +1,8 @@
+### 0.2.6
+
+* Fixed a bug where back-to-back emphases would not be processed correctly.
+  (#45; thanks to @SSJohns for the report.)
+
 ### 0.2.5
 
 * Fixed a bug where an exclamation mark "!" followed by a footnote would be
