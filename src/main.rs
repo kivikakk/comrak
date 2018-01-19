@@ -1,7 +1,7 @@
 //! The `comrak` binary.
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-       trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
+        trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 

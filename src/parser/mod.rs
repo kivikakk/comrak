@@ -240,7 +240,6 @@ pub struct ComrakOptions {
     pub ext_footnotes: bool,
 }
 
-
 #[derive(Clone)]
 pub struct Reference {
     pub url: Vec<u8>,

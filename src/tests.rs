@@ -607,10 +607,7 @@ fn footnotes() {
 #[test]
 fn footnote_does_not_eat_exclamation() {
     html_opts(
-        concat!("Here's my footnote![^a]\n",
-                "\n",
-                "[^a]: Yep.\n"
-        ),
+        concat!("Here's my footnote![^a]\n", "\n", "[^a]: Yep.\n"),
         concat!(
             "<p>Here's my footnote!<sup class=\"footnote-ref\"><a href=\"#fn1\" \
              id=\"fnref1\">[1]</a></sup></p>\n",
@@ -623,5 +620,13 @@ fn footnote_does_not_eat_exclamation() {
             "</section>\n"
         ),
         |opts| opts.ext_footnotes = true,
+    );
+}
+
+#[test]
+fn regression_back_to_back_ranges() {
+    html(
+        "**bold*****bold+italic***",
+        "<p><strong>bold</strong><em><strong>bold+italic</strong></em></p>\n",
     );
 }

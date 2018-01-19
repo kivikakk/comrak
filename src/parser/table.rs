@@ -79,7 +79,6 @@ fn try_opening_header<'a, 'o>(
     Some((table, true))
 }
 
-
 fn try_opening_row<'a, 'o>(
     parser: &mut Parser<'a, 'o>,
     container: &'a AstNode<'a>,

@@ -20,7 +20,6 @@ make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
 use std::cell::Cell;
 
-
 /// A node inside a DOM-like tree.
 #[derive(Debug)]
 pub struct Node<'a, T: 'a> {
@@ -31,7 +30,6 @@ pub struct Node<'a, T: 'a> {
     last_child: Cell<Option<&'a Node<'a, T>>>,
     pub data: T,
 }
-
 
 fn same_ref<T>(a: &T, b: &T) -> bool {
     let a: *const T = a;
@@ -222,7 +220,6 @@ impl<'a, T> Node<'a, T> {
     }
 }
 
-
 macro_rules! axis_iterator {
     (#[$attr:meta] $name: ident: $next: ident) => {
         #[$attr]
@@ -270,7 +267,6 @@ axis_iterator! {
     ReverseChildren: previous_sibling
 }
 
-
 /// An iterator of references to a given node and its descendants, in tree order.
 #[derive(Debug)]
 pub struct Descendants<'a, T: 'a>(Traverse<'a, T>);
@@ -288,7 +284,6 @@ impl<'a, T> Iterator for Descendants<'a, T> {
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum NodeEdge<T> {
@@ -364,7 +359,6 @@ traverse_iterator! {
     node and its descendants, in reverse tree order."]
     ReverseTraverse: last_child, previous_sibling
 }
-
 
 #[cfg(test)]
 extern crate typed_arena;
