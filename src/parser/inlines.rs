@@ -31,6 +31,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
 
 pub struct Delimiter<'a: 'd, 'd> {
     inl: &'a AstNode<'a>,
+    length: usize,
     delim_char: u8,
     can_open: bool,
     can_close: bool,
@@ -179,39 +180,14 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 while opener.is_some() && !Self::del_ref_eq(opener, stack_bottom)
                     && !Self::del_ref_eq(
                         opener,
-                        openers_bottom[closer
-                                           .unwrap()
-                                           .inl
-                                           .data
-                                           .borrow()
-                                           .value
-                                           .text()
-                                           .unwrap()
-                                           .len() % 3]
+                        openers_bottom[closer.unwrap().length % 3]
                             [closer.unwrap().delim_char as usize],
                     ) {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
                         let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
-                            && ((opener
-                                .unwrap()
-                                .inl
-                                .data
-                                .borrow()
-                                .value
-                                .text()
-                                .unwrap()
-                                .len()
-                                + closer
-                                    .unwrap()
-                                    .inl
-                                    .data
-                                    .borrow()
-                                    .value
-                                    .text()
-                                    .unwrap()
-                                    .len()) % 3 == 0);
+                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -273,15 +249,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     closer = closer.unwrap().next.get();
                 }
                 if !opener_found {
-                    let ix = old_closer
-                        .unwrap()
-                        .inl
-                        .data
-                        .borrow()
-                        .value
-                        .text()
-                        .unwrap()
-                        .len() % 3;
+                    let ix = old_closer.unwrap().length % 3;
                     openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
                         old_closer.unwrap().prev.get();
                     if !old_closer.unwrap().can_open {
@@ -494,6 +462,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
             inl: inl,
+            length: inl.data.borrow().value.text().unwrap().len(),
             delim_char: c,
             can_open: can_open,
             can_close: can_close,
