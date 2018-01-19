@@ -45,7 +45,6 @@ impl<'w> Write for WriteWithLast<'w> {
     }
 }
 
-
 struct HtmlFormatter<'o> {
     output: &'o mut WriteWithLast<'o>,
     options: &'o ComrakOptions,
@@ -265,9 +264,9 @@ impl<'o> HtmlFormatter<'o> {
     fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
         if plain {
             match node.data.borrow().value {
-                NodeValue::Text(ref literal) |
-                NodeValue::Code(ref literal) |
-                NodeValue::HtmlInline(ref literal) => {
+                NodeValue::Text(ref literal)
+                | NodeValue::Code(ref literal)
+                | NodeValue::HtmlInline(ref literal) => {
                     try!(self.escape(literal));
                 }
                 NodeValue::LineBreak | NodeValue::SoftBreak => {
@@ -606,9 +605,7 @@ impl<'o> HtmlFormatter<'o> {
                 try!(write!(
                     self.output,
                     "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">[{}]</a></sup>",
-                    r,
-                    r,
-                    r
+                    r, r, r
                 ));
             },
         }

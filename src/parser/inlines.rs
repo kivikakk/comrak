@@ -70,18 +70,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         };
         s.special_chars.extend_from_slice(&[false; 256]);
         for &c in &[
-            b'\n',
-            b'\r',
-            b'_',
-            b'*',
-            b'"',
-            b'`',
-            b'\\',
-            b'&',
-            b'<',
-            b'[',
-            b']',
-            b'!',
+            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!'
         ] {
             s.special_chars[c as usize] = true;
         }
@@ -327,7 +316,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     pub fn eof(&self) -> bool {
         self.pos >= self.input.len()
     }
-
 
     #[inline]
     pub fn peek_char(&self) -> Option<&u8> {
