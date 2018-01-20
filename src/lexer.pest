@@ -25,3 +25,29 @@ cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ any)+ | "]" ~ (!("]" | "\x00") ~ any
 html_tag = { open_tag | close_tag | html_comment | processing_instruction | declaration | cdata }
 
 html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }
+
+setext_heading_line = { ("="+ | "-"+) ~ (" " | "\t")* ~ ("\r" | "\n") }
+thematic_break = { (("*" ~ (" " | "\t")*){3,} | ("_" ~ (" " | "\t")*){3,} | ("-" ~ (" " | "\t")*){3,}) ~ (" " | "\t")* ~ ("\r" | "\n") }
+
+footnote_definition = { "[^" ~ (!("]" | "\r" | "\n" | "\x00" | "\t") ~ any)+ ~ "]:" ~ (" " | "\t")* }
+
+scheme = _{ ('A'..'Z' | 'a'..'z') ~ ('A'..'Z' | 'a'..'z' | '0'..'9' | "." | "+" | "-"){1,31} }
+
+scheme_rule = { scheme ~ ":" }
+
+autolink_uri = { scheme ~ ":" ~ (!('\x00'..'\x20' | "<" | ">") ~ any)* ~ ">" }
+autolink_email = { ('a'..'z' | 'A'..'Z' | '0'..'9' | "." | "!" | "#" | "$" | "%" | "&" | "'" | "*" | "+" | "/" | "=" | "?" | "^" | "_" | "`" | "{" | "|" | "}" | "~" | "-")+ ~ "@" ~ ('a'..'z' | 'A'..'Z' | '0'..'9') ~ (('a'..'z' | 'A'..'Z' | '0'..'9' | "-"){0,61} ~ ('a'..'z' | 'A'..'Z' | '0'..'9')?)? ~ ("." ~ (('a'..'z' | 'A'..'Z' | '0'..'9' | "-"){0,61} ~ ('a'..'z' | 'A'..'Z' | '0'..'9')?)?)* ~ ">" }
+
+spacechars = { space_char+ }
+
+escaped_char = _{ "\\" ~ ("!" | "\"" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "," | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "[" | "\\" | "]" | "^" | "_" | "`" | "{" | "|" | "}" | "~" | "-") }
+link_title = { "\"" ~ (escaped_char | (!("\"" | "\x00") ~ any))* ~ "\"" | "'" ~ (escaped_char | (!("'" | "\x00") ~ any))* ~ "'" | "(" ~ (escaped_char | (!(")" | "\x00") ~ any))* ~ ")" }
+
+table_spacechar = _{ " " | "\t" | "\x0b" | "\x0c" }
+table_newline = _{ "\r"? ~ "\n" }
+table_marker = _{ table_spacechar* ~ ":"? ~ "-"+ ~ ":"? ~ table_spacechar* }
+table_cell = { ( escaped_char | !("|" | "\r" | "\n") ~ any)* }
+
+table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_spacechar* | table_newline }
+table_cell_end = { "|" ~ table_spacechar* ~ table_newline? }
+table_row_end = { table_spacechar* ~ table_newline }

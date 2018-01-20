@@ -10,13 +10,13 @@ extern crate clap;
 extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
 extern crate regex;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
 
 mod arena_tree;
 mod html;
