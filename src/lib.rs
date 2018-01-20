@@ -63,7 +63,7 @@
 //! ```
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-        trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
+        trivial_numeric_casts, unstable_features, unused_import_braces)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
@@ -74,6 +74,9 @@ extern crate regex;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
 
 mod arena_tree;
 mod parser;

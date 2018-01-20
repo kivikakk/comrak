@@ -1,8 +1,25 @@
 use regex::bytes::Regex;
 use twoway::find_bytes;
+use pest::Parser;
+use std::str;
+
+#[cfg(debug_assertions)]
+const _LEXER: &str = include_str!("lexer.pest");
+
+#[derive(Parser)]
+#[grammar = "lexer.pest"]
+struct Lexer;
 
 fn search(re: &Regex, line: &[u8]) -> Option<usize> {
     re.find(line).map(|m| m.end() - m.start())
+}
+
+fn search_(rule: Rule, line: &[u8]) -> Option<usize> {
+    if let Ok(pairs) = Lexer::parse(rule, unsafe { str::from_utf8_unchecked(line) }) {
+        Some(pairs.last().unwrap().into_span().end())
+    } else {
+        None
+    }
 }
 
 fn captures(re: &Regex, line: &[u8], ix: usize) -> Option<usize> {
@@ -18,10 +35,7 @@ fn is_match(re: &Regex, line: &[u8]) -> bool {
 }
 
 pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:#{1,6}([ \t]+|[\r\n]))").unwrap();
-    }
-    search(&RE, line)
+    search_(Rule::atx_heading_start, line)
 }
 
 pub fn html_block_end_1(line: &[u8]) -> bool {
