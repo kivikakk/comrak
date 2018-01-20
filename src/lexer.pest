@@ -1,1 +1,27 @@
 atx_heading_start = { "#"{1, 6} ~ (" " | "\t" | "\r" | "\n") }
+
+open_code_fence = _{ open_code_fence_match ~ (!("`" | "\r" | "\n" | "\x00") ~ any)* ~ ("\r" | "\n") }
+open_code_fence_match = { "`"{3,} | "~"{3,} }
+
+close_code_fence = _{ close_code_fence_match ~ ("\t" | " ")* ~ ("\r" | "\n") }
+close_code_fence_match = { "`"{3,} | "~"{3,} }
+
+html_block_start_1 = { "<" ~ ("script" | "pre" | "style") ~ (" " | "\t" | "\x0b" | "\x0c" | "\r" | "\n" | ">") }
+html_block_start_4 = { "<!" ~ 'A'..'Z' }
+html_block_start_6 = { "<" ~ "/"? ~ ("address" | "article" | "aside" | "base" | "basefont" | "blockquote" | "body" | "caption" | "center" | "col" | "colgroup" | "dd" | "details" | "dialog" | "dir" | "div" | "dl" | "dt" | "fieldset" | "figcaption" | "figure" | "footer" | "form" | "frame" | "frameset" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "head" | "header" | "hr" | "html" | "iframe" | "legend" | "li" | "link" | "main" | "menu" | "menuitem" | "meta" | "nav" | "noframes" | "ol" | "optgroup" | "option" | "p" | "param" | "section" | "source" | "title" | "summary" | "table" | "tbody" | "td" | "tfoot" | "th" | "thead" | "title" | "tr" | "track" | "ul") ~ (" " | "\t" | "\x0b" | "\x0c" | "\r" | "\n" | "/>" | ">") }
+
+space_char = _{ " " | "\t" | "\x0b" | "\x0c" | "\r" | "\n" }
+tag_name = _{ ('A'..'Z' | 'a'..'z') ~ ('A'..'Z' | 'a'..'z' | '0'..'9' | "-")* }
+close_tag = _{ "/" ~ tag_name ~ space_char* ~ ">" }
+attribute_name = _{ ('a'..'z' | 'A'..'Z' | "_" | ":") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | ":" | "." | "_" | "-")* }
+attribute_value = _{ (!("\"" | "'" | "=" | "<" | ">" | "`" | "\x00" | " ") ~ any)+ | ("'" ~ (!("'" | "\x00") ~ any)* ~ "'") | ("\"" ~ (!("\"" | "\x00") ~ any)* ~ "\"") }
+attribute_value_spec = _{ space_char* ~ "=" ~ space_char* ~ attribute_value }
+attribute = _{ space_char+ ~ attribute_name ~ attribute_value_spec? }
+open_tag = _{ tag_name ~ attribute* ~ space_char* ~ "/"? ~ ">" }
+html_comment = _{ "!---->" | ("!--" ~ "-"? ~ !("\x00" | ">" | "-") ~ any ~ ("-"? ~ !("\x00" | "-") ~ any)* ~ "-->") }
+processing_instruction = _{ "?" ~ ((!("?" | ">" | "\x00") ~ any)+ | "?" ~ !(">" | "\x00") ~ any | ">")* ~ "?>" }
+declaration = _{ "!" ~ 'A'..'Z'+ ~ space_char+ ~ (!(">" | "\x00") ~ any)* ~ ">" }
+cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ any)+ | "]" ~ (!("]" | "\x00") ~ any) | "]]" ~ (!(">" | "\x00") ~ any))* ~ "]]>" }
+html_tag = { open_tag | close_tag | html_comment | processing_instruction | declaration | cdata }
+
+html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }

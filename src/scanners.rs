@@ -22,16 +22,12 @@ fn search_(rule: Rule, line: &[u8]) -> Option<usize> {
     }
 }
 
-fn captures(re: &Regex, line: &[u8], ix: usize) -> Option<usize> {
-    let c = match re.captures(line) {
-        Some(c) => c,
-        None => return None,
-    };
-    c.get(ix).map(|m| m.end() - m.start())
-}
-
 fn is_match(re: &Regex, line: &[u8]) -> bool {
     re.is_match(line)
+}
+
+fn is_match_(rule: Rule, line: &[u8]) -> bool {
+    Lexer::parse(rule, unsafe { str::from_utf8_unchecked(line) }).is_ok()
 }
 
 pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
@@ -39,10 +35,9 @@ pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
 }
 
 pub fn html_block_end_1(line: &[u8]) -> bool {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:.*</(script|pre|style)>)").unwrap();
-    }
-    RE.is_match(line)
+    find_bytes(line, b"</script>").is_some() ||
+        find_bytes(line, b"</pre>").is_some() ||
+        find_bytes(line, b"</style>").is_some()
 }
 
 pub fn html_block_end_2(line: &[u8]) -> bool {
@@ -62,59 +57,35 @@ pub fn html_block_end_5(line: &[u8]) -> bool {
 }
 
 pub fn open_code_fence(line: &[u8]) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:(```+|~~~+)[^`\r\n\x00]*[\r\n])").unwrap();
-    }
-    captures(&RE, line, 1)
+    search_(Rule::open_code_fence, line)
 }
 
 pub fn close_code_fence(line: &[u8]) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\A(?:(```+|~~~+)[ \t]*[\r\n])").unwrap();
-    }
-    captures(&RE, line, 1)
-}
-
-lazy_static! {
-    static ref BLOCK_TAG_NAMES: Vec<&'static str> = vec![
-      "address", "article", "aside", "base", "basefont", "blockquote", "body", "caption", "center",
-      "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", "fieldset",
-      "figcaption", "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3", "h4", "h5",
-      "h6", "head", "header", "hr", "html", "iframe", "legend", "li", "link", "main", "menu",
-      "menuitem", "meta", "nav", "noframes", "ol", "optgroup", "option", "p", "param", "section",
-      "source", "title", "summary", "table", "tbody", "td", "tfoot", "th", "thead", "title", "tr",
-      "track", "ul",
-    ];
-
-    static ref BLOCK_TAG_NAMES_PIPED: String = BLOCK_TAG_NAMES.join("|");
+    search_(Rule::close_code_fence, line)
 }
 
 pub fn html_block_start(line: &[u8]) -> Option<usize> {
     lazy_static! {
-        static ref RE1: Regex = Regex::new(r"\A(?:<(script|pre|style)([ \t\v\f\r\n]|>))").unwrap();
         static ref STR2: &'static [u8] = b"<!--";
         static ref STR3: &'static [u8] = b"<?";
-        static ref RE4: Regex = Regex::new(r"\A(?:<![A-Z])").unwrap();
         static ref STR5: &'static [u8] = b"<![CDATA[";
-        static ref RE6: Regex = Regex::new(
-            &format!(r"\A(?:</?({})([ \t\v\f\r\n]|/?>))", *BLOCK_TAG_NAMES_PIPED)).unwrap();
     }
 
     if !line.starts_with(b"<") {
         return None;
     }
 
-    if is_match(&RE1, line) {
+    if is_match_(Rule::html_block_start_1, line) {
         Some(1)
     } else if line.starts_with(*STR2) {
         Some(2)
     } else if line.starts_with(*STR3) {
         Some(3)
-    } else if is_match(&RE4, line) {
+    } else if is_match_(Rule::html_block_start_4, line) {
         Some(4)
     } else if line.starts_with(*STR5) {
         Some(5)
-    } else if is_match(&RE6, line) {
+    } else if is_match_(Rule::html_block_start_6, line) {
         Some(6)
     } else {
         None
@@ -127,7 +98,7 @@ lazy_static! {
     static ref CLOSE_TAG: String = format!(r"(?:/{}{}*>)", *TAG_NAME, *SPACE_CHAR);
     static ref ATTRIBUTE_NAME: &'static str = r"(?:[a-zA-Z_:][a-zA-Z0-9:._-]*)";
     static ref ATTRIBUTE_VALUE: &'static str =
-        r#"(?:[^"'=<>`\x00]+|['][^'\x00]*[']|["][^"\x00]*["])"#;
+        r#"(?:[^"'=<>`\x00 ]+|['][^'\x00]*[']|["][^"\x00]*["])"#;
     static ref ATTRIBUTE_VALUE_SPEC: String = format!(
         r"(?:{}*={}*{})", *SPACE_CHAR, *SPACE_CHAR, *ATTRIBUTE_VALUE);
     static ref ATTRIBUTE: String = format!(
@@ -143,12 +114,7 @@ lazy_static! {
 }
 
 pub fn html_block_start_7(line: &[u8]) -> Option<usize> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(
-            &format!(r"\A(?:<({}|{})[\t\n\f ]*[\r\n])", *OPEN_TAG, *CLOSE_TAG)).unwrap();
-    }
-
-    if is_match(&RE, line) {
+    if is_match_(Rule::html_block_start_7, line) {
         Some(7)
     } else {
         None
