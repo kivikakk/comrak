@@ -1,7 +1,7 @@
 //! The `comrak` binary.
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-        trivial_numeric_casts, unstable_features, unused_import_braces, unused_qualifications)]
+        trivial_numeric_casts, unstable_features, unused_import_braces)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 
@@ -10,6 +10,9 @@ extern crate clap;
 extern crate entities;
 #[macro_use]
 extern crate lazy_static;
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
 extern crate regex;
 extern crate twoway;
 extern crate typed_arena;
@@ -50,11 +53,6 @@ fn main() {
             clap::Arg::with_name("github-pre-lang")
                 .long("github-pre-lang")
                 .help("Use GitHub-style <pre lang> for code blocks"),
-        )
-        .arg(
-            clap::Arg::with_name("prepare-regexes")
-                .long("prepare-regexes")
-                .help("Prepare regexes up front for benchmarking"),
         )
         .arg(
             clap::Arg::with_name("extension")
@@ -143,10 +141,6 @@ fn main() {
         },
     };
 
-    if matches.is_present("prepare-regexes") {
-        init_scanners();
-    }
-
     let arena = Arena::new();
     let root = parser::parse_document(&arena, &String::from_utf8(s).unwrap(), &options);
 
@@ -159,25 +153,4 @@ fn main() {
     formatter(root, &options, &mut std::io::stdout()).unwrap();
 
     process::exit(0);
-}
-
-fn init_scanners() {
-    scanners::atx_heading_start(b"");
-    scanners::html_block_end_1(b"");
-    scanners::open_code_fence(b"");
-    scanners::close_code_fence(b"");
-    scanners::html_block_start(b"");
-    scanners::html_block_start_7(b"");
-    scanners::setext_heading_line(b"");
-    scanners::thematic_break(b"");
-    scanners::scheme(b"");
-    scanners::autolink_uri(b"");
-    scanners::autolink_email(b"");
-    scanners::html_tag(b"");
-    scanners::spacechars(b"");
-    scanners::link_title(b"");
-    scanners::table_start(b"");
-    scanners::table_cell(b"");
-    scanners::table_cell_end(b"");
-    scanners::table_row_end(b"");
 }
