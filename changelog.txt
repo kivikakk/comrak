@@ -1,3 +1,7 @@
+### 0.2.7
+
+* Use [`pest`](https://github.com/pest-parser/pest) instead of regexes for lexing.
+
 ### 0.2.6
 
 * Fixed a bug where back-to-back emphases would not be processed correctly.
