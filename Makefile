@@ -4,4 +4,4 @@ docker:
 
 bench:
 	cargo build --release
-	(cd vendor/cmark-gfm/; make bench PROG="../../target/release/comrak --prepare-regexes")
+	(cd vendor/cmark-gfm/; make bench PROG=../../target/release/comrak)

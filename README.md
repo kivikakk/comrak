@@ -27,7 +27,6 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
-        --prepare-regexes    Prepare regexes up front for benchmarking
     -V, --version            Prints version information
 
 OPTIONS:
