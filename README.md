@@ -7,6 +7,8 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
 * [Usage](#usage)
 * [Extensions](#extensions)
+* [Related projects](#related-projects)
+* [Contributors](#contributors)
 * [Legal](#legal)
 
 ## Usage
@@ -112,13 +114,17 @@ By default none are enabled; they are individually enabled with each parse by
 setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
 
-## Legal
+## Related projects
 
-Copyright (c) 2017–2018, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark) as closely as possible in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak. It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
 
-`cmark` itself is is copyright (c) 2014, John MacFarlane.
+The downside, of course, is that the code is not what I'd call idiomatic Rust (_so many `RefCell`s_), and while contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers depending on your use-case. Here are some other projects to consider:
 
-See [COPYING](COPYING) for all the details.
+* [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec compatibility yet.
+* [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to `libcmark`. It hasn't been updated in a while, though there's an [open pull request](https://github.com/bnavetta/rcmark/pull/2).
+* Know of another library? Please add it!
+
+As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
 
 ## Contributors
 
@@ -136,3 +142,11 @@ Thank you for PRs and issues opened!
 * [JordanMilne](https://github.com/JordanMilne)
 * [carols10cents](https://github.com/carols10cents)
 * [treiff](https://github.com/treiff)
+
+## Legal
+
+Copyright (c) 2017–2018, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+
+`cmark` itself is is copyright (c) 2014, John MacFarlane.
+
+See [COPYING](COPYING) for all the details.
