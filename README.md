@@ -5,11 +5,27 @@
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
+* [Installation](#installation)
 * [Usage](#usage)
 * [Extensions](#extensions)
 * [Related projects](#related-projects)
 * [Contributors](#contributors)
 * [Legal](#legal)
+
+## Installation
+
+To use at the command line:
+
+```
+cargo install comrak
+```
+
+Otherwise, specify it as a requirement in `Cargo.toml`:
+
+```toml
+[dependencies]
+comrak = "0.2"
+```
 
 ## Usage
 
