@@ -32,10 +32,12 @@ FLAGS:
     -V, --version            Prints version information
 
 OPTIONS:
-    -e, --extension <EXTENSION>...    Specify an extension name to use [values: strikethrough, tagfilter, table, autolink, tasklist, superscript, footnotes]
-    -t, --to <FORMAT>                 Specify output format [default: html]  [values: html, commonmark]
-        --header-ids <PREFIX>         Use the Comrak header IDs extension, with the given ID prefix
-        --width <WIDTH>               Specify wrap width (0 = nowrap) [default: 0]
+        --default-info-string <INFO>    Default value for fenced code block's info strings if none is given
+    -e, --extension <EXTENSION>...      Specify an extension name to use [values: strikethrough, tagfilter, table,
+                                        autolink, tasklist, superscript, footnotes]
+    -t, --to <FORMAT>                   Specify output format [default: html]  [values: html, commonmark]
+        --header-ids <PREFIX>           Use the Comrak header IDs extension, with the given ID prefix
+        --width <WIDTH>                 Specify wrap width (0 = nowrap) [default: 0]
 
 ARGS:
     <FILE>...    The CommonMark file to parse; or standard input if none passed

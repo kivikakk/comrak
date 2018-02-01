@@ -119,6 +119,20 @@ pub struct ComrakOptions {
     /// ```
     pub width: usize,
 
+    /// The default info string for fenced code blocks.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
+    ///            "<pre><code>fn hello();\n</code></pre>\n");
+    ///
+    /// options.default_info_string = Some("rust".into());
+    /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
+    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    /// ```
+    pub default_info_string: Option<String>,
+
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
@@ -1062,7 +1076,14 @@ impl<'a, 'o> Parser<'a, 'o> {
                     let mut tmp = entity::unescape_html(&content[..pos]);
                     strings::trim(&mut tmp);
                     strings::unescape(&mut tmp);
-                    ncb.info = tmp;
+                    if tmp.is_empty() {
+                        ncb.info = self.options
+                            .default_info_string
+                            .as_ref()
+                            .map_or(vec![], |s| s.as_bytes().to_vec());
+                    } else {
+                        ncb.info = tmp;
+                    }
 
                     if content[pos] == b'\r' {
                         pos += 1;
