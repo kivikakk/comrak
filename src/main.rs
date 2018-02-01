@@ -117,6 +117,7 @@ fn main() {
             .unwrap_or("0")
             .parse()
             .unwrap_or(0),
+        default_info_string: matches.value_of("default-info-string").map(|e| e.to_owned()),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),

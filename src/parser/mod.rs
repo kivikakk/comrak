@@ -119,6 +119,20 @@ pub struct ComrakOptions {
     /// ```
     pub width: usize,
 
+    /// The default info string for fenced code blocks.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
+    ///            "<pre><code>fn hello();\n</code></pre>\n");
+    ///
+    /// options.default_info_string = Some("rust".into());
+    /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
+    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    /// ```
+    pub default_info_string: Option<String>,
+
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
