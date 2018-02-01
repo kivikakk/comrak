@@ -55,6 +55,11 @@ fn main() {
                 .help("Use GitHub-style <pre lang> for code blocks"),
         )
         .arg(
+            clap::Arg::with_name("default-info-string")
+                .long("default-info-string")
+                .help("Default value for fenced code block's info strings if none is given"),
+        )
+        .arg(
             clap::Arg::with_name("extension")
                 .short("e")
                 .long("extension")
@@ -117,7 +122,9 @@ fn main() {
             .unwrap_or("0")
             .parse()
             .unwrap_or(0),
-        default_info_string: matches.value_of("default-info-string").map(|e| e.to_owned()),
+        default_info_string: matches
+            .value_of("default-info-string")
+            .map(|e| e.to_owned()),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),

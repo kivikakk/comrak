@@ -1077,7 +1077,10 @@ impl<'a, 'o> Parser<'a, 'o> {
                     strings::trim(&mut tmp);
                     strings::unescape(&mut tmp);
                     if tmp.is_empty() {
-                        ncb.info = self.options.default_info_string.as_ref().map_or(vec![], |s| s.as_bytes().to_vec());
+                        ncb.info = self.options
+                            .default_info_string
+                            .as_ref()
+                            .map_or(vec![], |s| s.as_bytes().to_vec());
                     } else {
                         ncb.info = tmp;
                     }
