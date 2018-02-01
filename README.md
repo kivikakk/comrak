@@ -5,11 +5,18 @@
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
+* [Installation](#installation)
 * [Usage](#usage)
 * [Extensions](#extensions)
 * [Related projects](#related-projects)
 * [Contributors](#contributors)
 * [Legal](#legal)
+
+## Installation
+
+```
+cargo install comrak
+```
 
 ## Usage
 
