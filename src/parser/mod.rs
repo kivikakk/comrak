@@ -1076,7 +1076,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                     let mut tmp = entity::unescape_html(&content[..pos]);
                     strings::trim(&mut tmp);
                     strings::unescape(&mut tmp);
-                    ncb.info = tmp;
+                    if tmp.is_empty() {
+                        ncb.info = self.options.default_info_string.as_ref().map_or(vec![], |s| s.as_bytes().to_vec());
+                    } else {
+                        ncb.info = tmp;
+                    }
 
                     if content[pos] == b'\r' {
                         pos += 1;
