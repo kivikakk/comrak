@@ -1,3 +1,8 @@
+### 0.2.8
+
+* Add `default-info-string` argument/option to specify a default language in fenced
+  code blocks. (Thanks to @steveklabnik for the suggestion.)
+
 ### 0.2.7
 
 * Use [`pest`](https://github.com/pest-parser/pest) instead of regexes for lexing.
