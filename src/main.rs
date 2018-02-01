@@ -57,7 +57,9 @@ fn main() {
         .arg(
             clap::Arg::with_name("default-info-string")
                 .long("default-info-string")
-                .help("Default value for fenced code block's info strings if none is given"),
+                .help("Default value for fenced code block's info strings if none is given")
+                .value_name("INFO")
+                .takes_value(true)
         )
         .arg(
             clap::Arg::with_name("extension")
