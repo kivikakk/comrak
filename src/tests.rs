@@ -1,6 +1,8 @@
 use {parse_document, Arena, ComrakOptions};
 use cm;
 use html;
+#[cfg(feature = "benchmarks")]
+use test::Bencher;
 
 fn compare_strs(output: &str, expected: &str, kind: &str) {
     if output != expected {
@@ -46,6 +48,23 @@ where
         expected,
         "roundtrip",
     );
+}
+
+#[cfg(feature = "benchmarks")]
+#[cfg_attr(feature = "benchmarks", bench)]
+fn bench_progit(b: &mut Bencher) {
+    use std::fs::File;
+    use std::io::Read;
+
+    let mut file = File::open("script/progit.md").unwrap();
+    let mut s = String::with_capacity(524288);
+    file.read_to_string(&mut s).unwrap();
+    b.iter(|| {
+        let arena = Arena::new();
+        let root = parse_document(&arena, &s, &ComrakOptions::default());
+        let mut output = vec![];
+        html::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
+    });
 }
 
 #[test]

@@ -66,6 +66,8 @@
         trivial_numeric_casts, unstable_features, unused_import_braces)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
+#![cfg_attr(feature = "benchmarks", allow(unstable_features))]
+#![cfg_attr(feature = "benchmarks", feature(test))]
 
 extern crate entities;
 #[macro_use]
@@ -74,6 +76,8 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 extern crate regex;
+#[cfg(feature = "benchmarks")]
+extern crate test;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;

@@ -35,3 +35,4 @@ pest_derive = "1.0"
 
 [features]
 default = ["clap"]
+benchmarks = []
