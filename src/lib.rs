@@ -77,6 +77,8 @@ extern crate pest_derive;
 extern crate regex;
 #[cfg(feature = "benchmarks")]
 extern crate test;
+#[cfg(test)]
+extern crate timebomb;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;

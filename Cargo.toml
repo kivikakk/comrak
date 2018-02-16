@@ -33,6 +33,9 @@ twoway = "0.1"
 pest = "1.0"
 pest_derive = "1.0"
 
+[dev-dependencies]
+timebomb = "0.1.2"
+
 [features]
 default = ["clap"]
 benchmarks = []

@@ -3,6 +3,7 @@ use cm;
 use html;
 #[cfg(feature = "benchmarks")]
 use test::Bencher;
+use timebomb::timeout_ms;
 
 fn compare_strs(output: &str, expected: &str, kind: &str) {
     if output != expected {
@@ -648,4 +649,19 @@ fn regression_back_to_back_ranges() {
         "**bold*****bold+italic***",
         "<p><strong>bold</strong><em><strong>bold+italic</strong></em></p>\n",
     );
+}
+
+#[test]
+fn pathological_emphases() {
+    let mut s = String::with_capacity(50000 * 4);
+    for _ in 0..50000 {
+        s.push_str("*a_ ");
+    }
+
+    let mut exp = format!("<p>{}", s);
+    // Right-most space is trimmed in output.
+    exp.pop();
+    exp += "</p>\n";
+
+    timeout_ms(move || html(&s, &exp), 4000);
 }
