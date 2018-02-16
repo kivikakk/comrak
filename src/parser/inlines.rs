@@ -177,7 +177,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 let mut opener = closer.unwrap().prev.get();
                 let mut opener_found = false;
 
-                while opener.is_some() && !Self::del_ref_eq(opener, stack_bottom)
+                while opener.is_some()
                     && !Self::del_ref_eq(
                         opener,
                         openers_bottom[closer.unwrap().length % 3]
