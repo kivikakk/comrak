@@ -665,3 +665,11 @@ fn pathological_emphases() {
 
     timeout_ms(move || html(&s, &exp), 4000);
 }
+
+#[test]
+fn no_panic_on_empty_bookended_atx_headers() {
+    html(
+        "#  #",
+        "<h1></h1>\n"
+    );
+}
