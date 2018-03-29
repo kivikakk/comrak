@@ -949,8 +949,25 @@ impl<'a, 'o> Parser<'a, 'o> {
                             }
                         };
                         let count = self.first_nonspace - self.offset;
-                        self.advance_offset(&line, count, false);
-                        self.add_line(container, &line);
+
+                        // In a rare case the above `chop` operation can leave
+                        // the line shorter than the recorded `first_nonspace`
+                        // This happens with ATX headers containing no header
+                        // text, multiple spaces and trailing hashes, e.g
+                        //
+                        // ###     ###
+                        //
+                        // In this case `first_nonspace` indexes into the second
+                        // set of hashes, while `chop_trailing_hashtags` truncates
+                        // `line` to just `###` (the first three hashes).
+                        // In this case there's no text to add, and no further
+                        // processing to be done.
+                        let have_line_text = self.first_nonspace <= line.len();
+
+                        if have_line_text {
+                            self.advance_offset(&line, count, false);
+                            self.add_line(container, &line);
+                        }
                     } else {
                         let start_column = self.first_nonspace + 1;
                         container = self.add_child(container, NodeValue::Paragraph, start_column);
