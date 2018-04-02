@@ -64,6 +64,7 @@ fn main() {
                     "tasklist",
                     "superscript",
                     "footnotes",
+                    "description-lists",
                 ])
                 .value_name("EXTENSION")
                 .help("Specify an extension name to use"),
@@ -98,6 +99,11 @@ fn main() {
                 .long("footnotes")
                 .help("Parse footnotes"),
         )
+        .arg(
+            clap::Arg::with_name("description-lists")
+                .long("description-lists")
+                .help("Parse description lists"),
+        )
         .get_matches();
 
     let mut exts = matches
@@ -125,6 +131,7 @@ fn main() {
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
         ext_footnotes: matches.is_present("footnotes"),
+        ext_description_lists: matches.is_present("description-lists"),
     };
 
     assert!(exts.is_empty());

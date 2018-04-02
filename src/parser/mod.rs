@@ -286,6 +286,22 @@ pub struct ComrakOptions {
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">[1]</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
     pub ext_footnotes: bool,
+
+    /// Enables the description lists extension.
+    ///
+    /// For usage, see `src/tests.rs`.  The extension is modelled after
+    /// [Kramdown](https://kramdown.gettalong.org/syntax.html#definition-lists).
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let options = ComrakOptions {
+    ///   ext_description_lists: true,
+    ///   ..ComrakOptions::default()
+    /// };
+    /// assert_eq!(markdown_to_html("Term\n: Definition", &options),
+    ///            "<dl>\n<dt>Term</dt>\n<dd>Definition></dd>\n</dl>");
+    /// ```
+    pub ext_description_lists: bool,
 }
 
 #[derive(Clone)]
