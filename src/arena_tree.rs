@@ -19,9 +19,9 @@ make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 #![allow(dead_code)]
 
 use std::cell::Cell;
+use std::fmt;
 
 /// A node inside a DOM-like tree.
-#[derive(Debug)]
 pub struct Node<'a, T: 'a> {
     parent: Cell<Option<&'a Node<'a, T>>>,
     previous_sibling: Cell<Option<&'a Node<'a, T>>>,
@@ -29,6 +29,28 @@ pub struct Node<'a, T: 'a> {
     first_child: Cell<Option<&'a Node<'a, T>>>,
     last_child: Cell<Option<&'a Node<'a, T>>>,
     pub data: T,
+}
+
+/// A simple Debug implementation that prints the children as a tree, without
+/// ilooping through the various interior pointer cycles.
+impl<'a, T: 'a> fmt::Debug for Node<'a, T> where T: fmt::Debug {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        // FIXME: would be better not to build a vector for the children but I
+        // can't presently figure out the borrowing to use the debug_list API
+        let mut children = vec![];
+        let mut child = self.first_child.get();
+        while let Some(inner_child) = child {
+            children.push(inner_child);
+            child = inner_child.next_sibling.get();
+        }
+
+        let mut struct_fmt = f.debug_struct("Node");
+        struct_fmt.field("data", &self.data);
+        struct_fmt.field("children", &children);
+        struct_fmt.finish()?;
+
+        Ok(())
+    }
 }
 
 fn same_ref<T>(a: &T, b: &T) -> bool {
