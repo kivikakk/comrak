@@ -48,6 +48,6 @@ table_newline = _{ "\r"? ~ "\n" }
 table_marker = _{ table_spacechar* ~ ":"? ~ "-"+ ~ ":"? ~ table_spacechar* }
 table_cell = { ( escaped_char | !("|" | "\r" | "\n") ~ any)* }
 
-table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_spacechar* | table_newline }
+table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_spacechar* ~ table_newline }
 table_cell_end = { "|" ~ table_spacechar* ~ table_newline? }
 table_row_end = { table_spacechar* ~ table_newline }
