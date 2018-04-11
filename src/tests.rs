@@ -673,3 +673,21 @@ fn no_panic_on_empty_bookended_atx_headers() {
         "<h1></h1>\n"
     );
 }
+
+#[test]
+fn table_misparse_1() {
+    html_opts(
+        "a\n-b",
+        "<p>a\n-b</p>\n",
+        |opts| opts.ext_table = true,
+    );
+}
+
+#[test]
+fn table_misparse_2() {
+    html_opts(
+        "a\n-b\n-c",
+        "<p>a\n-b\n-c</p>\n",
+        |opts| opts.ext_table = true,
+    );
+}
