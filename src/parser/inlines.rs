@@ -158,8 +158,63 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
     }
 
+    // After parsing a block (and sometimes during), this function traverses the
+    // stack of `Delimiters`, tokens ("*", "_", etc.) that may delimit regions
+    // of text for special rendering: emphasis, strong, superscript,
+    // spoilertext; looking for pairs of opening and closing delimiters,
+    // with the goal of placing the intervening nodes into new emphasis,
+    // etc AST nodes.
+    //
+    // The term stack here is a bit of a misnomer, as the `Delimiters` actually
+    // form a doubly-linked list. Items are pushed onto the stack during parsing,
+    // but during post-processing are removed from arbitrary locations.
+    //
+    // The `Delimiter` contains references AST `Text` nodes, which are also
+    // linked into the AST as siblings in the order they are parsed. This
+    // function doesn't know a-priori which ones are markdown syntax and which
+    // are just text: candidate delimiters that match have their nodes removed
+    // from the AST, as they are markdown, and their intervening siblings
+    // lowered into a new AST parent node via the `insert_emph` function;
+    // candidate delimiters that don't match are left in the tree.
+    //
+    // The basic algorithm is to start at the bottom of the stack, walk upwards
+    // looking for closing delimiters, and from each closing delimiter walk back
+    // down the stack looking for its matching opening delimiter. This traversal
+    // favors the smallest matching leftmost pairs, e.g.
+    //
+    //   _a *b c_ d* e_
+    //    ~~~~~~
+    //
+    // (The emphasis region is wavy-underlined)
+    //
+    // All of the `_` and `*` tokens are scanned as candidates, but only the
+    // region "a *b c" is lowered into an `Emph` node; the other candidate
+    // delimiters are all actually text.
+    //
+    // And in
+    //
+    //   _a _b c_
+    //       ~~~
+    //
+    // "b c" is the emphasis region, not "a _b c".
+    //
+    // Note that Delimiters are matched by comparing their `delim_char`, which
+    // is simply a value used to compare opening and closing delimiters - the
+    // actual text value of the scanned token can theoretically be different.
+    //
+    // There's some additional trickiness in the logic because "_", "__", and
+    // "___" (and etc. etc.) all share the same delim_char, but represent
+    // different emphasis. Note also that "_"- and "*"-delimited regions have
+    // complex rules for which can be opening and/or closing delimiters,
+    // determined in `scan_delims`.
     pub fn process_emphasis(&mut self, stack_bottom: Option<&'d Delimiter<'a, 'd>>) {
         let mut closer = self.last_delimiter;
+
+        // This array is an important optimization that prevents searching down
+        // the stack for openers we've previously searched for and know don't
+        // exist, preventing exponential blowup on pathological cases.
+        // TODO: It _seems_ like these should be initialized for the other
+        // delimiters too.
         let mut openers_bottom: [[Option<&'d Delimiter<'a, 'd>>; 128]; 3] = [[None; 128]; 3];
         for i in &mut openers_bottom {
             i['*' as usize] = stack_bottom;
@@ -168,15 +223,40 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             i['"' as usize] = stack_bottom;
         }
 
+        // This is traversing the stack from the top to the bottom, setting `closer` to
+        // the delimiter directly above `stack_bottom`. In the case where we are processing
+        // emphasis on an entire block, `stack_bottom` is `None`, so `closer` references
+        // the very bottom of the stack.
         while closer.is_some() && !Self::del_ref_eq(closer.unwrap().prev.get(), stack_bottom) {
             closer = closer.unwrap().prev.get();
         }
 
         while closer.is_some() {
+            // Curiously, ' and " are never actually pushed on the delimiter
+            // stack: handle_delim is short-circuited for both, so there seems
+            // to be lots of dead code related to quote delimiters.
+            debug_assert!(closer.unwrap().delim_char != b'\'');
+            debug_assert!(closer.unwrap().delim_char != b'"');
+
             if closer.unwrap().can_close {
+                // Each time through the outer `closer` loop we reset the opener
+                // to the element below the closer, and search down the stack
+                // for a matching opener.
+
                 let mut opener = closer.unwrap().prev.get();
                 let mut opener_found = false;
 
+                // Here's where we find the opener by searching down the stack,
+                // looking for matching delims with the `can_open` flag.
+                // On any invocation, on the first time through the outer
+                // `closer` loop, this inner `opener` search doesn't succeed:
+                // when processing a full block, `opener` starts out `None`;
+                // when processing emphasis otherwise, opener will be equal to
+                // `stack_bottom`.
+                //
+                // This search short-circuits for openers we've previously
+                // failed to find, avoiding repeatedly rescanning the bottom of
+                // the stack, using the openers_bottom array.
                 while opener.is_some()
                     && !Self::del_ref_eq(
                         opener,
@@ -186,6 +266,15 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
+                        // This is a bit convoluted; see points 9 and 10 here:
+                        // http://spec.commonmark.org/0.28/#can-open-emphasis.
+                        // This is to aid processing of runs like this:
+                        // “***hello*there**” or “***hello**there*”. In this
+                        // case, the middle delimiter can both open and close
+                        // emphasis; when trying to find an opening delimiter
+                        // that matches the last ** or *, we need to skip it,
+                        // and this algorithm ensures we do. (The sum of the
+                        // lengths are a multiple of 3.)
                         let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
                             && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0);
                         if !odd_match {
@@ -198,16 +287,36 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
 
                 let old_closer = closer;
 
+                // There's a case here for every possible delimiter. If we found
+                // a matching opening delimiter for our closing delimiter, they
+                // both get passed.
                 if closer.unwrap().delim_char == b'*' || closer.unwrap().delim_char == b'_'
                     || (self.options.ext_strikethrough && closer.unwrap().delim_char == b'~')
                     || (self.options.ext_superscript && closer.unwrap().delim_char == b'^')
                 {
                     if opener_found {
+                        // Finally, here's the happy case where the delimiters
+                        // match and they are inserted. We get a new closer
+                        // delimiter and go around the loop again.
+                        //
+                        // Note that for "***" and "___" delimiters of length
+                        // greater than 2, insert_emph will create a `Strong`
+                        // node (i.e. "**"), then _truncate_ the delimiters in
+                        // place, turning them into e.g. "*" delimiters, and
+                        // hand us back the same mutated closer to be matched
+                        // again.
+                        //
+                        // In general though the closer will be the next
+                        // delimiter up the stack.
                         closer = self.insert_emph(opener.unwrap(), closer.unwrap());
                     } else {
+                        // When no matching opener is found we move the closer
+                        // up the stack, do some bookkeeping with old_closer
+                        // (below), try again.
                         closer = closer.unwrap().next.get();
                     }
                 } else if closer.unwrap().delim_char == b'\'' {
+                    debug_assert!(false, "NB: dead code (brson)");
                     *closer
                         .unwrap()
                         .inl
@@ -228,6 +337,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     }
                     closer = closer.unwrap().next.get();
                 } else if closer.unwrap().delim_char == b'"' {
+                    debug_assert!(false, "NB: dead code (brson)");
                     *closer
                         .unwrap()
                         .inl
@@ -248,19 +358,34 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     }
                     closer = closer.unwrap().next.get();
                 }
+
+                // If the search for an opener was unsuccessful, then record
+                // the position the search started at in the `openers_bottom`
+                // so that the `opener` search can avoid looking for this
+                // same opener at the bottom of the stack later.
                 if !opener_found {
                     let ix = old_closer.unwrap().length % 3;
                     openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
                         old_closer.unwrap().prev.get();
+
+                    // Now that we've failed the `opener` search starting from
+                    // `old_closer`, future opener searches will be searching it
+                    // for openers - if `old_closer` can't be used as an opener
+                    // then we know it's just text - remove it from the
+                    // delimiter stack, leaving it in the AST as text
                     if !old_closer.unwrap().can_open {
                         self.remove_delimiter(old_closer.unwrap());
                     }
                 }
             } else {
+                // Closer is !can_close. Move up the stack
                 closer = closer.unwrap().next.get();
             }
         }
 
+        // At this point the entire delimiter stack from `stack_bottom` up has
+        // been scanned for matches, everything left is just text. Pop it all
+        // off.
         while self.last_delimiter.is_some() && !Self::del_ref_eq(self.last_delimiter, stack_bottom)
         {
             let last_del = self.last_delimiter.unwrap();
@@ -473,6 +598,11 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         self.last_delimiter = Some(d);
     }
 
+    // Create a new emphasis node, move all the nodes between `opener`
+    // and `closer` into it, and insert it into the AST.
+    //
+    // As a side-effect, handle long "***" and "___" nodes by truncating them in
+    // place to be re-matched by `process_emphasis`.
     pub fn insert_emph(
         &mut self,
         opener: &'d Delimiter<'a, 'd>,
@@ -512,6 +642,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             .unwrap()
             .truncate(closer_num_chars);
 
+        // Remove all the candidate delimiters from between the opener and the
+        // closer. None of them are matched pairs. They've been scanned already.
         let mut delim = closer.prev.get();
         while delim.is_some() && !Self::del_ref_eq(delim, Some(opener)) {
             self.remove_delimiter(delim.unwrap());
@@ -531,6 +663,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             },
         );
 
+        // Drop all the interior AST nodes into the emphasis node
+        // and then insert the emphasis node
         let mut tmp = opener.inl.next_sibling().unwrap();
         while !tmp.same_node(closer.inl) {
             let next = tmp.next_sibling();
@@ -542,6 +676,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             }
         }
         opener.inl.insert_after(emph);
+
+        // Drop the delimiters and return the next closer to process
 
         if opener_num_chars == 0 {
             opener.inl.detach();
