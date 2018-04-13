@@ -33,7 +33,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.2.8
+comrak 0.2.9
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -45,6 +45,7 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
+        --smart              Use smart punctuation
     -V, --version            Prints version information
 
 OPTIONS:
@@ -161,6 +162,7 @@ Thank you for PRs and issues opened!
 * [carols10cents](https://github.com/carols10cents)
 * [treiff](https://github.com/treiff)
 * [steveklabnik](https://github.com/steveklabnik)
+* [brson](https://github.com/brson)
 
 ## Legal
 

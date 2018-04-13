@@ -1,3 +1,9 @@
+### 0.2.9
+
+* Fix a corner case in the ATX header parser (#53, Brian Anderson).
+* Fix grammar for scanning table marker rows (#55, Brian Anderson).
+* Add smart punctuation (#57).
+
 ### 0.2.8
 
 * Add `default-info-string` argument/option to specify a default language in fenced
