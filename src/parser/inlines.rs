@@ -237,12 +237,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
 
         while closer.is_some() {
-            // Curiously, ' and " are never actually pushed on the delimiter
-            // stack: handle_delim is short-circuited for both, so there seems
-            // to be lots of dead code related to quote delimiters.
-            debug_assert!(closer.unwrap().delim_char != b'\'');
-            debug_assert!(closer.unwrap().delim_char != b'"');
-
             if closer.unwrap().can_close {
                 // Each time through the outer `closer` loop we reset the opener
                 // to the element below the closer, and search down the stack
@@ -321,7 +315,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                         closer = closer.unwrap().next.get();
                     }
                 } else if closer.unwrap().delim_char == b'\'' {
-                    debug_assert!(false, "NB: dead code (brson)");
                     *closer
                         .unwrap()
                         .inl
@@ -342,7 +335,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     }
                     closer = closer.unwrap().next.get();
                 } else if closer.unwrap().delim_char == b'"' {
-                    debug_assert!(false, "NB: dead code (brson)");
                     *closer
                         .unwrap()
                         .inl
