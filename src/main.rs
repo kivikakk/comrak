@@ -49,6 +49,11 @@ fn main() {
                 .help("Treat newlines as hard line breaks"),
         )
         .arg(
+            clap::Arg::with_name("smart")
+                .long("smart")
+                .help("Use smart punctuation"),
+        )
+        .arg(
             clap::Arg::with_name("github-pre-lang")
                 .long("github-pre-lang")
                 .help("Use GitHub-style <pre lang> for code blocks"),
@@ -117,6 +122,7 @@ fn main() {
 
     let options = parser::ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
+        smart: matches.is_present("smart"),
         github_pre_lang: matches.is_present("github-pre-lang"),
         width: matches
             .value_of("width")

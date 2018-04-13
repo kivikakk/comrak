@@ -81,6 +81,21 @@ pub struct ComrakOptions {
     /// ```
     pub hardbreaks: bool,
 
+    /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
+    ///            "<p>'Hello,' &quot;world&quot; ...</p>\n");
+    ///
+    /// options.smart = true;
+    /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
+    ///            "<p>‘Hello,’ “world” …</p>\n");
+
+    /// ```
+    pub smart: bool,
+
     /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
     ///
     /// ```
