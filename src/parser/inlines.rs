@@ -27,6 +27,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     special_chars: Vec<bool>,
+    smart_chars: Vec<bool>,
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
@@ -68,6 +69,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             special_chars: vec![],
+            smart_chars: vec![],
         };
         s.special_chars.extend_from_slice(&[false; 256]);
         for &c in &[
@@ -80,6 +82,12 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
         if options.ext_superscript {
             s.special_chars[b'^' as usize] = true;
+        }
+        s.smart_chars.extend_from_slice(&[false; 256]);
+        for &c in &[
+            b'"', b'\'', // b'.', b'-'
+        ] {
+            s.smart_chars[c as usize] = true;
         }
         s
     }
@@ -431,6 +439,9 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             if self.special_chars[self.input[n] as usize] {
                 return n;
             }
+            if self.options.smart && self.smart_chars[self.input[n] as usize] {
+                return n;
+            }
         }
 
         self.input.len()
@@ -518,10 +529,20 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     pub fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
-        let contents = self.input[self.pos - numdelims..self.pos].to_vec();
+        let contents = if c == b'\'' && self.options.smart {
+            b"\xE2\x80\x99".to_vec()
+        } else if c == b'"' && self.options.smart {
+            if can_close {
+                b"\xE2\x90\x9D".to_vec()
+            } else {
+                b"\xE2\x80\x9C".to_vec()
+            }
+        } else {
+            self.input[self.pos - numdelims..self.pos].to_vec()
+        };
         let inl = make_inline(self.arena, NodeValue::Text(contents));
 
-        if (can_open || can_close) && c != b'\'' && c != b'"' {
+        if (can_open || can_close) && (!(c == b'\'' && c == b'"') || self.options.smart) {
             self.push_delimiter(c, can_open, can_close, inl);
         }
 
@@ -576,7 +597,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 right_flanking && (!left_flanking || after_char.is_punctuation()),
             )
         } else if c == b'\'' || c == b'"' {
-            (numdelims, left_flanking && !right_flanking, right_flanking)
+            (numdelims, left_flanking && !right_flanking && before_char != ']' && before_char != ')', right_flanking)
         } else {
             (numdelims, left_flanking, right_flanking)
         }

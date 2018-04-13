@@ -81,6 +81,9 @@ pub struct ComrakOptions {
     /// ```
     pub hardbreaks: bool,
 
+    /// TODO
+    pub smart: bool,
+
     /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
     ///
     /// ```

@@ -691,3 +691,12 @@ fn table_misparse_2() {
         |opts| opts.ext_table = true,
     );
 }
+
+#[test]
+fn smart_chars() {
+    html_opts(
+        "Hello \"there\".",
+        "<p>Hello “there”.</p>\n",
+        |opts| opts.smart = true,
+    );
+}
