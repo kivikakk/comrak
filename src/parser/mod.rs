@@ -651,6 +651,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 NodeValue::List(..) => true,
                 _ => false,
             })
+                && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,

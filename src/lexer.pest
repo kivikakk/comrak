@@ -14,7 +14,7 @@ space_char = _{ " " | "\t" | "\x0b" | "\x0c" | "\r" | "\n" }
 tag_name = _{ ('A'..'Z' | 'a'..'z') ~ ('A'..'Z' | 'a'..'z' | '0'..'9' | "-")* }
 close_tag = _{ "/" ~ tag_name ~ space_char* ~ ">" }
 attribute_name = _{ ('a'..'z' | 'A'..'Z' | "_" | ":") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | ":" | "." | "_" | "-")* }
-attribute_value = _{ (!("\"" | "'" | "=" | "<" | ">" | "`" | "\x00" | " ") ~ any)+ | ("'" ~ (!("'" | "\x00") ~ any)* ~ "'") | ("\"" ~ (!("\"" | "\x00") ~ any)* ~ "\"") }
+attribute_value = _{ (!(" " | "\t" | "\r" | "\n" | "\x0b" | "\x0c" | "\"" | "'" | "=" | "<" | ">" | "`" | "\x00") ~ any)+ | ("'" ~ (!("'" | "\x00") ~ any)* ~ "'") | ("\"" ~ (!("\"" | "\x00") ~ any)* ~ "\"") }
 attribute_value_spec = _{ space_char* ~ "=" ~ space_char* ~ attribute_value }
 attribute = _{ space_char+ ~ attribute_name ~ attribute_value_spec? }
 open_tag = _{ tag_name ~ attribute* ~ space_char* ~ "/"? ~ ">" }

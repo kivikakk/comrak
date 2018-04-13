@@ -1050,7 +1050,7 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
                 break;
             } else if b == b'\\' {
                 i += 2;
-            } else if isspace(b) || b == b'<' {
+            } else if b == b'\n' || b == b'<' {
                 return None;
             } else {
                 i += 1;
