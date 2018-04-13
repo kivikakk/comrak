@@ -226,6 +226,12 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             i['_' as usize] = stack_bottom;
             i['\'' as usize] = stack_bottom;
             i['"' as usize] = stack_bottom;
+            if self.options.ext_strikethrough {
+                i['~' as usize] = stack_bottom;
+            }
+            if self.options.ext_superscript {
+                i['^' as usize] = stack_bottom;
+            }
         }
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
