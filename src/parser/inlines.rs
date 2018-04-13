@@ -85,7 +85,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
         s.smart_chars.extend_from_slice(&[false; 256]);
         for &c in &[
-            b'"', b'\'', // b'.', b'-'
+            b'"', b'\'', b'.', b'-',
         ] {
             s.smart_chars[c as usize] = true;
         }
@@ -111,9 +111,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             '&' => new_inl = Some(self.handle_entity()),
             '<' => new_inl = Some(self.handle_pointy_brace()),
             '*' | '_' | '\'' | '"' => new_inl = Some(self.handle_delim(c as u8)),
-            // TODO: smart characters. Eh.
-            //'-' => new_inl => Some(self.handle_hyphen()),
-            //'.' => new_inl => Some(self.handle_period()),
+            '-' => new_inl = Some(self.handle_hyphen()),
+            '.' => new_inl = Some(self.handle_period()),
             '[' => {
                 self.pos += 1;
                 let inl = make_inline(self.arena, NodeValue::Text(b"[".to_vec()));
@@ -542,11 +541,61 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         };
         let inl = make_inline(self.arena, NodeValue::Text(contents));
 
-        if (can_open || can_close) && (!(c == b'\'' && c == b'"') || self.options.smart) {
+        if (can_open || can_close) && (!(c == b'\'' || c == b'"') || self.options.smart) {
             self.push_delimiter(c, can_open, can_close, inl);
         }
 
         inl
+    }
+
+    pub fn handle_hyphen(&mut self) -> &'a AstNode<'a> {
+        let start = self.pos;
+        self.pos += 1;
+
+        if !self.options.smart || self.peek_char().map_or(false, |&c| c != b'-') {
+            return make_inline(self.arena, NodeValue::Text(vec![b'-']))
+        }
+
+        while self.options.smart && self.peek_char().map_or(false, |&c| c == b'-') {
+            self.pos += 1;
+        }
+
+        let numhyphens = (self.pos - start) as i32;
+
+        let (ens, ems) = if numhyphens % 3 == 0 {
+            (0, numhyphens / 3)
+        } else if numhyphens % 2 == 0 {
+            (numhyphens / 2, 0)
+        } else if numhyphens % 3 == 2 {
+            (1, (numhyphens - 2) / 3)
+        } else {
+            (2, (numhyphens - 4) / 3)
+        };
+
+        let mut buf = vec![];
+        for _ in 0..ems {
+            buf.extend_from_slice(b"\xE2\x80\x94");
+        }
+        for _ in 0..ens {
+            buf.extend_from_slice(b"\xE2\x80\x93");
+        }
+
+        make_inline(self.arena, NodeValue::Text(buf))
+    }
+
+    pub fn handle_period(&mut self) -> &'a AstNode<'a> {
+        self.pos += 1;
+        if self.options.smart && self.peek_char().map_or(false, |&c| c == b'.') {
+            self.pos += 1;
+            if self.peek_char().map_or(false, |&c| c == b'.') {
+                self.pos += 1;
+                make_inline(self.arena, NodeValue::Text(b"\xE2\x80\xA6".to_vec()))
+            } else {
+                make_inline(self.arena, NodeValue::Text(b"..".to_vec()))
+            }
+        } else {
+            make_inline(self.arena, NodeValue::Text(b".".to_vec()))
+        }
     }
 
     pub fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {

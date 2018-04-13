@@ -695,8 +695,14 @@ fn table_misparse_2() {
 #[test]
 fn smart_chars() {
     html_opts(
-        "Hello \"there\".",
-        "<p>Hello “there”.</p>\n",
+        "Why 'hello' \"there\". It's good.",
+        "<p>Why ‘hello’ “there”. It’s good.</p>\n",
+        |opts| opts.smart = true,
+    );
+
+    html_opts(
+        "Hm. Hm.. hm... yes- indeed-- quite---!",
+        "<p>Hm. Hm.. hm… yes- indeed– quite—!</p>\n",
         |opts| opts.smart = true,
     );
 }
