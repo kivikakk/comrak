@@ -7,6 +7,7 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
 * [Installation](#installation)
 * [Usage](#usage)
+* [Security](#security)
 * [Extensions](#extensions)
 * [Related projects](#related-projects)
 * [Contributors](#contributors)
@@ -14,13 +15,7 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
 ## Installation
 
-To use at the command line:
-
-```
-cargo install comrak
-```
-
-Otherwise, specify it as a requirement in `Cargo.toml`:
+Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -115,6 +110,10 @@ assert_eq!(
      <li>Certainly your input.</li>\n\
      </ol>\n");
 ```
+
+## Security
+
+As with [`cmark-gfm`](https://github.com/github/cmark#security), Comrak will pass through inline HTML, dangerous links, anything you can imagine — it only performs Markdown to HTML conversion per the CommonMark/GFM spec.  We recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
 ## Extensions
 
