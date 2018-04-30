@@ -706,3 +706,94 @@ fn smart_chars() {
         |opts| opts.smart = true,
     );
 }
+
+#[test]
+fn nested_tables_1() {
+    html_opts(
+        concat!(
+            "- p\n",
+            "\n",
+            "    |a|b|\n",
+            "    |-|-|\n",
+            "    |c|d|\n",
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<p>p</p>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>c</td>\n",
+            "<td>d</td>\n",
+            "</tr></tbody></table>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+        |opts| opts.ext_table = true,
+    );
+}
+
+#[test]
+fn nested_tables_2() {
+    html_opts(
+        concat!(
+            "- |a|b|\n",
+            "  |-|-|\n",
+            "  |c|d|\n",
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>c</td>\n",
+            "<td>d</td>\n",
+            "</tr></tbody></table>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+        |opts| opts.ext_table = true,
+    );
+}
+
+#[test]
+fn nested_tables_3() {
+    html_opts(
+        concat!(
+            "> |a|b|\n",
+            "> |-|-|\n",
+            "> |c|d|\n",
+        ),
+        concat!(
+            "<blockquote>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>c</td>\n",
+            "<td>d</td>\n",
+            "</tr></tbody></table>\n",
+            "</blockquote>\n",
+        ),
+        |opts| opts.ext_table = true,
+    );
+}

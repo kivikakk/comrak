@@ -88,7 +88,7 @@ fn try_opening_row<'a, 'o>(
     if parser.blank {
         return None;
     }
-    let this_row = row(line).unwrap();
+    let this_row = row(&line[parser.first_nonspace..]).unwrap();
     let new_row = parser.add_child(
         container,
         NodeValue::TableRow(false),
