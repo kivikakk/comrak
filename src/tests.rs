@@ -797,3 +797,21 @@ fn nested_tables_3() {
         |opts| opts.ext_table = true,
     );
 }
+
+#[test]
+fn no_stack_smash_html() {
+    let s: String = ::std::iter::repeat('>').take(150_000).collect();
+    let arena = Arena::new();
+    let root = parse_document(&arena, &s, &ComrakOptions::default());
+    let mut output = vec![];
+    html::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
+}
+
+#[test]
+fn no_stack_smash_cm() {
+    let s: String = ::std::iter::repeat('>').take(150_000).collect();
+    let arena = Arena::new();
+    let root = parse_document(&arena, &s, &ComrakOptions::default());
+    let mut output = vec![];
+    cm::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
+}
