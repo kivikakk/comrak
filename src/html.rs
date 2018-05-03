@@ -254,31 +254,48 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
-    fn format_children<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
-        for n in node.children() {
-            try!(self.format(n, plain));
-        }
-        Ok(())
-    }
-
     fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
-        if plain {
-            match node.data.borrow().value {
-                NodeValue::Text(ref literal)
-                | NodeValue::Code(ref literal)
-                | NodeValue::HtmlInline(ref literal) => {
-                    try!(self.escape(literal));
+        // Traverse the AST iteratively using a work stack, with pre- and
+        // post-child-traversal phases. During pre-order traversal render the
+        // opening tags, then push the node back onto the stack for the
+        // post-order traversal phase, then push the children in reverse order
+        // onto the stack and begin rendering first child.
+
+        enum Phase { Pre, Post }
+        let mut stack = vec![(node, plain, Phase::Pre)];
+
+        while let Some((node, plain, phase)) = stack.pop() {
+            match phase {
+                Phase::Pre => {
+                    let new_plain;
+                    if plain {
+                        match node.data.borrow().value {
+                            NodeValue::Text(ref literal)
+                            | NodeValue::Code(ref literal)
+                            | NodeValue::HtmlInline(ref literal) => {
+                                try!(self.escape(literal));
+                            }
+                            NodeValue::LineBreak | NodeValue::SoftBreak => {
+                                try!(self.output.write_all(b" "));
+                            }
+                            _ => (),
+                        }
+                        new_plain = plain;
+                    }
+                    else {
+                        stack.push((node, false, Phase::Post));
+                        new_plain = try!(self.format_node(node, true));
+                    }
+
+                    for ch in node.reverse_children() {
+                        stack.push((ch, new_plain, Phase::Pre));
+                    }
                 }
-                NodeValue::LineBreak | NodeValue::SoftBreak => {
-                    try!(self.output.write_all(b" "));
+                Phase::Post => {
+                    debug_assert!(!plain);
+                    try!(self.format_node(node, false));
                 }
-                _ => (),
             }
-            try!(self.format_children(node, true));
-        } else {
-            let new_plain = try!(self.format_node(node, true));
-            try!(self.format_children(node, new_plain));
-            try!(self.format_node(node, false));
         }
 
         Ok(())
