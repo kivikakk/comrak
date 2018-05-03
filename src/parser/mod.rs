@@ -1173,12 +1173,10 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn process_inlines_node(&mut self, node: &'a AstNode<'a>) {
-        if node.data.borrow().value.contains_inlines() {
-            self.parse_inlines(node);
-        }
-
-        for n in node.children() {
-            self.process_inlines_node(n);
+        for node in node.descendants() {
+            if node.data.borrow().value.contains_inlines() {
+                self.parse_inlines(node);
+            }
         }
     }
 
@@ -1275,45 +1273,54 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
-        let mut nch = node.first_child();
+        let mut stack = vec![node];
+        let mut children = vec![];
 
-        while let Some(n) = nch {
-            let mut this_bracket = false;
-            loop {
-                match n.data.borrow_mut().value {
-                    NodeValue::Text(ref mut root) => {
-                        let ns = match n.next_sibling() {
-                            Some(ns) => ns,
-                            _ => {
-                                self.postprocess_text_node(n, root);
-                                break;
-                            }
-                        };
+        while let Some(node) = stack.pop() {
+            let mut nch = node.first_child();
 
-                        match ns.data.borrow().value {
-                            NodeValue::Text(ref adj) => {
-                                root.extend_from_slice(adj);
-                                ns.detach();
-                            }
-                            _ => {
-                                self.postprocess_text_node(n, root);
-                                break;
+            while let Some(n) = nch {
+                let mut this_bracket = false;
+                loop {
+                    match n.data.borrow_mut().value {
+                        NodeValue::Text(ref mut root) => {
+                            let ns = match n.next_sibling() {
+                                Some(ns) => ns,
+                                _ => {
+                                    self.postprocess_text_node(n, root);
+                                    break;
+                                }
+                            };
+
+                            match ns.data.borrow().value {
+                                NodeValue::Text(ref adj) => {
+                                    root.extend_from_slice(adj);
+                                    ns.detach();
+                                }
+                                _ => {
+                                    self.postprocess_text_node(n, root);
+                                    break;
+                                }
                             }
                         }
+                        NodeValue::Link(..) | NodeValue::Image(..) => {
+                            this_bracket = true;
+                            break;
+                        }
+                        _ => break,
                     }
-                    NodeValue::Link(..) | NodeValue::Image(..) => {
-                        this_bracket = true;
-                        break;
-                    }
-                    _ => break,
                 }
+
+                if !this_bracket {
+                    children.push(n);
+                }
+
+                nch = n.next_sibling();
             }
 
-            if !this_bracket {
-                self.postprocess_text_nodes(n);
-            }
-
-            nch = n.next_sibling();
+            // Push children onto work stack in reverse order so they are
+            // traversed in order
+            stack.extend(children.drain(..).rev());
         }
     }
 

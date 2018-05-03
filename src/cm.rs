@@ -204,16 +204,25 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format_children(&mut self, node: &'a AstNode<'a>) {
-        for n in node.children() {
-            self.format(n);
-        }
-    }
-
     fn format(&mut self, node: &'a AstNode<'a>) {
-        if self.format_node(node, true) {
-            self.format_children(node);
-            self.format_node(node, false);
+
+        enum Phase { Pre, Post }
+        let mut stack = vec![(node, Phase::Pre)];
+
+        while let Some((node, phase)) = stack.pop() {
+            match phase {
+                Phase::Pre => {
+                    if self.format_node(node, true) {
+                        stack.push((node, Phase::Post));
+                        for ch in node.reverse_children() {
+                            stack.push((ch, Phase::Pre));
+                        }
+                    }
+                }
+                Phase::Post => {
+                    self.format_node(node, false);
+                }
+            }
         }
     }
 
