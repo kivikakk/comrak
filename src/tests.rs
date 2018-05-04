@@ -815,3 +815,9 @@ fn no_stack_smash_cm() {
     let mut output = vec![];
     cm::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
 }
+
+#[test]
+fn cm_autolink_regression() {
+    // Testing that the cm renderer handles this case without crashing
+    html("<a+c:dd>", "<p><a href=\"a+c:dd\">a+c:dd</a></p>\n");
+}
