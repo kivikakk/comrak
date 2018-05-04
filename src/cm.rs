@@ -471,7 +471,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Link(ref nl) => if is_autolink(node, nl) {
                 if entering {
                     write!(self, "<").unwrap();
-                    if &nl.url[..7] == b"mailto:" {
+                    if nl.url.len() >= 7 && &nl.url[..7] == b"mailto:" {
                         self.write_all(&nl.url[7..]).unwrap();
                     } else {
                         self.write_all(&nl.url).unwrap();
@@ -632,7 +632,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
     };
 
     let mut real_url: &[u8] = &nl.url;
-    if &real_url[..7] == b"mailto:" {
+    if real_url.len() >=7 && &real_url[..7] == b"mailto:" {
         real_url = &real_url[7..];
     }
 
