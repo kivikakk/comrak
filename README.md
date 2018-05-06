@@ -68,9 +68,7 @@ formatter:
 
 ``` rust
 extern crate comrak;
-extern crate typed_arena;
-use typed_arena::Arena;
-use comrak::{parse_document, format_html, ComrakOptions};
+use comrak::{parse_document, format_html, Arena, ComrakOptions};
 use comrak::nodes::{AstNode, NodeValue};
 
 // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
