@@ -17,9 +17,7 @@
 //!
 //! ```
 //! extern crate comrak;
-//! extern crate typed_arena;
-//! use typed_arena::Arena;
-//! use comrak::{parse_document, format_html, ComrakOptions};
+//! use comrak::{Arena, parse_document, format_html, ComrakOptions};
 //! use comrak::nodes::{AstNode, NodeValue};
 //!
 //! # fn main() {
@@ -98,7 +96,7 @@ mod tests;
 pub use cm::format_document as format_commonmark;
 pub use html::format_document as format_html;
 pub use parser::{parse_document, ComrakOptions};
-use typed_arena::Arena;
+pub use typed_arena::Arena;
 
 /// Render Markdown to HTML.
 ///
