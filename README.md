@@ -114,6 +114,8 @@ assert_eq!(
 
 As with [`cmark-gfm`](https://github.com/github/cmark#security), Comrak will pass through inline HTML, dangerous links, anything you can imagine — it only performs Markdown to HTML conversion per the CommonMark/GFM spec.  We recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
+You can also disable this potentially unsafe feature by using the `safe` option (or `--safe` at the command-line).
+
 ## Extensions
 
 Comrak supports the five extensions to CommonMark defined in the
