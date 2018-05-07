@@ -66,6 +66,11 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            clap::Arg::with_name("safe")
+                .long("safe")
+                .help("Suppress raw HTML and dangerous URLs"),
+        )
+        .arg(
             clap::Arg::with_name("extension")
                 .short("e")
                 .long("extension")
@@ -132,6 +137,7 @@ fn main() {
         default_info_string: matches
             .value_of("default-info-string")
             .map(|e| e.to_owned()),
+        safe: matches.is_present("safe"),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),

@@ -178,3 +178,8 @@ pub fn table_cell_end(line: &[u8]) -> Option<usize> {
 pub fn table_row_end(line: &[u8]) -> Option<usize> {
     search(Rule::table_row_end, line)
 }
+
+#[inline(always)]
+pub fn dangerous_url(line: &[u8]) -> Option<usize> {
+    search(Rule::dangerous_url, line)
+}
