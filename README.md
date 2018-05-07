@@ -40,6 +40,7 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
+        --safe               Suppress raw HTML and dangerous URLs
         --smart              Use smart punctuation
     -V, --version            Prints version information
 
@@ -112,6 +113,8 @@ assert_eq!(
 ## Security
 
 As with [`cmark-gfm`](https://github.com/github/cmark#security), Comrak will pass through inline HTML, dangerous links, anything you can imagine — it only performs Markdown to HTML conversion per the CommonMark/GFM spec.  We recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
+
+You can also disable this potentially unsafe feature by using the `safe` option (or `--safe` at the command-line).
 
 ## Extensions
 

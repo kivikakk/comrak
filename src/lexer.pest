@@ -51,3 +51,5 @@ table_cell = { ( escaped_char | !("|" | "\r" | "\n") ~ any)* }
 table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_spacechar* ~ table_newline }
 table_cell_end = { "|" ~ table_spacechar* ~ table_newline? }
 table_row_end = { table_spacechar* ~ table_newline }
+
+dangerous_url = { "data:" ~ !("png" | "gif" | "jpeg" | "webp") | "javascript:" | "vbscript:" | "file:" }

@@ -148,6 +148,31 @@ pub struct ComrakOptions {
     /// ```
     pub default_info_string: Option<String>,
 
+    /// Disable rendering of raw HTML and potentially dangerous links.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// let input = "<script>\nalert('xyz');\n</script>\n\n\
+    ///              Possibly <marquee>annoying</marquee>.\n\n\
+    ///              [Dangerous](javascript:alert(document.cookie)).\n\n\
+    ///              [Safe](http://commonmark.org).\n";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<script>\nalert(\'xyz\');\n</script>\n\
+    ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
+    ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
+    ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
+    ///
+    /// options.safe = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<!-- raw HTML omitted -->\n\
+    ///             <p>Possibly <!-- raw HTML omitted -->annoying<!-- raw HTML omitted -->.</p>\n\
+    ///             <p><a href=\"\">Dangerous</a>.</p>\n\
+    ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
+    /// ```
+    pub safe: bool,
+
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.

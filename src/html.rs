@@ -2,6 +2,7 @@ use ctype::isspace;
 use nodes::{AstNode, ListType, NodeValue, TableAlignment};
 use parser::ComrakOptions;
 use regex::Regex;
+use scanners;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::HashSet;
@@ -147,6 +148,10 @@ fn tagfilter_block(input: &[u8], o: &mut Write) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn dangerous_url(input: &[u8]) -> bool {
+    scanners::dangerous_url(input).is_some()
 }
 
 impl<'o> HtmlFormatter<'o> {
@@ -416,7 +421,9 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::HtmlBlock(ref nhb) => if entering {
                 try!(self.cr());
-                if self.options.ext_tagfilter {
+                if self.options.safe {
+                    try!(self.output.write_all(b"<!-- raw HTML omitted -->"));
+                } else if self.options.ext_tagfilter {
                     try!(tagfilter_block(&nhb.literal, &mut self.output));
                 } else {
                     try!(self.output.write_all(&nhb.literal));
@@ -472,7 +479,9 @@ impl<'o> HtmlFormatter<'o> {
                 try!(self.output.write_all(b"</code>"));
             },
             NodeValue::HtmlInline(ref literal) => if entering {
-                if self.options.ext_tagfilter && tagfilter(literal) {
+                if self.options.safe {
+                    try!(self.output.write_all(b"<!-- raw HTML omitted -->"));
+                } else if self.options.ext_tagfilter && tagfilter(literal) {
                     try!(self.output.write_all(b"&lt;"));
                     try!(self.output.write_all(&literal[1..]));
                 } else {
@@ -501,7 +510,9 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Link(ref nl) => if entering {
                 try!(self.output.write_all(b"<a href=\""));
-                try!(self.escape_href(&nl.url));
+                if !self.options.safe || !dangerous_url(&nl.url) {
+                    try!(self.escape_href(&nl.url));
+                }
                 if !nl.title.is_empty() {
                     try!(self.output.write_all(b"\" title=\""));
                     try!(self.escape(&nl.title));
@@ -512,7 +523,9 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Image(ref nl) => if entering {
                 try!(self.output.write_all(b"<img src=\""));
-                try!(self.escape_href(&nl.url));
+                if !self.options.safe || !dangerous_url(&nl.url) {
+                    try!(self.escape_href(&nl.url));
+                }
                 try!(self.output.write_all(b"\" alt=\""));
                 return Ok(true);
             } else {
