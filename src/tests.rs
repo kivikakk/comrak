@@ -821,3 +821,30 @@ fn cm_autolink_regression() {
     // Testing that the cm renderer handles this case without crashing
     html("<a+c:dd>", "<p><a href=\"a+c:dd\">a+c:dd</a></p>\n");
 }
+
+#[test]
+fn safe() {
+    html_opts(
+        concat!(
+            "[data:png](data:png/x)\n\n",
+            "[data:gif](data:gif/x)\n\n",
+            "[data:jpeg](data:jpeg/x)\n\n",
+            "[data:webp](data:webp/x)\n\n",
+            "[data:malicious](data:malicious/x)\n\n",
+            "[javascript:malicious](javascript:malicious)\n\n",
+            "[vbscript:malicious](vbscript:malicious)\n\n",
+            "[file:malicious](file:malicious)\n\n",
+        ),
+        concat!(
+            "<p><a href=\"data:png/x\">data:png</a></p>\n",
+            "<p><a href=\"data:gif/x\">data:gif</a></p>\n",
+            "<p><a href=\"data:jpeg/x\">data:jpeg</a></p>\n",
+            "<p><a href=\"data:webp/x\">data:webp</a></p>\n",
+            "<p><a href=\"\">data:malicious</a></p>\n",
+            "<p><a href=\"\">javascript:malicious</a></p>\n",
+            "<p><a href=\"\">vbscript:malicious</a></p>\n",
+            "<p><a href=\"\">file:malicious</a></p>\n",
+        ),
+        |opts| opts.safe = true,
+    )
+}
