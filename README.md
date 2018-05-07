@@ -40,6 +40,7 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
+        --safe               Suppress raw HTML and dangerous URLs
         --smart              Use smart punctuation
     -V, --version            Prints version information
 
