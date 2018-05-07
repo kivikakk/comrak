@@ -160,6 +160,7 @@ Thank you for PRs and issues opened!
 * [treiff](https://github.com/treiff)
 * [steveklabnik](https://github.com/steveklabnik)
 * [brson](https://github.com/brson)
+* [Keats](https://github.com/Keats)
 
 ## Legal
 
