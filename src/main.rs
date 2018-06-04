@@ -1,36 +1,15 @@
 //! The `comrak` binary.
 
-#![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-        trivial_numeric_casts, unstable_features, unused_import_braces)]
-#![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
+extern crate comrak;
 
 #[macro_use]
 extern crate clap;
-extern crate entities;
-#[macro_use]
-extern crate lazy_static;
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
-extern crate regex;
-extern crate twoway;
-extern crate typed_arena;
-extern crate unicode_categories;
 
-mod arena_tree;
-mod html;
-mod cm;
-mod parser;
-mod nodes;
-mod ctype;
-mod scanners;
-mod strings;
-mod entity;
+use comrak::{ComrakOptions, Arena};
 
 use std::collections::BTreeSet;
 use std::io::Read;
 use std::process;
-use typed_arena::Arena;
 
 fn main() {
     let matches = clap::App::new(crate_name!())
@@ -125,7 +104,7 @@ fn main() {
         .values_of("extension")
         .map_or(BTreeSet::new(), |vals| vals.collect());
 
-    let options = parser::ComrakOptions {
+    let options = ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
         smart: matches.is_present("smart"),
         github_pre_lang: matches.is_present("github-pre-lang"),
@@ -163,11 +142,11 @@ fn main() {
     };
 
     let arena = Arena::new();
-    let root = parser::parse_document(&arena, &String::from_utf8(s).unwrap(), &options);
+    let root = comrak::parse_document(&arena, &String::from_utf8(s).unwrap(), &options);
 
     let formatter = match matches.value_of("format") {
-        Some("html") => html::format_document,
-        Some("commonmark") => cm::format_document,
+        Some("html") => comrak::format_html,
+        Some("commonmark") => comrak::format_commonmark,
         _ => panic!("unknown format"),
     };
 
