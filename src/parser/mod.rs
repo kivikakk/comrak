@@ -92,7 +92,6 @@ pub struct ComrakOptions {
     /// options.smart = true;
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>‘Hello,’ “world” …</p>\n");
-
     /// ```
     pub smart: bool,
 
