@@ -218,8 +218,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        // TODO: It _seems_ like these should be initialized for the other
-        // delimiters too.
         let mut openers_bottom: [[Option<&'d Delimiter<'a, 'd>>; 128]; 3] = [[None; 128]; 3];
         for i in &mut openers_bottom {
             i['*' as usize] = stack_bottom;
