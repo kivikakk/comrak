@@ -58,18 +58,16 @@ fn try_opening_header<'a, 'o>(
         });
     }
 
-    let start_column = container.data.borrow().start_column;
     let child = make_block(
         NodeValue::Table(alignments),
         parser.line_number,
-        start_column,
     );
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
-    let header = parser.add_child(table, NodeValue::TableRow(true), start_column);
+    let header = parser.add_child(table, NodeValue::TableRow(true));
     for header_str in header_row {
-        let header_cell = parser.add_child(header, NodeValue::TableCell, start_column);
+        let header_cell = parser.add_child(header, NodeValue::TableCell);
         header_cell.data.borrow_mut().content = header_str;
     }
 
@@ -92,7 +90,6 @@ fn try_opening_row<'a, 'o>(
     let new_row = parser.add_child(
         container,
         NodeValue::TableRow(false),
-        container.data.borrow().start_column,
     );
 
     let mut i = 0;
@@ -100,7 +97,6 @@ fn try_opening_row<'a, 'o>(
         let cell = parser.add_child(
             new_row,
             NodeValue::TableCell,
-            container.data.borrow().start_column,
         );
         cell.data.borrow_mut().content = this_row[i].clone();
         i += 1;
@@ -110,7 +106,6 @@ fn try_opening_row<'a, 'o>(
         parser.add_child(
             new_row,
             NodeValue::TableCell,
-            container.data.borrow().start_column,
         );
         i += 1;
     }

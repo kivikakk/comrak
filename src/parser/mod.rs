@@ -33,9 +33,6 @@ pub fn parse_document<'a>(
         value: NodeValue::Document,
         content: vec![],
         start_line: 0,
-        start_column: 0,
-        end_line: 0,
-        end_column: 0,
         open: true,
         last_line_blank: false,
     })));
@@ -559,14 +556,13 @@ impl<'a, 'o> Parser<'a, 'o> {
             let indented = self.indent >= CODE_INDENT;
 
             if !indented && line[self.first_nonspace] == b'>' {
-                let blockquote_startpos = self.first_nonspace;
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
                 *container =
-                    self.add_child(*container, NodeValue::BlockQuote, blockquote_startpos + 1);
+                    self.add_child(*container, NodeValue::BlockQuote);
             } else if !indented
                 && unwrap_into(
                     scanners::atx_heading_start(&line[self.first_nonspace..]),
@@ -578,7 +574,6 @@ impl<'a, 'o> Parser<'a, 'o> {
                 *container = self.add_child(
                     *container,
                     NodeValue::Heading(NodeHeading::default()),
-                    heading_startpos + 1,
                 );
 
                 let mut hashpos = line[self.first_nonspace..]
@@ -611,7 +606,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     literal: Vec::new(),
                 };
                 *container =
-                    self.add_child(*container, NodeValue::CodeBlock(ncb), first_nonspace + 1);
+                    self.add_child(*container, NodeValue::CodeBlock(ncb));
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented
                 && (unwrap_into(
@@ -624,13 +619,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                         &mut matched,
                     ),
                 }) {
-                let offset = self.first_nonspace + 1;
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
                     literal: Vec::new(),
                 };
 
-                *container = self.add_child(*container, NodeValue::HtmlBlock(nhb), offset);
+                *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
             } else if !indented && match container.data.borrow().value {
                 NodeValue::Paragraph => unwrap_into(
                     scanners::setext_heading_line(&line[self.first_nonspace..]),
@@ -654,8 +648,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     &mut matched,
                 ),
             } {
-                let offset = self.first_nonspace + 1;
-                *container = self.add_child(*container, NodeValue::ThematicBreak, offset);
+                *container = self.add_child(*container, NodeValue::ThematicBreak);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
             } else if !indented && self.options.ext_footnotes
@@ -667,11 +660,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
-                let offset = self.first_nonspace + matched + 1;
                 *container = self.add_child(
                     *container,
                     NodeValue::FootnoteDefinition(c.to_vec()),
-                    offset,
                 );
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
@@ -715,16 +706,14 @@ impl<'a, 'o> Parser<'a, 'o> {
 
                 nl.marker_offset = self.indent;
 
-                let offset = self.first_nonspace + 1;
                 if match container.data.borrow().value {
                     NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
                     _ => true,
                 } {
-                    *container = self.add_child(*container, NodeValue::List(nl), offset);
+                    *container = self.add_child(*container, NodeValue::List(nl));
                 }
 
-                let offset = self.first_nonspace + 1;
-                *container = self.add_child(*container, NodeValue::Item(nl), offset);
+                *container = self.add_child(*container, NodeValue::Item(nl));
             } else if indented && !maybe_lazy && !self.blank {
                 self.advance_offset(line, CODE_INDENT, true);
                 let ncb = NodeCodeBlock {
@@ -735,8 +724,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     info: vec![],
                     literal: Vec::new(),
                 };
-                let offset = self.offset + 1;
-                *container = self.add_child(*container, NodeValue::CodeBlock(ncb), offset);
+                *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
             } else {
                 let new_container = if !indented && self.options.ext_table {
                     table::try_opening_block(self, *container, line)
@@ -899,13 +887,12 @@ impl<'a, 'o> Parser<'a, 'o> {
         &mut self,
         mut parent: &'a AstNode<'a>,
         value: NodeValue,
-        start_column: usize,
     ) -> &'a AstNode<'a> {
         while !nodes::can_contain_type(parent, &value) {
             parent = self.finalize(parent).unwrap();
         }
 
-        let child = make_block(value, self.line_number, start_column);
+        let child = make_block(value, self.line_number);
         let node = self.arena.alloc(Node::new(RefCell::new(child)));
         parent.append(node);
         node
@@ -1011,8 +998,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                             self.add_line(container, &line);
                         }
                     } else {
-                        let start_column = self.first_nonspace + 1;
-                        container = self.add_child(container, NodeValue::Paragraph, start_column);
+                        container = self.add_child(container, NodeValue::Paragraph);
                         let count = self.first_nonspace - self.offset;
                         self.advance_offset(line, count, false);
                         self.add_line(container, line);
@@ -1073,28 +1059,6 @@ impl<'a, 'o> Parser<'a, 'o> {
     ) -> Option<&'a AstNode<'a>> {
         assert!(ast.open);
         ast.open = false;
-
-        if !self.linebuf.is_empty() {
-            ast.end_line = self.line_number;
-            ast.end_column = self.last_line_length;
-        } else if match ast.value {
-            NodeValue::Document => true,
-            NodeValue::CodeBlock(ref ncb) => ncb.fenced,
-            NodeValue::Heading(ref nh) => nh.setext,
-            _ => false,
-        } {
-            ast.end_line = self.line_number;
-            ast.end_column = self.linebuf.len();
-            if ast.end_column > 0 && self.linebuf[ast.end_column - 1] == b'\n' {
-                ast.end_column -= 1;
-            }
-            if ast.end_column > 0 && self.linebuf[ast.end_column - 1] == b'\r' {
-                ast.end_column -= 1;
-            }
-        } else {
-            ast.end_line = self.line_number - 1;
-            ast.end_column = self.last_line_length;
-        }
 
         let content = &mut ast.content;
         let mut pos = 0;
