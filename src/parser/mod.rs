@@ -1111,7 +1111,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                         seeked += pos;
                     }
                 }
-                *content = content[seeked..].to_vec();
+                if seeked != 0 {
+                    *content = content[seeked..].to_vec();
+                }
                 if strings::is_blank(content) {
                     node.detach();
                 }
