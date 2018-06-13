@@ -279,7 +279,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                         // and this algorithm ensures we do. (The sum of the
                         // lengths are a multiple of 3.)
                         let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
-                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0);
+                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0)
+                            && !(opener.unwrap().length % 3 == 0 && closer.unwrap().length % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
