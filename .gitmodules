@@ -1,6 +1,6 @@
 [submodule "vendor/CommonMark"]
 	path = vendor/CommonMark
-	url = https://github.com/jgm/CommonMark.git
+	url = https://github.com/commonmark/CommonMark.git
 [submodule "vendor/cmark-gfm"]
 	path = vendor/cmark-gfm
 	url = https://github.com/github/cmark.git
