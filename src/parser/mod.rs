@@ -1399,7 +1399,9 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
-        let delimiter_arena = Arena::new();
+        // In this case reference inlines rarely have delimiters
+        // so we often just need the minimal case
+        let delimiter_arena = Arena::with_capacity(0);
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
