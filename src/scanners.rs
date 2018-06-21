@@ -1,3 +1,14 @@
+/*!
+  In many of these cases the AST will be scanned and then it
+  is found there is no match. In many of these cases the scan
+  turns up False. It can be see that in the very simplest cases,
+  usually by doing a char check at the very begginning of the
+  line, we can eliminate these checks without the same allocations
+  that are done otherwise and cause the program considerable
+  slowdown.
+
+*/
+
 use pest::Parser;
 use std::str;
 use twoway::find_bytes;
@@ -24,6 +35,9 @@ fn is_match(rule: Rule, line: &[u8]) -> bool {
 
 #[inline(always)]
 pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
+    if line[0] != b'#'{
+        return None
+    }
     search(Rule::atx_heading_start, line)
 }
 
@@ -55,11 +69,17 @@ pub fn html_block_end_5(line: &[u8]) -> bool {
 
 #[inline(always)]
 pub fn open_code_fence(line: &[u8]) -> Option<usize> {
+    if line[0] != b'`' && line[0] != b'~' {
+        return None
+    }
     search(Rule::open_code_fence, line)
 }
 
 #[inline(always)]
 pub fn close_code_fence(line: &[u8]) -> Option<usize> {
+    if line[0] != b'`' && line[0] != b'~' {
+        return None
+    }
     search(Rule::close_code_fence, line)
 }
 
@@ -108,7 +128,8 @@ pub enum SetextChar {
 
 #[inline(always)]
 pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
-    if is_match(Rule::setext_heading_line, line) {
+    if (line[0] == b'=' || line[0] == b'-')
+       && is_match(Rule::setext_heading_line, line) {
         if line[0] == b'=' {
             Some(SetextChar::Equals)
         } else {
@@ -121,6 +142,9 @@ pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
 
 #[inline(always)]
 pub fn thematic_break(line: &[u8]) -> Option<usize> {
+    if line[0] != b'*' && line[0] != b'-' && line[0] != b'_' {
+        return None
+    }
     search(Rule::thematic_break, line)
 }
 
