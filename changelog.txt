@@ -1,3 +1,11 @@
+### 0.2.13
+
+* Speed enhancements. (#75, Shaquille Johnson)
+
+### 0.2.12
+
+* Add safety options per the reference C implementation. (#67)
+
 ### 0.2.11
 
 * Expose Arena type so users don't need to bring it in themselves (#66, Vincent

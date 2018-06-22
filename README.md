@@ -28,7 +28,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.2.12
+comrak 0.2.13
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
