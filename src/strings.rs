@@ -12,7 +12,7 @@ pub fn unescape(v: &mut Vec<u8>) {
         if v[r] == b'\\' && r + 1 < v.len() && ispunct(v[r + 1]) {
             if let Some(prev) = prev {
                 let window = &mut v[(prev + 1 - found)..r];
-                window.rotate_left(found);
+                shift_buf_left(window, found);
             }
             prev = Some(r);
             found += 1;
@@ -22,7 +22,7 @@ pub fn unescape(v: &mut Vec<u8>) {
 
     if let Some(prev) = prev {
         let window = &mut v[(prev + 1 - found)..r];
-        window.rotate_left(found);
+        shift_buf_left(window, found);
     }
 
     let new_size = v.len() - found;
@@ -148,7 +148,7 @@ pub fn rtrim(line: &mut Vec<u8>) {
 
 pub fn ltrim(line: &mut Vec<u8>) {
     let spaces = line.iter().take_while(|&&b| isspace(b)).count();
-    line.rotate_left(spaces);
+    shift_buf_left(line, spaces);
     let new_len = line.len() - spaces;
     line.truncate(new_len);
 }
@@ -175,6 +175,15 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
         len -= 1;
     }
     i
+}
+
+fn shift_buf_left(buf: &mut [u8], n: usize) {
+    assert!(n <= buf.len());
+    let keep = buf.len() - n;
+    unsafe {
+        let p = buf.as_mut_ptr();
+        p.copy_from(p.offset(n as isize), keep);
+    }
 }
 
 pub fn clean_url(url: &[u8]) -> Vec<u8> {
