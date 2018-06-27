@@ -141,19 +141,16 @@ pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {
 }
 
 pub fn rtrim(line: &mut Vec<u8>) {
-    let mut len = line.len();
-    while len > 0 && isspace(line[len - 1]) {
-        line.pop();
-        len -= 1;
-    }
+    let spaces = line.iter().rev().take_while(|&&b| isspace(b)).count();
+    let new_len = line.len() - spaces;
+    line.truncate(new_len);
 }
 
 pub fn ltrim(line: &mut Vec<u8>) {
-    let mut len = line.len();
-    while len > 0 && isspace(line[0]) {
-        line.remove(0);
-        len -= 1;
-    }
+    let spaces = line.iter().take_while(|&&b| isspace(b)).count();
+    line.rotate_left(spaces);
+    let new_len = line.len() - spaces;
+    line.truncate(new_len);
 }
 
 pub fn trim(line: &mut Vec<u8>) {
