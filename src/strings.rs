@@ -1,6 +1,7 @@
 use ctype::{ispunct, isspace};
 use entity;
 use parser::AutolinkType;
+use std::ptr;
 use std::str;
 
 pub fn unescape(v: &mut Vec<u8>) {
@@ -181,8 +182,9 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
     assert!(n <= buf.len());
     let keep = buf.len() - n;
     unsafe {
-        let p = buf.as_mut_ptr();
-        p.copy_from(p.offset(n as isize), keep);
+        let dst = buf.as_mut_ptr();
+        let src = dst.offset(n as isize);
+        ptr::copy(src, dst, keep);
     }
 }
 
