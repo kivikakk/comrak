@@ -5,18 +5,28 @@ use std::str;
 
 pub fn unescape(v: &mut Vec<u8>) {
     let mut r = 0;
-    let mut sz = v.len();
+    let mut prev = None;
+    let mut found = 0;
 
-    while r < sz {
-        if v[r] == b'\\' && r + 1 < sz && ispunct(v[r + 1]) {
-            v.remove(r);
-            sz -= 1;
-        }
-        if r >= sz {
-            break;
+    while r < v.len() {
+        if v[r] == b'\\' && r + 1 < v.len() && ispunct(v[r + 1]) {
+            if let Some(prev) = prev {
+                let window = &mut v[(prev + 1 - found)..r];
+                window.rotate_left(found);
+            }
+            prev = Some(r);
+            found += 1;
         }
         r += 1;
     }
+
+    if let Some(prev) = prev {
+        let window = &mut v[(prev + 1 - found)..r];
+        window.rotate_left(found);
+    }
+
+    let new_size = v.len() - found;
+    v.truncate(new_size);
 }
 
 pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
