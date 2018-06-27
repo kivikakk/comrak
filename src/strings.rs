@@ -1,22 +1,33 @@
 use ctype::{ispunct, isspace};
 use entity;
 use parser::AutolinkType;
+use std::ptr;
 use std::str;
 
 pub fn unescape(v: &mut Vec<u8>) {
     let mut r = 0;
-    let mut sz = v.len();
+    let mut prev = None;
+    let mut found = 0;
 
-    while r < sz {
-        if v[r] == b'\\' && r + 1 < sz && ispunct(v[r + 1]) {
-            v.remove(r);
-            sz -= 1;
-        }
-        if r >= sz {
-            break;
+    while r < v.len() {
+        if v[r] == b'\\' && r + 1 < v.len() && ispunct(v[r + 1]) {
+            if let Some(prev) = prev {
+                let window = &mut v[(prev + 1 - found)..r];
+                shift_buf_left(window, found);
+            }
+            prev = Some(r);
+            found += 1;
         }
         r += 1;
     }
+
+    if let Some(prev) = prev {
+        let window = &mut v[(prev + 1 - found)..r];
+        shift_buf_left(window, found);
+    }
+
+    let new_size = v.len() - found;
+    v.truncate(new_size);
 }
 
 pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
@@ -131,19 +142,16 @@ pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {
 }
 
 pub fn rtrim(line: &mut Vec<u8>) {
-    let mut len = line.len();
-    while len > 0 && isspace(line[len - 1]) {
-        line.pop();
-        len -= 1;
-    }
+    let spaces = line.iter().rev().take_while(|&&b| isspace(b)).count();
+    let new_len = line.len() - spaces;
+    line.truncate(new_len);
 }
 
 pub fn ltrim(line: &mut Vec<u8>) {
-    let mut len = line.len();
-    while len > 0 && isspace(line[0]) {
-        line.remove(0);
-        len -= 1;
-    }
+    let spaces = line.iter().take_while(|&&b| isspace(b)).count();
+    shift_buf_left(line, spaces);
+    let new_len = line.len() - spaces;
+    line.truncate(new_len);
 }
 
 pub fn trim(line: &mut Vec<u8>) {
@@ -168,6 +176,16 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
         len -= 1;
     }
     i
+}
+
+fn shift_buf_left(buf: &mut [u8], n: usize) {
+    assert!(n <= buf.len());
+    let keep = buf.len() - n;
+    unsafe {
+        let dst = buf.as_mut_ptr();
+        let src = dst.offset(n as isize);
+        ptr::copy(src, dst, keep);
+    }
 }
 
 pub fn clean_url(url: &[u8]) -> Vec<u8> {
