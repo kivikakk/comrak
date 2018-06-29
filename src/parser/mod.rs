@@ -40,7 +40,7 @@ pub fn parse_document<'a>(
         last_line_blank: false,
     })));
     let mut parser = Parser::new(arena, root, options);
-    parser.feed(buffer.as_bytes(), true);
+    parser.feed(buffer, true);
     parser.finish()
 }
 
@@ -330,7 +330,8 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    pub fn feed(&mut self, s: &[u8], eof: bool) {
+    fn feed(&mut self, s: &str, eof: bool) {
+        let s = s.as_bytes();
         let mut i = 0;
         let buffer = s;
         let sz = buffer.len();
