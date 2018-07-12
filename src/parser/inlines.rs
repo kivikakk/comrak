@@ -1037,7 +1037,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
 pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
     let len = input.len();
     let mut i = 0;
-    let mut nb_p = 0;
 
     if i < len && input[i] == b'<' {
         i += 1;
@@ -1049,32 +1048,46 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
             } else if b == b'\\' {
                 i += 2;
             } else if b == b'\n' || b == b'<' {
-                return None;
+                return manual_scan_link_url_2(input);
             } else {
                 i += 1;
             }
         }
     } else {
-        while i < len {
-            if input[i] == b'\\' {
-                i += 2;
-            } else if input[i] == b'(' {
-                nb_p += 1;
-                i += 1;
-                if nb_p > 32 {
-                    return None;
-                }
-            } else if input[i] == b')' {
-                if nb_p == 0 {
-                    break;
-                }
-                nb_p -= 1;
-                i += 1;
-            } else if isspace(input[i]) {
-                break;
-            } else {
-                i += 1;
+        return manual_scan_link_url_2(input);
+    }
+
+    if i >= len {
+        None
+    } else {
+        Some(i)
+    }
+}
+
+pub fn manual_scan_link_url_2(input: &[u8]) -> Option<usize> {
+    let len = input.len();
+    let mut i = 0;
+    let mut nb_p = 0;
+
+    while i < len {
+        if input[i] == b'\\' && i + 1 < len && ispunct(input[i + 1]) {
+            i += 2;
+        } else if input[i] == b'(' {
+            nb_p += 1;
+            i += 1;
+            if nb_p > 32 {
+                return None;
             }
+        } else if input[i] == b')' {
+            if nb_p == 0 {
+                break;
+            }
+            nb_p -= 1;
+            i += 1;
+        } else if isspace(input[i]) {
+            break;
+        } else {
+            i += 1;
         }
     }
 
