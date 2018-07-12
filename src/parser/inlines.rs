@@ -607,7 +607,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
                 .chars()
                 .next() {
-                    Some(x) => if self.skip_chars[x as usize] {
+                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
                         '\n'
                     } else {
                         x
@@ -637,7 +637,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             match unsafe { str::from_utf8_unchecked(&self.input[after_char_pos..]) }
                 .chars()
                 .next() {
-                    Some(x) => if self.skip_chars[x as usize] {
+                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
                         '\n'
                     } else {
                         x
