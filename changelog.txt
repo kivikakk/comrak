@@ -1,3 +1,8 @@
+### 0.2.14
+
+* Speed enhancements. (#76, Brian Anderson)
+* Target latest spec; bring comrak closer into line with cmark. (#81, Brian Anderson and Ashe Connor)
+
 ### 0.2.13
 
 * Speed enhancements. (#75, Shaquille Johnson)
