@@ -27,6 +27,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     special_chars: [bool; 256],
+    skip_chars: [bool; 256],
     smart_chars: [bool; 256],
 }
 
@@ -69,6 +70,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             special_chars: [false; 256],
+            skip_chars: [false; 256],
             smart_chars: [false; 256],
         };
         for &c in &[
@@ -78,6 +80,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
         if options.ext_strikethrough {
             s.special_chars[b'~' as usize] = true;
+            s.skip_chars[b'~' as usize] = true;
         }
         if options.ext_superscript {
             s.special_chars[b'^' as usize] = true;
@@ -598,13 +601,19 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             '\n'
         } else {
             let mut before_char_pos = self.pos - 1;
-            while before_char_pos > 0 && self.input[before_char_pos] >> 6 == 2 {
+            while before_char_pos > 0 && (self.input[before_char_pos] >> 6 == 2 || self.skip_chars[self.input[before_char_pos] as usize]) {
                 before_char_pos -= 1;
             }
-            unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
+            match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
                 .chars()
-                .next()
-                .unwrap()
+                .next() {
+                    Some(x) => if self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    },
+                    None => '\n',
+                }
         };
 
         let mut numdelims = 0;
@@ -621,10 +630,20 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let after_char = if self.eof() {
             '\n'
         } else {
-            unsafe { str::from_utf8_unchecked(&self.input[self.pos..]) }
+            let mut after_char_pos = self.pos;
+            while after_char_pos < self.input.len() - 1 && self.skip_chars[self.input[after_char_pos] as usize] {
+                after_char_pos += 1;
+            }
+            match unsafe { str::from_utf8_unchecked(&self.input[after_char_pos..]) }
                 .chars()
-                .next()
-                .unwrap()
+                .next() {
+                    Some(x) => if self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    },
+                    None => '\n',
+                }
         };
 
         let left_flanking = numdelims > 0 && !after_char.is_whitespace()
