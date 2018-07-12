@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::str;
 
 pub const ENTITY_MIN_LENGTH: usize = 2;
-pub const ENTITY_MAX_LENGTH: usize = 31;
+pub const ENTITY_MAX_LENGTH: usize = 32;
 
 fn isxdigit(ch: &u8) -> bool {
     (*ch >= b'0' && *ch <= b'9') || (*ch >= b'a' && *ch <= b'f') || (*ch >= b'A' && *ch <= b'F')
