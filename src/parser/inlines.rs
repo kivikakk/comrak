@@ -2,7 +2,7 @@ use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
 use nodes::{Ast, AstNode, NodeLink, NodeValue};
-use parser::{unwrap_into, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
+use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -860,11 +860,13 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let after_link_text_pos = self.pos;
 
         let mut sps = 0;
-        let mut n = 0;
+        let mut url: &[u8] = &[];
+        let mut n: usize = 0;
         if self.peek_char() == Some(&(b'(')) && {
             sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            unwrap_into(
+            unwrap_into_2(
                 manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
+                &mut url,
                 &mut n,
             )
         } {
@@ -880,7 +882,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
 
             if endall < self.input.len() && self.input[endall] == b')' {
                 self.pos = endall + 1;
-                let url = strings::clean_url(&self.input[starturl..endurl]);
+                let url = strings::clean_url(url);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
                 self.close_bracket_match(is_image, url, title);
                 return None;
@@ -1035,7 +1037,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     }
 }
 
-pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
+pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
     let len = input.len();
     let mut i = 0;
 
@@ -1061,11 +1063,11 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
     if i >= len {
         None
     } else {
-        Some(i)
+        Some((&input[1..i-1], i))
     }
 }
 
-pub fn manual_scan_link_url_2(input: &[u8]) -> Option<usize> {
+pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
     let len = input.len();
     let mut i = 0;
     let mut nb_p = 0;
@@ -1095,7 +1097,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<usize> {
     if i >= len {
         None
     } else {
-        Some(i)
+        Some((&input[..i], i))
     }
 }
 
