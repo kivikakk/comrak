@@ -1426,11 +1426,10 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         subj.pos += 1;
         subj.spnl();
-        let matchlen = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
-            Some(matchlen) => matchlen,
+        let (url, matchlen) = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
+            Some((url, matchlen)) => (url, matchlen),
             None => return None,
         };
-        let url = subj.input[subj.pos..subj.pos + matchlen].to_vec();
         subj.pos += matchlen;
 
         let beforetitle = subj.pos;

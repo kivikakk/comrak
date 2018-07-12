@@ -196,11 +196,7 @@ pub fn clean_url(url: &[u8]) -> Vec<u8> {
         return vec![];
     }
 
-    let mut b = if url[0] == b'<' && url[url_len - 1] == b'>' {
-        entity::unescape_html(&url[1..url_len - 1])
-    } else {
-        entity::unescape_html(url)
-    };
+    let mut b = entity::unescape_html(url);
 
     unescape(&mut b);
     b

@@ -2,7 +2,7 @@ use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
 use nodes::{Ast, AstNode, NodeLink, NodeValue};
-use parser::{unwrap_into, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
+use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -27,6 +27,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     special_chars: [bool; 256],
+    skip_chars: [bool; 256],
     smart_chars: [bool; 256],
 }
 
@@ -69,6 +70,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             special_chars: [false; 256],
+            skip_chars: [false; 256],
             smart_chars: [false; 256],
         };
         for &c in &[
@@ -78,6 +80,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
         if options.ext_strikethrough {
             s.special_chars[b'~' as usize] = true;
+            s.skip_chars[b'~' as usize] = true;
         }
         if options.ext_superscript {
             s.special_chars[b'^' as usize] = true;
@@ -279,7 +282,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                         // and this algorithm ensures we do. (The sum of the
                         // lengths are a multiple of 3.)
                         let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
-                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0);
+                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0)
+                            && !(opener.unwrap().length % 3 == 0 && closer.unwrap().length % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -597,13 +601,19 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             '\n'
         } else {
             let mut before_char_pos = self.pos - 1;
-            while before_char_pos > 0 && self.input[before_char_pos] >> 6 == 2 {
+            while before_char_pos > 0 && (self.input[before_char_pos] >> 6 == 2 || self.skip_chars[self.input[before_char_pos] as usize]) {
                 before_char_pos -= 1;
             }
-            unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
+            match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
                 .chars()
-                .next()
-                .unwrap()
+                .next() {
+                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    },
+                    None => '\n',
+                }
         };
 
         let mut numdelims = 0;
@@ -620,10 +630,20 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let after_char = if self.eof() {
             '\n'
         } else {
-            unsafe { str::from_utf8_unchecked(&self.input[self.pos..]) }
+            let mut after_char_pos = self.pos;
+            while after_char_pos < self.input.len() - 1 && self.skip_chars[self.input[after_char_pos] as usize] {
+                after_char_pos += 1;
+            }
+            match unsafe { str::from_utf8_unchecked(&self.input[after_char_pos..]) }
                 .chars()
-                .next()
-                .unwrap()
+                .next() {
+                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    },
+                    None => '\n',
+                }
         };
 
         let left_flanking = numdelims > 0 && !after_char.is_whitespace()
@@ -859,11 +879,13 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let after_link_text_pos = self.pos;
 
         let mut sps = 0;
-        let mut n = 0;
+        let mut url: &[u8] = &[];
+        let mut n: usize = 0;
         if self.peek_char() == Some(&(b'(')) && {
             sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            unwrap_into(
+            unwrap_into_2(
                 manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
+                &mut url,
                 &mut n,
             )
         } {
@@ -879,7 +901,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
 
             if endall < self.input.len() && self.input[endall] == b')' {
                 self.pos = endall + 1;
-                let url = strings::clean_url(&self.input[starturl..endurl]);
+                let url = strings::clean_url(url);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
                 self.close_bracket_match(is_image, url, title);
                 return None;
@@ -1034,7 +1056,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     }
 }
 
-pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
+pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
     let len = input.len();
     let mut i = 0;
 
@@ -1060,11 +1082,11 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<usize> {
     if i >= len {
         None
     } else {
-        Some(i)
+        Some((&input[1..i-1], i))
     }
 }
 
-pub fn manual_scan_link_url_2(input: &[u8]) -> Option<usize> {
+pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
     let len = input.len();
     let mut i = 0;
     let mut nb_p = 0;
@@ -1094,7 +1116,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<usize> {
     if i >= len {
         None
     } else {
-        Some(i)
+        Some((&input[..i], i))
     }
 }
 
