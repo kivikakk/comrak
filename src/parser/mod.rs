@@ -326,18 +326,17 @@ impl<'a, 'o> Parser<'a, 'o> {
     fn feed(&mut self, s: &str) {
         let s = s.as_bytes();
         let mut i = 0;
-        let buffer = s;
-        let sz = buffer.len();
+        let sz = s.len();
         let mut linebuf = vec![];
 
         while i < sz {
             let mut process = true;
             let mut eol = i;
             while eol < sz {
-                if strings::is_line_end_char(buffer[eol]) {
+                if strings::is_line_end_char(s[eol]) {
                     break;
                 }
-                if buffer[eol] == 0 {
+                if s[eol] == 0 {
                     process = false;
                     break;
                 }
@@ -349,12 +348,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                     linebuf.extend_from_slice(&s[i..eol]);
                     let linebuf = mem::replace(&mut linebuf, Vec::with_capacity(80));
                     self.process_line(&linebuf);
-                } else if sz > eol && buffer[eol] == b'\n' {
+                } else if sz > eol && s[eol] == b'\n' {
                     self.process_line(&s[i..eol + 1]);
                 } else {
                     self.process_line(&s[i..eol]);
                 }
-            } else if eol < sz && buffer[eol] == b'\0' {
+            } else if eol < sz && s[eol] == b'\0' {
                 linebuf.extend_from_slice(&s[i..eol]);
                 linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
                 i = eol + 1;
@@ -364,10 +363,10 @@ impl<'a, 'o> Parser<'a, 'o> {
             }
 
             i = eol;
-            if i < sz && buffer[i] == b'\r' {
+            if i < sz && s[i] == b'\r' {
                 i += 1;
             }
-            if i < sz && buffer[i] == b'\n' {
+            if i < sz && s[i] == b'\n' {
                 i += 1;
             }
         }
