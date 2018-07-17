@@ -55,7 +55,6 @@ pub struct Parser<'a, 'o> {
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: usize,
-    linebuf: Vec<u8>,
     last_buffer_ended_with_cr: bool,
     options: &'o ComrakOptions,
 }
@@ -321,7 +320,6 @@ impl<'a, 'o> Parser<'a, 'o> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
-            linebuf: Vec::with_capacity(80),
             last_buffer_ended_with_cr: false,
             options: options,
         }
@@ -332,6 +330,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         let mut i = 0;
         let buffer = s;
         let sz = buffer.len();
+        let mut linebuf = vec![];
 
         if self.last_buffer_ended_with_cr && buffer[i] == b'\n' {
             i += 1;
@@ -357,9 +356,9 @@ impl<'a, 'o> Parser<'a, 'o> {
             }
 
             if process {
-                if !self.linebuf.is_empty() {
-                    self.linebuf.extend_from_slice(&s[i..eol]);
-                    let linebuf = mem::replace(&mut self.linebuf, Vec::with_capacity(80));
+                if !linebuf.is_empty() {
+                    linebuf.extend_from_slice(&s[i..eol]);
+                    let linebuf = mem::replace(&mut linebuf, Vec::with_capacity(80));
                     self.process_line(&linebuf);
                 } else if sz > eol && buffer[eol] == b'\n' {
                     self.process_line(&s[i..eol + 1]);
@@ -367,13 +366,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                     self.process_line(&s[i..eol]);
                 }
             } else if eol < sz && buffer[eol] == b'\0' {
-                self.linebuf.extend_from_slice(&s[i..eol]);
-                self.linebuf
-                    .extend_from_slice(&"\u{fffd}".to_string().into_bytes());
+                linebuf.extend_from_slice(&s[i..eol]);
+                linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
                 i = eol + 1;
                 continue;
             } else {
-                self.linebuf.extend_from_slice(&s[i..eol]);
+                linebuf.extend_from_slice(&s[i..eol]);
             }
 
             i = eol;
@@ -1026,11 +1024,6 @@ impl<'a, 'o> Parser<'a, 'o> {
     }
 
     pub fn finish(&mut self) -> &'a AstNode<'a> {
-        if !self.linebuf.is_empty() {
-            let linebuf = mem::replace(&mut self.linebuf, vec![]);
-            self.process_line(&linebuf);
-        }
-
         self.finalize_document();
         self.postprocess_text_nodes(self.root);
         self.root
