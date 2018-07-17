@@ -331,21 +331,17 @@ impl<'a, 'o> Parser<'a, 'o> {
         let mut linebuf = vec![];
 
         while i < sz {
-            let mut process = false;
+            let mut process = true;
             let mut eol = i;
             while eol < sz {
                 if strings::is_line_end_char(buffer[eol]) {
-                    process = true;
                     break;
                 }
                 if buffer[eol] == 0 {
+                    process = false;
                     break;
                 }
                 eol += 1;
-            }
-
-            if eol >= sz {
-                process = true;
             }
 
             if process {
