@@ -373,7 +373,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                 self.linebuf.extend_from_slice(&s[i..eol]);
                 self.linebuf
                     .extend_from_slice(&"\u{fffd}".to_string().into_bytes());
-                eol += 1;
+                i = eol + 1;
+                continue;
             } else {
                 self.linebuf.extend_from_slice(&s[i..eol]);
             }
