@@ -346,8 +346,8 @@ impl<'a, 'o> Parser<'a, 'o> {
             if process {
                 if !linebuf.is_empty() {
                     linebuf.extend_from_slice(&s[i..eol]);
-                    let linebuf = mem::replace(&mut linebuf, Vec::with_capacity(80));
                     self.process_line(&linebuf);
+                    linebuf.truncate(0);
                 } else if sz > eol && s[eol] == b'\n' {
                     self.process_line(&s[i..eol + 1]);
                 } else {
