@@ -353,20 +353,19 @@ impl<'a, 'o> Parser<'a, 'o> {
                 } else {
                     self.process_line(&s[i..eol]);
                 }
+
+                i = eol;
+                if i < sz && s[i] == b'\r' {
+                    i += 1;
+                }
+                if i < sz && s[i] == b'\n' {
+                    i += 1;
+                }
             } else {
                 debug_assert!(eol < sz && s[eol] == b'\0');
                 linebuf.extend_from_slice(&s[i..eol]);
                 linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
                 i = eol + 1;
-                continue;
-            }
-
-            i = eol;
-            if i < sz && s[i] == b'\r' {
-                i += 1;
-            }
-            if i < sz && s[i] == b'\n' {
-                i += 1;
             }
         }
     }
