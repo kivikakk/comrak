@@ -300,7 +300,7 @@ struct FootnoteDefinition<'a> {
 }
 
 impl<'a, 'o> Parser<'a, 'o> {
-    pub fn new(
+    fn new(
         arena: &'a Arena<AstNode<'a>>,
         root: &'a AstNode<'a>,
         options: &'o ComrakOptions,
@@ -1006,7 +1006,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    pub fn finish(&mut self) -> &'a AstNode<'a> {
+    fn finish(&mut self) -> &'a AstNode<'a> {
         self.finalize_document();
         self.postprocess_text_nodes(self.root);
         self.root
