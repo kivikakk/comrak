@@ -353,13 +353,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                 } else {
                     self.process_line(&s[i..eol]);
                 }
-            } else if eol < sz && s[eol] == b'\0' {
+            } else {
+                debug_assert!(eol < sz && s[eol] == b'\0');
                 linebuf.extend_from_slice(&s[i..eol]);
                 linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
                 i = eol + 1;
                 continue;
-            } else {
-                linebuf.extend_from_slice(&s[i..eol]);
             }
 
             i = eol;
