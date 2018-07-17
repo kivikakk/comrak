@@ -37,7 +37,7 @@ pub fn parse_document<'a>(
         last_line_blank: false,
     })));
     let mut parser = Parser::new(arena, root, options);
-    parser.feed(buffer, true);
+    parser.feed(buffer);
     parser.finish()
 }
 
@@ -327,7 +327,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn feed(&mut self, s: &str, eof: bool) {
+    fn feed(&mut self, s: &str) {
         let s = s.as_bytes();
         let mut i = 0;
         let buffer = s;
@@ -352,7 +352,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 eol += 1;
             }
 
-            if eol >= sz && eof {
+            if eol >= sz {
                 process = true;
             }
 
