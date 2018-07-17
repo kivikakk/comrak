@@ -55,7 +55,6 @@ pub struct Parser<'a, 'o> {
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: usize,
-    last_buffer_ended_with_cr: bool,
     options: &'o ComrakOptions,
 }
 
@@ -320,7 +319,6 @@ impl<'a, 'o> Parser<'a, 'o> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
-            last_buffer_ended_with_cr: false,
             options: options,
         }
     }
@@ -331,11 +329,6 @@ impl<'a, 'o> Parser<'a, 'o> {
         let buffer = s;
         let sz = buffer.len();
         let mut linebuf = vec![];
-
-        if self.last_buffer_ended_with_cr && buffer[i] == b'\n' {
-            i += 1;
-        }
-        self.last_buffer_ended_with_cr = false;
 
         while i < sz {
             let mut process = false;
@@ -377,9 +370,6 @@ impl<'a, 'o> Parser<'a, 'o> {
             i = eol;
             if i < sz && buffer[i] == b'\r' {
                 i += 1;
-                if i == sz {
-                    self.last_buffer_ended_with_cr = true;
-                }
             }
             if i < sz && buffer[i] == b'\n' {
                 i += 1;
