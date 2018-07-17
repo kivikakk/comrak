@@ -870,3 +870,31 @@ fn angle_bracketed_link_fallback_2() {
     // Test should probably be in the spec.
     html("[a](<b\n)", "<p><a href=\"%3Cb\">a</a></p>\n");
 }
+
+// Again, at least some of these cases are not covered by the reference
+// implementation's test suite - 3 and 4 were broken in comrak.
+
+#[test]
+fn nul_replacement_1() {
+    html("a\0b", "<p>a\u{fffd}b</p>\n");
+}
+
+#[test]
+fn nul_replacement_2() {
+    html("a\0b\0c", "<p>a\u{fffd}b\u{fffd}c</p>\n");
+}
+
+#[test]
+fn nul_replacement_3() {
+    html("a\0\nb", "<p>a\u{fffd}\nb</p>\n");
+}
+
+#[test]
+fn nul_replacement_4() {
+    html("a\0\r\nb", "<p>a\u{fffd}\nb</p>\n");
+}
+
+#[test]
+fn nul_replacement_5() {
+    html("a\r\n\0b", "<p>a\n\u{fffd}b</p>\n");
+}
