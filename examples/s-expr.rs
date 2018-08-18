@@ -1,34 +1,66 @@
+// s-expr
+//
+// Parse CommonMark source files and print their AST as S-expressions.
+//
+// # Usage
+//
+//  $ cargo run --example s-expr file1.md file2.md ...
+//  $ cat file.md | cargo run --example s-expr
+
 extern crate comrak;
 
+/// Spaces to indent nested nodes
+const INDENT: usize = 4;
+
+/// If true, the close parenthesis is printed in its own line.
+const CLOSE_NEWLINE: bool = false;
+
+use comrak::{parse_document, Arena, ComrakOptions};
+use comrak::nodes::{AstNode, NodeValue};
 use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufWriter, Read, Write};
 
-use comrak::nodes::{AstNode, NodeValue};
-use comrak::{parse_document, Arena, ComrakOptions};
-
-fn iter_nodes<'a, W: Write>(node: &'a AstNode<'a>, writer: &mut W, indent: usize) -> io::Result<()> {
+fn iter_nodes<'a, W: Write>(
+    node: &'a AstNode<'a>,
+    writer: &mut W,
+    indent: usize,
+) -> io::Result<()> {
 
     use NodeValue::*;
+
+    macro_rules! try_node_inline {
+        ($node:expr, $name:ident) => ({
+            if let $name(t) = $node {
+                return write!(writer, concat!(stringify!($name), "({:?})"), String::from_utf8_lossy(&t));
+            }
+        })
+    }
+
     match &node.data.borrow().value {
         Text(t) => write!(writer, "{:?}", String::from_utf8_lossy(&t))?,
-        n => {
+        value => {
+            try_node_inline!(value, Code);
+            try_node_inline!(value, FootnoteDefinition);
+            try_node_inline!(value, FootnoteReference);
+            try_node_inline!(value, HtmlInline);
+
             let has_blocks = node.children().any(|c| c.data.borrow().value.block());
 
-            write!(writer, "({:?}", n)?;
+            write!(writer, "({:?}", value)?;
             for child in node.children() {
                 if has_blocks {
-                    write!(writer, "\n{1:0$}", indent + 2, " ")?;
+                    write!(writer, "\n{1:0$}", indent + INDENT, " ")?;
                 } else {
                     write!(writer, " ")?;
                 }
-                iter_nodes(child, writer, indent + 2)?;
+                iter_nodes(child, writer, indent + INDENT)?;
             }
 
             if indent == 0 {
                 write!(writer, "\n)\n")?;
-            } else if has_blocks {
+            } else if CLOSE_NEWLINE && has_blocks {
                 write!(writer, "\n{1:0$})", indent, " ")?;
             } else {
                 write!(writer, ")")?;
@@ -72,10 +104,10 @@ fn main() -> Result<(), Box<Error>> {
     }
 
     for filename in args {
-        body.clear();
         println!("{:?}", filename);
-        let mut file = File::open(&filename)?;
-        file.read_to_string(&mut body)?;
+
+        body.clear();
+        File::open(&filename)?.read_to_string(&mut body)?;
         dump(&body)?;
     }
 
