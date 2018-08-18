@@ -898,3 +898,72 @@ fn nul_replacement_4() {
 fn nul_replacement_5() {
     html("a\r\n\0b", "<p>a\n\u{fffd}b</p>\n");
 }
+
+#[test]
+fn description_lists() {
+    html_opts(
+        concat!(
+            "Term 1\n",
+            "\n",
+            ": Definition 1\n",
+            "\n",
+            "Term 2 with *inline markup*\n",
+            "\n",
+            ": Definition 2\n"
+        ),
+        concat!(
+            "<dl>",
+            "<dt>\n",
+            "<p>Term 1</p>\n",
+            "</dt>\n",
+            "<dd>\n",
+            "<p>Definition 1</p>\n",
+            "</dd>\n",
+            "<dt>\n",
+            "<p>Term 2 with <em>inline markup</em></p>\n",
+            "</dt>\n",
+            "<dd>\n",
+            "<p>Definition 2</p>\n",
+            "</dd>\n",
+            "</dl>\n",
+        ),
+        |opts| opts.ext_description_lists = true,
+    );
+
+    html_opts(
+        concat!(
+            "* Nested\n",
+            "\n",
+            "    Term 1\n\n",
+            "    :   Definition 1\n\n",
+            "    Term 2 with *inline markup*\n\n",
+            "    :   Definition 2\n\n",
+            "    :   `Definition 2b`\n\n",
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<p>Nested</p>\n",
+            "<dl>",
+            "<dt>\n",
+            "<p>Term 1</p>\n",
+            "</dt>\n",
+            "<dd>\n",
+            "<p>Definition 1</p>\n",
+            "</dd>\n",
+            "<dt>\n",
+            "<p>Term 2 with <em>inline markup</em></p>\n",
+            "</dt>\n",
+            "<dd>\n",
+            "<p>Definition 2</p>\n",
+            "</dd>\n",
+            "<dd>\n",
+            "<p><code>Definition 2b</code></p>\n",
+            "</dd>\n",
+            "</dl>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+        |opts| opts.ext_description_lists = true,
+    );
+}

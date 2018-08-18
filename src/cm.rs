@@ -335,10 +335,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.cr();
                 }
             }
-            NodeValue::DescriptionList => unimplemented!(),
-            NodeValue::DescriptionItem => unimplemented!(),
-            NodeValue::DescriptionTerm => unimplemented!(),
-            NodeValue::DescriptionDetails => unimplemented!(),
+            NodeValue::DescriptionList => (),
+            NodeValue::DescriptionItem => (),
+            NodeValue::DescriptionTerm => (),
+            NodeValue::DescriptionDetails => if entering { write!(self, ": ").unwrap() },
             NodeValue::Heading(ref nch) => if entering {
                 for _ in 0..nch.level {
                     write!(self, "#").unwrap();

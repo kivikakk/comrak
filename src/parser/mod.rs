@@ -298,8 +298,18 @@ pub struct ComrakOptions {
 
     /// Enables the description lists extension.
     ///
-    /// For usage, see `src/tests.rs`.  The extension is modelled after
-    /// [Kramdown](https://kramdown.gettalong.org/syntax.html#definition-lists).
+    /// Each term must fit on one line, followed by a blank line, and must be
+    /// followed by one or more definitions. A definition begins with a colon.
+    ///
+    /// ``` md
+    /// First term
+    ///
+    /// : Details for the **first term**
+    ///
+    /// Second term
+    ///
+    /// : Details for the **second term**
+    /// ```
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
@@ -308,7 +318,7 @@ pub struct ComrakOptions {
     ///   ..ComrakOptions::default()
     /// };
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
-    ///            "<dl>\n<dt>Term</dt>\n<dd>Definition></dd>\n</dl>");
+    ///            "<dl><dt>\n<p>Term</p>\n</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     pub ext_description_lists: bool,
 }
@@ -919,16 +929,14 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             last_child.detach();
 
-            let candidate = match container.last_child() {
-                Some(lc) => lc,
-                None => return false,
-            };
-
-            let list = if node_matches!(candidate, NodeValue::DescriptionList) {
-                candidate.data.borrow_mut().open = true;
-                candidate
-            } else {
-                self.add_child(container, NodeValue::DescriptionList)
+            let list = match container.last_child() {
+                Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
+                    lc.data.borrow_mut().open = true;
+                    lc
+                }
+                _ => {
+                    self.add_child(container, NodeValue::DescriptionList)
+                }
             };
 
             let item = self.add_child(list, NodeValue::DescriptionItem);

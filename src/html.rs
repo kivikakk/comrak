@@ -348,10 +348,23 @@ impl<'o> HtmlFormatter<'o> {
             } else {
                 try!(self.output.write_all(b"</li>\n"));
             },
-            NodeValue::DescriptionList => unimplemented!(),
-            NodeValue::DescriptionItem => unimplemented!(),
-            NodeValue::DescriptionTerm => unimplemented!(),
-            NodeValue::DescriptionDetails => unimplemented!(),
+            NodeValue::DescriptionList => if entering {
+                try!(self.cr());
+                try!(self.output.write_all(b"<dl>"));
+            } else {
+                try!(self.output.write_all(b"</dl>\n"));
+            },
+            NodeValue::DescriptionItem => (),
+            NodeValue::DescriptionTerm => if entering {
+                try!(self.output.write_all(b"<dt>"));
+            } else {
+                try!(self.output.write_all(b"</dt>\n"));
+            },
+            NodeValue::DescriptionDetails => if entering {
+                try!(self.output.write_all(b"<dd>"));
+            } else {
+                try!(self.output.write_all(b"</dd>\n"));
+            },
             NodeValue::Heading(ref nch) => {
                 lazy_static! {
                     static ref REJECTED_CHARS: Regex = Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap();
