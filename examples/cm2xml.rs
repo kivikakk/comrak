@@ -84,7 +84,19 @@ fn to_xml(source: &str) -> Result<(), Box<Error>> {
 
     let arena = Arena::new();
 
-    let doc = parse_document(&arena, source, &ComrakOptions::default());
+    let opts = ComrakOptions {
+        ext_strikethrough: true,
+        ext_tagfilter: true,
+        ext_table: true,
+        ext_autolink: true,
+        ext_tasklist: true,
+        ext_superscript: true,
+        ext_footnotes: true,
+        ext_description_lists: true,
+        ..ComrakOptions::default()
+    };
+
+    let doc = parse_document(&arena, source, &opts);
     iter_nodes(doc, &mut writer)
 }
 
