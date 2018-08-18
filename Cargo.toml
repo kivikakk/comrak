@@ -35,6 +35,7 @@ pest_derive = "1.0.7"
 
 [dev-dependencies]
 timebomb = "0.1.2"
+xml-rs = "0.8"
 
 [features]
 default = ["clap"]
