@@ -21,6 +21,15 @@ use typed_arena::Arena;
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
+macro_rules! node_matches {
+    ($node:expr, $pat:pat) => ({
+        match $node.data.borrow().value {
+            $pat => true,
+            _ => false,
+        }
+    })
+}
+
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
@@ -298,7 +307,7 @@ pub struct ComrakOptions {
     ///   ext_description_lists: true,
     ///   ..ComrakOptions::default()
     /// };
-    /// assert_eq!(markdown_to_html("Term\n: Definition", &options),
+    /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl>\n<dt>Term</dt>\n<dd>Definition></dd>\n</dl>");
     /// ```
     pub ext_description_lists: bool,
@@ -661,6 +670,20 @@ impl<'a, 'o> Parser<'a, 'o> {
                     *container,
                     NodeValue::FootnoteDefinition(c.to_vec()),
                 );
+            } else if !indented && self.options.ext_description_lists
+                && line[self.first_nonspace] == b':'
+                && self.parse_desc_list_details(container)
+            {
+                let offset = self.first_nonspace + 1 - self.offset;
+                self.advance_offset(line, offset, false);
+                if strings::is_space_or_tab(line[self.offset]) {
+                    self.advance_offset(line, 1, true);
+                }
+            } else if !indented && self.options.ext_description_lists
+                && self.blank
+                && node_matches!(container, NodeValue::DescriptionDetails)
+            {
+                *container = self.finalize(container).unwrap();
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
                 _ => false,
@@ -877,6 +900,52 @@ impl<'a, 'o> Parser<'a, 'o> {
                 assert!(false);
                 false
             }
+        }
+    }
+
+    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>) -> bool {
+        let last_child = match container.last_child() {
+            Some(lc) => lc,
+            None => return false,
+        };
+
+        if node_matches!(last_child, NodeValue::Paragraph) {
+            // We have found the details after the paragraph for the term.
+            //
+            // This paragraph is moved as a child of a new DescriptionTerm node.
+            //
+            // If the node before the paragraph is a description list, the item
+            // is added to it. If not, create a new list.
+
+            last_child.detach();
+
+            let candidate = match container.last_child() {
+                Some(lc) => lc,
+                None => return false,
+            };
+
+            let list = if node_matches!(candidate, NodeValue::DescriptionList) {
+                candidate.data.borrow_mut().open = true;
+                candidate
+            } else {
+                self.add_child(container, NodeValue::DescriptionList)
+            };
+
+            let item = self.add_child(list, NodeValue::DescriptionItem);
+            let term = self.add_child(item, NodeValue::DescriptionTerm);
+            let details = self.add_child(item, NodeValue::DescriptionDetails);
+
+            term.append(last_child);
+
+            *container = details;
+
+            true
+        } else if node_matches!(container, NodeValue::DescriptionItem) {
+            // We are adding more details to the same term.
+            *container = self.add_child(container, NodeValue::DescriptionDetails);
+            true
+        } else {
+            false
         }
     }
 

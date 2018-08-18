@@ -33,6 +33,31 @@ pub enum NodeValue {
     /// **blocks**.
     Item(NodeList),
 
+    /// **Block**. A description list, enabled with `ext_description_lists` option.  Contains
+    /// description items.
+    ///
+    /// It is required to put a blank line between terms and details.
+    ///
+    /// ``` md
+    /// Term 1
+    ///
+    /// : Details 1
+    ///
+    /// Term 2
+    ///
+    /// : Details 2
+    /// ```
+    DescriptionList,
+
+    /// *Block**. An item of a description list.  Contains a term and one or more details.
+    DescriptionItem,
+
+    /// **Block**. Term of an item in a definition list.
+    DescriptionTerm,
+
+    /// **Block**. Details of an item in a definition list.
+    DescriptionDetails,
+
     /// **Block**. A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
     /// or [indented](https://github.github.com/gfm/#indented-code-blocks).  Contains raw text
     /// which is not parsed as Markdown, although is HTML escaped.
@@ -253,6 +278,7 @@ impl NodeValue {
             | NodeValue::BlockQuote
             | NodeValue::FootnoteDefinition(_)
             | NodeValue::List(..)
+            | NodeValue::DescriptionList
             | NodeValue::Item(..)
             | NodeValue::CodeBlock(..)
             | NodeValue::HtmlBlock(..)
@@ -356,6 +382,8 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::Document
         | NodeValue::BlockQuote
         | NodeValue::FootnoteDefinition(_)
+        | NodeValue::DescriptionTerm
+        | NodeValue::DescriptionDetails
         | NodeValue::Item(..) => {
             child.block() && match *child {
                 NodeValue::Item(..) => false,
@@ -365,6 +393,16 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
 
         NodeValue::List(..) => match *child {
             NodeValue::Item(..) => true,
+            _ => false,
+        },
+
+        NodeValue::DescriptionList => match *child {
+            NodeValue::DescriptionItem => true,
+            _ => false,
+        },
+
+        NodeValue::DescriptionItem => match *child {
+            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => true,
             _ => false,
         },
 
