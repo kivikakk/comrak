@@ -279,6 +279,9 @@ impl NodeValue {
             | NodeValue::FootnoteDefinition(_)
             | NodeValue::List(..)
             | NodeValue::DescriptionList
+            | NodeValue::DescriptionItem
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
             | NodeValue::Item(..)
             | NodeValue::CodeBlock(..)
             | NodeValue::HtmlBlock(..)
