@@ -49,7 +49,7 @@ pub enum NodeValue {
     /// ```
     DescriptionList,
 
-    /// *Block**. An item of a description list.  Contains a term and one or more details.
+    /// *Block**. An item of a description list.  Contains a term and one details block.
     DescriptionItem(NodeDescriptionItem),
 
     /// **Block**. Term of an item in a definition list.

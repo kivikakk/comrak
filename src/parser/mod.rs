@@ -298,8 +298,8 @@ pub struct ComrakOptions {
 
     /// Enables the description lists extension.
     ///
-    /// Each term must fit on one line, followed by a blank line, and must be
-    /// followed by one or more definitions. A definition begins with a colon.
+    /// Each term must be defined in one paragraph, followed by a blank line,
+    /// and then by the details.  Details begins with a colon.
     ///
     /// ``` md
     /// First term
@@ -309,6 +309,8 @@ pub struct ComrakOptions {
     /// Second term
     ///
     /// : Details for the **second term**
+    ///
+    ///     More details in second paragraph.
     /// ```
     ///
     /// ```
