@@ -36,19 +36,20 @@ USAGE:
     comrak [FLAGS] [OPTIONS] [--] [FILE]...
 
 FLAGS:
-        --footnotes          Parse footnotes
-        --github-pre-lang    Use GitHub-style <pre lang> for code blocks
-        --hardbreaks         Treat newlines as hard line breaks
-    -h, --help               Prints help information
-        --safe               Suppress raw HTML and dangerous URLs
-        --smart              Use smart punctuation
-    -V, --version            Prints version information
+        --description-lists    Parse description lists
+        --footnotes            Parse footnotes
+        --github-pre-lang      Use GitHub-style <pre lang> for code blocks
+        --hardbreaks           Treat newlines as hard line breaks
+    -h, --help                 Prints help information
+        --safe                 Suppress raw HTML and dangerous URLs
+        --smart                Use smart punctuation
+    -V, --version              Prints version information
 
 OPTIONS:
         --default-info-string <INFO>    Default value for fenced code block's info strings if none is given
-    -e, --extension <EXTENSION>...      Specify an extension name to use [values: strikethrough, tagfilter, table,
-                                        autolink, tasklist, superscript, footnotes]
-    -t, --to <FORMAT>                   Specify output format [default: html]  [values: html, commonmark]
+    -e, --extension <EXTENSION>...      Specify an extension name to use [possible values: strikethrough, tagfilter,
+                                        table, autolink, tasklist, superscript, footnotes, description-lists]
+    -t, --to <FORMAT>                   Specify output format [default: html]  [possible values: html, commonmark]
         --header-ids <PREFIX>           Use the Comrak header IDs extension, with the given ID prefix
         --width <WIDTH>                 Specify wrap width (0 = nowrap) [default: 0]
 
@@ -127,7 +128,7 @@ Comrak supports the five extensions to CommonMark defined in the
 * [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
 * [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
-as well as superscript and footnotes.
+as well as superscript, footnotes, and description lists.
 
 By default none are enabled; they are individually enabled with each parse by
 setting the appropriate values in the
