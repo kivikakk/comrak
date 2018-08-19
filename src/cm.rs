@@ -336,7 +336,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
             }
             NodeValue::DescriptionList => (),
-            NodeValue::DescriptionItem => (),
+            NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
             NodeValue::DescriptionDetails => if entering { write!(self, ": ").unwrap() },
             NodeValue::Heading(ref nch) => if entering {

@@ -6,8 +6,8 @@ use arena_tree::Node;
 use ctype::{isdigit, isspace};
 use entity;
 use nodes;
-use nodes::{make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading,
-            NodeHtmlBlock, NodeList, NodeValue};
+use nodes::{make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+            NodeHeading, NodeHtmlBlock, NodeList, NodeValue};
 use regex::bytes::Regex;
 use scanners;
 use std::cell::RefCell;
@@ -523,6 +523,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                 NodeValue::Item(ref nl) => if !self.parse_node_item_prefix(line, container, nl) {
                     return (false, container, should_continue);
                 },
+                NodeValue::DescriptionItem(ref di) => if !self.parse_description_item_prefix(line, container, di) {
+                    return (false, container, should_continue);
+                },
                 NodeValue::CodeBlock(..) => {
                     if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
                         return (false, container, should_continue);
@@ -689,11 +692,6 @@ impl<'a, 'o> Parser<'a, 'o> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if !indented && self.options.ext_description_lists
-                && self.blank
-                && node_matches!(container, NodeValue::DescriptionDetails)
-            {
-                *container = self.finalize(container).unwrap();
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
                 _ => false,
@@ -852,6 +850,24 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
+    fn parse_description_item_prefix(
+        &mut self,
+        line: &[u8],
+        container: &'a AstNode<'a>,
+        di: &NodeDescriptionItem,
+    ) -> bool {
+        if self.indent >= di.marker_offset + di.padding {
+            self.advance_offset(line, di.marker_offset + di.padding, true);
+            true
+        } else if self.blank && container.first_child().is_some() {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            true
+        } else {
+            false
+        }
+    }
+
     fn parse_code_block_prefix(
         &mut self,
         line: &[u8],
@@ -931,7 +947,7 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             let list = match container.last_child() {
                 Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
-                    lc.data.borrow_mut().open = true;
+                    reopen_ast_nodes(lc);
                     lc
                 }
                 _ => {
@@ -939,7 +955,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                 }
             };
 
-            let item = self.add_child(list, NodeValue::DescriptionItem);
+            let metadata = NodeDescriptionItem {
+                marker_offset: self.indent,
+                padding: 2,
+            };
+
+            let item = self.add_child(list, NodeValue::DescriptionItem(metadata));
             let term = self.add_child(item, NodeValue::DescriptionTerm);
             let details = self.add_child(item, NodeValue::DescriptionDetails);
 
@@ -947,10 +968,6 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             *container = details;
 
-            true
-        } else if node_matches!(container, NodeValue::DescriptionItem) {
-            // We are adding more details to the same term.
-            *container = self.add_child(container, NodeValue::DescriptionDetails);
             true
         } else {
             false
@@ -1640,6 +1657,16 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter
         && list_data.bullet_char == item_data.bullet_char
+}
+
+fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
+    loop {
+        ast.data.borrow_mut().open = true;
+        ast = match ast.parent() {
+            Some(p) => p,
+            None => return,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

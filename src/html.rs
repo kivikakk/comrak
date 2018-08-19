@@ -354,7 +354,7 @@ impl<'o> HtmlFormatter<'o> {
             } else {
                 try!(self.output.write_all(b"</dl>\n"));
             },
-            NodeValue::DescriptionItem => (),
+            NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => if entering {
                 try!(self.output.write_all(b"<dt>"));
             } else {

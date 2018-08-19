@@ -50,7 +50,7 @@ pub enum NodeValue {
     DescriptionList,
 
     /// *Block**. An item of a description list.  Contains a term and one or more details.
-    DescriptionItem,
+    DescriptionItem(NodeDescriptionItem),
 
     /// **Block**. Term of an item in a definition list.
     DescriptionTerm,
@@ -192,6 +192,16 @@ pub struct NodeList {
     pub tight: bool,
 }
 
+/// The metadata of a description list
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NodeDescriptionItem {
+    #[doc(hidden)]
+    pub marker_offset: usize,
+
+    #[doc(hidden)]
+    pub padding: usize,
+}
+
 /// The type of list.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ListType {
@@ -279,7 +289,7 @@ impl NodeValue {
             | NodeValue::FootnoteDefinition(_)
             | NodeValue::List(..)
             | NodeValue::DescriptionList
-            | NodeValue::DescriptionItem
+            | NodeValue::DescriptionItem(_)
             | NodeValue::DescriptionTerm
             | NodeValue::DescriptionDetails
             | NodeValue::Item(..)
@@ -400,11 +410,11 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         },
 
         NodeValue::DescriptionList => match *child {
-            NodeValue::DescriptionItem => true,
+            NodeValue::DescriptionItem(_) => true,
             _ => false,
         },
 
-        NodeValue::DescriptionItem => match *child {
+        NodeValue::DescriptionItem(_) => match *child {
             NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => true,
             _ => false,
         },

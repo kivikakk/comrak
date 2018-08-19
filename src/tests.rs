@@ -937,8 +937,7 @@ fn description_lists() {
             "    Term 1\n\n",
             "    :   Definition 1\n\n",
             "    Term 2 with *inline markup*\n\n",
-            "    :   Definition 2\n\n",
-            "    :   `Definition 2b`\n\n",
+            "    :   Definition 2\n\n"
         ),
         concat!(
             "<ul>\n",
@@ -956,9 +955,6 @@ fn description_lists() {
             "</dt>\n",
             "<dd>\n",
             "<p>Definition 2</p>\n",
-            "</dd>\n",
-            "<dd>\n",
-            "<p><code>Definition 2b</code></p>\n",
             "</dd>\n",
             "</dl>\n",
             "</li>\n",
