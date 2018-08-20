@@ -6,8 +6,8 @@ use arena_tree::Node;
 use ctype::{isdigit, isspace};
 use entity;
 use nodes;
-use nodes::{make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading,
-            NodeHtmlBlock, NodeList, NodeValue};
+use nodes::{make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+            NodeHeading, NodeHtmlBlock, NodeList, NodeValue};
 use regex::bytes::Regex;
 use scanners;
 use std::cell::RefCell;
@@ -20,6 +20,15 @@ use typed_arena::Arena;
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
+
+macro_rules! node_matches {
+    ($node:expr, $pat:pat) => ({
+        match $node.data.borrow().value {
+            $pat => true,
+            _ => false,
+        }
+    })
+}
 
 /// Parse a Markdown document to an AST.
 ///
@@ -286,6 +295,34 @@ pub struct ComrakOptions {
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">[1]</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
     pub ext_footnotes: bool,
+
+    /// Enables the description lists extension.
+    ///
+    /// Each term must be defined in one paragraph, followed by a blank line,
+    /// and then by the details.  Details begins with a colon.
+    ///
+    /// ``` md
+    /// First term
+    ///
+    /// : Details for the **first term**
+    ///
+    /// Second term
+    ///
+    /// : Details for the **second term**
+    ///
+    ///     More details in second paragraph.
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let options = ComrakOptions {
+    ///   ext_description_lists: true,
+    ///   ..ComrakOptions::default()
+    /// };
+    /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
+    ///            "<dl><dt>\n<p>Term</p>\n</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    /// ```
+    pub ext_description_lists: bool,
 }
 
 #[derive(Clone)]
@@ -488,6 +525,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                 NodeValue::Item(ref nl) => if !self.parse_node_item_prefix(line, container, nl) {
                     return (false, container, should_continue);
                 },
+                NodeValue::DescriptionItem(ref di) => if !self.parse_description_item_prefix(line, container, di) {
+                    return (false, container, should_continue);
+                },
                 NodeValue::CodeBlock(..) => {
                     if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
                         return (false, container, should_continue);
@@ -645,6 +685,15 @@ impl<'a, 'o> Parser<'a, 'o> {
                     *container,
                     NodeValue::FootnoteDefinition(c.to_vec()),
                 );
+            } else if !indented && self.options.ext_description_lists
+                && line[self.first_nonspace] == b':'
+                && self.parse_desc_list_details(container)
+            {
+                let offset = self.first_nonspace + 1 - self.offset;
+                self.advance_offset(line, offset, false);
+                if strings::is_space_or_tab(line[self.offset]) {
+                    self.advance_offset(line, 1, true);
+                }
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
                 _ => false,
@@ -803,6 +852,24 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
+    fn parse_description_item_prefix(
+        &mut self,
+        line: &[u8],
+        container: &'a AstNode<'a>,
+        di: &NodeDescriptionItem,
+    ) -> bool {
+        if self.indent >= di.marker_offset + di.padding {
+            self.advance_offset(line, di.marker_offset + di.padding, true);
+            true
+        } else if self.blank && container.first_child().is_some() {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            true
+        } else {
+            false
+        }
+    }
+
     fn parse_code_block_prefix(
         &mut self,
         line: &[u8],
@@ -861,6 +928,51 @@ impl<'a, 'o> Parser<'a, 'o> {
                 assert!(false);
                 false
             }
+        }
+    }
+
+    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>) -> bool {
+        let last_child = match container.last_child() {
+            Some(lc) => lc,
+            None => return false,
+        };
+
+        if node_matches!(last_child, NodeValue::Paragraph) {
+            // We have found the details after the paragraph for the term.
+            //
+            // This paragraph is moved as a child of a new DescriptionTerm node.
+            //
+            // If the node before the paragraph is a description list, the item
+            // is added to it. If not, create a new list.
+
+            last_child.detach();
+
+            let list = match container.last_child() {
+                Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
+                    reopen_ast_nodes(lc);
+                    lc
+                }
+                _ => {
+                    self.add_child(container, NodeValue::DescriptionList)
+                }
+            };
+
+            let metadata = NodeDescriptionItem {
+                marker_offset: self.indent,
+                padding: 2,
+            };
+
+            let item = self.add_child(list, NodeValue::DescriptionItem(metadata));
+            let term = self.add_child(item, NodeValue::DescriptionTerm);
+            let details = self.add_child(item, NodeValue::DescriptionDetails);
+
+            term.append(last_child);
+
+            *container = details;
+
+            true
+        } else {
+            false
         }
     }
 
@@ -1547,6 +1659,16 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter
         && list_data.bullet_char == item_data.bullet_char
+}
+
+fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
+    loop {
+        ast.data.borrow_mut().open = true;
+        ast = match ast.parent() {
+            Some(p) => p,
+            None => return,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -33,6 +33,31 @@ pub enum NodeValue {
     /// **blocks**.
     Item(NodeList),
 
+    /// **Block**. A description list, enabled with `ext_description_lists` option.  Contains
+    /// description items.
+    ///
+    /// It is required to put a blank line between terms and details.
+    ///
+    /// ``` md
+    /// Term 1
+    ///
+    /// : Details 1
+    ///
+    /// Term 2
+    ///
+    /// : Details 2
+    /// ```
+    DescriptionList,
+
+    /// *Block**. An item of a description list.  Contains a term and one details block.
+    DescriptionItem(NodeDescriptionItem),
+
+    /// **Block**. Term of an item in a definition list.
+    DescriptionTerm,
+
+    /// **Block**. Details of an item in a definition list.
+    DescriptionDetails,
+
     /// **Block**. A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
     /// or [indented](https://github.github.com/gfm/#indented-code-blocks).  Contains raw text
     /// which is not parsed as Markdown, although is HTML escaped.
@@ -167,6 +192,16 @@ pub struct NodeList {
     pub tight: bool,
 }
 
+/// The metadata of a description list
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NodeDescriptionItem {
+    #[doc(hidden)]
+    pub marker_offset: usize,
+
+    #[doc(hidden)]
+    pub padding: usize,
+}
+
 /// The type of list.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ListType {
@@ -253,6 +288,10 @@ impl NodeValue {
             | NodeValue::BlockQuote
             | NodeValue::FootnoteDefinition(_)
             | NodeValue::List(..)
+            | NodeValue::DescriptionList
+            | NodeValue::DescriptionItem(_)
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
             | NodeValue::Item(..)
             | NodeValue::CodeBlock(..)
             | NodeValue::HtmlBlock(..)
@@ -356,6 +395,8 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         NodeValue::Document
         | NodeValue::BlockQuote
         | NodeValue::FootnoteDefinition(_)
+        | NodeValue::DescriptionTerm
+        | NodeValue::DescriptionDetails
         | NodeValue::Item(..) => {
             child.block() && match *child {
                 NodeValue::Item(..) => false,
@@ -365,6 +406,16 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
 
         NodeValue::List(..) => match *child {
             NodeValue::Item(..) => true,
+            _ => false,
+        },
+
+        NodeValue::DescriptionList => match *child {
+            NodeValue::DescriptionItem(_) => true,
+            _ => false,
+        },
+
+        NodeValue::DescriptionItem(_) => match *child {
+            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => true,
             _ => false,
         },
 
