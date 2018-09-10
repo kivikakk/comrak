@@ -469,6 +469,15 @@ fn autolink_scheme_multiline() {
 }
 
 #[test]
+fn autolink_no_link_bad() {
+    html_opts(
+        concat!("@a.b.c@. x\n", "\n", "n@. x\n"),
+        concat!("<p>@a.b.c@. x</p>\n", "<p>n@. x</p>\n"),
+        |opts| opts.ext_autolink = true,
+    );
+}
+
+#[test]
 fn tagfilter() {
     html_opts(
         concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
