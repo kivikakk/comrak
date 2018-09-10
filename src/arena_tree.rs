@@ -33,7 +33,10 @@ pub struct Node<'a, T: 'a> {
 
 /// A simple Debug implementation that prints the children as a tree, without
 /// ilooping through the various interior pointer cycles.
-impl<'a, T: 'a> fmt::Debug for Node<'a, T> where T: fmt::Debug {
+impl<'a, T: 'a> fmt::Debug for Node<'a, T>
+where
+    T: fmt::Debug,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // FIXME: would be better not to build a vector for the children but I
         // can't presently figure out the borrowing to use the debug_list API
@@ -243,7 +246,7 @@ impl<'a, T> Node<'a, T> {
 }
 
 macro_rules! axis_iterator {
-    (#[$attr:meta] $name: ident: $next: ident) => {
+    (#[$attr:meta] $name:ident : $next:ident) => {
         #[$attr]
         #[derive(Debug)]
         pub struct $name<'a, T: 'a>(Option<&'a Node<'a, T>>);
@@ -257,11 +260,11 @@ macro_rules! axis_iterator {
                         self.0 = node.$next.get();
                         Some(node)
                     }
-                    None => None
+                    None => None,
                 }
             }
         }
-    }
+    };
 }
 
 axis_iterator! {
@@ -321,7 +324,7 @@ pub enum NodeEdge<T> {
 }
 
 macro_rules! traverse_iterator {
-    (#[$attr:meta] $name: ident: $first_child: ident, $next_sibling: ident) => {
+    (#[$attr:meta] $name:ident : $first_child:ident, $next_sibling:ident) => {
         #[$attr]
         #[derive(Debug)]
         pub struct $name<'a, T: 'a> {
@@ -336,12 +339,10 @@ macro_rules! traverse_iterator {
                 match self.next.take() {
                     Some(item) => {
                         self.next = match item {
-                            NodeEdge::Start(node) => {
-                                match node.$first_child.get() {
-                                    Some(child) => Some(NodeEdge::Start(child)),
-                                    None => Some(NodeEdge::End(node))
-                                }
-                            }
+                            NodeEdge::Start(node) => match node.$first_child.get() {
+                                Some(child) => Some(NodeEdge::Start(child)),
+                                None => Some(NodeEdge::End(node)),
+                            },
                             NodeEdge::End(node) => {
                                 if node.same_node(self.root) {
                                     None
@@ -355,19 +356,19 @@ macro_rules! traverse_iterator {
                                             // if the tree has been modified during iteration,
                                             // but silently stoping iteration
                                             // seems a more sensible behavior than panicking.
-                                            None => None
-                                        }
+                                            None => None,
+                                        },
                                     }
                                 }
                             }
                         };
                         Some(item)
                     }
-                    None => None
+                    None => None,
                 }
             }
         }
-    }
+    };
 }
 
 traverse_iterator! {

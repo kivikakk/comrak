@@ -1,7 +1,7 @@
 use ctype::{isalpha, isdigit, isspace};
 use nodes;
-use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeValue};
 use nodes::TableAlignment;
+use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeValue};
 use parser::ComrakOptions;
 use scanners;
 use std;
@@ -143,7 +143,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.begin_content = self.begin_content && isdigit(buf[i]);
             }
 
-            if self.options.width > 0 && self.column > self.options.width && !self.begin_line
+            if self.options.width > 0
+                && self.column > self.options.width
+                && !self.begin_line
                 && self.last_breakable > 0
             {
                 let remainder = self.v[self.last_breakable + 1..].to_vec();
@@ -168,16 +170,32 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         let needs_escaping = c < 0x80 && escaping != Escaping::Literal
             && ((escaping == Escaping::Normal
-                && (c == b'*' || c == b'_' || c == b'[' || c == b']' || c == b'#' || c == b'<'
-                    || c == b'>' || c == b'\\' || c == b'`' || c == b'!'
+                && (c == b'*'
+                    || c == b'_'
+                    || c == b'['
+                    || c == b']'
+                    || c == b'#'
+                    || c == b'<'
+                    || c == b'>'
+                    || c == b'\\'
+                    || c == b'`'
+                    || c == b'!'
                     || (c == b'&' && isalpha(nextc))
                     || (c == b'!' && nextc == 0x5b)
-                    || (self.begin_content && (c == b'-' || c == b'+' || c == b'=')
+                    || (self.begin_content
+                        && (c == b'-' || c == b'+' || c == b'=')
                         && !follows_digit)
-                    || (self.begin_content && (c == b'.' || c == b')') && follows_digit
+                    || (self.begin_content
+                        && (c == b'.' || c == b')')
+                        && follows_digit
                         && (nextc == 0 || isspace(nextc)))))
                 || (escaping == Escaping::URL
-                    && (c == b'`' || c == b'<' || c == b'>' || isspace(c) || c == b'\\' || c == b')'
+                    && (c == b'`'
+                        || c == b'<'
+                        || c == b'>'
+                        || isspace(c)
+                        || c == b'\\'
+                        || c == b')'
                         || c == b'('))
                 || (escaping == Escaping::Title
                     && (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
@@ -205,8 +223,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn format(&mut self, node: &'a AstNode<'a>) {
-
-        enum Phase { Pre, Post }
+        enum Phase {
+            Pre,
+            Post,
+        }
         let mut stack = vec![(node, Phase::Pre)];
 
         while let Some((node, phase)) = stack.pop() {
@@ -338,7 +358,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::DescriptionList => (),
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
-            NodeValue::DescriptionDetails => if entering { write!(self, ": ").unwrap() },
+            NodeValue::DescriptionDetails => if entering {
+                write!(self, ": ").unwrap()
+            },
             NodeValue::Heading(ref nch) => if entering {
                 for _ in 0..nch.level {
                     write!(self, "#").unwrap();
@@ -636,7 +658,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
     };
 
     let mut real_url: &[u8] = &nl.url;
-    if real_url.len() >=7 && &real_url[..7] == b"mailto:" {
+    if real_url.len() >= 7 && &real_url[..7] == b"mailto:" {
         real_url = &real_url[7..];
     }
 

@@ -37,7 +37,8 @@ pub fn unescape(text: &[u8]) -> Option<(Vec<u8>, usize)> {
         };
 
         if num_digits >= 1 && num_digits <= 8 && i < text.len() && text[i] == b';' {
-            if codepoint == 0 || (codepoint >= 0xD800 && codepoint <= 0xE000)
+            if codepoint == 0
+                || (codepoint >= 0xD800 && codepoint <= 0xE000)
                 || codepoint >= 0x110000
             {
                 codepoint = 0xFFFD;

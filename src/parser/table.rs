@@ -58,10 +58,7 @@ fn try_opening_header<'a, 'o>(
         });
     }
 
-    let child = make_block(
-        NodeValue::Table(alignments),
-        parser.line_number,
-    );
+    let child = make_block(NodeValue::Table(alignments), parser.line_number);
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
@@ -87,26 +84,17 @@ fn try_opening_row<'a, 'o>(
         return None;
     }
     let this_row = row(&line[parser.first_nonspace..]).unwrap();
-    let new_row = parser.add_child(
-        container,
-        NodeValue::TableRow(false),
-    );
+    let new_row = parser.add_child(container, NodeValue::TableRow(false));
 
     let mut i = 0;
     while i < min(alignments.len(), this_row.len()) {
-        let cell = parser.add_child(
-            new_row,
-            NodeValue::TableCell,
-        );
+        let cell = parser.add_child(new_row, NodeValue::TableCell);
         cell.data.borrow_mut().content = this_row[i].clone();
         i += 1;
     }
 
     while i < alignments.len() {
-        parser.add_child(
-            new_row,
-            NodeValue::TableCell,
-        );
+        parser.add_child(new_row, NodeValue::TableCell);
         i += 1;
     }
 
@@ -160,7 +148,7 @@ fn unescape_pipes(string: &[u8]) -> Vec<u8> {
     let mut v = Vec::with_capacity(len);
 
     for (i, &c) in string.iter().enumerate() {
-        if c == b'\\' && i + 1 < len && string[i+1] == b'|' {
+        if c == b'\\' && i + 1 < len && string[i + 1] == b'|' {
             continue;
         } else {
             v.push(c);
