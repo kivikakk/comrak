@@ -19,7 +19,7 @@ pub fn format_document<'a>(
     if !f.v.is_empty() && f.v[f.v.len() - 1] != b'\n' {
         f.v.push(b'\n');
     }
-    try!(output.write_all(&f.v));
+    output.write_all(&f.v)?;
     Ok(())
 }
 
