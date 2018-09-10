@@ -13,14 +13,16 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 * [Contributors](#contributors)
 * [Legal](#legal)
 
+
 ## Installation
 
 Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.2"
+comrak = "0.3"
 ```
+
 
 ## Usage
 
@@ -28,7 +30,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.2.14
+comrak 0.3.0
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -36,7 +38,6 @@ USAGE:
     comrak [FLAGS] [OPTIONS] [--] [FILE]...
 
 FLAGS:
-        --footnotes          Parse footnotes
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
@@ -110,11 +111,13 @@ assert_eq!(
      </ol>\n");
 ```
 
+
 ## Security
 
 As with [`cmark-gfm`](https://github.com/github/cmark#security), Comrak will pass through inline HTML, dangerous links, anything you can imagine — it only performs Markdown to HTML conversion per the CommonMark/GFM spec.  We recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
 You can also disable this potentially unsafe feature by using the `safe` option (or `--safe` at the command-line).
+
 
 ## Extensions
 
@@ -133,6 +136,7 @@ By default none are enabled; they are individually enabled with each parse by
 setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
 
+
 ## Related projects
 
 Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark) as closely as possible in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak. It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
@@ -144,6 +148,7 @@ The downside, of course, is that the code is not what I'd call idiomatic Rust (_
 * Know of another library? Please add it!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
+
 
 ## Contributors
 
@@ -164,6 +169,7 @@ Thank you for PRs and issues opened!
 * [steveklabnik](https://github.com/steveklabnik)
 * [brson](https://github.com/brson)
 * [Keats](https://github.com/Keats)
+* [ayosec](https://github.com/ayosec)
 
 ## Legal
 

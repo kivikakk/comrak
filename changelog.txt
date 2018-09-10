@@ -1,3 +1,11 @@
+### 0.3.0
+
+* Significant test coverage and code clean up. (#82, #83, Brian Anderson)
+* Description list support. (#86, Ayose Cazorla)
+* Example use of comrak to convert CommonMark documents into S-expressions. (#86, Ayose Cazorla)
+* Footnotes are now enabled via an extension option, not a flag of its own. (#87)
+* Extend `cmark-gfm` compatibility to include all extension and regression tests. (#87)
+
 ### 0.2.14
 
 * Speed enhancements. (#76, Brian Anderson)
