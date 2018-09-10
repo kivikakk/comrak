@@ -78,7 +78,7 @@ fn www_match<'a>(
         return None;
     }
 
-    let mut link_end = match check_domain(&contents[i..]) {
+    let mut link_end = match check_domain(&contents[i..], false) {
         None => return None,
         Some(link_end) => link_end,
     };
@@ -107,7 +107,7 @@ fn www_match<'a>(
     Some((inl, 0, link_end))
 }
 
-fn check_domain(data: &[u8]) -> Option<usize> {
+fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
     let mut np = 0;
     let mut uscore1 = 0;
     let mut uscore2 = 0;
@@ -127,7 +127,9 @@ fn check_domain(data: &[u8]) -> Option<usize> {
         }
     }
 
-    if uscore1 == 0 && uscore2 == 0 && np > 0 {
+    if uscore1 > 0 || uscore2 > 0 {
+        None
+    } else if allow_short || np > 0 {
         Some(data.len())
     } else {
         None
@@ -224,7 +226,7 @@ fn url_match<'a>(
         return None;
     }
 
-    let mut link_end = match check_domain(&contents[i + 3..]) {
+    let mut link_end = match check_domain(&contents[i + 3..], true) {
         None => return None,
         Some(link_end) => link_end,
     };
