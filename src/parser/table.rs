@@ -156,23 +156,15 @@ fn row(string: &[u8]) -> Option<Vec<Vec<u8>>> {
 }
 
 fn unescape_pipes(string: &[u8]) -> Vec<u8> {
-    let mut v = Vec::with_capacity(string.len());
-    let mut escaping = false;
+    let len = string.len();
+    let mut v = Vec::with_capacity(len);
 
-    for &c in string {
-        // TODO
-        if escaping {
-            v.push(c);
-            escaping = false;
-        } else if c == b'\\' {
-            escaping = true;
+    for (i, &c) in string.iter().enumerate() {
+        if c == b'\\' && i + 1 < len && string[i+1] == b'|' {
+            continue;
         } else {
             v.push(c);
         }
-    }
-
-    if escaping {
-        v.push(b'\\');
     }
 
     v
