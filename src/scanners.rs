@@ -35,15 +35,16 @@ fn is_match(rule: Rule, line: &[u8]) -> bool {
 
 #[inline(always)]
 pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
-    if line[0] != b'#'{
-        return None
+    if line[0] != b'#' {
+        return None;
     }
     search(Rule::atx_heading_start, line)
 }
 
 #[inline(always)]
 pub fn html_block_end_1(line: &[u8]) -> bool {
-    find_bytes(line, b"</script>").is_some() || find_bytes(line, b"</pre>").is_some()
+    find_bytes(line, b"</script>").is_some()
+        || find_bytes(line, b"</pre>").is_some()
         || find_bytes(line, b"</style>").is_some()
 }
 
@@ -70,7 +71,7 @@ pub fn html_block_end_5(line: &[u8]) -> bool {
 #[inline(always)]
 pub fn open_code_fence(line: &[u8]) -> Option<usize> {
     if line[0] != b'`' && line[0] != b'~' {
-        return None
+        return None;
     }
     search(Rule::open_code_fence, line)
 }
@@ -78,7 +79,7 @@ pub fn open_code_fence(line: &[u8]) -> Option<usize> {
 #[inline(always)]
 pub fn close_code_fence(line: &[u8]) -> Option<usize> {
     if line[0] != b'`' && line[0] != b'~' {
-        return None
+        return None;
     }
     search(Rule::close_code_fence, line)
 }
@@ -128,8 +129,7 @@ pub enum SetextChar {
 
 #[inline(always)]
 pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
-    if (line[0] == b'=' || line[0] == b'-')
-       && is_match(Rule::setext_heading_line, line) {
+    if (line[0] == b'=' || line[0] == b'-') && is_match(Rule::setext_heading_line, line) {
         if line[0] == b'=' {
             Some(SetextChar::Equals)
         } else {
@@ -143,7 +143,7 @@ pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
 #[inline(always)]
 pub fn thematic_break(line: &[u8]) -> Option<usize> {
     if line[0] != b'*' && line[0] != b'-' && line[0] != b'_' {
-        return None
+        return None;
     }
     search(Rule::thematic_break, line)
 }

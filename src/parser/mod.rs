@@ -1,13 +1,15 @@
-mod table;
 mod autolink;
 mod inlines;
+mod table;
 
 use arena_tree::Node;
 use ctype::{isdigit, isspace};
 use entity;
 use nodes;
-use nodes::{make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
-            NodeHeading, NodeHtmlBlock, NodeList, NodeValue};
+use nodes::{
+    make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    NodeHeading, NodeHtmlBlock, NodeList, NodeValue,
+};
 use regex::bytes::Regex;
 use scanners;
 use std::cell::RefCell;
@@ -22,12 +24,12 @@ const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 macro_rules! node_matches {
-    ($node:expr, $pat:pat) => ({
+    ($node:expr, $pat:pat) => {{
         match $node.data.borrow().value {
             $pat => true,
             _ => false,
         }
-    })
+    }};
 }
 
 /// Parse a Markdown document to an AST.
@@ -217,7 +219,7 @@ pub struct ComrakOptions {
     /// };
     /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
-    ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr></tbody></table>\n");
+    ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n");
     /// ```
     pub ext_table: bool,
 
@@ -292,7 +294,7 @@ pub struct ComrakOptions {
     ///   ..ComrakOptions::default()
     /// };
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
-    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">[1]</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
+    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
     pub ext_footnotes: bool,
 
@@ -525,9 +527,11 @@ impl<'a, 'o> Parser<'a, 'o> {
                 NodeValue::Item(ref nl) => if !self.parse_node_item_prefix(line, container, nl) {
                     return (false, container, should_continue);
                 },
-                NodeValue::DescriptionItem(ref di) => if !self.parse_description_item_prefix(line, container, di) {
-                    return (false, container, should_continue);
-                },
+                NodeValue::DescriptionItem(ref di) => {
+                    if !self.parse_description_item_prefix(line, container, di) {
+                        return (false, container, should_continue);
+                    }
+                }
                 NodeValue::CodeBlock(..) => {
                     if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
                         return (false, container, should_continue);
@@ -582,8 +586,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-                *container =
-                    self.add_child(*container, NodeValue::BlockQuote);
+                *container = self.add_child(*container, NodeValue::BlockQuote);
             } else if !indented
                 && unwrap_into(
                     scanners::atx_heading_start(&line[self.first_nonspace..]),
@@ -592,10 +595,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
-                *container = self.add_child(
-                    *container,
-                    NodeValue::Heading(NodeHeading::default()),
-                );
+                *container = self.add_child(*container, NodeValue::Heading(NodeHeading::default()));
 
                 let mut hashpos = line[self.first_nonspace..]
                     .iter()
@@ -626,8 +626,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     info: Vec::with_capacity(10),
                     literal: Vec::new(),
                 };
-                *container =
-                    self.add_child(*container, NodeValue::CodeBlock(ncb));
+                *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented
                 && (unwrap_into(
@@ -681,11 +680,9 @@ impl<'a, 'o> Parser<'a, 'o> {
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
-                *container = self.add_child(
-                    *container,
-                    NodeValue::FootnoteDefinition(c.to_vec()),
-                );
-            } else if !indented && self.options.ext_description_lists
+                *container = self.add_child(*container, NodeValue::FootnoteDefinition(c.to_vec()));
+            } else if !indented
+                && self.options.ext_description_lists
                 && line[self.first_nonspace] == b':'
                 && self.parse_desc_list_details(container)
             {
@@ -697,8 +694,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             } else if (!indented || match container.data.borrow().value {
                 NodeValue::List(..) => true,
                 _ => false,
-            })
-                && self.indent < 4
+            }) && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,
@@ -952,9 +948,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     reopen_ast_nodes(lc);
                     lc
                 }
-                _ => {
-                    self.add_child(container, NodeValue::DescriptionList)
-                }
+                _ => self.add_child(container, NodeValue::DescriptionList),
             };
 
             let metadata = NodeDescriptionItem {
@@ -976,11 +970,7 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn add_child(
-        &mut self,
-        mut parent: &'a AstNode<'a>,
-        value: NodeValue,
-    ) -> &'a AstNode<'a> {
+    fn add_child(&mut self, mut parent: &'a AstNode<'a>, value: NodeValue) -> &'a AstNode<'a> {
         while !nodes::can_contain_type(parent, &value) {
             parent = self.finalize(parent).unwrap();
         }
@@ -1023,11 +1013,11 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
 
         if !self.current.same_node(last_matched_container)
-            && container.same_node(last_matched_container) && !self.blank
-            && match self.current.data.borrow().value {
-                NodeValue::Paragraph => true,
-                _ => false,
-            } {
+            && container.same_node(last_matched_container)
+            && !self.blank && match self.current.data.borrow().value {
+            NodeValue::Paragraph => true,
+            _ => false,
+        } {
             self.add_line(self.current, line);
         } else {
             while !self.current.same_node(last_matched_container) {
@@ -1158,7 +1148,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let mut seeked = 0;
                 {
                     let mut seek: &[u8] = &*content;
-                    while !seek.is_empty() && seek[0] == b'['
+                    while !seek.is_empty()
+                        && seek[0] == b'['
                         && unwrap_into(self.parse_reference_inline(seek), &mut pos)
                     {
                         seek = &seek[pos..];
@@ -1190,7 +1181,8 @@ impl<'a, 'o> Parser<'a, 'o> {
                     strings::trim(&mut tmp);
                     strings::unescape(&mut tmp);
                     if tmp.is_empty() {
-                        ncb.info = self.options
+                        ncb.info = self
+                            .options
                             .default_info_string
                             .as_ref()
                             .map_or(vec![], |s| s.as_bytes().to_vec());
@@ -1657,7 +1649,8 @@ fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool
 }
 
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
-    list_data.list_type == item_data.list_type && list_data.delimiter == item_data.delimiter
+    list_data.list_type == item_data.list_type
+        && list_data.delimiter == item_data.delimiter
         && list_data.bullet_char == item_data.bullet_char
 }
 

@@ -15,8 +15,8 @@ const INDENT: usize = 4;
 /// If true, the close parenthesis is printed in its own line.
 const CLOSE_NEWLINE: bool = false;
 
-use comrak::{parse_document, Arena, ComrakOptions};
 use comrak::nodes::{AstNode, NodeValue};
+use comrak::{parse_document, Arena, ComrakOptions};
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -27,15 +27,18 @@ fn iter_nodes<'a, W: Write>(
     writer: &mut W,
     indent: usize,
 ) -> io::Result<()> {
-
     use NodeValue::*;
 
     macro_rules! try_node_inline {
-        ($node:expr, $name:ident) => ({
+        ($node:expr, $name:ident) => {{
             if let $name(t) = $node {
-                return write!(writer, concat!(stringify!($name), "({:?})"), String::from_utf8_lossy(&t));
+                return write!(
+                    writer,
+                    concat!(stringify!($name), "({:?})"),
+                    String::from_utf8_lossy(&t)
+                );
             }
-        })
+        }};
     }
 
     match &node.data.borrow().value {
@@ -72,7 +75,6 @@ fn iter_nodes<'a, W: Write>(
 }
 
 fn dump(source: &str) -> io::Result<()> {
-
     let arena = Arena::new();
 
     let opts = ComrakOptions {
@@ -94,7 +96,6 @@ fn dump(source: &str) -> io::Result<()> {
 }
 
 fn main() -> Result<(), Box<Error>> {
-
     let mut args = env::args_os().skip(1).peekable();
     let mut body = String::new();
 

@@ -74,7 +74,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             smart_chars: [false; 256],
         };
         for &c in &[
-            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!'
+            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!',
         ] {
             s.special_chars[c as usize] = true;
         }
@@ -85,9 +85,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         if options.ext_superscript {
             s.special_chars[b'^' as usize] = true;
         }
-        for &c in &[
-            b'"', b'\'', b'.', b'-',
-        ] {
+        for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
         }
         s
@@ -141,7 +139,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 let mut contents = self.input[self.pos..endpos].to_vec();
                 self.pos = endpos;
 
-                if self.peek_char()
+                if self
+                    .peek_char()
                     .map_or(false, |&c| strings::is_line_end_char(c))
                 {
                     strings::rtrim(&mut contents);
@@ -283,7 +282,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                         // lengths are a multiple of 3.)
                         let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
                             && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0)
-                            && !(opener.unwrap().length % 3 == 0 && closer.unwrap().length % 3 == 0);
+                            && !(opener.unwrap().length % 3 == 0
+                                && closer.unwrap().length % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -297,7 +297,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if closer.unwrap().delim_char == b'*' || closer.unwrap().delim_char == b'_'
+                if closer.unwrap().delim_char == b'*'
+                    || closer.unwrap().delim_char == b'_'
                     || (self.options.ext_strikethrough && closer.unwrap().delim_char == b'~')
                     || (self.options.ext_superscript && closer.unwrap().delim_char == b'^')
                 {
@@ -551,7 +552,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         self.pos += 1;
 
         if !self.options.smart || self.peek_char().map_or(false, |&c| c != b'-') {
-            return make_inline(self.arena, NodeValue::Text(vec![b'-']))
+            return make_inline(self.arena, NodeValue::Text(vec![b'-']));
         }
 
         while self.options.smart && self.peek_char().map_or(false, |&c| c == b'-') {
@@ -601,19 +602,23 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             '\n'
         } else {
             let mut before_char_pos = self.pos - 1;
-            while before_char_pos > 0 && (self.input[before_char_pos] >> 6 == 2 || self.skip_chars[self.input[before_char_pos] as usize]) {
+            while before_char_pos > 0
+                && (self.input[before_char_pos] >> 6 == 2
+                    || self.skip_chars[self.input[before_char_pos] as usize])
+            {
                 before_char_pos -= 1;
             }
             match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
                 .chars()
-                .next() {
-                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    },
-                    None => '\n',
-                }
+                .next()
+            {
+                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    '\n'
+                } else {
+                    x
+                },
+                None => '\n',
+            }
         };
 
         let mut numdelims = 0;
@@ -631,26 +636,31 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             '\n'
         } else {
             let mut after_char_pos = self.pos;
-            while after_char_pos < self.input.len() - 1 && self.skip_chars[self.input[after_char_pos] as usize] {
+            while after_char_pos < self.input.len() - 1
+                && self.skip_chars[self.input[after_char_pos] as usize]
+            {
                 after_char_pos += 1;
             }
             match unsafe { str::from_utf8_unchecked(&self.input[after_char_pos..]) }
                 .chars()
-                .next() {
-                    Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    },
-                    None => '\n',
-                }
+                .next()
+            {
+                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    '\n'
+                } else {
+                    x
+                },
+                None => '\n',
+            }
         };
 
         let left_flanking = numdelims > 0 && !after_char.is_whitespace()
-            && !(after_char.is_punctuation() && !before_char.is_whitespace()
+            && !(after_char.is_punctuation()
+                && !before_char.is_whitespace()
                 && !before_char.is_punctuation());
         let right_flanking = numdelims > 0 && !before_char.is_whitespace()
-            && !(before_char.is_punctuation() && !after_char.is_whitespace()
+            && !(before_char.is_punctuation()
+                && !after_char.is_whitespace()
                 && !after_char.is_punctuation());
 
         if c == b'_' {
@@ -660,7 +670,11 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 right_flanking && (!left_flanking || after_char.is_punctuation()),
             )
         } else if c == b'\'' || c == b'"' {
-            (numdelims, left_flanking && !right_flanking && before_char != ']' && before_char != ')', right_flanking)
+            (
+                numdelims,
+                left_flanking && !right_flanking && before_char != ']' && before_char != ')',
+                right_flanking,
+            )
         } else {
             (numdelims, left_flanking, right_flanking)
         }
@@ -1082,7 +1096,7 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
     if i >= len {
         None
     } else {
-        Some((&input[1..i-1], i))
+        Some((&input[1..i - 1], i))
     }
 }
 

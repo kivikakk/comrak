@@ -5,13 +5,15 @@ extern crate comrak;
 #[macro_use]
 extern crate clap;
 
-use comrak::{ComrakOptions, Arena};
+use comrak::{Arena, ComrakOptions};
 
+use std::boxed::Box;
 use std::collections::BTreeSet;
+use std::error::Error;
 use std::io::Read;
 use std::process;
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let matches = clap::App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
@@ -94,11 +96,6 @@ fn main() {
                 .value_name("PREFIX")
                 .help("Use the Comrak header IDs extension, with the given ID prefix"),
         )
-        .arg(
-            clap::Arg::with_name("footnotes")
-                .long("footnotes")
-                .help("Parse footnotes"),
-        )
         .get_matches();
 
     let mut exts = matches
@@ -125,26 +122,29 @@ fn main() {
         ext_tasklist: exts.remove("tasklist"),
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-        ext_footnotes: matches.is_present("footnotes"),
+        ext_footnotes: exts.remove("footnotes"),
         ext_description_lists: exts.remove("description-lists"),
     };
 
-    assert!(exts.is_empty());
+    if !exts.is_empty() {
+        eprintln!("unknown extensions: {:?}", exts);
+        process::exit(1);
+    }
 
     let mut s: Vec<u8> = Vec::with_capacity(2048);
 
     match matches.values_of("file") {
         None => {
-            std::io::stdin().read_to_end(&mut s).unwrap();
+            std::io::stdin().read_to_end(&mut s)?;
         }
         Some(fs) => for f in fs {
-            let mut io = std::fs::File::open(f).unwrap();
-            io.read_to_end(&mut s).unwrap();
+            let mut io = std::fs::File::open(f)?;
+            io.read_to_end(&mut s)?;
         },
     };
 
     let arena = Arena::new();
-    let root = comrak::parse_document(&arena, &String::from_utf8(s).unwrap(), &options);
+    let root = comrak::parse_document(&arena, &String::from_utf8(s)?, &options);
 
     let formatter = match matches.value_of("format") {
         Some("html") => comrak::format_html,
@@ -152,7 +152,7 @@ fn main() {
         _ => panic!("unknown format"),
     };
 
-    formatter(root, &options, &mut std::io::stdout()).unwrap();
+    formatter(root, &options, &mut std::io::stdout())?;
 
     process::exit(0);
 }

@@ -1,9 +1,9 @@
-use {parse_document, Arena, ComrakOptions};
 use cm;
 use html;
 #[cfg(feature = "benchmarks")]
 use test::Bencher;
 use timebomb::timeout_ms;
+use {parse_document, Arena, ComrakOptions};
 
 fn compare_strs(output: &str, expected: &str, kind: &str) {
     if output != expected {
@@ -417,7 +417,9 @@ fn table() {
             "<tr>\n",
             "<td>c</td>\n",
             "<td align=\"center\">d</td>\n",
-            "</tr></tbody></table>\n"
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n"
         ),
         |opts| opts.ext_table = true,
     );
@@ -462,6 +464,15 @@ fn autolink_scheme_multiline() {
              com/search</a>\n<a href=\"https://www.google.com/maps\">\
              https://www.google.com/maps</a></p>\n"
         ),
+        |opts| opts.ext_autolink = true,
+    );
+}
+
+#[test]
+fn autolink_no_link_bad() {
+    html_opts(
+        concat!("@a.b.c@. x\n", "\n", "n@. x\n"),
+        concat!("<p>@a.b.c@. x</p>\n", "<p>n@. x</p>\n"),
         |opts| opts.ext_autolink = true,
     );
 }
@@ -595,10 +606,10 @@ fn footnotes() {
         ),
         concat!(
             "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\"><a href=\"#fn1\" \
-             id=\"fnref1\">[1]</a></sup> and another.<sup class=\"footnote-ref\"><a \
-             href=\"#fn2\" id=\"fnref2\">[2]</a></sup></p>\n",
+             id=\"fnref1\">1</a></sup> and another.<sup class=\"footnote-ref\"><a \
+             href=\"#fn2\" id=\"fnref2\">2</a></sup></p>\n",
             "<p>This is another note.<sup class=\"footnote-ref\"><a href=\"#fn3\" \
-             id=\"fnref3\">[3]</a></sup></p>\n",
+             id=\"fnref3\">3</a></sup></p>\n",
             "<p>This is regular content.</p>\n",
             "<section class=\"footnotes\">\n",
             "<ol>\n",
@@ -630,7 +641,7 @@ fn footnote_does_not_eat_exclamation() {
         concat!("Here's my footnote![^a]\n", "\n", "[^a]: Yep.\n"),
         concat!(
             "<p>Here's my footnote!<sup class=\"footnote-ref\"><a href=\"#fn1\" \
-             id=\"fnref1\">[1]</a></sup></p>\n",
+             id=\"fnref1\">1</a></sup></p>\n",
             "<section class=\"footnotes\">\n",
             "<ol>\n",
             "<li id=\"fn1\">\n",
@@ -641,6 +652,45 @@ fn footnote_does_not_eat_exclamation() {
         ),
         |opts| opts.ext_footnotes = true,
     );
+}
+
+#[test]
+fn footnote_in_table() {
+    html_opts(concat!(
+        "A footnote in a paragraph[^1]\n",
+        "\n",
+        "| Column1   | Column2 |\n",
+        "| --------- | ------- |\n",
+        "| foot [^1] | note    |\n",
+        "\n",
+        "[^1]: a footnote\n",
+    ), concat!(
+        "<p>A footnote in a paragraph<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></p>\n",
+        "<table>\n",
+        "<thead>\n",
+        "<tr>\n",
+        "<th>Column1</th>\n",
+        "<th>Column2</th>\n",
+        "</tr>\n",
+        "</thead>\n",
+        "<tbody>\n",
+        "<tr>\n",
+        "<td>foot <sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></td>\n",
+        "<td>note</td>\n",
+        "</tr>\n",
+        "</tbody>\n",
+        "</table>\n",
+        "<section class=\"footnotes\">\n",
+        "<ol>\n",
+        "<li id=\"fn1\">\n",
+        "<p>a footnote <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
+        "</li>\n",
+        "</ol>\n",
+        "</section>\n",
+    ), |opts| {
+        opts.ext_footnotes = true;
+        opts.ext_table = true;
+    });
 }
 
 #[test]
@@ -668,28 +718,19 @@ fn pathological_emphases() {
 
 #[test]
 fn no_panic_on_empty_bookended_atx_headers() {
-    html(
-        "#  #",
-        "<h1></h1>\n"
-    );
+    html("#  #", "<h1></h1>\n");
 }
 
 #[test]
 fn table_misparse_1() {
-    html_opts(
-        "a\n-b",
-        "<p>a\n-b</p>\n",
-        |opts| opts.ext_table = true,
-    );
+    html_opts("a\n-b", "<p>a\n-b</p>\n", |opts| opts.ext_table = true);
 }
 
 #[test]
 fn table_misparse_2() {
-    html_opts(
-        "a\n-b\n-c",
-        "<p>a\n-b\n-c</p>\n",
-        |opts| opts.ext_table = true,
-    );
+    html_opts("a\n-b\n-c", "<p>a\n-b\n-c</p>\n", |opts| {
+        opts.ext_table = true
+    });
 }
 
 #[test]
@@ -710,13 +751,7 @@ fn smart_chars() {
 #[test]
 fn nested_tables_1() {
     html_opts(
-        concat!(
-            "- p\n",
-            "\n",
-            "    |a|b|\n",
-            "    |-|-|\n",
-            "    |c|d|\n",
-        ),
+        concat!("- p\n", "\n", "    |a|b|\n", "    |-|-|\n", "    |c|d|\n",),
         concat!(
             "<ul>\n",
             "<li>\n",
@@ -732,7 +767,9 @@ fn nested_tables_1() {
             "<tr>\n",
             "<td>c</td>\n",
             "<td>d</td>\n",
-            "</tr></tbody></table>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
             "</li>\n",
             "</ul>\n",
         ),
@@ -743,11 +780,7 @@ fn nested_tables_1() {
 #[test]
 fn nested_tables_2() {
     html_opts(
-        concat!(
-            "- |a|b|\n",
-            "  |-|-|\n",
-            "  |c|d|\n",
-        ),
+        concat!("- |a|b|\n", "  |-|-|\n", "  |c|d|\n",),
         concat!(
             "<ul>\n",
             "<li>\n",
@@ -762,7 +795,9 @@ fn nested_tables_2() {
             "<tr>\n",
             "<td>c</td>\n",
             "<td>d</td>\n",
-            "</tr></tbody></table>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
             "</li>\n",
             "</ul>\n",
         ),
@@ -773,11 +808,7 @@ fn nested_tables_2() {
 #[test]
 fn nested_tables_3() {
     html_opts(
-        concat!(
-            "> |a|b|\n",
-            "> |-|-|\n",
-            "> |c|d|\n",
-        ),
+        concat!("> |a|b|\n", "> |-|-|\n", "> |c|d|\n",),
         concat!(
             "<blockquote>\n",
             "<table>\n",
@@ -791,7 +822,9 @@ fn nested_tables_3() {
             "<tr>\n",
             "<td>c</td>\n",
             "<td>d</td>\n",
-            "</tr></tbody></table>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
             "</blockquote>\n",
         ),
         |opts| opts.ext_table = true,

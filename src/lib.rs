@@ -60,8 +60,15 @@
 //! # }
 //! ```
 
-#![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-        trivial_numeric_casts, unstable_features, unused_import_braces)]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unstable_features,
+    unused_import_braces
+)]
 #![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
 #![cfg_attr(feature = "benchmarks", allow(unstable_features))]
 #![cfg_attr(feature = "benchmarks", feature(test))]
@@ -82,13 +89,13 @@ extern crate typed_arena;
 extern crate unicode_categories;
 
 mod arena_tree;
-mod parser;
-mod scanners;
-mod html;
 mod cm;
 mod ctype;
-pub mod nodes;
 mod entity;
+mod html;
+pub mod nodes;
+mod parser;
+mod scanners;
 mod strings;
 #[cfg(test)]
 mod tests;
