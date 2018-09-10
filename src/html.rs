@@ -560,19 +560,19 @@ impl<'o> HtmlFormatter<'o> {
                     .unwrap()
                     .same_node(node.first_child().unwrap())
                 {
-                    try!(self.output.write_all(b"</tbody>"));
+                    try!(self.cr());
+                    try!(self.output.write_all(b"</tbody>\n"));
                 }
+                try!(self.cr());
                 try!(self.output.write_all(b"</table>\n"));
             },
             NodeValue::TableRow(header) => if entering {
                 try!(self.cr());
                 if header {
-                    try!(self.output.write_all(b"<thead>"));
-                    try!(self.cr());
+                    try!(self.output.write_all(b"<thead>\n"));
                 } else if let Some(n) = node.previous_sibling() {
                     if let NodeValue::TableRow(true) = n.data.borrow().value {
-                        try!(self.output.write_all(b"<tbody>"));
-                        try!(self.cr());
+                        try!(self.output.write_all(b"<tbody>\n"));
                     }
                 }
                 try!(self.output.write_all(b"<tr>"));
@@ -651,7 +651,7 @@ impl<'o> HtmlFormatter<'o> {
                 let r = str::from_utf8(r).unwrap();
                 try!(write!(
                     self.output,
-                    "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">[{}]</a></sup>",
+                    "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">{}</a></sup>",
                     r, r, r
                 ));
             },
