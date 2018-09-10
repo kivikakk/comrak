@@ -205,8 +205,7 @@ fn url_match<'a>(
     i: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     lazy_static! {
-        static ref SCHEMES: Vec<&'static [u8]> =
-            vec![b"http", b"https", b"ftp"];
+        static ref SCHEMES: Vec<&'static [u8]> = vec![b"http", b"https", b"ftp"];
     }
 
     let size = contents.len();
@@ -299,7 +298,7 @@ fn email_match<'a>(
             // empty
         } else if c == b'@' {
             nb += 1;
-        } else if c == b'.' && link_end < size - i - 1 {
+        } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
             np += 1;
         } else if c != b'-' && c != b'_' {
             break;
@@ -308,7 +307,9 @@ fn email_match<'a>(
         link_end += 1;
     }
 
-    if link_end < 2 || nb != 1 || np == 0
+    if link_end < 2
+        || nb != 1
+        || np == 0
         || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
     {
         return None;
