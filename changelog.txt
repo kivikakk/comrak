@@ -1,3 +1,7 @@
+### 0.3.1
+
+* Keep up-to-date with the spec.
+
 ### 0.3.0
 
 * Significant test coverage and code clean up. (#82, #83, Brian Anderson)
