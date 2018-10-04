@@ -448,11 +448,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 for _ in 0..numticks {
                     write!(self, "`").unwrap();
                 }
-                if literal.is_empty() || literal[0] == b'`' {
+                let pad = literal.is_empty() ||
+                    literal[0] == b'`' || literal[literal.len() - 1] == b'`' ||
+                    literal[0] == b' ' || literal[literal.len() - 1] == b' ';
+                if pad {
                     write!(self, " ").unwrap();
                 }
                 self.output(literal, allow_wrap, Escaping::Literal);
-                if literal.is_empty() || literal[literal.len() - 1] == b'`' {
+                if pad {
                     write!(self, " ").unwrap();
                 }
                 for _ in 0..numticks {

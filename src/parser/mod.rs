@@ -1479,7 +1479,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
         let beforetitle = subj.pos;
         subj.spnl();
-        let title = match scanners::link_title(&subj.input[subj.pos..]) {
+        let title_search = if subj.pos == beforetitle { None } else { scanners::link_title(&subj.input[subj.pos..]) };
+        let title = match title_search {
             Some(matchlen) => {
                 let t = &subj.input[subj.pos..subj.pos + matchlen];
                 subj.pos += matchlen;

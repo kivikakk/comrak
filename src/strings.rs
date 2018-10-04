@@ -47,33 +47,29 @@ pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
     buf
 }
 
-pub fn normalize_whitespace(v: &[u8]) -> Vec<u8> {
-    let mut last_char_was_space = false;
-    let b = v;
+pub fn normalize_code(v: &[u8]) -> Vec<u8> {
     let mut r = Vec::with_capacity(v.len());
-    let mut org = 0;
-    let len = v.len();
-    while org < len {
-        let mut i = org;
+    let mut i = 0;
 
-        while i < len && !isspace(b[i]) {
-            i += 1;
-        }
-
-        if i > org {
-            r.extend_from_slice(&b[org..i]);
-            last_char_was_space = false;
-        }
-
-        if i < len {
-            if !last_char_was_space {
-                r.push(b' ');
-                last_char_was_space = true;
+    while i < v.len() {
+        match v[i] {
+            b'\r' => {
+                if i + 1 == v.len() || v[i + 1] != b'\n' {
+                    r.push(b' ');
+                }
             }
-            i += 1;
+            b'\n' => {
+                r.push(b' ');
+            }
+            c => r.push(c),
         }
 
-        org = i;
+        i += 1
+    }
+
+    if r.len() > 0 && r[0] == b' ' && r[r.len() - 1] == b' ' {
+        r.remove(0);
+        r.pop();
     }
 
     r
