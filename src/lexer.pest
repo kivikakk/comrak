@@ -1,6 +1,6 @@
 atx_heading_start = { "#"{1, 6} ~ (" " | "\t" | "\r" | "\n") }
 
-open_code_fence = _{ open_code_fence_match ~ (!("`" | "\r" | "\n" | "\x00") ~ any)* ~ ("\r" | "\n") }
+open_code_fence = _{ open_code_fence_match ~ (!("`" | "\r" | "\n" | "\x00") ~ ANY)* ~ ("\r" | "\n") }
 open_code_fence_match = { "`"{3,} | "~"{3,} }
 
 close_code_fence = _{ close_code_fence_match ~ ("\t" | " ")* ~ ("\r" | "\n") }
@@ -14,14 +14,14 @@ space_char = _{ " " | "\t" | "\x0b" | "\x0c" | "\r" | "\n" }
 tag_name = _{ ('A'..'Z' | 'a'..'z') ~ ('A'..'Z' | 'a'..'z' | '0'..'9' | "-")* }
 close_tag = _{ "/" ~ tag_name ~ space_char* ~ ">" }
 attribute_name = _{ ('a'..'z' | 'A'..'Z' | "_" | ":") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | ":" | "." | "_" | "-")* }
-attribute_value = _{ (!(" " | "\t" | "\r" | "\n" | "\x0b" | "\x0c" | "\"" | "'" | "=" | "<" | ">" | "`" | "\x00") ~ any)+ | ("'" ~ (!("'" | "\x00") ~ any)* ~ "'") | ("\"" ~ (!("\"" | "\x00") ~ any)* ~ "\"") }
+attribute_value = _{ (!(" " | "\t" | "\r" | "\n" | "\x0b" | "\x0c" | "\"" | "'" | "=" | "<" | ">" | "`" | "\x00") ~ ANY)+ | ("'" ~ (!("'" | "\x00") ~ ANY)* ~ "'") | ("\"" ~ (!("\"" | "\x00") ~ ANY)* ~ "\"") }
 attribute_value_spec = _{ space_char* ~ "=" ~ space_char* ~ attribute_value }
 attribute = _{ space_char+ ~ attribute_name ~ attribute_value_spec? }
 open_tag = _{ tag_name ~ attribute* ~ space_char* ~ "/"? ~ ">" }
-html_comment = _{ "!---->" | ("!--" ~ "-"? ~ !("\x00" | ">" | "-") ~ any ~ ("-"? ~ !("\x00" | "-") ~ any)* ~ "-->") }
-processing_instruction = _{ "?" ~ ((!("?" | ">" | "\x00") ~ any)+ | "?" ~ !(">" | "\x00") ~ any | ">")* ~ "?>" }
-declaration = _{ "!" ~ 'A'..'Z'+ ~ space_char+ ~ (!(">" | "\x00") ~ any)* ~ ">" }
-cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ any)+ | "]" ~ (!("]" | "\x00") ~ any) | "]]" ~ (!(">" | "\x00") ~ any))* ~ "]]>" }
+html_comment = _{ "!---->" | ("!--" ~ "-"? ~ !("\x00" | ">" | "-") ~ ANY ~ ("-"? ~ !("\x00" | "-") ~ ANY)* ~ "-->") }
+processing_instruction = _{ "?" ~ ((!("?" | ">" | "\x00") ~ ANY)+ | "?" ~ !(">" | "\x00") ~ ANY | ">")* ~ "?>" }
+declaration = _{ "!" ~ 'A'..'Z'+ ~ space_char+ ~ (!(">" | "\x00") ~ ANY)* ~ ">" }
+cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ ANY)+ | "]" ~ (!("]" | "\x00") ~ ANY) | "]]" ~ (!(">" | "\x00") ~ ANY))* ~ "]]>" }
 html_tag = { open_tag | close_tag | html_comment | processing_instruction | declaration | cdata }
 
 html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }
@@ -29,24 +29,24 @@ html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ (
 setext_heading_line = { ("="+ | "-"+) ~ (" " | "\t")* ~ ("\r" | "\n") }
 thematic_break = { (("*" ~ (" " | "\t")*){3,} | ("_" ~ (" " | "\t")*){3,} | ("-" ~ (" " | "\t")*){3,}) ~ (" " | "\t")* ~ ("\r" | "\n") }
 
-footnote_definition = { "[^" ~ (!("]" | "\r" | "\n" | "\x00" | "\t") ~ any)+ ~ "]:" ~ (" " | "\t")* }
+footnote_definition = { "[^" ~ (!("]" | "\r" | "\n" | "\x00" | "\t") ~ ANY)+ ~ "]:" ~ (" " | "\t")* }
 
 scheme = _{ ('A'..'Z' | 'a'..'z') ~ ('A'..'Z' | 'a'..'z' | '0'..'9' | "." | "+" | "-"){1,31} }
 
 scheme_rule = { scheme ~ ":" }
 
-autolink_uri = { scheme ~ ":" ~ (!('\x00'..'\x20' | "<" | ">") ~ any)* ~ ">" }
+autolink_uri = { scheme ~ ":" ~ (!('\x00'..'\x20' | "<" | ">") ~ ANY)* ~ ">" }
 autolink_email = { ('a'..'z' | 'A'..'Z' | '0'..'9' | "." | "!" | "#" | "$" | "%" | "&" | "'" | "*" | "+" | "/" | "=" | "?" | "^" | "_" | "`" | "{" | "|" | "}" | "~" | "-")+ ~ "@" ~ ('a'..'z' | 'A'..'Z' | '0'..'9') ~ (('a'..'z' | 'A'..'Z' | '0'..'9' | "-"){0,61} ~ ('a'..'z' | 'A'..'Z' | '0'..'9')?)? ~ ("." ~ (('a'..'z' | 'A'..'Z' | '0'..'9' | "-"){0,61} ~ ('a'..'z' | 'A'..'Z' | '0'..'9')?)?)* ~ ">" }
 
 spacechars = { space_char+ }
 
-escaped_char = _{ "\\" ~ any }
-link_title = { "\"" ~ (escaped_char | (!("\"" | "\x00") ~ any))* ~ "\"" | "'" ~ (escaped_char | (!("'" | "\x00") ~ any))* ~ "'" | "(" ~ (escaped_char | (!(")" | "\x00") ~ any))* ~ ")" }
+escaped_char = _{ "\\" ~ ANY }
+link_title = { "\"" ~ (escaped_char | (!("\"" | "\x00") ~ ANY))* ~ "\"" | "'" ~ (escaped_char | (!("'" | "\x00") ~ ANY))* ~ "'" | "(" ~ (escaped_char | (!(")" | "\x00") ~ ANY))* ~ ")" }
 
 table_spacechar = _{ " " | "\t" | "\x0b" | "\x0c" }
 table_newline = _{ "\r"? ~ "\n" }
 table_marker = _{ table_spacechar* ~ ":"? ~ "-"+ ~ ":"? ~ table_spacechar* }
-table_cell = { ( escaped_char | !("|" | "\r" | "\n") ~ any)* }
+table_cell = { ( escaped_char | !("|" | "\r" | "\n") ~ ANY)* }
 
 table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_spacechar* ~ table_newline }
 table_cell_end = { "|" ~ table_spacechar* ~ table_newline? }
