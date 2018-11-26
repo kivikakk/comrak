@@ -114,7 +114,7 @@ fn main() -> Result<(), Box<Error>> {
         default_info_string: matches
             .value_of("default-info-string")
             .map(|e| e.to_owned()),
-        safe: !matches.is_present("unsafe"),
+        unsafe_: matches.is_present("unsafe"),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),

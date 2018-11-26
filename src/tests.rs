@@ -51,6 +51,17 @@ where
     );
 }
 
+macro_rules! html_opts {
+    ([$($opt:ident),*], $lhs:expr, $rhs:expr,) => {
+        html_opts!([$($opt),*], $lhs, $rhs)
+    };
+    ([$($opt:ident),*], $lhs:expr, $rhs:expr) => {
+        html_opts($lhs, $rhs, |opts| {
+            $(opts.$opt = true;)*
+        });
+    };
+}
+
 #[cfg(feature = "benchmarks")]
 #[cfg_attr(feature = "benchmarks", bench)]
 fn bench_progit(b: &mut Bencher) {
@@ -141,7 +152,8 @@ fn setext_heading() {
 
 #[test]
 fn html_block_1() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<script>\n",
             "*ok* </script> *ok*\n",
@@ -179,7 +191,8 @@ fn html_block_1() {
 
 #[test]
 fn html_block_2() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("   <!-- abc\n", "\n", "ok --> *hi*\n", "*hi*\n"),
         concat!(
             "   <!-- abc\n",
@@ -192,7 +205,8 @@ fn html_block_2() {
 
 #[test]
 fn html_block_3() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(" <? o\n", "k ?> *a*\n", "*a*\n"),
         concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"),
     );
@@ -200,7 +214,8 @@ fn html_block_3() {
 
 #[test]
 fn html_block_4() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("<!X >\n", "ok\n", "<!X\n", "um > h\n", "ok\n"),
         concat!("<!X >\n", "<p>ok</p>\n", "<!X\n", "um > h\n", "<p>ok</p>\n"),
     );
@@ -208,7 +223,8 @@ fn html_block_4() {
 
 #[test]
 fn html_block_5() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<![CDATA[\n",
             "\n",
@@ -230,7 +246,8 @@ fn html_block_5() {
 
 #[test]
 fn html_block_6() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(" </table>\n", "*x*\n", "\n", "ok\n", "\n", "<li\n", "*x*\n"),
         concat!(" </table>\n", "*x*\n", "<p>ok</p>\n", "<li\n", "*x*\n"),
     );
@@ -238,7 +255,8 @@ fn html_block_6() {
 
 #[test]
 fn html_block_7() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<a b >\n",
             "ok\n",
@@ -261,7 +279,8 @@ fn html_block_7() {
         ),
     );
 
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "\n", "ok\n"),
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "<p>ok</p>\n"),
     );
@@ -314,7 +333,8 @@ fn entities() {
 
 #[test]
 fn pointy_brace() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "URI autolink: <https://www.pixiv.net>\n",
             "\n",
@@ -387,7 +407,8 @@ fn reference_links() {
 
 #[test]
 fn strikethrough() {
-    html_opts(
+    html_opts!(
+        [ext_strikethrough],
         concat!(
             "This is ~strikethrough~.\n",
             "\n",
@@ -397,7 +418,6 @@ fn strikethrough() {
             "<p>This is <del>strikethrough</del>.</p>\n",
             "<p>As is <del>this, okay</del>?</p>\n"
         ),
-        |opts| opts.ext_strikethrough = true,
     );
 }
 
@@ -479,16 +499,17 @@ fn autolink_no_link_bad() {
 
 #[test]
 fn tagfilter() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tagfilter],
         concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
         concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
-        |opts| opts.ext_tagfilter = true,
     );
 }
 
 #[test]
 fn tasklist() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tasklist],
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
@@ -527,13 +548,13 @@ fn tasklist() {
             "</li>\n",
             "</ul>\n"
         ),
-        |opts| opts.ext_tasklist = true,
     );
 }
 
 #[test]
 fn tasklist_32() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tasklist],
         concat!(
             "- [ ] List item 1\n",
             "- [ ] This list item is **bold**\n",
@@ -546,7 +567,6 @@ fn tasklist_32() {
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> There is some <code>code</code> here</li>\n",
             "</ul>\n"
         ),
-        |opts| opts.ext_tasklist = true,
     );
 }
 
@@ -856,8 +876,8 @@ fn cm_autolink_regression() {
 }
 
 #[test]
-fn safe() {
-    html_opts(
+fn safety() {
+    html(
         concat!(
             "[data:png](data:png/x)\n\n",
             "[data:gif](data:gif/x)\n\n",
@@ -878,7 +898,6 @@ fn safe() {
             "<p><a href=\"\">vbscript:malicious</a></p>\n",
             "<p><a href=\"\">file:malicious</a></p>\n",
         ),
-        |opts| opts.safe = true,
     )
 }
 

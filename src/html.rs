@@ -450,7 +450,7 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::HtmlBlock(ref nhb) => if entering {
                 self.cr()?;
-                if self.options.safe {
+                if !self.options.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
                 } else if self.options.ext_tagfilter {
                     tagfilter_block(&nhb.literal, &mut self.output)?;
@@ -509,7 +509,7 @@ impl<'o> HtmlFormatter<'o> {
                 self.output.write_all(b"</code>")?;
             },
             NodeValue::HtmlInline(ref literal) => if entering {
-                if self.options.safe {
+                if !self.options.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
                 } else if self.options.ext_tagfilter && tagfilter(literal) {
                     self.output.write_all(b"&lt;")?;
@@ -540,7 +540,7 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Link(ref nl) => if entering {
                 self.output.write_all(b"<a href=\"")?;
-                if !self.options.safe || !dangerous_url(&nl.url) {
+                if self.options.unsafe_ || !dangerous_url(&nl.url) {
                     self.escape_href(&nl.url)?;
                 }
                 if !nl.title.is_empty() {
@@ -553,7 +553,7 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Image(ref nl) => if entering {
                 self.output.write_all(b"<img src=\"")?;
-                if !self.options.safe || !dangerous_url(&nl.url) {
+                if self.options.unsafe_ || !dangerous_url(&nl.url) {
                     self.escape_href(&nl.url)?;
                 }
                 self.output.write_all(b"\" alt=\"")?;
