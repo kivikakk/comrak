@@ -47,9 +47,9 @@ fn main() -> Result<(), Box<Error>> {
                 .takes_value(true),
         )
         .arg(
-            clap::Arg::with_name("safe")
-                .long("safe")
-                .help("Suppress raw HTML and dangerous URLs"),
+            clap::Arg::with_name("unsafe")
+                .long("unsafe")
+                .help("Allow raw HTML and dangerous URLs"),
         )
         .arg(
             clap::Arg::with_name("extension")
@@ -114,7 +114,7 @@ fn main() -> Result<(), Box<Error>> {
         default_info_string: matches
             .value_of("default-info-string")
             .map(|e| e.to_owned()),
-        safe: matches.is_present("safe"),
+        safe: !matches.is_present("unsafe"),
         ext_strikethrough: exts.remove("strikethrough"),
         ext_tagfilter: exts.remove("tagfilter"),
         ext_table: exts.remove("table"),
