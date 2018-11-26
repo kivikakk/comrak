@@ -718,8 +718,10 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         closer_num_chars -= use_delims;
 
         if self.options.ext_strikethrough && opener_char == b'~' {
-            opener_num_chars = 0;
-            closer_num_chars = 0;
+            if opener_num_chars != closer_num_chars ||
+                opener_num_chars > 0 {
+                    return None
+                }
         }
 
         opener
