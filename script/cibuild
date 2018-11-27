@@ -14,4 +14,5 @@ if [ x"$SPEC" = "xtrue" ]; then
 	python3 entity_tests.py --program=../../../target/debug/comrak
 else
 	cargo test --verbose
+	cargo run --example readme
 fi
