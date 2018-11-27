@@ -1,3 +1,8 @@
+### 0.4.0
+
+* Invert default-false `safe` flag to default-false `unsafe_` flag.  If you
+  were not enabling safe mode before, you'll need to enable unsafe mode now.
+
 ### 0.3.1
 
 * Keep up-to-date with the spec.

@@ -20,7 +20,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.3"
+comrak = "0.4"
 ```
 
 
@@ -30,7 +30,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.3.1
+comrak 0.4.0
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -41,8 +41,8 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
-        --safe               Suppress raw HTML and dangerous URLs
         --smart              Use smart punctuation
+        --unsafe             Allow raw HTML and dangerous URLs
     -V, --version            Prints version information
 
 OPTIONS:
@@ -114,9 +114,9 @@ assert_eq!(
 
 ## Security
 
-As with [`cmark-gfm`](https://github.com/github/cmark#security), Comrak will pass through inline HTML, dangerous links, anything you can imagine — it only performs Markdown to HTML conversion per the CommonMark/GFM spec.  We recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
+As with [`cmark-gfm`](https://github.com/github/cmark-gfm#security), Comrak will scrub raw HTML and potentially dangerous links.  This change was introduced in Comrak 0.4.0 in support of a safe-by-default posture.
 
-You can also disable this potentially unsafe feature by using the `safe` option (or `--safe` at the command-line).
+To allow these, use the `unsafe_` option (or `--unsafe` with the command line program).  If doing so, we recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
 
 ## Extensions
@@ -139,7 +139,7 @@ setting the appropriate values in the
 
 ## Related projects
 
-Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark) as closely as possible in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak. It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
+Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak. It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
 
 The downside, of course, is that the code is not what I'd call idiomatic Rust (_so many `RefCell`s_), and while contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers depending on your use-case. Here are some other projects to consider:
 
