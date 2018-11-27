@@ -153,7 +153,7 @@ pub struct ComrakOptions {
     /// ```
     pub default_info_string: Option<String>,
 
-    /// Disable rendering of raw HTML and potentially dangerous links.
+    /// Allow rendering of raw HTML and potentially dangerous links.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
@@ -164,19 +164,19 @@ pub struct ComrakOptions {
     ///              [Safe](http://commonmark.org).\n";
     ///
     /// assert_eq!(markdown_to_html(input, &options),
-    ///            "<script>\nalert(\'xyz\');\n</script>\n\
-    ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
-    ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
-    ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
-    ///
-    /// options.safe = true;
-    /// assert_eq!(markdown_to_html(input, &options),
     ///            "<!-- raw HTML omitted -->\n\
     ///             <p>Possibly <!-- raw HTML omitted -->annoying<!-- raw HTML omitted -->.</p>\n\
     ///             <p><a href=\"\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
+    ///
+    /// options.unsafe_ = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<script>\nalert(\'xyz\');\n</script>\n\
+    ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
+    ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
+    ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
-    pub safe: bool,
+    pub unsafe_: bool,
 
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
@@ -200,6 +200,7 @@ pub struct ComrakOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let options = ComrakOptions {
+    ///   unsafe_: true,
     ///   ext_tagfilter: true,
     ///   ..ComrakOptions::default()
     /// };
@@ -247,6 +248,7 @@ pub struct ComrakOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let options = ComrakOptions {
+    ///   unsafe_: true,
     ///   ext_tasklist: true,
     ///   ..ComrakOptions::default()
     /// };

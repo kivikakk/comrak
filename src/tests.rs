@@ -51,6 +51,17 @@ where
     );
 }
 
+macro_rules! html_opts {
+    ([$($opt:ident),*], $lhs:expr, $rhs:expr,) => {
+        html_opts!([$($opt),*], $lhs, $rhs)
+    };
+    ([$($opt:ident),*], $lhs:expr, $rhs:expr) => {
+        html_opts($lhs, $rhs, |opts| {
+            $(opts.$opt = true;)*
+        });
+    };
+}
+
 #[cfg(feature = "benchmarks")]
 #[cfg_attr(feature = "benchmarks", bench)]
 fn bench_progit(b: &mut Bencher) {
@@ -141,7 +152,8 @@ fn setext_heading() {
 
 #[test]
 fn html_block_1() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<script>\n",
             "*ok* </script> *ok*\n",
@@ -179,7 +191,8 @@ fn html_block_1() {
 
 #[test]
 fn html_block_2() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("   <!-- abc\n", "\n", "ok --> *hi*\n", "*hi*\n"),
         concat!(
             "   <!-- abc\n",
@@ -192,7 +205,8 @@ fn html_block_2() {
 
 #[test]
 fn html_block_3() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(" <? o\n", "k ?> *a*\n", "*a*\n"),
         concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"),
     );
@@ -200,7 +214,8 @@ fn html_block_3() {
 
 #[test]
 fn html_block_4() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("<!X >\n", "ok\n", "<!X\n", "um > h\n", "ok\n"),
         concat!("<!X >\n", "<p>ok</p>\n", "<!X\n", "um > h\n", "<p>ok</p>\n"),
     );
@@ -208,7 +223,8 @@ fn html_block_4() {
 
 #[test]
 fn html_block_5() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<![CDATA[\n",
             "\n",
@@ -230,7 +246,8 @@ fn html_block_5() {
 
 #[test]
 fn html_block_6() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(" </table>\n", "*x*\n", "\n", "ok\n", "\n", "<li\n", "*x*\n"),
         concat!(" </table>\n", "*x*\n", "<p>ok</p>\n", "<li\n", "*x*\n"),
     );
@@ -238,7 +255,8 @@ fn html_block_6() {
 
 #[test]
 fn html_block_7() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "<a b >\n",
             "ok\n",
@@ -261,7 +279,8 @@ fn html_block_7() {
         ),
     );
 
-    html(
+    html_opts!(
+        [unsafe_],
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "\n", "ok\n"),
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "<p>ok</p>\n"),
     );
@@ -314,7 +333,8 @@ fn entities() {
 
 #[test]
 fn pointy_brace() {
-    html(
+    html_opts!(
+        [unsafe_],
         concat!(
             "URI autolink: <https://www.pixiv.net>\n",
             "\n",
@@ -387,7 +407,8 @@ fn reference_links() {
 
 #[test]
 fn strikethrough() {
-    html_opts(
+    html_opts!(
+        [ext_strikethrough],
         concat!(
             "This is ~strikethrough~.\n",
             "\n",
@@ -397,13 +418,13 @@ fn strikethrough() {
             "<p>This is <del>strikethrough</del>.</p>\n",
             "<p>As is <del>this, okay</del>?</p>\n"
         ),
-        |opts| opts.ext_strikethrough = true,
     );
 }
 
 #[test]
 fn table() {
-    html_opts(
+    html_opts!(
+        [ext_table],
         concat!("| a | b |\n", "|---|:-:|\n", "| c | d |\n"),
         concat!(
             "<table>\n",
@@ -421,74 +442,74 @@ fn table() {
             "</tbody>\n",
             "</table>\n"
         ),
-        |opts| opts.ext_table = true,
     );
 }
 
 #[test]
 fn autolink_www() {
-    html_opts(
+    html_opts!(
+        [ext_autolink],
         concat!("www.autolink.com\n"),
         concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
-        |opts| opts.ext_autolink = true,
     );
 }
 
 #[test]
 fn autolink_email() {
-    html_opts(
+    html_opts!(
+        [ext_autolink],
         concat!("john@smith.com\n"),
         concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
-        |opts| opts.ext_autolink = true,
     );
 }
 
 #[test]
 fn autolink_scheme() {
-    html_opts(
+    html_opts!(
+        [ext_autolink],
         concat!("https://google.com/search\n"),
         concat!(
             "<p><a href=\"https://google.com/search\">https://google.\
              com/search</a></p>\n"
         ),
-        |opts| opts.ext_autolink = true,
     );
 }
 
 #[test]
 fn autolink_scheme_multiline() {
-    html_opts(
+    html_opts!(
+        [ext_autolink],
         concat!("https://google.com/search\nhttps://www.google.com/maps"),
         concat!(
             "<p><a href=\"https://google.com/search\">https://google.\
              com/search</a>\n<a href=\"https://www.google.com/maps\">\
              https://www.google.com/maps</a></p>\n"
         ),
-        |opts| opts.ext_autolink = true,
     );
 }
 
 #[test]
 fn autolink_no_link_bad() {
-    html_opts(
+    html_opts!(
+        [ext_autolink],
         concat!("@a.b.c@. x\n", "\n", "n@. x\n"),
         concat!("<p>@a.b.c@. x</p>\n", "<p>n@. x</p>\n"),
-        |opts| opts.ext_autolink = true,
     );
 }
 
 #[test]
 fn tagfilter() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tagfilter],
         concat!("hi <xmp> ok\n", "\n", "<xmp>\n"),
         concat!("<p>hi &lt;xmp> ok</p>\n", "&lt;xmp>\n"),
-        |opts| opts.ext_tagfilter = true,
     );
 }
 
 #[test]
 fn tasklist() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tasklist],
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
@@ -527,13 +548,13 @@ fn tasklist() {
             "</li>\n",
             "</ul>\n"
         ),
-        |opts| opts.ext_tasklist = true,
     );
 }
 
 #[test]
 fn tasklist_32() {
-    html_opts(
+    html_opts!(
+        [unsafe_, ext_tasklist],
         concat!(
             "- [ ] List item 1\n",
             "- [ ] This list item is **bold**\n",
@@ -546,16 +567,15 @@ fn tasklist_32() {
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> There is some <code>code</code> here</li>\n",
             "</ul>\n"
         ),
-        |opts| opts.ext_tasklist = true,
     );
 }
 
 #[test]
 fn superscript() {
-    html_opts(
+    html_opts!(
+        [ext_superscript],
         concat!("e = mc^2^.\n"),
         concat!("<p>e = mc<sup>2</sup>.</p>\n"),
-        |opts| opts.ext_superscript = true,
     );
 }
 
@@ -584,7 +604,8 @@ fn header_ids() {
 
 #[test]
 fn footnotes() {
-    html_opts(
+    html_opts!(
+        [ext_footnotes],
         concat!(
             "Here is a[^nowhere] footnote reference,[^1] and another.[^longnote]\n",
             "\n",
@@ -631,13 +652,13 @@ fn footnotes() {
             "</ol>\n",
             "</section>\n"
         ),
-        |opts| opts.ext_footnotes = true,
     );
 }
 
 #[test]
 fn footnote_does_not_eat_exclamation() {
-    html_opts(
+    html_opts!(
+        [ext_footnotes],
         concat!("Here's my footnote![^a]\n", "\n", "[^a]: Yep.\n"),
         concat!(
             "<p>Here's my footnote!<sup class=\"footnote-ref\"><a href=\"#fn1\" \
@@ -650,47 +671,45 @@ fn footnote_does_not_eat_exclamation() {
             "</ol>\n",
             "</section>\n"
         ),
-        |opts| opts.ext_footnotes = true,
     );
 }
 
 #[test]
 fn footnote_in_table() {
-    html_opts(concat!(
-        "A footnote in a paragraph[^1]\n",
-        "\n",
-        "| Column1   | Column2 |\n",
-        "| --------- | ------- |\n",
-        "| foot [^1] | note    |\n",
-        "\n",
-        "[^1]: a footnote\n",
-    ), concat!(
-        "<p>A footnote in a paragraph<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></p>\n",
-        "<table>\n",
-        "<thead>\n",
-        "<tr>\n",
-        "<th>Column1</th>\n",
-        "<th>Column2</th>\n",
-        "</tr>\n",
-        "</thead>\n",
-        "<tbody>\n",
-        "<tr>\n",
-        "<td>foot <sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></td>\n",
-        "<td>note</td>\n",
-        "</tr>\n",
-        "</tbody>\n",
-        "</table>\n",
-        "<section class=\"footnotes\">\n",
-        "<ol>\n",
-        "<li id=\"fn1\">\n",
-        "<p>a footnote <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
-        "</li>\n",
-        "</ol>\n",
-        "</section>\n",
-    ), |opts| {
-        opts.ext_footnotes = true;
-        opts.ext_table = true;
-    });
+    html_opts!(
+        [ext_table, ext_footnotes],
+        concat!(
+            "A footnote in a paragraph[^1]\n",
+            "\n",
+            "| Column1   | Column2 |\n",
+            "| --------- | ------- |\n",
+            "| foot [^1] | note    |\n",
+            "\n",
+            "[^1]: a footnote\n",
+        ), concat!(
+            "<p>A footnote in a paragraph<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></p>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>Column1</th>\n",
+            "<th>Column2</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>foot <sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup></td>\n",
+            "<td>note</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+            "<section class=\"footnotes\">\n",
+            "<ol>\n",
+            "<li id=\"fn1\">\n",
+            "<p>a footnote <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ));
 }
 
 #[test]
@@ -723,34 +742,33 @@ fn no_panic_on_empty_bookended_atx_headers() {
 
 #[test]
 fn table_misparse_1() {
-    html_opts("a\n-b", "<p>a\n-b</p>\n", |opts| opts.ext_table = true);
+    html_opts!([ext_table], "a\n-b", "<p>a\n-b</p>\n");
 }
 
 #[test]
 fn table_misparse_2() {
-    html_opts("a\n-b\n-c", "<p>a\n-b\n-c</p>\n", |opts| {
-        opts.ext_table = true
-    });
+    html_opts!([ext_table], "a\n-b\n-c", "<p>a\n-b\n-c</p>\n");
 }
 
 #[test]
 fn smart_chars() {
-    html_opts(
+    html_opts!(
+        [smart],
         "Why 'hello' \"there\". It's good.",
         "<p>Why ‘hello’ “there”. It’s good.</p>\n",
-        |opts| opts.smart = true,
     );
 
-    html_opts(
+    html_opts!(
+        [smart],
         "Hm. Hm.. hm... yes- indeed-- quite---!",
         "<p>Hm. Hm.. hm… yes- indeed– quite—!</p>\n",
-        |opts| opts.smart = true,
     );
 }
 
 #[test]
 fn nested_tables_1() {
-    html_opts(
+    html_opts!(
+        [ext_table],
         concat!("- p\n", "\n", "    |a|b|\n", "    |-|-|\n", "    |c|d|\n",),
         concat!(
             "<ul>\n",
@@ -773,13 +791,13 @@ fn nested_tables_1() {
             "</li>\n",
             "</ul>\n",
         ),
-        |opts| opts.ext_table = true,
     );
 }
 
 #[test]
 fn nested_tables_2() {
-    html_opts(
+    html_opts!(
+        [ext_table],
         concat!("- |a|b|\n", "  |-|-|\n", "  |c|d|\n",),
         concat!(
             "<ul>\n",
@@ -801,13 +819,13 @@ fn nested_tables_2() {
             "</li>\n",
             "</ul>\n",
         ),
-        |opts| opts.ext_table = true,
     );
 }
 
 #[test]
 fn nested_tables_3() {
-    html_opts(
+    html_opts!(
+        [ext_table],
         concat!("> |a|b|\n", "> |-|-|\n", "> |c|d|\n",),
         concat!(
             "<blockquote>\n",
@@ -827,7 +845,6 @@ fn nested_tables_3() {
             "</table>\n",
             "</blockquote>\n",
         ),
-        |opts| opts.ext_table = true,
     );
 }
 
@@ -856,8 +873,8 @@ fn cm_autolink_regression() {
 }
 
 #[test]
-fn safe() {
-    html_opts(
+fn safety() {
+    html(
         concat!(
             "[data:png](data:png/x)\n\n",
             "[data:gif](data:gif/x)\n\n",
@@ -878,7 +895,6 @@ fn safe() {
             "<p><a href=\"\">vbscript:malicious</a></p>\n",
             "<p><a href=\"\">file:malicious</a></p>\n",
         ),
-        |opts| opts.safe = true,
     )
 }
 
@@ -934,7 +950,8 @@ fn nul_replacement_5() {
 
 #[test]
 fn description_lists() {
-    html_opts(
+    html_opts!(
+        [ext_description_lists],
         concat!(
             "Term 1\n",
             "\n",
@@ -960,10 +977,10 @@ fn description_lists() {
             "</dd>\n",
             "</dl>\n",
         ),
-        |opts| opts.ext_description_lists = true,
     );
 
-    html_opts(
+    html_opts!(
+        [ext_description_lists],
         concat!(
             "* Nested\n",
             "\n",
@@ -993,6 +1010,5 @@ fn description_lists() {
             "</li>\n",
             "</ul>\n",
         ),
-        |opts| opts.ext_description_lists = true,
     );
 }
