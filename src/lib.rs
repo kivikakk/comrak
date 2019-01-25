@@ -104,6 +104,7 @@ pub use cm::format_document as format_commonmark;
 pub use html::format_document as format_html;
 pub use parser::{parse_document, ComrakOptions};
 pub use typed_arena::Arena;
+pub use html::Anchorizer;
 
 /// Render Markdown to HTML.
 ///
