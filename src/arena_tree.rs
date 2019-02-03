@@ -28,6 +28,8 @@ pub struct Node<'a, T: 'a> {
     next_sibling: Cell<Option<&'a Node<'a, T>>>,
     first_child: Cell<Option<&'a Node<'a, T>>>,
     last_child: Cell<Option<&'a Node<'a, T>>>,
+
+    /// The data held by the node.
     pub data: T,
 }
 
@@ -310,6 +312,7 @@ impl<'a, T> Iterator for Descendants<'a, T> {
     }
 }
 
+/// An edge of the node graph returned by a traversal iterator.
 #[derive(Debug, Clone)]
 pub enum NodeEdge<T> {
     /// Indicates that start of a node that has children.
