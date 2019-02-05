@@ -1,6 +1,5 @@
 /*!
-  Included from https://github.com/SimonSapin/rust-forest/blob/
-  5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs.
+  Included from <https://github.com/SimonSapin/rust-forest/blob/5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs>.
   MIT license (per Cargo.toml).
 
 A DOM-like tree data structure based on `&Node` references.
@@ -28,6 +27,8 @@ pub struct Node<'a, T: 'a> {
     next_sibling: Cell<Option<&'a Node<'a, T>>>,
     first_child: Cell<Option<&'a Node<'a, T>>>,
     last_child: Cell<Option<&'a Node<'a, T>>>,
+
+    /// The data held by the node.
     pub data: T,
 }
 
@@ -310,6 +311,7 @@ impl<'a, T> Iterator for Descendants<'a, T> {
     }
 }
 
+/// An edge of the node graph returned by a traversal iterator.
 #[derive(Debug, Clone)]
 pub enum NodeEdge<T> {
     /// Indicates that start of a node that has children.

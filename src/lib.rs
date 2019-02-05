@@ -88,7 +88,7 @@ extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
 
-mod arena_tree;
+pub mod arena_tree;
 mod cm;
 mod ctype;
 mod entity;
