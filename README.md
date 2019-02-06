@@ -170,7 +170,7 @@ Thank you for PRs and issues opened!
 * [brson](https://github.com/brson)
 * [Keats](https://github.com/Keats)
 * [ayosec](https://github.com/ayosec)
-
+* [ctm](https://github.com/ctm)
 
 ## Legal
 
