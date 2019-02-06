@@ -392,7 +392,7 @@ impl<'o> HtmlFormatter<'o> {
 
                         let mut id = String::from_utf8(text_content).unwrap();
                         id = id.to_lowercase();
-                        id = REJECTED_CHARS.replace(&id, "").to_string();
+                        id = REJECTED_CHARS.replace_all(&id, "").to_string();
                         id = id.replace(' ', "-");
 
                         let mut uniq = 0;
