@@ -1,3 +1,8 @@
+### 0.4.1
+
+* Fix a bug in anchor generation; it should now be on par with GitHub's. (#97, Clifford T. Matthews)
+* Expose anchor generation for use in library consumers. (#94, Clifford T. Matthews)
+
 ### 0.4.0
 
 * Invert default-false `safe` flag to default-false `unsafe_` flag.  If you

@@ -30,7 +30,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.4.0
+comrak 0.4.1
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
