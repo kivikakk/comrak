@@ -95,7 +95,7 @@ impl Anchorizer {
 
         let mut id = header;
         id = id.to_lowercase();
-        id = REJECTED_CHARS.replace(&id, "").to_string();
+        id = REJECTED_CHARS.replace_all(&id, "").to_string();
         id = id.replace(' ', "-");
 
         let mut uniq = 0;
