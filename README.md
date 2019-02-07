@@ -130,7 +130,12 @@ Comrak supports the five extensions to CommonMark defined in the
 * [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
 * [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
-as well as superscript, footnotes, and description lists.
+Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
+
+* Superscript
+* Header IDs
+* Footnotes
+* Description lists
 
 By default none are enabled; they are individually enabled with each parse by
 setting the appropriate values in the
