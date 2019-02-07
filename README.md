@@ -10,7 +10,7 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 * [Security](#security)
 * [Extensions](#extensions)
 * [Related projects](#related-projects)
-* [Contributors](#contributors)
+* [Contributing](#contributing)
 * [Legal](#legal)
 
 
@@ -145,14 +145,16 @@ The downside, of course, is that the code is not what I'd call idiomatic Rust (_
 
 * [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec compatibility yet.
 * [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to `libcmark`. It hasn't been updated in a while, though there's an [open pull request](https://github.com/bnavetta/rcmark/pull/2).
-* Know of another library? Please add it!
+* Know of another library? Please open a PR to add it!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
 
 
-## Contributors
+## Contributing
 
-Thank you for PRs and issues opened!
+Contributions are highly encouraged; where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this project.
+
+Thank you to comrak's many contributors for PRs and issues opened!
 
 * [ConnyOnny](https://github.com/ConnyOnny)
 * [killercup](https://github.com/killercup)
@@ -172,9 +174,10 @@ Thank you for PRs and issues opened!
 * [ayosec](https://github.com/ayosec)
 * [ctm](https://github.com/ctm)
 
+
 ## Legal
 
-Copyright (c) 2017–2018, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Copyright (c) 2017–2019, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
