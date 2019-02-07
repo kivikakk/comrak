@@ -130,6 +130,28 @@ pub enum NodeValue {
     /// title.
     Link(NodeLink),
 
+    /// **Inline**.  A [full reference link](https://github.github.com/gfm/#full-reference-link),
+    /// [collapsed reference link](https://github.github.com/gfm/#collapsed-reference-link), or
+    /// [shortcut reference link](https://github.github.com/gfm/#shortcut-reference-link) with no
+    /// matching reference (a "broken" link). This node exists so you may replace it during
+    /// preprocessing if desired. If the node is left in, it will be rendered as a Text node with
+    /// the square brackets intact.
+    BrokenReference {
+        /// The text of the link label that could not be matched with a reference
+        ///
+        /// ```md
+        /// 1. [not this text][this text]
+        /// 2. [this text][]
+        /// 3. [this text]
+        /// ```
+        ///
+        /// For (1), the child node will be `not this text`, for (2) and (3), the child node will
+        /// be `this text`.
+        label: Vec<u8>,
+        /// true if this was an image, false if this was a regular link
+        is_image: bool,
+    },
+
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
 

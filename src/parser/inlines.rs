@@ -977,9 +977,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             }
         }
 
-        self.brackets.pop();
-        self.pos = initial_pos;
-        Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())))
+        self.close_bracket_broken_link(is_image, lab);
+        return None;
     }
 
     pub fn close_bracket_match(&mut self, is_image: bool, url: Vec<u8>, title: Vec<u8>) {
@@ -994,6 +993,40 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             } else {
                 NodeValue::Link(nl)
             },
+        );
+
+        let mut brackets_len = self.brackets.len();
+        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
+        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        while let Some(tmp) = tmpch {
+            tmpch = tmp.next_sibling();
+            inl.append(tmp);
+        }
+        self.brackets[brackets_len - 1].inl_text.detach();
+        let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
+        self.process_emphasis(previous_delimiter);
+        self.brackets.pop();
+        brackets_len -= 1;
+
+        if !is_image {
+            let mut i = brackets_len as i32 - 1;
+            while i >= 0 {
+                if !self.brackets[i as usize].image {
+                    if !self.brackets[i as usize].active {
+                        break;
+                    } else {
+                        self.brackets[i as usize].active = false;
+                    }
+                }
+                i -= 1;
+            }
+        }
+    }
+
+    pub fn close_bracket_broken_link(&mut self, is_image: bool, label: Vec<u8>) {
+        let inl = make_inline(
+            self.arena,
+            NodeValue::BrokenReference {label, is_image},
         );
 
         let mut brackets_len = self.brackets.len();

@@ -602,6 +602,14 @@ impl<'o> HtmlFormatter<'o> {
             } else {
                 self.output.write_all(b"</a>")?;
             },
+            NodeValue::BrokenReference {ref label, is_image} => if entering {
+                if is_image { self.output.write_all(b"!")?; }
+                self.output.write_all(b"[")?;
+            } else {
+                self.output.write_all(b"][")?;
+                self.escape(&label)?;
+                self.output.write_all(b"]")?;
+            },
             NodeValue::Image(ref nl) => if entering {
                 self.output.write_all(b"<img src=\"")?;
                 if self.options.unsafe_ || !dangerous_url(&nl.url) {

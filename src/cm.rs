@@ -520,6 +520,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
                 write!(self, ")").unwrap();
             },
+            NodeValue::BrokenReference {ref label, is_image} => if entering {
+                if is_image { write!(self, "!").unwrap() }
+                write!(self, "[").unwrap();
+            } else {
+                write!(self, "][").unwrap();
+                self.output(&label, false, Escaping::Normal);
+                write!(self, "]").unwrap();
+            },
             NodeValue::Image(ref nl) => if entering {
                 write!(self, "![").unwrap();
             } else {
