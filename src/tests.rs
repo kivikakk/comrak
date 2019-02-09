@@ -513,7 +513,7 @@ fn tasklist() {
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
-            "* [ ] Blue\n",
+            "* [ ] Blue [x]\n",
             "<!-- end list -->\n",
             "1. [ ] Bird\n",
             "2. [ ] McHale\n",
@@ -527,7 +527,7 @@ fn tasklist() {
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" /> Blue [x]</li>\n",
             "</ul>\n",
             "<!-- end list -->\n",
             "<ol>\n",

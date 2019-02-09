@@ -8,7 +8,7 @@ use entity;
 use nodes;
 use nodes::{
     make_block, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
-    NodeHeading, NodeHtmlBlock, NodeList, NodeValue,
+    NodeHeading, NodeHtmlBlock, NodeList, NodeBrokenRef, RefLinkType, NodeValue,
 };
 use regex::bytes::Regex;
 use scanners;
@@ -1355,10 +1355,18 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let mut this_bracket = false;
                 loop {
                     match n.data.borrow_mut().value {
+                        // Broken reference nodes are essentially text nodes but processed a bit
+                        // differently because they have no "[" or "]" around their text
+                        NodeValue::BrokenReference(ref br) => {
+                            self.postprocess_broken_ref(n, br);
+                            break;
+                        },
+                        // Join adjacent text nodes together
                         NodeValue::Text(ref mut root) => {
                             let ns = match n.next_sibling() {
                                 Some(ns) => ns,
                                 _ => {
+                                    // Post-process once we are finished joining text nodes
                                     self.postprocess_text_node(n, root);
                                     break;
                                 }
@@ -1370,6 +1378,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                                     ns.detach();
                                 }
                                 _ => {
+                                    // Post-process once we are finished joining text nodes
                                     self.postprocess_text_node(n, root);
                                     break;
                                 }
@@ -1406,6 +1415,19 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
+    fn postprocess_broken_ref(&mut self, node: &'a AstNode<'a>, br: &NodeBrokenRef) {
+        if self.options.ext_tasklist && !br.is_image && br.ref_type == RefLinkType::Shortcut {
+            let became_task_item = match &br.label[..] {
+                [] | [b' '] => self.process_potential_tasklist_item(node, false),
+                [b'x'] | [b'X'] => self.process_potential_tasklist_item(node, true),
+                _ => false,
+            };
+            if became_task_item {
+                node.detach();
+            }
+        }
+    }
+
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
         lazy_static! {
             static ref TASKLIST: Regex = Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap();
@@ -1419,22 +1441,30 @@ impl<'a, 'o> Parser<'a, 'o> {
             ),
         };
 
+        if self.process_potential_tasklist_item(node, active) {
+            *text = text[end..].to_vec();
+        }
+    }
+
+    /// Attempts to make a suspected tasklist item into that item. Returns true if the node has
+    /// been converted. Returns false and does nothing otherwise.
+    /// Set active to true if the checkbox should be checked.
+    fn process_potential_tasklist_item(&mut self, node: &'a AstNode<'a>, active: bool) -> bool {
         let parent = node.parent().unwrap();
         if node.previous_sibling().is_some() || parent.previous_sibling().is_some() {
-            return;
+            return false;
         }
 
         match parent.data.borrow().value {
             NodeValue::Paragraph => (),
-            _ => return,
+            _ => return false,
         }
 
         match parent.parent().unwrap().data.borrow().value {
             NodeValue::Item(..) => (),
-            _ => return,
+            _ => return false,
         }
 
-        *text = text[end..].to_vec();
         let checkbox = inlines::make_inline(
             self.arena,
             NodeValue::HtmlInline(if active {
@@ -1444,6 +1474,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             }),
         );
         node.insert_before(checkbox);
+        return true;
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
