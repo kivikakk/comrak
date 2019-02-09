@@ -1,5 +1,5 @@
 use ctype::isspace;
-use nodes::{AstNode, ListType, NodeValue, TableAlignment};
+use nodes::{AstNode, ListType, NodeBrokenRef, RefLinkType, NodeValue, TableAlignment};
 use parser::ComrakOptions;
 use regex::Regex;
 use scanners;
@@ -602,12 +602,16 @@ impl<'o> HtmlFormatter<'o> {
             } else {
                 self.output.write_all(b"</a>")?;
             },
-            NodeValue::BrokenReference {ref label, is_image} => if entering {
+            NodeValue::BrokenReference(NodeBrokenRef {ref label, is_image, ref_type}) => if entering {
                 if is_image { self.output.write_all(b"!")?; }
                 self.output.write_all(b"[")?;
+            } else if ref_type == RefLinkType::Shortcut {
+                self.output.write_all(b"]")?;
             } else {
                 self.output.write_all(b"][")?;
-                self.escape(&label)?;
+                if ref_type != RefLinkType::Collapsed {
+                    self.escape(&label)?;
+                }
                 self.output.write_all(b"]")?;
             },
             NodeValue::Image(ref nl) => if entering {

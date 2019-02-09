@@ -393,14 +393,14 @@ fn images() {
 fn reference_links() {
     html(
         concat!(
-            "This [is] [legit], [very][honestly] legit and [cool][broken] and [empty][].\n",
+            "This [is] [legit], [very][honestly] legit and [*very* cool][broken] and [*em*pty][].\n",
             "\n",
             "[legit]: ok\n",
             "[honestly]: sure \"hm\"\n"
         ),
         concat!(
             "<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> \
-             legit and [cool][broken] and [empty][].</p>\n"
+             legit and [<em>very</em> cool][broken] and [<em>em</em>pty][].</p>\n"
         ),
     );
 }

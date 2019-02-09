@@ -1,7 +1,7 @@
 use ctype::{isalpha, isdigit, isspace};
 use nodes;
 use nodes::TableAlignment;
-use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeValue};
+use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeBrokenRef, RefLinkType, NodeValue};
 use parser::ComrakOptions;
 use scanners;
 use std;
@@ -520,12 +520,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
                 write!(self, ")").unwrap();
             },
-            NodeValue::BrokenReference {ref label, is_image} => if entering {
+            NodeValue::BrokenReference(NodeBrokenRef {ref label, is_image, ref_type}) => if entering {
                 if is_image { write!(self, "!").unwrap() }
                 write!(self, "[").unwrap();
+            } else if ref_type == RefLinkType::Shortcut {
+                write!(self, "]").unwrap();
             } else {
                 write!(self, "][").unwrap();
-                self.output(&label, false, Escaping::Normal);
+                if ref_type != RefLinkType::Collapsed {
+                    self.output(&label, false, Escaping::Normal);
+                }
                 write!(self, "]").unwrap();
             },
             NodeValue::Image(ref nl) => if entering {

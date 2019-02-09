@@ -1,7 +1,7 @@
 use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
-use nodes::{Ast, AstNode, NodeLink, NodeValue};
+use nodes::{Ast, AstNode, NodeLink, NodeBrokenRef, RefLinkType, NodeValue};
 use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
@@ -893,6 +893,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let is_image = self.brackets[brackets_len - 1].image;
         let after_link_text_pos = self.pos;
 
+        // Try to find a link destination within parenthesis
+
         let mut sps = 0;
         let mut url: &[u8] = &[];
         let mut n: usize = 0;
@@ -925,9 +927,23 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             }
         }
 
+        // Try to see if this is a reference link
+
         let (mut lab, mut found_label) = match self.link_label() {
             Some(lab) => (lab.to_vec(), true),
             None => (vec![], false),
+        };
+
+        let ref_type = if found_label {
+            if lab.is_empty() {
+                // Label is found but it is empty []
+                RefLinkType::Collapsed
+            } else {
+                RefLinkType::Full
+            }
+        } else {
+            // If no label is found, this is a shortcut link
+            RefLinkType::Shortcut
         };
 
         if !found_label {
@@ -939,8 +955,10 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             found_label = true;
         }
 
+        // Always normalize whether the link can be matched to a reference or not
+        lab = strings::normalize_label(&lab);
+
         let reff: Option<Reference> = if found_label {
-            lab = strings::normalize_label(&lab);
             self.refmap.get(&lab).cloned()
         } else {
             None
@@ -977,7 +995,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             }
         }
 
-        self.close_bracket_broken_link(is_image, lab);
+        self.close_bracket_broken_link(is_image, lab, ref_type);
         return None;
     }
 
@@ -1023,10 +1041,10 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
     }
 
-    pub fn close_bracket_broken_link(&mut self, is_image: bool, label: Vec<u8>) {
+    pub fn close_bracket_broken_link(&mut self, is_image: bool, label: Vec<u8>, ref_type: RefLinkType) {
         let inl = make_inline(
             self.arena,
-            NodeValue::BrokenReference {label, is_image},
+            NodeValue::BrokenReference(NodeBrokenRef {label, is_image, ref_type}),
         );
 
         let mut brackets_len = self.brackets.len();

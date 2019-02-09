@@ -136,21 +136,7 @@ pub enum NodeValue {
     /// matching reference (a "broken" link). This node exists so you may replace it during
     /// preprocessing if desired. If the node is left in, it will be rendered as a Text node with
     /// the square brackets intact.
-    BrokenReference {
-        /// The text of the link label that could not be matched with a reference
-        ///
-        /// ```md
-        /// 1. [not this text][this text]
-        /// 2. [this text][]
-        /// 3. [this text]
-        /// ```
-        ///
-        /// For (1), the child node will be `not this text`, for (2) and (3), the child node will
-        /// be `this text`.
-        label: Vec<u8>,
-        /// true if this was an image, false if this was a regular link
-        is_image: bool,
-    },
+    BrokenReference(NodeBrokenRef),
 
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
@@ -186,6 +172,37 @@ pub struct NodeLink {
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
     pub title: Vec<u8>,
+}
+
+/// Necessary for formatting broken reference links correctly
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RefLinkType {
+    /// `[foo][bar]`
+    Full,
+    /// `[bar][]`
+    Collapsed,
+    /// `[bar]`
+    Shortcut,
+}
+
+/// The details of a broken reference (for either an image or a link)
+#[derive(Debug, Clone)]
+pub struct NodeBrokenRef {
+    /// The text of the link label that could not be matched with a reference
+    ///
+    /// ```md
+    /// 1. [not this text][this text]
+    /// 2. [this text][]
+    /// 3. [this text]
+    /// ```
+    ///
+    /// For (1), the child node will be `not this text`, for (2) and (3), the child node will
+    /// be `this text`.
+    pub label: Vec<u8>,
+    /// true if this was an image, false if this was a regular link
+    pub is_image: bool,
+    /// The type of reference link. Necessary to know how to correctly format the link.
+    pub ref_type: RefLinkType,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
