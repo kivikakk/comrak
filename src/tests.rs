@@ -414,6 +414,14 @@ fn nested_brackets_in_link() {
 }
 
 #[test]
+fn emphasis_spanning_bracket() {
+    html(
+        "*foo [bar* baz]",
+        "<p><em>foo [bar</em> baz]</p>\n",
+    );
+}
+
+#[test]
 fn strikethrough() {
     html_opts!(
         [ext_strikethrough],
