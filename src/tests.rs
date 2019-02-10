@@ -406,6 +406,14 @@ fn reference_links() {
 }
 
 #[test]
+fn nested_brackets_in_link() {
+    html(
+        "[hello [there]](/target)",
+        "<p><a href=\"/target\">hello [there]</a></p>\n",
+    );
+}
+
+#[test]
 fn strikethrough() {
     html_opts!(
         [ext_strikethrough],
