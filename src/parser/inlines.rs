@@ -1047,7 +1047,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             NodeValue::BrokenReference(NodeBrokenRef {label, is_image, ref_type}),
         );
 
-        let mut brackets_len = self.brackets.len();
+        let brackets_len = self.brackets.len();
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
         let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
         while let Some(tmp) = tmpch {
@@ -1058,21 +1058,6 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
         self.process_emphasis(previous_delimiter);
         self.brackets.pop();
-        brackets_len -= 1;
-
-        if !is_image {
-            let mut i = brackets_len as i32 - 1;
-            while i >= 0 {
-                if !self.brackets[i as usize].image {
-                    if !self.brackets[i as usize].active {
-                        break;
-                    } else {
-                        self.brackets[i as usize].active = false;
-                    }
-                }
-                i -= 1;
-            }
-        }
     }
 
     pub fn link_label(&mut self) -> Option<&[u8]> {
