@@ -893,6 +893,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let is_image = self.brackets[brackets_len - 1].image;
         let after_link_text_pos = self.pos;
 
+        // Try to find a link destination within parenthesis
+
         let mut sps = 0;
         let mut url: &[u8] = &[];
         let mut n: usize = 0;
@@ -924,6 +926,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 self.pos = after_link_text_pos;
             }
         }
+
+        // Try to see if this is a reference link
 
         let (mut lab, mut found_label) = match self.link_label() {
             Some(lab) => (lab.to_vec(), true),

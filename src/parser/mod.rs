@@ -1355,10 +1355,12 @@ impl<'a, 'o> Parser<'a, 'o> {
                 let mut this_bracket = false;
                 loop {
                     match n.data.borrow_mut().value {
+                        // Join adjacent text nodes together
                         NodeValue::Text(ref mut root) => {
                             let ns = match n.next_sibling() {
                                 Some(ns) => ns,
                                 _ => {
+                                    // Post-process once we are finished joining text nodes
                                     self.postprocess_text_node(n, root);
                                     break;
                                 }
@@ -1370,6 +1372,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                                     ns.detach();
                                 }
                                 _ => {
+                                    // Post-process once we are finished joining text nodes
                                     self.postprocess_text_node(n, root);
                                     break;
                                 }
