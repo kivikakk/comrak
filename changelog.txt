@@ -1,7 +1,8 @@
-### master
+### 0.4.2
 
 * Add a callback to fill in broken reference links, per pulldown_cmark's
   Parser::new_with_broken_link_callback. (#100, Sunjay Varma)
+* Update to latest spec.  (#99)
 
 ### 0.4.1
 
