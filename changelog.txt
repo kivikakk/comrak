@@ -1,3 +1,8 @@
+### master
+
+* Add a callback to fill in broken reference links, per pulldown_cmark's
+  Parser::new_with_broken_link_callback. (#100, Sunjay Varma)
+
 ### 0.4.1
 
 * Fix a bug in anchor generation; it should now be on par with GitHub's. (#97, Clifford T. Matthews)
