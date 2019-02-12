@@ -362,12 +362,12 @@ pub struct Ast {
     pub last_line_blank: bool,
 }
 
-#[doc(hidden)]
-pub fn make_block(value: NodeValue, start_line: u32) -> Ast {
+/// Create a new AST node with the given value.
+pub fn make_ast(value: NodeValue) -> Ast {
     Ast {
         value: value,
         content: vec![],
-        start_line: start_line,
+        start_line: 0,
         open: true,
         last_line_blank: false,
     }
