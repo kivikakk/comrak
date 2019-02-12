@@ -40,6 +40,53 @@ pub fn parse_document<'a>(
     buffer: &str,
     options: &ComrakOptions,
 ) -> &'a AstNode<'a> {
+    parse_document_with_broken_link_callback(arena, buffer, options, None)
+}
+
+/// Parse a Markdown document to an AST.
+///
+/// In case the parser encounters any potential links that have a broken reference (e.g `[foo]`
+/// when there is no `[foo]: url` entry at the bottom) the provided callback will be called with
+/// the reference name, and the returned pair will be used as the link destination and title if not
+/// None.
+///
+/// ```
+/// extern crate comrak;
+/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, ComrakOptions};
+/// use comrak::nodes::{AstNode, NodeValue};
+///
+/// # fn main() -> std::io::Result<()> {
+/// // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
+/// let arena = Arena::new();
+///
+/// let root = parse_document_with_broken_link_callback(
+///     &arena,
+///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
+///     &ComrakOptions::default(),
+///     Some(&mut |link_ref: &[u8]| match link_ref {
+///         b"foo" => Some((
+///             b"https://www.rust-lang.org/".to_vec(),
+///             b"The Rust Language".to_vec(),
+///         )),
+///         _ => None,
+///     }),
+/// );
+///
+/// let mut output = Vec::new();
+/// format_html(root, &ComrakOptions::default(), &mut output)?;
+/// let output_str = std::str::from_utf8(&output).expect("invalid UTF-8");
+/// assert_eq!(output_str, "<h1>Cool input!</h1>\n<p>Wow look at this cool \
+///                 <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
+///                 A [broken link] renders as text.</p>\n");
+/// # Ok(())
+/// # }
+/// ```
+pub fn parse_document_with_broken_link_callback<'a, 'c>(
+    arena: &'a Arena<AstNode<'a>>,
+    buffer: &str,
+    options: &ComrakOptions,
+    callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
         content: vec![],
@@ -47,12 +94,12 @@ pub fn parse_document<'a>(
         open: true,
         last_line_blank: false,
     })));
-    let mut parser = Parser::new(arena, root, options);
+    let mut parser = Parser::new(arena, root, options, callback);
     parser.feed(buffer);
     parser.finish()
 }
 
-pub struct Parser<'a, 'o> {
+pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: HashMap<Vec<u8>, Reference>,
     root: &'a AstNode<'a>,
@@ -67,6 +114,7 @@ pub struct Parser<'a, 'o> {
     partially_consumed_tab: bool,
     last_line_length: usize,
     options: &'o ComrakOptions,
+    callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -340,12 +388,13 @@ struct FootnoteDefinition<'a> {
     node: &'a AstNode<'a>,
 }
 
-impl<'a, 'o> Parser<'a, 'o> {
+impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn new(
         arena: &'a Arena<AstNode<'a>>,
         root: &'a AstNode<'a>,
         options: &'o ComrakOptions,
-    ) -> Parser<'a, 'o> {
+        callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+    ) -> Self {
         Parser {
             arena: arena,
             refmap: HashMap::new(),
@@ -361,6 +410,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             partially_consumed_tab: false,
             last_line_length: 0,
             options: options,
+            callback: callback,
         }
     }
 
@@ -1262,6 +1312,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             content,
             &mut self.refmap,
             &delimiter_arena,
+            self.callback.as_mut(),
         );
 
         while subj.parse_inline(node) {}
@@ -1459,6 +1510,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             content,
             &mut self.refmap,
             &delimiter_arena,
+            self.callback.as_mut(),
         );
 
         let mut lab: Vec<u8> = match subj.link_label() {
