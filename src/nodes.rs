@@ -270,7 +270,7 @@ pub struct NodeHeading {
 }
 
 /// The metadata of an included HTML block.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct NodeHtmlBlock {
     #[doc(hidden)]
     pub block_type: u8,
