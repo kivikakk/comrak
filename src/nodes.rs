@@ -362,14 +362,16 @@ pub struct Ast {
     pub last_line_blank: bool,
 }
 
-/// Create a new AST node with the given value.
-pub fn make_ast(value: NodeValue) -> Ast {
-    Ast {
-        value: value,
-        content: vec![],
-        start_line: 0,
-        open: true,
-        last_line_blank: false,
+impl Ast {
+    /// Create a new AST node with the given value.
+    pub fn new(value: NodeValue) -> Self {
+        Ast {
+            value: value,
+            content: vec![],
+            start_line: 0,
+            open: true,
+            last_line_blank: false,
+        }
     }
 }
 

@@ -7,7 +7,7 @@ use ctype::{isdigit, isspace};
 use entity;
 use nodes;
 use nodes::{
-    make_ast, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
     NodeHeading, NodeHtmlBlock, NodeList, NodeValue,
 };
 use regex::bytes::Regex;
@@ -1027,7 +1027,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             parent = self.finalize(parent).unwrap();
         }
 
-        let mut child = make_ast(value);
+        let mut child = Ast::new(value);
         child.start_line = self.line_number;
         let node = self.arena.alloc(Node::new(RefCell::new(child)));
         parent.append(node);
