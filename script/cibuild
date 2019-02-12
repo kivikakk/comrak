@@ -2,7 +2,7 @@
 
 set -evx
 
-if which apt-get &>/dev/null; then
+if command -v apt-get &>/dev/null; then
 	sudo apt-get install python3
 fi
 
