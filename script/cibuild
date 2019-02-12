@@ -2,13 +2,16 @@
 
 set -evx
 
-sudo apt-get install python3
+if command -v apt-get &>/dev/null; then
+	sudo apt-get install python3
+fi
+
 cargo build --verbose
 
 if [ x"$SPEC" = "xtrue" ]; then
 	cd vendor/cmark-gfm/test
 	python3 spec_tests.py --program=../../../target/debug/comrak
-	python3 spec_tests.py --spec extensions.txt --program=../../../target/debug/comrak --extensions "table strikethrough autolink tagfilter footnotes"
+	python3 spec_tests.py --spec extensions.txt --program=../../../target/debug/comrak --extensions "table strikethrough autolink tagfilter footnotes tasklist"
 	python3 roundtrip_tests.py --program=../../../target/debug/comrak
 	python3 spec_tests.py --no-normalize --spec regression.txt --program=../../../target/debug/comrak
 	python3 entity_tests.py --program=../../../target/debug/comrak

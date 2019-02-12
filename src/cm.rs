@@ -397,9 +397,15 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     let new_len = self.prefix.len() - 4;
                     self.prefix.truncate(new_len);
                 } else {
-                    let numticks = max(3, longest_backtick_sequence(&ncb.literal) + 1);
+                    let fence_char =
+                        if ncb.info.contains(&b'`') {
+                            b'~'
+                        } else {
+                            b'`'
+                        };
+                    let numticks = max(3, longest_char_sequence(&ncb.literal, fence_char) + 1);
                     for _ in 0..numticks {
-                        write!(self, "`").unwrap();
+                        write!(self, "{}", fence_char as char).unwrap();
                     }
                     if !ncb.info.is_empty() {
                         write!(self, " ").unwrap();
@@ -409,7 +415,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     self.write_all(&ncb.literal).unwrap();
                     self.cr();
                     for _ in 0..numticks {
-                        write!(self, "`").unwrap();
+                        write!(self, "{}", fence_char as char).unwrap();
                     }
                 }
                 self.blankline();
@@ -598,11 +604,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 }
 
-fn longest_backtick_sequence(literal: &[u8]) -> usize {
+fn longest_char_sequence(literal: &[u8], ch: u8) -> usize {
     let mut longest = 0;
     let mut current = 0;
     for c in literal {
-        if *c == b'`' {
+        if *c == ch {
             current += 1;
         } else {
             if current > longest {
