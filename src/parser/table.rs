@@ -1,5 +1,5 @@
 use arena_tree::Node;
-use nodes::{make_block, AstNode, NodeValue, TableAlignment};
+use nodes::{Ast, AstNode, NodeValue, TableAlignment};
 use parser::Parser;
 use scanners;
 use std::cell::RefCell;
@@ -58,7 +58,8 @@ fn try_opening_header<'a, 'o, 'c>(
         });
     }
 
-    let child = make_block(NodeValue::Table(alignments), parser.line_number);
+    let mut child = Ast::new(NodeValue::Table(alignments));
+    child.start_line = parser.line_number;
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
