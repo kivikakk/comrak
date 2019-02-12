@@ -6,8 +6,8 @@ use std::cell::RefCell;
 use std::cmp::min;
 use strings::trim;
 
-pub fn try_opening_block<'a, 'o>(
-    parser: &mut Parser<'a, 'o>,
+pub fn try_opening_block<'a, 'o, 'c>(
+    parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool)> {
@@ -23,8 +23,8 @@ pub fn try_opening_block<'a, 'o>(
     }
 }
 
-fn try_opening_header<'a, 'o>(
-    parser: &mut Parser<'a, 'o>,
+fn try_opening_header<'a, 'o, 'c>(
+    parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool)> {
@@ -74,8 +74,8 @@ fn try_opening_header<'a, 'o>(
     Some((table, true))
 }
 
-fn try_opening_row<'a, 'o>(
-    parser: &mut Parser<'a, 'o>,
+fn try_opening_row<'a, 'o, 'c>(
+    parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
     line: &[u8],

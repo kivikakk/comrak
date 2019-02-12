@@ -15,7 +15,7 @@ use unicode_categories::UnicodeCategories;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o ComrakOptions,
     pub input: &'i [u8],
@@ -29,6 +29,10 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     special_chars: [bool; 256],
     skip_chars: [bool; 256],
     smart_chars: [bool; 256],
+    // Need to borrow the callback from the parser only for the lifetime of the Subject, 'subj, and
+    // then give it back when the Subject goes out of scope. Needs to be a mutable reference so we
+    // can call the FnMut and let it mutate its captured variables.
+    callback: Option<&'subj mut &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
@@ -50,13 +54,14 @@ struct Bracket<'a: 'd, 'd> {
     bracket_after: bool,
 }
 
-impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
+impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
         options: &'o ComrakOptions,
         input: &'i [u8],
         refmap: &'r mut HashMap<Vec<u8>, Reference>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+        callback: Option<&'subj mut &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
     ) -> Self {
         let mut s = Subject {
             arena: arena,
@@ -72,6 +77,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             special_chars: [false; 256],
             skip_chars: [false; 256],
             smart_chars: [false; 256],
+            callback: callback,
         };
         for &c in &[
             b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!',
@@ -893,6 +899,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         let is_image = self.brackets[brackets_len - 1].image;
         let after_link_text_pos = self.pos;
 
+        // Try to find a link destination within parenthesis
+
         let mut sps = 0;
         let mut url: &[u8] = &[];
         let mut n: usize = 0;
@@ -925,6 +933,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             }
         }
 
+        // Try to see if this is a reference link
+
         let (mut lab, mut found_label) = match self.link_label() {
             Some(lab) => (lab.to_vec(), true),
             None => (vec![], false),
@@ -939,12 +949,20 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             found_label = true;
         }
 
-        let reff: Option<Reference> = if found_label {
-            lab = strings::normalize_label(&lab);
+        // Need to normalize both to lookup in refmap and to call callback
+        lab = strings::normalize_label(&lab);
+        let mut reff = if found_label {
             self.refmap.get(&lab).cloned()
         } else {
             None
         };
+
+        // Attempt to use the provided broken link callback if a reference cannot be resolved
+        if reff.is_none() {
+            if let Some(ref mut callback) = self.callback {
+                reff = callback(&lab).map(|(url, title)| Reference {url: url, title: title});
+            }
+        }
 
         if let Some(reff) = reff {
             self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
