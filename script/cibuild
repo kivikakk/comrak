@@ -2,7 +2,10 @@
 
 set -evx
 
-sudo apt-get install python3
+if which apt-get &>/dev/null; then
+	sudo apt-get install python3
+fi
+
 cargo build --verbose
 
 if [ x"$SPEC" = "xtrue" ]; then
