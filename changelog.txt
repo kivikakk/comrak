@@ -1,3 +1,8 @@
+### 0.4.3
+
+* Add a Default derive and Ast::new to make ASTs programmatically
+  constructible. (#101, Sunjay Varma and #102)
+
 ### 0.4.2
 
 * Add a callback to fill in broken reference links, per pulldown_cmark's
