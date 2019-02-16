@@ -50,6 +50,9 @@ pub fn parse_document<'a>(
 /// the reference name, and the returned pair will be used as the link destination and title if not
 /// None.
 ///
+/// **Note:** The label provided to the callback is the normalized representation of the label as
+/// described in the [GFM spec](https://github.github.com/gfm/#matches).
+///
 /// ```
 /// extern crate comrak;
 /// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, ComrakOptions};
