@@ -380,7 +380,21 @@ impl Ast {
 /// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are allocated in.
 /// `AstNode`s are almost handled as a reference itself bound by `'a`.  Child `Ast`s are wrapped in
 /// `RefCell` for interior mutability.
+///
+/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
+///
+/// ```no_run
+/// # use comrak::nodes::{AstNode, NodeValue};
+/// let root = AstNode::from(NodeValue::Document);
+/// ```
 pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+
+impl<'a> From<NodeValue> for AstNode<'a> {
+    /// Create a new AST node with the given value.
+    fn from(value: NodeValue) -> Self {
+        Node::new(RefCell::new(Ast::new(value)))
+    }
+}
 
 #[doc(hidden)]
 pub fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
