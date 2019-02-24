@@ -1,3 +1,7 @@
+### 0.4.4
+
+* Add From<NodeValue> impl to AstNode. (#105, Sunjay Varma)
+
 ### 0.4.3
 
 * Add a Default derive and Ast::new to make ASTs programmatically
