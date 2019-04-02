@@ -1338,6 +1338,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
             for f in v {
                 if f.ix.is_some() {
+                    match f.node.data.borrow_mut().value {
+                        NodeValue::FootnoteDefinition(ref mut name) => {
+                            *name = format!("{}", f.ix.unwrap()).into_bytes();
+                        }
+                        _ => unreachable!(),
+                    }
                     self.root.append(f.node);
                 }
             }
@@ -1379,7 +1385,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         *ix += 1;
                         footnote.ix = Some(*ix);
                     }
-
                     *name = format!("{}", footnote.ix.unwrap()).into_bytes();
                 } else {
                     replace = Some(name.clone());
