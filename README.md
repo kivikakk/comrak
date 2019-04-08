@@ -179,6 +179,7 @@ Thank you to comrak's many contributors for PRs and issues opened!
 * [ayosec](https://github.com/ayosec)
 * [ctm](https://github.com/ctm)
 * [sunjay](https://github.com/sunjay)
+* [lise-henry](https://github.com/lise-henry)
 
 
 ## Legal
