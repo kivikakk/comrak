@@ -7,6 +7,9 @@ if [ "$RUN_PRECOMMIT_HOOK" != 1 ]; then
 	exit 0
 fi
 
+echo "roll me into script/update-readme (currently broken due to sed)"
+exit 1
+
 if [ "$(git status --porcelain README.md | cut -b2-2 | tr -d '[:space:]')" != "" ]; then
 	echo "README.md has unstaged changes, commit hook cannot run"
 	exit 1

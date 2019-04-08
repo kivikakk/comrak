@@ -1,34 +1,32 @@
-[![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak)
-![Spec Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg)
-[![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
+[![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak) ![Spec
+Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![crates.io
+version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
-* [Installation](#installation)
-* [Usage](#usage)
-* [Security](#security)
-* [Extensions](#extensions)
-* [Related projects](#related-projects)
-* [Contributing](#contributing)
-* [Legal](#legal)
-
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Security](#security)
+  - [Extensions](#extensions)
+  - [Related projects](#related-projects)
+  - [Contributing](#contributing)
+  - [Legal](#legal)
 
 ## Installation
 
 Specify it as a requirement in `Cargo.toml`:
 
-```toml
+``` toml
 [dependencies]
 comrak = "0.5"
 ```
-
 
 ## Usage
 
 A binary is included which does everything you typically want:
 
-```
+``` console
 $ comrak --help
 comrak 0.5.0
 Ashe Connor <kivikakk@github.com>
@@ -57,7 +55,7 @@ ARGS:
     <FILE>...    The CommonMark file to parse; or standard input if none passed
 ```
 
-And there's a Rust interface.  You can use `comrak::markdown_to_html` directly:
+And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
 ``` rust
 use comrak::{markdown_to_html, ComrakOptions};
@@ -65,8 +63,7 @@ assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
            "<p>Hello, <strong>世界</strong>!</p>\n");
 ```
 
-Or you can parse the input into an AST yourself, manipulate it, and then use your desired
-formatter:
+Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
 
 ``` rust
 extern crate comrak;
@@ -111,80 +108,74 @@ assert_eq!(
      </ol>\n");
 ```
 
-
 ## Security
 
-As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https://github.com/github/cmark-gfm#security), Comrak will scrub raw HTML and potentially dangerous links.  This change was introduced in Comrak 0.4.0 in support of a safe-by-default posture.
+As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https://github.com/github/cmark-gfm#security),
+Comrak will scrub raw HTML and potentially dangerous links. This change was introduced in Comrak 0.4.0 in support of a
+safe-by-default posture.
 
-To allow these, use the `unsafe_` option (or `--unsafe` with the command line program).  If doing so, we recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
-
+To allow these, use the `unsafe_` option (or `--unsafe` with the command line program). If doing so, we recommend the
+use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
 ## Extensions
 
-Comrak supports the five extensions to CommonMark defined in the
-[GitHub Flavored Markdown Spec](https://github.github.com/gfm/):
+Comrak supports the five extensions to CommonMark defined in the [GitHub Flavored Markdown
+Spec](https://github.github.com/gfm/):
 
-* [Tables](https://github.github.com/gfm/#tables-extension-)
-* [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
-* [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
-* [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
-* [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+  - [Tables](https://github.github.com/gfm/#tables-extension-)
+  - [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
+  - [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
+  - [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
+  - [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
-Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
+Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome\!):
 
-* Superscript
-* Header IDs
-* Footnotes
-* Description lists
+  - Superscript
+  - Header IDs
+  - Footnotes
+  - Description lists
 
-By default none are enabled; they are individually enabled with each parse by
-setting the appropriate values in the
+By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
-
 
 ## Related projects
 
-Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak. It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
+Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible
+in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak.
+It helps that I maintain both, and tend to update Comrak in lock-step with `cmark-gfm`. Likewise, any bug in `cmark-gfm`
+is likely to be reproduced in Comrak. This could be considered a pro or a con, depending on your use case.
 
-The downside, of course, is that the code is not what I'd call idiomatic Rust (_so many `RefCell`s_), and while contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers depending on your use-case. Here are some other projects to consider:
+The downside, of course, is that the code is not what I'd call idiomatic Rust (*so many `RefCell`s*), and while
+contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
+depending on your use-case. Here are some other projects to consider:
 
-* [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec compatibility yet.
-* [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to `libcmark`. It hasn't been updated in a while, though there's an [open pull request](https://github.com/bnavetta/rcmark/pull/2).
-* Know of another library? Please open a PR to add it!
+  - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
+    very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
+    want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec
+    compatibility yet.
+  - [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
+    `libcmark`. It hasn't been updated in a while, though there's an [open pull
+    request](https://github.com/bnavetta/rcmark/pull/2).
+  - Know of another library? Please open a PR to add it\!
 
-As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
-
+As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
+extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce
+GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
 
 ## Contributing
 
-Contributions are highly encouraged; where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this project.
+Contributions are highly encouraged; where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as
+described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this
+project.
 
-Thank you to comrak's many contributors for PRs and issues opened!
+Thank you to comrak's many contributors for PRs and issues opened\!
 
-* [ConnyOnny](https://github.com/ConnyOnny)
-* [killercup](https://github.com/killercup)
-* [bovarysme](https://github.com/bovarysme)
-* [gjtorikian](https://github.com/gjtorikian)
-* [SSJohns](https://github.com/SSJohns)
-* [zeantsoi](https://github.com/zeantsoi)
-* [DemiMarie](https://github.com/DemiMarie)
-* [ivanceras](https://github.com/ivanceras)
-* [anthonynguyen](https://github.com/anthonynguyen)
-* [JordanMilne](https://github.com/JordanMilne)
-* [carols10cents](https://github.com/carols10cents)
-* [treiff](https://github.com/treiff)
-* [steveklabnik](https://github.com/steveklabnik)
-* [brson](https://github.com/brson)
-* [Keats](https://github.com/Keats)
-* [ayosec](https://github.com/ayosec)
-* [ctm](https://github.com/ctm)
-* [sunjay](https://github.com/sunjay)
-* [lise-henry](https://github.com/lise-henry)
-
+<table id='contributors'></table><a class='contributors' title='anthonynguyen' href='https://github.com/anthonynguyen'><img width='64' src='https://github.com/anthonynguyen.png' alt='anthonynguyen'></a> <a class='contributors' title='ayosec' href='https://github.com/ayosec'><img width='64' src='https://github.com/ayosec.png' alt='ayosec'></a> <a class='contributors' title='bovarysme' href='https://github.com/bovarysme'><img width='64' src='https://github.com/bovarysme.png' alt='bovarysme'></a> <a class='contributors' title='brson' href='https://github.com/brson'><img width='64' src='https://github.com/brson.png' alt='brson'></a> <a class='contributors' title='carols10cents' href='https://github.com/carols10cents'><img width='64' src='https://github.com/carols10cents.png' alt='carols10cents'></a> <a class='contributors' title='ConnyOnny' href='https://github.com/ConnyOnny'><img width='64' src='https://github.com/ConnyOnny.png' alt='ConnyOnny'></a> <a class='contributors' title='ctm' href='https://github.com/ctm'><img width='64' src='https://github.com/ctm.png' alt='ctm'></a> <a class='contributors' title='DemiMarie' href='https://github.com/DemiMarie'><img width='64' src='https://github.com/DemiMarie.png' alt='DemiMarie'></a> <a class='contributors' title='gjtorikian' href='https://github.com/gjtorikian'><img width='64' src='https://github.com/gjtorikian.png' alt='gjtorikian'></a> <a class='contributors' title='ivanceras' href='https://github.com/ivanceras'><img width='64' src='https://github.com/ivanceras.png' alt='ivanceras'></a> <a class='contributors' title='JordanMilne' href='https://github.com/JordanMilne'><img width='64' src='https://github.com/JordanMilne.png' alt='JordanMilne'></a> <a class='contributors' title='Keats' href='https://github.com/Keats'><img width='64' src='https://github.com/Keats.png' alt='Keats'></a> <a class='contributors' title='killercup' href='https://github.com/killercup'><img width='64' src='https://github.com/killercup.png' alt='killercup'></a> <a class='contributors' title='lise-henry' href='https://github.com/lise-henry'><img width='64' src='https://github.com/lise-henry.png' alt='lise-henry'></a> <a class='contributors' title='SSJohns' href='https://github.com/SSJohns'><img width='64' src='https://github.com/SSJohns.png' alt='SSJohns'></a> <a class='contributors' title='steveklabnik' href='https://github.com/steveklabnik'><img width='64' src='https://github.com/steveklabnik.png' alt='steveklabnik'></a> <a class='contributors' title='sunjay' href='https://github.com/sunjay'><img width='64' src='https://github.com/sunjay.png' alt='sunjay'></a> <a class='contributors' title='treiff' href='https://github.com/treiff'><img width='64' src='https://github.com/treiff.png' alt='treiff'></a> <a class='contributors' title='zeantsoi' href='https://github.com/zeantsoi'><img width='64' src='https://github.com/zeantsoi.png' alt='zeantsoi'></a>
 
 ## Legal
 
-Copyright (c) 2017–2019, Ashe Connor.  Licensed under the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Copyright (c) 2017–2019, Ashe Connor. Licensed under the [2-Clause BSD
+License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
