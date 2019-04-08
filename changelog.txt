@@ -1,3 +1,9 @@
+### 0.5.0
+
+* Update API so that footnote reference and definition identifiers match.
+  (#110, Élisabeth Henry)
+* Update to CommonMark spec 0.29. (#112)
+
 ### 0.4.4
 
 * Add From<NodeValue> impl to AstNode. (#105, Sunjay Varma)
