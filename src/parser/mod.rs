@@ -707,15 +707,21 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 ),
                 _ => false,
             } {
-                container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
-                    level: match sc {
-                        scanners::SetextChar::Equals => 1,
-                        scanners::SetextChar::Hyphen => 2,
-                    },
-                    setext: true,
-                });
-                let adv = line.len() - 1 - self.offset;
-                self.advance_offset(line, adv, false);
+                let has_content = {
+                    let mut ast = container.data.borrow_mut();
+                    self.resolve_reference_link_definitions(&mut ast.content)
+                };
+                if has_content {
+                    container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+                        level: match sc {
+                            scanners::SetextChar::Equals => 1,
+                            scanners::SetextChar::Hyphen => 2,
+                        },
+                        setext: true,
+                    });
+                    let adv = line.len() - 1 - self.offset;
+                    self.advance_offset(line, adv, false);
+                }
             } else if !indented && match (&container.data.borrow().value, all_matched) {
                 (&NodeValue::Paragraph, false) => false,
                 _ => unwrap_into(
@@ -1186,6 +1192,27 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
+    fn resolve_reference_link_definitions(&mut self, content: &mut Vec<u8>) -> bool {
+        let mut seeked = 0;
+        {
+            let mut pos = 0;
+            let mut seek: &[u8] = &*content;
+            while !seek.is_empty()
+                && seek[0] == b'['
+                && unwrap_into(self.parse_reference_inline(seek), &mut pos)
+            {
+                seek = &seek[pos..];
+                seeked += pos;
+            }
+        }
+
+        if seeked != 0 {
+            *content = content[seeked..].to_vec();
+        }
+
+        !strings::is_blank(content)
+    }
+
     fn finalize_borrowed(
         &mut self,
         node: &'a AstNode<'a>,
@@ -1195,27 +1222,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         ast.open = false;
 
         let content = &mut ast.content;
-        let mut pos = 0;
-
         let parent = node.parent();
 
         match ast.value {
             NodeValue::Paragraph => {
-                let mut seeked = 0;
-                {
-                    let mut seek: &[u8] = &*content;
-                    while !seek.is_empty()
-                        && seek[0] == b'['
-                        && unwrap_into(self.parse_reference_inline(seek), &mut pos)
-                    {
-                        seek = &seek[pos..];
-                        seeked += pos;
-                    }
-                }
-                if seeked != 0 {
-                    *content = content[seeked..].to_vec();
-                }
-                if strings::is_blank(content) {
+                let has_content = self.resolve_reference_link_definitions(content);
+                if !has_content {
                     node.detach();
                 }
             }
