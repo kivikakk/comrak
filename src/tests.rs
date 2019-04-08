@@ -906,22 +906,6 @@ fn link_backslash_requires_punct() {
     html("[a](\\ b)", "<p>[a](\\ b)</p>\n");
 }
 
-#[test]
-fn angle_bracketed_link_fallback_1() {
-    // When the `<...>` URL parser hits a second `<` it falls back to the
-    // non-bracketed parser.
-    // Test should probably be in the spec.
-    html("[a](<<b)", "<p><a href=\"%3C%3Cb\">a</a></p>\n");
-}
-
-#[test]
-fn angle_bracketed_link_fallback_2() {
-    // When the `<...>` URL parser hits a newline it falls back to the
-    // non-bracketed parser.
-    // Test should probably be in the spec.
-    html("[a](<b\n)", "<p><a href=\"%3Cb\">a</a></p>\n");
-}
-
 // Again, at least some of these cases are not covered by the reference
 // implementation's test suite - 3 and 4 were broken in comrak.
 
