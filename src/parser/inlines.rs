@@ -1103,7 +1103,7 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
             } else if b == b'\\' {
                 i += 2;
             } else if b == b'\n' || b == b'<' {
-                return manual_scan_link_url_2(input);
+                return None;
             } else {
                 i += 1;
             }
