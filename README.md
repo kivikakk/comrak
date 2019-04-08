@@ -20,7 +20,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.4"
+comrak = "0.5"
 ```
 
 
@@ -30,7 +30,7 @@ A binary is included which does everything you typically want:
 
 ```
 $ comrak --help
-comrak 0.4.4
+comrak 0.5.0
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -114,7 +114,7 @@ assert_eq!(
 
 ## Security
 
-As with [`cmark-gfm`](https://github.com/github/cmark-gfm#security), Comrak will scrub raw HTML and potentially dangerous links.  This change was introduced in Comrak 0.4.0 in support of a safe-by-default posture.
+As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https://github.com/github/cmark-gfm#security), Comrak will scrub raw HTML and potentially dangerous links.  This change was introduced in Comrak 0.4.0 in support of a safe-by-default posture.
 
 To allow these, use the `unsafe_` option (or `--unsafe` with the command line program).  If doing so, we recommend the use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
