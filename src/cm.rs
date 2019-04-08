@@ -126,17 +126,19 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         self.last_breakable = last_nonspace;
                     }
                 }
-            } else if buf[i] == b'\n' {
-                self.v.push(b'\n');
-                self.column = 0;
-                self.begin_line = true;
-                self.begin_content = true;
-                self.last_breakable = 0;
             } else if escaping == Escaping::Literal {
-                self.v.push(buf[i]);
-                self.column += 1;
-                self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(buf[i]);
+                if buf[i] == b'\n' {
+                    self.v.push(b'\n');
+                    self.column = 0;
+                    self.begin_line = true;
+                    self.begin_content = true;
+                    self.last_breakable = 0;
+                } else {
+                    self.v.push(buf[i]);
+                    self.column += 1;
+                    self.begin_line = false;
+                    self.begin_content = self.begin_content && isdigit(buf[i]);
+                }
             } else {
                 self.outc(buf[i], escaping, nextc);
                 self.begin_line = false;
