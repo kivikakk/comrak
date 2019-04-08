@@ -1,4 +1,4 @@
-use ctype::{isalpha, isdigit, isspace};
+use ctype::{isalpha, isdigit, ispunct, isspace};
 use nodes;
 use nodes::TableAlignment;
 use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeValue};
@@ -170,7 +170,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         let needs_escaping = c < 0x80 && escaping != Escaping::Literal
             && ((escaping == Escaping::Normal
-                && (c == b'*'
+                && (c < 0x20
+                    || c == b'*'
                     || c == b'_'
                     || c == b'['
                     || c == b']'
@@ -201,12 +202,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     && (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
 
         if needs_escaping {
-            if isspace(c) {
-                write!(self.v, "%{:2x}", c).unwrap();
+            if escaping == Escaping::URL && isspace(c) {
+                write!(self.v, "%{:2X}", c).unwrap();
                 self.column += 3;
-            } else {
+            } else if ispunct(c) {
                 write!(self.v, "\\{}", c as char).unwrap();
                 self.column += 2;
+            } else {
+                let s = format!("&#{};", c);
+                self.write_all(s.as_bytes()).unwrap();
+                self.column += s.len();
             }
         } else {
             self.v.push(c);
