@@ -22,13 +22,15 @@ Specify it as a requirement in `Cargo.toml`:
 comrak = "0.5"
 ```
 
+Comrak supports Rust 1.27.0 and forward.
+
 ## Usage
 
 A binary is included which does everything you typically want:
 
 ``` console
 $ comrak --help
-comrak 0.5.0
+comrak 0.5.1
 Ashe Connor <kivikakk@github.com>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
