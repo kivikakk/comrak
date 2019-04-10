@@ -15,7 +15,7 @@ use unicode_categories::UnicodeCategories;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'subj> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o ComrakOptions,
     pub input: &'i [u8],
