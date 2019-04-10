@@ -70,7 +70,7 @@ pub struct Anchorizer(HashSet<String>);
 impl Anchorizer {
     /// Construct a new anchorizer.
     pub fn new() -> Self {
-        Self(HashSet::new())
+        Anchorizer(HashSet::new())
     }
 
     /// Returns a String that has been converted into an anchor using the
@@ -448,11 +448,6 @@ impl<'o> HtmlFormatter<'o> {
                 self.output.write_all(b"</dd>\n")?;
             },
             NodeValue::Heading(ref nch) => {
-                lazy_static! {
-                    static ref REJECTED_CHARS: Regex =
-                        Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap();
-                }
-
                 if entering {
                     self.cr()?;
                     write!(self.output, "<h{}>", nch.level)?;

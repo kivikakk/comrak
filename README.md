@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/kivikakk/comrak.svg?branch=master)](https://travis-ci.org/kivikakk/comrak) ![Spec
+[![Build Status](https://travis-ci.com/kivikakk/comrak.svg?branch=master)](https://travis-ci.com/kivikakk/comrak) ![Spec
 Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![crates.io
 version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
