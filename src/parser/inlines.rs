@@ -15,7 +15,7 @@ use unicode_categories::UnicodeCategories;
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'subj> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o ComrakOptions,
     pub input: &'i [u8],
@@ -1103,7 +1103,7 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
             } else if b == b'\\' {
                 i += 2;
             } else if b == b'\n' || b == b'<' {
-                return manual_scan_link_url_2(input);
+                return None;
             } else {
                 i += 1;
             }
@@ -1140,6 +1140,9 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
             nb_p -= 1;
             i += 1;
         } else if isspace(input[i]) {
+            if i == 0 {
+                return None;
+            }
             break;
         } else {
             i += 1;

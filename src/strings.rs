@@ -50,6 +50,7 @@ pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
 pub fn normalize_code(v: &[u8]) -> Vec<u8> {
     let mut r = Vec::with_capacity(v.len());
     let mut i = 0;
+    let mut contains_nonspace = false;
 
     while i < v.len() {
         match v[i] {
@@ -63,11 +64,14 @@ pub fn normalize_code(v: &[u8]) -> Vec<u8> {
             }
             c => r.push(c),
         }
+        if v[i] != b' ' {
+            contains_nonspace = true;
+        }
 
         i += 1
     }
 
-    if r.len() > 0 && r[0] == b' ' && r[r.len() - 1] == b' ' {
+    if contains_nonspace && r.len() > 0 && r[0] == b' ' && r[r.len() - 1] == b' ' {
         r.remove(0);
         r.pop();
     }

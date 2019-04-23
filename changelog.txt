@@ -1,3 +1,13 @@
+### 0.5.1
+
+* Support building on Rust versions back to 1.27.0. (#114)
+
+### 0.5.0
+
+* Update API so that footnote reference and definition identifiers match.
+  (#110, Élisabeth Henry)
+* Update to CommonMark spec 0.29. (#112)
+
 ### 0.4.4
 
 * Add From<NodeValue> impl to AstNode. (#105, Sunjay Varma)
