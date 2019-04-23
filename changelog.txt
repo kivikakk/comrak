@@ -1,3 +1,7 @@
+### 0.6.0
+
+* Add TaskItem variant to NodeValue. (#115, Élisabeth Henry)
+
 ### 0.5.1
 
 * Support building on Rust versions back to 1.27.0. (#114)
