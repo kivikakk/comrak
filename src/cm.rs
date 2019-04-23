@@ -500,6 +500,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
                 self.write_all(&[emph_delim]).unwrap();
             }
+            NodeValue::TaskItem(checked) => if entering {
+                if checked {
+                    write!(self, " [x] ").unwrap();
+                } else {
+                    write!(self, " [ ] ").unwrap();
+                }
+            },
             NodeValue::Strikethrough => if entering {
                 write!(self, "~").unwrap();
             } else {

@@ -98,6 +98,10 @@ pub enum NodeValue {
     /// in a document will be contained in a `Text` node.
     Text(Vec<u8>),
 
+    /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-). The
+    /// `bool` indicates whether it is checked or not.
+    TaskItem(bool),
+
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
     /// the `hardbreaks` option is set in `ComrakOptions` during formatting, it will be formatted
     /// as a `LineBreak`.

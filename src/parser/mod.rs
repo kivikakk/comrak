@@ -1490,7 +1490,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             None => return,
             Some(c) => (
                 c.get(2).unwrap().as_bytes() != b" ",
-                c.get(1).unwrap().end(),
+                c.get(0).unwrap().end(),
             ),
         };
 
@@ -1510,14 +1510,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         *text = text[end..].to_vec();
-        let checkbox = inlines::make_inline(
-            self.arena,
-            NodeValue::HtmlInline(if active {
-                b"<input type=\"checkbox\" disabled=\"\" checked=\"\" />".to_vec()
-            } else {
-                b"<input type=\"checkbox\" disabled=\"\" />".to_vec()
-            }),
-        );
+        let checkbox = inlines::make_inline(self.arena, NodeValue::TaskItem(active));
         node.insert_before(checkbox);
     }
 

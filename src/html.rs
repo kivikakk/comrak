@@ -713,6 +713,15 @@ impl<'o> HtmlFormatter<'o> {
                     r, r, r
                 )?;
             },
+            NodeValue::TaskItem(checked) => if entering {
+                if checked {
+                    self.output
+                        .write_all(b"<input type=\"checkbox\" disabled=\"\" checked=\"\" /> ")?;
+                } else {
+                    self.output
+                        .write_all(b"<input type=\"checkbox\" disabled=\"\" /> ")?;
+                }
+            },
         }
         Ok(false)
     }
