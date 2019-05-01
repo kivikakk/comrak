@@ -40,6 +40,11 @@ fn main() -> Result<(), Box<Error>> {
                 .help("Use GitHub-style <pre lang> for code blocks"),
         )
         .arg(
+            clap::Arg::with_name("gfm")
+                .long("gfm")
+                .help("Enable GitHub-flavored markdown extensions strikethrough, tagfilter, table, autolink, and tasklist. It also enables --github-pre-lang.")
+        )
+        .arg(
             clap::Arg::with_name("default-info-string")
                 .long("default-info-string")
                 .help("Default value for fenced code block's info strings if none is given")
@@ -105,7 +110,7 @@ fn main() -> Result<(), Box<Error>> {
     let options = ComrakOptions {
         hardbreaks: matches.is_present("hardbreaks"),
         smart: matches.is_present("smart"),
-        github_pre_lang: matches.is_present("github-pre-lang"),
+        github_pre_lang: matches.is_present("github-pre-lang") || matches.is_present("gfm"),
         width: matches
             .value_of("width")
             .unwrap_or("0")
@@ -115,11 +120,11 @@ fn main() -> Result<(), Box<Error>> {
             .value_of("default-info-string")
             .map(|e| e.to_owned()),
         unsafe_: matches.is_present("unsafe"),
-        ext_strikethrough: exts.remove("strikethrough"),
-        ext_tagfilter: exts.remove("tagfilter"),
-        ext_table: exts.remove("table"),
-        ext_autolink: exts.remove("autolink"),
-        ext_tasklist: exts.remove("tasklist"),
+        ext_strikethrough: exts.remove("strikethrough") || matches.is_present("gfm"),
+        ext_tagfilter: exts.remove("tagfilter") || matches.is_present("gfm"),
+        ext_table: exts.remove("table") || matches.is_present("gfm"),
+        ext_autolink: exts.remove("autolink") || matches.is_present("gfm"),
+        ext_tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
         ext_superscript: exts.remove("superscript"),
         ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
         ext_footnotes: exts.remove("footnotes"),
