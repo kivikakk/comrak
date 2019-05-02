@@ -1,3 +1,8 @@
+### 0.6.1
+
+* Add --gfm flag to CLI to enable all GitHub Flavored Markdown extensions and
+  options. (#118, James R Miller)
+
 ### 0.6.0
 
 * Add TaskItem variant to NodeValue. (#115, Élisabeth Henry)
