@@ -1,3 +1,8 @@
+### 0.6.2
+
+* Exclude unneeded files from crate. (#120, Igor Gnatenko)
+* Bump the twoway dependency. (#121, Igor Gnatenko)
+
 ### 0.6.1
 
 * Add --gfm flag to CLI to enable all GitHub Flavored Markdown extensions and
