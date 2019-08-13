@@ -15,8 +15,8 @@ jobs:
           - stable
     steps:
     - uses: actions/checkout@master
-        with:
-          submodules: true
+      with:
+        submodules: true
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test
