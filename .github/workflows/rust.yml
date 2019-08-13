@@ -2,13 +2,21 @@ name: Rust
 
 on: [push]
 
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        rust:
+          - 1.27.0
+          - nightly
+          - beta
+          - stable
     steps:
     - uses: actions/checkout@master
+    - name: Obtain Rust ${{ matrix.rust }}
+      run: rustup override set ${{ matrix.rust }}
     - name: Build and test
       run: env SPEC=false script/cibuild
     - name: Run spec tests
