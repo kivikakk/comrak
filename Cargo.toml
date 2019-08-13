@@ -25,7 +25,8 @@ doc = false
 
 [dependencies]
 typed-arena = "1.4.1"
-regex = "1.0.1"
+regex = "= 1.0.1"
+regex-syntax = "= 0.6.8"
 lazy_static = "1.0.1"
 entities = "1.0.1"
 unicode_categories = "0.1.1"
