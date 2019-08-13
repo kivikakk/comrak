@@ -15,7 +15,9 @@ jobs:
           - stable
     steps:
     - uses: actions/checkout@master
-    - name: Obtain Rust ${{ matrix.rust }}
+        with:
+          submodules: true
+    - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test
       run: env SPEC=false script/cibuild
