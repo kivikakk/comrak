@@ -31,7 +31,7 @@ A binary is included which does everything you typically want:
 ``` console
 $ comrak --help
 comrak 0.6.2
-Ashe Connor <kivikakk@github.com>
+Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
 USAGE:

@@ -1,7 +1,7 @@
 [package]
 name = "comrak"
 version = "0.6.2"
-authors = ["Ashe Connor <kivikakk@github.com>"]
+authors = ["Ashe Connor <ashe@kivikakk.ee>"]
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
 homepage = "https://github.com/kivikakk/comrak"
@@ -11,9 +11,6 @@ keywords = ["markdown", "commonmark"]
 license = "BSD-2-Clause"
 categories = ["text-processing", "parsing", "command-line-utilities"]
 exclude = ["/hooks/*", "/script/*", "/vendor/*", "/.travis.yml", "/Makefile", "/spec_out.txt"]
-
-[badges]
-travis-ci = { repository = "kivikakk/comrak" }
 
 [profile.release]
 lto = true
