@@ -13,7 +13,7 @@ use std::error::Error;
 use std::io::Read;
 use std::process;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = clap::App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())

@@ -1,3 +1,8 @@
+### 0.7.0
+
+* Supporting stable and newer again, since dependencies keep breaking for
+  1.27.0. (#134)
+
 ### 0.6.2
 
 * Exclude unneeded files from crate. (#120, Igor Gnatenko)

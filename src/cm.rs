@@ -12,7 +12,7 @@ use std::io::{self, Write};
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &ComrakOptions,
-    output: &mut Write,
+    output: &mut dyn Write,
 ) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);

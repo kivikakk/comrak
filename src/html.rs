@@ -13,7 +13,7 @@ use std::str;
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &ComrakOptions,
-    output: &mut Write,
+    output: &mut dyn Write,
 ) -> io::Result<()> {
     let mut writer = WriteWithLast {
         output: output,
@@ -28,7 +28,7 @@ pub fn format_document<'a>(
 }
 
 pub struct WriteWithLast<'w> {
-    output: &'w mut Write,
+    output: &'w mut dyn Write,
     pub last_was_lf: Cell<bool>,
 }
 
@@ -200,7 +200,7 @@ fn tagfilter(literal: &[u8]) -> bool {
     false
 }
 
-fn tagfilter_block(input: &[u8], o: &mut Write) -> io::Result<()> {
+fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
     let size = input.len();
     let mut i = 0;
 

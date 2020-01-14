@@ -23,7 +23,7 @@ struct Lexer;
 #[inline(always)]
 fn search(rule: Rule, line: &[u8]) -> Option<usize> {
     if let Ok(pairs) = Lexer::parse(rule, unsafe { str::from_utf8_unchecked(line) }) {
-        Some(pairs.last().unwrap().into_span().end())
+        Some(pairs.last().unwrap().as_span().end())
     } else {
         None
     }

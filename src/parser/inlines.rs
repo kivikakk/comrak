@@ -513,7 +513,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 make_inline(self.arena, NodeValue::Text(vec![b'`'; openticks]))
             }
             Some(endpos) => {
-                let mut buf = &self.input[startpos..endpos - openticks];
+                let buf = &self.input[startpos..endpos - openticks];
                 let buf = strings::normalize_code(buf);
                 make_inline(self.arena, NodeValue::Code(buf))
             }
