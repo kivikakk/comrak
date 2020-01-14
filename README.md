@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 comrak = "0.6"
 ```
 
-Comrak supports Rust 1.27.0 and forward.
+Comrak supports Rust stable.
 
 ## Usage
 

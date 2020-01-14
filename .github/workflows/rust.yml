@@ -9,12 +9,11 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.27.0
           - nightly
           - beta
           - stable
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Obtain Rust
