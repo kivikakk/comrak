@@ -323,7 +323,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 let mut listmarker = vec![];
 
                 let marker_width = if parent.list_type == ListType::Bullet {
-                    4
+                    2
                 } else {
                     let mut list_number = parent.start;
                     let list_delim = parent.delimiter;
@@ -348,7 +348,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
                 if entering {
                     if parent.list_type == ListType::Bullet {
-                        write!(self, "  - ").unwrap();
+                        write!(self, "- ").unwrap();
                     } else {
                         self.write_all(&listmarker).unwrap();
                     }
@@ -502,9 +502,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::TaskItem(checked) => if entering {
                 if checked {
-                    write!(self, " [x] ").unwrap();
+                    write!(self, "[x] ").unwrap();
                 } else {
-                    write!(self, " [ ] ").unwrap();
+                    write!(self, "[ ] ").unwrap();
                 }
             },
             NodeValue::Strikethrough => if entering {
