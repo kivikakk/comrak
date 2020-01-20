@@ -348,7 +348,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
                 if entering {
                     if parent.list_type == ListType::Bullet {
-                        write!(self, "  - ").unwrap();
+                        write!(self, "- ").unwrap();
                     } else {
                         self.write_all(&listmarker).unwrap();
                     }
