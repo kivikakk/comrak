@@ -452,7 +452,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr()?;
                     write!(self.output, "<h{}>", nch.level)?;
 
-                    if let Some(ref prefix) = self.options.ext_header_ids {
+                    if let Some(ref prefix) = self.options.extension.header_ids {
                         let mut text_content = Vec::with_capacity(20);
                         self.collect_text(node, &mut text_content);
 
@@ -481,7 +481,7 @@ impl<'o> HtmlFormatter<'o> {
                         first_tag += 1;
                     }
 
-                    if self.options.github_pre_lang {
+                    if self.options.render.github_pre_lang {
                         self.output.write_all(b"<pre lang=\"")?;
                         self.escape(&ncb.info[..first_tag])?;
                         self.output.write_all(b"\"><code>")?;
@@ -496,9 +496,9 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::HtmlBlock(ref nhb) => if entering {
                 self.cr()?;
-                if !self.options.unsafe_ {
+                if !self.options.render.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
-                } else if self.options.ext_tagfilter {
+                } else if self.options.extension.tagfilter {
                     tagfilter_block(&nhb.literal, &mut self.output)?;
                 } else {
                     self.output.write_all(&nhb.literal)?;
@@ -543,7 +543,7 @@ impl<'o> HtmlFormatter<'o> {
                 self.output.write_all(b"<br />\n")?;
             },
             NodeValue::SoftBreak => if entering {
-                if self.options.hardbreaks {
+                if self.options.render.hardbreaks {
                     self.output.write_all(b"<br />\n")?;
                 } else {
                     self.output.write_all(b"\n")?;
@@ -555,9 +555,9 @@ impl<'o> HtmlFormatter<'o> {
                 self.output.write_all(b"</code>")?;
             },
             NodeValue::HtmlInline(ref literal) => if entering {
-                if !self.options.unsafe_ {
+                if !self.options.render.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
-                } else if self.options.ext_tagfilter && tagfilter(literal) {
+                } else if self.options.extension.tagfilter && tagfilter(literal) {
                     self.output.write_all(b"&lt;")?;
                     self.output.write_all(&literal[1..])?;
                 } else {
@@ -586,7 +586,7 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Link(ref nl) => if entering {
                 self.output.write_all(b"<a href=\"")?;
-                if self.options.unsafe_ || !dangerous_url(&nl.url) {
+                if self.options.render.unsafe_ || !dangerous_url(&nl.url) {
                     self.escape_href(&nl.url)?;
                 }
                 if !nl.title.is_empty() {
@@ -599,7 +599,7 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::Image(ref nl) => if entering {
                 self.output.write_all(b"<img src=\"")?;
-                if self.options.unsafe_ || !dangerous_url(&nl.url) {
+                if self.options.render.unsafe_ || !dangerous_url(&nl.url) {
                     self.escape_href(&nl.url)?;
                 }
                 self.output.write_all(b"\" alt=\"")?;

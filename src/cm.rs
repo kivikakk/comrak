@@ -145,8 +145,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.begin_content = self.begin_content && isdigit(buf[i]);
             }
 
-            if self.options.width > 0
-                && self.column > self.options.width
+            if self.options.render.width > 0
+                && self.column > self.options.render.width
                 && !self.begin_line
                 && self.last_breakable > 0
             {
@@ -282,7 +282,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
     fn format_node(&mut self, node: &'a AstNode<'a>, entering: bool) -> bool {
         self.node = node;
-        let allow_wrap = self.options.width > 0 && !self.options.hardbreaks;
+        let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
         if !(match node.data.borrow().value {
             NodeValue::Item(..) => true,
@@ -444,13 +444,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.output(literal, allow_wrap, Escaping::Normal);
             },
             NodeValue::LineBreak => if entering {
-                if !self.options.hardbreaks {
+                if !self.options.render.hardbreaks {
                     write!(self, "  ").unwrap();
                 }
                 self.cr();
             },
             NodeValue::SoftBreak => if entering {
-                if !self.no_linebreaks && self.options.width == 0 && !self.options.hardbreaks {
+                if !self.no_linebreaks && self.options.render.width == 0 && !self.options.render.hardbreaks {
                     self.cr();
                 } else {
                     self.output(&[b' '], allow_wrap, Escaping::Literal);

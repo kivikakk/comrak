@@ -84,11 +84,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         ] {
             s.special_chars[c as usize] = true;
         }
-        if options.ext_strikethrough {
+        if options.extension.strikethrough {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
         }
-        if options.ext_superscript {
+        if options.extension.superscript {
             s.special_chars[b'^' as usize] = true;
         }
         for &c in &[b'"', b'\'', b'.', b'-'] {
@@ -136,9 +136,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     new_inl = Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())));
                 }
             }
-            _ => if self.options.ext_strikethrough && c == '~' {
+            _ => if self.options.extension.strikethrough && c == '~' {
                 new_inl = Some(self.handle_delim(b'~'));
-            } else if self.options.ext_superscript && c == '^' {
+            } else if self.options.extension.superscript && c == '^' {
                 new_inl = Some(self.handle_delim(b'^'));
             } else {
                 let endpos = self.find_special_char();
@@ -232,10 +232,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             i['_' as usize] = stack_bottom;
             i['\'' as usize] = stack_bottom;
             i['"' as usize] = stack_bottom;
-            if self.options.ext_strikethrough {
+            if self.options.extension.strikethrough {
                 i['~' as usize] = stack_bottom;
             }
-            if self.options.ext_superscript {
+            if self.options.extension.superscript {
                 i['^' as usize] = stack_bottom;
             }
         }
@@ -305,8 +305,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // both get passed.
                 if closer.unwrap().delim_char == b'*'
                     || closer.unwrap().delim_char == b'_'
-                    || (self.options.ext_strikethrough && closer.unwrap().delim_char == b'~')
-                    || (self.options.ext_superscript && closer.unwrap().delim_char == b'^')
+                    || (self.options.extension.strikethrough && closer.unwrap().delim_char == b'~')
+                    || (self.options.extension.superscript && closer.unwrap().delim_char == b'^')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -443,7 +443,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             if self.special_chars[self.input[n] as usize] {
                 return n;
             }
-            if self.options.smart && self.smart_chars[self.input[n] as usize] {
+            if self.options.parse.smart && self.smart_chars[self.input[n] as usize] {
                 return n;
             }
         }
@@ -532,9 +532,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
-        let contents = if c == b'\'' && self.options.smart {
+        let contents = if c == b'\'' && self.options.parse.smart {
             b"\xE2\x80\x99".to_vec()
-        } else if c == b'"' && self.options.smart {
+        } else if c == b'"' && self.options.parse.smart {
             if can_close {
                 b"\xE2\x90\x9D".to_vec()
             } else {
@@ -545,7 +545,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         };
         let inl = make_inline(self.arena, NodeValue::Text(contents));
 
-        if (can_open || can_close) && (!(c == b'\'' || c == b'"') || self.options.smart) {
+        if (can_open || can_close) && (!(c == b'\'' || c == b'"') || self.options.parse.smart) {
             self.push_delimiter(c, can_open, can_close, inl);
         }
 
@@ -556,11 +556,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let start = self.pos;
         self.pos += 1;
 
-        if !self.options.smart || self.peek_char().map_or(false, |&c| c != b'-') {
+        if !self.options.parse.smart || self.peek_char().map_or(false, |&c| c != b'-') {
             return make_inline(self.arena, NodeValue::Text(vec![b'-']));
         }
 
-        while self.options.smart && self.peek_char().map_or(false, |&c| c == b'-') {
+        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
             self.pos += 1;
         }
 
@@ -589,7 +589,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
     pub fn handle_period(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
-        if self.options.smart && self.peek_char().map_or(false, |&c| c == b'.') {
+        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
             if self.peek_char().map_or(false, |&c| c == b'.') {
                 self.pos += 1;
@@ -723,7 +723,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
 
-        if self.options.ext_strikethrough && opener_char == b'~' {
+        if self.options.extension.strikethrough && opener_char == b'~' {
             if opener_num_chars != closer_num_chars ||
                 opener_num_chars > 0 {
                     return None
@@ -757,9 +757,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         let emph = make_inline(
             self.arena,
-            if self.options.ext_strikethrough && opener_char == b'~' {
+            if self.options.extension.strikethrough && opener_char == b'~' {
                 NodeValue::Strikethrough
-            } else if self.options.ext_superscript && opener_char == b'^' {
+            } else if self.options.extension.superscript && opener_char == b'^' {
                 NodeValue::Superscript
             } else if use_delims == 1 {
                 NodeValue::Emph
@@ -970,7 +970,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         let mut text: Option<Vec<u8>> = None;
-        if self.options.ext_footnotes
+        if self.options.extension.footnotes
             && match self.brackets[brackets_len - 1].inl_text.next_sibling() {
                 Some(n) => {
                     text = n.data.borrow().value.text().cloned();

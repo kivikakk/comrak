@@ -5,7 +5,7 @@ extern crate comrak;
 #[macro_use]
 extern crate clap;
 
-use comrak::{Arena, ComrakOptions};
+use comrak::{Arena, ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
 
 use std::boxed::Box;
 use std::collections::BTreeSet;
@@ -108,27 +108,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         .map_or(BTreeSet::new(), |vals| vals.collect());
 
     let options = ComrakOptions {
-        hardbreaks: matches.is_present("hardbreaks"),
-        smart: matches.is_present("smart"),
-        github_pre_lang: matches.is_present("github-pre-lang") || matches.is_present("gfm"),
-        width: matches
-            .value_of("width")
-            .unwrap_or("0")
-            .parse()
-            .unwrap_or(0),
-        default_info_string: matches
-            .value_of("default-info-string")
-            .map(|e| e.to_owned()),
-        unsafe_: matches.is_present("unsafe"),
-        ext_strikethrough: exts.remove("strikethrough") || matches.is_present("gfm"),
-        ext_tagfilter: exts.remove("tagfilter") || matches.is_present("gfm"),
-        ext_table: exts.remove("table") || matches.is_present("gfm"),
-        ext_autolink: exts.remove("autolink") || matches.is_present("gfm"),
-        ext_tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
-        ext_superscript: exts.remove("superscript"),
-        ext_header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-        ext_footnotes: exts.remove("footnotes"),
-        ext_description_lists: exts.remove("description-lists"),
+        extension: ComrakExtensionOptions {
+            strikethrough: exts.remove("strikethrough") || matches.is_present("gfm"),
+            tagfilter: exts.remove("tagfilter") || matches.is_present("gfm"),
+            table: exts.remove("table") || matches.is_present("gfm"),
+            autolink: exts.remove("autolink") || matches.is_present("gfm"),
+            tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
+            superscript: exts.remove("superscript"),
+            header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
+            footnotes: exts.remove("footnotes"),
+            description_lists: exts.remove("description-lists"),
+        },
+        parse: ComrakParseOptions {
+            smart: matches.is_present("smart"),
+            default_info_string: matches
+                .value_of("default-info-string")
+                .map(|e| e.to_owned()),
+        },
+        render: ComrakRenderOptions {
+            hardbreaks: matches.is_present("hardbreaks"),
+            github_pre_lang: matches.is_present("github-pre-lang") || matches.is_present("gfm"),
+            width: matches
+                .value_of("width")
+                .unwrap_or("0")
+                .parse()
+                .unwrap_or(0),
+            unsafe_: matches.is_present("unsafe"),
+        },
     };
 
     if !exts.is_empty() {
