@@ -16,7 +16,7 @@ const INDENT: usize = 4;
 const CLOSE_NEWLINE: bool = false;
 
 use comrak::nodes::{AstNode, NodeValue};
-use comrak::{parse_document, Arena, ComrakOptions};
+use comrak::{parse_document, Arena, ComrakOptions, ComrakExtensionOptions};
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -78,14 +78,17 @@ fn dump(source: &str) -> io::Result<()> {
     let arena = Arena::new();
 
     let opts = ComrakOptions {
-        ext_strikethrough: true,
-        ext_tagfilter: true,
-        ext_table: true,
-        ext_autolink: true,
-        ext_tasklist: true,
-        ext_superscript: true,
-        ext_footnotes: true,
-        ext_description_lists: true,
+        extension: ComrakExtensionOptions {
+            strikethrough: true,
+            tagfilter: true,
+            table: true,
+            autolink: true,
+            tasklist: true,
+            superscript: true,
+            footnotes: true,
+            description_lists: true,
+            ..ComrakExtensionOptions::default()
+        },
         ..ComrakOptions::default()
     };
 
@@ -95,7 +98,7 @@ fn dump(source: &str) -> io::Result<()> {
     iter_nodes(doc, &mut output, 0)
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args_os().skip(1).peekable();
     let mut body = String::new();
 
