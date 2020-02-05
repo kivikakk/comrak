@@ -253,42 +253,22 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        let size = buffer.len();
-        let mut i = 0;
-
-        while i < size {
-            let org = i;
-            while i < size && !NEEDS_ESCAPED[buffer[i] as usize] {
-                i += 1;
+        let mut offset = 0;
+        for (i, &byte) in buffer.iter().enumerate() {
+            if NEEDS_ESCAPED[byte as usize] {
+                let esc: &[u8] = match byte {
+                    b'"' => b"&quot;",
+                    b'&' => b"&amp;",
+                    b'<' => b"&lt;",
+                    b'>' => b"&gt;",
+                    _ => unreachable!(),
+                };
+                self.output.write_all(&buffer[offset..i])?;
+                self.output.write_all(esc)?;
+                offset = i + 1;
             }
-
-            if i > org {
-                self.output.write_all(&buffer[org..i])?;
-            }
-
-            if i >= size {
-                break;
-            }
-
-            match buffer[i] as char {
-                '"' => {
-                    self.output.write_all(b"&quot;")?;
-                }
-                '&' => {
-                    self.output.write_all(b"&amp;")?;
-                }
-                '<' => {
-                    self.output.write_all(b"&lt;")?;
-                }
-                '>' => {
-                    self.output.write_all(b"&gt;")?;
-                }
-                _ => unreachable!(),
-            }
-
-            i += 1;
         }
-
+        self.output.write_all(&buffer[offset..])?;
         Ok(())
     }
 
