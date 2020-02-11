@@ -1,5 +1,5 @@
 ![Build Status](https://action-badges.now.sh/kivikakk/comrak) ![Spec
-Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![crates.io
+Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![Financial Contributors on Open Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+contributors)](https://opencollective.com/comrak) [![crates.io
 version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
@@ -184,3 +184,33 @@ License](https://opensource.org/licenses/BSD-2-Clause).
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
 See [COPYING](COPYING) for all the details.
+
+## Contributors
+
+### Code Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/kivikakk/comrak/graphs/contributors"><img src="https://opencollective.com/comrak/contributors.svg?width=890&button=false" /></a>
+
+### Financial Contributors
+
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/comrak/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/comrak"><img src="https://opencollective.com/comrak/individuals.svg?width=890"></a>
+
+#### Organizations
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/comrak/contribute)]
+
+<a href="https://opencollective.com/comrak/organization/0/website"><img src="https://opencollective.com/comrak/organization/0/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/1/website"><img src="https://opencollective.com/comrak/organization/1/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/2/website"><img src="https://opencollective.com/comrak/organization/2/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/3/website"><img src="https://opencollective.com/comrak/organization/3/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/4/website"><img src="https://opencollective.com/comrak/organization/4/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/5/website"><img src="https://opencollective.com/comrak/organization/5/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/6/website"><img src="https://opencollective.com/comrak/organization/6/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/7/website"><img src="https://opencollective.com/comrak/organization/7/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/8/website"><img src="https://opencollective.com/comrak/organization/8/avatar.svg"></a>
+<a href="https://opencollective.com/comrak/organization/9/website"><img src="https://opencollective.com/comrak/organization/9/avatar.svg"></a>
