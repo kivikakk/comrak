@@ -1,6 +1,7 @@
 ![Build Status](https://action-badges.now.sh/kivikakk/comrak) ![Spec
-Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![Financial Contributors on Open Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+contributors)](https://opencollective.com/comrak) [![crates.io
-version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
+Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![Financial Contributors on Open
+Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+contributors)](https://opencollective.com/comrak)
+[![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
@@ -174,27 +175,14 @@ project.
 
 Thank you to comrak's many contributors for PRs and issues opened\!
 
-<table id='contributors'></table><a class='contributors' title='andersk' href='https://github.com/andersk'><img width='64' src='https://github.com/andersk.png' alt='andersk'></a> <a class='contributors' title='anthonynguyen' href='https://github.com/anthonynguyen'><img width='64' src='https://github.com/anthonynguyen.png' alt='anthonynguyen'></a> <a class='contributors' title='ayosec' href='https://github.com/ayosec'><img width='64' src='https://github.com/ayosec.png' alt='ayosec'></a> <a class='contributors' title='bovarysme' href='https://github.com/bovarysme'><img width='64' src='https://github.com/bovarysme.png' alt='bovarysme'></a> <a class='contributors' title='brson' href='https://github.com/brson'><img width='64' src='https://github.com/brson.png' alt='brson'></a> <a class='contributors' title='carols10cents' href='https://github.com/carols10cents'><img width='64' src='https://github.com/carols10cents.png' alt='carols10cents'></a> <a class='contributors' title='casey' href='https://github.com/casey'><img width='64' src='https://github.com/casey.png' alt='casey'></a> <a class='contributors' title='colindean' href='https://github.com/colindean'><img width='64' src='https://github.com/colindean.png' alt='colindean'></a> <a class='contributors' title='ConnyOnny' href='https://github.com/ConnyOnny'><img width='64' src='https://github.com/ConnyOnny.png' alt='ConnyOnny'></a> <a class='contributors' title='ctm' href='https://github.com/ctm'><img width='64' src='https://github.com/ctm.png' alt='ctm'></a> <a class='contributors' title='DemiMarie' href='https://github.com/DemiMarie'><img width='64' src='https://github.com/DemiMarie.png' alt='DemiMarie'></a> <a class='contributors' title='gjtorikian' href='https://github.com/gjtorikian'><img width='64' src='https://github.com/gjtorikian.png' alt='gjtorikian'></a> <a class='contributors' title='ignatenkobrain' href='https://github.com/ignatenkobrain'><img width='64' src='https://github.com/ignatenkobrain.png' alt='ignatenkobrain'></a> <a class='contributors' title='ivanceras' href='https://github.com/ivanceras'><img width='64' src='https://github.com/ivanceras.png' alt='ivanceras'></a> <a class='contributors' title='JordanMilne' href='https://github.com/JordanMilne'><img width='64' src='https://github.com/JordanMilne.png' alt='JordanMilne'></a> <a class='contributors' title='jrmiller82' href='https://github.com/jrmiller82'><img width='64' src='https://github.com/jrmiller82.png' alt='jrmiller82'></a> <a class='contributors' title='Keats' href='https://github.com/Keats'><img width='64' src='https://github.com/Keats.png' alt='Keats'></a> <a class='contributors' title='killercup' href='https://github.com/killercup'><img width='64' src='https://github.com/killercup.png' alt='killercup'></a> <a class='contributors' title='ldm0' href='https://github.com/ldm0'><img width='64' src='https://github.com/ldm0.png' alt='ldm0'></a> <a class='contributors' title='lise-henry' href='https://github.com/lise-henry'><img width='64' src='https://github.com/lise-henry.png' alt='lise-henry'></a> <a class='contributors' title='maxwell-k' href='https://github.com/maxwell-k'><img width='64' src='https://github.com/maxwell-k.png' alt='maxwell-k'></a> <a class='contributors' title='mity' href='https://github.com/mity'><img width='64' src='https://github.com/mity.png' alt='mity'></a> <a class='contributors' title='SSJohns' href='https://github.com/SSJohns'><img width='64' src='https://github.com/SSJohns.png' alt='SSJohns'></a> <a class='contributors' title='steveklabnik' href='https://github.com/steveklabnik'><img width='64' src='https://github.com/steveklabnik.png' alt='steveklabnik'></a> <a class='contributors' title='sunjay' href='https://github.com/sunjay'><img width='64' src='https://github.com/sunjay.png' alt='sunjay'></a> <a class='contributors' title='treiff' href='https://github.com/treiff'><img width='64' src='https://github.com/treiff.png' alt='treiff'></a> <a class='contributors' title='zeantsoi' href='https://github.com/zeantsoi'><img width='64' src='https://github.com/zeantsoi.png' alt='zeantsoi'></a>
-
-## Legal
-
-Copyright (c) 2017–2019, Ashe Connor. Licensed under the [2-Clause BSD
-License](https://opensource.org/licenses/BSD-2-Clause).
-
-`cmark` itself is is copyright (c) 2014, John MacFarlane.
-
-See [COPYING](COPYING) for all the details.
-
-## Contributors
-
 ### Code Contributors
 
-This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
 <a href="https://github.com/kivikakk/comrak/graphs/contributors"><img src="https://opencollective.com/comrak/contributors.svg?width=890&button=false" /></a>
 
 ### Financial Contributors
 
-Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/comrak/contribute)]
+Become a financial contributor and help us sustain our community.
+\[[Contribute](https://opencollective.com/comrak/contribute)\]
 
 #### Individuals
 
@@ -202,7 +190,8 @@ Become a financial contributor and help us sustain our community. [[Contribute](
 
 #### Organizations
 
-Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/comrak/contribute)]
+Support this project with your organization. Your logo will show up here with a link to your website.
+\[[Contribute](https://opencollective.com/comrak/contribute)\]
 
 <a href="https://opencollective.com/comrak/organization/0/website"><img src="https://opencollective.com/comrak/organization/0/avatar.svg"></a>
 <a href="https://opencollective.com/comrak/organization/1/website"><img src="https://opencollective.com/comrak/organization/1/avatar.svg"></a>
@@ -214,3 +203,12 @@ Support this project with your organization. Your logo will show up here with a 
 <a href="https://opencollective.com/comrak/organization/7/website"><img src="https://opencollective.com/comrak/organization/7/avatar.svg"></a>
 <a href="https://opencollective.com/comrak/organization/8/website"><img src="https://opencollective.com/comrak/organization/8/avatar.svg"></a>
 <a href="https://opencollective.com/comrak/organization/9/website"><img src="https://opencollective.com/comrak/organization/9/avatar.svg"></a>
+
+## Legal
+
+Copyright (c) 2017–2020, Ashe Connor. Licensed under the [2-Clause BSD
+License](https://opensource.org/licenses/BSD-2-Clause).
+
+`cmark` itself is is copyright (c) 2014, John MacFarlane.
+
+See [COPYING](COPYING) for all the details.
