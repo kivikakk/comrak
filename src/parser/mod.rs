@@ -264,7 +264,7 @@ pub struct ComrakExtensionOptions {
     /// let mut options = ComrakOptions::default();
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
-    ///            "<dl><dt>\n<p>Term</p>\n</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     pub description_lists: bool,
 }
