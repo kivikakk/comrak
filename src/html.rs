@@ -499,6 +499,12 @@ impl<'o> HtmlFormatter<'o> {
                     _ => false,
                 };
 
+                let tight = tight || (match node.parent().map(|n| n.data.borrow().value.clone())
+                {
+                    Some(NodeValue::DescriptionTerm) => true,
+                    _ => false,
+                });
+
                 if !tight {
                     if entering {
                         self.cr()?;

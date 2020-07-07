@@ -69,7 +69,7 @@
     unstable_features,
     unused_import_braces
 )]
-#![allow(unknown_lints, doc_markdown, cyclomatic_complexity)]
+#![allow(unknown_lints, clippy::doc_markdown, cyclomatic_complexity)]
 #![cfg_attr(feature = "benchmarks", allow(unstable_features))]
 #![cfg_attr(feature = "benchmarks", feature(test))]
 
