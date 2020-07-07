@@ -1,3 +1,10 @@
+### 0.7.1
+
+* Reduce list item indentation in line with spec. (#135, Casey Rodarmor)
+* Split uber-struct ComrakOptions into substructures.
+* Refactor HTML formatter escaping. (#140, Donough Liu)
+* Don't render <p> inside <dt> tags. (#145)
+
 ### 0.7.0
 
 * Supporting stable and newer again, since dependencies keep breaking for
