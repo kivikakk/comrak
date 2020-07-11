@@ -20,7 +20,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.7"
+comrak = "0.8"
 ```
 
 Comrak supports Rust stable.
@@ -31,7 +31,7 @@ A binary is included which does everything you typically want:
 
 ``` console
 $ comrak --help
-comrak 0.7.1
+comrak 0.8.0
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 

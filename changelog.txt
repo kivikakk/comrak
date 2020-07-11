@@ -1,3 +1,7 @@
+### 0.8.0
+
+* 0.7.1 was a semver-breaking change.  This is now 0.8.0.
+
 ### 0.7.1
 
 * Reduce list item indentation in line with spec. (#135, Casey Rodarmor)
