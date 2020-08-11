@@ -381,6 +381,21 @@ pub struct ComrakRenderOptions {
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
     pub unsafe_: bool,
+
+    /// Escape raw HTML instead of clobbering it.
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// let input = "<i>italic text</i>";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><!-- raw HTML omitted -->italic text<!-- raw HTML omitted --></p>\n");
+    ///
+    /// options.render.escape = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
+    /// ```
+    pub escape: bool,
 }
 
 #[derive(Clone)]
