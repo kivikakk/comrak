@@ -57,6 +57,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .help("Allow raw HTML and dangerous URLs"),
         )
         .arg(
+            clap::Arg::with_name("escape")
+                .long("escape")
+                .help("Escape raw HTML instead of clobbering it"),
+        )
+        .arg(
             clap::Arg::with_name("extension")
                 .short("e")
                 .long("extension")
@@ -134,6 +139,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .parse()
                 .unwrap_or(0),
             unsafe_: matches.is_present("unsafe"),
+            escape: matches.is_present("escape"),
         },
     };
 

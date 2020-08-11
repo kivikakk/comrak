@@ -476,7 +476,9 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::HtmlBlock(ref nhb) => if entering {
                 self.cr()?;
-                if !self.options.render.unsafe_ {
+                if self.options.render.escape {
+                    self.escape(&nhb.literal)?;
+                } else if !self.options.render.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
                 } else if self.options.extension.tagfilter {
                     tagfilter_block(&nhb.literal, &mut self.output)?;
@@ -541,7 +543,9 @@ impl<'o> HtmlFormatter<'o> {
                 self.output.write_all(b"</code>")?;
             },
             NodeValue::HtmlInline(ref literal) => if entering {
-                if !self.options.render.unsafe_ {
+                if self.options.render.escape {
+                    self.escape(&literal)?;
+                } else if !self.options.render.unsafe_ {
                     self.output.write_all(b"<!-- raw HTML omitted -->")?;
                 } else if self.options.extension.tagfilter && tagfilter(literal) {
                     self.output.write_all(b"&lt;")?;
