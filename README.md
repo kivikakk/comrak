@@ -31,7 +31,7 @@ A binary is included which does everything you typically want:
 
 ``` console
 $ comrak --help
-comrak 0.8.0
+comrak 0.8.1
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -39,6 +39,7 @@ USAGE:
     comrak [FLAGS] [OPTIONS] [--] [FILE]...
 
 FLAGS:
+        --escape             Escape raw HTML instead of clobbering it
         --gfm                Enable GitHub-flavored markdown extensions strikethrough, tagfilter, table, autolink, and
                              tasklist. It also enables --github-pre-lang.
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks

@@ -1,3 +1,8 @@
+### 0.8.1
+
+* Add escape option to escape raw HTML instead of clobbering it. (#150, Ryan
+  Westlund)
+
 ### 0.8.0
 
 * 0.7.1 was a semver-breaking change.  This is now 0.8.0.
