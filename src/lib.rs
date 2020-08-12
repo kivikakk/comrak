@@ -70,8 +70,6 @@
     unused_import_braces
 )]
 #![allow(unknown_lints, clippy::doc_markdown, cyclomatic_complexity)]
-#![cfg_attr(feature = "benchmarks", allow(unstable_features))]
-#![cfg_attr(feature = "benchmarks", feature(test))]
 
 extern crate entities;
 #[macro_use]
