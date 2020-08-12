@@ -36,5 +36,5 @@ pub fn isalpha(ch: u8) -> bool {
 }
 
 pub fn isalnum(ch: u8) -> bool {
-    (CMARK_CTYPE_CLASS[ch as usize] == 3 || CMARK_CTYPE_CLASS[ch as usize] == 4)
+    CMARK_CTYPE_CLASS[ch as usize] == 3 || CMARK_CTYPE_CLASS[ch as usize] == 4
 }
