@@ -36,4 +36,3 @@ timebomb = "0.1.2"
 
 [features]
 default = ["clap"]
-benchmarks = []
