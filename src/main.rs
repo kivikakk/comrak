@@ -18,6 +18,11 @@ use std::fs;
 use std::io::Read;
 use std::process;
 
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_UNKNOWN_EXTENSION: i32 = 1;
+const EXIT_PARSE_CONFIG: i32 = 2;
+const EXIT_READ_INPUT: i32 = 3;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let default_config_path = get_default_config_path();
 
@@ -27,8 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .about(crate_description!())
         .after_help("\
 By default, Comrak will attempt to read command-line options from a config file specified by \
---config-file.  This behaviour can be disabled with --no-config-file.  It is not an error if the \
-file does not exist.\
+--config-file.  This behaviour can be disabled by passing --config-file none.  It is not an error
+if the file does not exist.\
         ")
         .arg(
             clap::Arg::with_name("file")
@@ -40,15 +45,10 @@ file does not exist.\
             clap::Arg::with_name("config-file")
                 .short("c")
                 .long("config-file")
-                .help("Path to config file containing command-line arguments")
+                .help("Path to config file containing command-line arguments, or `none'")
                 .value_name("PATH")
                 .takes_value(true)
                 .default_value(&default_config_path),
-        )
-        .arg(
-            clap::Arg::with_name("no-config-file")
-                .long("no-config-file")
-                .help("Do not read config file"),
         )
         .arg(
             clap::Arg::with_name("hardbreaks")
@@ -135,8 +135,8 @@ file does not exist.\
 
     let mut matches = app.clone().get_matches();
 
-    if !matches.is_present("no-config-file") {
-        let config_file_path = matches.value_of("config-file").unwrap();
+    let config_file_path = matches.value_of("config-file").unwrap();
+    if config_file_path != "none" {
         if let Ok(args) = fs::read_to_string(config_file_path) {
             match shell_words::split(&args) {
                 Ok(mut args) => {
@@ -148,8 +148,8 @@ file does not exist.\
                     matches = app.get_matches_from(args);
                 },
                 Err(e) => {
-                    eprintln!("failed to parse {} -- {}", config_file_path, e);
-                    process::exit(2);
+                    eprintln!("failed to parse {}: {}", config_file_path, e);
+                    process::exit(EXIT_PARSE_CONFIG);
                 },
             }
         }
@@ -192,7 +192,7 @@ file does not exist.\
 
     if !exts.is_empty() {
         eprintln!("unknown extensions: {:?}", exts);
-        process::exit(1);
+        process::exit(EXIT_UNKNOWN_EXTENSION);
     }
 
     let mut s: Vec<u8> = Vec::with_capacity(2048);
@@ -202,8 +202,15 @@ file does not exist.\
             std::io::stdin().read_to_end(&mut s)?;
         }
         Some(fs) => for f in fs {
-            let mut io = std::fs::File::open(f)?;
-            io.read_to_end(&mut s)?;
+            match fs::File::open(f) {
+                Ok(mut io) => {
+                    io.read_to_end(&mut s)?;
+                }
+                Err(e) => {
+                    eprintln!("failed to read {}: {}", f, e);
+                    process::exit(EXIT_READ_INPUT);
+                }
+            }
         },
     };
 
@@ -218,7 +225,7 @@ file does not exist.\
 
     formatter(root, &options, &mut std::io::stdout())?;
 
-    process::exit(0);
+    process::exit(EXIT_SUCCESS);
 }
 
 fn get_default_config_path() -> String {
