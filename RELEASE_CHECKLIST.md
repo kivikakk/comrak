@@ -3,10 +3,7 @@
 * [ ] bump version in Cargo.toml
 * [ ] update changelog
 * [ ] `script/update-readme`
-* [ ] commit, tag
-* [ ] `cargo publish`
-* [ ] push tag
-* [ ] edit release to include changelog
+* [ ] commit, tag, but do not push yet
 * build binaries:
   * [ ] build x86_64-apple-darwin on sencha
   * [ ] cross-compile x86_64-pc-windows-gnu.exe on sencha
@@ -15,3 +12,6 @@
     * [ ] test on muffin
   * [ ] build x86_64-unknown-linux-gnu on hannah
   * [ ] build aarch64-unknown-linux-gnu on aarch64 debian VM
+* [ ] `cargo publish`
+* [ ] push commit and tag
+* [ ] edit release to include changelog
