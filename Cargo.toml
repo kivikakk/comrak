@@ -30,6 +30,8 @@ clap = { version = "2.32.0", optional = true }
 twoway = "0.2"
 pest = "2"
 pest_derive = "2"
+xdg = "^2.1"
+shell-words = "1.0"
 
 [dev-dependencies]
 timebomb = "0.1.2"

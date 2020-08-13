@@ -5,24 +5,50 @@ extern crate comrak;
 #[macro_use]
 extern crate clap;
 
+extern crate xdg;
+extern crate shell_words;
+
 use comrak::{Arena, ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
 
 use std::boxed::Box;
 use std::collections::BTreeSet;
+use std::env;
 use std::error::Error;
+use std::fs;
 use std::io::Read;
 use std::process;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = clap::App::new(crate_name!())
+    let default_config_path = get_default_config_path();
+
+    let app = clap::App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
+        .after_help("\
+By default, Comrak will attempt to read command-line options from a config file specified by \
+--config-file.  This behaviour can be disabled with --no-config-file.  It is not an error if the \
+file does not exist.\
+        ")
         .arg(
             clap::Arg::with_name("file")
                 .value_name("FILE")
                 .multiple(true)
                 .help("The CommonMark file to parse; or standard input if none passed"),
+        )
+        .arg(
+            clap::Arg::with_name("config-file")
+                .short("c")
+                .long("config-file")
+                .help("Path to config file containing command-line arguments")
+                .value_name("PATH")
+                .takes_value(true)
+                .default_value(&default_config_path),
+        )
+        .arg(
+            clap::Arg::with_name("no-config-file")
+                .long("no-config-file")
+                .help("Do not read config file"),
         )
         .arg(
             clap::Arg::with_name("hardbreaks")
@@ -105,8 +131,29 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .takes_value(true)
                 .value_name("PREFIX")
                 .help("Use the Comrak header IDs extension, with the given ID prefix"),
-        )
-        .get_matches();
+        );
+
+    let mut matches = app.clone().get_matches();
+
+    if !matches.is_present("no-config-file") {
+        let config_file_path = matches.value_of("config-file").unwrap();
+        if let Ok(args) = fs::read_to_string(config_file_path) {
+            match shell_words::split(&args) {
+                Ok(mut args) => {
+                    for (i, arg) in env::args_os().enumerate() {
+                        if let Some(s) = arg.to_str() {
+                            args.insert(i, s.into());
+                        }
+                    }
+                    matches = app.get_matches_from(args);
+                },
+                Err(e) => {
+                    eprintln!("failed to parse {} -- {}", config_file_path, e);
+                    process::exit(2);
+                },
+            }
+        }
+    }
 
     let mut exts = matches
         .values_of("extension")
@@ -172,4 +219,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     formatter(root, &options, &mut std::io::stdout())?;
 
     process::exit(0);
+}
+
+fn get_default_config_path() -> String {
+    if let Ok(xdg_dirs) = xdg::BaseDirectories::with_prefix("comrak") {
+        if let Ok(path) = xdg_dirs.place_config_file("config") {
+            if let Some(path_str) = path.to_str() {
+                return path_str.into();
+            }
+        }
+    }
+
+    return "comrak.config".into();
 }
