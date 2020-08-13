@@ -4,9 +4,10 @@ extern crate comrak;
 
 #[macro_use]
 extern crate clap;
-
-extern crate xdg;
 extern crate shell_words;
+
+#[cfg(not(windows))]
+extern crate xdg;
 
 use comrak::{Arena, ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
 
@@ -228,6 +229,7 @@ if the file does not exist.\
     process::exit(EXIT_SUCCESS);
 }
 
+#[cfg(not(windows))]
 fn get_default_config_path() -> String {
     if let Ok(xdg_dirs) = xdg::BaseDirectories::with_prefix("comrak") {
         if let Ok(path) = xdg_dirs.place_config_file("config") {
@@ -238,4 +240,9 @@ fn get_default_config_path() -> String {
     }
 
     return "comrak.config".into();
+}
+
+#[cfg(windows)]
+fn get_default_config_path() -> String {
+    "none".into()
 }
