@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .about(crate_description!())
         .after_help("\
 By default, Comrak will attempt to read command-line options from a config file specified by \
---config-file.  This behaviour can be disabled by passing --config-file none.  It is not an error
+--config-file.  This behaviour can be disabled by passing --config-file none.  It is not an error \
 if the file does not exist.\
         ")
         .arg(
