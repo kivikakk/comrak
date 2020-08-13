@@ -5,24 +5,50 @@ extern crate comrak;
 #[macro_use]
 extern crate clap;
 
+extern crate xdg;
+extern crate shell_words;
+
 use comrak::{Arena, ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
 
 use std::boxed::Box;
 use std::collections::BTreeSet;
+use std::env;
 use std::error::Error;
+use std::fs;
 use std::io::Read;
 use std::process;
 
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_UNKNOWN_EXTENSION: i32 = 1;
+const EXIT_PARSE_CONFIG: i32 = 2;
+const EXIT_READ_INPUT: i32 = 3;
+
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = clap::App::new(crate_name!())
+    let default_config_path = get_default_config_path();
+
+    let app = clap::App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
+        .after_help("\
+By default, Comrak will attempt to read command-line options from a config file specified by \
+--config-file.  This behaviour can be disabled by passing --config-file none.  It is not an error \
+if the file does not exist.\
+        ")
         .arg(
             clap::Arg::with_name("file")
                 .value_name("FILE")
                 .multiple(true)
                 .help("The CommonMark file to parse; or standard input if none passed"),
+        )
+        .arg(
+            clap::Arg::with_name("config-file")
+                .short("c")
+                .long("config-file")
+                .help("Path to config file containing command-line arguments, or `none'")
+                .value_name("PATH")
+                .takes_value(true)
+                .default_value(&default_config_path),
         )
         .arg(
             clap::Arg::with_name("hardbreaks")
@@ -105,8 +131,29 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .takes_value(true)
                 .value_name("PREFIX")
                 .help("Use the Comrak header IDs extension, with the given ID prefix"),
-        )
-        .get_matches();
+        );
+
+    let mut matches = app.clone().get_matches();
+
+    let config_file_path = matches.value_of("config-file").unwrap();
+    if config_file_path != "none" {
+        if let Ok(args) = fs::read_to_string(config_file_path) {
+            match shell_words::split(&args) {
+                Ok(mut args) => {
+                    for (i, arg) in env::args_os().enumerate() {
+                        if let Some(s) = arg.to_str() {
+                            args.insert(i, s.into());
+                        }
+                    }
+                    matches = app.get_matches_from(args);
+                },
+                Err(e) => {
+                    eprintln!("failed to parse {}: {}", config_file_path, e);
+                    process::exit(EXIT_PARSE_CONFIG);
+                },
+            }
+        }
+    }
 
     let mut exts = matches
         .values_of("extension")
@@ -145,7 +192,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if !exts.is_empty() {
         eprintln!("unknown extensions: {:?}", exts);
-        process::exit(1);
+        process::exit(EXIT_UNKNOWN_EXTENSION);
     }
 
     let mut s: Vec<u8> = Vec::with_capacity(2048);
@@ -155,8 +202,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             std::io::stdin().read_to_end(&mut s)?;
         }
         Some(fs) => for f in fs {
-            let mut io = std::fs::File::open(f)?;
-            io.read_to_end(&mut s)?;
+            match fs::File::open(f) {
+                Ok(mut io) => {
+                    io.read_to_end(&mut s)?;
+                }
+                Err(e) => {
+                    eprintln!("failed to read {}: {}", f, e);
+                    process::exit(EXIT_READ_INPUT);
+                }
+            }
         },
     };
 
@@ -171,5 +225,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     formatter(root, &options, &mut std::io::stdout())?;
 
-    process::exit(0);
+    process::exit(EXIT_SUCCESS);
+}
+
+fn get_default_config_path() -> String {
+    if let Ok(xdg_dirs) = xdg::BaseDirectories::with_prefix("comrak") {
+        if let Ok(path) = xdg_dirs.place_config_file("config") {
+            if let Some(path_str) = path.to_str() {
+                return path_str.into();
+            }
+        }
+    }
+
+    return "comrak.config".into();
 }
