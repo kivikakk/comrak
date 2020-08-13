@@ -1,3 +1,9 @@
+### 0.8.2
+
+* Fix some lint issues. (#152, Caleb Maclennan)
+* Build benchmarks separately to tests. (#154)
+* Add support for a config file for CLI use. (#157, with thanks to AJ ONeal.)
+
 ### 0.8.1
 
 * Add escape option to escape raw HTML instead of clobbering it. (#150, Ryan
