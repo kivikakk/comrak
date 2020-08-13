@@ -45,11 +45,14 @@ FLAGS:
         --github-pre-lang    Use GitHub-style <pre lang> for code blocks
         --hardbreaks         Treat newlines as hard line breaks
     -h, --help               Prints help information
+        --no-config-file     Do not read config file
         --smart              Use smart punctuation
         --unsafe             Allow raw HTML and dangerous URLs
     -V, --version            Prints version information
 
 OPTIONS:
+    -c, --config-file <PATH>            Path to config file containing command-line arguments [default:
+                                        /Users/kivikakk/.config/comrak/config]
         --default-info-string <INFO>    Default value for fenced code block's info strings if none is given
     -e, --extension <EXTENSION>...      Specify an extension name to use [possible values: strikethrough, tagfilter,
                                         table, autolink, tasklist, superscript, footnotes, description-lists]
@@ -59,6 +62,9 @@ OPTIONS:
 
 ARGS:
     <FILE>...    The CommonMark file to parse; or standard input if none passed
+
+By default, Comrak will attempt to read command-line options from a config file specified by --config-file.  This
+behaviour can be disabled with --no-config-file.  It is not an error if the file does not exist.
 ```
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
