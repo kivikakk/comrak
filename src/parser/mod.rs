@@ -7,8 +7,8 @@ use ctype::{isdigit, isspace};
 use entity;
 use nodes;
 use nodes::{
-    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
-    NodeHeading, NodeHtmlBlock, NodeList, NodeValue,
+    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
+    NodeHtmlBlock, NodeList, NodeValue,
 };
 use regex::bytes::Regex;
 use scanners;
@@ -529,11 +529,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         self.blank = false;
         self.partially_consumed_tab = false;
 
-        if self.line_number == 0 && line.len() >= 3
+        if self.line_number == 0
+            && line.len() >= 3
             && unsafe { str::from_utf8_unchecked(line) }
                 .chars()
                 .next()
-                .unwrap() == '\u{feff}'
+                .unwrap()
+                == '\u{feff}'
         {
             self.offset += 3;
         }
@@ -594,12 +596,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.find_first_nonspace(line);
 
             match ast.value {
-                NodeValue::BlockQuote => if !self.parse_block_quote_prefix(line) {
-                    return (false, container, should_continue);
-                },
-                NodeValue::Item(ref nl) => if !self.parse_node_item_prefix(line, container, nl) {
-                    return (false, container, should_continue);
-                },
+                NodeValue::BlockQuote => {
+                    if !self.parse_block_quote_prefix(line) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::Item(ref nl) => {
+                    if !self.parse_node_item_prefix(line, container, nl) {
+                        return (false, container, should_continue);
+                    }
+                }
                 NodeValue::DescriptionItem(ref di) => {
                     if !self.parse_description_item_prefix(line, container, di) {
                         return (false, container, should_continue);
@@ -610,12 +616,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::HtmlBlock(ref nhb) => if !self.parse_html_block_prefix(nhb.block_type) {
-                    return (false, container, should_continue);
-                },
-                NodeValue::Paragraph => if self.blank {
-                    return (false, container, should_continue);
-                },
+                NodeValue::HtmlBlock(ref nhb) => {
+                    if !self.parse_html_block_prefix(nhb.block_type) {
+                        return (false, container, should_continue);
+                    }
+                }
+                NodeValue::Paragraph => {
+                    if self.blank {
+                        return (false, container, should_continue);
+                    }
+                }
                 NodeValue::Table(..) => {
                     if !table::matches(&line[self.first_nonspace..]) {
                         return (false, container, should_continue);
@@ -664,7 +674,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && unwrap_into(
                     scanners::atx_heading_start(&line[self.first_nonspace..]),
                     &mut matched,
-                ) {
+                )
+            {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
@@ -673,7 +684,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 let mut hashpos = line[self.first_nonspace..]
                     .iter()
                     .position(|&c| c == b'#')
-                    .unwrap() + self.first_nonspace;
+                    .unwrap()
+                    + self.first_nonspace;
                 let mut level = 0;
                 while line[hashpos] == b'#' {
                     level += 1;
@@ -688,7 +700,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && unwrap_into(
                     scanners::open_code_fence(&line[self.first_nonspace..]),
                     &mut matched,
-                ) {
+                )
+            {
                 let first_nonspace = self.first_nonspace;
                 let offset = self.offset;
                 let ncb = NodeCodeBlock {
@@ -711,20 +724,23 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         scanners::html_block_start_7(&line[self.first_nonspace..]),
                         &mut matched,
                     ),
-                }) {
+                })
+            {
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
                     literal: Vec::new(),
                 };
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
-            } else if !indented && match container.data.borrow().value {
-                NodeValue::Paragraph => unwrap_into(
-                    scanners::setext_heading_line(&line[self.first_nonspace..]),
-                    &mut sc,
-                ),
-                _ => false,
-            } {
+            } else if !indented
+                && match container.data.borrow().value {
+                    NodeValue::Paragraph => unwrap_into(
+                        scanners::setext_heading_line(&line[self.first_nonspace..]),
+                        &mut sc,
+                    ),
+                    _ => false,
+                }
+            {
                 let has_content = {
                     let mut ast = container.data.borrow_mut();
                     self.resolve_reference_link_definitions(&mut ast.content)
@@ -740,21 +756,25 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     let adv = line.len() - 1 - self.offset;
                     self.advance_offset(line, adv, false);
                 }
-            } else if !indented && match (&container.data.borrow().value, all_matched) {
-                (&NodeValue::Paragraph, false) => false,
-                _ => unwrap_into(
-                    scanners::thematic_break(&line[self.first_nonspace..]),
-                    &mut matched,
-                ),
-            } {
+            } else if !indented
+                && match (&container.data.borrow().value, all_matched) {
+                    (&NodeValue::Paragraph, false) => false,
+                    _ => unwrap_into(
+                        scanners::thematic_break(&line[self.first_nonspace..]),
+                        &mut matched,
+                    ),
+                }
+            {
                 *container = self.add_child(*container, NodeValue::ThematicBreak);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
-            } else if !indented && self.options.extension.footnotes
+            } else if !indented
+                && self.options.extension.footnotes
                 && unwrap_into(
                     scanners::footnote_definition(&line[self.first_nonspace..]),
                     &mut matched,
-                ) {
+                )
+            {
                 let mut c = &line[self.first_nonspace + 2..self.first_nonspace + matched];
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
@@ -770,10 +790,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if (!indented || match container.data.borrow().value {
-                NodeValue::List(..) => true,
-                _ => false,
-            }) && self.indent < 4
+            } else if (!indented
+                || match container.data.borrow().value {
+                    NodeValue::List(..) => true,
+                    _ => false,
+                })
+                && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,
@@ -785,7 +807,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     ),
                     &mut matched,
                     &mut nl,
-                ) {
+                )
+            {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 let (save_partially_consumed_tab, save_offset, save_column) =
@@ -838,13 +861,15 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 };
 
                 match new_container {
-                    Some((new_container, replace)) => if replace {
-                        container.insert_after(new_container);
-                        container.detach();
-                        *container = new_container;
-                    } else {
-                        *container = new_container;
-                    },
+                    Some((new_container, replace)) => {
+                        if replace {
+                            container.insert_after(new_container);
+                            container.detach();
+                            *container = new_container;
+                        } else {
+                            *container = new_container;
+                        }
+                    }
                     _ => break,
                 }
             }
@@ -1094,10 +1119,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
-            && !self.blank && match self.current.data.borrow().value {
-            NodeValue::Paragraph => true,
-            _ => false,
-        } {
+            && !self.blank
+            && match self.current.data.borrow().value {
+                NodeValue::Paragraph => true,
+                _ => false,
+            }
+        {
             self.add_line(self.current, line);
         } else {
             while !self.current.same_node(last_matched_container) {
@@ -1396,9 +1423,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     },
                 );
             }
-            _ => for n in node.children() {
-                Self::find_footnote_definitions(n, map);
-            },
+            _ => {
+                for n in node.children() {
+                    Self::find_footnote_definitions(n, map);
+                }
+            }
         }
     }
 
@@ -1421,9 +1450,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     replace = Some(name.clone());
                 }
             }
-            _ => for n in node.children() {
-                Self::find_footnote_references(n, map, ix);
-            },
+            _ => {
+                for n in node.children() {
+                    Self::find_footnote_references(n, map, ix);
+                }
+            }
         }
 
         if let Some(mut label) = replace {
@@ -1547,13 +1578,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         );
 
         let mut lab: Vec<u8> = match subj.link_label() {
-            Some(lab) => if lab.is_empty() {
-                return None;
-            } else {
-                lab
-            },
+            Some(lab) => {
+                if lab.is_empty() {
+                    return None;
+                } else {
+                    lab
+                }
+            }
             None => return None,
-        }.to_vec();
+        }
+        .to_vec();
 
         if subj.peek_char() != Some(&(b':')) {
             return None;
@@ -1569,7 +1603,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         let beforetitle = subj.pos;
         subj.spnl();
-        let title_search = if subj.pos == beforetitle { None } else { scanners::link_title(&subj.input[subj.pos..]) };
+        let title_search = if subj.pos == beforetitle {
+            None
+        } else {
+            scanners::link_title(&subj.input[subj.pos..])
+        };
         let title = match title_search {
             Some(matchlen) => {
                 let t = &subj.input[subj.pos..subj.pos + matchlen];

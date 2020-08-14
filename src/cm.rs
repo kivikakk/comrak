@@ -170,7 +170,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         let nextc = nextc.map_or(0, |&c| c);
 
-        let needs_escaping = c < 0x80 && escaping != Escaping::Literal
+        let needs_escaping = c < 0x80
+            && escaping != Escaping::Literal
             && ((escaping == Escaping::Normal
                 && (c < 0x20
                     || c == b'*'
@@ -287,33 +288,40 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         if !(match node.data.borrow().value {
             NodeValue::Item(..) => true,
             _ => false,
-        } && node.previous_sibling().is_none() && entering)
+        } && node.previous_sibling().is_none()
+            && entering)
         {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
         }
 
         match node.data.borrow().value {
             NodeValue::Document => (),
-            NodeValue::BlockQuote => if entering {
-                write!(self, "> ").unwrap();
-                self.begin_content = true;
-                write!(self.prefix, "> ").unwrap();
-            } else {
-                let new_len = self.prefix.len() - 2;
-                self.prefix.truncate(new_len);
-                self.blankline();
-            },
-            NodeValue::List(..) => if !entering && match node.next_sibling() {
-                Some(next_sibling) => match next_sibling.data.borrow().value {
-                    NodeValue::CodeBlock(..) | NodeValue::List(..) => true,
-                    _ => false,
-                },
-                _ => false,
-            } {
-                self.cr();
-                write!(self, "<!-- end list -->").unwrap();
-                self.blankline();
-            },
+            NodeValue::BlockQuote => {
+                if entering {
+                    write!(self, "> ").unwrap();
+                    self.begin_content = true;
+                    write!(self.prefix, "> ").unwrap();
+                } else {
+                    let new_len = self.prefix.len() - 2;
+                    self.prefix.truncate(new_len);
+                    self.blankline();
+                }
+            }
+            NodeValue::List(..) => {
+                if !entering
+                    && match node.next_sibling() {
+                        Some(next_sibling) => match next_sibling.data.borrow().value {
+                            NodeValue::CodeBlock(..) | NodeValue::List(..) => true,
+                            _ => false,
+                        },
+                        _ => false,
+                    }
+                {
+                    self.cr();
+                    write!(self, "<!-- end list -->").unwrap();
+                    self.blankline();
+                }
+            }
             NodeValue::Item(..) => {
                 let parent = match node.parent().unwrap().data.borrow().value {
                     NodeValue::List(ref nl) => *nl,
@@ -342,7 +350,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                             "."
                         },
                         if list_number < 10 { "  " } else { " " }
-                    ).unwrap();
+                    )
+                    .unwrap();
                     listmarker.len()
                 };
 
@@ -365,124 +374,150 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::DescriptionList => (),
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
-            NodeValue::DescriptionDetails => if entering {
-                write!(self, ": ").unwrap()
-            },
-            NodeValue::Heading(ref nch) => if entering {
-                for _ in 0..nch.level {
-                    write!(self, "#").unwrap();
+            NodeValue::DescriptionDetails => {
+                if entering {
+                    write!(self, ": ").unwrap()
                 }
-                write!(self, " ").unwrap();
-                self.begin_content = true;
-                self.no_linebreaks = true;
-            } else {
-                self.no_linebreaks = false;
-                self.blankline();
-            },
-            NodeValue::CodeBlock(ref ncb) => if entering {
-                let first_in_list_item = node.previous_sibling().is_none() && match node.parent() {
-                    Some(parent) => match parent.data.borrow().value {
-                        NodeValue::Item(..) => true,
-                        _ => false,
-                    },
-                    _ => false,
-                };
-
-                if !first_in_list_item {
+            }
+            NodeValue::Heading(ref nch) => {
+                if entering {
+                    for _ in 0..nch.level {
+                        write!(self, "#").unwrap();
+                    }
+                    write!(self, " ").unwrap();
+                    self.begin_content = true;
+                    self.no_linebreaks = true;
+                } else {
+                    self.no_linebreaks = false;
                     self.blankline();
                 }
-
-                if ncb.info.is_empty()
-                    && (ncb.literal.len() > 2 && !isspace(ncb.literal[0])
-                        && !(isspace(ncb.literal[ncb.literal.len() - 1])
-                            && isspace(ncb.literal[ncb.literal.len() - 2])))
-                    && !first_in_list_item
-                {
-                    write!(self, "    ").unwrap();
-                    write!(self.prefix, "    ").unwrap();
-                    self.write_all(&ncb.literal).unwrap();
-                    let new_len = self.prefix.len() - 4;
-                    self.prefix.truncate(new_len);
-                } else {
-                    let fence_char =
-                        if ncb.info.contains(&b'`') {
-                            b'~'
-                        } else {
-                            b'`'
+            }
+            NodeValue::CodeBlock(ref ncb) => {
+                if entering {
+                    let first_in_list_item = node.previous_sibling().is_none()
+                        && match node.parent() {
+                            Some(parent) => match parent.data.borrow().value {
+                                NodeValue::Item(..) => true,
+                                _ => false,
+                            },
+                            _ => false,
                         };
-                    let numticks = max(3, longest_char_sequence(&ncb.literal, fence_char) + 1);
-                    for _ in 0..numticks {
-                        write!(self, "{}", fence_char as char).unwrap();
+
+                    if !first_in_list_item {
+                        self.blankline();
                     }
-                    if !ncb.info.is_empty() {
+
+                    if ncb.info.is_empty()
+                        && (ncb.literal.len() > 2
+                            && !isspace(ncb.literal[0])
+                            && !(isspace(ncb.literal[ncb.literal.len() - 1])
+                                && isspace(ncb.literal[ncb.literal.len() - 2])))
+                        && !first_in_list_item
+                    {
+                        write!(self, "    ").unwrap();
+                        write!(self.prefix, "    ").unwrap();
+                        self.write_all(&ncb.literal).unwrap();
+                        let new_len = self.prefix.len() - 4;
+                        self.prefix.truncate(new_len);
+                    } else {
+                        let fence_char = if ncb.info.contains(&b'`') { b'~' } else { b'`' };
+                        let numticks = max(3, longest_char_sequence(&ncb.literal, fence_char) + 1);
+                        for _ in 0..numticks {
+                            write!(self, "{}", fence_char as char).unwrap();
+                        }
+                        if !ncb.info.is_empty() {
+                            write!(self, " ").unwrap();
+                            self.write_all(&ncb.info).unwrap();
+                        }
+                        self.cr();
+                        self.write_all(&ncb.literal).unwrap();
+                        self.cr();
+                        for _ in 0..numticks {
+                            write!(self, "{}", fence_char as char).unwrap();
+                        }
+                    }
+                    self.blankline();
+                }
+            }
+            NodeValue::HtmlBlock(ref nhb) => {
+                if entering {
+                    self.blankline();
+                    self.write_all(&nhb.literal).unwrap();
+                    self.blankline();
+                }
+            }
+            NodeValue::ThematicBreak => {
+                if entering {
+                    self.blankline();
+                    write!(self, "-----").unwrap();
+                    self.blankline();
+                }
+            }
+            NodeValue::Paragraph => {
+                if !entering {
+                    self.blankline();
+                }
+            }
+            NodeValue::Text(ref literal) => {
+                if entering {
+                    self.output(literal, allow_wrap, Escaping::Normal);
+                }
+            }
+            NodeValue::LineBreak => {
+                if entering {
+                    if !self.options.render.hardbreaks {
+                        write!(self, "  ").unwrap();
+                    }
+                    self.cr();
+                }
+            }
+            NodeValue::SoftBreak => {
+                if entering {
+                    if !self.no_linebreaks
+                        && self.options.render.width == 0
+                        && !self.options.render.hardbreaks
+                    {
+                        self.cr();
+                    } else {
+                        self.output(&[b' '], allow_wrap, Escaping::Literal);
+                    }
+                }
+            }
+            NodeValue::Code(ref literal) => {
+                if entering {
+                    let numticks = shortest_unused_sequence(literal, b'`');
+                    for _ in 0..numticks {
+                        write!(self, "`").unwrap();
+                    }
+                    let pad = literal.is_empty()
+                        || literal[0] == b'`'
+                        || literal[literal.len() - 1] == b'`'
+                        || literal[0] == b' '
+                        || literal[literal.len() - 1] == b' ';
+                    if pad {
                         write!(self, " ").unwrap();
-                        self.write_all(&ncb.info).unwrap();
                     }
-                    self.cr();
-                    self.write_all(&ncb.literal).unwrap();
-                    self.cr();
+                    self.output(literal, allow_wrap, Escaping::Literal);
+                    if pad {
+                        write!(self, " ").unwrap();
+                    }
                     for _ in 0..numticks {
-                        write!(self, "{}", fence_char as char).unwrap();
+                        write!(self, "`").unwrap();
                     }
                 }
-                self.blankline();
-            },
-            NodeValue::HtmlBlock(ref nhb) => if entering {
-                self.blankline();
-                self.write_all(&nhb.literal).unwrap();
-                self.blankline();
-            },
-            NodeValue::ThematicBreak => if entering {
-                self.blankline();
-                write!(self, "-----").unwrap();
-                self.blankline();
-            },
-            NodeValue::Paragraph => if !entering {
-                self.blankline();
-            },
-            NodeValue::Text(ref literal) => if entering {
-                self.output(literal, allow_wrap, Escaping::Normal);
-            },
-            NodeValue::LineBreak => if entering {
-                if !self.options.render.hardbreaks {
-                    write!(self, "  ").unwrap();
+            }
+            NodeValue::HtmlInline(ref literal) => {
+                if entering {
+                    self.write_all(literal).unwrap();
                 }
-                self.cr();
-            },
-            NodeValue::SoftBreak => if entering {
-                if !self.no_linebreaks && self.options.render.width == 0 && !self.options.render.hardbreaks {
-                    self.cr();
+            }
+            NodeValue::Strong => {
+                if entering {
+                    write!(self, "**").unwrap();
                 } else {
-                    self.output(&[b' '], allow_wrap, Escaping::Literal);
+                    write!(self, "**").unwrap();
                 }
-            },
-            NodeValue::Code(ref literal) => if entering {
-                let numticks = shortest_unused_sequence(literal, b'`');
-                for _ in 0..numticks {
-                    write!(self, "`").unwrap();
-                }
-                let pad = literal.is_empty() ||
-                    literal[0] == b'`' || literal[literal.len() - 1] == b'`' ||
-                    literal[0] == b' ' || literal[literal.len() - 1] == b' ';
-                if pad {
-                    write!(self, " ").unwrap();
-                }
-                self.output(literal, allow_wrap, Escaping::Literal);
-                if pad {
-                    write!(self, " ").unwrap();
-                }
-                for _ in 0..numticks {
-                    write!(self, "`").unwrap();
-                }
-            },
-            NodeValue::HtmlInline(ref literal) => if entering {
-                self.write_all(literal).unwrap();
-            },
-            NodeValue::Strong => if entering {
-                write!(self, "**").unwrap();
-            } else {
-                write!(self, "**").unwrap();
-            },
+            }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
                     Some(parent) => match parent.data.borrow().value {
@@ -500,58 +535,68 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
                 self.write_all(&[emph_delim]).unwrap();
             }
-            NodeValue::TaskItem(checked) => if entering {
-                if checked {
-                    write!(self, "[x] ").unwrap();
-                } else {
-                    write!(self, "[ ] ").unwrap();
-                }
-            },
-            NodeValue::Strikethrough => if entering {
-                write!(self, "~").unwrap();
-            } else {
-                write!(self, "~").unwrap();
-            },
-            NodeValue::Superscript => if entering {
-                write!(self, "^").unwrap();
-            } else {
-                write!(self, "^").unwrap();
-            },
-            NodeValue::Link(ref nl) => if is_autolink(node, nl) {
+            NodeValue::TaskItem(checked) => {
                 if entering {
-                    write!(self, "<").unwrap();
-                    if nl.url.len() >= 7 && &nl.url[..7] == b"mailto:" {
-                        self.write_all(&nl.url[7..]).unwrap();
+                    if checked {
+                        write!(self, "[x] ").unwrap();
                     } else {
-                        self.write_all(&nl.url).unwrap();
+                        write!(self, "[ ] ").unwrap();
                     }
-                    write!(self, ">").unwrap();
-                    return false;
                 }
-            } else if entering {
-                write!(self, "[").unwrap();
-            } else {
-                write!(self, "](").unwrap();
-                self.output(&nl.url, false, Escaping::URL);
-                if !nl.title.is_empty() {
-                    write!(self, " \"").unwrap();
-                    self.output(&nl.title, false, Escaping::Title);
-                    write!(self, "\"").unwrap();
+            }
+            NodeValue::Strikethrough => {
+                if entering {
+                    write!(self, "~").unwrap();
+                } else {
+                    write!(self, "~").unwrap();
                 }
-                write!(self, ")").unwrap();
-            },
-            NodeValue::Image(ref nl) => if entering {
-                write!(self, "![").unwrap();
-            } else {
-                write!(self, "](").unwrap();
-                self.output(&nl.url, false, Escaping::URL);
-                if !nl.title.is_empty() {
-                    self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
-                    self.output(&nl.title, false, Escaping::Title);
-                    write!(self, "\"").unwrap();
+            }
+            NodeValue::Superscript => {
+                if entering {
+                    write!(self, "^").unwrap();
+                } else {
+                    write!(self, "^").unwrap();
                 }
-                write!(self, ")").unwrap();
-            },
+            }
+            NodeValue::Link(ref nl) => {
+                if is_autolink(node, nl) {
+                    if entering {
+                        write!(self, "<").unwrap();
+                        if nl.url.len() >= 7 && &nl.url[..7] == b"mailto:" {
+                            self.write_all(&nl.url[7..]).unwrap();
+                        } else {
+                            self.write_all(&nl.url).unwrap();
+                        }
+                        write!(self, ">").unwrap();
+                        return false;
+                    }
+                } else if entering {
+                    write!(self, "[").unwrap();
+                } else {
+                    write!(self, "](").unwrap();
+                    self.output(&nl.url, false, Escaping::URL);
+                    if !nl.title.is_empty() {
+                        write!(self, " \"").unwrap();
+                        self.output(&nl.title, false, Escaping::Title);
+                        write!(self, "\"").unwrap();
+                    }
+                    write!(self, ")").unwrap();
+                }
+            }
+            NodeValue::Image(ref nl) => {
+                if entering {
+                    write!(self, "![").unwrap();
+                } else {
+                    write!(self, "](").unwrap();
+                    self.output(&nl.url, false, Escaping::URL);
+                    if !nl.title.is_empty() {
+                        self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
+                        self.output(&nl.title, false, Escaping::Title);
+                        write!(self, "\"").unwrap();
+                    }
+                    write!(self, ")").unwrap();
+                }
+            }
             NodeValue::Table(..) => {
                 if entering {
                     self.custom_escape = Some(table_escape);
@@ -560,59 +605,68 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
                 self.blankline();
             }
-            NodeValue::TableRow(..) => if entering {
-                self.cr();
-                write!(self, "|").unwrap();
-            },
-            NodeValue::TableCell => if entering {
-                write!(self, " ").unwrap();
-            } else {
-                write!(self, " |").unwrap();
+            NodeValue::TableRow(..) => {
+                if entering {
+                    self.cr();
+                    write!(self, "|").unwrap();
+                }
+            }
+            NodeValue::TableCell => {
+                if entering {
+                    write!(self, " ").unwrap();
+                } else {
+                    write!(self, " |").unwrap();
 
-                let row = &node.parent().unwrap().data.borrow().value;
-                let in_header = match *row {
-                    NodeValue::TableRow(header) => header,
-                    _ => panic!(),
-                };
-
-                if in_header && node.next_sibling().is_none() {
-                    let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
-                    let alignments = match *table {
-                        NodeValue::Table(ref alignments) => alignments,
+                    let row = &node.parent().unwrap().data.borrow().value;
+                    let in_header = match *row {
+                        NodeValue::TableRow(header) => header,
                         _ => panic!(),
                     };
 
-                    self.cr();
-                    write!(self, "|").unwrap();
-                    for a in alignments {
-                        write!(
-                            self,
-                            " {} |",
-                            match *a {
-                                TableAlignment::Left => ":--",
-                                TableAlignment::Center => ":-:",
-                                TableAlignment::Right => "--:",
-                                TableAlignment::None => "---",
-                            }
-                        ).unwrap();
+                    if in_header && node.next_sibling().is_none() {
+                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                        let alignments = match *table {
+                            NodeValue::Table(ref alignments) => alignments,
+                            _ => panic!(),
+                        };
+
+                        self.cr();
+                        write!(self, "|").unwrap();
+                        for a in alignments {
+                            write!(
+                                self,
+                                " {} |",
+                                match *a {
+                                    TableAlignment::Left => ":--",
+                                    TableAlignment::Center => ":-:",
+                                    TableAlignment::Right => "--:",
+                                    TableAlignment::None => "---",
+                                }
+                            )
+                            .unwrap();
+                        }
+                        self.cr();
                     }
-                    self.cr();
                 }
-            },
-            NodeValue::FootnoteDefinition(_) => if entering {
-                self.footnote_ix += 1;
-                let footnote_ix = self.footnote_ix;
-                write!(self, "[^{}]:\n", footnote_ix).unwrap();
-                write!(self.prefix, "    ").unwrap();
-            } else {
-                let new_len = self.prefix.len() - 4;
-                self.prefix.truncate(new_len);
-            },
-            NodeValue::FootnoteReference(ref r) => if entering {
-                self.write_all(b"[^").unwrap();
-                self.write_all(r).unwrap();
-                self.write_all(b"]").unwrap();
-            },
+            }
+            NodeValue::FootnoteDefinition(_) => {
+                if entering {
+                    self.footnote_ix += 1;
+                    let footnote_ix = self.footnote_ix;
+                    write!(self, "[^{}]:\n", footnote_ix).unwrap();
+                    write!(self.prefix, "    ").unwrap();
+                } else {
+                    let new_len = self.prefix.len() - 4;
+                    self.prefix.truncate(new_len);
+                }
+            }
+            NodeValue::FootnoteReference(ref r) => {
+                if entering {
+                    self.write_all(b"[^").unwrap();
+                    self.write_all(r).unwrap();
+                    self.write_all(b"]").unwrap();
+                }
+            }
         };
         true
     }

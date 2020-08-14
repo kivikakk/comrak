@@ -418,10 +418,11 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::DescriptionTerm
         | NodeValue::DescriptionDetails
         | NodeValue::Item(..) => {
-            child.block() && match *child {
-                NodeValue::Item(..) => false,
-                _ => true,
-            }
+            child.block()
+                && match *child {
+                    NodeValue::Item(..) => false,
+                    _ => true,
+                }
         }
 
         NodeValue::List(..) => match *child {

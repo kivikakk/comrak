@@ -1,9 +1,9 @@
 #![feature(test)]
 
-extern crate test;
 extern crate comrak;
+extern crate test;
 
-use comrak::{parse_document, format_html, Arena, ComrakOptions};
+use comrak::{format_html, parse_document, Arena, ComrakOptions};
 use test::Bencher;
 
 #[bench]
@@ -21,4 +21,3 @@ fn bench_progit(b: &mut Bencher) {
         format_html(root, &ComrakOptions::default(), &mut output).unwrap()
     });
 }
-

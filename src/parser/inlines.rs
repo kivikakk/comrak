@@ -136,24 +136,26 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     new_inl = Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())));
                 }
             }
-            _ => if self.options.extension.strikethrough && c == '~' {
-                new_inl = Some(self.handle_delim(b'~'));
-            } else if self.options.extension.superscript && c == '^' {
-                new_inl = Some(self.handle_delim(b'^'));
-            } else {
-                let endpos = self.find_special_char();
-                let mut contents = self.input[self.pos..endpos].to_vec();
-                self.pos = endpos;
+            _ => {
+                if self.options.extension.strikethrough && c == '~' {
+                    new_inl = Some(self.handle_delim(b'~'));
+                } else if self.options.extension.superscript && c == '^' {
+                    new_inl = Some(self.handle_delim(b'^'));
+                } else {
+                    let endpos = self.find_special_char();
+                    let mut contents = self.input[self.pos..endpos].to_vec();
+                    self.pos = endpos;
 
-                if self
-                    .peek_char()
-                    .map_or(false, |&c| strings::is_line_end_char(c))
-                {
-                    strings::rtrim(&mut contents);
+                    if self
+                        .peek_char()
+                        .map_or(false, |&c| strings::is_line_end_char(c))
+                    {
+                        strings::rtrim(&mut contents);
+                    }
+
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
                 }
-
-                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
-            },
+            }
         }
 
         if let Some(inl) = new_inl {
@@ -273,7 +275,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         opener,
                         openers_bottom[closer.unwrap().length % 3]
                             [closer.unwrap().delim_char as usize],
-                    ) {
+                    )
+                {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
@@ -617,11 +620,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 .chars()
                 .next()
             {
-                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    '\n'
-                } else {
-                    x
-                },
+                Some(x) => {
+                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    }
+                }
                 None => '\n',
             }
         };
@@ -650,20 +655,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 .chars()
                 .next()
             {
-                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    '\n'
-                } else {
-                    x
-                },
+                Some(x) => {
+                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    }
+                }
                 None => '\n',
             }
         };
 
-        let left_flanking = numdelims > 0 && !after_char.is_whitespace()
+        let left_flanking = numdelims > 0
+            && !after_char.is_whitespace()
             && !(after_char.is_punctuation()
                 && !before_char.is_whitespace()
                 && !before_char.is_punctuation());
-        let right_flanking = numdelims > 0 && !before_char.is_whitespace()
+        let right_flanking = numdelims > 0
+            && !before_char.is_whitespace()
             && !(before_char.is_punctuation()
                 && !after_char.is_whitespace()
                 && !after_char.is_punctuation());
@@ -724,10 +733,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         closer_num_chars -= use_delims;
 
         if self.options.extension.strikethrough && opener_char == b'~' {
-            if opener_num_chars != closer_num_chars ||
-                opener_num_chars > 0 {
-                    return None
-                }
+            if opener_num_chars != closer_num_chars || opener_num_chars > 0 {
+                return None;
+            }
         }
 
         opener
@@ -960,7 +968,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
             if let Some(ref mut callback) = self.callback {
-                reff = callback(&lab).map(|(url, title)| Reference {url: url, title: title});
+                reff = callback(&lab).map(|(url, title)| Reference {
+                    url: url,
+                    title: title,
+                });
             }
         }
 
@@ -977,7 +988,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     text.is_some() && n.next_sibling().is_none()
                 }
                 _ => false,
-            } {
+            }
+        {
             let text = text.unwrap();
             if text.len() > 1 && text[0] == b'^' {
                 let inl = make_inline(self.arena, NodeValue::FootnoteReference(text[1..].to_vec()));
