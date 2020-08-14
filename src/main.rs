@@ -243,7 +243,7 @@ fn get_default_config_path() -> String {
         }
     }
 
-    return "comrak.config".into();
+    "comrak.config".into()
 }
 
 #[cfg(windows)]

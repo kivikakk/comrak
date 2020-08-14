@@ -16,7 +16,7 @@ pub fn format_document<'a>(
     output: &mut dyn Write,
 ) -> io::Result<()> {
     let mut writer = WriteWithLast {
-        output: output,
+        output,
         last_was_lf: Cell::new(true),
     };
     let mut f = HtmlFormatter::new(options, &mut writer);
@@ -64,7 +64,7 @@ impl<'w> Write for WriteWithLast<'w> {
 /// // Second "stuff" has "-1" appended to make it unique.
 /// assert_eq!("stuff-1".to_string(), anchorizer.anchorize("Stuff".to_string()));
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Anchorizer(HashSet<String>);
 
 impl Anchorizer {
@@ -124,7 +124,7 @@ struct HtmlFormatter<'o> {
     written_footnote_ix: u32,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 const NEEDS_ESCAPED : [bool; 256] = [
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
@@ -236,8 +236,8 @@ fn dangerous_url(input: &[u8]) -> bool {
 impl<'o> HtmlFormatter<'o> {
     fn new(options: &'o ComrakOptions, output: &'o mut WriteWithLast<'o>) -> Self {
         HtmlFormatter {
-            options: options,
-            output: output,
+            options,
+            output,
             anchorizer: Anchorizer::new(),
             footnote_ix: 0,
             written_footnote_ix: 0,
@@ -401,7 +401,7 @@ impl<'o> HtmlFormatter<'o> {
                     } else if nl.start == 1 {
                         self.output.write_all(b"<ol>\n")?;
                     } else {
-                        write!(self.output, "<ol start=\"{}\">\n", nl.start)?;
+                        writeln!(self.output, "<ol start=\"{}\">", nl.start)?;
                     }
                 } else if nl.list_type == ListType::Bullet {
                     self.output.write_all(b"</ul>\n")?;
@@ -460,7 +460,7 @@ impl<'o> HtmlFormatter<'o> {
                         )?;
                     }
                 } else {
-                    write!(self.output, "</h{}>\n", nch.level)?;
+                    writeln!(self.output, "</h{}>", nch.level)?;
                 }
             }
             NodeValue::CodeBlock(ref ncb) => {
@@ -734,7 +734,7 @@ impl<'o> HtmlFormatter<'o> {
                             .write_all(b"<section class=\"footnotes\">\n<ol>\n")?;
                     }
                     self.footnote_ix += 1;
-                    write!(self.output, "<li id=\"fn{}\">\n", self.footnote_ix)?;
+                    writeln!(self.output, "<li id=\"fn{}\">", self.footnote_ix)?;
                 } else {
                     if self.put_footnote_backref()? {
                         self.output.write_all(b"\n")?;

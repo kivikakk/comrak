@@ -88,7 +88,7 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     arena: &'a Arena<AstNode<'a>>,
     buffer: &str,
     options: &ComrakOptions,
-    callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+    callback: Option<Callback<'c>>,
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
@@ -101,6 +101,8 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     parser.feed(buffer);
     parser.finish()
 }
+
+type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
@@ -117,7 +119,7 @@ pub struct Parser<'a, 'o, 'c> {
     partially_consumed_tab: bool,
     last_line_length: usize,
     options: &'o ComrakOptions,
-    callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+    callback: Option<Callback<'c>>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -414,12 +416,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         arena: &'a Arena<AstNode<'a>>,
         root: &'a AstNode<'a>,
         options: &'o ComrakOptions,
-        callback: Option<&'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+        callback: Option<Callback<'c>>,
     ) -> Self {
         Parser {
-            arena: arena,
+            arena,
             refmap: HashMap::new(),
-            root: root,
+            root,
             current: root,
             line_number: 0,
             offset: 0,
@@ -430,8 +432,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
-            options: options,
-            callback: callback,
+            options,
+            callback,
         }
     }
 
@@ -531,11 +533,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         if self.line_number == 0
             && line.len() >= 3
-            && unsafe { str::from_utf8_unchecked(line) }
-                .chars()
-                .next()
-                .unwrap()
-                == '\u{feff}'
+            && unsafe { str::from_utf8_unchecked(line) }.starts_with("\u{feff}")
         {
             self.offset += 3;
         }
@@ -693,7 +691,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 }
 
                 container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
-                    level: level,
+                    level,
                     setext: false,
                 });
             } else if !indented
@@ -1024,10 +1022,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         match t {
             1 | 2 | 3 | 4 | 5 => true,
             6 | 7 => !self.blank,
-            _ => {
-                assert!(false);
-                false
-            }
+            _ => unreachable!(),
         }
     }
 
@@ -1417,10 +1412,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 node.detach();
                 map.insert(
                     strings::normalize_label(name),
-                    FootnoteDefinition {
-                        ix: None,
-                        node: node,
-                    },
+                    FootnoteDefinition { ix: None, node },
                 );
             }
             _ => {
@@ -1731,7 +1723,7 @@ fn parse_list_marker(
                 list_type: ListType::Ordered,
                 marker_offset: 0,
                 padding: 0,
-                start: start,
+                start,
                 delimiter: if c == b'.' {
                     ListDelimType::Period
                 } else {

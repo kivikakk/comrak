@@ -92,13 +92,7 @@ fn www_match<'a>(
     let mut url = b"http://".to_vec();
     url.extend_from_slice(&contents[i..link_end + i]);
 
-    let inl = make_inline(
-        arena,
-        NodeValue::Link(NodeLink {
-            url: url,
-            title: vec![],
-        }),
-    );
+    let inl = make_inline(arena, NodeValue::Link(NodeLink { url, title: vec![] }));
 
     inl.append(make_inline(
         arena,
@@ -322,13 +316,7 @@ fn email_match<'a>(
     let mut url = b"mailto:".to_vec();
     url.extend_from_slice(&contents[i - rewind..link_end + i]);
 
-    let inl = make_inline(
-        arena,
-        NodeValue::Link(NodeLink {
-            url: url,
-            title: vec![],
-        }),
-    );
+    let inl = make_inline(arena, NodeValue::Link(NodeLink { url, title: vec![] }));
 
     inl.append(make_inline(
         arena,

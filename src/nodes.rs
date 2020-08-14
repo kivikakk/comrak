@@ -370,7 +370,7 @@ impl Ast {
     /// Create a new AST node with the given value.
     pub fn new(value: NodeValue) -> Self {
         Ast {
-            value: value,
+            value,
             content: vec![],
             start_line: 0,
             open: true,

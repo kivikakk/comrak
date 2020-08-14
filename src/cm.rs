@@ -61,8 +61,8 @@ impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
 impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn new(node: &'a AstNode<'a>, options: &'o ComrakOptions) -> Self {
         CommonMarkFormatter {
-            node: node,
-            options: options,
+            node,
+            options,
             v: vec![],
             prefix: vec![],
             column: 0,
@@ -512,11 +512,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
             }
             NodeValue::Strong => {
-                if entering {
-                    write!(self, "**").unwrap();
-                } else {
-                    write!(self, "**").unwrap();
-                }
+                write!(self, "**").unwrap();
             }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
@@ -545,18 +541,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
             }
             NodeValue::Strikethrough => {
-                if entering {
-                    write!(self, "~").unwrap();
-                } else {
-                    write!(self, "~").unwrap();
-                }
+                write!(self, "~").unwrap();
             }
             NodeValue::Superscript => {
-                if entering {
-                    write!(self, "^").unwrap();
-                } else {
-                    write!(self, "^").unwrap();
-                }
+                write!(self, "^").unwrap();
             }
             NodeValue::Link(ref nl) => {
                 if is_autolink(node, nl) {
@@ -653,7 +641,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if entering {
                     self.footnote_ix += 1;
                     let footnote_ix = self.footnote_ix;
-                    write!(self, "[^{}]:\n", footnote_ix).unwrap();
+                    writeln!(self, "[^{}]:", footnote_ix).unwrap();
                     write!(self.prefix, "    ").unwrap();
                 } else {
                     let new_len = self.prefix.len() - 4;

@@ -71,7 +71,7 @@ pub fn normalize_code(v: &[u8]) -> Vec<u8> {
         i += 1
     }
 
-    if contains_nonspace && r.len() > 0 && r[0] == b' ' && r[r.len() - 1] == b' ' {
+    if contains_nonspace && !r.is_empty() && r[0] == b' ' && r[r.len() - 1] == b' ' {
         r.remove(0);
         r.pop();
     }
@@ -183,7 +183,7 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
     let keep = buf.len() - n;
     unsafe {
         let dst = buf.as_mut_ptr();
-        let src = dst.offset(n as isize);
+        let src = dst.add(n);
         ptr::copy(src, dst, keep);
     }
 }
