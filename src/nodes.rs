@@ -287,8 +287,7 @@ pub struct NodeHtmlBlock {
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
-        match *self {
-            NodeValue::Document
+        matches!(*self, NodeValue::Document
             | NodeValue::BlockQuote
             | NodeValue::FootnoteDefinition(_)
             | NodeValue::List(..)
@@ -304,25 +303,23 @@ impl NodeValue {
             | NodeValue::ThematicBreak
             | NodeValue::Table(..)
             | NodeValue::TableRow(..)
-            | NodeValue::TableCell => true,
-            _ => false,
-        }
+            | NodeValue::TableCell)
     }
 
     #[doc(hidden)]
     pub fn accepts_lines(&self) -> bool {
-        match *self {
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..) => true,
-            _ => false,
-        }
+        matches!(
+            *self,
+            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
+        )
     }
 
     /// Indicates whether this node may contain inlines.
     pub fn contains_inlines(&self) -> bool {
-        match *self {
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::TableCell => true,
-            _ => false,
-        }
+        matches!(
+            *self,
+            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::TableCell
+        )
     }
 
     /// Return a reference to the text of a `Text` inline, if this node is one.
@@ -417,28 +414,16 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::FootnoteDefinition(_)
         | NodeValue::DescriptionTerm
         | NodeValue::DescriptionDetails
-        | NodeValue::Item(..) => {
-            child.block()
-                && match *child {
-                    NodeValue::Item(..) => false,
-                    _ => true,
-                }
-        }
+        | NodeValue::Item(..) => child.block() && !matches!(*child, NodeValue::Item(..)),
 
-        NodeValue::List(..) => match *child {
-            NodeValue::Item(..) => true,
-            _ => false,
-        },
+        NodeValue::List(..) => matches!(*child, NodeValue::Item(..)),
 
-        NodeValue::DescriptionList => match *child {
-            NodeValue::DescriptionItem(_) => true,
-            _ => false,
-        },
+        NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
 
-        NodeValue::DescriptionItem(_) => match *child {
-            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => true,
-            _ => false,
-        },
+        NodeValue::DescriptionItem(_) => matches!(
+            *child,
+            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
+        ),
 
         NodeValue::Paragraph
         | NodeValue::Heading(..)
@@ -447,27 +432,21 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::Link(..)
         | NodeValue::Image(..) => !child.block(),
 
-        NodeValue::Table(..) => match *child {
-            NodeValue::TableRow(..) => true,
-            _ => false,
-        },
+        NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
-        NodeValue::TableRow(..) => match *child {
-            NodeValue::TableCell => true,
-            _ => false,
-        },
+        NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
 
-        NodeValue::TableCell => match *child {
+        NodeValue::TableCell => matches!(
+            *child,
             NodeValue::Text(..)
-            | NodeValue::Code(..)
-            | NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Link(..)
-            | NodeValue::Image(..)
-            | NodeValue::Strikethrough
-            | NodeValue::HtmlInline(..) => true,
-            _ => false,
-        },
+                | NodeValue::Code(..)
+                | NodeValue::Emph
+                | NodeValue::Strong
+                | NodeValue::Link(..)
+                | NodeValue::Image(..)
+                | NodeValue::Strikethrough
+                | NodeValue::HtmlInline(..)
+        ),
 
         _ => false,
     }

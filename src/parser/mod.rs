@@ -25,10 +25,7 @@ const CODE_INDENT: usize = 4;
 
 macro_rules! node_matches {
     ($node:expr, $pat:pat) => {{
-        match $node.data.borrow().value {
-            $pat => true,
-            _ => false,
-        }
+        matches!($node.data.borrow().value, $pat)
     }};
 }
 
@@ -649,15 +646,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = match self.current.data.borrow().value {
-            NodeValue::Paragraph => true,
-            _ => false,
-        };
+        let mut maybe_lazy = matches!(self.current.data.borrow().value, NodeValue::Paragraph);
 
-        while match container.data.borrow().value {
-            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) => false,
-            _ => true,
-        } {
+        while !matches!(
+            container.data.borrow().value,
+            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
+        ) {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
@@ -788,20 +782,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if (!indented
-                || match container.data.borrow().value {
-                    NodeValue::List(..) => true,
-                    _ => false,
-                })
+            } else if (!indented || matches!(container.data.borrow().value, NodeValue::List(..)))
                 && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,
                         self.first_nonspace,
-                        match container.data.borrow().value {
-                            NodeValue::Paragraph => true,
-                            _ => false,
-                        },
+                        matches!(container.data.borrow().value, NodeValue::Paragraph),
                     ),
                     &mut matched,
                     &mut nl,
@@ -1115,10 +1102,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
             && !self.blank
-            && match self.current.data.borrow().value {
-                NodeValue::Paragraph => true,
-                _ => false,
-            }
+            && matches!(self.current.data.borrow().value, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);
         } else {

@@ -109,17 +109,11 @@ pub fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
 }
 
 pub fn is_line_end_char(ch: u8) -> bool {
-    match ch {
-        10 | 13 => true,
-        _ => false,
-    }
+    matches!(ch, 10 | 13)
 }
 
 pub fn is_space_or_tab(ch: u8) -> bool {
-    match ch {
-        9 | 32 => true,
-        _ => false,
-    }
+    matches!(ch, 9 | 32)
 }
 
 pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {

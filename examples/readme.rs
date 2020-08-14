@@ -32,8 +32,8 @@ fn large() {
         }
     }
 
-    iter_nodes(root, &|node| match &mut node.data.borrow_mut().value {
-        &mut NodeValue::Text(ref mut text) => {
+    iter_nodes(root, &|node| {
+        if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
             let orig = std::mem::replace(text, vec![]);
             *text = String::from_utf8(orig)
                 .unwrap()
@@ -41,7 +41,6 @@ fn large() {
                 .as_bytes()
                 .to_vec();
         }
-        _ => (),
     });
 
     let mut html = vec![];

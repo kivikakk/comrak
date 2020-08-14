@@ -285,10 +285,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
-        if !(match node.data.borrow().value {
-            NodeValue::Item(..) => true,
-            _ => false,
-        } && node.previous_sibling().is_none()
+        if !(matches!(node.data.borrow().value, NodeValue::Item(..))
+            && node.previous_sibling().is_none()
             && entering)
         {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
@@ -310,10 +308,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::List(..) => {
                 if !entering
                     && match node.next_sibling() {
-                        Some(next_sibling) => match next_sibling.data.borrow().value {
-                            NodeValue::CodeBlock(..) | NodeValue::List(..) => true,
-                            _ => false,
-                        },
+                        Some(next_sibling) => matches!(
+                            next_sibling.data.borrow().value,
+                            NodeValue::CodeBlock(..) | NodeValue::List(..)
+                        ),
                         _ => false,
                     }
                 {
@@ -396,10 +394,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 if entering {
                     let first_in_list_item = node.previous_sibling().is_none()
                         && match node.parent() {
-                            Some(parent) => match parent.data.borrow().value {
-                                NodeValue::Item(..) => true,
-                                _ => false,
-                            },
+                            Some(parent) => {
+                                matches!(parent.data.borrow().value, NodeValue::Item(..))
+                            }
                             _ => false,
                         };
 
@@ -516,10 +513,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Emph => {
                 let emph_delim = if match node.parent() {
-                    Some(parent) => match parent.data.borrow().value {
-                        NodeValue::Emph => true,
-                        _ => false,
-                    },
+                    Some(parent) => matches!(parent.data.borrow().value, NodeValue::Emph),
                     _ => false,
                 } && node.next_sibling().is_none()
                     && node.previous_sibling().is_none()

@@ -521,20 +521,20 @@ impl<'o> HtmlFormatter<'o> {
                 };
 
                 let tight = tight
-                    || (match node.parent().map(|n| n.data.borrow().value.clone()) {
-                        Some(NodeValue::DescriptionTerm) => true,
-                        _ => false,
-                    });
+                    || matches!(
+                        node.parent().map(|n| n.data.borrow().value.clone()),
+                        Some(NodeValue::DescriptionTerm)
+                    );
 
                 if !tight {
                     if entering {
                         self.cr()?;
                         self.output.write_all(b"<p>")?;
                     } else {
-                        if match node.parent().unwrap().data.borrow().value {
-                            NodeValue::FootnoteDefinition(..) => true,
-                            _ => false,
-                        } && node.next_sibling().is_none()
+                        if matches!(
+                            node.parent().unwrap().data.borrow().value,
+                            NodeValue::FootnoteDefinition(..)
+                        ) && node.next_sibling().is_none()
                         {
                             self.output.write_all(b" ")?;
                             self.put_footnote_backref()?;
