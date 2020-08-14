@@ -2,7 +2,7 @@ use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
 use nodes::{Ast, AstNode, NodeLink, NodeValue};
-use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, ComrakOptions, Reference};
+use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -32,7 +32,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     // Need to borrow the callback from the parser only for the lifetime of the Subject, 'subj, and
     // then give it back when the Subject goes out of scope. Needs to be a mutable reference so we
     // can call the FnMut and let it mutate its captured variables.
-    callback: Option<&'subj mut &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+    callback: Option<&'subj mut Callback<'c>>,
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
@@ -61,15 +61,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         input: &'i [u8],
         refmap: &'r mut HashMap<Vec<u8>, Reference>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
-        callback: Option<&'subj mut &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>>,
+        callback: Option<&'subj mut Callback<'c>>,
     ) -> Self {
         let mut s = Subject {
-            arena: arena,
-            options: options,
-            input: input,
+            arena,
+            options,
+            input,
             pos: 0,
-            refmap: refmap,
-            delimiter_arena: delimiter_arena,
+            refmap,
+            delimiter_arena,
             last_delimiter: None,
             brackets: vec![],
             backticks: [0; MAXBACKTICKS + 1],
@@ -77,7 +77,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             special_chars: [false; 256],
             skip_chars: [false; 256],
             smart_chars: [false; 256],
-            callback: callback,
+            callback,
         };
         for &c in &[
             b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!',
@@ -136,24 +136,26 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     new_inl = Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())));
                 }
             }
-            _ => if self.options.extension.strikethrough && c == '~' {
-                new_inl = Some(self.handle_delim(b'~'));
-            } else if self.options.extension.superscript && c == '^' {
-                new_inl = Some(self.handle_delim(b'^'));
-            } else {
-                let endpos = self.find_special_char();
-                let mut contents = self.input[self.pos..endpos].to_vec();
-                self.pos = endpos;
+            _ => {
+                if self.options.extension.strikethrough && c == '~' {
+                    new_inl = Some(self.handle_delim(b'~'));
+                } else if self.options.extension.superscript && c == '^' {
+                    new_inl = Some(self.handle_delim(b'^'));
+                } else {
+                    let endpos = self.find_special_char();
+                    let mut contents = self.input[self.pos..endpos].to_vec();
+                    self.pos = endpos;
 
-                if self
-                    .peek_char()
-                    .map_or(false, |&c| strings::is_line_end_char(c))
-                {
-                    strings::rtrim(&mut contents);
+                    if self
+                        .peek_char()
+                        .map_or(false, |&c| strings::is_line_end_char(c))
+                    {
+                        strings::rtrim(&mut contents);
+                    }
+
+                    new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
                 }
-
-                new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
-            },
+            }
         }
 
         if let Some(inl) = new_inl {
@@ -273,7 +275,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         opener,
                         openers_bottom[closer.unwrap().length % 3]
                             [closer.unwrap().delim_char as usize],
-                    ) {
+                    )
+                {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
@@ -617,11 +620,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 .chars()
                 .next()
             {
-                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    '\n'
-                } else {
-                    x
-                },
+                Some(x) => {
+                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    }
+                }
                 None => '\n',
             }
         };
@@ -650,20 +655,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 .chars()
                 .next()
             {
-                Some(x) => if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    '\n'
-                } else {
-                    x
-                },
+                Some(x) => {
+                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    }
+                }
                 None => '\n',
             }
         };
 
-        let left_flanking = numdelims > 0 && !after_char.is_whitespace()
+        let left_flanking = numdelims > 0
+            && !after_char.is_whitespace()
             && !(after_char.is_punctuation()
                 && !before_char.is_whitespace()
                 && !before_char.is_punctuation());
-        let right_flanking = numdelims > 0 && !before_char.is_whitespace()
+        let right_flanking = numdelims > 0
+            && !before_char.is_whitespace()
             && !(before_char.is_punctuation()
                 && !after_char.is_whitespace()
                 && !after_char.is_punctuation());
@@ -689,11 +698,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let d = self.delimiter_arena.alloc(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
-            inl: inl,
+            inl,
             length: inl.data.borrow().value.text().unwrap().len(),
             delim_char: c,
-            can_open: can_open,
-            can_close: can_close,
+            can_open,
+            can_close,
         });
         if d.prev.get().is_some() {
             d.prev.get().unwrap().next.set(Some(d));
@@ -723,11 +732,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
 
-        if self.options.extension.strikethrough && opener_char == b'~' {
-            if opener_num_chars != closer_num_chars ||
-                opener_num_chars > 0 {
-                    return None
-                }
+        if self.options.extension.strikethrough
+            && opener_char == b'~'
+            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
+        {
+            return None;
         }
 
         opener
@@ -874,9 +883,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
         self.brackets.push(Bracket {
             previous_delimiter: self.last_delimiter,
-            inl_text: inl_text,
+            inl_text,
             position: self.pos,
-            image: image,
+            image,
             active: true,
             bracket_after: false,
         });
@@ -960,12 +969,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
             if let Some(ref mut callback) = self.callback {
-                reff = callback(&lab).map(|(url, title)| Reference {url: url, title: title});
+                reff = callback(&lab).map(|(url, title)| Reference { url, title });
             }
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title);
             return None;
         }
 
@@ -977,7 +986,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     text.is_some() && n.next_sibling().is_none()
                 }
                 _ => false,
-            } {
+            }
+        {
             let text = text.unwrap();
             if text.len() > 1 && text[0] == b'^' {
                 let inl = make_inline(self.arena, NodeValue::FootnoteReference(text[1..].to_vec()));
@@ -1001,10 +1011,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     pub fn close_bracket_match(&mut self, is_image: bool, url: Vec<u8>, title: Vec<u8>) {
-        let nl = NodeLink {
-            url: url,
-            title: title,
-        };
+        let nl = NodeLink { url, title };
         let inl = make_inline(
             self.arena,
             if is_image {
@@ -1158,7 +1165,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
 
 pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a AstNode<'a> {
     let ast = Ast {
-        value: value,
+        value,
         content: vec![],
         start_line: 0,
         open: false,

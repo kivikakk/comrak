@@ -9,7 +9,9 @@ extern crate shell_words;
 #[cfg(not(windows))]
 extern crate xdg;
 
-use comrak::{Arena, ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
+use comrak::{
+    Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakRenderOptions,
+};
 
 use std::boxed::Box;
 use std::collections::BTreeSet;
@@ -147,11 +149,11 @@ if the file does not exist.\
                         }
                     }
                     matches = app.get_matches_from(args);
-                },
+                }
                 Err(e) => {
                     eprintln!("failed to parse {}: {}", config_file_path, e);
                     process::exit(EXIT_PARSE_CONFIG);
-                },
+                }
             }
         }
     }
@@ -202,17 +204,19 @@ if the file does not exist.\
         None => {
             std::io::stdin().read_to_end(&mut s)?;
         }
-        Some(fs) => for f in fs {
-            match fs::File::open(f) {
-                Ok(mut io) => {
-                    io.read_to_end(&mut s)?;
-                }
-                Err(e) => {
-                    eprintln!("failed to read {}: {}", f, e);
-                    process::exit(EXIT_READ_INPUT);
+        Some(fs) => {
+            for f in fs {
+                match fs::File::open(f) {
+                    Ok(mut io) => {
+                        io.read_to_end(&mut s)?;
+                    }
+                    Err(e) => {
+                        eprintln!("failed to read {}: {}", f, e);
+                        process::exit(EXIT_READ_INPUT);
+                    }
                 }
             }
-        },
+        }
     };
 
     let arena = Arena::new();
@@ -239,7 +243,7 @@ fn get_default_config_path() -> String {
         }
     }
 
-    return "comrak.config".into();
+    "comrak.config".into()
 }
 
 #[cfg(windows)]

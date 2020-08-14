@@ -16,7 +16,7 @@ const INDENT: usize = 4;
 const CLOSE_NEWLINE: bool = false;
 
 use comrak::nodes::{AstNode, NodeValue};
-use comrak::{parse_document, Arena, ComrakOptions, ComrakExtensionOptions};
+use comrak::{parse_document, Arena, ComrakExtensionOptions, ComrakOptions};
 use std::env;
 use std::error::Error;
 use std::fs::File;

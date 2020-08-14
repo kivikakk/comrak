@@ -75,7 +75,7 @@ impl<'a, T> Node<'a, T> {
             last_child: Cell::new(None),
             previous_sibling: Cell::new(None),
             next_sibling: Cell::new(None),
-            data: data,
+            data,
         }
     }
 
