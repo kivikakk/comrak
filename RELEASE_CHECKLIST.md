@@ -6,12 +6,11 @@
 * [ ] commit, tag, but do not push yet
 * build binaries:
   * [ ] build x86_64-apple-darwin on sencha
-  * [ ] cross-compile x86_64-pc-windows-gnu.exe on sencha
-    * [ ] ensure this actually runs and we don't need to mess with the toolchain again
+  * [ ] build x86_64-pc-windows-gnu on sencha vm
   * [ ] cross-compile arm7-unknown-linux-musleabihf on sencha
     * [ ] test on muffin
-  * [ ] build x86_64-unknown-linux-gnu on hannah
-  * [ ] build aarch64-unknown-linux-gnu on aarch64 debian VM
+  * [ ] build x86_64-unknown-linux-gnu on corgi
+  * [ ] build aarch64-unknown-linux-gnu on corgi aarch64 chroot
 * [ ] `cargo publish`
 * [ ] push commit and tag
 * [ ] edit release to include changelog
