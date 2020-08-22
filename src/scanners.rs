@@ -43,6 +43,7 @@ pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
 
 #[inline(always)]
 pub fn html_block_end_1(line: &[u8]) -> bool {
+    // XXX: should be case-insensitive
     find_bytes(line, b"</script>").is_some()
         || find_bytes(line, b"</pre>").is_some()
         || find_bytes(line, b"</style>").is_some()
