@@ -27,9 +27,19 @@ comrak = "0.8"
 
 Comrak supports Rust stable.
 
-## Usage
+### Mac & Linux Binaries
 
-A binary is included which does everything you typically want:
+```bash
+curl https://webinstall.dev/comrak | bash
+```
+
+### Windows 10 Binaries
+
+```powershell
+curl.exe -A "MS" https://webinstall.dev/comrak | powershell
+```
+
+## Usage
 
 ``` console
 $ comrak --help
