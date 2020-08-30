@@ -18,6 +18,8 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
 ## Installation
 
+### Build from Source
+
 Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
@@ -26,6 +28,18 @@ comrak = "0.8"
 ```
 
 Comrak supports Rust stable.
+
+### Mac & Linux Binaries
+
+```bash
+curl https://webinstall.dev/comrak | bash
+```
+
+### Windows 10 Binaries
+
+```bash
+curl.exe -A "MS" https://webinstall.dev/comrak | powershell
+```
 
 ## Usage
 
