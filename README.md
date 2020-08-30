@@ -18,8 +18,6 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
 ## Installation
 
-### Build from Source
-
 Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
@@ -37,13 +35,11 @@ curl https://webinstall.dev/comrak | bash
 
 ### Windows 10 Binaries
 
-```bash
+```powershell
 curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 ```
 
 ## Usage
-
-A binary is included which does everything you typically want:
 
 ``` console
 $ comrak --help
