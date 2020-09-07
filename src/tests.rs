@@ -971,3 +971,139 @@ fn description_lists() {
         ),
     );
 }
+
+#[test]
+fn exercise_full_api() {
+    let arena = ::Arena::new();
+    let default_options = ::ComrakOptions::default();
+    let node = ::parse_document(&arena, "# My document\n", &default_options);
+    let mut buffer = vec![];
+
+    // Use every member of the exposed API without any defaults.
+    // Not looking for specific outputs, just want to know if the API changes shape.
+
+    let _: std::io::Result<()> = ::format_commonmark(node, &default_options, &mut buffer);
+
+    let _: std::io::Result<()> = ::format_html(node, &default_options, &mut buffer);
+
+    let _: String = ::Anchorizer::new().anchorize("header".to_string());
+
+    let _: &::nodes::AstNode = ::parse_document(&arena, "document", &default_options);
+
+    let _: &::nodes::AstNode = ::parse_document_with_broken_link_callback(
+        &arena,
+        "document",
+        &default_options,
+        Some(&mut |_: &[u8]| Some((b"abc".to_vec(), b"xyz".to_vec()))),
+    );
+
+    let _ = ::ComrakOptions {
+        extension: ::ComrakExtensionOptions {
+            strikethrough: false,
+            tagfilter: false,
+            table: false,
+            autolink: false,
+            tasklist: false,
+            superscript: false,
+            header_ids: Some("abc".to_string()),
+            footnotes: false,
+            description_lists: false,
+        },
+        parse: ::ComrakParseOptions {
+            smart: false,
+            default_info_string: Some("abc".to_string()),
+        },
+        render: ::ComrakRenderOptions {
+            hardbreaks: false,
+            github_pre_lang: false,
+            width: 123456,
+            unsafe_: false,
+            escape: false,
+        },
+    };
+
+    let _: String = ::markdown_to_html("# Yes", &default_options);
+
+    //
+
+    let ast = node.data.borrow();
+    let _ = ast.start_line;
+    match &ast.value {
+        ::nodes::NodeValue::Document => {}
+        ::nodes::NodeValue::BlockQuote => {}
+        ::nodes::NodeValue::List(nl) | ::nodes::NodeValue::Item(nl) => {
+            match nl.list_type {
+                ::nodes::ListType::Bullet => {}
+                ::nodes::ListType::Ordered => {}
+            }
+            let _: usize = nl.start;
+            match nl.delimiter {
+                ::nodes::ListDelimType::Period => {}
+                ::nodes::ListDelimType::Paren => {}
+            }
+            let _: u8 = nl.bullet_char;
+            let _: bool = nl.tight;
+        }
+        ::nodes::NodeValue::DescriptionList => {}
+        ::nodes::NodeValue::DescriptionItem(_ndi) => {}
+        ::nodes::NodeValue::DescriptionTerm => {}
+        ::nodes::NodeValue::DescriptionDetails => {}
+        ::nodes::NodeValue::CodeBlock(ncb) => {
+            let _: bool = ncb.fenced;
+            let _: u8 = ncb.fence_char;
+            let _: usize = ncb.fence_length;
+            let _: Vec<u8> = ncb.info;
+            let _: Vec<u8> = ncb.literal;
+        }
+        ::nodes::NodeValue::HtmlBlock(nhb) => {
+            let _: Vec<u8> = nhb.literal;
+        }
+        ::nodes::NodeValue::Paragraph => {}
+        ::nodes::NodeValue::Heading(nh) => {
+            let _: u32 = nh.level;
+            let _: bool = nh.setext;
+        }
+        ::nodes::NodeValue::ThematicBreak => {}
+        ::nodes::NodeValue::FootnoteDefinition(name) => {
+            let _: &Vec<u8> = name;
+        }
+        ::nodes::NodeValue::Table(aligns) => {
+            let _: &Vec<::nodes::TableAlignment> = aligns;
+            match aligns[0] {
+                ::nodes::TableAlignment::None => {}
+                ::nodes::TableAlignment::Left => {}
+                ::nodes::TableAlignment::Center => {}
+                ::nodes::TableAlignment::Right => {}
+            }
+        }
+        ::nodes::NodeValue::TableRow(header) => {
+            let _: &bool = header;
+        }
+        ::nodes::NodeValue::TableCell => {}
+        ::nodes::NodeValue::Text(text) => {
+            let _: &Vec<u8> = text;
+        }
+        ::nodes::NodeValue::TaskItem(checked) => {
+            let _: &bool = checked;
+        }
+        ::nodes::NodeValue::SoftBreak => {}
+        ::nodes::NodeValue::LineBreak => {}
+        ::nodes::NodeValue::Code(code) => {
+            let _: &Vec<u8> = code;
+        }
+        ::nodes::NodeValue::HtmlInline(html) => {
+            let _: &Vec<u8> = html;
+        }
+        ::nodes::NodeValue::Emph => {}
+        ::nodes::NodeValue::Strong => {}
+        ::nodes::NodeValue::Strikethrough => {}
+        ::nodes::NodeValue::Superscript => {}
+        ::nodes::NodeValue::Link(nl) | ::nodes::NodeValue::Image(nl) => {
+            let _: Vec<u8> = nl.url;
+            let _: Vec<u8> = nl.title;
+        }
+        ::nodes::NodeValue::FootnoteReference(name) => {
+            let _: &Vec<u8> = name;
+        }
+    }
+}
