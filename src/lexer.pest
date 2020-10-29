@@ -55,4 +55,4 @@ table_start = { "|"? ~ table_marker ~ ("|" ~ table_marker)* ~ "|"? ~ table_space
 table_cell_end = { "|" ~ table_spacechar* ~ table_newline? }
 table_row_end = { table_spacechar* ~ table_newline }
 
-dangerous_url = { "data:" ~ !("png" | "gif" | "jpeg" | "webp") | "javascript:" | "vbscript:" | "file:" }
+dangerous_url = { "data:" ~ "image/"? ~ !("png" | "gif" | "jpeg" | "webp") | "javascript:" | "vbscript:" | "file:" }
