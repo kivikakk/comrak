@@ -29,13 +29,13 @@ Comrak supports Rust stable.
 
 ### Mac & Linux Binaries
 
-```bash
+``` bash
 curl https://webinstall.dev/comrak | bash
 ```
 
 ### Windows 10 Binaries
 
-```powershell
+``` powershell
 curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 ```
 
@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.8.2
+comrak 0.9.0
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
