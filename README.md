@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.8"
+comrak = "0.9"
 ```
 
 Comrak supports Rust stable.
