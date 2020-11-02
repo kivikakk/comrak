@@ -859,20 +859,20 @@ fn cm_autolink_regression() {
 fn safety() {
     html(
         concat!(
-            "[data:png](data:png/x)\n\n",
-            "[data:gif](data:gif/x)\n\n",
-            "[data:jpeg](data:jpeg/x)\n\n",
-            "[data:webp](data:webp/x)\n\n",
+            "[data:image/png](data:image/png/x)\n\n",
+            "[data:image/gif](data:image/gif/x)\n\n",
+            "[data:image/jpeg](data:image/jpeg/x)\n\n",
+            "[data:image/webp](data:image/webp/x)\n\n",
             "[data:malicious](data:malicious/x)\n\n",
             "[javascript:malicious](javascript:malicious)\n\n",
             "[vbscript:malicious](vbscript:malicious)\n\n",
             "[file:malicious](file:malicious)\n\n",
         ),
         concat!(
-            "<p><a href=\"data:png/x\">data:png</a></p>\n",
-            "<p><a href=\"data:gif/x\">data:gif</a></p>\n",
-            "<p><a href=\"data:jpeg/x\">data:jpeg</a></p>\n",
-            "<p><a href=\"data:webp/x\">data:webp</a></p>\n",
+            "<p><a href=\"data:image/png/x\">data:image/png</a></p>\n",
+            "<p><a href=\"data:image/gif/x\">data:image/gif</a></p>\n",
+            "<p><a href=\"data:image/jpeg/x\">data:image/jpeg</a></p>\n",
+            "<p><a href=\"data:image/webp/x\">data:image/webp</a></p>\n",
             "<p><a href=\"\">data:malicious</a></p>\n",
             "<p><a href=\"\">javascript:malicious</a></p>\n",
             "<p><a href=\"\">vbscript:malicious</a></p>\n",
