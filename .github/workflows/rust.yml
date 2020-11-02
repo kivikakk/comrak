@@ -22,6 +22,18 @@ jobs:
       run: env SPEC=false script/cibuild
     - name: Run spec tests
       run: env SPEC=true script/cibuild
+  clippy_format:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Obtain Rust
+      run: rustup override set ${{ matrix.rust }}
     - name: Check clippy
       run: rustup component add clippy && cargo clippy
     - name: Check formatting
