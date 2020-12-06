@@ -134,6 +134,13 @@ if the file does not exist.\
                 .takes_value(true)
                 .value_name("PREFIX")
                 .help("Use the Comrak header IDs extension, with the given ID prefix"),
+        )
+        .arg(
+            clap::Arg::with_name("front-matter-delimiter")
+                .long("front-matter-delimiter")
+                .takes_value(true)
+                .value_name("DELIMITER")
+                .help("Ignore front-matter that starts and ends with the given string"),
         );
 
     let mut matches = app.clone().get_matches();
@@ -173,6 +180,9 @@ if the file does not exist.\
             header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
             footnotes: exts.remove("footnotes"),
             description_lists: exts.remove("description-lists"),
+            front_matter_delimiter: matches
+                .value_of("front-matter-delimiter")
+                .map(|s| s.to_string()),
         },
         parse: ComrakParseOptions {
             smart: matches.is_present("smart"),

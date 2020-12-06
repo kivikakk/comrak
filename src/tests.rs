@@ -1008,6 +1008,7 @@ fn exercise_full_api() {
             header_ids: Some("abc".to_string()),
             footnotes: false,
             description_lists: false,
+            front_matter_delimiter: None,
         },
         parse: ::ComrakParseOptions {
             smart: false,
@@ -1030,6 +1031,7 @@ fn exercise_full_api() {
     let _ = ast.start_line;
     match &ast.value {
         ::nodes::NodeValue::Document => {}
+        ::nodes::NodeValue::FrontMatter(_) => {}
         ::nodes::NodeValue::BlockQuote => {}
         ::nodes::NodeValue::List(nl) | ::nodes::NodeValue::Item(nl) => {
             match nl.list_type {

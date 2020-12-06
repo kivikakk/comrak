@@ -384,6 +384,7 @@ impl<'o> HtmlFormatter<'o> {
     fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> io::Result<bool> {
         match node.data.borrow().value {
             NodeValue::Document => (),
+            NodeValue::FrontMatter(_) => (),
             NodeValue::BlockQuote => {
                 if entering {
                     self.cr()?;

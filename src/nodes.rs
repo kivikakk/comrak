@@ -9,6 +9,9 @@ pub enum NodeValue {
     /// The root of every CommonMark document.  Contains **blocks**.
     Document,
 
+    /// Non-Markdown front matter. Treated as an opaque blob.
+    FrontMatter(Vec<u8>),
+
     /// **Block**. A [block quote](https://github.github.com/gfm/#block-quotes).  Contains other
     /// **blocks**.
     ///
@@ -390,8 +393,14 @@ pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
 }
 
 pub(crate) fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
-    if let NodeValue::Document = *child {
-        return false;
+    match *child {
+        NodeValue::Document => {
+            return false;
+        }
+        NodeValue::FrontMatter(_) => {
+            return matches!(node.data.borrow().value, NodeValue::Document);
+        }
+        _ => {}
     }
 
     match node.data.borrow().value {
