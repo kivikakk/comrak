@@ -480,20 +480,14 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
             let front_matter_pattern = RegexBuilder::new(&format!(
-                "\\A(?:\u{feff})?{delim}$.*^{delim}$",
+                "\\A(?:\u{feff})?{delim}\\r?\\n.*^{delim}\\r?\\n(?:\\r?\\n)?",
                 delim = regex::escape(delimiter)
             ))
             .multi_line(true)
             .dot_matches_new_line(true)
             .build()
             .unwrap();
-            if let Some(mut front_matter_size) = front_matter_pattern.shortest_match(s) {
-                if let Some(13 /* \r */) = s.get(front_matter_size) {
-                    front_matter_size += 1;
-                }
-                if let Some(10 /* \n */) = s.get(front_matter_size) {
-                    front_matter_size += 1;
-                }
+            if let Some(front_matter_size) = front_matter_pattern.shortest_match(s) {
                 i += front_matter_size;
                 let node = self.add_child(self.root, NodeValue::FrontMatter(s[..i].to_vec()));
                 self.finalize(node).unwrap();
