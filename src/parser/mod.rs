@@ -10,7 +10,7 @@ use nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
-use regex::bytes::Regex;
+use regex::bytes::{Regex, RegexBuilder};
 use scanners;
 use std::cell::RefCell;
 use std::cmp::min;
@@ -266,6 +266,46 @@ pub struct ComrakExtensionOptions {
     ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     pub description_lists: bool,
+
+    /// Enables the front matter extension.
+    ///
+    /// Front matter, which begins with the delimiter string at the beginning of the file and ends
+    /// at the end of the next line that contains only the delimiter, is passed through unchanged
+    /// in markdown output and omitted from HTML output.
+    ///
+    /// ``` md
+    /// ---
+    /// layout: post
+    /// title: Formatting Markdown with Comrak
+    /// ---
+    ///
+    /// # Shorter Title
+    ///
+    /// etc.
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// assert_eq!(
+    ///     markdown_to_html("---\nlayout: post\n---\nText\n", &options),
+    ///     markdown_to_html("Text\n", &ComrakOptions::default()));
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{format_commonmark, Arena, ComrakOptions};
+    /// use comrak::parse_document;
+    /// let mut options = ComrakOptions::default();
+    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// let arena = Arena::new();
+    /// let input ="---\nlayout: post\n---\nText\n";
+    /// let root = parse_document(&arena, input, &options);
+    /// let mut buf = Vec::new();
+    /// format_commonmark(&root, &options, &mut buf);
+    /// assert_eq!(&String::from_utf8(buf).unwrap(), input);
+    /// ```
+    pub front_matter_delimiter: Option<String>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -435,8 +475,25 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn feed(&mut self, s: &str) {
-        let s = s.as_bytes();
         let mut i = 0;
+        let s = s.as_bytes();
+
+        if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
+            let front_matter_pattern = RegexBuilder::new(&format!(
+                "\\A(?:\u{feff})?{delim}\\r?\\n.*^{delim}\\r?\\n(?:\\r?\\n)?",
+                delim = regex::escape(delimiter)
+            ))
+            .multi_line(true)
+            .dot_matches_new_line(true)
+            .build()
+            .unwrap();
+            if let Some(front_matter_size) = front_matter_pattern.shortest_match(s) {
+                i += front_matter_size;
+                let node = self.add_child(self.root, NodeValue::FrontMatter(s[..i].to_vec()));
+                self.finalize(node).unwrap();
+            }
+        }
+
         let sz = s.len();
         let mut linebuf = vec![];
 

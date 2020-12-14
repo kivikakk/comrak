@@ -294,6 +294,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         match node.data.borrow().value {
             NodeValue::Document => (),
+            NodeValue::FrontMatter(ref front_matter) => {
+                if entering {
+                    self.output(front_matter, false, Escaping::Literal);
+                }
+            }
             NodeValue::BlockQuote => {
                 if entering {
                     write!(self, "> ").unwrap();
