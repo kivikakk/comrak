@@ -140,7 +140,8 @@ if the file does not exist.\
                 .long("front-matter-delimiter")
                 .takes_value(true)
                 .value_name("DELIMITER")
-                .help("Ignore front-matter that starts and ends with the given string"),
+                .help("Ignore front-matter that starts and ends with the given string")
+                .allow_hyphen_values(true),
         );
 
     let mut matches = app.clone().get_matches();
