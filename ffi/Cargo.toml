@@ -1,0 +1,24 @@
+[package]
+name = "comrak-ffi"
+version = "0.1.0" # remember to update html_root_url
+description = "FFI bindings for comrak crate"
+
+[lib]
+name = "comrak_ffi"
+crate-type = ["cdylib"]
+
+[features]
+default = ["cbindgen"]
+
+[dependencies.comrak]
+version = "^0.9"
+path = ".."
+
+[dependencies]
+libc = "^0.2"
+
+[build-dependencies]
+cbindgen = { version = "^0.13", optional = true }
+
+[package.metadata.docs.rs]
+no-default-features = true

@@ -16,11 +16,6 @@ resolver = "2"
 [profile.release]
 lto = true
 
-[lib]
-name = 'comrak'
-required-features = ["clap"]
-crate-type = ["cdylib", "rlib"]
-
 [[bin]]
 name = "comrak"
 required-features = ["clap", "syntect"]
