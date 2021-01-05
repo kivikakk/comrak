@@ -78,6 +78,7 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 extern crate regex;
+extern crate slugify;
 #[cfg(feature = "benchmarks")]
 extern crate test;
 #[cfg(test)]
@@ -85,7 +86,6 @@ extern crate timebomb;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
-extern crate slugify;
 
 pub mod arena_tree;
 mod cm;

@@ -179,13 +179,14 @@ if the file does not exist.\
             tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
             superscript: exts.remove("superscript"),
             header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-            // use the format: 'prefix|suffix', why choose '|'? Because it is intruitive and more importantly: '|' is considered url-not-safe-character.
+            // use the format: 'prefix|suffix', why choose '|'?
+            // Because it is intruitive and more importantly: '|' is considered url-not-safe-character.
             header_id_slugify: matches.value_of("header-id-slugify").map(|s| {
                 if s.contains("|") {
-                    let v: Vec<_> =  s.splitn(2, ",").collect();
-                    return (v[0].to_string(), v[1].to_string())
+                    let v: Vec<_> = s.splitn(2, ",").collect();
+                    return (v[0].to_string(), v[1].to_string());
                 } else {
-                    return (s.to_string(), "".to_string())
+                    return (s.to_string(), "".to_string());
                 }
             }),
             footnotes: exts.remove("footnotes"),

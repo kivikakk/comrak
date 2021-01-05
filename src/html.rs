@@ -3,13 +3,12 @@ use nodes::{AstNode, ListType, NodeValue, TableAlignment};
 use parser::ComrakOptions;
 use regex::Regex;
 use scanners;
+use slugify::slugify;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::HashSet;
 use std::io::{self, Write};
 use std::str;
-use slugify::slugify;
-
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -447,7 +446,8 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     self.cr()?;
                     write!(self.output, "<h{}", nch.level)?;
-                    if let Some((ref prefix, ref suffix)) = self.options.extension.header_id_slugify {
+                    if let Some((ref prefix, ref suffix)) = self.options.extension.header_id_slugify
+                    {
                         let mut text_content = Vec::with_capacity(20);
                         self.collect_text(node, &mut text_content);
                         let mut id = String::from_utf8(text_content).unwrap();
@@ -464,7 +464,11 @@ impl<'o> HtmlFormatter<'o> {
                             id = id + suffix
                         }
 
-                        write!(self.output, " class=\"title-anchor\" level=\"{}\" id=\"{}\"", nch.level, id)?;
+                        write!(
+                            self.output,
+                            " class=\"title-anchor\" level=\"{}\" id=\"{}\"",
+                            nch.level, id
+                        )?;
                         let link_id = "link-".to_string() + &id;
                         write!(
                             self.output,
