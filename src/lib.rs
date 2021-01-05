@@ -85,6 +85,7 @@ extern crate timebomb;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
+extern crate slugify;
 
 pub mod arena_tree;
 mod cm;

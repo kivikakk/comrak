@@ -8,6 +8,8 @@ use std::cell::Cell;
 use std::collections::HashSet;
 use std::io::{self, Write};
 use std::str;
+use slugify::slugify;
+
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -125,12 +127,12 @@ struct HtmlFormatter<'o> {
 }
 
 #[rustfmt::skip]
-const NEEDS_ESCAPED : [bool; 256] = [
+const NEEDS_ESCAPED: [bool; 256] = [
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
-    false, false, true,  false, false, false, true,  false,
+    false, false, true, false, false, false, true, false,
     false, false, false, false, false, false, false, false,
     false, false, false, false, false, false, false, false,
     false, false, false, false, true, false, true, false,
@@ -444,9 +446,34 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::Heading(ref nch) => {
                 if entering {
                     self.cr()?;
-                    write!(self.output, "<h{}>", nch.level)?;
+                    write!(self.output, "<h{}", nch.level)?;
+                    if let Some((ref prefix, ref suffix)) = self.options.extension.header_id_slugify {
+                        let mut text_content = Vec::with_capacity(20);
+                        self.collect_text(node, &mut text_content);
+                        let mut id = String::from_utf8(text_content).unwrap();
+                        id = slugify(&id, "", "-", Some(131));
+                        if id.len() >= 128 {
+                            id.truncate(128);
+                            id += "..."
+                        }
 
-                    if let Some(ref prefix) = self.options.extension.header_ids {
+                        if !prefix.is_empty() {
+                            id = prefix.to_string() + &id;
+                        }
+                        if !suffix.is_empty() {
+                            id = id + suffix
+                        }
+
+                        write!(self.output, " class=\"title-anchor\" level=\"{}\" id=\"{}\"", nch.level, id)?;
+                        let link_id = "link-".to_string() + &id;
+                        write!(
+                            self.output,
+                            "><a href=\"#{}\" aria-hidden=\"true\" class=\"link-anchor\" level=\"{}\"  id=\"{}\"></a>",
+                            link_id,
+                            nch.level,
+                            link_id
+                        )?;
+                    } else if let Some(ref prefix) = self.options.extension.header_ids {
                         let mut text_content = Vec::with_capacity(20);
                         self.collect_text(node, &mut text_content);
 
@@ -454,11 +481,13 @@ impl<'o> HtmlFormatter<'o> {
                         id = self.anchorizer.anchorize(id);
                         write!(
                             self.output,
-                            "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                            "><a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
                             id,
                             prefix,
                             id
                         )?;
+                    } else {
+                        write!(self.output, ">")?
                     }
                 } else {
                     writeln!(self.output, "</h{}>", nch.level)?;

@@ -227,6 +227,18 @@ pub struct ComrakExtensionOptions {
     /// ```
     pub header_ids: Option<String>,
 
+    /// Enables the extension of header_id_slugify. Option:`header_ids` will be superseded if this option is enabled(aka, if this one is enabled, option:`header_ids` will not work!).
+    /// The finally slugify id takes up to 128 characters, if exceeded, it is similar to 'prefix-realtext-slugified-...-suffix' if prefix is 'prefix-' and suffix is '-suffix'.
+    ///
+    /// ```
+    /// # use comrak::{...};
+    /// let mut options = ComrakOptions::default();
+    /// options.extension.header_id_slugify = Some(("prefix".to_string(), "suffix".to_string());
+    /// assert_eq!(markdown_to_html("# README\n", &options),
+    ///            r##"<h1 class="title-anchor" level="1" id="prefix-readme-suffix"><a href="#link-prefix-readme-suffix" aria-hidden="true" class="link-anchor" level="1"  id="link-prefix-readme-suffix"></a>README</h1>"##);
+    /// ```
+    pub header_id_slugify: Option<(String, String)>,
+
     /// Enables the footnotes extension per `cmark-gfm`.
     ///
     /// For usage, see `src/tests.rs`.  The extension is modelled after
