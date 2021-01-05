@@ -463,16 +463,17 @@ impl<'o> HtmlFormatter<'o> {
                         if !suffix.is_empty() {
                             id = id + suffix
                         }
+                        id = self.anchorizer.anchorize(id);
 
                         write!(
                             self.output,
-                            " class=\"title-anchor\" level=\"{}\" id=\"{}\"",
+                            " class=\"title-anchor\" data-level=\"{}\" id=\"{}\"",
                             nch.level, id
                         )?;
                         let link_id = "link-".to_string() + &id;
                         write!(
                             self.output,
-                            "><a href=\"#{}\" aria-hidden=\"true\" class=\"link-anchor\" level=\"{}\"  id=\"{}\"></a>",
+                            "><a href=\"#{}\" aria-hidden=\"true\" class=\"link-anchor\" data-level=\"{}\"  id=\"{}\"></a>",
                             link_id,
                             nch.level,
                             link_id

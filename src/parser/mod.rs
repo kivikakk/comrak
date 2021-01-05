@@ -235,7 +235,7 @@ pub struct ComrakExtensionOptions {
     /// let mut options = ComrakOptions::default();
     /// options.extension.header_id_slugify = Some(("prefix-".to_string(), "-suffix".to_string()));
     /// assert_eq!(markdown_to_html("# README\n", &options),
-    ///            r##"<h1 class="title-anchor" level="1" id="prefix-readme-suffix"><a href="#link-prefix-readme-suffix" aria-hidden="true" class="link-anchor" level="1"  id="link-prefix-readme-suffix"></a>README</h1>
+    ///            r##"<h1 class="title-anchor" data-level="1" id="prefix-readme-suffix"><a href="#link-prefix-readme-suffix" aria-hidden="true" class="link-anchor" data-level="1"  id="link-prefix-readme-suffix"></a>README</h1>
     /// "##);
     /// ```
     pub header_id_slugify: Option<(String, String)>,
