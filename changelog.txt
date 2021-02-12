@@ -1,3 +1,9 @@
+### 0.9.1
+
+* SECURITY: we were matching unsafe URL prefixes, such as `data:` or
+  `javascript:`, in a case-sensitive manner.  This meant prefixes like `Data:`
+  were untouched.  Please upgrade as soon as possible.  (Kouhei Morita)
+
 ### 0.9.0
 
 * 0.8.2 was a semver-breaking change, so we're now bumping to 0.9.0.  Some
