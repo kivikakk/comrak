@@ -7,8 +7,9 @@
 * build binaries:
   * [ ] build `aarch64-apple-darwin` on tapioca
   * [ ] cross-compile `x86_64-apple-darwin` on tapioca
-  * [ ] ~~build `x86_64-pc-windows-gnu` on sencha vm~~
-  * [ ] ~~build `x86_64-pc-windows-msvc` on sencha vm~~
+  * [ ] build `x86_64-pc-windows-msvc` on raven
+  * [ ] build `x86_64-pc-windows-gnu` on raven
+    * `rustup run stable-gnu cargo build --release --target=x86_64-pc-windows-gnu` does the trick. You may need to `rustup toolchain install stable-x86_64-pc-windows-gnu` first? Unclear.
   * [ ] cross-compile `armv7-unknown-linux-musleabihf` on tapioca
     * `brew install arm-linux-gnueabihf-binutils` and add something like this to `~/.cargo/config.toml`:
     
