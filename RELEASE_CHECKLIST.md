@@ -22,6 +22,7 @@
     * [ ] test on muffin
   * [ ] build `x86_64-unknown-linux-gnu` on ishtar
   * [ ] build `aarch64-unknown-linux-gnu` on tapioca debian VM
+  * [ ] build `x86_64-unknown-freebsd` on talia
 * [ ] `cargo publish`
 * [ ] push tag
 * [ ] edit release to include changelog
