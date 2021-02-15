@@ -122,9 +122,9 @@ pub struct Parser<'a, 'o, 'c> {
 #[derive(Default, Debug, Clone)]
 /// Umbrella options struct.
 pub struct ComrakOptions {
-    extension: ComrakExtensionOptions,
-    parse: ComrakParseOptions,
-    render: ComrakRenderOptions,
+    pub(crate) extension: ComrakExtensionOptions,
+    pub(crate) parse: ComrakParseOptions,
+    pub(crate) render: ComrakRenderOptions,
 }
 
 impl ComrakOptions {
@@ -152,16 +152,16 @@ impl ComrakOptions {
 #[derive(Default, Debug, Clone)]
 /// Options to select extensions.
 pub struct ComrakExtensionOptions {
-    strikethrough: bool,
-    tagfilter: bool,
-    table: bool,
-    autolink: bool,
-    tasklist: bool,
-    superscript: bool,
-    header_ids: Option<String>,
-    footnotes: bool,
-    description_lists: bool,
-    front_matter_delimiter: Option<String>,
+    pub(crate) strikethrough: bool,
+    pub(crate) tagfilter: bool,
+    pub(crate) table: bool,
+    pub(crate) autolink: bool,
+    pub(crate) tasklist: bool,
+    pub(crate) superscript: bool,
+    pub(crate) header_ids: Option<String>,
+    pub(crate) footnotes: bool,
+    pub(crate) description_lists: bool,
+    pub(crate) front_matter_delimiter: Option<String>,
 }
 
 impl ComrakExtensionOptions {
@@ -177,7 +177,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.strikethrough = true;
+    /// options.extension().strikethrough(true);
     /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
     ///            "<p>Hello <del>world</del> there.</p>\n");
     /// ```
@@ -193,8 +193,8 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.tagfilter = true;
-    /// options.render.unsafe_ = true;
+    /// options.extension().tagfilter(true);
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
@@ -209,7 +209,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.table = true;
+    /// options.extension().table(true);
     /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
     ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n");
@@ -225,7 +225,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.autolink = true;
+    /// options.extension().autolink(true);
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
@@ -244,8 +244,8 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.tasklist = true;
-    /// options.render.unsafe_ = true;
+    /// options.extension().tasklist(true);
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
     ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
@@ -260,7 +260,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.superscript = true;
+    /// options.extension().superscript(true);
     /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
     /// ```
@@ -274,7 +274,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.header_ids = Some("user-content-".to_string());
+    /// options.extension().header_ids(Some("user-content-".to_string()));
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
@@ -291,7 +291,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.footnotes = true;
+    /// options.extension().footnotes(true);
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
@@ -320,7 +320,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.description_lists = true;
+    /// options.extension().description_lists(true);
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
@@ -349,7 +349,7 @@ impl ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// options.extension().front_matter_delimiter(Some("---".to_owned()));
     /// assert_eq!(
     ///     markdown_to_html("---\nlayout: post\n---\nText\n", &options),
     ///     markdown_to_html("Text\n", &ComrakOptions::default()));
@@ -359,7 +359,7 @@ impl ComrakExtensionOptions {
     /// # use comrak::{format_commonmark, Arena, ComrakOptions};
     /// use comrak::parse_document;
     /// let mut options = ComrakOptions::default();
-    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// options.extension().front_matter_delimiter(Some("---".to_owned()));
     /// let arena = Arena::new();
     /// let input ="---\nlayout: post\n---\nText\n";
     /// let root = parse_document(&arena, input, &options);
@@ -376,8 +376,8 @@ impl ComrakExtensionOptions {
 #[derive(Default, Debug, Clone)]
 /// Options for parser functions.
 pub struct ComrakParseOptions {
-    smart: bool,
-    default_info_string: Option<String>,
+    pub(crate) smart: bool,
+    pub(crate) default_info_string: Option<String>,
 }
 
 impl ComrakParseOptions {
@@ -397,7 +397,7 @@ impl ComrakParseOptions {
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>'Hello,' &quot;world&quot; ...</p>\n");
     ///
-    /// options.parse.smart = true;
+    /// options.parse().smart(true);
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>‘Hello,’ “world” …</p>\n");
     /// ```
@@ -414,7 +414,7 @@ impl ComrakParseOptions {
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
     ///            "<pre><code>fn hello();\n</code></pre>\n");
     ///
-    /// options.parse.default_info_string = Some("rust".into());
+    /// options.parse().default_info_string(Some("rust".into()));
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     /// ```
@@ -427,11 +427,11 @@ impl ComrakParseOptions {
 #[derive(Default, Debug, Clone, Copy)]
 /// Options for formatter functions.
 pub struct ComrakRenderOptions {
-    hardbreaks: bool,
-    github_pre_lang: bool,
-    width: usize,
-    unsafe_: bool,
-    escape: bool,
+    pub(crate) hardbreaks: bool,
+    pub(crate) github_pre_lang: bool,
+    pub(crate) width: usize,
+    pub(crate) unsafe_: bool,
+    pub(crate) escape: bool,
 }
 
 impl ComrakRenderOptions {
@@ -454,7 +454,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.\nWorld.</p>\n");
     ///
-    /// options.render.hardbreaks = true;
+    /// options.render().hardbreaks(true);
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.<br />\nWorld.</p>\n");
     /// ```
@@ -471,7 +471,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     ///
-    /// options.render.github_pre_lang = true;
+    /// options.render().github_pre_lang(true);
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
     /// ```
@@ -495,7 +495,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(String::from_utf8(output).unwrap(),
     ///            "hello hello hello hello hello hello\n");
     ///
-    /// options.render.width = 20;
+    /// options.render().width(20);
     /// let mut output = vec![];
     /// format_commonmark(node, &options, &mut output).unwrap();
     /// assert_eq!(String::from_utf8(output).unwrap(),
@@ -523,7 +523,7 @@ impl ComrakRenderOptions {
     ///             <p><a href=\"\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     ///
-    /// options.render.unsafe_ = true;
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<script>\nalert(\'xyz\');\n</script>\n\
     ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
@@ -544,7 +544,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p><!-- raw HTML omitted -->italic text<!-- raw HTML omitted --></p>\n");
     ///
-    /// options.render.escape = true;
+    /// options.render().escape(true);
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```

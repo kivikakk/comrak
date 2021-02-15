@@ -9,9 +9,7 @@ extern crate shell_words;
 #[cfg(not(windows))]
 extern crate xdg;
 
-use comrak::{
-    Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakRenderOptions,
-};
+use comrak::{Arena, ComrakOptions};
 
 use std::boxed::Box;
 use std::collections::BTreeSet;
@@ -170,39 +168,44 @@ if the file does not exist.\
         .values_of("extension")
         .map_or(BTreeSet::new(), |vals| vals.collect());
 
-    let options = ComrakOptions {
-        extension: ComrakExtensionOptions {
-            strikethrough: exts.remove("strikethrough") || matches.is_present("gfm"),
-            tagfilter: exts.remove("tagfilter") || matches.is_present("gfm"),
-            table: exts.remove("table") || matches.is_present("gfm"),
-            autolink: exts.remove("autolink") || matches.is_present("gfm"),
-            tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
-            superscript: exts.remove("superscript"),
-            header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-            footnotes: exts.remove("footnotes"),
-            description_lists: exts.remove("description-lists"),
-            front_matter_delimiter: matches
+    let mut options = ComrakOptions::new();
+    options
+        .extension()
+        .strikethrough(exts.remove("strikethrough") || matches.is_present("gfm"))
+        .tagfilter(exts.remove("tagfilter") || matches.is_present("gfm"))
+        .table(exts.remove("table") || matches.is_present("gfm"))
+        .autolink(exts.remove("autolink") || matches.is_present("gfm"))
+        .tasklist(exts.remove("tasklist") || matches.is_present("gfm"))
+        .superscript(exts.remove("superscript"))
+        .header_ids(matches.value_of("header-ids").map(|s| s.to_string()))
+        .footnotes(exts.remove("footnotes"))
+        .description_lists(exts.remove("description-lists"))
+        .front_matter_delimiter(
+            matches
                 .value_of("front-matter-delimiter")
                 .map(|s| s.to_string()),
-        },
-        parse: ComrakParseOptions {
-            smart: matches.is_present("smart"),
-            default_info_string: matches
+        );
+    options
+        .parse()
+        .smart(matches.is_present("smart"))
+        .default_info_string(
+            matches
                 .value_of("default-info-string")
                 .map(|e| e.to_owned()),
-        },
-        render: ComrakRenderOptions {
-            hardbreaks: matches.is_present("hardbreaks"),
-            github_pre_lang: matches.is_present("github-pre-lang") || matches.is_present("gfm"),
-            width: matches
+        );
+    options
+        .render()
+        .hardbreaks(matches.is_present("hardbreaks"))
+        .github_pre_lang(matches.is_present("github-pre-lang") || matches.is_present("gfm"))
+        .width(
+            matches
                 .value_of("width")
                 .unwrap_or("0")
                 .parse()
                 .unwrap_or(0),
-            unsafe_: matches.is_present("unsafe"),
-            escape: matches.is_present("escape"),
-        },
-    };
+        )
+        .unsafe_(matches.is_present("unsafe"))
+        .escape(matches.is_present("escape"));
 
     if !exts.is_empty() {
         eprintln!("unknown extensions: {:?}", exts);
