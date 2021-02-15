@@ -581,7 +581,7 @@ fn header_ids() {
             "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n",
             "<h1><a href=\"#isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
         ),
-        |opts| opts.extension.header_ids = Some("user-content-".to_owned()),
+        |opts| opts.extension().header_ids(Some("user-content-".to_owned())),
     );
 }
 
@@ -1005,31 +1005,31 @@ fn exercise_full_api() {
         Some(&mut |_: &[u8]| Some((b"abc".to_vec(), b"xyz".to_vec()))),
     );
 
-    let _ = ::ComrakOptions {
-        extension: ::ComrakExtensionOptions {
-            strikethrough: false,
-            tagfilter: false,
-            table: false,
-            autolink: false,
-            tasklist: false,
-            superscript: false,
-            header_ids: Some("abc".to_string()),
-            footnotes: false,
-            description_lists: false,
-            front_matter_delimiter: None,
-        },
-        parse: ::ComrakParseOptions {
-            smart: false,
-            default_info_string: Some("abc".to_string()),
-        },
-        render: ::ComrakRenderOptions {
-            hardbreaks: false,
-            github_pre_lang: false,
-            width: 123456,
-            unsafe_: false,
-            escape: false,
-        },
-    };
+    let _ = ::ComrakOptions::new()
+        .extension()
+                .strikethrough(false)
+                .tagfilter(false)
+                .table(false)
+                .autolink(false)
+                .tasklist(false)
+                .superscript(false)
+                .header_ids(Some("abc".to_string()))
+                .footnotes(false)
+                .description_lists(false)
+                .front_matter_delimiter(None);
+
+    let _ = ::ComrakOptions::new()
+        .parse()
+                .smart(false)
+                .default_info_string(Some("abc".to_string()));
+
+    let _ = ::ComrakOptions::new()
+        .render()
+                .hardbreaks(false)
+                .github_pre_lang(false)
+                .width(123456)
+                .unsafe_(false)
+                .escape(false);
 
     let _: String = ::markdown_to_html("# Yes", &default_options);
 

@@ -134,21 +134,18 @@ impl ComrakOptions {
     }
 
     /// Enable CommonMark extensions.
-    pub fn extension(&mut self, extension: ComrakExtensionOptions) -> &mut ComrakOptions {
-        self.extension = extension;
-        self
+    pub fn extension(&mut self) -> &mut ComrakExtensionOptions {
+        &mut self.extension
     }
 
     /// Configure parse-time options.
-    pub fn parse(&mut self, parse: ComrakParseOptions) -> &mut ComrakOptions {
-        self.parse = parse;
-        self
+    pub fn parse(&mut self) -> &mut ComrakParseOptions {
+        &mut self.parse
     }
 
     /// Configure render-time options.
-    pub fn render(&mut self, render: ComrakRenderOptions) -> &mut ComrakOptions {
-        self.render = render;
-        self
+    pub fn render(&mut self) -> &mut ComrakRenderOptions {
+        &mut self.render
     }
 }
 
@@ -444,8 +441,8 @@ impl ComrakRenderOptions {
     /// * default fenced code block style is used with info tags
     /// * CommonMark output is not wrapped
     /// * raw HTML and potentially unsafe links are filtered out
-    pub fn new() -> ComrakParseOptions {
-        ComrakParseOptions::default()
+    pub fn new() -> ComrakRenderOptions {
+        ComrakRenderOptions::default()
     }
 
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
@@ -461,7 +458,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.<br />\nWorld.</p>\n");
     /// ```
-    pub fn hardbreaks(&mut self, value: bool) -> &mut ComrakParseOptions {
+    pub fn hardbreaks(&mut self, value: bool) -> &mut ComrakRenderOptions {
         self.hardbreaks = value;
         self
     }
@@ -478,7 +475,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
     /// ```
-    pub fn github_pre_lang(&mut self, value: bool) -> &mut ComrakParseOptions {
+    pub fn github_pre_lang(&mut self, value: bool) -> &mut ComrakRenderOptions {
         self.github_pre_lang = value;
         self
     }
@@ -505,7 +502,7 @@ impl ComrakRenderOptions {
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
     /// ```
-    pub fn width(&mut self, value: usize) -> &mut ComrakParseOptions {
+    pub fn width(&mut self, value: usize) -> &mut ComrakRenderOptions {
         self.width = value;
         self
     }
@@ -533,7 +530,7 @@ impl ComrakRenderOptions {
     ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
-    pub fn unsafe_(&mut self, value: bool) -> &mut ComrakParseOptions {
+    pub fn unsafe_(&mut self, value: bool) -> &mut ComrakRenderOptions {
         self.unsafe_ = value;
         self
     }
@@ -551,7 +548,7 @@ impl ComrakRenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```
-    pub fn escape(&mut self, value: bool) -> &mut ComrakParseOptions {
+    pub fn escape(&mut self, value: bool) -> &mut ComrakRenderOptions {
         self.escape = value;
         self
     }
