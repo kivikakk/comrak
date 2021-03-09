@@ -282,23 +282,26 @@ pub struct NodeHtmlBlock {
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
-        matches!(*self, NodeValue::Document
-            | NodeValue::BlockQuote
-            | NodeValue::FootnoteDefinition(_)
-            | NodeValue::List(..)
-            | NodeValue::DescriptionList
-            | NodeValue::DescriptionItem(_)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails
-            | NodeValue::Item(..)
-            | NodeValue::CodeBlock(..)
-            | NodeValue::HtmlBlock(..)
-            | NodeValue::Paragraph
-            | NodeValue::Heading(..)
-            | NodeValue::ThematicBreak
-            | NodeValue::Table(..)
-            | NodeValue::TableRow(..)
-            | NodeValue::TableCell)
+        matches!(
+            *self,
+            NodeValue::Document
+                | NodeValue::BlockQuote
+                | NodeValue::FootnoteDefinition(_)
+                | NodeValue::List(..)
+                | NodeValue::DescriptionList
+                | NodeValue::DescriptionItem(_)
+                | NodeValue::DescriptionTerm
+                | NodeValue::DescriptionDetails
+                | NodeValue::Item(..)
+                | NodeValue::CodeBlock(..)
+                | NodeValue::HtmlBlock(..)
+                | NodeValue::Paragraph
+                | NodeValue::Heading(..)
+                | NodeValue::ThematicBreak
+                | NodeValue::Table(..)
+                | NodeValue::TableRow(..)
+                | NodeValue::TableCell
+        )
     }
 
     /// Whether the type the node is of can contain inline nodes.
