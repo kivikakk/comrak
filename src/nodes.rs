@@ -349,7 +349,9 @@ pub struct Ast {
     /// The line in the input document the node starts at.
     pub start_line: u32,
 
-    pub(crate) content: Vec<u8>,
+    /// The content of the node.
+    pub content: Vec<u8>,
+
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
 }
