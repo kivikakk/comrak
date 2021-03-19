@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.9"
+comrak = "0.10"
 ```
 
 Comrak supports Rust stable.
@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.9.1
+comrak 0.10.0
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -72,6 +72,7 @@ OPTIONS:
                                                 commonmark]
         --front-matter-delimiter <DELIMITER>    Ignore front-matter that starts and ends with the given string
         --header-ids <PREFIX>                   Use the Comrak header IDs extension, with the given ID prefix
+    -o, --output <FILE>                         Write output to FILE instead of stdout
         --width <WIDTH>                         Specify wrap width (0 = nowrap) [default: 0]
 
 ARGS:

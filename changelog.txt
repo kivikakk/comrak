@@ -1,8 +1,14 @@
+### 0.10.0
+
+* 0.9.1 was a semver-breaking change.
+* Add -o/--output CLI option. (#177)
+
 ### 0.9.1
 
 * SECURITY: we were matching unsafe URL prefixes, such as `data:` or
   `javascript:`, in a case-sensitive manner.  This meant prefixes like `Data:`
   were untouched.  Please upgrade as soon as possible.  (Kouhei Morita)
+* Add support for ignoring front matter. (#170, Eitan Mosenkis.)
 
 ### 0.9.0
 
