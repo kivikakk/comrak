@@ -121,6 +121,14 @@ if the file does not exist.\
                 .help("Specify output format"),
         )
         .arg(
+            clap::Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Write output to FILE instead of stdout"),
+        )
+        .arg(
             clap::Arg::with_name("width")
                 .long("width")
                 .takes_value(true)
@@ -239,7 +247,11 @@ if the file does not exist.\
         _ => panic!("unknown format"),
     };
 
-    formatter(root, &options, &mut std::io::stdout())?;
+    if let Some(output_filename) = matches.value_of("output") {
+        formatter(root, &options, &mut fs::File::create(output_filename)?)?;
+    } else {
+        formatter(root, &options, &mut std::io::stdout())?;
+    };
 
     process::exit(EXIT_SUCCESS);
 }
