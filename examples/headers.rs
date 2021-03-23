@@ -1,6 +1,9 @@
 extern crate comrak;
 
-use comrak::{Arena, parse_document, ComrakOptions, nodes::{AstNode, NodeValue}};
+use comrak::{
+    nodes::{AstNode, NodeValue},
+    parse_document, Arena, ComrakOptions,
+};
 
 fn main() {
     println!("{:?}", get_document_title("# Hello\n"));
