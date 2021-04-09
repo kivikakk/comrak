@@ -1,4 +1,5 @@
 use arena_tree::Node;
+use nodes;
 use nodes::{Ast, AstNode, NodeValue, TableAlignment};
 use parser::Parser;
 use scanners;
@@ -39,12 +40,21 @@ fn try_opening_header<'a, 'o, 'c>(
 
     let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
-    if header_row.len() != marker_row.len() {
+    if header_row.cells.len() != marker_row.cells.len() {
         return Some((container, false));
     }
 
+    if header_row.paragraph_offset > 0 {
+        try_inserting_table_header_paragraph(
+            parser,
+            container,
+            &container.data.borrow().content,
+            header_row.paragraph_offset,
+        );
+    }
+
     let mut alignments = vec![];
-    for cell in marker_row {
+    for cell in marker_row.cells {
         let left = !cell.is_empty() && cell[0] == b':';
         let right = !cell.is_empty() && cell[cell.len() - 1] == b':';
         alignments.push(if left && right {
@@ -64,7 +74,7 @@ fn try_opening_header<'a, 'o, 'c>(
     container.append(table);
 
     let header = parser.add_child(table, NodeValue::TableRow(true));
-    for header_str in header_row {
+    for header_str in header_row.cells {
         let header_cell = parser.add_child(header, NodeValue::TableCell);
         header_cell.data.borrow_mut().content = header_str;
     }
@@ -88,9 +98,9 @@ fn try_opening_row<'a, 'o, 'c>(
     let new_row = parser.add_child(container, NodeValue::TableRow(false));
 
     let mut i = 0;
-    while i < min(alignments.len(), this_row.len()) {
+    while i < min(alignments.len(), this_row.cells.len()) {
         let cell = parser.add_child(new_row, NodeValue::TableCell);
-        cell.data.borrow_mut().content = this_row[i].clone();
+        cell.data.borrow_mut().content = this_row.cells[i].clone();
         i += 1;
     }
 
@@ -105,14 +115,21 @@ fn try_opening_row<'a, 'o, 'c>(
     Some((new_row, false))
 }
 
-fn row(string: &[u8]) -> Option<Vec<Vec<u8>>> {
+struct Row {
+    paragraph_offset: usize,
+    cells: Vec<Vec<u8>>,
+}
+
+fn row(string: &[u8]) -> Option<Row> {
     let len = string.len();
-    let mut v = vec![];
+    let mut cells = vec![];
     let mut offset = 0;
 
     if len > 0 && string[0] == b'|' {
         offset += 1;
     }
+
+    let mut paragraph_offset: usize = 0;
 
     loop {
         let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
@@ -120,9 +137,16 @@ fn row(string: &[u8]) -> Option<Vec<Vec<u8>>> {
             scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
-            let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
-            trim(&mut cell);
-            v.push(cell);
+            let cell_end_offset = offset + cell_matched - 1;
+
+            if string[cell_end_offset] == b'\n' || string[cell_end_offset] == b'\r' {
+                paragraph_offset = cell_end_offset;
+                cells.clear();
+            } else {
+                let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
+                trim(&mut cell);
+                cells.push(cell);
+            }
         }
 
         offset += cell_matched + pipe_matched;
@@ -137,11 +161,35 @@ fn row(string: &[u8]) -> Option<Vec<Vec<u8>>> {
         }
     }
 
-    if offset != len || v.is_empty() {
+    if offset != len || cells.is_empty() {
         None
     } else {
-        Some(v)
+        Some(Row {
+            paragraph_offset: paragraph_offset,
+            cells: cells,
+        })
     }
+}
+
+fn try_inserting_table_header_paragraph<'a, 'o, 'c>(
+    parser: &mut Parser<'a, 'o, 'c>,
+    container: &'a AstNode<'a>,
+    parent_string: &[u8],
+    paragraph_offset: usize,
+) {
+    let mut paragraph_content = unescape_pipes(&parent_string[..paragraph_offset]);
+    trim(&mut paragraph_content);
+
+    if !container.parent().is_some()
+        || !nodes::can_contain_type(container.parent().unwrap(), &NodeValue::Paragraph)
+    {
+        return;
+    }
+
+    let mut paragraph = Ast::new(NodeValue::Paragraph);
+    paragraph.content = paragraph_content;
+    let node = parser.arena.alloc(Node::new(RefCell::new(paragraph)));
+    container.insert_before(node);
 }
 
 fn unescape_pipes(string: &[u8]) -> Vec<u8> {
