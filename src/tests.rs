@@ -462,6 +462,32 @@ fn table() {
 }
 
 #[test]
+fn table_regression() {
+    html_opts!(
+        [extension.table],
+        concat!("123\n", "456\n", "| a | b |\n", "| ---| --- |\n", "d | e\n"),
+        concat!(
+            "<p>123\n",
+            "456</p>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>d</td>\n",
+            "<td>e</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n"
+        ),
+    );
+}
+
+#[test]
 fn autolink_www() {
     html_opts!(
         [extension.autolink],
