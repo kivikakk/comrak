@@ -1,3 +1,5 @@
+// Extract the document title by srching for a level-one header at the root level.
+
 extern crate comrak;
 
 use comrak::{

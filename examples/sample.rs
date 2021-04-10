@@ -1,3 +1,5 @@
+// Samples used in the README.  Wanna make sure they work as advertised.
+
 extern crate comrak;
 
 fn small() {

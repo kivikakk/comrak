@@ -8,13 +8,13 @@ Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+cont
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Security](#security)
-  - [Extensions](#extensions)
-  - [Related projects](#related-projects)
-  - [Contributing](#contributing)
-  - [Legal](#legal)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Security](#security)
+- [Extensions](#extensions)
+- [Related projects](#related-projects)
+- [Contributing](#contributing)
+- [Legal](#legal)
 
 ## Installation
 
@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.10.0
+comrak 0.10.1-rc.1
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -149,18 +149,18 @@ use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammo
 Comrak supports the five extensions to CommonMark defined in the [GitHub Flavored Markdown
 Spec](https://github.github.com/gfm/):
 
-  - [Tables](https://github.github.com/gfm/#tables-extension-)
-  - [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
-  - [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
-  - [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
-  - [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+- [Tables](https://github.github.com/gfm/#tables-extension-)
+- [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
+- [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
+- [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
+- [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
 Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome\!):
 
-  - Superscript
-  - Header IDs
-  - Footnotes
-  - Description lists
+- Superscript
+- Header IDs
+- Footnotes
+- Description lists
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
@@ -176,14 +176,14 @@ The downside, of course, is that the code is not what I'd call idiomatic Rust (*
 contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
 depending on your use-case. Here are some other projects to consider:
 
-  - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
-    very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
-    want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec
-    compatibility yet.
-  - [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
-    `libcmark`. It hasn't been updated in a while, though there's an [open pull
-    request](https://github.com/bnavetta/rcmark/pull/2).
-  - Know of another library? Please open a PR to add it\!
+- [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
+  very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
+  want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec
+  compatibility yet.
+- [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
+  `libcmark`. It hasn't been updated in a while, though there's an [open pull
+  request](https://github.com/bnavetta/rcmark/pull/2).
+- Know of another library? Please open a PR to add it\!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
 extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce
