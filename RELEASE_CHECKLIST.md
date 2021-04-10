@@ -3,7 +3,7 @@
 * [ ] bump version in Cargo.toml
   * [ ] did `tests::exercise_full_api` change? if so, it's a semver-breaking change.
 * [ ] update changelog
-* [ ] `script/update-readme`
+* [ ] `cargo run --example update-readme`
 * [ ] commit, tag, push commit, but do not push tag yet
 * build binaries:
   * [ ] build `aarch64-apple-darwin` on tapioca
