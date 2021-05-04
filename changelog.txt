@@ -1,3 +1,10 @@
+### 0.10.1
+
+* SECURITY: it was possible to smuggle unsafe URLs --- like `javascript:` ones
+  --- even without using the "unsafe" mode of operation.  Thanks to Sam Sanoop
+  (snoopysecurity) for reporting.
+* Recognise tables without a preceding newline. (#183)
+
 ### 0.10.0
 
 * 0.9.1 was a semver-breaking change.
