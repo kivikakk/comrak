@@ -275,7 +275,7 @@ impl<'o> HtmlFormatter<'o> {
         lazy_static! {
             static ref HREF_SAFE: [bool; 256] = {
                 let mut a = [false; 256];
-                for &c in b"-_.+!*'(),%#@?=;:/,+&$~abcdefghijklmnopqrstuvwxyz".iter() {
+                for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
                     a[c as usize] = true;
                 }
                 for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
