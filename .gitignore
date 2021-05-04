@@ -3,3 +3,4 @@ Cargo.lock
 script/.bundle
 script/Gemfile.lock
 script/vendor
+comrak-*

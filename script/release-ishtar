@@ -1,0 +1,7 @@
+#!/bin/sh
+version="$(script/version)"
+echo $version
+
+rustup update stable
+cargo +stable build --release
+mv target/release/comrak comrak-$version-x86_64-unknown-linux-gnu
