@@ -1,0 +1,2 @@
+#!/bin/sh
+cat Cargo.toml | grep ^version | head -n 1 | awk '{ gsub(/"/, "", $3); print $3 }'
