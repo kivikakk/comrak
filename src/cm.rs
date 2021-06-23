@@ -1,7 +1,10 @@
 use ctype::{isalpha, isdigit, ispunct, isspace};
 use nodes;
 use nodes::TableAlignment;
-use nodes::{AstNode, ListDelimType, ListType, NodeLink, NodeValue};
+use nodes::{
+    AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
+    NodeValue,
+};
 use parser::ComrakOptions;
 use scanners;
 use std;
@@ -294,368 +297,425 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         match node.data.borrow().value {
             NodeValue::Document => (),
-            NodeValue::FrontMatter(ref front_matter) => {
-                if entering {
-                    self.output(front_matter, false, Escaping::Literal);
-                }
-            }
-            NodeValue::BlockQuote => {
-                if entering {
-                    write!(self, "> ").unwrap();
-                    self.begin_content = true;
-                    write!(self.prefix, "> ").unwrap();
-                } else {
-                    let new_len = self.prefix.len() - 2;
-                    self.prefix.truncate(new_len);
-                    self.blankline();
-                }
-            }
-            NodeValue::List(..) => {
-                if !entering
-                    && match node.next_sibling() {
-                        Some(next_sibling) => matches!(
-                            next_sibling.data.borrow().value,
-                            NodeValue::CodeBlock(..) | NodeValue::List(..)
-                        ),
-                        _ => false,
-                    }
-                {
-                    self.cr();
-                    write!(self, "<!-- end list -->").unwrap();
-                    self.blankline();
-                }
-            }
-            NodeValue::Item(..) => {
-                let parent = match node.parent().unwrap().data.borrow().value {
-                    NodeValue::List(ref nl) => *nl,
-                    _ => unreachable!(),
-                };
-
-                let mut listmarker = vec![];
-
-                let marker_width = if parent.list_type == ListType::Bullet {
-                    2
-                } else {
-                    let mut list_number = parent.start;
-                    let list_delim = parent.delimiter;
-                    let mut tmpch = node;
-                    while let Some(tmp) = tmpch.previous_sibling() {
-                        tmpch = tmp;
-                        list_number += 1;
-                    }
-                    write!(
-                        listmarker,
-                        "{}{}{}",
-                        list_number,
-                        if list_delim == ListDelimType::Paren {
-                            ")"
-                        } else {
-                            "."
-                        },
-                        if list_number < 10 { "  " } else { " " }
-                    )
-                    .unwrap();
-                    listmarker.len()
-                };
-
-                if entering {
-                    if parent.list_type == ListType::Bullet {
-                        write!(self, "- ").unwrap();
-                    } else {
-                        self.write_all(&listmarker).unwrap();
-                    }
-                    self.begin_content = true;
-                    for _ in 0..marker_width {
-                        write!(self.prefix, " ").unwrap();
-                    }
-                } else {
-                    let new_len = self.prefix.len() - marker_width;
-                    self.prefix.truncate(new_len);
-                    self.cr();
-                }
-            }
+            NodeValue::FrontMatter(ref fm) => self.format_front_matter(fm, entering),
+            NodeValue::BlockQuote => self.format_block_quote(entering),
+            NodeValue::List(..) => self.format_list(node, entering),
+            NodeValue::Item(..) => self.format_item(node, entering),
             NodeValue::DescriptionList => (),
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
-            NodeValue::DescriptionDetails => {
-                if entering {
-                    write!(self, ": ").unwrap()
-                }
-            }
-            NodeValue::Heading(ref nch) => {
-                if entering {
-                    for _ in 0..nch.level {
-                        write!(self, "#").unwrap();
-                    }
-                    write!(self, " ").unwrap();
-                    self.begin_content = true;
-                    self.no_linebreaks = true;
-                } else {
-                    self.no_linebreaks = false;
-                    self.blankline();
-                }
-            }
-            NodeValue::CodeBlock(ref ncb) => {
-                if entering {
-                    let first_in_list_item = node.previous_sibling().is_none()
-                        && match node.parent() {
-                            Some(parent) => {
-                                matches!(parent.data.borrow().value, NodeValue::Item(..))
-                            }
-                            _ => false,
-                        };
-
-                    if !first_in_list_item {
-                        self.blankline();
-                    }
-
-                    if ncb.info.is_empty()
-                        && (ncb.literal.len() > 2
-                            && !isspace(ncb.literal[0])
-                            && !(isspace(ncb.literal[ncb.literal.len() - 1])
-                                && isspace(ncb.literal[ncb.literal.len() - 2])))
-                        && !first_in_list_item
-                    {
-                        write!(self, "    ").unwrap();
-                        write!(self.prefix, "    ").unwrap();
-                        self.write_all(&ncb.literal).unwrap();
-                        let new_len = self.prefix.len() - 4;
-                        self.prefix.truncate(new_len);
-                    } else {
-                        let fence_char = if ncb.info.contains(&b'`') { b'~' } else { b'`' };
-                        let numticks = max(3, longest_char_sequence(&ncb.literal, fence_char) + 1);
-                        for _ in 0..numticks {
-                            write!(self, "{}", fence_char as char).unwrap();
-                        }
-                        if !ncb.info.is_empty() {
-                            write!(self, " ").unwrap();
-                            self.write_all(&ncb.info).unwrap();
-                        }
-                        self.cr();
-                        self.write_all(&ncb.literal).unwrap();
-                        self.cr();
-                        for _ in 0..numticks {
-                            write!(self, "{}", fence_char as char).unwrap();
-                        }
-                    }
-                    self.blankline();
-                }
-            }
-            NodeValue::HtmlBlock(ref nhb) => {
-                if entering {
-                    self.blankline();
-                    self.write_all(&nhb.literal).unwrap();
-                    self.blankline();
-                }
-            }
-            NodeValue::ThematicBreak => {
-                if entering {
-                    self.blankline();
-                    write!(self, "-----").unwrap();
-                    self.blankline();
-                }
-            }
-            NodeValue::Paragraph => {
-                if !entering {
-                    self.blankline();
-                }
-            }
-            NodeValue::Text(ref literal) => {
-                if entering {
-                    self.output(literal, allow_wrap, Escaping::Normal);
-                }
-            }
-            NodeValue::LineBreak => {
-                if entering {
-                    if !self.options.render.hardbreaks {
-                        write!(self, "  ").unwrap();
-                    }
-                    self.cr();
-                }
-            }
-            NodeValue::SoftBreak => {
-                if entering {
-                    if !self.no_linebreaks
-                        && self.options.render.width == 0
-                        && !self.options.render.hardbreaks
-                    {
-                        self.cr();
-                    } else {
-                        self.output(&[b' '], allow_wrap, Escaping::Literal);
-                    }
-                }
-            }
-            NodeValue::Code(ref literal) => {
-                if entering {
-                    let numticks = shortest_unused_sequence(literal, b'`');
-                    for _ in 0..numticks {
-                        write!(self, "`").unwrap();
-                    }
-                    let pad = literal.is_empty()
-                        || literal[0] == b'`'
-                        || literal[literal.len() - 1] == b'`'
-                        || literal[0] == b' '
-                        || literal[literal.len() - 1] == b' ';
-                    if pad {
-                        write!(self, " ").unwrap();
-                    }
-                    self.output(literal, allow_wrap, Escaping::Literal);
-                    if pad {
-                        write!(self, " ").unwrap();
-                    }
-                    for _ in 0..numticks {
-                        write!(self, "`").unwrap();
-                    }
-                }
-            }
-            NodeValue::HtmlInline(ref literal) => {
-                if entering {
-                    self.write_all(literal).unwrap();
-                }
-            }
-            NodeValue::Strong => {
-                write!(self, "**").unwrap();
-            }
-            NodeValue::Emph => {
-                let emph_delim = if match node.parent() {
-                    Some(parent) => matches!(parent.data.borrow().value, NodeValue::Emph),
-                    _ => false,
-                } && node.next_sibling().is_none()
-                    && node.previous_sibling().is_none()
-                {
-                    b'_'
-                } else {
-                    b'*'
-                };
-
-                self.write_all(&[emph_delim]).unwrap();
-            }
-            NodeValue::TaskItem(checked) => {
-                if entering {
-                    if checked {
-                        write!(self, "[x] ").unwrap();
-                    } else {
-                        write!(self, "[ ] ").unwrap();
-                    }
-                }
-            }
-            NodeValue::Strikethrough => {
-                write!(self, "~").unwrap();
-            }
-            NodeValue::Superscript => {
-                write!(self, "^").unwrap();
-            }
+            NodeValue::DescriptionDetails => self.format_description_details(entering),
+            NodeValue::Heading(ref nch) => self.format_heading(nch, entering),
+            NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering),
+            NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering),
+            NodeValue::ThematicBreak => self.format_thematic_break(entering),
+            NodeValue::Paragraph => self.format_paragraph(entering),
+            NodeValue::Text(ref literal) => self.format_text(literal, allow_wrap, entering),
+            NodeValue::LineBreak => self.format_line_break(entering),
+            NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering),
+            NodeValue::Code(ref literal) => self.format_code(literal, allow_wrap, entering),
+            NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering),
+            NodeValue::Strong => self.format_strong(),
+            NodeValue::Emph => self.format_emph(node),
+            NodeValue::TaskItem(checked) => self.format_task_item(checked, entering),
+            NodeValue::Strikethrough => self.format_strikethrough(),
+            NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => {
-                if is_autolink(node, nl) {
-                    if entering {
-                        write!(self, "<").unwrap();
-                        if nl.url.len() >= 7 && &nl.url[..7] == b"mailto:" {
-                            self.write_all(&nl.url[7..]).unwrap();
-                        } else {
-                            self.write_all(&nl.url).unwrap();
-                        }
-                        write!(self, ">").unwrap();
-                        return false;
-                    }
-                } else if entering {
-                    write!(self, "[").unwrap();
-                } else {
-                    write!(self, "](").unwrap();
-                    self.output(&nl.url, false, Escaping::URL);
-                    if !nl.title.is_empty() {
-                        write!(self, " \"").unwrap();
-                        self.output(&nl.title, false, Escaping::Title);
-                        write!(self, "\"").unwrap();
-                    }
-                    write!(self, ")").unwrap();
-                }
+                return self.format_link(node, nl, entering) 
             }
-            NodeValue::Image(ref nl) => {
-                if entering {
-                    write!(self, "![").unwrap();
-                } else {
-                    write!(self, "](").unwrap();
-                    self.output(&nl.url, false, Escaping::URL);
-                    if !nl.title.is_empty() {
-                        self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
-                        self.output(&nl.title, false, Escaping::Title);
-                        write!(self, "\"").unwrap();
-                    }
-                    write!(self, ")").unwrap();
-                }
-            }
-            NodeValue::Table(..) => {
-                if entering {
-                    self.custom_escape = Some(table_escape);
-                } else {
-                    self.custom_escape = None;
-                }
-                self.blankline();
-            }
-            NodeValue::TableRow(..) => {
-                if entering {
-                    self.cr();
-                    write!(self, "|").unwrap();
-                }
-            }
-            NodeValue::TableCell => {
-                if entering {
-                    write!(self, " ").unwrap();
-                } else {
-                    write!(self, " |").unwrap();
-
-                    let row = &node.parent().unwrap().data.borrow().value;
-                    let in_header = match *row {
-                        NodeValue::TableRow(header) => header,
-                        _ => panic!(),
-                    };
-
-                    if in_header && node.next_sibling().is_none() {
-                        let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
-                        let alignments = match *table {
-                            NodeValue::Table(ref alignments) => alignments,
-                            _ => panic!(),
-                        };
-
-                        self.cr();
-                        write!(self, "|").unwrap();
-                        for a in alignments {
-                            write!(
-                                self,
-                                " {} |",
-                                match *a {
-                                    TableAlignment::Left => ":--",
-                                    TableAlignment::Center => ":-:",
-                                    TableAlignment::Right => "--:",
-                                    TableAlignment::None => "---",
-                                }
-                            )
-                            .unwrap();
-                        }
-                        self.cr();
-                    }
-                }
-            }
-            NodeValue::FootnoteDefinition(_) => {
-                if entering {
-                    self.footnote_ix += 1;
-                    let footnote_ix = self.footnote_ix;
-                    writeln!(self, "[^{}]:", footnote_ix).unwrap();
-                    write!(self.prefix, "    ").unwrap();
-                } else {
-                    let new_len = self.prefix.len() - 4;
-                    self.prefix.truncate(new_len);
-                }
-            }
-            NodeValue::FootnoteReference(ref r) => {
-                if entering {
-                    self.write_all(b"[^").unwrap();
-                    self.write_all(r).unwrap();
-                    self.write_all(b"]").unwrap();
-                }
-            }
+            NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering),
+            NodeValue::Table(..) => self.format_table(entering),
+            NodeValue::TableRow(..) => self.format_table_row(entering),
+            NodeValue::TableCell => self.format_table_cell(node, entering),
+            NodeValue::FootnoteDefinition(_) => self.format_footnote_definition(entering),
+            NodeValue::FootnoteReference(ref r) => self.format_footnote_reference(r, entering),
         };
         true
+    }
+
+    fn format_front_matter(&mut self, front_matter: &Vec<u8>, entering: bool) {
+        if entering {
+            self.output(front_matter, false, Escaping::Literal);
+        }
+    }
+
+    fn format_block_quote(&mut self, entering: bool) {
+        if entering {
+            write!(self, "> ").unwrap();
+            self.begin_content = true;
+            write!(self.prefix, "> ").unwrap();
+        } else {
+            let new_len = self.prefix.len() - 2;
+            self.prefix.truncate(new_len);
+            self.blankline();
+        }
+    }
+
+    fn format_list(&mut self, node: &'a AstNode<'a>, entering: bool) {
+        if !entering
+            && match node.next_sibling() {
+                Some(next_sibling) => matches!(
+                    next_sibling.data.borrow().value,
+                    NodeValue::CodeBlock(..) | NodeValue::List(..)
+                ),
+                _ => false,
+            }
+        {
+            self.cr();
+            write!(self, "<!-- end list -->").unwrap();
+            self.blankline();
+        }
+    }
+
+    fn format_item(&mut self, node: &'a AstNode<'a>, entering: bool) {
+        let parent = match node.parent().unwrap().data.borrow().value {
+            NodeValue::List(ref nl) => *nl,
+            _ => unreachable!(),
+        };
+
+        let mut listmarker = vec![];
+
+        let marker_width = if parent.list_type == ListType::Bullet {
+            2
+        } else {
+            let mut list_number = parent.start;
+            let list_delim = parent.delimiter;
+            let mut tmpch = node;
+            while let Some(tmp) = tmpch.previous_sibling() {
+                tmpch = tmp;
+                list_number += 1;
+            }
+            write!(
+                listmarker,
+                "{}{}{}",
+                list_number,
+                if list_delim == ListDelimType::Paren {
+                    ")"
+                } else {
+                    "."
+                },
+                if list_number < 10 { "  " } else { " " }
+            )
+            .unwrap();
+            listmarker.len()
+        };
+
+        if entering {
+            if parent.list_type == ListType::Bullet {
+                write!(self, "- ").unwrap();
+            } else {
+                self.write_all(&listmarker).unwrap();
+            }
+            self.begin_content = true;
+            for _ in 0..marker_width {
+                write!(self.prefix, " ").unwrap();
+            }
+        } else {
+            let new_len = self.prefix.len() - marker_width;
+            self.prefix.truncate(new_len);
+            self.cr();
+        }
+    }
+
+    fn format_description_details(&mut self, entering: bool) {
+        if entering {
+            write!(self, ": ").unwrap()
+        }
+    }
+
+    fn format_heading(&mut self, nch: &NodeHeading, entering: bool) {
+        if entering {
+            for _ in 0..nch.level {
+                write!(self, "#").unwrap();
+            }
+            write!(self, " ").unwrap();
+            self.begin_content = true;
+            self.no_linebreaks = true;
+        } else {
+            self.no_linebreaks = false;
+            self.blankline();
+        }
+    }
+
+    fn format_code_block(&mut self, node: &'a AstNode<'a>, ncb: &NodeCodeBlock, entering: bool) {
+        if entering {
+            let first_in_list_item = node.previous_sibling().is_none()
+                && match node.parent() {
+                    Some(parent) => {
+                        matches!(parent.data.borrow().value, NodeValue::Item(..))
+                    }
+                    _ => false,
+                };
+
+            if !first_in_list_item {
+                self.blankline();
+            }
+
+            if ncb.info.is_empty()
+                && (ncb.literal.len() > 2
+                    && !isspace(ncb.literal[0])
+                    && !(isspace(ncb.literal[ncb.literal.len() - 1])
+                        && isspace(ncb.literal[ncb.literal.len() - 2])))
+                && !first_in_list_item
+            {
+                write!(self, "    ").unwrap();
+                write!(self.prefix, "    ").unwrap();
+                self.write_all(&ncb.literal).unwrap();
+                let new_len = self.prefix.len() - 4;
+                self.prefix.truncate(new_len);
+            } else {
+                let fence_char = if ncb.info.contains(&b'`') { b'~' } else { b'`' };
+                let numticks = max(3, longest_char_sequence(&ncb.literal, fence_char) + 1);
+                for _ in 0..numticks {
+                    write!(self, "{}", fence_char as char).unwrap();
+                }
+                if !ncb.info.is_empty() {
+                    write!(self, " ").unwrap();
+                    self.write_all(&ncb.info).unwrap();
+                }
+                self.cr();
+                self.write_all(&ncb.literal).unwrap();
+                self.cr();
+                for _ in 0..numticks {
+                    write!(self, "{}", fence_char as char).unwrap();
+                }
+            }
+            self.blankline();
+        }
+    }
+
+    fn format_html_block(&mut self, nhb: &NodeHtmlBlock, entering: bool) {
+        if entering {
+            self.blankline();
+            self.write_all(&nhb.literal).unwrap();
+            self.blankline();
+        }
+    }
+
+    fn format_thematic_break(&mut self, entering: bool) {
+        if entering {
+            self.blankline();
+            write!(self, "-----").unwrap();
+            self.blankline();
+        }
+    }
+
+    fn format_paragraph(&mut self, entering: bool) {
+        if !entering {
+            self.blankline();
+        }
+    }
+
+    fn format_text(&mut self, literal: &Vec<u8>, allow_wrap: bool, entering: bool) {
+        if entering {
+            self.output(literal, allow_wrap, Escaping::Normal);
+        }
+    }
+
+    fn format_line_break(&mut self, entering: bool) {
+        if entering {
+            if !self.options.render.hardbreaks {
+                write!(self, "  ").unwrap();
+            }
+            self.cr();
+        }
+    }
+
+    fn format_soft_break(&mut self, allow_wrap: bool, entering: bool) {
+        if entering {
+            if !self.no_linebreaks
+                && self.options.render.width == 0
+                && !self.options.render.hardbreaks
+            {
+                self.cr();
+            } else {
+                self.output(&[b' '], allow_wrap, Escaping::Literal);
+            }
+        }
+    }
+
+    fn format_code(&mut self, literal: &Vec<u8>, allow_wrap: bool, entering: bool) {
+        if entering {
+            let numticks = shortest_unused_sequence(literal, b'`');
+            for _ in 0..numticks {
+                write!(self, "`").unwrap();
+            }
+            let pad = literal.is_empty()
+                || literal[0] == b'`'
+                || literal[literal.len() - 1] == b'`'
+                || literal[0] == b' '
+                || literal[literal.len() - 1] == b' ';
+            if pad {
+                write!(self, " ").unwrap();
+            }
+            self.output(literal, allow_wrap, Escaping::Literal);
+            if pad {
+                write!(self, " ").unwrap();
+            }
+            for _ in 0..numticks {
+                write!(self, "`").unwrap();
+            }
+        }
+    }
+
+    fn format_html_inline(&mut self, literal: &Vec<u8>, entering: bool) {
+        if entering {
+            self.write_all(literal).unwrap();
+        }
+    }
+
+    fn format_strong(&mut self) {
+        write!(self, "**").unwrap();
+    }
+
+    fn format_emph(&mut self, node: &'a AstNode<'a>) {
+        let emph_delim = if match node.parent() {
+            Some(parent) => matches!(parent.data.borrow().value, NodeValue::Emph),
+            _ => false,
+        } && node.next_sibling().is_none()
+            && node.previous_sibling().is_none()
+        {
+            b'_'
+        } else {
+            b'*'
+        };
+
+        self.write_all(&[emph_delim]).unwrap();
+    }
+
+    fn format_task_item(&mut self, checked: bool, entering: bool) {
+        if entering {
+            if checked {
+                write!(self, "[x] ").unwrap();
+            } else {
+                write!(self, "[ ] ").unwrap();
+            }
+        }
+    }
+
+    fn format_strikethrough(&mut self) {
+        write!(self, "~").unwrap();
+    }
+
+    fn format_superscript(&mut self) {
+        write!(self, "^").unwrap();
+    }
+
+    fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {
+        if is_autolink(node, nl) {
+            if entering {
+                write!(self, "<").unwrap();
+                if nl.url.len() >= 7 && &nl.url[..7] == b"mailto:" {
+                    self.write_all(&nl.url[7..]).unwrap();
+                } else {
+                    self.write_all(&nl.url).unwrap();
+                }
+                write!(self, ">").unwrap();
+                return false;
+            }
+        } else if entering {
+            write!(self, "[").unwrap();
+        } else {
+            write!(self, "](").unwrap();
+            self.output(&nl.url, false, Escaping::URL);
+            if !nl.title.is_empty() {
+                write!(self, " \"").unwrap();
+                self.output(&nl.title, false, Escaping::Title);
+                write!(self, "\"").unwrap();
+            }
+            write!(self, ")").unwrap();
+        }
+
+        return true;
+    }
+
+    fn format_image(&mut self, nl: &NodeLink, allow_wrap: bool, entering: bool) {
+        if entering {
+            write!(self, "![").unwrap();
+        } else {
+            write!(self, "](").unwrap();
+            self.output(&nl.url, false, Escaping::URL);
+            if !nl.title.is_empty() {
+                self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
+                self.output(&nl.title, false, Escaping::Title);
+                write!(self, "\"").unwrap();
+            }
+            write!(self, ")").unwrap();
+        }
+    }
+
+    fn format_table(&mut self, entering: bool) {
+        if entering {
+            self.custom_escape = Some(table_escape);
+        } else {
+            self.custom_escape = None;
+        }
+        self.blankline();
+    }
+
+    fn format_table_row(&mut self, entering: bool) {
+        if entering {
+            self.cr();
+            write!(self, "|").unwrap();
+        }
+    }
+
+    fn format_table_cell(&mut self, node: &'a AstNode<'a>, entering: bool) {
+        if entering {
+            write!(self, " ").unwrap();
+        } else {
+            write!(self, " |").unwrap();
+
+            let row = &node.parent().unwrap().data.borrow().value;
+            let in_header = match *row {
+                NodeValue::TableRow(header) => header,
+                _ => panic!(),
+            };
+
+            if in_header && node.next_sibling().is_none() {
+                let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+                let alignments = match *table {
+                    NodeValue::Table(ref alignments) => alignments,
+                    _ => panic!(),
+                };
+
+                self.cr();
+                write!(self, "|").unwrap();
+                for a in alignments {
+                    write!(
+                        self,
+                        " {} |",
+                        match *a {
+                            TableAlignment::Left => ":--",
+                            TableAlignment::Center => ":-:",
+                            TableAlignment::Right => "--:",
+                            TableAlignment::None => "---",
+                        }
+                    )
+                    .unwrap();
+                }
+                self.cr();
+            }
+        }
+    }
+    fn format_footnote_definition(&mut self, entering: bool) {
+        if entering {
+            self.footnote_ix += 1;
+            let footnote_ix = self.footnote_ix;
+            writeln!(self, "[^{}]:", footnote_ix).unwrap();
+            write!(self.prefix, "    ").unwrap();
+        } else {
+            let new_len = self.prefix.len() - 4;
+            self.prefix.truncate(new_len);
+        }
+    }
+
+    fn format_footnote_reference(&mut self, r: &Vec<u8>, entering: bool) {
+        if entering {
+            self.write_all(b"[^").unwrap();
+            self.write_all(r).unwrap();
+            self.write_all(b"]").unwrap();
+        }
     }
 }
 
