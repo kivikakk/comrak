@@ -320,9 +320,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::TaskItem(checked) => self.format_task_item(checked, entering),
             NodeValue::Strikethrough => self.format_strikethrough(),
             NodeValue::Superscript => self.format_superscript(),
-            NodeValue::Link(ref nl) => {
-                return self.format_link(node, nl, entering) 
-            }
+            NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
             NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering),
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering),
