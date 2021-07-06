@@ -114,7 +114,7 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
             uscore2 = 0;
             np += 1;
         } else if !is_valid_hostchar(c) && c != '-' {
-            if uscore1 == 0 && uscore2 == 0 && np > 0 {
+            if uscore1 == 0 && uscore2 == 0 && (allow_short || np > 0) {
                 return Some(i);
             }
             return None;
