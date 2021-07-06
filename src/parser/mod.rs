@@ -122,19 +122,54 @@ pub struct Parser<'a, 'o, 'c> {
 #[derive(Default, Debug, Clone)]
 /// Umbrella options struct.
 pub struct ComrakOptions {
+    pub(crate) extension: ComrakExtensionOptions,
+    pub(crate) parse: ComrakParseOptions,
+    pub(crate) render: ComrakRenderOptions,
+}
+
+impl ComrakOptions {
+    /// Initialize default options.
+    pub fn new() -> ComrakOptions {
+        ComrakOptions::default()
+    }
+
     /// Enable CommonMark extensions.
-    pub extension: ComrakExtensionOptions,
+    pub fn extension(&mut self) -> &mut ComrakExtensionOptions {
+        &mut self.extension
+    }
 
     /// Configure parse-time options.
-    pub parse: ComrakParseOptions,
+    pub fn parse(&mut self) -> &mut ComrakParseOptions {
+        &mut self.parse
+    }
 
     /// Configure render-time options.
-    pub render: ComrakRenderOptions,
+    pub fn render(&mut self) -> &mut ComrakRenderOptions {
+        &mut self.render
+    }
 }
 
 #[derive(Default, Debug, Clone)]
 /// Options to select extensions.
 pub struct ComrakExtensionOptions {
+    pub(crate) strikethrough: bool,
+    pub(crate) tagfilter: bool,
+    pub(crate) table: bool,
+    pub(crate) autolink: bool,
+    pub(crate) tasklist: bool,
+    pub(crate) superscript: bool,
+    pub(crate) header_ids: Option<String>,
+    pub(crate) footnotes: bool,
+    pub(crate) description_lists: bool,
+    pub(crate) front_matter_delimiter: Option<String>,
+}
+
+impl ComrakExtensionOptions {
+    /// Initialize default options.
+    pub fn new() -> ComrakParseOptions {
+        ComrakParseOptions::default()
+    }
+
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
@@ -142,11 +177,14 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.strikethrough = true;
+    /// options.extension().strikethrough(true);
     /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
     ///            "<p>Hello <del>world</del> there.</p>\n");
     /// ```
-    pub strikethrough: bool,
+    pub fn strikethrough(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.strikethrough = value;
+        self
+    }
 
     /// Enables the
     /// [tagfilter extension](https://github.github.com/gfm/#disallowed-raw-html-extension-)
@@ -155,12 +193,15 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.tagfilter = true;
-    /// options.render.unsafe_ = true;
+    /// options.extension().tagfilter(true);
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
-    pub tagfilter: bool,
+    pub fn tagfilter(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.tagfilter = value;
+        self
+    }
 
     /// Enables the [table extension](https://github.github.com/gfm/#tables-extension-)
     /// from the GFM spec.
@@ -168,12 +209,15 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.table = true;
+    /// options.extension().table(true);
     /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
     ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n");
     /// ```
-    pub table: bool,
+    pub fn table(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.table = value;
+        self
+    }
 
     /// Enables the [autolink extension](https://github.github.com/gfm/#autolinks-extension-)
     /// from the GFM spec.
@@ -181,11 +225,14 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.autolink = true;
+    /// options.extension().autolink(true);
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
-    pub autolink: bool,
+    pub fn autolink(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.autolink = value;
+        self
+    }
 
     /// Enables the
     /// [task list items extension](https://github.github.com/gfm/#task-list-items-extension-)
@@ -197,35 +244,44 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.tasklist = true;
-    /// options.render.unsafe_ = true;
+    /// options.extension().tasklist(true);
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
     ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
-    pub tasklist: bool,
+    pub fn tasklist(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.tasklist = value;
+        self
+    }
 
     /// Enables the superscript Comrak extension.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.superscript = true;
+    /// options.extension().superscript(true);
     /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
     /// ```
-    pub superscript: bool,
+    pub fn superscript(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.superscript = value;
+        self
+    }
 
     /// Enables the header IDs Comrak extension.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.header_ids = Some("user-content-".to_string());
+    /// options.extension().header_ids(Some("user-content-".to_string()));
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
-    pub header_ids: Option<String>,
+    pub fn header_ids(&mut self, value: Option<String>) -> &mut ComrakExtensionOptions {
+        self.header_ids = value;
+        self
+    }
 
     /// Enables the footnotes extension per `cmark-gfm`.
     ///
@@ -235,11 +291,14 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.footnotes = true;
+    /// options.extension().footnotes(true);
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn1\" id=\"fnref1\">1</a></sup>.</p>\n<section class=\"footnotes\">\n<ol>\n<li id=\"fn1\">\n<p>A greeting. <a href=\"#fnref1\" class=\"footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
-    pub footnotes: bool,
+    pub fn footnotes(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.footnotes = value;
+        self
+    }
 
     /// Enables the description lists extension.
     ///
@@ -261,11 +320,14 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.description_lists = true;
+    /// options.extension().description_lists(true);
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
-    pub description_lists: bool,
+    pub fn description_lists(&mut self, value: bool) -> &mut ComrakExtensionOptions {
+        self.description_lists = value;
+        self
+    }
 
     /// Enables the front matter extension.
     ///
@@ -287,7 +349,7 @@ pub struct ComrakExtensionOptions {
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
-    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// options.extension().front_matter_delimiter(Some("---".to_owned()));
     /// assert_eq!(
     ///     markdown_to_html("---\nlayout: post\n---\nText\n", &options),
     ///     markdown_to_html("Text\n", &ComrakOptions::default()));
@@ -297,7 +359,7 @@ pub struct ComrakExtensionOptions {
     /// # use comrak::{format_commonmark, Arena, ComrakOptions};
     /// use comrak::parse_document;
     /// let mut options = ComrakOptions::default();
-    /// options.extension.front_matter_delimiter = Some("---".to_owned());
+    /// options.extension().front_matter_delimiter(Some("---".to_owned()));
     /// let arena = Arena::new();
     /// let input ="---\nlayout: post\n---\nText\n";
     /// let root = parse_document(&arena, input, &options);
@@ -305,12 +367,28 @@ pub struct ComrakExtensionOptions {
     /// format_commonmark(&root, &options, &mut buf);
     /// assert_eq!(&String::from_utf8(buf).unwrap(), input);
     /// ```
-    pub front_matter_delimiter: Option<String>,
+    pub fn front_matter_delimiter(&mut self, value: Option<String>) -> &mut ComrakExtensionOptions {
+        self.front_matter_delimiter = value;
+        self
+    }
 }
 
 #[derive(Default, Debug, Clone)]
 /// Options for parser functions.
 pub struct ComrakParseOptions {
+    pub(crate) smart: bool,
+    pub(crate) default_info_string: Option<String>,
+}
+
+impl ComrakParseOptions {
+    /// Initialize default parse-time options:
+    ///
+    /// * smart punctuation disabled
+    /// * no info string prefix in fenced code blocks
+    pub fn new() -> ComrakParseOptions {
+        ComrakParseOptions::default()
+    }
+
     /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
     ///
     /// ```
@@ -319,11 +397,14 @@ pub struct ComrakParseOptions {
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>'Hello,' &quot;world&quot; ...</p>\n");
     ///
-    /// options.parse.smart = true;
+    /// options.parse().smart(true);
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>‘Hello,’ “world” …</p>\n");
     /// ```
-    pub smart: bool,
+    pub fn smart(&mut self, value: bool) -> &mut ComrakParseOptions {
+        self.smart = value;
+        self
+    }
 
     /// The default info string for fenced code blocks.
     ///
@@ -333,16 +414,37 @@ pub struct ComrakParseOptions {
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
     ///            "<pre><code>fn hello();\n</code></pre>\n");
     ///
-    /// options.parse.default_info_string = Some("rust".into());
+    /// options.parse().default_info_string(Some("rust".into()));
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     /// ```
-    pub default_info_string: Option<String>,
+    pub fn default_info_string(&mut self, value: Option<String>) -> &mut ComrakParseOptions {
+        self.default_info_string = value;
+        self
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy)]
 /// Options for formatter functions.
 pub struct ComrakRenderOptions {
+    pub(crate) hardbreaks: bool,
+    pub(crate) github_pre_lang: bool,
+    pub(crate) width: usize,
+    pub(crate) unsafe_: bool,
+    pub(crate) escape: bool,
+}
+
+impl ComrakRenderOptions {
+    /// Initialize default render-time options:
+    ///
+    /// * soft line breaks are not translated into hard line breaks
+    /// * default fenced code block style is used with info tags
+    /// * CommonMark output is not wrapped
+    /// * raw HTML and potentially unsafe links are filtered out
+    pub fn new() -> ComrakRenderOptions {
+        ComrakRenderOptions::default()
+    }
+
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
     /// translate into hard line breaks in the output.
     ///
@@ -352,11 +454,14 @@ pub struct ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.\nWorld.</p>\n");
     ///
-    /// options.render.hardbreaks = true;
+    /// options.render().hardbreaks(true);
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.<br />\nWorld.</p>\n");
     /// ```
-    pub hardbreaks: bool,
+    pub fn hardbreaks(&mut self, value: bool) -> &mut ComrakRenderOptions {
+        self.hardbreaks = value;
+        self
+    }
 
     /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
     ///
@@ -366,11 +471,14 @@ pub struct ComrakRenderOptions {
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     ///
-    /// options.render.github_pre_lang = true;
+    /// options.render().github_pre_lang(true);
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
     /// ```
-    pub github_pre_lang: bool,
+    pub fn github_pre_lang(&mut self, value: bool) -> &mut ComrakRenderOptions {
+        self.github_pre_lang = value;
+        self
+    }
 
     /// The wrap column when outputting CommonMark.
     ///
@@ -387,14 +495,17 @@ pub struct ComrakRenderOptions {
     /// assert_eq!(String::from_utf8(output).unwrap(),
     ///            "hello hello hello hello hello hello\n");
     ///
-    /// options.render.width = 20;
+    /// options.render().width(20);
     /// let mut output = vec![];
     /// format_commonmark(node, &options, &mut output).unwrap();
     /// assert_eq!(String::from_utf8(output).unwrap(),
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
     /// ```
-    pub width: usize,
+    pub fn width(&mut self, value: usize) -> &mut ComrakRenderOptions {
+        self.width = value;
+        self
+    }
 
     /// Allow rendering of raw HTML and potentially dangerous links.
     ///
@@ -412,14 +523,17 @@ pub struct ComrakRenderOptions {
     ///             <p><a href=\"\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     ///
-    /// options.render.unsafe_ = true;
+    /// options.render().unsafe_(true);
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<script>\nalert(\'xyz\');\n</script>\n\
     ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
     ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
-    pub unsafe_: bool,
+    pub fn unsafe_(&mut self, value: bool) -> &mut ComrakRenderOptions {
+        self.unsafe_ = value;
+        self
+    }
 
     /// Escape raw HTML instead of clobbering it.
     /// ```
@@ -430,11 +544,14 @@ pub struct ComrakRenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p><!-- raw HTML omitted -->italic text<!-- raw HTML omitted --></p>\n");
     ///
-    /// options.render.escape = true;
+    /// options.render().escape(true);
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```
-    pub escape: bool,
+    pub fn escape(&mut self, value: bool) -> &mut ComrakRenderOptions {
+        self.escape = value;
+        self
+    }
 }
 
 #[derive(Clone)]
