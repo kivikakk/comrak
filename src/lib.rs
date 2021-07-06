@@ -80,6 +80,7 @@ extern crate pest_derive;
 #[cfg(test)]
 extern crate propfuzz;
 extern crate regex;
+extern crate slugify;
 #[cfg(feature = "benchmarks")]
 extern crate test;
 #[cfg(test)]
