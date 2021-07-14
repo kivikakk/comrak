@@ -1,5 +1,5 @@
 use ctype::isspace;
-use nodes::{AstNode, ListType, NodeValue, TableAlignment};
+use nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
 use parser::ComrakOptions;
 use regex::Regex;
 use scanners;
@@ -338,7 +338,7 @@ impl<'o> HtmlFormatter<'o> {
                     if plain {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
-                            | NodeValue::Code(ref literal)
+                            | NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal) => {
                                 self.escape(literal)?;
                             }
@@ -369,7 +369,7 @@ impl<'o> HtmlFormatter<'o> {
 
     fn collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
         match node.data.borrow().value {
-            NodeValue::Text(ref literal) | NodeValue::Code(ref literal) => {
+            NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
                 output.extend_from_slice(literal)
             }
             NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
@@ -563,7 +563,7 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
             }
-            NodeValue::Code(ref literal) => {
+            NodeValue::Code(NodeCode { ref literal, .. }) => {
                 if entering {
                     self.output.write_all(b"<code>")?;
                     self.escape(literal)?;

@@ -114,7 +114,7 @@ pub enum NodeValue {
     LineBreak,
 
     /// **Inline**.  A [code span](https://github.github.com/gfm/#code-spans).
-    Code(Vec<u8>),
+    Code(NodeCode),
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(Vec<u8>),
@@ -158,6 +158,19 @@ pub enum TableAlignment {
 
     /// Cell content is aligned right.
     Right,
+}
+
+/// An inline [code span](https://github.github.com/gfm/#code-spans).
+#[derive(Debug, Clone)]
+pub struct NodeCode {
+    /// The URL for the link destination or image source.
+    pub num_backticks: usize,
+
+    /// The content of the inline code span.
+    /// As the contents are not interpreted as Markdown at all,
+    /// they are contained within this structure,
+    /// rather than inserted into a child inline of any kind.
+    pub literal: Vec<u8>,
 }
 
 /// The details of a link's destination, or an image's source.

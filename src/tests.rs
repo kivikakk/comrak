@@ -1,3 +1,4 @@
+use crate::nodes::{AstNode, NodeCode, NodeValue};
 use cm;
 use html;
 use propfuzz::prelude::*;
@@ -93,6 +94,18 @@ macro_rules! html_opts {
             $(opts.$optclass.$optname = true;)*
         });
     };
+}
+
+fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &NodeValue) {
+    let node = location
+        .iter()
+        .fold(node, |node, &n| node.children().nth(n).unwrap());
+
+    let data = node.data.borrow();
+    let actual = format!("{:?}", data.value);
+    let expected = format!("{:?}", expected);
+
+    compare_strs(&actual, &expected, "ast comparison");
 }
 
 #[test]
@@ -308,6 +321,27 @@ fn backticks() {
         "Some `code\\` yep.\n",
         "<p>Some <code>code\\</code> yep.</p>\n",
     );
+}
+
+#[test]
+fn backticks_num() {
+    let input = "Some `code1`. More ``` code2 ```.\n";
+
+    let arena = Arena::new();
+    let options = ComrakOptions::default();
+    let root = parse_document(&arena, input, &options);
+
+    let code1 = NodeValue::Code(NodeCode {
+        num_backticks: 1,
+        literal: b"code1".to_vec(),
+    });
+    asssert_node_eq(root, &[0, 1], &code1);
+
+    let code2 = NodeValue::Code(NodeCode {
+        num_backticks: 3,
+        literal: b"code2".to_vec(),
+    });
+    asssert_node_eq(root, &[0, 3], &code2);
 }
 
 #[test]
@@ -1065,9 +1099,9 @@ fn exercise_full_api() {
 
     let _: String = ::Anchorizer::new().anchorize("header".to_string());
 
-    let _: &::nodes::AstNode = ::parse_document(&arena, "document", &default_options);
+    let _: &AstNode = ::parse_document(&arena, "document", &default_options);
 
-    let _: &::nodes::AstNode = ::parse_document_with_broken_link_callback(
+    let _: &AstNode = ::parse_document_with_broken_link_callback(
         &arena,
         "document",
         &default_options,
@@ -1168,7 +1202,8 @@ fn exercise_full_api() {
         ::nodes::NodeValue::SoftBreak => {}
         ::nodes::NodeValue::LineBreak => {}
         ::nodes::NodeValue::Code(code) => {
-            let _: &Vec<u8> = code;
+            let _: usize = code.num_backticks;
+            let _: Vec<u8> = code.literal;
         }
         ::nodes::NodeValue::HtmlInline(html) => {
             let _: &Vec<u8> = html;
