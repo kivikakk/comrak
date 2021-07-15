@@ -313,7 +313,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Text(ref literal) => self.format_text(literal, allow_wrap, entering),
             NodeValue::LineBreak => self.format_line_break(entering),
             NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering),
-            NodeValue::Code(ref literal) => self.format_code(literal, allow_wrap, entering),
+            NodeValue::Code(ref code) => self.format_code(&code.literal, allow_wrap, entering),
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering),
             NodeValue::Strong => self.format_strong(),
             NodeValue::Emph => self.format_emph(node),

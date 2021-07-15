@@ -3,7 +3,7 @@
 extern crate comrak;
 
 use comrak::{
-    nodes::{AstNode, NodeValue},
+    nodes::{AstNode, NodeCode, NodeValue},
     parse_document, Arena, ComrakOptions,
 };
 
@@ -40,7 +40,7 @@ fn get_document_title(document: &str) -> String {
 
 fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
     match node.data.borrow().value {
-        NodeValue::Text(ref literal) | NodeValue::Code(ref literal) => {
+        NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
             output.extend_from_slice(literal)
         }
         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),

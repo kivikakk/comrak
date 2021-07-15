@@ -1,7 +1,7 @@
 use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
-use nodes::{Ast, AstNode, NodeLink, NodeValue};
+use nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
 use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
@@ -518,7 +518,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             Some(endpos) => {
                 let buf = &self.input[startpos..endpos - openticks];
                 let buf = strings::normalize_code(buf);
-                make_inline(self.arena, NodeValue::Code(buf))
+                let code = NodeCode {
+                    num_backticks: openticks,
+                    literal: buf,
+                };
+                make_inline(self.arena, NodeValue::Code(code))
             }
         }
     }
