@@ -1,13 +1,14 @@
 use ctype::isspace;
 use nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
-use parser::ComrakOptions;
+use parser::{ComrakOptions, ComrakPlugins};
 use regex::Regex;
 use scanners;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::io::{self, Write};
 use std::str;
+use strings::build_opening_tag;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -15,11 +16,21 @@ pub fn format_document<'a>(
     options: &ComrakOptions,
     output: &mut dyn Write,
 ) -> io::Result<()> {
+    format_document_with_plugins(root, &options, output, &ComrakPlugins::default())
+}
+
+/// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
+pub fn format_document_with_plugins<'a>(
+    root: &'a AstNode<'a>,
+    options: &ComrakOptions,
+    output: &mut dyn Write,
+    plugins: &ComrakPlugins,
+) -> io::Result<()> {
     let mut writer = WriteWithLast {
         output,
         last_was_lf: Cell::new(true),
     };
-    let mut f = HtmlFormatter::new(options, &mut writer);
+    let mut f = HtmlFormatter::new(options, &mut writer, plugins);
     f.format(root, false)?;
     if f.footnote_ix > 0 {
         f.output.write_all(b"</ol>\n</section>\n")?;
@@ -122,6 +133,7 @@ struct HtmlFormatter<'o> {
     anchorizer: Anchorizer,
     footnote_ix: u32,
     written_footnote_ix: u32,
+    plugins: &'o ComrakPlugins<'o>,
 }
 
 #[rustfmt::skip]
@@ -234,13 +246,14 @@ fn dangerous_url(input: &[u8]) -> bool {
 }
 
 impl<'o> HtmlFormatter<'o> {
-    fn new(options: &'o ComrakOptions, output: &'o mut WriteWithLast<'o>) -> Self {
+    fn new(options: &'o ComrakOptions, output: &'o mut WriteWithLast<'o>, plugins: &'o ComrakPlugins) -> Self {
         HtmlFormatter {
             options,
             output,
             anchorizer: Anchorizer::new(),
             footnote_ix: 0,
             written_footnote_ix: 0,
+            plugins,
         }
     }
 
@@ -468,26 +481,53 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     self.cr()?;
 
-                    if ncb.info.is_empty() {
-                        self.output.write_all(b"<pre><code>")?;
-                    } else {
-                        let mut first_tag = 0;
+                    let mut first_tag = 0;
+                    let mut pre_attributes: HashMap<String, String> = HashMap::new();
+                    let mut code_attributes: HashMap<String, String> = HashMap::new();
+                    let code_attr: String;
+
+                    if !ncb.info.is_empty() {
                         while first_tag < ncb.info.len() && !isspace(ncb.info[first_tag]) {
                             first_tag += 1;
                         }
 
                         if self.options.render.github_pre_lang {
-                            self.output.write_all(b"<pre lang=\"")?;
-                            self.escape(&ncb.info[..first_tag])?;
-                            self.output.write_all(b"\"><code>")?;
+                            pre_attributes.insert(String::from("lang"), String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap());
                         } else {
-                            self.output.write_all(b"<pre><code class=\"language-")?;
-                            self.escape(&ncb.info[..first_tag])?;
-                            self.output.write_all(b"\">")?;
+                            code_attr = format!(
+                                "language-{}",
+                                str::from_utf8(&ncb.info[..first_tag]).unwrap()
+                            );
+                            code_attributes.insert(String::from("class"), code_attr);
                         }
                     }
-                    self.escape(&ncb.literal)?;
-                    self.output.write_all(b"</code></pre>\n")?;
+
+                    match self.plugins.render.codefence_syntax_highlighter {
+                        None => {
+                            self.output.write_all(build_opening_tag("pre", &pre_attributes).as_bytes())?;
+                            self.output.write_all(build_opening_tag("code", &code_attributes).as_bytes())?;
+
+                            self.escape(&ncb.literal)?;
+
+                            self.output.write_all(b"</code></pre>\n")?
+                        },
+                        Some(highlighter) => {
+                            self.output.write_all(highlighter.build_pre_tag(&pre_attributes).as_bytes())?;
+                            self.output.write_all(highlighter.build_code_tag(&code_attributes).as_bytes())?;
+
+                            self.output.write_all(
+                                highlighter.highlight(
+                                    match str::from_utf8(&ncb.info[..first_tag]) {
+                                        Ok(lang) => Some(lang),
+                                        Err(_) => None
+                                    },
+                                    str::from_utf8(ncb.literal.as_slice()).unwrap()
+                                ).as_bytes()
+                            ) ?;
+
+                            self.output.write_all(b"</code></pre>\n")?
+                        },
+                    }
                 }
             }
             NodeValue::HtmlBlock(ref nhb) => {

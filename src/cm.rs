@@ -1,5 +1,5 @@
 use ctype::{isalpha, isdigit, ispunct, isspace};
-use nodes;
+use ::{nodes, ComrakPlugins};
 use nodes::TableAlignment;
 use nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
@@ -16,6 +16,16 @@ pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &ComrakOptions,
     output: &mut dyn Write,
+) -> io::Result<()> {
+    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
+}
+
+/// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
+pub fn format_document_with_plugins<'a>(
+    root: &'a AstNode<'a>,
+    options: &ComrakOptions,
+    output: &mut dyn Write,
+    plugins: &ComrakPlugins,
 ) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);

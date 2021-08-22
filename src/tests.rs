@@ -5,8 +5,13 @@ use propfuzz::prelude::*;
 use timebomb::timeout_ms;
 use {
     parse_document, Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
-    ComrakRenderOptions,
+    ComrakRenderOptions, ComrakPlugins,
 };
+use std::fmt::Debug;
+use adapters::SyntaxHighlighterAdapter;
+use plugins::syntect::SyntectAdapter;
+use std::collections::HashMap;
+use strings::build_opening_tag;
 
 #[propfuzz]
 fn fuzz_doesnt_crash(md: String) {
@@ -96,6 +101,27 @@ macro_rules! html_opts {
     };
 }
 
+fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
+    let arena = Arena::new();
+    let options = ComrakOptions::default();
+
+    let root = parse_document(&arena, input, &options);
+    let mut output = vec![];
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+    compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
+
+    let mut md = vec![];
+    cm::format_document(root, &options, &mut md).unwrap();
+    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let mut output_from_rt = vec![];
+    html::format_document_with_plugins(root, &options, &mut output_from_rt, &plugins).unwrap();
+    compare_strs(
+        &String::from_utf8(output_from_rt).unwrap(),
+        expected,
+        "roundtrip",
+    );
+}
+
 fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &NodeValue) {
     let node = location
         .iter()
@@ -143,6 +169,55 @@ fn codefence() {
             "</code></pre>\n"
         ),
     );
+}
+
+#[test]
+fn syntax_highlighter_plugin() {
+    pub struct MockAdapter {}
+
+    impl SyntaxHighlighterAdapter for MockAdapter {
+        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+            format!("<!--{}--><span>{}</span>", lang.unwrap(), code)
+        }
+
+        fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
+            build_opening_tag("pre", attributes)
+        }
+
+        fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
+            build_opening_tag("code", attributes)
+        }
+    }
+
+    let input = concat!("``` rust yum\n", "fn main<'a>();\n", "```\n");
+    let expected = concat!(
+        "<pre><code class=\"language-rust\"><!--rust--><span>fn main<'a>();\n</span>",
+        "</code></pre>\n"
+    );
+
+    let mut plugins = ComrakPlugins::default();
+    let adapter = MockAdapter {};
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    html_plugins(input, expected, &plugins);
+}
+
+#[test]
+fn syntect_plugin() {
+    let adapter = SyntectAdapter::new("base16-ocean.dark");
+
+    let input = concat!("```Rust\n", "fn main<'a>();\n", "```\n");
+    let expected = concat!(
+        "<pre style=\"background-color:#2b303b;\"><code class=\"language-Rust\">\n",
+        "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
+        "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>\n",
+        "</code></pre>\n"
+    );
+
+    let mut plugins = ComrakPlugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    html_plugins(input, expected, &plugins);
 }
 
 #[test]
@@ -1084,9 +1159,10 @@ fn case_insensitive_safety() {
 }
 
 #[test]
-fn exercise_full_api() {
+fn exercise_full_api<'a>() {
     let arena = ::Arena::new();
     let default_options = ::ComrakOptions::default();
+    let default_plugins = ::ComrakPlugins::default();
     let node = ::parse_document(&arena, "# My document\n", &default_options);
     let mut buffer = vec![];
 
@@ -1096,6 +1172,8 @@ fn exercise_full_api() {
     let _: std::io::Result<()> = ::format_commonmark(node, &default_options, &mut buffer);
 
     let _: std::io::Result<()> = ::format_html(node, &default_options, &mut buffer);
+
+    let _: std::io::Result<()> = ::format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
 
     let _: String = ::Anchorizer::new().anchorize("header".to_string());
 
@@ -1132,6 +1210,29 @@ fn exercise_full_api() {
             unsafe_: false,
             escape: false,
         },
+    };
+
+    pub struct MockAdaper {}
+    impl SyntaxHighlighterAdapter for MockAdaper {
+        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+            String::from(format!("{}{}", lang.unwrap(), code))
+        }
+
+        fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
+            build_opening_tag("pre", &attributes)
+        }
+
+        fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
+            build_opening_tag("code", &attributes)
+        }
+    }
+
+    let syntax_highlighter_adapter = MockAdaper {};
+
+    let _ = ::ComrakPlugins {
+        render: ::ComrakRenderPlugins {
+            codefence_syntax_highlighter: Some(&syntax_highlighter_adapter)
+        }
     };
 
     let _: String = ::markdown_to_html("# Yes", &default_options);
