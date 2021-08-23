@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter {
-
     /// Generates a syntax highlighted HTML output.
     ///
     /// lang: Name of the programming language (the info string of the codefence block after the initial "```" part).

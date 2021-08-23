@@ -2,6 +2,7 @@ mod autolink;
 mod inlines;
 mod table;
 
+use adapters::SyntaxHighlighterAdapter;
 use arena_tree::Node;
 use ctype::{isdigit, isspace};
 use entity;
@@ -15,12 +16,11 @@ use scanners;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::str;
 use strings;
 use typed_arena::Arena;
-use adapters::SyntaxHighlighterAdapter;
-use std::fmt::{Debug, Formatter};
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
@@ -442,7 +442,6 @@ pub struct ComrakRenderOptions {
 #[derive(Default, Debug)]
 /// Umbrella plugins struct.
 pub struct ComrakPlugins<'a> {
-
     /// Configure render-time plugins.
     pub render: ComrakRenderPlugins<'a>,
 }
@@ -450,7 +449,6 @@ pub struct ComrakPlugins<'a> {
 #[derive(Default)]
 /// Plugins for alternative rendering.
 pub struct ComrakRenderPlugins<'a> {
-
     /// Provide a syntax highlighter adapter implementation for syntax
     /// highlighting of codefence blocks.
     /// ```
@@ -491,7 +489,10 @@ pub struct ComrakRenderPlugins<'a> {
 impl Debug for ComrakRenderPlugins<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ComrakRenderPlugins")
-            .field("codefence_syntax_highlighter", &"impl SyntaxHighlighterAdapter")
+            .field(
+                "codefence_syntax_highlighter",
+                &"impl SyntaxHighlighterAdapter",
+            )
             .finish()
     }
 }

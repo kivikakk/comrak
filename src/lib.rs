@@ -80,6 +80,7 @@ extern crate pest_derive;
 #[cfg(test)]
 extern crate propfuzz;
 extern crate regex;
+extern crate syntect;
 #[cfg(feature = "benchmarks")]
 extern crate test;
 #[cfg(test)]
@@ -87,7 +88,6 @@ extern crate timebomb;
 extern crate twoway;
 extern crate typed_arena;
 extern crate unicode_categories;
-extern crate syntect;
 
 pub mod adapters;
 pub mod arena_tree;
@@ -106,11 +106,11 @@ mod tests;
 pub use cm::format_document as format_commonmark;
 pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
 pub use html::format_document as format_html;
-pub use html::format_document_with_plugins  as format_html_with_plugins;
+pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use html::Anchorizer;
 pub use parser::{
     parse_document, parse_document_with_broken_link_callback, ComrakExtensionOptions,
-    ComrakOptions, ComrakParseOptions, ComrakRenderOptions, ComrakPlugins, ComrakRenderPlugins,
+    ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions, ComrakRenderPlugins,
 };
 pub use typed_arena::Arena;
 
@@ -124,7 +124,11 @@ pub fn markdown_to_html(md: &str, options: &ComrakOptions) -> String {
 /// Render Markdown to HTML using plugins.
 ///
 /// See the documentation of the crate root for an example.
-pub fn markdown_to_html_with_plugins(md: &str, options: &ComrakOptions, plugins: &ComrakPlugins) -> String {
+pub fn markdown_to_html_with_plugins(
+    md: &str,
+    options: &ComrakOptions,
+    plugins: &ComrakPlugins,
+) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut s = Vec::new();

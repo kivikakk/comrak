@@ -1,5 +1,4 @@
 use ctype::{isalpha, isdigit, ispunct, isspace};
-use ::{nodes, ComrakPlugins};
 use nodes::TableAlignment;
 use nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
@@ -10,6 +9,7 @@ use scanners;
 use std;
 use std::cmp::max;
 use std::io::{self, Write};
+use {nodes, ComrakPlugins};
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(

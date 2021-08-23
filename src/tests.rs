@@ -1,17 +1,17 @@
 use crate::nodes::{AstNode, NodeCode, NodeValue};
+use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
+use plugins::syntect::SyntectAdapter;
 use propfuzz::prelude::*;
+use std::collections::HashMap;
+use std::fmt::Debug;
+use strings::build_opening_tag;
 use timebomb::timeout_ms;
 use {
     parse_document, Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
-    ComrakRenderOptions, ComrakPlugins,
+    ComrakPlugins, ComrakRenderOptions,
 };
-use std::fmt::Debug;
-use adapters::SyntaxHighlighterAdapter;
-use plugins::syntect::SyntectAdapter;
-use std::collections::HashMap;
-use strings::build_opening_tag;
 
 #[propfuzz]
 fn fuzz_doesnt_crash(md: String) {
@@ -1173,7 +1173,8 @@ fn exercise_full_api<'a>() {
 
     let _: std::io::Result<()> = ::format_html(node, &default_options, &mut buffer);
 
-    let _: std::io::Result<()> = ::format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
+    let _: std::io::Result<()> =
+        ::format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
 
     let _: String = ::Anchorizer::new().anchorize("header".to_string());
 
@@ -1231,8 +1232,8 @@ fn exercise_full_api<'a>() {
 
     let _ = ::ComrakPlugins {
         render: ::ComrakRenderPlugins {
-            codefence_syntax_highlighter: Some(&syntax_highlighter_adapter)
-        }
+            codefence_syntax_highlighter: Some(&syntax_highlighter_adapter),
+        },
     };
 
     let _: String = ::markdown_to_html("# Yes", &default_options);

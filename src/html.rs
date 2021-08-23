@@ -5,7 +5,7 @@ use regex::Regex;
 use scanners;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
 use std::str;
 use strings::build_opening_tag;
@@ -246,7 +246,11 @@ fn dangerous_url(input: &[u8]) -> bool {
 }
 
 impl<'o> HtmlFormatter<'o> {
-    fn new(options: &'o ComrakOptions, output: &'o mut WriteWithLast<'o>, plugins: &'o ComrakPlugins) -> Self {
+    fn new(
+        options: &'o ComrakOptions,
+        output: &'o mut WriteWithLast<'o>,
+        plugins: &'o ComrakPlugins,
+    ) -> Self {
         HtmlFormatter {
             options,
             output,
@@ -492,7 +496,10 @@ impl<'o> HtmlFormatter<'o> {
                         }
 
                         if self.options.render.github_pre_lang {
-                            pre_attributes.insert(String::from("lang"), String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap());
+                            pre_attributes.insert(
+                                String::from("lang"),
+                                String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap(),
+                            );
                         } else {
                             code_attr = format!(
                                 "language-{}",
@@ -504,29 +511,37 @@ impl<'o> HtmlFormatter<'o> {
 
                     match self.plugins.render.codefence_syntax_highlighter {
                         None => {
-                            self.output.write_all(build_opening_tag("pre", &pre_attributes).as_bytes())?;
-                            self.output.write_all(build_opening_tag("code", &code_attributes).as_bytes())?;
+                            self.output
+                                .write_all(build_opening_tag("pre", &pre_attributes).as_bytes())?;
+                            self.output.write_all(
+                                build_opening_tag("code", &code_attributes).as_bytes(),
+                            )?;
 
                             self.escape(&ncb.literal)?;
 
                             self.output.write_all(b"</code></pre>\n")?
-                        },
+                        }
                         Some(highlighter) => {
-                            self.output.write_all(highlighter.build_pre_tag(&pre_attributes).as_bytes())?;
-                            self.output.write_all(highlighter.build_code_tag(&code_attributes).as_bytes())?;
+                            self.output
+                                .write_all(highlighter.build_pre_tag(&pre_attributes).as_bytes())?;
+                            self.output.write_all(
+                                highlighter.build_code_tag(&code_attributes).as_bytes(),
+                            )?;
 
                             self.output.write_all(
-                                highlighter.highlight(
-                                    match str::from_utf8(&ncb.info[..first_tag]) {
-                                        Ok(lang) => Some(lang),
-                                        Err(_) => None
-                                    },
-                                    str::from_utf8(ncb.literal.as_slice()).unwrap()
-                                ).as_bytes()
-                            ) ?;
+                                highlighter
+                                    .highlight(
+                                        match str::from_utf8(&ncb.info[..first_tag]) {
+                                            Ok(lang) => Some(lang),
+                                            Err(_) => None,
+                                        },
+                                        str::from_utf8(ncb.literal.as_slice()).unwrap(),
+                                    )
+                                    .as_bytes(),
+                            )?;
 
                             self.output.write_all(b"</code></pre>\n")?
-                        },
+                        }
                     }
                 }
             }

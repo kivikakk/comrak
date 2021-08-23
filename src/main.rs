@@ -9,8 +9,13 @@ extern crate shell_words;
 #[cfg(not(windows))]
 extern crate xdg;
 
-use comrak::{Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakRenderOptions, ComrakPlugins};
+use comrak::{
+    Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
+    ComrakRenderOptions,
+};
 
+use comrak::adapters::SyntaxHighlighterAdapter;
+use comrak::plugins::syntect::SyntectAdapter;
 use std::boxed::Box;
 use std::collections::BTreeSet;
 use std::env;
@@ -18,8 +23,6 @@ use std::error::Error;
 use std::fs;
 use std::io::Read;
 use std::process;
-use comrak::plugins::syntect::SyntectAdapter;
-use comrak::adapters::SyntaxHighlighterAdapter;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_UNKNOWN_EXTENSION: i32 = 1;
@@ -269,13 +272,18 @@ if the file does not exist.\
         Some("html") => {
             plugins.render.codefence_syntax_highlighter = syntax_highlighter;
             comrak::format_html_with_plugins
-        },
+        }
         Some("commonmark") => comrak::format_commonmark_with_plugins,
         _ => panic!("unknown format"),
     };
 
     if let Some(output_filename) = matches.value_of("output") {
-        formatter(root, &options, &mut fs::File::create(output_filename)?, &plugins)?;
+        formatter(
+            root,
+            &options,
+            &mut fs::File::create(output_filename)?,
+            &plugins,
+        )?;
     } else {
         formatter(root, &options, &mut std::io::stdout(), &plugins)?;
     };

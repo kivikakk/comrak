@@ -1,12 +1,12 @@
 //! Adapter for the Syntect syntax highlighter plugin.
 
 use adapters::SyntaxHighlighterAdapter;
-use syntect::html::highlighted_html_for_string;
-use syntect::parsing::SyntaxSet;
-use syntect::highlighting::ThemeSet;
+use regex::Regex;
 use std::collections::HashMap;
 use strings::{build_opening_tag, extract_attributes_from_tag};
-use regex::Regex;
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 
 #[derive(Debug, Copy, Clone)]
 /// Syntect syntax highlighter plugin.
@@ -14,13 +14,10 @@ pub struct SyntectAdapter<'a> {
     theme: &'a str,
 }
 
-impl <'a>SyntectAdapter<'a> {
-
+impl<'a> SyntectAdapter<'a> {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
     pub fn new(theme: &'a str) -> Self {
-        SyntectAdapter {
-            theme: &theme,
-        }
+        SyntectAdapter { theme: &theme }
     }
 
     fn gen_empty_block(&self) -> String {
@@ -34,7 +31,9 @@ impl <'a>SyntectAdapter<'a> {
     fn remove_pre_tag(&self, highlighted_code: String) -> String {
         let re: Regex = Regex::new("<pre[\\s]+.*?>").unwrap();
 
-        re.replace_all(highlighted_code.as_str(), "").to_string().replace("</pre>", "")
+        re.replace_all(highlighted_code.as_str(), "")
+            .to_string()
+            .replace("</pre>", "")
     }
 }
 
@@ -64,14 +63,16 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
 
         let ts = ThemeSet::load_defaults();
 
-        self.remove_pre_tag(
-        highlighted_html_for_string(code, &ss, syntax, &ts.themes[self.theme])
-        )
+        self.remove_pre_tag(highlighted_html_for_string(
+            code,
+            &ss,
+            syntax,
+            &ts.themes[self.theme],
+        ))
     }
 
     fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-        let mut syntect_attributes =
-            extract_attributes_from_tag(self.gen_empty_block().as_str());
+        let mut syntect_attributes = extract_attributes_from_tag(self.gen_empty_block().as_str());
 
         for (attr, val) in attributes {
             syntect_attributes.insert(attr.clone(), val.clone());

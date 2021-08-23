@@ -1,10 +1,10 @@
 use ctype::{ispunct, isspace};
 use entity;
 use parser::AutolinkType;
+use regex::Regex;
+use std::collections::HashMap;
 use std::ptr;
 use std::str;
-use std::collections::HashMap;
-use regex::Regex;
 
 pub fn unescape(v: &mut Vec<u8>) {
     let mut r = 0;
