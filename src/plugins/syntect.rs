@@ -74,8 +74,18 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
     fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
         let mut syntect_attributes = extract_attributes_from_tag(self.gen_empty_block().as_str());
 
-        for (attr, val) in attributes {
-            syntect_attributes.insert(attr.clone(), val.clone());
+        for (comrak_attr, val) in attributes {
+            let mut combined_attr: String = val.clone();
+
+            if syntect_attributes.contains_key(comrak_attr.as_str()) {
+                combined_attr = format!(
+                    "{} {}",
+                    syntect_attributes.remove(comrak_attr).unwrap(),
+                    val
+                );
+            }
+
+            syntect_attributes.insert(comrak_attr.clone(), combined_attr);
         }
 
         build_opening_tag("pre", &syntect_attributes)
