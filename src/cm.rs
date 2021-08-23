@@ -25,7 +25,7 @@ pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
     options: &ComrakOptions,
     output: &mut dyn Write,
-    plugins: &ComrakPlugins,
+    _plugins: &ComrakPlugins,
 ) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);

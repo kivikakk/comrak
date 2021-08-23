@@ -1,8 +1,6 @@
-/*!
-Adapter traits for plugins.
-
-Each plugin has to implement one of the traits available in this module.
-*/
+//! Adapter traits for plugins.
+//!
+//! Each plugin has to implement one of the traits available in this module.
 
 use std::collections::HashMap;
 
