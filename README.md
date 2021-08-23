@@ -165,6 +165,24 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
 
+## Plugins
+
+### Codefence syntax highlighter
+
+At the moment syntax highlighting of codefence blocks is the only feature that can be enhanced with plugins.
+
+Create an implementation of the `SyntaxHighlighterAdapter` trait, and then provide an instance of such adapter to 
+`ComrakPlugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the 
+`markdown_to_html_with_plugins` function, which accepts your plugin as a parameter.
+
+See the `syntax_highlighter.rs` and `syntect.rs` examples for more details.
+
+#### Syntect
+
+[`syntect`](https://github.com/trishume/syntect) is a syntax highlighting library for Rust. By default, `comrak` offers 
+a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it as your 
+`ComrakPlugins` option.
+
 ## Related projects
 
 Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible
