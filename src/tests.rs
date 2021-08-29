@@ -2,6 +2,7 @@ use crate::nodes::{AstNode, NodeCode, NodeValue};
 use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
+#[cfg(feature = "syntect")]
 use plugins::syntect::SyntectAdapter;
 use propfuzz::prelude::*;
 use std::collections::HashMap;
@@ -203,6 +204,7 @@ fn syntax_highlighter_plugin() {
 }
 
 #[test]
+#[cfg(feature = "syntect")]
 fn syntect_plugin() {
     let adapter = SyntectAdapter::new("base16-ocean.dark");
 

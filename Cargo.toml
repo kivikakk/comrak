@@ -17,7 +17,7 @@ lto = true
 
 [[bin]]
 name = "comrak"
-required-features = ["clap"]
+required-features = ["clap", "syntect"]
 doc = false
 
 [dependencies]
@@ -31,14 +31,14 @@ twoway = "0.2"
 pest = "2"
 pest_derive = "2"
 shell-words = "1.0"
-syntect = "4.6"
+syntect = { version = "4.6", optional = true }
 
 [dev-dependencies]
 timebomb = "0.1.2"
 propfuzz = "0.0.1"
 
 [features]
-default = ["clap"]
+default = ["clap", "syntect"]
 
 [target.'cfg(not(windows))'.dependencies]
 xdg = "^2.1"

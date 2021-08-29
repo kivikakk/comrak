@@ -1,7 +1,6 @@
 use ctype::{ispunct, isspace};
 use entity;
 use parser::AutolinkType;
-use regex::Regex;
 use std::collections::HashMap;
 use std::ptr;
 use std::str;
@@ -263,8 +262,9 @@ pub fn build_opening_tag(tag: &str, attributes: &HashMap<String, String>) -> Str
     tag_parts.join("")
 }
 
+#[cfg(feature = "syntect")]
 pub fn extract_attributes_from_tag(html_tag: &str) -> HashMap<String, String> {
-    let re = Regex::new("([a-zA-Z_:][-a-zA-Z0-9_:.]+)=([\"'])(.*?)([\"'])").unwrap();
+    let re = regex::Regex::new("([a-zA-Z_:][-a-zA-Z0-9_:.]+)=([\"'])(.*?)([\"'])").unwrap();
 
     let mut attributes: HashMap<String, String> = HashMap::new();
 
