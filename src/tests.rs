@@ -1213,8 +1213,8 @@ fn exercise_full_api<'a>() {
         },
     };
 
-    pub struct MockAdaper {}
-    impl SyntaxHighlighterAdapter for MockAdaper {
+    pub struct MockAdapter {}
+    impl SyntaxHighlighterAdapter for MockAdapter {
         fn highlight(&self, lang: Option<&str>, code: &str) -> String {
             String::from(format!("{}{}", lang.unwrap(), code))
         }
@@ -1228,7 +1228,7 @@ fn exercise_full_api<'a>() {
         }
     }
 
-    let syntax_highlighter_adapter = MockAdaper {};
+    let syntax_highlighter_adapter = MockAdapter {};
 
     let _ = ::ComrakPlugins {
         render: ::ComrakRenderPlugins {

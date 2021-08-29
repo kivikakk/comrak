@@ -462,8 +462,8 @@ pub struct ComrakRenderPlugins<'a> {
     /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
     ///            "<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n</code></pre>\n");
     ///
-    /// pub struct MockAdaper {}
-    /// impl SyntaxHighlighterAdapter for MockAdaper {
+    /// pub struct MockAdapter {}
+    /// impl SyntaxHighlighterAdapter for MockAdapter {
     ///     fn highlight(&self, lang: Option<&str>, code: &str) -> String {
     ///         String::from(format!("<span class=\"lang-{}\">{}</span>", lang.unwrap(), code))
     ///     }
@@ -477,7 +477,7 @@ pub struct ComrakRenderPlugins<'a> {
     ///     }
     /// }
     ///
-    /// let adapter = MockAdaper {};
+    /// let adapter = MockAdapter {};
     /// plugins.render.codefence_syntax_highlighter = Some(&adapter);
     ///
     /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
