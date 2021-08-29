@@ -1,5 +1,4 @@
 * [ ] `rustup update stable`
-* [ ] ensure `cargo +stable build --locked --release --all-features` works
 * [ ] bump version in Cargo.toml
   * [ ] did `tests::exercise_full_api` change? if so, it's a semver-breaking change.
 * [ ] update changelog

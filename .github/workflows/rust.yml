@@ -38,6 +38,16 @@ jobs:
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test with no features
       run: cargo test --no-default-features --tests
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Obtain Rust
+      run: rustup override set stable
+    - name: Build and test with no features
+      run: cargo +stable build --locked --release --all-features
   clippy_format:
     runs-on: ubuntu-latest
     strategy:
