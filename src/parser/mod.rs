@@ -2,6 +2,7 @@ mod autolink;
 mod inlines;
 mod table;
 
+use adapters::SyntaxHighlighterAdapter;
 use arena_tree::Node;
 use ctype::{isdigit, isspace};
 use entity;
@@ -15,6 +16,7 @@ use scanners;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::str;
 use strings;
@@ -435,6 +437,64 @@ pub struct ComrakRenderOptions {
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```
     pub escape: bool,
+}
+
+#[derive(Default, Debug)]
+/// Umbrella plugins struct.
+pub struct ComrakPlugins<'a> {
+    /// Configure render-time plugins.
+    pub render: ComrakRenderPlugins<'a>,
+}
+
+#[derive(Default)]
+/// Plugins for alternative rendering.
+pub struct ComrakRenderPlugins<'a> {
+    /// Provide a syntax highlighter adapter implementation for syntax
+    /// highlighting of codefence blocks.
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions, ComrakPlugins, markdown_to_html_with_plugins};
+    /// # use comrak::adapters::SyntaxHighlighterAdapter;
+    /// use std::collections::HashMap;
+    /// let options = ComrakOptions::default();
+    /// let mut plugins = ComrakPlugins::default();
+    /// let input = "```rust\nfn main<'a>();\n```";
+    ///
+    /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
+    ///            "<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n</code></pre>\n");
+    ///
+    /// pub struct MockAdapter {}
+    /// impl SyntaxHighlighterAdapter for MockAdapter {
+    ///     fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+    ///         String::from(format!("<span class=\"lang-{}\">{}</span>", lang.unwrap(), code))
+    ///     }
+    ///
+    /// fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
+    ///         String::from("<pre lang=\"rust\">")
+    ///     }
+    ///
+    /// fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
+    ///         String::from("<code class=\"language-rust\">")
+    ///     }
+    /// }
+    ///
+    /// let adapter = MockAdapter {};
+    /// plugins.render.codefence_syntax_highlighter = Some(&adapter);
+    ///
+    /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
+    ///            "<pre lang=\"rust\"><code class=\"language-rust\"><span class=\"lang-rust\">fn main<'a>();\n</span></code></pre>\n");
+    /// ```
+    pub codefence_syntax_highlighter: Option<&'a dyn SyntaxHighlighterAdapter>,
+}
+
+impl Debug for ComrakRenderPlugins<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComrakRenderPlugins")
+            .field(
+                "codefence_syntax_highlighter",
+                &"impl SyntaxHighlighterAdapter",
+            )
+            .finish()
+    }
 }
 
 #[derive(Clone)]
