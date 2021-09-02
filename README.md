@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.11.0
+comrak 0.12.0
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -73,6 +73,8 @@ OPTIONS:
         --front-matter-delimiter <DELIMITER>    Ignore front-matter that starts and ends with the given string
         --header-ids <PREFIX>                   Use the Comrak header IDs extension, with the given ID prefix
     -o, --output <FILE>                         Write output to FILE instead of stdout
+        --syntax-highlighting <THEME>           Syntax highlighting for codefence blocks. Choose a theme or 'none' for
+                                                disabling. [default: base16-ocean.dark]
         --width <WIDTH>                         Specify wrap width (0 = nowrap) [default: 0]
 
 ARGS:
@@ -171,16 +173,16 @@ By default none are enabled; they are individually enabled with each parse by se
 
 At the moment syntax highlighting of codefence blocks is the only feature that can be enhanced with plugins.
 
-Create an implementation of the `SyntaxHighlighterAdapter` trait, and then provide an instance of such adapter to 
-`ComrakPlugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the 
+Create an implementation of the `SyntaxHighlighterAdapter` trait, and then provide an instance of such adapter to
+`ComrakPlugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the
 `markdown_to_html_with_plugins` function, which accepts your plugin as a parameter.
 
 See the `syntax_highlighter.rs` and `syntect.rs` examples for more details.
 
 #### Syntect
 
-[`syntect`](https://github.com/trishume/syntect) is a syntax highlighting library for Rust. By default, `comrak` offers 
-a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it as your 
+[`syntect`](https://github.com/trishume/syntect) is a syntax highlighting library for Rust. By default, `comrak` offers
+a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it as your
 `ComrakPlugins` option.
 
 ## Related projects
