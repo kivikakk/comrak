@@ -10,6 +10,7 @@
   * [ ] `script/release-ishtar`
   * [ ] `script/release-debian`
   * [ ] `script/release-talia`
+* [ ] `script/assemble-releases`
 * [ ] `cargo publish`
 * [ ] push tag
 * [ ] edit release to include changelog
