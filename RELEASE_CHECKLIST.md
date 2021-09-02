@@ -6,7 +6,7 @@
 * [ ] commit, tag, push commit, but do not push tag yet
 * build binaries:
   * [ ] `script/release-tapioca`
-  * [ ] `script/release-raven.ps1`
+  * [ ] `script\release-raven.ps1` ("Windows PowerShell" works, make sure to run with comrak root as cwd)
   * [ ] `script/release-ishtar`
   * [ ] `script/release-debian`
   * [ ] `script/release-talia`
