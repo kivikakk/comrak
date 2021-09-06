@@ -198,8 +198,7 @@ depending on your use-case. Here are some other projects to consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
-  want). Recent `cargo doc` uses this, as do many other projects in the ecosystem. It's not quite at 100% spec
-  compatibility yet.
+  want). `cargo doc` uses this, as do many other projects in the ecosystem.
 - [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
   `libcmark`. It hasn't been updated in a while, though there's an [open pull
   request](https://github.com/bnavetta/rcmark/pull/2).
