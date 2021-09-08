@@ -60,16 +60,14 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
             }
         };
 
-        let syntax = match self.syntax_set.find_syntax_by_name(lang) {
-            None => match self.syntax_set.find_syntax_by_first_line(code) {
-                Some(s) => s,
-                None => self
-                    .syntax_set
-                    .find_syntax_by_name(fallback_syntax)
-                    .unwrap(),
-            },
-            Some(s) => s,
-        };
+        let syntax = self
+            .syntax_set
+            .find_syntax_by_token(lang)
+            .unwrap_or_else(|| {
+                self.syntax_set
+                    .find_syntax_by_first_line(code)
+                    .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text())
+            });
 
         self.remove_pre_tag(highlighted_html_for_string(
             code,
