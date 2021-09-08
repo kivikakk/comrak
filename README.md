@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.12.0
+comrak 0.12.1
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 

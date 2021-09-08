@@ -1,3 +1,8 @@
+### 0.12.1
+
+* Only load syntax and theme sets once, on Syntect plugin instantiation. (#197)
+* Match syntax highlighting language names more loosely. (#198)
+
 ### 0.12.0
 
 * Add pluggable syntax highlighting, and default implementation with syntect.
