@@ -208,9 +208,9 @@ fn syntax_highlighter_plugin() {
 fn syntect_plugin() {
     let adapter = SyntectAdapter::new("base16-ocean.dark");
 
-    let input = concat!("```Rust\n", "fn main<'a>();\n", "```\n");
+    let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
     let expected = concat!(
-        "<pre style=\"background-color:#2b303b;\"><code class=\"language-Rust\">\n",
+        "<pre style=\"background-color:#2b303b;\"><code class=\"language-rust\">\n",
         "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
         "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>\n",
         "</code></pre>\n"
