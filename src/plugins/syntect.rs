@@ -8,24 +8,32 @@ use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 /// Syntect syntax highlighter plugin.
 pub struct SyntectAdapter<'a> {
     theme: &'a str,
+    syntax_set: SyntaxSet,
+    theme_set: ThemeSet,
 }
 
 impl<'a> SyntectAdapter<'a> {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
     pub fn new(theme: &'a str) -> Self {
-        SyntectAdapter { theme: &theme }
+        SyntectAdapter {
+            theme: &theme,
+            syntax_set: SyntaxSet::load_defaults_newlines(),
+            theme_set: ThemeSet::load_defaults(),
+        }
     }
 
     fn gen_empty_block(&self) -> String {
-        let ss = SyntaxSet::load_defaults_newlines();
-        let syntax = ss.find_syntax_by_name("Plain Text").unwrap();
-        let ts = ThemeSet::load_defaults();
-
-        highlighted_html_for_string("", &ss, syntax, &ts.themes[self.theme])
+        let syntax = self.syntax_set.find_syntax_by_name("Plain Text").unwrap();
+        highlighted_html_for_string(
+            "",
+            &self.syntax_set,
+            syntax,
+            &self.theme_set.themes[self.theme],
+        )
     }
 
     fn remove_pre_tag(&self, highlighted_code: String) -> String {
@@ -39,7 +47,6 @@ impl<'a> SyntectAdapter<'a> {
 
 impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
     fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-        let ss = SyntaxSet::load_defaults_newlines();
         let fallback_syntax = "Plain Text";
 
         let lang: &str = match lang {
@@ -53,21 +60,22 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
             }
         };
 
-        let syntax = match ss.find_syntax_by_name(lang) {
-            None => match ss.find_syntax_by_first_line(code) {
+        let syntax = match self.syntax_set.find_syntax_by_name(lang) {
+            None => match self.syntax_set.find_syntax_by_first_line(code) {
                 Some(s) => s,
-                None => ss.find_syntax_by_name(fallback_syntax).unwrap(),
+                None => self
+                    .syntax_set
+                    .find_syntax_by_name(fallback_syntax)
+                    .unwrap(),
             },
             Some(s) => s,
         };
 
-        let ts = ThemeSet::load_defaults();
-
         self.remove_pre_tag(highlighted_html_for_string(
             code,
-            &ss,
+            &self.syntax_set,
             syntax,
-            &ts.themes[self.theme],
+            &self.theme_set.themes[self.theme],
         ))
     }
 
