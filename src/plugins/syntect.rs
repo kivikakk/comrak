@@ -8,11 +8,12 @@ use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 /// Syntect syntax highlighter plugin.
 pub struct SyntectAdapter<'a> {
     theme: &'a str,
     syntax_set: SyntaxSet,
+    theme_set: ThemeSet,
 }
 
 impl<'a> SyntectAdapter<'a> {
@@ -21,14 +22,13 @@ impl<'a> SyntectAdapter<'a> {
         SyntectAdapter {
             theme: &theme,
             syntax_set: SyntaxSet::load_defaults_newlines(),
+            theme_set: ThemeSet::load_defaults(),
         }
     }
 
     fn gen_empty_block(&self) -> String {
         let syntax = self.syntax_set.find_syntax_by_name("Plain Text").unwrap();
-        let ts = ThemeSet::load_defaults();
-
-        highlighted_html_for_string("", &self.syntax_set, syntax, &ts.themes[self.theme])
+        highlighted_html_for_string("", &self.syntax_set, syntax, &self.theme_set.themes[self.theme])
     }
 
     fn remove_pre_tag(&self, highlighted_code: String) -> String {
@@ -63,13 +63,11 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
             Some(s) => s,
         };
 
-        let ts = ThemeSet::load_defaults();
-
         self.remove_pre_tag(highlighted_html_for_string(
             code,
             &self.syntax_set,
             syntax,
-            &ts.themes[self.theme],
+            &self.theme_set.themes[self.theme],
         ))
     }
 
