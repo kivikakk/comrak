@@ -31,7 +31,7 @@ twoway = "0.2"
 pest = "2"
 pest_derive = "2"
 shell-words = "1.0"
-syntect = { version = "4.6", optional = true }
+syntect = { version = "4.6", optional = true, default-features = false, features = ["assets", "dump-load", "html", "regex-onig"] }
 
 [dev-dependencies]
 timebomb = "0.1.2"
