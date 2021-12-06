@@ -163,6 +163,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Header IDs
 - Footnotes
 - Description lists
+- Front matter
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
