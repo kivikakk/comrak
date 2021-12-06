@@ -4,6 +4,7 @@ extern crate comrak;
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{format_commonmark, parse_document, Arena, ComrakOptions};
 
+const DEPENDENCIES: &str = "[dependencies]\ncomrak = ";
 const HELP: &str = "$ comrak --help\n";
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
@@ -23,10 +24,21 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     }
 
     iter_nodes(doc, &|node| {
-        // Look for a code block whose contents starts with the HELP string.
-        // Replace its contents with the same string and the actual command output.
         if let NodeValue::CodeBlock(ref mut ncb) = node.data.borrow_mut().value {
-            if ncb.literal.starts_with(&HELP.as_bytes()) {
+            // Look for the Cargo.toml example block.
+            if ncb.info == "toml".as_bytes() && ncb.literal.starts_with(&DEPENDENCIES.as_bytes()) {
+                let mut content = DEPENDENCIES.as_bytes().to_vec();
+                let mut version_parts = comrak::version().split('.').collect::<Vec<&str>>();
+                version_parts.pop();
+                content.extend("\"".bytes());
+                content.extend(version_parts.join(".").bytes());
+                content.extend("\"".bytes());
+                ncb.literal = content;
+            }
+
+            // Look for a console code block whose contents starts with the HELP string.
+            // Replace its contents with the same string and the actual command output.
+            if ncb.info == "console".as_bytes() && ncb.literal.starts_with(&HELP.as_bytes()) {
                 let mut content = HELP.as_bytes().to_vec();
                 let mut cmd = std::process::Command::new("cargo");
                 content.extend(cmd.args(&["run", "--", "--help"]).output().unwrap().stdout);

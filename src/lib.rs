@@ -136,3 +136,8 @@ pub fn markdown_to_html_with_plugins(
     format_html_with_plugins(root, options, &mut s, plugins).unwrap();
     String::from_utf8(s).unwrap()
 }
+
+/// Return the version of the crate.
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
