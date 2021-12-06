@@ -7,6 +7,7 @@ if command -v apt-get &>/dev/null; then
 fi
 
 cargo build --verbose
+cargo build --verbose --examples
 
 if [ x"$SPEC" = "xtrue" ]; then
 	cd vendor/cmark-gfm/test
