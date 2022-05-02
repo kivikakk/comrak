@@ -404,6 +404,11 @@ fn backticks() {
 }
 
 #[test]
+fn backticks_empty_with_newline_should_be_space() {
+    html("`\n`", "<p><code> </code></p>\n");
+}
+
+#[test]
 fn backticks_num() {
     let input = "Some `code1`. More ``` code2 ```.\n";
 

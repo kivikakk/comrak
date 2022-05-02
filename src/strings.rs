@@ -65,7 +65,7 @@ pub fn normalize_code(v: &[u8]) -> Vec<u8> {
             }
             c => r.push(c),
         }
-        if v[i] != b' ' {
+        if v[i] != b' ' && v[i] != b'\r' && v[i] != b'\n' {
             contains_nonspace = true;
         }
 
@@ -273,4 +273,19 @@ pub fn extract_attributes_from_tag(html_tag: &str) -> HashMap<String, String> {
     }
 
     attributes
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::normalize_code;
+
+    #[test]
+    pub fn normalize_code_handles_lone_newline() {
+        assert_eq!(normalize_code(&[b'\n']), vec![b' ']);
+    }
+
+    #[test]
+    pub fn normalize_code_handles_lone_space() {
+        assert_eq!(normalize_code(&[b' ']), vec![b' ']);
+    }
 }
