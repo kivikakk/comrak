@@ -549,13 +549,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 write!(self, "`").unwrap();
             }
 
-            let all_space = literal.iter().all(|&c| c==b' ' || c==b'\r' || c==b'\n');
+            let all_space = literal
+                .iter()
+                .all(|&c| c == b' ' || c == b'\r' || c == b'\n');
             let has_edge_space = literal[0] == b' ' || literal[literal.len() - 1] == b' ';
-            let has_edge_backtick =  literal[0] == b'`' || literal[literal.len() - 1] == b'`';
+            let has_edge_backtick = literal[0] == b'`' || literal[literal.len() - 1] == b'`';
 
-            let pad = literal.is_empty()
-                || has_edge_backtick
-                || (!all_space && has_edge_space);
+            let pad = literal.is_empty() || has_edge_backtick || (!all_space && has_edge_space);
             if pad {
                 write!(self, " ").unwrap();
             }
