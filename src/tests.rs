@@ -45,6 +45,7 @@ fn fuzz_doesnt_crash(md: String) {
     parse_document(&Arena::new(), &md, &options);
 }
 
+#[track_caller]
 fn compare_strs(output: &str, expected: &str, kind: &str) {
     if output != expected {
         println!("Running {} test", kind);
@@ -62,10 +63,12 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
     assert_eq!(output, expected);
 }
 
+#[track_caller]
 fn html(input: &str, expected: &str) {
     html_opts(input, expected, |_| ());
 }
 
+#[track_caller]
 fn html_opts<F>(input: &str, expected: &str, opts: F)
 where
     F: Fn(&mut ComrakOptions),
