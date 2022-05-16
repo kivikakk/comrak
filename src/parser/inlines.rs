@@ -148,6 +148,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     strings::rtrim(&mut contents);
                 }
 
+                // if we've just produced a LineBreak, then we should consume any leading
+                // space on this line
+                if node.last_child().map_or(false, |n| {
+                    matches!(n.data.borrow().value, NodeValue::LineBreak)
+                }) {
+                    strings::ltrim(&mut contents);
+                }
+
                 Some(make_inline(self.arena, NodeValue::Text(contents)))
             }
         };
