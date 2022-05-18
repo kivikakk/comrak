@@ -192,8 +192,11 @@ pub struct NodeList {
     /// The kind of list (bullet (unordered) or ordered).
     pub list_type: ListType,
 
-    pub(crate) marker_offset: usize,
-    pub(crate) padding: usize,
+    /// Number of spaces before the list marker.
+    pub marker_offset: usize,
+
+    /// Number of characters between the start of the list marker and the item text (including the list marker(s)).
+    pub padding: usize,
 
     /// For ordered lists, the ordinal the list starts at.
     pub start: usize,
@@ -212,8 +215,11 @@ pub struct NodeList {
 /// The metadata of a description list
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NodeDescriptionItem {
-    pub(crate) marker_offset: usize,
-    pub(crate) padding: usize,
+    /// Number of spaces before the list marker.
+    pub marker_offset: usize,
+
+    /// Number of characters between the start of the list marker and the item text (including the list marker(s)).
+    pub padding: usize,
 }
 
 /// The type of list.
@@ -260,7 +266,8 @@ pub struct NodeCodeBlock {
     /// For fenced code blocks, the length of the fence.
     pub fence_length: usize,
 
-    pub(crate) fence_offset: usize,
+    /// For fenced code blocks, the indentation level of the code within the block.
+    pub fence_offset: usize,
 
     /// For fenced code blocks, the [info string](https://github.github.com/gfm/#info-string) after
     /// the opening fence, if any.
@@ -285,7 +292,8 @@ pub struct NodeHeading {
 /// The metadata of an included HTML block.
 #[derive(Debug, Default, Clone)]
 pub struct NodeHtmlBlock {
-    pub(crate) block_type: u8,
+    /// The HTML block's type
+    pub block_type: u8,
 
     /// The literal contents of the HTML block.  Per NodeCodeBlock, the content is included here
     /// rather than in any inline.
@@ -408,7 +416,8 @@ pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
     node.last_child().map_or(false, |n| n.data.borrow().open)
 }
 
-pub(crate) fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
+/// Returns true if the given node can contain a node with the given value.
+pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
     match *child {
         NodeValue::Document => {
             return false;
