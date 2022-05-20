@@ -523,7 +523,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_line_break(&mut self, entering: bool) {
         if entering {
             if !self.options.render.hardbreaks {
-                write!(self, "  ").unwrap();
+                write!(self, "\\").unwrap();
             }
             self.cr();
         }

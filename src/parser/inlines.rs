@@ -102,61 +102,63 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     pub fn parse_inline(&mut self, node: &'a AstNode<'a>) -> bool {
-        let new_inl: Option<&'a AstNode<'a>>;
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
         };
-
-        match c {
+        let new_inl: Option<&'a AstNode<'a>> = match c {
             '\0' => return false,
-            '\r' | '\n' => new_inl = Some(self.handle_newline()),
-            '`' => new_inl = Some(self.handle_backticks()),
-            '\\' => new_inl = Some(self.handle_backslash()),
-            '&' => new_inl = Some(self.handle_entity()),
-            '<' => new_inl = Some(self.handle_pointy_brace()),
-            '*' | '_' | '\'' | '"' => new_inl = Some(self.handle_delim(c as u8)),
-            '-' => new_inl = Some(self.handle_hyphen()),
-            '.' => new_inl = Some(self.handle_period()),
+            '\r' | '\n' => Some(self.handle_newline()),
+            '`' => Some(self.handle_backticks()),
+            '\\' => Some(self.handle_backslash()),
+            '&' => Some(self.handle_entity()),
+            '<' => Some(self.handle_pointy_brace()),
+            '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
+            '-' => Some(self.handle_hyphen()),
+            '.' => Some(self.handle_period()),
             '[' => {
                 self.pos += 1;
                 let inl = make_inline(self.arena, NodeValue::Text(b"[".to_vec()));
-                new_inl = Some(inl);
                 self.push_bracket(false, inl);
+                Some(inl)
             }
-            ']' => new_inl = self.handle_close_bracket(),
+            ']' => self.handle_close_bracket(),
             '!' => {
                 self.pos += 1;
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
                     let inl = make_inline(self.arena, NodeValue::Text(b"![".to_vec()));
-                    new_inl = Some(inl);
                     self.push_bracket(true, inl);
+                    Some(inl)
                 } else {
-                    new_inl = Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())));
+                    Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())))
                 }
             }
+            '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
+            '^' if self.options.extension.superscript => Some(self.handle_delim(b'^')),
             _ => {
-                if self.options.extension.strikethrough && c == '~' {
-                    new_inl = Some(self.handle_delim(b'~'));
-                } else if self.options.extension.superscript && c == '^' {
-                    new_inl = Some(self.handle_delim(b'^'));
-                } else {
-                    let endpos = self.find_special_char();
-                    let mut contents = self.input[self.pos..endpos].to_vec();
-                    self.pos = endpos;
+                let endpos = self.find_special_char();
+                let mut contents = self.input[self.pos..endpos].to_vec();
+                self.pos = endpos;
 
-                    if self
-                        .peek_char()
-                        .map_or(false, |&c| strings::is_line_end_char(c))
-                    {
-                        strings::rtrim(&mut contents);
-                    }
-
-                    new_inl = Some(make_inline(self.arena, NodeValue::Text(contents)));
+                if self
+                    .peek_char()
+                    .map_or(false, |&c| strings::is_line_end_char(c))
+                {
+                    strings::rtrim(&mut contents);
                 }
+
+                // if we've just produced a LineBreak, then we should consume any leading
+                // space on this line
+                if node.last_child().map_or(false, |n| {
+                    matches!(n.data.borrow().value, NodeValue::LineBreak)
+                }) {
+                    strings::ltrim(&mut contents);
+                }
+
+                Some(make_inline(self.arena, NodeValue::Text(contents)))
             }
-        }
+        };
 
         if let Some(inl) = new_inl {
             node.append(inl);

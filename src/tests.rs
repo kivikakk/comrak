@@ -409,6 +409,19 @@ fn backticks_empty_with_newline_should_be_space() {
 }
 
 #[test]
+fn blockquote_hard_linebreak_space() {
+    html(">\\\n A", "<blockquote>\n<p><br />\nA</p>\n</blockquote>\n");
+}
+
+#[test]
+fn blockquote_hard_linebreak_nonlazy_space() {
+    html(
+        "> A\\\n> B",
+        "<blockquote>\n<p>A<br />\nB</p>\n</blockquote>\n",
+    );
+}
+
+#[test]
 fn backticks_num() {
     let input = "Some `code1`. More ``` code2 ```.\n";
 
