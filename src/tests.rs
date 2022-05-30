@@ -554,6 +554,14 @@ fn reference_links() {
 }
 
 #[test]
+fn no_control_characters_in_reference_links() {
+    html(
+        "[A]:\u{1b}\n\nX [A] Y\n",
+        "<p>[A]:\u{1b}</p>\n<p>X [A] Y</p>\n",
+    )
+}
+
+#[test]
 fn link_entity_regression() {
     html(
         "[link](&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29)",

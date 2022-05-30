@@ -1152,7 +1152,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
             }
             nb_p -= 1;
             i += 1;
-        } else if isspace(input[i]) {
+        } else if isspace(input[i]) || input[i].is_ascii_control() {
             if i == 0 {
                 return None;
             }
