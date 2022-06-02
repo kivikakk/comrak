@@ -2,7 +2,7 @@
   In many of these cases the AST will be scanned and then it
   is found there is no match. In many of these cases the scan
   turns up False. It can be see that in the very simplest cases,
-  usually by doing a char check at the very begginning of the
+  usually by doing a char check at the very beginning of the
   line, we can eliminate these checks without the same allocations
   that are done otherwise and cause the program considerable
   slowdown.

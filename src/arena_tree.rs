@@ -7,7 +7,7 @@ A DOM-like tree data structure based on `&Node` references.
 Any non-trivial tree involves reference cycles
 (e.g. if a node has a first child, the parent of the child is that node).
 To enable this, nodes need to live in an arena allocator
-such as `arena::TypedArena` distrubuted with rustc (which is `#[unstable]` as of this writing)
+such as `arena::TypedArena` distributed with rustc (which is `#[unstable]` as of this writing)
 or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
 
 If you need mutability in the node’s `data`,
@@ -356,7 +356,7 @@ macro_rules! traverse_iterator {
 
                                             // `node.parent()` here can only be `None`
                                             // if the tree has been modified during iteration,
-                                            // but silently stoping iteration
+                                            // but silently stopping iteration
                                             // seems a more sensible behavior than panicking.
                                             None => None,
                                         },
