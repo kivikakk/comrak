@@ -1,3 +1,13 @@
+### 0.13.0
+
+* SECURITY: Bump regex to 1.5.5. (#221, Dependabot)
+* Drop unneeded YAML dependency from Syntect. (#199, Chris Wong)
+* Match newline handling in code inlines to upstream, and improve test failure
+  reporting. (#210, Michael Anderson)
+* Make all node value fields public. (#216, Evan Schwartz)
+* Line break handling adjustments. (#214, Michael Anderson)
+* Disable control characters in link definitions. (#219, Michael Anderson)
+
 ### 0.12.1
 
 * Only load syntax and theme sets once, on Syntect plugin instantiation. (#197)

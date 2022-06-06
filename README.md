@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.12"
+comrak = "0.13"
 ```
 
 Comrak supports Rust stable.
@@ -43,7 +43,7 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.12.1
+comrak 0.13.0
 Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -63,7 +63,7 @@ FLAGS:
 
 OPTIONS:
     -c, --config-file <PATH>                    Path to config file containing command-line arguments, or `none'
-                                                [default: /Users/kameliya/.config/comrak/config]
+                                                [default: /Users/kivikakk/.config/comrak/config]
         --default-info-string <INFO>            Default value for fenced code block's info strings if none is given
     -e, --extension <EXTENSION>...              Specify an extension name to use [possible values: strikethrough,
                                                 tagfilter, table, autolink, tasklist, superscript, footnotes,
