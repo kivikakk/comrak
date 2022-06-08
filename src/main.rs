@@ -6,7 +6,7 @@ extern crate comrak;
 extern crate clap;
 extern crate shell_words;
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 extern crate xdg;
 
 use comrak::{
@@ -291,7 +291,7 @@ if the file does not exist.\
     process::exit(EXIT_SUCCESS);
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_arch = "wasm32")))]
 fn get_default_config_path() -> String {
     if let Ok(xdg_dirs) = xdg::BaseDirectories::with_prefix("comrak") {
         if let Ok(path) = xdg_dirs.place_config_file("config") {
@@ -303,8 +303,8 @@ fn get_default_config_path() -> String {
 
     "comrak.config".into()
 }
-
-#[cfg(windows)]
+// If on Windows or compiling to wasm, disable default config file check
+#[cfg(any(windows, target_arch = "wasm32"))]
 fn get_default_config_path() -> String {
     "none".into()
 }
