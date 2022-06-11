@@ -22,6 +22,20 @@ jobs:
       run: env SPEC=false script/cibuild
     - name: Run spec tests
       run: env SPEC=true script/cibuild
+  build_wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Obtain Rust
+      run: rustup override set stable
+    - name: Setup for wasm
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build
+      run: cargo build --verbose --target wasm32-unknown-unknown
+    - name: Build examples
+      run: cargo build --verbose --target wasm32-unknown-unknown --examples
   no_features_build_test:
     runs-on: ubuntu-latest
     strategy:
