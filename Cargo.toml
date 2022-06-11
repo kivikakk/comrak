@@ -11,6 +11,7 @@ keywords = ["markdown", "commonmark"]
 license = "BSD-2-Clause"
 categories = ["text-processing", "parsing", "command-line-utilities"]
 exclude = ["/hooks/*", "/script/*", "/vendor/*", "/.travis.yml", "/Makefile", "/spec_out.txt"]
+resolver = "2"
 
 [profile.release]
 lto = true
