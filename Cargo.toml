@@ -11,6 +11,7 @@ keywords = ["markdown", "commonmark"]
 license = "BSD-2-Clause"
 categories = ["text-processing", "parsing", "command-line-utilities"]
 exclude = ["/hooks/*", "/script/*", "/vendor/*", "/.travis.yml", "/Makefile", "/spec_out.txt"]
+resolver = "2"
 
 [profile.release]
 lto = true
@@ -31,14 +32,19 @@ twoway = "0.2"
 pest = "2"
 pest_derive = "2"
 shell-words = "1.0"
-syntect = { version = "4.6", optional = true, default-features = false, features = ["assets", "dump-load", "html", "regex-onig"] }
 
 [dev-dependencies]
 timebomb = "0.1.2"
+
+[target.'cfg(not(target_arch="wasm32"))'.dev-dependencies]
 propfuzz = "0.0.1"
 
 [features]
 default = ["clap", "syntect"]
 
-[target.'cfg(not(windows))'.dependencies]
+[target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
 xdg = "^2.1"
+syntect = { version = "4.6", optional = true, default-features = false, features = ["assets", "dump-load", "html", "regex-onig"] }
+
+[target.'cfg(target_arch="wasm32")'.dependencies]
+syntect = { version = "4.6", optional = true, default-features = false, features = ["default-fancy"] }
