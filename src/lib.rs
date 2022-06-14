@@ -77,7 +77,7 @@ extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 extern crate propfuzz;
 extern crate regex;
 #[cfg(feature = "syntect")]
