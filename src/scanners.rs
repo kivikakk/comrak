@@ -9,9 +9,9 @@
 
 */
 
+use memchr::memmem;
 use pest::Parser;
 use std::str;
-use twoway::find_bytes;
 
 #[cfg(debug_assertions)]
 const _LEXER: &str = include_str!("lexer.pest");
@@ -44,19 +44,19 @@ pub fn atx_heading_start(line: &[u8]) -> Option<usize> {
 #[inline(always)]
 pub fn html_block_end_1(line: &[u8]) -> bool {
     // XXX: should be case-insensitive
-    find_bytes(line, b"</script>").is_some()
-        || find_bytes(line, b"</pre>").is_some()
-        || find_bytes(line, b"</style>").is_some()
+    memmem::find(line, b"</script>").is_some()
+        || memmem::find(line, b"</pre>").is_some()
+        || memmem::find(line, b"</style>").is_some()
 }
 
 #[inline(always)]
 pub fn html_block_end_2(line: &[u8]) -> bool {
-    find_bytes(line, b"-->").is_some()
+    memmem::find(line, b"-->").is_some()
 }
 
 #[inline(always)]
 pub fn html_block_end_3(line: &[u8]) -> bool {
-    find_bytes(line, b"?>").is_some()
+    memmem::find(line, b"?>").is_some()
 }
 
 #[inline(always)]
@@ -66,7 +66,7 @@ pub fn html_block_end_4(line: &[u8]) -> bool {
 
 #[inline(always)]
 pub fn html_block_end_5(line: &[u8]) -> bool {
-    find_bytes(line, b"]]>").is_some()
+    memmem::find(line, b"]]>").is_some()
 }
 
 #[inline(always)]
