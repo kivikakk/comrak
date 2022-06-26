@@ -1,3 +1,8 @@
+### 0.13.1
+
+* Support compiling for WASM. (#222, Ben Wishoshavich)
+* Replace deprecated twoway dependency. (#224)
+
 ### 0.13.0
 
 * SECURITY: Bump regex to 1.5.5. (#221, Dependabot)
