@@ -44,7 +44,9 @@ default = ["clap", "syntect"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
 xdg = "^2.1"
-syntect = { version = "4.6", optional = true, default-features = false, features = ["assets", "dump-load", "html", "regex-onig"] }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 syntect = { version = "4.6", optional = true, default-features = false, features = ["default-fancy"] }
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+syntect = { version = "4.6", optional = true, default-features = false, features = ["assets", "dump-load", "html", "regex-onig"] }
