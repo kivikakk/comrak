@@ -180,7 +180,6 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
     let dst = buf.as_mut_ptr();
     let src = unsafe { dst.add(n) };
     unsafe { ptr::copy(src, dst, keep) };
-    
 }
 
 pub fn clean_url(url: &[u8]) -> Vec<u8> {
