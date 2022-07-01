@@ -176,11 +176,11 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
 fn shift_buf_left(buf: &mut [u8], n: usize) {
     assert!(n <= buf.len());
     let keep = buf.len() - n;
-    unsafe {
-        let dst = buf.as_mut_ptr();
-        let src = dst.add(n);
-        ptr::copy(src, dst, keep);
-    }
+
+    let dst = buf.as_mut_ptr();
+    let src = unsafe { dst.add(n) };
+    unsafe { ptr::copy(src, dst, keep) };
+    
 }
 
 pub fn clean_url(url: &[u8]) -> Vec<u8> {
