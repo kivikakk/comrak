@@ -1,3 +1,7 @@
+### 0.13.2
+
+* Fix Windows build.
+
 ### 0.13.1
 
 * Support compiling for WASM. (#222, Ben Wishoshavich)
