@@ -31,21 +31,16 @@ void test_commonmark_render_works_with_tagfilter() {
     const char* commonmark = "hi <xmp> ok\n\n<xmp>\n";
     comrak_options_t * comrak_options = comrak_options_new();
 
-    comrak_set_extension_option_tagfilter(comrak_options, false);
+    comrak_set_extension_option_tagfilter(comrak_options, true);
+    comrak_set_render_option_unsafe_(comrak_options, true);
+
     comrak_str_t html = comrak_commonmark_to_html(commonmark, comrak_options);
-    const char* expected = "<p>Hello ~~world~~ 世界!</p>\n";
+    const char* expected ="<p>hi &lt;xmp> ok</p>\n&lt;xmp>\n";
 
     str_eq(html, expected);
 
-    comrak_set_extension_option_tagfilter(comrak_options, true);
-    comrak_str_t html_w_extension = comrak_commonmark_to_html(commonmark, comrak_options);
-    const char* expected_w_extension = "<p>Hello <del>world</del> 世界!</p>\n";
-
-    str_eq(html_w_extension, expected_w_extension);
-
     comrak_options_free(comrak_options);
     comrak_str_free(html);
-    comrak_str_free(html_w_extension);
 }
 
 void test_commonmark_render_works_with_table() {
@@ -96,7 +91,7 @@ void test_commonmark_render_works_with_tasklist() {
 
     comrak_set_extension_option_tasklist(comrak_options, false);
     comrak_str_t html = comrak_commonmark_to_html(commonmark, comrak_options);
-    const char* expected = "<p>- [ ] List item 1\n- [ ] This list item is <strong>bold</strong>\n- [x] There is some <code>code</code> here</p>\n";
+    const char* expected = "<ul>\n<li>[ ] List item 1</li>\n<li>[ ] This list item is <strong>bold</strong></li>\n<li>[x] There is some <code>code</code> here</li>\n</ul>\n</table>\n";
 
     str_eq(html, expected);
 
@@ -167,7 +162,6 @@ void test_commonmark_render_works_with_footnotes() {
     comrak_str_free(html_w_extension);
 }
 
-
 void test_commonmark_render_works_with_description_lists() {
     const char* commonmark = "Term 1\n\n: Definition 1\n\nTerm 2 with *inline markup*\n\n: Definition 2\n";
     comrak_options_t * comrak_options = comrak_options_new();
@@ -189,15 +183,29 @@ void test_commonmark_render_works_with_description_lists() {
     comrak_str_free(html_w_extension);
 }
 
+void test_commonmark_render_works_with_front_matter_delimiter() {
+    const char* commonmark = "---\nlayout: post\n---\nText\n";
+    comrak_options_t * comrak_options = comrak_options_new();
+
+    comrak_set_extension_option_front_matter_delimiter(comrak_options, "---", 3);
+    comrak_str_t html = comrak_commonmark_to_html(commonmark, comrak_options);
+    const char* expected = "<p>Text</p>\n";
+
+    str_eq(html, expected);
+
+    comrak_options_free(comrak_options);
+    comrak_str_free(html);
+}
+
 void test_commonmark_extension_options() {
     test_commonmark_render_works_with_strikethrough();
-    // test_commonmark_render_works_with_tagfilter(); TODO
+    test_commonmark_render_works_with_tagfilter();
     test_commonmark_render_works_with_table();
     test_commonmark_render_works_with_autolink();
-    // test_commonmark_render_works_with_tasklist(); TODO
+    test_commonmark_render_works_with_tasklist();
     test_commonmark_render_works_with_superscript();
     test_commonmark_render_works_with_header_ids();
     test_commonmark_render_works_with_footnotes();
     test_commonmark_render_works_with_description_lists();
-    // test_commonmark_render_works_with_front_matter_delimiter(); TODO
+    test_commonmark_render_works_with_front_matter_delimiter();
 }

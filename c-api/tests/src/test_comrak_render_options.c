@@ -48,6 +48,26 @@ void test_commonmark_render_works_with_github_pre_lang() {
     comrak_str_free(html_w_extension);
 }
 
+void test_commonmark_render_works_with_width() {
+    const char* commonmark = "hello hello hello hello hello hello";
+    comrak_options_t * comrak_options = comrak_options_new();
+
+    comrak_str_t html = comrak_commonmark_to_html(commonmark, comrak_options);
+    const char* expected = "<p>hello hello hello hello hello hello</p>\n";
+
+    str_eq(html, expected);
+
+    comrak_set_render_option_width(comrak_options, 20);
+    comrak_str_t html_w_extension = comrak_commonmark_to_html(commonmark, comrak_options);
+    const char* expected_w_extension ="<p>hello hello hello\nhello hello hello</p>\n";
+
+    str_eq(html_w_extension, expected_w_extension);
+
+    comrak_options_free(comrak_options);
+    comrak_str_free(html);
+    comrak_str_free(html_w_extension);
+}
+
 void test_commonmark_render_works_with_unsafe_() {
     const char* commonmark = "<script>\nalert('xyz');\n</script>";
     comrak_options_t * comrak_options = comrak_options_new();
@@ -93,7 +113,7 @@ void test_commonmark_render_works_with_escape() {
 void test_commonmark_render_options() {
     test_commonmark_render_works_with_hardbreaks();
     test_commonmark_render_works_with_github_pre_lang();
-    // test_commonmark_render_works_with_width(); TODO
+    test_commonmark_render_works_with_width();
     test_commonmark_render_works_with_unsafe_();
     test_commonmark_render_works_with_escape();
 }
