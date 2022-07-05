@@ -30,6 +30,13 @@ void comrak_set_extension_option_front_matter_delimiter(comrak_options_t *option
 void comrak_set_parse_option_superscript(comrak_options_t *options, bool value);
 void comrak_set_parse_option_default_info_string(comrak_options_t *options, const char *default_info_string, size_t default_info_string_len);
 
+void comrak_set_render_option_hardbreaks(comrak_options_t *options, bool value);
+void comrak_set_render_option_github_pre_lang(comrak_options_t *options, bool value);
+void comrak_set_render_option_width(comrak_options_t *options, size_t value);
+void comrak_set_render_option_unsafe_(comrak_options_t *options, bool value);
+void comrak_set_render_option_escape(comrak_options_t *options, bool value);
+
+
 // Library-allocated UTF-8 string fat pointer.
 //
 // The string is not NULL-terminated.
