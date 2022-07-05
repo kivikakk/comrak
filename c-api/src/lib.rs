@@ -9,6 +9,13 @@ macro_rules! assert_not_null {
     };
 }
 
+macro_rules! to_ref_mut {
+    ($ptr:ident) => {{
+        assert_not_null!($ptr);
+        unsafe { &mut *$ptr }
+    }};
+}
+
 macro_rules! to_bytes {
     ($data:ident, $len:ident) => {{
         assert_not_null!($data);
@@ -16,18 +23,10 @@ macro_rules! to_bytes {
     }};
 }
 
-macro_rules! to_ref {
-    ($ptr:ident) => {{
-        assert_not_null!($ptr);
-        unsafe { &*$ptr }
-    }};
-}
-
-macro_rules! to_ref_mut {
-    ($ptr:ident) => {{
-        assert_not_null!($ptr);
-        unsafe { &mut *$ptr }
-    }};
+macro_rules! to_str {
+    ($data:ident, $len:ident) => {
+        str::from_utf8(to_bytes!($data, $len)).into()
+    };
 }
 
 macro_rules! unwrap_or_ret {
@@ -41,15 +40,9 @@ macro_rules! unwrap_or_ret {
     };
 }
 
-macro_rules! unwrap_or_ret_null {
+macro_rules! unwrap_or_ret_err_code {
     ($expr:expr) => {
         unwrap_or_ret!($expr, ())
-    };
-} // ptr::null_mut
-
-macro_rules! to_str {
-    ($data:ident, $len:ident) => {
-        str::from_utf8(to_bytes!($data, $len)).into()
     };
 }
 
@@ -60,6 +53,10 @@ fn to_ptr_mut<T>(val: T) -> *mut T {
 
 mod comrak_extension_options;
 pub mod comrak_ffi;
+
 mod comrak_options;
 mod comrak_parse_options;
 mod comrak_render_options;
+
+mod string;
+pub use self::string::Str;

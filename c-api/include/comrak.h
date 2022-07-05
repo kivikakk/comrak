@@ -17,13 +17,37 @@ comrak_options_t *comrak_options_new();
 void comrak_options_free(comrak_options_t *options);
 
 void comrak_set_extension_option_strikethrough(comrak_options_t *options, bool value);
+void comrak_set_extension_option_tagfilter(comrak_options_t *options, bool value);
+void comrak_set_extension_option_table(comrak_options_t *options, bool value);
+void comrak_set_extension_option_autolink(comrak_options_t *options, bool value);
+void comrak_set_extension_option_tasklist(comrak_options_t *options, bool value);
+void comrak_set_extension_option_superscript(comrak_options_t *options, bool value);
+void comrak_set_extension_option_header_ids(comrak_options_t *options, const char *header_id, size_t header_id_len);
+void comrak_set_extension_option_footnotes(comrak_options_t *options, bool value);
+void comrak_set_extension_option_description_lists(comrak_options_t *options, bool value);
+void comrak_set_extension_option_front_matter_delimiter(comrak_options_t *options, const char *front_matter_delimiter, size_t front_matter_delimiter_len);
 
-/** Convert 'text' (assumed to be a UTF-8 encoded string) from CommonMark Markdown to HTML,
- * returning a null-terminated, UTF-8-encoded string, using the options specified.
- *
- * It is the caller's responsibility to free the returned buffer.
-*/
-char *comrak_commonmark_to_html(const char *text, comrak_options_t *options);
+// Library-allocated UTF-8 string fat pointer.
+//
+// The string is not NULL-terminated.
+//
+// Use `comrak_str_free` function to deallocate.
+typedef struct {
+    // String data pointer.
+    const char *data;
+
+    // The length of the string in bytes.
+    size_t len;
+} comrak_str_t;
+
+// Convert 'text' (assumed to be a UTF-8 encoded string) from Commonmark to HTML,
+// returning a null-terminated, UTF-8-encoded string, using the options specified.
+comrak_str_t comrak_commonmark_to_html(const char *text, comrak_options_t *options);
+
+// Frees the memory held by the library-allocated string.
+//
+// This is valid to call even if `str.data == NULL` (it does nothing, like `free(NULL)`).
+void comrak_str_free(comrak_str_t str);
 
 #if defined(__cplusplus)
 }  // extern C

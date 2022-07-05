@@ -6,6 +6,10 @@
 
 #include "../../include/comrak.h"
 
-#define c_str_eq(actual, expected) ok(!strcmp(actual, expected))
+#define str_eq(actual, expected) { \
+    ok((actual).data != NULL); \
+    ok((actual).len == strlen(expected)); \
+    ok(!memcmp((actual).data, expected, (actual).len)); \
+}
 
 #endif // TEST_UTIL_H
