@@ -19,7 +19,7 @@ pub struct FFIComrakExtensionOptions {
     front_matter_delimiter: *const c_char,
 }
 
-macro_rules! make_bool_option_func {
+macro_rules! make_bool_extension_option_func {
     ($name:ident) => {
         paste! {
             #[no_mangle]
@@ -35,7 +35,7 @@ macro_rules! make_bool_option_func {
     };
 }
 
-macro_rules! make_c_char_option_func {
+macro_rules! make_c_char_extension_option_func {
     ($name:ident) => {
         paste! {
             #[no_mangle]
@@ -53,13 +53,13 @@ macro_rules! make_c_char_option_func {
     };
 }
 
-make_bool_option_func!(strikethrough);
-make_bool_option_func!(tagfilter);
-make_bool_option_func!(table);
-make_bool_option_func!(autolink);
-make_bool_option_func!(tasklist);
-make_bool_option_func!(superscript);
-make_c_char_option_func!(header_ids);
-make_bool_option_func!(footnotes);
-make_bool_option_func!(description_lists);
-make_c_char_option_func!(front_matter_delimiter);
+make_bool_extension_option_func!(strikethrough);
+make_bool_extension_option_func!(tagfilter);
+make_bool_extension_option_func!(table);
+make_bool_extension_option_func!(autolink);
+make_bool_extension_option_func!(tasklist);
+make_bool_extension_option_func!(superscript);
+make_c_char_extension_option_func!(header_ids);
+make_bool_extension_option_func!(footnotes);
+make_bool_extension_option_func!(description_lists);
+make_c_char_extension_option_func!(front_matter_delimiter);

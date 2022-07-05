@@ -9,7 +9,8 @@
 
 int run_tests() {
     subtest("test_comrak_basic", test_comrak_basic);
-    subtest("test_commonmark_extension_option", test_commonmark_extension_option);
+    subtest("test_commonmark_extension_options", test_commonmark_extension_options);
+    subtest("test_commonmark_parse_options", test_commonmark_parse_options);
 
     return done_testing();
 }

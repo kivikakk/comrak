@@ -189,11 +189,11 @@ void test_commonmark_render_works_with_description_lists() {
     comrak_str_free(html_w_extension);
 }
 
-void test_commonmark_extension_option() {
-    // test_commonmark_render_works_with_strikethrough();
+void test_commonmark_extension_options() {
+    test_commonmark_render_works_with_strikethrough();
     // test_commonmark_render_works_with_tagfilter(); TODO
-    // test_commonmark_render_works_with_table();
-    // test_commonmark_render_works_with_autolink();
+    test_commonmark_render_works_with_table();
+    test_commonmark_render_works_with_autolink();
     // test_commonmark_render_works_with_tasklist(); TODO
     test_commonmark_render_works_with_superscript();
     test_commonmark_render_works_with_header_ids();
