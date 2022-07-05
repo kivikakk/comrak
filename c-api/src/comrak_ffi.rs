@@ -2,9 +2,7 @@ use super::*;
 
 use libc::c_char;
 
-use comrak::{
-    ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
-};
+use comrak::ComrakOptions;
 use std::ffi::CStr;
 
 /// Render Commonmark to HTML, with the given options.
@@ -25,12 +23,4 @@ pub extern "C" fn comrak_commonmark_to_html(
 
     // return as fat pointer string
     Str::new(result)
-}
-
-fn convert_c_str_to_string(c_str: *const c_char) -> Option<String> {
-    if c_str.is_null() {
-        None
-    } else {
-        Some(unsafe { CStr::from_ptr(c_str).to_string_lossy().into_owned() })
-    }
 }
