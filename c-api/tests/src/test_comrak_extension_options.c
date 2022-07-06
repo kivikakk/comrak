@@ -91,7 +91,7 @@ void test_commonmark_render_works_with_tasklist() {
 
     comrak_set_extension_option_tasklist(comrak_options, false);
     comrak_str_t html = comrak_commonmark_to_html(commonmark, comrak_options);
-    const char* expected = "<ul>\n<li>[ ] List item 1</li>\n<li>[ ] This list item is <strong>bold</strong></li>\n<li>[x] There is some <code>code</code> here</li>\n</ul>\n</table>\n";
+    const char* expected = "<ul>\n<li>[ ] List item 1</li>\n<li>[ ] This list item is <strong>bold</strong></li>\n<li>[x] There is some <code>code</code> here</li>\n</ul>\n";
 
     str_eq(html, expected);
 

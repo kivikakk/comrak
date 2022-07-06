@@ -53,6 +53,10 @@ typedef struct {
 // Convert 'text' (assumed to be a UTF-8 encoded string) from Commonmark to HTML,
 // returning a null-terminated, UTF-8-encoded string, using the options specified.
 comrak_str_t comrak_commonmark_to_html(const char *text, comrak_options_t *options);
+//
+// Convert 'text' (assumed to be a UTF-8 encoded string) from Commonmark back to CommonMark,
+// returning a null-terminated, UTF-8-encoded string, using the options specified.
+comrak_str_t comrak_commonmark_to_commonmark(const char *text, comrak_options_t *options);
 
 // Frees the memory held by the library-allocated string.
 //

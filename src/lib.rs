@@ -141,3 +141,12 @@ pub fn markdown_to_html_with_plugins(
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
+
+/// Render Markdown to CommonMark.
+pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
+    let arena = Arena::new();
+    let root = parse_document(&arena, md, options);
+    let mut s = Vec::new();
+    format_commonmark(root, options, &mut s).unwrap();
+    String::from_utf8(s).unwrap()
+}
