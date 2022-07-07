@@ -62,6 +62,18 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 #[track_caller]
+fn commonmark(input: &str, expected: &str) {
+    let arena = ::Arena::new();
+    let mut options = ::ComrakOptions::default();
+    options.render.width = 72;
+
+    let root = ::parse_document(&arena, input, &options);
+    let mut output = vec![];
+    cm::format_document(root, &options, &mut output).unwrap();
+    compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
+}
+
+#[track_caller]
 fn html(input: &str, expected: &str) {
     html_opts(input, expected, |_| ());
 }
@@ -247,6 +259,27 @@ fn thematic_breaks() {
         concat!("---\n", "\n", "- - -\n", "\n", "\n", "_        _   _\n"),
         concat!("<hr />\n", "<hr />\n", "<hr />\n"),
     );
+}
+
+#[test]
+fn width_breaks() {
+    let input = concat!(
+        "this should break because it has breakable characters. break right here newline\n",
+        "\n",
+        "don't break\n",
+        "\n",
+        "a-long-line-that-won't-break-because-there-is-no-character-it-can-break-on\n"
+    );
+    let output = concat!(
+        "this should break because it has breakable characters. break right here\n",
+        "newline\n",
+        "\n",
+        "don't break\n",
+        "\n",
+        "a-long-line-that-won't-break-because-there-is-no-character-it-can-break-on\n"
+    );
+
+    commonmark(input, output);
 }
 
 #[test]

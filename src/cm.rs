@@ -108,6 +108,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 }
             }
             self.column = 0;
+            self.last_breakable = 0;
             self.begin_line = true;
             self.begin_content = true;
             self.need_cr -= 1;
