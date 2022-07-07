@@ -18,7 +18,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem;
-use std::str;
+use std::str::{self, FromStr};
 use strings;
 use typed_arena::Arena;
 
@@ -437,6 +437,29 @@ pub struct ComrakRenderOptions {
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```
     pub escape: bool,
+
+    /// Set the type of [bullet list marker](https://spec.commonmark.org/0.30/#bullet-list-marker) to use. Options are:
+    ///
+    /// * `ListStyleType::Dash` to use `-` (default)
+    /// * `ListStyleType::Plus` to use `+`
+    /// * `ListStyleType::Star` to use `*`
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_commonmark, ComrakOptions, ListStyleType};
+    /// let mut options = ComrakOptions::default();
+    /// let input = "- one\n- two\n- three";
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "- one\n- two\n- three\n"); // default is Dash
+    ///
+    /// options.render.list_style = ListStyleType::Plus;
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "+ one\n+ two\n+ three\n");
+    ///
+    /// options.render.list_style = ListStyleType::Star;
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "* one\n* two\n* three\n");
+    /// ```
+    pub list_style: ListStyleType,
 }
 
 #[derive(Default, Debug)]
@@ -1890,4 +1913,34 @@ fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
 pub enum AutolinkType {
     URI,
     Email,
+}
+
+#[derive(Debug, Clone, Copy)]
+/// Options for bulleted list redering in markdown. See `link_style` in [ComrakRenderOptions] for more details.
+pub enum ListStyleType {
+    /// The `-` character
+    Dash = 45,
+    /// The `+` character
+    Plus = 43,
+    /// The `*` character
+    Star = 42,
+}
+
+impl Default for ListStyleType {
+    fn default() -> Self {
+        ListStyleType::Dash
+    }
+}
+
+impl FromStr for ListStyleType {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<ListStyleType, Self::Err> {
+        match input {
+            "dash" => Ok(ListStyleType::Dash),
+            "plus" => Ok(ListStyleType::Plus),
+            "star" => Ok(ListStyleType::Star),
+            _ => Err(()),
+        }
+    }
 }
