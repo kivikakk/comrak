@@ -5,11 +5,11 @@
 * [ ] `cargo run --example update-readme`
 * [ ] commit, tag, push commit, but do not push tag yet
 * build binaries:
-  * [ ] `script/release-tapioca`
+  * [ ] `script/release-skye`
+  * [ ] `script/release-skye-debian` in Parallels
   * [ ] `script\release-raven.ps1` ("Windows PowerShell" works, make sure to run with comrak root as cwd)
-  * [ ] `script/release-ishtar`
-  * [ ] `script/release-debian`
-  * [ ] `script/release-talia`
+  * [ ] `script/release-raven-freebsd` in VMWare
+  * [ ] `script/release-sarah`
 * [ ] `script/assemble-releases`
 * [ ] `cargo publish`
 * [ ] push tag

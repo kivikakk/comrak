@@ -5,5 +5,7 @@ echo $version
 
 rsync sarah:~/Code/comrak/comrak-$version-x86_64-unknown-linux-gnu .
 rsync debian:~/comrak/comrak-$version-aarch64-unknown-linux-gnu .
-rsync talia:~/Code/comrak/comrak-$version-x86_64-unknown-freebsd .
-rsync /Volumes/comrak/comrak-$version-x86_64-pc-windows-msvc.exe .
+
+# TODO:
+# rsync talia:~/Code/comrak/comrak-$version-x86_64-unknown-freebsd .
+# rsync /Volumes/comrak/comrak-$version-x86_64-pc-windows-msvc.exe .
