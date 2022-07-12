@@ -11,7 +11,7 @@ extern crate xdg;
 
 use comrak::{
     Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
-    ComrakRenderOptions,
+    ComrakRenderOptions, ListStyleType,
 };
 
 use comrak::adapters::SyntaxHighlighterAdapter;
@@ -161,6 +161,15 @@ if the file does not exist.\
                 .value_name("THEME")
                 .help("Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling.")
                 .default_value("base16-ocean.dark"),
+        )
+        .arg(
+            clap::Arg::with_name("list-style")
+                .long("list-style")
+                .takes_value(true)
+                .possible_values(&["dash", "plus", "star"])
+                .default_value("dash")
+                .value_name("LIST_STYLE")
+                .help("Specify bullet character for lists (-, +, *) in CommonMark ouput"),
         );
 
     let mut matches = app.clone().get_matches();
@@ -220,6 +229,11 @@ if the file does not exist.\
                 .unwrap_or(0),
             unsafe_: matches.is_present("unsafe"),
             escape: matches.is_present("escape"),
+            list_style: matches
+                .value_of("list-style")
+                .unwrap_or("dash")
+                .parse::<ListStyleType>()
+                .expect("unknown list style"),
         },
     };
 

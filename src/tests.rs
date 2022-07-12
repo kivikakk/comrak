@@ -37,6 +37,7 @@ fn fuzz_doesnt_crash(md: String) {
             width: 80,
             unsafe_: true,
             escape: false,
+            list_style: ::ListStyleType::Dash,
         },
     };
 
@@ -62,12 +63,12 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 #[track_caller]
-fn commonmark(input: &str, expected: &str) {
+fn commonmark(input: &str, expected: &str, opts: Option<&::ComrakOptions>) {
     let arena = ::Arena::new();
-    let mut options = ::ComrakOptions::default();
-    options.render.width = 72;
+    let defaults = ::ComrakOptions::default();
+    let options = opts.unwrap_or(&defaults);
 
-    let root = ::parse_document(&arena, input, &options);
+    let root = ::parse_document(&arena, input, options);
     let mut output = vec![];
     cm::format_document(root, &options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
@@ -254,6 +255,31 @@ fn lists() {
 }
 
 #[test]
+fn markdown_list_bullets() {
+    let dash = concat!("- a\n");
+    let plus = concat!("+ a\n");
+    let star = concat!("* a\n");
+    let mut dash_opts = ::ComrakOptions::default();
+    dash_opts.render.list_style = ::ListStyleType::Dash;
+    let mut plus_opts = ::ComrakOptions::default();
+    plus_opts.render.list_style = ::ListStyleType::Plus;
+    let mut star_opts = ::ComrakOptions::default();
+    star_opts.render.list_style = ::ListStyleType::Star;
+
+    commonmark(dash, dash, Some(&dash_opts));
+    commonmark(plus, dash, Some(&dash_opts));
+    commonmark(star, dash, Some(&dash_opts));
+
+    commonmark(dash, plus, Some(&plus_opts));
+    commonmark(plus, plus, Some(&plus_opts));
+    commonmark(star, plus, Some(&plus_opts));
+
+    commonmark(dash, star, Some(&star_opts));
+    commonmark(plus, star, Some(&star_opts));
+    commonmark(star, star, Some(&star_opts));
+}
+
+#[test]
 fn thematic_breaks() {
     html(
         concat!("---\n", "\n", "- - -\n", "\n", "\n", "_        _   _\n"),
@@ -263,6 +289,8 @@ fn thematic_breaks() {
 
 #[test]
 fn width_breaks() {
+    let mut options = ::ComrakOptions::default();
+    options.render.width = 72;
     let input = concat!(
         "this should break because it has breakable characters. break right here newline\n",
         "\n",
@@ -279,7 +307,7 @@ fn width_breaks() {
         "a-long-line-that-won't-break-because-there-is-no-character-it-can-break-on\n"
     );
 
-    commonmark(input, output);
+    commonmark(input, output, Some(&options));
 }
 
 #[test]
@@ -1272,6 +1300,7 @@ fn exercise_full_api<'a>() {
             width: 123456,
             unsafe_: false,
             escape: false,
+            list_style: ::ListStyleType::Dash,
         },
     };
 

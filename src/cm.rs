@@ -411,7 +411,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         if entering {
             if parent.list_type == ListType::Bullet {
-                write!(self, "- ").unwrap();
+                let bullet = char::from(self.options.render.list_style as u8);
+                write!(self, "{} ", bullet).unwrap();
             } else {
                 self.write_all(&listmarker).unwrap();
             }
