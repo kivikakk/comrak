@@ -1,3 +1,11 @@
+### 0.14.0
+
+* Add C FFI, allowing Comrak to be used from other languages. (#171, Garen
+  Torikian)
+* Fix line wrapping in CommonMark output. (#228, Edward Loveall)
+* Add option to specify character used for unordered list bullets in
+  CommonMark output. (#229, Edward Loveall)
+
 ### 0.13.2
 
 * Fix Windows build.
