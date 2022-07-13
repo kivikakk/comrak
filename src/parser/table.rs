@@ -69,7 +69,7 @@ fn try_opening_header<'a, 'o, 'c>(
     }
 
     let mut child = Ast::new(NodeValue::Table(alignments));
-    child.start_line = parser.line_number;
+    child.start_line = container.data.borrow().start_line;
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
