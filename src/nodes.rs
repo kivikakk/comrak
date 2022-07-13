@@ -105,11 +105,9 @@ pub enum NodeValue {
     Text(String),
 
     /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
-    TaskItem {
-        /// The symbol that was used in the brackets to mark a task item
-        /// as checked, or None if the item is unchecked.
-        symbol: Option<char>,
-    },
+    /// The value is the symbol that was used in the brackets to mark a task item as checked, or
+    /// None if the item is unchecked.
+    TaskItem(Option<char>),
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
     /// the `hardbreaks` option is set in `ComrakOptions` during formatting, it will be formatted
@@ -264,6 +262,15 @@ impl Default for ListDelimType {
     }
 }
 
+impl ListDelimType {
+    pub(crate) fn xml_name(&self) -> &'static str {
+        match *self {
+            ListDelimType::Period => "period",
+            ListDelimType::Paren => "paren",
+        }
+    }
+}
+
 /// The metadata and data of a code block (fenced or indented).
 #[derive(Default, Debug, Clone)]
 pub struct NodeCodeBlock {
@@ -369,6 +376,44 @@ impl NodeValue {
             NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
         )
     }
+
+    pub(crate) fn xml_node_name(&self) -> &'static str {
+        match *self {
+            NodeValue::Document => "document",
+            NodeValue::BlockQuote => "block_quote",
+            NodeValue::FootnoteDefinition(_) => "footnote_definition",
+            NodeValue::List(..) => "list",
+            NodeValue::DescriptionList => "description_list",
+            NodeValue::DescriptionItem(_) => "description_item",
+            NodeValue::DescriptionTerm => "description_term",
+            NodeValue::DescriptionDetails => "description_details",
+            NodeValue::Item(..) => "item",
+            NodeValue::CodeBlock(..) => "code_block",
+            NodeValue::HtmlBlock(..) => "html_block",
+            NodeValue::Paragraph => "paragraph",
+            NodeValue::Heading(..) => "heading",
+            NodeValue::ThematicBreak => "thematic_break",
+            NodeValue::Table(..) => "table",
+            NodeValue::TableRow(..) => "table_row",
+            NodeValue::TableCell => "table_cell",
+            NodeValue::Text(..) => "text",
+            NodeValue::SoftBreak => "softbreak",
+            NodeValue::LineBreak => "linebreak",
+            NodeValue::Image(..) => "image",
+            NodeValue::Link(..) => "link",
+            NodeValue::Emph => "emph",
+            NodeValue::Strong => "strong",
+            NodeValue::Code(..) => "code",
+            NodeValue::HtmlInline(..) => "html_inline",
+            NodeValue::Strikethrough => "strikethrough",
+            NodeValue::FrontMatter(_) => "frontmatter",
+            NodeValue::TaskItem { .. } => "tasklist",
+            NodeValue::Superscript => "superscript",
+            NodeValue::FootnoteReference(_) => "footnote_reference",
+            #[cfg(feature = "shortcodes")]
+            NodeValue::ShortCode(_) => "shortcode",
+        }
+    }
 }
 
 /// A single node in the CommonMark AST.
@@ -382,6 +427,12 @@ pub struct Ast {
 
     /// The line in the input document the node starts at.
     pub start_line: u32,
+    /// The column in the input document the node starts at.
+    pub start_column: u32,
+    /// The line in the input document the node ends at.
+    pub end_line: u32,
+    /// The column in the input document the node ends at.
+    pub end_column: u32,
 
     pub(crate) content: String,
     pub(crate) open: bool,
@@ -396,6 +447,9 @@ impl Ast {
             value,
             content: String::new(),
             start_line: 0,
+            start_column: 0,
+            end_line: 0,
+            end_column: 0,
             open: true,
             last_line_blank: false,
             table_visited: false,

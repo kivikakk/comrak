@@ -85,6 +85,7 @@ mod scanners;
 mod strings;
 #[cfg(test)]
 mod tests;
+mod xml;
 
 pub use cm::format_document as format_commonmark;
 pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
@@ -97,6 +98,8 @@ pub use parser::{
     ListStyleType,
 };
 pub use typed_arena::Arena;
+pub use xml::format_document as format_xml;
+pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
 /// Render Markdown to HTML.
 ///

@@ -337,7 +337,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Strong => self.format_strong(),
             NodeValue::Emph => self.format_emph(node),
-            NodeValue::TaskItem { symbol } => self.format_task_item(symbol, entering),
+            NodeValue::TaskItem(symbol) => self.format_task_item(symbol, entering),
             NodeValue::Strikethrough => self.format_strikethrough(),
             NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),

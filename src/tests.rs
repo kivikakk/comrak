@@ -49,6 +49,7 @@ fn propfuzz_doesnt_crash(md: String) {
             unsafe_: true,
             escape: false,
             list_style: ListStyleType::Dash,
+            sourcepos: true,
         },
     };
 
@@ -135,6 +136,7 @@ macro_rules! html_opts {
 
 pub(crate) use html_opts;
 
+#[track_caller]
 fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
     let arena = Arena::new();
     let options = ComrakOptions::default();
@@ -149,6 +151,37 @@ fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
     let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
     let mut output_from_rt = vec![];
     html::format_document_with_plugins(root, &options, &mut output_from_rt, plugins).unwrap();
+    compare_strs(
+        &String::from_utf8(output_from_rt).unwrap(),
+        expected,
+        "roundtrip",
+    );
+}
+
+#[track_caller]
+fn xml(input: &str, expected: &str) {
+    xml_opts(input, expected, |_| ());
+}
+
+#[track_caller]
+fn xml_opts<F>(input: &str, expected: &str, opts: F)
+where
+    F: Fn(&mut ComrakOptions),
+{
+    let arena = Arena::new();
+    let mut options = ComrakOptions::default();
+    opts(&mut options);
+
+    let root = parse_document(&arena, input, &options);
+    let mut output = vec![];
+    crate::xml::format_document(root, &options, &mut output).unwrap();
+    compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
+
+    let mut md = vec![];
+    cm::format_document(root, &options, &mut md).unwrap();
+    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let mut output_from_rt = vec![];
+    crate::xml::format_document(root, &options, &mut output_from_rt).unwrap();
     compare_strs(
         &String::from_utf8(output_from_rt).unwrap(),
         expected,
@@ -1417,6 +1450,62 @@ fn case_insensitive_safety() {
 }
 
 #[test]
+fn xml_and_sourcepos() {
+    let input = concat!(
+        "foo *bar*\n",
+        "\n",
+        "paragraph 2\n",
+        "\n",
+        "```\n",
+        "code\n",
+        "```\n",
+    );
+
+    xml(
+        input,
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <paragraph>\n",
+            "    <text xml:space=\"preserve\">foo </text>\n",
+            "    <emph>\n",
+            "      <text xml:space=\"preserve\">bar</text>\n",
+            "    </emph>\n",
+            "  </paragraph>\n",
+            "  <paragraph>\n",
+            "    <text xml:space=\"preserve\">paragraph 2</text>\n",
+            "  </paragraph>\n",
+            "  <code_block xml:space=\"preserve\">code\n",
+            "</code_block>\n",
+            "</document>\n",
+        ),
+    );
+
+    xml_opts(
+        input,
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document sourcepos=\"1:1-7:3\" xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <paragraph sourcepos=\"1:1-1:9\">\n",
+            "    <text sourcepos=\"1:1-1:4\" xml:space=\"preserve\">foo </text>\n",
+            "    <emph sourcepos=\"1:5-1:9\">\n",
+            "      <text sourcepos=\"1:6-1:8\" xml:space=\"preserve\">bar</text>\n",
+            "    </emph>\n",
+            "  </paragraph>\n",
+            "  <paragraph sourcepos=\"3:1-3:11\">\n",
+            "    <text sourcepos=\"3:1-3:11\" xml:space=\"preserve\">paragraph 2</text>\n",
+            "  </paragraph>\n",
+            "  <code_block sourcepos=\"5:1-7:3\" xml:space=\"preserve\">code\n",
+            "</code_block>\n",
+            "</document>\n",
+        ),
+        |opts| opts.render.sourcepos = true,
+    );
+}
+
+#[test]
 fn exercise_full_api() {
     let arena = Arena::new();
     let default_options = ComrakOptions::default();
@@ -1473,6 +1562,7 @@ fn exercise_full_api() {
             unsafe_: false,
             escape: false,
             list_style: ListStyleType::Dash,
+            sourcepos: false,
         },
     };
 
@@ -1585,7 +1675,7 @@ fn exercise_full_api() {
         nodes::NodeValue::Text(text) => {
             let _: &String = text;
         }
-        nodes::NodeValue::TaskItem { symbol } => {
+        nodes::NodeValue::TaskItem(symbol) => {
             let _: &Option<char> = symbol;
         }
         nodes::NodeValue::SoftBreak => {}

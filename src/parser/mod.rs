@@ -100,6 +100,9 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         value: NodeValue::Document,
         content: String::new(),
         start_line: 0,
+        start_column: 0,
+        end_line: 0,
+        end_column: 0,
         open: true,
         last_line_blank: false,
         table_visited: false,
@@ -508,6 +511,9 @@ pub struct ComrakRenderOptions {
     ///            "* one\n* two\n* three\n");
     /// ```
     pub list_style: ListStyleType,
+
+    /// XXX TODO
+    pub sourcepos: bool,
 }
 
 #[derive(Default, Debug)]
@@ -1815,9 +1821,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         let checkbox = inlines::make_inline(
             self.arena,
-            NodeValue::TaskItem {
-                symbol: if symbol == ' ' { None } else { Some(symbol) },
-            },
+            NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
         );
         node.insert_before(checkbox);
     }

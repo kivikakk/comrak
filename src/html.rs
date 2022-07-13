@@ -856,7 +856,7 @@ impl<'o> HtmlFormatter<'o> {
                     )?;
                 }
             }
-            NodeValue::TaskItem { symbol } => {
+            NodeValue::TaskItem(symbol) => {
                 if entering {
                     write!(
                         self.output,
