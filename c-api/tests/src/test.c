@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "deps/picotest/picotest.h"
-#include "../../include/comrak.h"
+#include "../../include/comrak_ffi.h"
 
 #include "test.h"
 

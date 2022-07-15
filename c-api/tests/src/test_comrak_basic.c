@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "../../include/comrak.h"
+#include "../../include/comrak_ffi.h"
 #include "deps/picotest/picotest.h"
 #include "test.h"
 #include "test_util.h"
