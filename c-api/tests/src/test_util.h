@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../include/comrak.h"
+#include "../../include/comrak_ffi.h"
 
 #define str_eq(actual, expected) { \
     ok((actual).data != NULL); \

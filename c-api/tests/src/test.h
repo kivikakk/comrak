@@ -1,7 +1,7 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-#include "../../include/comrak.h"
+#include "../../include/comrak_ffi.h"
 
 void test_comrak_basic();
 
