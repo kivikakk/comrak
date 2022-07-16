@@ -1,5 +1,5 @@
-#ifndef COMRAK_H
-#define COMRAK_H
+#ifndef COMRAK_FFI_H
+#define COMRAK_FFI_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -67,4 +67,4 @@ void comrak_str_free(comrak_str_t str);
 }  // extern C
 #endif
 
-#endif // PULLDOWN_CMCOMRAK_HARK_H
+#endif // COMRAK_FFI_H
