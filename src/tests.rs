@@ -635,11 +635,13 @@ fn strikethrough() {
         concat!(
             "This is ~strikethrough~.\n",
             "\n",
-            "As is ~~this, okay~~?\n"
+            "As is ~~this, okay~~?\n",
+            "But not ~this~.\n"
         ),
         concat!(
             "<p>This is <del>strikethrough</del>.</p>\n",
-            "<p>As is <del>this, okay</del>?</p>\n"
+            "<p>As is <del>this, okay</del>?</p>\n",
+            "<p>But not this.</p>\n"
         ),
     );
 }
