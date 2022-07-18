@@ -27,7 +27,7 @@ void comrak_set_extension_option_footnotes(comrak_options_t *options, bool value
 void comrak_set_extension_option_description_lists(comrak_options_t *options, bool value);
 void comrak_set_extension_option_front_matter_delimiter(comrak_options_t *options, const char *front_matter_delimiter, size_t front_matter_delimiter_len);
 
-void comrak_set_parse_option_superscript(comrak_options_t *options, bool value);
+void comrak_set_parse_option_smart(comrak_options_t *options, bool value);
 void comrak_set_parse_option_default_info_string(comrak_options_t *options, const char *default_info_string, size_t default_info_string_len);
 
 void comrak_set_render_option_hardbreaks(comrak_options_t *options, bool value);
