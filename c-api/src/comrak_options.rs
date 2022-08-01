@@ -31,9 +31,14 @@ macro_rules! make_c_char_option_func {
                 v_len: size_t,
             ) {
                 let comrak_options = to_ref_mut!(c_comrak_options);
-                let value = unwrap_or_ret_err_code! { to_str!(v, v_len) };
 
-                comrak_options.$opt_type.$name = Some(value.to_string());
+                if v.is_null() {
+                    comrak_options.$opt_type.$name = None;
+                } else {
+                    let value = unwrap_or_ret_err_code! { to_str!(v, v_len) };
+
+                    comrak_options.$opt_type.$name = Some(value.to_string());
+                }
             }
         }
     };
@@ -55,7 +60,6 @@ macro_rules! make_size_t_option_func {
     };
 }
 
-
 #[no_mangle]
 pub extern "C" fn comrak_options_new() -> *mut ComrakOptions {
     to_ptr_mut(ComrakOptions::default())
@@ -66,7 +70,6 @@ pub extern "C" fn comrak_options_free(options: *mut ComrakOptions) {
     assert!(!options.is_null());
     drop(unsafe { Box::from_raw(options) });
 }
-
 
 make_bool_option_func!(extension, strikethrough);
 make_bool_option_func!(extension, tagfilter);
