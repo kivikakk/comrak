@@ -197,7 +197,7 @@ fn url_match<'a>(
     contents: &[u8],
     i: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    static SCHEMES: Lazy<Vec<&'static [u8]>> = Lazy::new(|| vec![b"http", b"https", b"ftp"]);
+    const SCHEMES: [&'static [u8]; 3] = [b"http", b"https", b"ftp"];
 
     let size = contents.len();
 
