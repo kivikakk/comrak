@@ -87,11 +87,9 @@ pub fn close_code_fence(line: &[u8]) -> Option<usize> {
 
 #[inline(always)]
 pub fn html_block_start(line: &[u8]) -> Option<usize> {
-    lazy_static! {
-        static ref STR2: &'static [u8] = b"<!--";
-        static ref STR3: &'static [u8] = b"<?";
-        static ref STR5: &'static [u8] = b"<![CDATA[";
-    }
+    const STR2: &'static [u8] = b"<!--";
+    const STR3: &'static [u8] = b"<?";
+    const STR5: &'static [u8] = b"<![CDATA[";
 
     if !line.starts_with(b"<") {
         return None;
@@ -99,13 +97,13 @@ pub fn html_block_start(line: &[u8]) -> Option<usize> {
 
     if is_match(Rule::html_block_start_1, line) {
         Some(1)
-    } else if line.starts_with(*STR2) {
+    } else if line.starts_with(STR2) {
         Some(2)
-    } else if line.starts_with(*STR3) {
+    } else if line.starts_with(STR3) {
         Some(3)
     } else if is_match(Rule::html_block_start_4, line) {
         Some(4)
-    } else if line.starts_with(*STR5) {
+    } else if line.starts_with(STR5) {
         Some(5)
     } else if is_match(Rule::html_block_start_6, line) {
         Some(6)
