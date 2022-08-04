@@ -1,5 +1,6 @@
 use ctype::isspace;
 use nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
+use once_cell::sync::Lazy;
 use parser::{ComrakOptions, ComrakPlugins};
 use regex::Regex;
 use scanners;
@@ -99,9 +100,8 @@ impl Anchorizer {
     /// assert_eq!("ticks-arent-in".to_string(), anchorizer.anchorize(source.to_string()));
     /// ```
     pub fn anchorize(&mut self, header: String) -> String {
-        lazy_static! {
-            static ref REJECTED_CHARS: Regex = Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap();
-        }
+        static REJECTED_CHARS: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap());
 
         let mut id = header;
         id = id.to_lowercase();
@@ -173,19 +173,17 @@ const NEEDS_ESCAPED : [bool; 256] = [
 ];
 
 fn tagfilter(literal: &[u8]) -> bool {
-    lazy_static! {
-        static ref TAGFILTER_BLACKLIST: [&'static str; 9] = [
-            "title",
-            "textarea",
-            "style",
-            "xmp",
-            "iframe",
-            "noembed",
-            "noframes",
-            "script",
-            "plaintext"
-        ];
-    }
+    static TAGFILTER_BLACKLIST: [&'static str; 9] = [
+        "title",
+        "textarea",
+        "style",
+        "xmp",
+        "iframe",
+        "noembed",
+        "noframes",
+        "script",
+        "plaintext",
+    ];
 
     if literal.len() < 3 || literal[0] != b'<' {
         return false;
@@ -289,18 +287,16 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
-        lazy_static! {
-            static ref HREF_SAFE: [bool; 256] = {
-                let mut a = [false; 256];
-                for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
-                    a[c as usize] = true;
-                }
-                for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
-                    a[c as usize] = true;
-                }
-                a
-            };
-        }
+        static HREF_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
+            let mut a = [false; 256];
+            for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
+                a[c as usize] = true;
+            }
+            for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
+                a[c as usize] = true;
+            }
+            a
+        });
 
         let size = buffer.len();
         let mut i = 0;

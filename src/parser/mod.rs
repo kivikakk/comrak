@@ -11,6 +11,7 @@ use nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
+use once_cell::sync::Lazy;
 use regex::bytes::{Regex, RegexBuilder};
 use scanners;
 use std::cell::RefCell;
@@ -1648,9 +1649,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
-        lazy_static! {
-            static ref TASKLIST: Regex = Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap();
-        }
+        static TASKLIST: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap());
 
         let (active, end) = match TASKLIST.captures(text) {
             None => return,

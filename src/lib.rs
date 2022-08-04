@@ -72,12 +72,11 @@
 #![allow(unknown_lints, clippy::doc_markdown, cyclomatic_complexity)]
 
 extern crate entities;
-#[macro_use]
-extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 extern crate memchr;
+extern crate once_cell;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 extern crate propfuzz;
 extern crate regex;
