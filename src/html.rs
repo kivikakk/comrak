@@ -182,7 +182,7 @@ fn tagfilter(literal: &[u8]) -> bool {
         "noembed",
         "noframes",
         "script",
-        "plaintext"
+        "plaintext",
     ];
 
     if literal.len() < 3 || literal[0] != b'<' {
