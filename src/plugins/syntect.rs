@@ -119,21 +119,33 @@ pub struct SyntectAdapterBuilder<'a> {
 }
 
 impl<'a> SyntectAdapterBuilder<'a> {
+    /// Creates a new empty [`SyntectAdapterBuilder`]
     pub fn new() -> Self {
         Default::default()
     }
+
+    /// Sets the theme
     pub fn theme(mut self, s: &'a str) -> Self {
         self.theme.replace(s);
         self
     }
+
+    /// Sets the syntax set
     pub fn syntax_set(mut self, s: SyntaxSet) -> Self {
         self.syntax_set.replace(s);
         self
     }
+
+    /// Sets the theme set
     pub fn theme_set(mut self, s: ThemeSet) -> Self {
         self.theme_set.replace(s);
         self
     }
+
+    /// Builds the [`SyntectAdapter`]. Default values:
+    /// - `theme`: `InspiredGitHub`
+    /// - `syntax_set`: [`SyntaxSet::load_defaults_newlines()`]
+    /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter<'a> {
         SyntectAdapter {
             theme: self.theme.unwrap_or("InspiredGitHub"),
