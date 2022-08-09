@@ -107,3 +107,40 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
         build_opening_tag("code", attributes)
     }
 }
+
+#[derive(Debug, Default)]
+/// A builder for [`SyntectAdapter`].
+///
+/// Allows customization of `Theme`, [`ThemeSet`], and [`SyntaxSet`].
+pub struct SyntectAdapterBuilder<'a> {
+    theme: Option<&'a str>,
+    syntax_set: Option<SyntaxSet>,
+    theme_set: Option<ThemeSet>,
+}
+
+impl<'a> SyntectAdapterBuilder<'a> {
+    fn new() -> Self {
+        Default::default()
+    }
+    fn theme(mut self, s: &'a str) -> Self {
+        self.theme.replace(s);
+        self
+    }
+    fn syntax_set(mut self, s: SyntaxSet) -> Self {
+        self.syntax_set.replace(s);
+        self
+    }
+    fn theme_set(mut self, s: ThemeSet) -> Self {
+        self.theme_set.replace(s);
+        self
+    }
+    fn build(self) -> SyntectAdapter<'a> {
+        SyntectAdapter {
+            theme: self.theme.unwrap_or("InspiredGitHub"),
+            syntax_set: self
+                .syntax_set
+                .unwrap_or_else(SyntaxSet::load_defaults_newlines),
+            theme_set: self.theme_set.unwrap_or_else(ThemeSet::load_defaults),
+        }
+    }
+}
