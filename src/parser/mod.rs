@@ -123,6 +123,7 @@ pub struct Parser<'a, 'o, 'c> {
 }
 
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Umbrella options struct.
 pub struct ComrakOptions {
     /// Enable CommonMark extensions.
@@ -136,6 +137,7 @@ pub struct ComrakOptions {
 }
 
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
 pub struct ComrakExtensionOptions {
     /// Enables the
@@ -312,6 +314,7 @@ pub struct ComrakExtensionOptions {
 }
 
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
 pub struct ComrakParseOptions {
     /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
@@ -344,6 +347,7 @@ pub struct ComrakParseOptions {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
 pub struct ComrakRenderOptions {
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
@@ -1916,6 +1920,7 @@ pub enum AutolinkType {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for bulleted list redering in markdown. See `link_style` in [ComrakRenderOptions] for more details.
 pub enum ListStyleType {
     /// The `-` character
