@@ -148,7 +148,7 @@ dependencies = [
 
 [[package]]
 name = "comrak"
-version = "0.14.1"
+version = "0.14.0"
 dependencies = [
  "clap",
  "entities",
