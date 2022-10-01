@@ -28,12 +28,15 @@ impl<'a> SyntectAdapter<'a> {
 
     fn gen_empty_block(&self) -> String {
         let syntax = self.syntax_set.find_syntax_by_name("Plain Text").unwrap();
-        highlighted_html_for_string(
+        match highlighted_html_for_string(
             "",
             &self.syntax_set,
             syntax,
             &self.theme_set.themes[self.theme],
-        )
+        ) {
+            Ok(empty_block) => empty_block,
+            Err(_) => "".into(),
+        }
     }
 
     fn remove_pre_tag(&self, highlighted_code: String) -> String {
@@ -69,12 +72,15 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
                     .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text())
             });
 
-        self.remove_pre_tag(highlighted_html_for_string(
+        match highlighted_html_for_string(
             code,
             &self.syntax_set,
             syntax,
             &self.theme_set.themes[self.theme],
-        ))
+        ) {
+            Ok(highlighted_code) => self.remove_pre_tag(highlighted_code),
+            Err(_) => code.into(),
+        }
     }
 
     fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
