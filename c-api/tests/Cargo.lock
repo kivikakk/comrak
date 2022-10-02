@@ -145,8 +145,8 @@ version = "0.14.0"
 dependencies = [
  "clap",
  "entities",
- "lazy_static",
  "memchr",
+ "once_cell",
  "pest",
  "pest_derive",
  "regex",
@@ -373,6 +373,12 @@ checksum = "2819ce041d2ee131036f4fc9d6ae7ae125a3a40e97ba64d04fe799ad9dabbb44"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "once_cell"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 
 [[package]]
 name = "onig"
