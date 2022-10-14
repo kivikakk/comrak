@@ -18,7 +18,7 @@ lto = true
 
 [[bin]]
 name = "comrak"
-required-features = ["clap", "syntect"]
+required-features = ["cli", "syntect"]
 doc = false
 
 [dependencies]
@@ -31,7 +31,7 @@ clap = { version = "2.34.0", optional = true, features = ["wrap_help"] }
 memchr = "2"
 pest = "2"
 pest_derive = "2"
-shell-words = "1.0"
+shell-words = { version = "1.0", optional = true }
 
 [dev-dependencies]
 timebomb = "0.1.2"
@@ -40,10 +40,11 @@ timebomb = "0.1.2"
 propfuzz = "0.0.1"
 
 [features]
-default = ["clap", "syntect"]
+default = ["cli", "syntect"]
+cli = ["clap", "shell-words", "xdg"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
-xdg = "^2.1"
+xdg = { version = "^2.1", optional = true }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 syntect = { version = "5.0", optional = true, default-features = false, features = ["default-fancy"] }
