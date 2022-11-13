@@ -17,261 +17,229 @@ use comrak::{
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::plugins::syntect::SyntectAdapter;
 use std::boxed::Box;
-use std::collections::BTreeSet;
 use std::env;
 use std::error::Error;
 use std::fs;
 use std::io::Read;
+use std::path::PathBuf;
 use std::process;
 
+use clap::Parser;
+
 const EXIT_SUCCESS: i32 = 0;
-const EXIT_UNKNOWN_EXTENSION: i32 = 1;
 const EXIT_PARSE_CONFIG: i32 = 2;
 const EXIT_READ_INPUT: i32 = 3;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let default_config_path = get_default_config_path();
-
-    let app = clap::App::new(crate_name!())
-        .version(crate_version!())
-        .author(crate_authors!())
-        .about(crate_description!())
-        .after_help("\
+#[derive(Debug, Parser)]
+#[command(about, author, version)]
+#[command(after_help = "\
 By default, Comrak will attempt to read command-line options from a config file specified by \
---config-file.  This behaviour can be disabled by passing --config-file none.  It is not an error \
+--config-file. This behaviour can be disabled by passing --config-file none. It is not an error \
 if the file does not exist.\
-        ")
-        .arg(
-            clap::Arg::with_name("file")
-                .value_name("FILE")
-                .multiple(true)
-                .help("The CommonMark file to parse; or standard input if none passed"),
-        )
-        .arg(
-            clap::Arg::with_name("config-file")
-                .short("c")
-                .long("config-file")
-                .help("Path to config file containing command-line arguments, or `none'")
-                .value_name("PATH")
-                .takes_value(true)
-                .default_value(&default_config_path),
-        )
-        .arg(
-            clap::Arg::with_name("hardbreaks")
-                .long("hardbreaks")
-                .help("Treat newlines as hard line breaks"),
-        )
-        .arg(
-            clap::Arg::with_name("smart")
-                .long("smart")
-                .help("Use smart punctuation"),
-        )
-        .arg(
-            clap::Arg::with_name("github-pre-lang")
-                .long("github-pre-lang")
-                .help("Use GitHub-style <pre lang> for code blocks"),
-        )
-        .arg(
-            clap::Arg::with_name("gfm")
-                .long("gfm")
-                .help("Enable GitHub-flavored markdown extensions strikethrough, tagfilter, table, autolink, and tasklist. It also enables --github-pre-lang.")
-        )
-        .arg(
-            clap::Arg::with_name("default-info-string")
-                .long("default-info-string")
-                .help("Default value for fenced code block's info strings if none is given")
-                .value_name("INFO")
-                .takes_value(true),
-        )
-        .arg(
-            clap::Arg::with_name("unsafe")
-                .long("unsafe")
-                .help("Allow raw HTML and dangerous URLs"),
-        )
-        .arg(
-            clap::Arg::with_name("escape")
-                .long("escape")
-                .help("Escape raw HTML instead of clobbering it"),
-        )
-        .arg(
-            clap::Arg::with_name("extension")
-                .short("e")
-                .long("extension")
-                .takes_value(true)
-                .number_of_values(1)
-                .multiple(true)
-                .possible_values(&[
-                    "strikethrough",
-                    "tagfilter",
-                    "table",
-                    "autolink",
-                    "tasklist",
-                    "superscript",
-                    "footnotes",
-                    "description-lists",
-                ])
-                .value_name("EXTENSION")
-                .help("Specify an extension name to use"),
-        )
-        .arg(
-            clap::Arg::with_name("format")
-                .short("t")
-                .long("to")
-                .takes_value(true)
-                .possible_values(&["html", "commonmark"])
-                .default_value("html")
-                .value_name("FORMAT")
-                .help("Specify output format"),
-        )
-        .arg(
-            clap::Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .value_name("FILE")
-                .help("Write output to FILE instead of stdout"),
-        )
-        .arg(
-            clap::Arg::with_name("width")
-                .long("width")
-                .takes_value(true)
-                .value_name("WIDTH")
-                .default_value("0")
-                .help("Specify wrap width (0 = nowrap)"),
-        )
-        .arg(
-            clap::Arg::with_name("header-ids")
-                .long("header-ids")
-                .takes_value(true)
-                .value_name("PREFIX")
-                .help("Use the Comrak header IDs extension, with the given ID prefix"),
-        )
-        .arg(
-            clap::Arg::with_name("front-matter-delimiter")
-                .long("front-matter-delimiter")
-                .takes_value(true)
-                .value_name("DELIMITER")
-                .help("Ignore front-matter that starts and ends with the given string")
-                .allow_hyphen_values(true),
-        )
-        .arg(
-            clap::Arg::with_name("syntax-highlighting")
-                .long("syntax-highlighting")
-                .takes_value(true)
-                .value_name("THEME")
-                .help("Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling.")
-                .default_value("base16-ocean.dark"),
-        )
-        .arg(
-            clap::Arg::with_name("list-style")
-                .long("list-style")
-                .takes_value(true)
-                .possible_values(&["dash", "plus", "star"])
-                .default_value("dash")
-                .value_name("LIST_STYLE")
-                .help("Specify bullet character for lists (-, +, *) in CommonMark ouput"),
-        );
+        ")]
+struct Cli {
+    /// CommonMark file(s) to parse; or standard input if none passed
+    #[arg(value_name = "FILE")]
+    files: Option<Vec<PathBuf>>,
 
-    let mut matches = app.clone().get_matches();
+    /// Path to config file containing command-line arguments, or 'none'
+    #[arg(short, long, value_name = "PATH", default_value = get_default_config_path())]
+    config_file: String,
 
-    let config_file_path = matches.value_of("config-file").unwrap();
-    if config_file_path != "none" {
-        if let Ok(args) = fs::read_to_string(config_file_path) {
-            match shell_words::split(&args) {
-                Ok(mut args) => {
-                    for (i, arg) in env::args_os().enumerate() {
-                        if let Some(s) = arg.to_str() {
-                            args.insert(i, s.into());
-                        }
-                    }
-                    matches = app.get_matches_from(args);
-                }
-                Err(e) => {
-                    eprintln!("failed to parse {}: {}", config_file_path, e);
-                    process::exit(EXIT_PARSE_CONFIG);
-                }
-            }
+    /// Treat newlines as hard line breaks
+    #[arg(long)]
+    hardbreaks: bool,
+
+    /// Use smart punctuation
+    #[arg(long)]
+    smart: bool,
+
+    /// Use GitHub-style <pre lang> for code blocks
+    #[arg(long)]
+    github_pre_lang: bool,
+
+    /// Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and tasklist.
+    /// Also enables --github-pre-lang.
+    #[arg(long)]
+    gfm: bool,
+
+    /// Default value for fenced code block's info strings if none is given
+    #[arg(long, value_name = "INFO")]
+    default_info_string: Option<String>,
+
+    /// Allow raw HTML and dangerous URLs
+    #[arg(long = "unsafe")]
+    unsafe_: bool,
+
+    /// Escape raw HTML instead of clobbering it
+    #[arg(long)]
+    escape: bool,
+
+    /// Specify extension name(s) to use
+    ///
+    /// Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
+    #[arg(
+        short,
+        long = "extension",
+        value_name = "EXTENSION",
+        value_delimiter = ',',
+        value_enum
+    )]
+    extensions: Vec<Extension>,
+
+    /// Specify output format
+    #[arg(short = 't', long = "to", value_enum, default_value_t = Format::Html)]
+    format: Format,
+
+    /// Write output to FILE instead of stdout
+    #[arg(short, long, value_name = "FILE")]
+    output: Option<PathBuf>,
+
+    /// Specify wrap width (0 = nowrap)
+    #[arg(long, default_value_t = 0)]
+    width: usize,
+
+    /// Use the Comrak header IDs extension, with the given ID prefix
+    #[arg(long, value_name = "PREFIX")]
+    header_ids: Option<String>,
+
+    /// Ignore front-matter that starts and ends with the given string
+    #[arg(long, value_name = "DELIMITER", allow_hyphen_values = true)]
+    front_matter_delimiter: Option<String>,
+
+    /// Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling.
+    #[arg(long, value_name = "THEME", default_value = "base16-ocean.dark")]
+    syntax_highlighting: String,
+
+    /// Specify bullet character for lists (-, +, *) in CommonMark ouput
+    #[arg(long, value_enum, default_value_t = ListStyle::Dash)]
+    list_style: ListStyle,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum Format {
+    Html,
+
+    #[value(name = "commonmark")]
+    CommonMark,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+enum Extension {
+    Strikethrough,
+    Tagfilter,
+    Table,
+    Autolink,
+    Tasklist,
+    Superscript,
+    Footnotes,
+    DescriptionLists,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum ListStyle {
+    Dash,
+    Plus,
+    Star,
+}
+
+impl From<ListStyle> for ListStyleType {
+    fn from(style: ListStyle) -> Self {
+        match style {
+            ListStyle::Dash => Self::Dash,
+            ListStyle::Plus => Self::Plus,
+            ListStyle::Star => Self::Star,
         }
     }
+}
 
-    let mut exts = matches
-        .values_of("extension")
-        .map_or(BTreeSet::new(), |vals| vals.collect());
+fn cli_with_config() -> Cli {
+    let cli = Cli::parse();
+    let config_file_path = &cli.config_file;
+
+    if config_file_path == "none" {
+        return cli;
+    }
+
+    if let Ok(args) = fs::read_to_string(config_file_path) {
+        match shell_words::split(&args) {
+            Ok(mut args) => {
+                for (i, arg) in env::args_os().enumerate() {
+                    if let Some(s) = arg.to_str() {
+                        args.insert(i, s.into());
+                    }
+                }
+
+                Cli::parse_from(args)
+            }
+            Err(e) => {
+                eprintln!("failed to parse {}: {}", config_file_path, e);
+                process::exit(EXIT_PARSE_CONFIG);
+            }
+        }
+    } else {
+        cli
+    }
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let cli = cli_with_config();
+
+    let exts = &cli.extensions;
 
     let options = ComrakOptions {
         extension: ComrakExtensionOptions {
-            strikethrough: exts.remove("strikethrough") || matches.is_present("gfm"),
-            tagfilter: exts.remove("tagfilter") || matches.is_present("gfm"),
-            table: exts.remove("table") || matches.is_present("gfm"),
-            autolink: exts.remove("autolink") || matches.is_present("gfm"),
-            tasklist: exts.remove("tasklist") || matches.is_present("gfm"),
-            superscript: exts.remove("superscript"),
-            header_ids: matches.value_of("header-ids").map(|s| s.to_string()),
-            footnotes: exts.remove("footnotes"),
-            description_lists: exts.remove("description-lists"),
-            front_matter_delimiter: matches
-                .value_of("front-matter-delimiter")
-                .map(|s| s.to_string()),
+            strikethrough: exts.contains(&Extension::Strikethrough) || cli.gfm,
+            tagfilter: exts.contains(&Extension::Tagfilter) || cli.gfm,
+            table: exts.contains(&Extension::Table) || cli.gfm,
+            autolink: exts.contains(&Extension::Autolink) || cli.gfm,
+            tasklist: exts.contains(&Extension::Tasklist) || cli.gfm,
+            superscript: exts.contains(&Extension::Superscript),
+            header_ids: cli.header_ids,
+            footnotes: exts.contains(&Extension::Footnotes),
+            description_lists: exts.contains(&Extension::DescriptionLists),
+            front_matter_delimiter: cli.front_matter_delimiter,
         },
         parse: ComrakParseOptions {
-            smart: matches.is_present("smart"),
-            default_info_string: matches
-                .value_of("default-info-string")
-                .map(|e| e.to_owned()),
+            smart: cli.smart,
+            default_info_string: cli.default_info_string,
         },
         render: ComrakRenderOptions {
-            hardbreaks: matches.is_present("hardbreaks"),
-            github_pre_lang: matches.is_present("github-pre-lang") || matches.is_present("gfm"),
-            width: matches
-                .value_of("width")
-                .unwrap_or("0")
-                .parse()
-                .unwrap_or(0),
-            unsafe_: matches.is_present("unsafe"),
-            escape: matches.is_present("escape"),
-            list_style: matches
-                .value_of("list-style")
-                .unwrap_or("dash")
-                .parse::<ListStyleType>()
-                .expect("unknown list style"),
+            hardbreaks: cli.hardbreaks,
+            github_pre_lang: cli.github_pre_lang || cli.gfm,
+            width: cli.width,
+            unsafe_: cli.unsafe_,
+            escape: cli.escape,
+            list_style: cli.list_style.into(),
         },
     };
 
     let syntax_highlighter: Option<&dyn SyntaxHighlighterAdapter>;
-    let theme: &str = match matches.value_of("syntax-highlighting") {
-        Some(theme) => theme,
-        None => "",
-    };
-
     let mut plugins: ComrakPlugins = ComrakPlugins::default();
     let adapter: SyntectAdapter;
 
+    let theme = cli.syntax_highlighting;
     if theme.is_empty() || theme == "none" {
         syntax_highlighter = None;
     } else {
-        adapter = SyntectAdapter::new(theme);
+        adapter = SyntectAdapter::new(&theme);
         syntax_highlighter = Some(&adapter);
-    }
-
-    if !exts.is_empty() {
-        eprintln!("unknown extensions: {:?}", exts);
-        process::exit(EXIT_UNKNOWN_EXTENSION);
     }
 
     let mut s: Vec<u8> = Vec::with_capacity(2048);
 
-    match matches.values_of("file") {
+    match cli.files {
         None => {
             std::io::stdin().read_to_end(&mut s)?;
         }
         Some(fs) => {
-            for f in fs {
+            for f in &fs {
                 match fs::File::open(f) {
                     Ok(mut io) => {
                         io.read_to_end(&mut s)?;
                     }
                     Err(e) => {
-                        eprintln!("failed to read {}: {}", f, e);
+                        eprintln!("failed to read {}: {}", f.display(), e);
                         process::exit(EXIT_READ_INPUT);
                     }
                 }
@@ -282,16 +250,15 @@ if the file does not exist.\
     let arena = Arena::new();
     let root = comrak::parse_document(&arena, &String::from_utf8(s)?, &options);
 
-    let formatter = match matches.value_of("format") {
-        Some("html") => {
+    let formatter = match cli.format {
+        Format::Html => {
             plugins.render.codefence_syntax_highlighter = syntax_highlighter;
             comrak::format_html_with_plugins
         }
-        Some("commonmark") => comrak::format_commonmark_with_plugins,
-        _ => panic!("unknown format"),
+        Format::CommonMark => comrak::format_commonmark_with_plugins,
     };
 
-    if let Some(output_filename) = matches.value_of("output") {
+    if let Some(output_filename) = cli.output {
         formatter(
             root,
             &options,
