@@ -18,7 +18,5 @@ if [ x"$SPEC" = "xtrue" ]; then
 	python3 entity_tests.py --program='../../../target/debug/comrak --syntax-highlighting none'
 else
 	cargo test --verbose
-	echo "=== Running C API tests... ==="
-	cargo run --manifest-path=./c-api/tests/Cargo.toml
 	cargo run --example sample
 fi
