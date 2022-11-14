@@ -19,7 +19,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem;
-use std::str::{self, FromStr};
+use std::str;
 use strings;
 use typed_arena::Arena;
 
@@ -1929,18 +1929,5 @@ pub enum ListStyleType {
 impl Default for ListStyleType {
     fn default() -> Self {
         ListStyleType::Dash
-    }
-}
-
-impl FromStr for ListStyleType {
-    type Err = ();
-
-    fn from_str(input: &str) -> Result<ListStyleType, Self::Err> {
-        match input {
-            "dash" => Ok(ListStyleType::Dash),
-            "plus" => Ok(ListStyleType::Plus),
-            "star" => Ok(ListStyleType::Star),
-            _ => Err(()),
-        }
     }
 }
