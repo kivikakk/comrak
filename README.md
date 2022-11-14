@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.14"
+comrak = "0.15"
 ```
 
 Comrak supports Rust stable.
@@ -43,47 +43,90 @@ curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 
 ``` console
 $ comrak --help
-comrak 0.14.0
-Ashe Connor <ashe@kivikakk.ee>
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
-USAGE:
-    comrak [FLAGS] [OPTIONS] [--] [FILE]...
+Usage: comrak [OPTIONS] [FILE]...
 
-FLAGS:
-        --escape             Escape raw HTML instead of clobbering it
-        --gfm                Enable GitHub-flavored markdown extensions strikethrough, tagfilter, table, autolink, and
-                             tasklist. It also enables --github-pre-lang.
-        --github-pre-lang    Use GitHub-style <pre lang> for code blocks
-        --hardbreaks         Treat newlines as hard line breaks
-    -h, --help               Prints help information
-        --smart              Use smart punctuation
-        --unsafe             Allow raw HTML and dangerous URLs
-    -V, --version            Prints version information
+Arguments:
+  [FILE]...
+          CommonMark file(s) to parse; or standard input if none passed
 
-OPTIONS:
-    -c, --config-file <PATH>                    Path to config file containing command-line arguments, or `none'
-                                                [default: /Users/kivikakk/.config/comrak/config]
-        --default-info-string <INFO>            Default value for fenced code block's info strings if none is given
-    -e, --extension <EXTENSION>...              Specify an extension name to use [possible values: strikethrough,
-                                                tagfilter, table, autolink, tasklist, superscript, footnotes,
-                                                description-lists]
-    -t, --to <FORMAT>                           Specify output format [default: html]  [possible values: html,
-                                                commonmark]
-        --front-matter-delimiter <DELIMITER>    Ignore front-matter that starts and ends with the given string
-        --header-ids <PREFIX>                   Use the Comrak header IDs extension, with the given ID prefix
-        --list-style <LIST_STYLE>               Specify bullet character for lists (-, +, *) in CommonMark ouput
-                                                [default: dash]  [possible values: dash, plus, star]
-    -o, --output <FILE>                         Write output to FILE instead of stdout
-        --syntax-highlighting <THEME>           Syntax highlighting for codefence blocks. Choose a theme or 'none' for
-                                                disabling. [default: base16-ocean.dark]
-        --width <WIDTH>                         Specify wrap width (0 = nowrap) [default: 0]
+Options:
+  -c, --config-file <PATH>
+          Path to config file containing command-line arguments, or 'none'
+          
+          [default: /Users/kivikakk/.config/comrak/config]
 
-ARGS:
-    <FILE>...    The CommonMark file to parse; or standard input if none passed
+      --hardbreaks
+          Treat newlines as hard line breaks
 
-By default, Comrak will attempt to read command-line options from a config file specified by --config-file.  This
-behaviour can be disabled by passing --config-file none.  It is not an error if the file does not exist.
+      --smart
+          Use smart punctuation
+
+      --github-pre-lang
+          Use GitHub-style <pre lang> for code blocks
+
+      --gfm
+          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
+          tasklist. Also enables --github-pre-lang
+
+      --default-info-string <INFO>
+          Default value for fenced code block's info strings if none is given
+
+      --unsafe
+          Allow raw HTML and dangerous URLs
+
+      --escape
+          Escape raw HTML instead of clobbering it
+
+  -e, --extension <EXTENSION>
+          Specify extension name(s) to use
+          
+          Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
+          
+          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
+          footnotes, description-lists]
+
+  -t, --to <FORMAT>
+          Specify output format
+          
+          [default: html]
+          [possible values: html, commonmark]
+
+  -o, --output <FILE>
+          Write output to FILE instead of stdout
+
+      --width <WIDTH>
+          Specify wrap width (0 = nowrap)
+          
+          [default: 0]
+
+      --header-ids <PREFIX>
+          Use the Comrak header IDs extension, with the given ID prefix
+
+      --front-matter-delimiter <DELIMITER>
+          Ignore front-matter that starts and ends with the given string
+
+      --syntax-highlighting <THEME>
+          Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling
+          
+          [default: base16-ocean.dark]
+
+      --list-style <LIST_STYLE>
+          Specify bullet character for lists (-, +, *) in CommonMark ouput
+          
+          [default: dash]
+          [possible values: dash, plus, star]
+
+  -h, --help
+          Print help information (use `-h` for a summary)
+
+  -V, --version
+          Print version information
+
+By default, Comrak will attempt to read command-line options from a config file specified by
+--config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
+the file does not exist.
 ```
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:

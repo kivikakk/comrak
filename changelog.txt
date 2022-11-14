@@ -1,3 +1,19 @@
+### 0.15.0
+
+* table: fix start_line of Table itself by @kivikakk in https://github.com/kivikakk/comrak/pull/231
+* Rename header file to match c libname by @gjtorikian in https://github.com/kivikakk/comrak/pull/233
+* Change the name of the ifdef by @gjtorikian in https://github.com/kivikakk/comrak/pull/234
+* Add `comrak_set_parse_option_smart` by @gjtorikian in https://github.com/kivikakk/comrak/pull/235
+* Allow `c_char` options to be NULL by @gjtorikian in https://github.com/kivikakk/comrak/pull/237
+* Replace `lazy_static` dependency with `once_cell` by @Turbo87 in https://github.com/kivikakk/comrak/pull/238
+* Make `comrak --help` readable on my terminal by @mgeisler in https://github.com/kivikakk/comrak/pull/242
+* c-api: fix CI build by @kivikakk in https://github.com/kivikakk/comrak/pull/240
+* Bump versions of some dependencies by @helmet91 in https://github.com/kivikakk/comrak/pull/243
+* Adding functionality to build SyntectAdapters with custom themes, syntax sets, etc. by @ArvinSKushwaha in https://github.com/kivikakk/comrak/pull/239
+* Make shell-words and xdg dependencies optional by @silverpill in https://github.com/kivikakk/comrak/pull/245
+* Bump clap version to 4.0 and switch to the Derive API by @tranzystorek-io in https://github.com/kivikakk/comrak/pull/248
+* c-api: remove by @kivikakk in https://github.com/kivikakk/comrak/pull/249
+
 ### 0.14.0
 
 * Add C FFI, allowing Comrak to be used from other languages. (#171, Garen
