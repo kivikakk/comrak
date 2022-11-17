@@ -196,6 +196,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             tasklist: exts.contains(&Extension::Tasklist) || cli.gfm,
             superscript: exts.contains(&Extension::Superscript),
             header_ids: cli.header_ids,
+            header_aria_hidden: true,
             footnotes: exts.contains(&Extension::Footnotes),
             description_lists: exts.contains(&Extension::DescriptionLists),
             front_matter_delimiter: cli.front_matter_delimiter,

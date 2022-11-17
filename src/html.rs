@@ -467,8 +467,13 @@ impl<'o> HtmlFormatter<'o> {
                         id = self.anchorizer.anchorize(id);
                         write!(
                             self.output,
-                            "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                            "<a href=\"#{}\" {}class=\"anchor\" id=\"{}{}\"></a>",
                             id,
+                            if self.options.extension.header_aria_hidden {
+                                "aria-hidden=\"true\" "
+                            } else {
+                                ""
+                            },
                             prefix,
                             id
                         )?;
