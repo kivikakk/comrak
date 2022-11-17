@@ -23,6 +23,7 @@ fn fuzz_doesnt_crash(md: String) {
             tasklist: true,
             superscript: true,
             header_ids: Some("user-content-".to_string()),
+            header_no_aria_hidden: true,
             footnotes: true,
             description_lists: true,
             front_matter_delimiter: None,
@@ -849,7 +850,9 @@ fn header_ids() {
             "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n",
             "<h1><a href=\"#isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
         ),
-        |opts| opts.extension.header_ids = Some("user-content-".to_owned()),
+        |opts| {
+            opts.extension.header_ids = Some("user-content-".to_owned());
+        },
     );
 }
 
@@ -1286,6 +1289,7 @@ fn exercise_full_api<'a>() {
             tasklist: false,
             superscript: false,
             header_ids: Some("abc".to_string()),
+            header_no_aria_hidden: false,
             footnotes: false,
             description_lists: false,
             front_matter_delimiter: None,
