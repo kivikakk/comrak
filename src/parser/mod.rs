@@ -135,7 +135,7 @@ pub struct ComrakOptions {
     pub render: ComrakRenderOptions,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 /// Options to select extensions.
 pub struct ComrakExtensionOptions {
     /// Enables the
@@ -237,11 +237,11 @@ pub struct ComrakExtensionOptions {
     /// # use comrak::{markdown_to_html, ComrakOptions};
     /// let mut options = ComrakOptions::default();
     /// options.extension.header_ids = Some("user-content-".to_string());
-    /// options.extension.header_no_aria_hidden = true;
+    /// options.extension.header_ids_aria_hidden = false;
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
-    pub header_no_aria_hidden: bool,
+    pub header_ids_aria_hidden: bool,
 
     /// Enables the footnotes extension per `cmark-gfm`.
     ///
@@ -1942,5 +1942,23 @@ pub enum ListStyleType {
 impl Default for ListStyleType {
     fn default() -> Self {
         ListStyleType::Dash
+    }
+}
+
+impl Default for ComrakExtensionOptions {
+    fn default() -> Self {
+        Self {
+            strikethrough: false,
+            tagfilter: false,
+            table: false,
+            autolink: false,
+            tasklist: false,
+            superscript: false,
+            header_ids: None,
+            header_ids_aria_hidden: true,
+            footnotes: false,
+            description_lists: false,
+            front_matter_delimiter: None,
+        }
     }
 }

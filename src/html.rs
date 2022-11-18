@@ -469,10 +469,10 @@ impl<'o> HtmlFormatter<'o> {
                             self.output,
                             "<a href=\"#{}\" {}class=\"anchor\" id=\"{}{}\"></a>",
                             id,
-                            if self.options.extension.header_no_aria_hidden {
-                                ""
-                            } else {
+                            if self.options.extension.header_ids_aria_hidden {
                                 "aria-hidden=\"true\" "
+                            } else {
+                                ""
                             },
                             prefix,
                             id
