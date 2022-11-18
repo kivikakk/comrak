@@ -103,6 +103,10 @@ struct Cli {
     #[arg(long, value_name = "PREFIX")]
     header_ids: Option<String>,
 
+    /// Disable the aria-hidden attribute on header links
+    #[arg(long)]
+    header_no_aria_hidden: bool,
+
     /// Ignore front-matter that starts and ends with the given string
     #[arg(long, value_name = "DELIMITER", allow_hyphen_values = true)]
     front_matter_delimiter: Option<String>,
@@ -196,7 +200,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             tasklist: exts.contains(&Extension::Tasklist) || cli.gfm,
             superscript: exts.contains(&Extension::Superscript),
             header_ids: cli.header_ids,
-            header_no_aria_hidden: true,
+            header_no_aria_hidden: cli.header_no_aria_hidden,
             footnotes: exts.contains(&Extension::Footnotes),
             description_lists: exts.contains(&Extension::DescriptionLists),
             front_matter_delimiter: cli.front_matter_delimiter,
