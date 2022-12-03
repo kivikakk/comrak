@@ -1650,12 +1650,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
         static TASKLIST: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap());
+            Lazy::new(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
 
-        let (active, end) = match TASKLIST.captures(text) {
+        let (symbol, end) = match TASKLIST.captures(text) {
             None => return,
             Some(c) => (
-                c.get(2).unwrap().as_bytes() != b" ",
+                c.get(2).unwrap().as_bytes().to_owned(),
                 c.get(0).unwrap().end(),
             ),
         };
@@ -1676,7 +1676,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         *text = text[end..].to_vec();
-        let checkbox = inlines::make_inline(self.arena, NodeValue::TaskItem(active));
+        let checkbox = inlines::make_inline(
+            self.arena,
+            NodeValue::TaskItem {
+                checked: symbol != b" ",
+                symbol: symbol[0] as char,
+            },
+        );
         node.insert_before(checkbox);
     }
 

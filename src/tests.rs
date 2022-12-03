@@ -763,6 +763,7 @@ fn tasklist() {
             "* [ ] Red\n",
             "* [x] Green\n",
             "* [ ] Blue\n",
+            "* [!] Papayawhip\n",
             "<!-- end list -->\n",
             "1. [ ] Bird\n",
             "2. [ ] McHale\n",
@@ -777,6 +778,7 @@ fn tasklist() {
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Papayawhip</li>\n",
             "</ul>\n",
             "<!-- end list -->\n",
             "<ol>\n",
@@ -1389,7 +1391,7 @@ fn exercise_full_api<'a>() {
         ::nodes::NodeValue::Text(text) => {
             let _: &Vec<u8> = text;
         }
-        ::nodes::NodeValue::TaskItem(checked) => {
+        ::nodes::NodeValue::TaskItem { checked, .. } => {
             let _: &bool = checked;
         }
         ::nodes::NodeValue::SoftBreak => {}

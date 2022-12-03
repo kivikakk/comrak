@@ -804,7 +804,7 @@ impl<'o> HtmlFormatter<'o> {
                     )?;
                 }
             }
-            NodeValue::TaskItem(checked) => {
+            NodeValue::TaskItem { checked, .. } => {
                 if entering {
                     if checked {
                         self.output.write_all(
