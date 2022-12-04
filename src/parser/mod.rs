@@ -1680,7 +1680,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.arena,
             NodeValue::TaskItem {
                 checked: symbol != b" ",
-                symbol: symbol[0] as char,
+                symbol: symbol[0],
             },
         );
         node.insert_before(checkbox);

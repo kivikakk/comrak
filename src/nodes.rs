@@ -106,7 +106,7 @@ pub enum NodeValue {
         /// The `bool` `checked` indicates whether it is checked or not.
         checked: bool,
         /// The `symbol` that was used in the brackets to mark a task as `checked`.
-        symbol: char,
+        symbol: u8,
     },
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
