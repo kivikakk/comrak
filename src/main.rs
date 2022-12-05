@@ -63,6 +63,10 @@ struct Cli {
     #[arg(long)]
     gfm: bool,
 
+    /// Enable relaxing which character is allowed in a tasklists.
+    #[arg(long)]
+    relaxed_tasklist_character: bool,
+
     /// Default value for fenced code block's info strings if none is given
     #[arg(long, value_name = "INFO")]
     default_info_string: Option<String>,
@@ -203,6 +207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         parse: ComrakParseOptions {
             smart: cli.smart,
             default_info_string: cli.default_info_string,
+            relaxed_tasklist_matching: cli.relaxed_tasklist_character,
         },
         render: ComrakRenderOptions {
             hardbreaks: cli.hardbreaks,

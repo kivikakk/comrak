@@ -30,6 +30,7 @@ fn fuzz_doesnt_crash(md: String) {
         parse: ::ComrakParseOptions {
             smart: true,
             default_info_string: Some("Rust".to_string()),
+            relaxed_tasklist_matching: true,
         },
         render: ::ComrakRenderOptions {
             hardbreaks: true,
@@ -1295,6 +1296,7 @@ fn exercise_full_api<'a>() {
         parse: ::ComrakParseOptions {
             smart: false,
             default_info_string: Some("abc".to_string()),
+            relaxed_tasklist_matching: true,
         },
         render: ::ComrakRenderOptions {
             hardbreaks: false,
