@@ -1652,23 +1652,17 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
-        let relaxed_tasklist_matching = self.options.parse.relaxed_tasklist_matching;
         static TASKLIST: OnceCell<Regex> = OnceCell::new();
-        let r = TASKLIST.get_or_init(|| {
-            if relaxed_tasklist_matching {
-                Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap()
-            } else {
-                Regex::new(r"\A(\s*\[([xX\s])\])(?:\z|\s)").unwrap()
-            }
-        });
+        let r = TASKLIST.get_or_init(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
 
         let (symbol, end) = match r.captures(text) {
             None => return,
-            Some(c) => (
-                c.get(2).unwrap().as_bytes().to_owned(),
-                c.get(0).unwrap().end(),
-            ),
+            Some(c) => (c.get(2).unwrap().as_bytes()[0], c.get(0).unwrap().end()),
         };
+
+        if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, b' ' | b'x' | b'X') {
+            return;
+        }
 
         let parent = node.parent().unwrap();
         if node.previous_sibling().is_some() || parent.previous_sibling().is_some() {
@@ -1689,8 +1683,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let checkbox = inlines::make_inline(
             self.arena,
             NodeValue::TaskItem {
-                checked: symbol != b" ",
-                symbol: symbol[0],
+                checked: symbol != b' ',
+                symbol: symbol,
             },
         );
         node.insert_before(checkbox);

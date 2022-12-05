@@ -759,7 +759,11 @@ fn tagfilter() {
 #[test]
 fn tasklist() {
     html_opts!(
-        [render.unsafe_, extension.tasklist],
+        [
+            render.unsafe_,
+            extension.tasklist,
+            parse.relaxed_tasklist_matching
+        ],
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
