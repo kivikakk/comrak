@@ -804,6 +804,35 @@ fn tasklist() {
 }
 
 #[test]
+fn tasklist_relaxed_regression() {
+    html_opts!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
+            "</ul>\n"
+        ),
+    );
+
+    html_opts!(
+        [extension.tasklist],
+        "* [!] Red\n",
+        concat!("<ul>\n", "<li>[!] Red</li>\n", "</ul>\n"),
+    );
+
+    html_opts!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
 fn tasklist_32() {
     html_opts!(
         [render.unsafe_, extension.tasklist],
