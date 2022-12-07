@@ -101,9 +101,13 @@ pub enum NodeValue {
     /// in a document will be contained in a `Text` node.
     Text(Vec<u8>),
 
-    /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-). The
-    /// `bool` indicates whether it is checked or not.
-    TaskItem(bool),
+    /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
+    TaskItem {
+        /// The `bool` `checked` indicates whether it is checked or not.
+        checked: bool,
+        /// The `symbol` that was used in the brackets to mark a task as `checked`.
+        symbol: u8,
+    },
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
     /// the `hardbreaks` option is set in `ComrakOptions` during formatting, it will be formatted

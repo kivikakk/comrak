@@ -30,6 +30,7 @@ fn fuzz_doesnt_crash(md: String) {
         parse: ::ComrakParseOptions {
             smart: true,
             default_info_string: Some("Rust".to_string()),
+            relaxed_tasklist_matching: true,
         },
         render: ::ComrakRenderOptions {
             hardbreaks: true,
@@ -758,11 +759,16 @@ fn tagfilter() {
 #[test]
 fn tasklist() {
     html_opts!(
-        [render.unsafe_, extension.tasklist],
+        [
+            render.unsafe_,
+            extension.tasklist,
+            parse.relaxed_tasklist_matching
+        ],
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
             "* [ ] Blue\n",
+            "* [!] Papayawhip\n",
             "<!-- end list -->\n",
             "1. [ ] Bird\n",
             "2. [ ] McHale\n",
@@ -777,6 +783,7 @@ fn tasklist() {
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Papayawhip</li>\n",
             "</ul>\n",
             "<!-- end list -->\n",
             "<ol>\n",
@@ -795,6 +802,35 @@ fn tasklist() {
             "</li>\n",
             "</ul>\n",
             "</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
+fn tasklist_relaxed_regression() {
+    html_opts!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
+            "</ul>\n"
+        ),
+    );
+
+    html_opts!(
+        [extension.tasklist],
+        "* [!] Red\n",
+        concat!("<ul>\n", "<li>[!] Red</li>\n", "</ul>\n"),
+    );
+
+    html_opts!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
             "</ul>\n"
         ),
     );
@@ -1293,6 +1329,7 @@ fn exercise_full_api<'a>() {
         parse: ::ComrakParseOptions {
             smart: false,
             default_info_string: Some("abc".to_string()),
+            relaxed_tasklist_matching: true,
         },
         render: ::ComrakRenderOptions {
             hardbreaks: false,
@@ -1389,8 +1426,9 @@ fn exercise_full_api<'a>() {
         ::nodes::NodeValue::Text(text) => {
             let _: &Vec<u8> = text;
         }
-        ::nodes::NodeValue::TaskItem(checked) => {
+        ::nodes::NodeValue::TaskItem { checked, symbol } => {
             let _: &bool = checked;
+            let _: &u8 = symbol;
         }
         ::nodes::NodeValue::SoftBreak => {}
         ::nodes::NodeValue::LineBreak => {}

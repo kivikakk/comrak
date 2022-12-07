@@ -11,7 +11,7 @@ use nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
-use once_cell::sync::Lazy;
+use once_cell::sync::OnceCell;
 use regex::bytes::{Regex, RegexBuilder};
 use scanners;
 use std::cell::RefCell;
@@ -341,6 +341,9 @@ pub struct ComrakParseOptions {
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     /// ```
     pub default_info_string: Option<String>,
+
+    /// Whether or not a simple `x` or `X` is used for tasklist or any other symbol is allowed.
+    pub relaxed_tasklist_matching: bool,
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -1649,16 +1652,17 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
-        static TASKLIST: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\A(\s*\[([xX ])\])(?:\z|\s)").unwrap());
+        static TASKLIST: OnceCell<Regex> = OnceCell::new();
+        let r = TASKLIST.get_or_init(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
 
-        let (active, end) = match TASKLIST.captures(text) {
+        let (symbol, end) = match r.captures(text) {
             None => return,
-            Some(c) => (
-                c.get(2).unwrap().as_bytes() != b" ",
-                c.get(0).unwrap().end(),
-            ),
+            Some(c) => (c.get(2).unwrap().as_bytes()[0], c.get(0).unwrap().end()),
         };
+
+        if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, b' ' | b'x' | b'X') {
+            return;
+        }
 
         let parent = node.parent().unwrap();
         if node.previous_sibling().is_some() || parent.previous_sibling().is_some() {
@@ -1676,7 +1680,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         *text = text[end..].to_vec();
-        let checkbox = inlines::make_inline(self.arena, NodeValue::TaskItem(active));
+        let checkbox = inlines::make_inline(
+            self.arena,
+            NodeValue::TaskItem {
+                checked: symbol != b' ',
+                symbol: symbol,
+            },
+        );
         node.insert_before(checkbox);
     }
 

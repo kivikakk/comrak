@@ -328,7 +328,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering),
             NodeValue::Strong => self.format_strong(),
             NodeValue::Emph => self.format_emph(node),
-            NodeValue::TaskItem(checked) => self.format_task_item(checked, entering),
+            NodeValue::TaskItem { checked, symbol } => {
+                self.format_task_item(checked, symbol, entering)
+            }
             NodeValue::Strikethrough => self.format_strikethrough(),
             NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
@@ -596,13 +598,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.write_all(&[emph_delim]).unwrap();
     }
 
-    fn format_task_item(&mut self, checked: bool, entering: bool) {
+    fn format_task_item(&mut self, _checked: bool, symbol: u8, entering: bool) {
         if entering {
-            if checked {
-                write!(self, "[x] ").unwrap();
-            } else {
-                write!(self, "[ ] ").unwrap();
-            }
+            write!(self, "[{}] ", symbol as char).unwrap();
         }
     }
 
