@@ -194,11 +194,9 @@ fn tagfilter(literal: &[u8]) -> bool {
         i += 1;
     }
 
+    let lc = unsafe { String::from_utf8_unchecked(literal[i..].to_vec()) }.to_lowercase();
     for t in TAGFILTER_BLACKLIST.iter() {
-        if unsafe { String::from_utf8_unchecked(literal[i..].to_vec()) }
-            .to_lowercase()
-            .starts_with(t)
-        {
+        if lc.starts_with(t) {
             let j = i + t.len();
             return isspace(literal[j])
                 || literal[j] == b'>'
