@@ -485,8 +485,6 @@ impl<'o> HtmlFormatter<'o> {
                     let code_attr: String;
 
                     if !ncb.info.is_empty() {
-                        println!("{:?}", String::from_utf8_lossy(&ncb.info));
-
                         while first_tag < ncb.info.len() && !isspace(ncb.info[first_tag]) {
                             first_tag += 1;
                         }
@@ -503,7 +501,7 @@ impl<'o> HtmlFormatter<'o> {
                                         if meta.len() > 0 {
                                             pre_attributes.insert(
                                                 String::from("meta"),
-                                                String::from(meta.trim()),
+                                                String::from(meta.trim_start()),
                                             );
                                         }
                                     }
