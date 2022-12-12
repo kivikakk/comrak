@@ -58,6 +58,10 @@ struct Cli {
     #[arg(long)]
     github_pre_lang: bool,
 
+    /// Capture code block metadata for code blocks
+    #[arg(long)]
+    pre_metadata: bool,
+
     /// Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and tasklist.
     /// Also enables --github-pre-lang.
     #[arg(long)]
@@ -212,6 +216,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         render: ComrakRenderOptions {
             hardbreaks: cli.hardbreaks,
             github_pre_lang: cli.github_pre_lang || cli.gfm,
+            pre_metadata: cli.pre_metadata,
             width: cli.width,
             unsafe_: cli.unsafe_,
             escape: cli.escape,

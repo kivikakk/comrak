@@ -485,15 +485,31 @@ impl<'o> HtmlFormatter<'o> {
                     let code_attr: String;
 
                     if !ncb.info.is_empty() {
+                        println!("{:?}", String::from_utf8_lossy(&ncb.info));
+
                         while first_tag < ncb.info.len() && !isspace(ncb.info[first_tag]) {
                             first_tag += 1;
                         }
 
                         if self.options.render.github_pre_lang {
-                            pre_attributes.insert(
-                                String::from("lang"),
-                                String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap(),
-                            );
+                            let lang =
+                                String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap();
+
+                            pre_attributes.insert(String::from("lang"), lang);
+
+                            if self.options.render.pre_metadata {
+                                match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
+                                    Ok(meta) => {
+                                        if meta.len() > 0 {
+                                            pre_attributes.insert(
+                                                String::from("meta"),
+                                                String::from(meta.trim()),
+                                            );
+                                        }
+                                    }
+                                    _ => (),
+                                }
+                            }
                         } else {
                             code_attr = format!(
                                 "language-{}",
