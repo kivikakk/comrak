@@ -216,7 +216,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         render: ComrakRenderOptions {
             hardbreaks: cli.hardbreaks,
             github_pre_lang: cli.github_pre_lang || cli.gfm,
-            pre_metadata: cli.pre_metadata,
+            pre_lang_and_meta: cli.pre_metadata,
             width: cli.width,
             unsafe_: cli.unsafe_,
             escape: cli.escape,

@@ -35,7 +35,7 @@ fn fuzz_doesnt_crash(md: String) {
         render: ::ComrakRenderOptions {
             hardbreaks: true,
             github_pre_lang: true,
-            pre_metadata: true,
+            pre_lang_and_meta: true,
             width: 80,
             unsafe_: true,
             escape: false,
@@ -1335,7 +1335,7 @@ fn exercise_full_api<'a>() {
         render: ::ComrakRenderOptions {
             hardbreaks: false,
             github_pre_lang: false,
-            pre_metadata: false,
+            pre_lang_and_meta: false,
             width: 123456,
             unsafe_: false,
             escape: false,

@@ -10,7 +10,7 @@ pub trait SyntaxHighlighterAdapter {
     ///
     /// lang: Name of the programming language (the info string of the codefence block after the initial "```" part).
     /// code: The source code to be syntax highlighted.
-    fn highlight(&self, lang: Option<&str>, code: &str) -> String;
+    fn highlight(&self, lang: Option<&str>, meta: Option<&str>, code: &str) -> String;
 
     /// Generates the opening `<pre>` tag. Some syntax highlighter libraries might include their own
     /// `<pre>` tag possibly with some HTML attribute pre-filled.

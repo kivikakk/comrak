@@ -58,8 +58,7 @@ fn main() {
         extension: ComrakExtensionOptions::default(),
         parse: ComrakParseOptions::default(),
         render: ComrakRenderOptions {
-            github_pre_lang: true,
-            pre_metadata: true,
+            pre_lang_and_meta: true,
             ..Default::default()
         },
     };

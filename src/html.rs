@@ -489,24 +489,33 @@ impl<'o> HtmlFormatter<'o> {
                             first_tag += 1;
                         }
 
-                        if self.options.render.github_pre_lang {
+                        // Set the `lang` attribute if either `pre_lang_and_meta` or
+                        // `github_pre_lang` is set to `true`
+                        if self.options.render.pre_lang_and_meta
+                            || self.options.render.github_pre_lang
+                        {
                             let lang =
                                 String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap();
-
                             pre_attributes.insert(String::from("lang"), lang);
+                        }
 
-                            if self.options.render.pre_metadata {
-                                match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
-                                    Ok(meta) if meta.len() > 0 => {
-                                        pre_attributes.insert(
-                                            String::from("meta"),
-                                            String::from(meta.trim_start()),
-                                        );
-                                    }
-                                    _ => (),
+                        // Set the `meta` attribute only if `pre_lang_and_meta` is set to `true`
+                        if self.options.render.pre_lang_and_meta {
+                            match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
+                                Ok(meta) if meta.len() > 0 => {
+                                    pre_attributes.insert(
+                                        String::from("meta"),
+                                        String::from(meta.trim_start()),
+                                    );
                                 }
+                                _ => (),
                             }
-                        } else {
+                        }
+
+                        // Otherwise, add a `language-{lang}` class
+                        if !self.options.render.pre_lang_and_meta
+                            && !self.options.render.github_pre_lang
+                        {
                             code_attr = format!(
                                 "language-{}",
                                 str::from_utf8(&ncb.info[..first_tag]).unwrap()
@@ -534,6 +543,8 @@ impl<'o> HtmlFormatter<'o> {
                                 highlighter.build_code_tag(&code_attributes).as_bytes(),
                             )?;
 
+                            let meta = pre_attributes.get("meta").map(String::as_str);
+
                             self.output.write_all(
                                 highlighter
                                     .highlight(
@@ -541,6 +552,7 @@ impl<'o> HtmlFormatter<'o> {
                                             Ok(lang) => Some(lang),
                                             Err(_) => None,
                                         },
+                                        meta,
                                         str::from_utf8(ncb.literal.as_slice()).unwrap(),
                                     )
                                     .as_bytes(),

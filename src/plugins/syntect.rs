@@ -49,7 +49,7 @@ impl<'a> SyntectAdapter<'a> {
 }
 
 impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
-    fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+    fn highlight(&self, lang: Option<&str>, _meta: Option<&str>, code: &str) -> String {
         let fallback_syntax = "Plain Text";
 
         let lang: &str = match lang {
