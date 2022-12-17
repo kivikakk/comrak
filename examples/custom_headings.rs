@@ -11,6 +11,15 @@ fn main() {
         "{}",
         render_heading("Some text.\n\n## Please hide me from search\n\nSome other text")
     );
+    println!(
+        "{}",
+        render_heading("Some text.\n\n### Here is some `code`\n\nSome other text")
+    );
+    println!(
+        "{}",
+        render_heading("Some text.\n\n### Here is some **bold** text and some *italicized* text\n\nSome other text")
+    );
+    println!("{}", render_heading("# Here is a [link](/)"));
 }
 
 struct CustomHeadingAdapter;
