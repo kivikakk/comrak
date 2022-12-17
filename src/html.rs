@@ -11,6 +11,8 @@ use std::io::{self, Write};
 use std::str;
 use strings::build_opening_tag;
 
+use crate::adapters::HeadingMeta;
+
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
@@ -454,22 +456,40 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::Heading(ref nch) => {
                 if entering {
-                    self.cr()?;
-                    write!(self.output, "<h{}>", nch.level)?;
+                    match self.plugins.render.heading_adapter {
+                        Some(adapter) => {
+                            let level = nch.level;
+                            let mut text_content = Vec::with_capacity(20);
+                            self.collect_text(node, &mut text_content);
 
-                    if let Some(ref prefix) = self.options.extension.header_ids {
-                        let mut text_content = Vec::with_capacity(20);
-                        self.collect_text(node, &mut text_content);
+                            let content = &String::from_utf8(text_content).unwrap();
 
-                        let mut id = String::from_utf8(text_content).unwrap();
-                        id = self.anchorizer.anchorize(id);
-                        write!(
-                            self.output,
-                            "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                            id,
-                            prefix,
-                            id
-                        )?;
+                            let heading = HeadingMeta {
+                                level,
+                                content: String::from(content),
+                            };
+
+                            let rendered = adapter.render(&heading);
+                            write!(self.output, "{}", rendered)?;
+                        }
+                        None => {
+                            write!(self.output, "<h{}>", nch.level)?;
+
+                            if let Some(ref prefix) = self.options.extension.header_ids {
+                                let mut text_content = Vec::with_capacity(20);
+                                self.collect_text(node, &mut text_content);
+
+                                let mut id = String::from_utf8(text_content).unwrap();
+                                id = self.anchorizer.anchorize(id);
+                                write!(
+                                        self.output,
+                                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                                        id,
+                                        prefix,
+                                        id
+                                    )?;
+                            }
+                        }
                     }
                 } else {
                     writeln!(self.output, "</h{}>", nch.level)?;

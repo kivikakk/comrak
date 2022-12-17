@@ -23,6 +23,8 @@ use std::str;
 use strings;
 use typed_arena::Arena;
 
+use crate::adapters::HeadingAdapter;
+
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
@@ -511,6 +513,9 @@ pub struct ComrakRenderPlugins<'a> {
     ///            "<pre lang=\"rust\"><code class=\"language-rust\"><span class=\"lang-rust\">fn main<'a>();\n</span></code></pre>\n");
     /// ```
     pub codefence_syntax_highlighter: Option<&'a dyn SyntaxHighlighterAdapter>,
+
+    /// Optional heading adapter
+    pub heading_adapter: Option<&'a dyn HeadingAdapter>,
 }
 
 impl Debug for ComrakRenderPlugins<'_> {

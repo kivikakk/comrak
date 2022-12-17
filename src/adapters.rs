@@ -24,3 +24,19 @@ pub trait SyntaxHighlighterAdapter {
     /// `attributes`: A map of HTML attributes provided by comrak.
     fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String;
 }
+
+/// The struct passed to the `HeadingAdapter`.
+#[derive(Clone, Debug)]
+pub struct HeadingMeta {
+    /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
+    pub level: u32,
+
+    /// The text content of the heading.
+    pub content: String,
+}
+
+/// Implement this adapter for creating a plugin for custom headings.
+pub trait HeadingAdapter {
+    /// The rendering function for headings.
+    fn render(&self, heading: &HeadingMeta) -> String;
+}
