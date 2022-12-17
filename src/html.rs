@@ -543,8 +543,6 @@ impl<'o> HtmlFormatter<'o> {
                                 highlighter.build_code_tag(&code_attributes).as_bytes(),
                             )?;
 
-                            let meta = pre_attributes.get("meta").map(String::as_str);
-
                             self.output.write_all(
                                 highlighter
                                     .highlight(
@@ -552,7 +550,7 @@ impl<'o> HtmlFormatter<'o> {
                                             Ok(lang) => Some(lang),
                                             Err(_) => None,
                                         },
-                                        meta,
+                                        pre_attributes.get("meta").map(String::as_str),
                                         str::from_utf8(ncb.literal.as_slice()).unwrap(),
                                     )
                                     .as_bytes(),
