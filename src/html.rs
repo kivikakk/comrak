@@ -546,10 +546,7 @@ impl<'o> HtmlFormatter<'o> {
                             self.output.write_all(
                                 highlighter
                                     .highlight(
-                                        match str::from_utf8(&ncb.info[..first_tag]) {
-                                            Ok(lang) => Some(lang),
-                                            Err(_) => None,
-                                        },
+                                        pre_attributes.get("lang").map(String::as_str),
                                         pre_attributes.get("meta").map(String::as_str),
                                         str::from_utf8(ncb.literal.as_slice()).unwrap(),
                                     )
