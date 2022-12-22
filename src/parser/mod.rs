@@ -1,6 +1,8 @@
 mod autolink;
 mod inlines;
 mod table;
+#[cfg(feature = "shortcodes")]
+pub mod shortcodes;
 
 use adapters::SyntaxHighlighterAdapter;
 use arena_tree::Node;
@@ -310,7 +312,7 @@ pub struct ComrakExtensionOptions {
     /// ```
     pub front_matter_delimiter: Option<String>,
 
-    #[cfg(feature = "emoji")]
+    #[cfg(feature = "shortcodes")]
     /// If "emoji" feature is enabled and shortcodes is set to true, phrases wrapped
     /// inside of ':' blocks will be replaced with emojis.
     ///

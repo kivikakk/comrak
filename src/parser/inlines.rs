@@ -1,9 +1,9 @@
 use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
-#[cfg(feature = "emoji")]
-use nodes::NodeShortCode;
 use nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
+#[cfg(feature = "shortcodes")]
+use parser::shortcodes::NodeShortCode;
 use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
@@ -93,7 +93,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if options.extension.superscript {
             s.special_chars[b'^' as usize] = true;
         }
-        #[cfg(feature = "emoji")]
+        #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
             s.special_chars[b':' as usize] = true;
         }
@@ -119,7 +119,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace()),
-            #[cfg(feature = "emoji")]
+            #[cfg(feature = "shortcodes")]
             ':' if self.options.extension.shortcodes => Some(self.handle_colons()),
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
             '-' => Some(self.handle_hyphen()),
@@ -857,14 +857,18 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
     }
 
-    #[cfg(feature = "emoji")]
+    #[cfg(feature = "shortcodes")]
     pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
         if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
-            self.pos += 1;
-            let shortcode = &self.input[self.pos..self.pos + matchlen - 2];
-            let inl = make_emoji(self.arena, shortcode);
-            self.pos += matchlen;
-            return inl;
+            let s = self.pos + 1;
+            let e = s + matchlen - 2;
+            let shortcode = &self.input[s..e];
+
+            if NodeShortCode::is_valid(shortcode.to_vec()) {
+                let inl = make_emoji(self.arena, &shortcode);
+                self.pos += matchlen;
+                return inl;
+            }
         }
         self.pos += 1;
         make_inline(self.arena, NodeValue::Text(b":".to_vec()))
@@ -1220,13 +1224,11 @@ fn make_autolink<'a>(
     inl
 }
 
-#[cfg(feature = "emoji")]
+#[cfg(feature = "shortcodes")]
 fn make_emoji<'a>(arena: &'a Arena<AstNode<'a>>, shortcode: &[u8]) -> &'a AstNode<'a> {
     let inl = make_inline(
         arena,
-        NodeValue::ShortCode(NodeShortCode {
-            shortcode: shortcode.to_vec(),
-        }),
+        NodeValue::ShortCode(NodeShortCode::from(shortcode.to_vec())),
     );
     inl
 }

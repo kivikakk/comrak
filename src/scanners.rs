@@ -182,7 +182,7 @@ pub fn link_title(line: &[u8]) -> Option<usize> {
     search(Rule::link_title, line)
 }
 
-#[cfg(feature = "emoji")]
+#[cfg(feature = "shortcodes")]
 #[inline(always)]
 pub fn shortcode(line: &[u8]) -> Option<usize> {
     search(Rule::shortcode_rule, line)

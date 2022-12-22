@@ -207,7 +207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             footnotes: exts.contains(&Extension::Footnotes),
             description_lists: exts.contains(&Extension::DescriptionLists),
             front_matter_delimiter: cli.front_matter_delimiter,
-            #[cfg(feature = "emoji")]
+            #[cfg(feature = "shortcodes")]
             shortcodes: cli.gemojis,
         },
         parse: ComrakParseOptions {

@@ -11,7 +11,7 @@ use std::io::{self, Write};
 use std::str;
 use strings::build_opening_tag;
 
-#[cfg(feature = "emoji")]
+#[cfg(feature = "shortcodes")]
 extern crate emojis;
 
 /// Formats an AST as HTML, modified by the given options.
@@ -695,12 +695,11 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"\" />")?;
                 }
             }
-            #[cfg(feature = "emoji")]
+            #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref emoji) => {
                 if entering {
                     if self.options.extension.shortcodes {
-                        let captured = unsafe { str::from_utf8_unchecked(&emoji.shortcode) };
-                        if let Some(emoji) = emojis::get_by_shortcode(captured) {
+                        if let Some(emoji) = emoji.emoji() {
                             self.output.write_all(emoji.as_bytes())?;
                         }
                     }
