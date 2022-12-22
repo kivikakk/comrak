@@ -1,4 +1,6 @@
 use ctype::{isalpha, isdigit, ispunct, isspace};
+#[cfg(feature = "emoji")]
+use nodes::NodeShortCode;
 use nodes::TableAlignment;
 use nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
@@ -335,6 +337,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
             NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering),
+            #[cfg(feature = "emoji")]
+            NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering),
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering),
             NodeValue::TableCell => self.format_table_cell(node, entering),
@@ -652,6 +656,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
+        }
+    }
+
+    #[cfg(feature = "emoji")]
+    fn format_shortcode(&mut self, ne: &NodeShortCode, entering: bool) {
+        if entering {
+            write!(self, ":").unwrap();
+        } else {
+            self.output(&ne.shortcode, false, Escaping::Literal);
+            write!(self, ":").unwrap();
         }
     }
 

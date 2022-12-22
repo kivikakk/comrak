@@ -75,6 +75,10 @@ struct Cli {
     #[arg(long = "unsafe")]
     unsafe_: bool,
 
+    /// Translate gemojis into UTF8 characters
+    #[arg(long)]
+    gemojis: bool,
+
     /// Escape raw HTML instead of clobbering it
     #[arg(long)]
     escape: bool,
@@ -203,6 +207,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             footnotes: exts.contains(&Extension::Footnotes),
             description_lists: exts.contains(&Extension::DescriptionLists),
             front_matter_delimiter: cli.front_matter_delimiter,
+            #[cfg(feature = "emoji")]
+            shortcodes: cli.gemojis,
         },
         parse: ComrakParseOptions {
             smart: cli.smart,

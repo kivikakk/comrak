@@ -182,6 +182,12 @@ pub fn link_title(line: &[u8]) -> Option<usize> {
     search(Rule::link_title, line)
 }
 
+#[cfg(feature = "emoji")]
+#[inline(always)]
+pub fn shortcode(line: &[u8]) -> Option<usize> {
+    search(Rule::shortcode_rule, line)
+}
+
 #[inline(always)]
 pub fn table_start(line: &[u8]) -> Option<usize> {
     search(Rule::table_start, line)

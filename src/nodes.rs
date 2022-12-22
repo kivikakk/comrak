@@ -146,6 +146,10 @@ pub enum NodeValue {
 
     /// **Inline**.  A footnote reference; the `Vec<u8>` is the referent footnote's name.
     FootnoteReference(Vec<u8>),
+
+    #[cfg(feature = "emoji")]
+    /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "emoji"
+    ShortCode(NodeShortCode),
 }
 
 /// Alignment of a single table cell.
@@ -188,6 +192,14 @@ pub struct NodeLink {
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
     pub title: Vec<u8>,
+}
+
+#[cfg(feature = "emoji")]
+/// The details of an inline emoji
+#[derive(Debug, Clone)]
+pub struct NodeShortCode {
+    /// A short code that is translated into an emoji
+    pub shortcode: Vec<u8>,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
@@ -449,6 +461,9 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
         ),
 
+        #[cfg(feature = "emoji")]
+        NodeValue::ShortCode(..) => !child.block(),
+
         NodeValue::Paragraph
         | NodeValue::Heading(..)
         | NodeValue::Emph
@@ -460,6 +475,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
 
         NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
 
+        #[cfg(not(feature = "emoji"))]
         NodeValue::TableCell => matches!(
             *child,
             NodeValue::Text(..)
@@ -468,6 +484,20 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Strong
                 | NodeValue::Link(..)
                 | NodeValue::Image(..)
+                | NodeValue::Strikethrough
+                | NodeValue::HtmlInline(..)
+        ),
+
+        #[cfg(feature = "emoji")]
+        NodeValue::TableCell => matches!(
+            *child,
+            NodeValue::Text(..)
+                | NodeValue::Code(..)
+                | NodeValue::Emph
+                | NodeValue::Strong
+                | NodeValue::Link(..)
+                | NodeValue::Image(..)
+                | NodeValue::ShortCode(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
         ),
