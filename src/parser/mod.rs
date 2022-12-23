@@ -1,8 +1,8 @@
 mod autolink;
 mod inlines;
-mod table;
 #[cfg(feature = "shortcodes")]
 pub mod shortcodes;
+mod table;
 
 use adapters::SyntaxHighlighterAdapter;
 use arena_tree::Node;
