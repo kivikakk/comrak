@@ -238,19 +238,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [[Option<&'d Delimiter<'a, 'd>>; 128]; 3] = [[None; 128]; 3];
-        for i in &mut openers_bottom {
-            i['*' as usize] = stack_bottom;
-            i['_' as usize] = stack_bottom;
-            i['\'' as usize] = stack_bottom;
-            i['"' as usize] = stack_bottom;
-            if self.options.extension.strikethrough {
-                i['~' as usize] = stack_bottom;
-            }
-            if self.options.extension.superscript {
-                i['^' as usize] = stack_bottom;
-            }
-        }
+        let mut openers_bottom: [Option<&'d Delimiter<'a, 'd>>; 11] = [stack_bottom; 11];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -270,6 +258,19 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 let mut opener_found = false;
                 let mut mod_three_rule_invoked = false;
 
+                let ix = match closer.unwrap().delim_char {
+                    b'~' => 0,
+                    b'^' => 1,
+                    b'"' => 2,
+                    b'\'' => 3,
+                    b'_' => 4,
+                    b'*' => {
+                        5 + (if closer.unwrap().can_open { 3 } else { 0 })
+                            + (closer.unwrap().length % 3)
+                    }
+                    _ => unreachable!(),
+                };
+
                 // Here's where we find the opener by searching down the stack,
                 // looking for matching delims with the `can_open` flag.
                 // On any invocation, on the first time through the outer
@@ -281,13 +282,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // This search short-circuits for openers we've previously
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
-                while opener.is_some()
-                    && !Self::del_ref_eq(
-                        opener,
-                        openers_bottom[closer.unwrap().length % 3]
-                            [closer.unwrap().delim_char as usize],
-                    )
-                {
+                while opener.is_some() && !Self::del_ref_eq(opener, openers_bottom[ix]) {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
@@ -393,9 +388,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // same opener at the bottom of the stack later.
                 if !opener_found {
                     if !mod_three_rule_invoked {
-                        let ix = old_closer.unwrap().length % 3;
-                        openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
-                            old_closer.unwrap().prev.get();
+                        openers_bottom[ix] = old_closer.unwrap().prev.get();
                     }
 
                     // Now that we've failed the `opener` search starting from
