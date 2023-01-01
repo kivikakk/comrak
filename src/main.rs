@@ -75,7 +75,7 @@ struct Cli {
     #[arg(long = "unsafe")]
     unsafe_: bool,
 
-    /// Translate gemojis into UTF8 characters
+    /// Translate gemojis into UTF-8 characters
     #[arg(long)]
     gemojis: bool,
 

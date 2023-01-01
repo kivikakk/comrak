@@ -8,19 +8,19 @@ Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+cont
 
 Rust port of [github's `cmark-gfm`](https://github.com/github/cmark).
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Security](#security)
-- [Extensions](#extensions)
-- [Related projects](#related-projects)
-- [Contributing](#contributing)
-- [Legal](#legal)
+-   [Installation](#installation)
+-   [Usage](#usage)
+-   [Security](#security)
+-   [Extensions](#extensions)
+-   [Related projects](#related-projects)
+-   [Contributing](#contributing)
+-   [Legal](#legal)
 
 ## Installation
 
 Specify it as a requirement in `Cargo.toml`:
 
-``` toml
+```toml
 [dependencies]
 comrak = "0.15"
 ```
@@ -29,19 +29,19 @@ Comrak supports Rust stable.
 
 ### Mac & Linux Binaries
 
-``` bash
+```bash
 curl https://webinstall.dev/comrak | bash
 ```
 
 ### Windows 10 Binaries
 
-``` powershell
+```powershell
 curl.exe -A "MS" https://webinstall.dev/comrak | powershell
 ```
 
 ## Usage
 
-``` console
+```console
 $ comrak --help
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
@@ -54,7 +54,7 @@ Arguments:
 Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
-          
+
           [default: /Users/kivikakk/.config/comrak/config]
 
       --hardbreaks
@@ -76,20 +76,23 @@ Options:
       --unsafe
           Allow raw HTML and dangerous URLs
 
+      --gemojis
+          Translate gemojis into UTF-8 characters
+
       --escape
           Escape raw HTML instead of clobbering it
 
   -e, --extension <EXTENSION>
           Specify extension name(s) to use
-          
+
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
-          
+
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, description-lists]
 
   -t, --to <FORMAT>
           Specify output format
-          
+
           [default: html]
           [possible values: html, commonmark]
 
@@ -98,7 +101,7 @@ Options:
 
       --width <WIDTH>
           Specify wrap width (0 = nowrap)
-          
+
           [default: 0]
 
       --header-ids <PREFIX>
@@ -109,12 +112,12 @@ Options:
 
       --syntax-highlighting <THEME>
           Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling
-          
+
           [default: base16-ocean.dark]
 
       --list-style <LIST_STYLE>
           Specify bullet character for lists (-, +, *) in CommonMark ouput
-          
+
           [default: dash]
           [possible values: dash, plus, star]
 
@@ -131,7 +134,7 @@ the file does not exist.
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
-``` rust
+```rust
 use comrak::{markdown_to_html, ComrakOptions};
 assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
            "<p>Hello, <strong>世界</strong>!</p>\n");
@@ -139,7 +142,7 @@ assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
 
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
 
-``` rust
+```rust
 extern crate comrak;
 use comrak::{parse_document, format_html, Arena, ComrakOptions};
 use comrak::nodes::{AstNode, NodeValue};
@@ -196,19 +199,20 @@ use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammo
 Comrak supports the five extensions to CommonMark defined in the [GitHub Flavored Markdown
 Spec](https://github.github.com/gfm/):
 
-- [Tables](https://github.github.com/gfm/#tables-extension-)
-- [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
-- [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
-- [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
-- [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+-   [Tables](https://github.github.com/gfm/#tables-extension-)
+-   [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
+-   [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
+-   [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
+-   [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
 Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome\!):
 
-- Superscript
-- Header IDs
-- Footnotes
-- Description lists
-- Front matter
+-   Superscript
+-   Header IDs
+-   Footnotes
+-   Description lists
+-   Front matter
+-   Shortcodes
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
@@ -238,17 +242,17 @@ in terms of code structure. The upside of this is that a change in `cmark-gfm` h
 Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con,
 depending on your use case.
 
-The downside, of course, is that the code is not what I'd call idiomatic Rust (*so many `RefCell`s*), and while
+The downside, of course, is that the code is not what I'd call idiomatic Rust (_so many `RefCell`s_), and while
 contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
 depending on your use-case. Here are some other projects to consider:
 
-- [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
-  very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
-  want). `cargo doc` uses this, as do many other projects in the ecosystem.
-- [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
-  `libcmark`. It hasn't been updated in a while, though there's an [open pull
-  request](https://github.com/bnavetta/rcmark/pull/2).
-- Know of another library? Please open a PR to add it\!
+-   [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
+    very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
+    want). `cargo doc` uses this, as do many other projects in the ecosystem.
+-   [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
+    `libcmark`. It hasn't been updated in a while, though there's an [open pull
+    request](https://github.com/bnavetta/rcmark/pull/2).
+-   Know of another library? Please open a PR to add it\!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
 extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce
