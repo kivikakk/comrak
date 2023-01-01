@@ -268,6 +268,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
                 let mut opener = closer.unwrap().prev.get();
                 let mut opener_found = false;
+                let mut mod_three_rule_invoked = false;
 
                 // Here's where we find the opener by searching down the stack,
                 // looking for matching delims with the `can_open` flag.
@@ -306,6 +307,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         if !odd_match {
                             opener_found = true;
                             break;
+                        } else {
+                            mod_three_rule_invoked = true;
                         }
                     }
                     opener = opener.unwrap().prev.get();
@@ -389,9 +392,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // so that the `opener` search can avoid looking for this
                 // same opener at the bottom of the stack later.
                 if !opener_found {
-                    let ix = old_closer.unwrap().length % 3;
-                    openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
-                        old_closer.unwrap().prev.get();
+                    if !mod_three_rule_invoked {
+                        let ix = old_closer.unwrap().length % 3;
+                        openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
+                            old_closer.unwrap().prev.get();
+                    }
 
                     // Now that we've failed the `opener` search starting from
                     // `old_closer`, future opener searches will be searching it
