@@ -11,6 +11,9 @@ use std::io::{self, Write};
 use std::str;
 use strings::build_opening_tag;
 
+#[cfg(feature = "shortcodes")]
+extern crate emojis;
+
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
@@ -690,6 +693,16 @@ impl<'o> HtmlFormatter<'o> {
                         self.escape(&nl.title)?;
                     }
                     self.output.write_all(b"\" />")?;
+                }
+            }
+            #[cfg(feature = "shortcodes")]
+            NodeValue::ShortCode(ref emoji) => {
+                if entering {
+                    if self.options.extension.shortcodes {
+                        if let Some(emoji) = emoji.emoji() {
+                            self.output.write_all(emoji.as_bytes())?;
+                        }
+                    }
                 }
             }
             NodeValue::Table(..) => {

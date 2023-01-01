@@ -1,5 +1,7 @@
 mod autolink;
 mod inlines;
+#[cfg(feature = "shortcodes")]
+pub mod shortcodes;
 mod table;
 
 use adapters::SyntaxHighlighterAdapter;
@@ -309,6 +311,22 @@ pub struct ComrakExtensionOptions {
     /// assert_eq!(&String::from_utf8(buf).unwrap(), input);
     /// ```
     pub front_matter_delimiter: Option<String>,
+
+    #[cfg(feature = "shortcodes")]
+    /// Available if "shortcodes" feature is enabled.  Phrases wrapped inside of ':' blocks will be
+    /// replaced with emojis.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("Happy Friday! :smile:", &options),
+    ///            "<p>Happy Friday! :smile:</p>\n");
+    ///
+    /// options.extension.shortcodes = true;
+    /// assert_eq!(markdown_to_html("Happy Friday! :smile:", &options),
+    ///            "<p>Happy Friday! 😄</p>\n");
+    /// ```
+    pub shortcodes: bool,
 }
 
 #[derive(Default, Debug, Clone)]

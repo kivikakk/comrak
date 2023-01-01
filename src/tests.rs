@@ -26,6 +26,8 @@ fn fuzz_doesnt_crash(md: String) {
             footnotes: true,
             description_lists: true,
             front_matter_delimiter: None,
+            #[cfg(feature = "shortcodes")]
+            shortcodes: true,
         },
         parse: ::ComrakParseOptions {
             smart: true,
@@ -235,6 +237,38 @@ fn syntect_plugin() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+}
+
+#[cfg(feature = "shortcodes")]
+#[test]
+fn emojis() {
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!("Hello, happy days! :smile:\n"),
+        concat!("<p>Hello, happy days! 😄</p>\n"),
+    );
+
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!(":smile::smile::smile::smile:\n"),
+        concat!("<p>😄😄😄😄</p>\n"),
+    );
+
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!(":smile:::smile:::smile:::smile:\n"),
+        concat!("<p>😄:😄:😄:😄</p>\n"),
+    );
+
+    // Test no match
+    html_opts!(
+        [extension.shortcodes],
+        concat!("Hello, happy days! :diego:\n"),
+        concat!("<p>Hello, happy days! :diego:</p>\n"),
+    );
 }
 
 #[test]
@@ -1325,6 +1359,8 @@ fn exercise_full_api<'a>() {
             footnotes: false,
             description_lists: false,
             front_matter_delimiter: None,
+            #[cfg(feature = "shortcodes")]
+            shortcodes: true,
         },
         parse: ::ComrakParseOptions {
             smart: false,
@@ -1446,6 +1482,10 @@ fn exercise_full_api<'a>() {
         ::nodes::NodeValue::Link(nl) | ::nodes::NodeValue::Image(nl) => {
             let _: Vec<u8> = nl.url;
             let _: Vec<u8> = nl.title;
+        }
+        #[cfg(feature = "shortcodes")]
+        ::nodes::NodeValue::ShortCode(ne) => {
+            let _: Option<String> = ne.shortcode();
         }
         ::nodes::NodeValue::FootnoteReference(name) => {
             let _: &Vec<u8> = name;
