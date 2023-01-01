@@ -313,8 +313,8 @@ pub struct ComrakExtensionOptions {
     pub front_matter_delimiter: Option<String>,
 
     #[cfg(feature = "shortcodes")]
-    /// If "emoji" feature is enabled and shortcodes is set to true, phrases wrapped
-    /// inside of ':' blocks will be replaced with emojis.
+    /// Available if "shortcodes" feature is enabled.  Phrases wrapped inside of ':' blocks will be
+    /// replaced with emojis.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
