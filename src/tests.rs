@@ -2,11 +2,11 @@ use crate::nodes::{AstNode, NodeCode, NodeValue};
 use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
+use ntest::timeout;
 #[cfg(feature = "syntect")]
 use plugins::syntect::SyntectAdapter;
 use std::collections::HashMap;
 use strings::build_opening_tag;
-use timebomb::timeout_ms;
 
 #[cfg(not(target_arch = "wasm32"))]
 use propfuzz::prelude::*;
@@ -1042,6 +1042,7 @@ fn regression_back_to_back_ranges() {
 }
 
 #[test]
+#[timeout(4000)]
 fn pathological_emphases() {
     let mut s = String::with_capacity(50000 * 4);
     for _ in 0..50000 {
@@ -1053,7 +1054,7 @@ fn pathological_emphases() {
     exp.pop();
     exp += "</p>\n";
 
-    timeout_ms(move || html(&s, &exp), 4000);
+    html(&s, &exp);
 }
 
 #[test]
