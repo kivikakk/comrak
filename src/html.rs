@@ -839,13 +839,20 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
                 Some(adapter) => {
-                    let img_meta = adapter.render(
-                        self.output,
-                        ImageMeta {
-                            url: &nl.url,
-                            title: &nl.title,
-                        },
-                    )?;
+                    if entering {
+                        adapter.render(
+                            self.output,
+                            ImageMeta {
+                                url: &nl.url,
+                                title: &nl.title,
+                            },
+                            if self.options.render.sourcepos {
+                                Some(node.data.borrow().sourcepos)
+                            } else {
+                                None
+                            },
+                        )?;
+                    }
                 }
             },
             #[cfg(feature = "shortcodes")]

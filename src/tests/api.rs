@@ -1,5 +1,5 @@
 use crate::{
-    adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
+    adapters::{HeadingAdapter, HeadingMeta, ImageAdapter, ImageMeta, SyntaxHighlighterAdapter},
     nodes::Sourcepos,
 };
 
@@ -109,12 +109,24 @@ fn exercise_full_api() {
         }
     }
 
+    impl ImageAdapter for MockAdapter {
+        fn render(
+            &self,
+            _output: &mut dyn Write,
+            _img_meta: ImageMeta,
+            _sourcepos: Option<Sourcepos>,
+        ) -> io::Result<()> {
+            unreachable!()
+        }
+    }
+
     let mock_adapter = MockAdapter {};
 
     let _ = ComrakPlugins {
         render: ComrakRenderPlugins {
             codefence_syntax_highlighter: Some(&mock_adapter),
             heading_adapter: Some(&mock_adapter),
+            image_adapter: Some(&mock_adapter),
         },
     };
 

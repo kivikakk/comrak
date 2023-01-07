@@ -82,5 +82,10 @@ pub struct ImageMeta<'a> {
 /// Implement this adapter to create a plugin for custom images.
 pub trait ImageAdapter {
     /// The rendering function for images.
-    fn render(&self, output: &mut dyn Write, image_meta: ImageMeta) -> io::Result<()>;
+    fn render(
+        &self,
+        output: &mut dyn Write,
+        image_meta: ImageMeta,
+        sourcepos: Option<Sourcepos>,
+    ) -> io::Result<()>;
 }
