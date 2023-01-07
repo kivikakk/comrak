@@ -69,3 +69,18 @@ pub trait HeadingAdapter {
     /// Render the closing tag.
     fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
 }
+
+/// Image data passed to the custom image adapter.
+#[derive(Debug)]
+pub struct ImageMeta<'a> {
+    /// The URL of the image.
+    pub url: &'a str,
+    /// The title of the image.
+    pub title: &'a str,
+}
+
+/// Implement this adapter to create a plugin for custom images.
+pub trait ImageAdapter {
+    /// The rendering function for images.
+    fn render(&self, output: &mut dyn Write, image_meta: ImageMeta) -> io::Result<()>;
+}

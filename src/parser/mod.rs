@@ -23,7 +23,7 @@ use std::mem;
 use std::str;
 use typed_arena::Arena;
 
-use crate::adapters::HeadingAdapter;
+use crate::adapters::{HeadingAdapter, ImageAdapter};
 
 use self::inlines::RefMap;
 
@@ -578,6 +578,9 @@ pub struct ComrakRenderPlugins<'p> {
 
     /// Optional heading adapter
     pub heading_adapter: Option<&'p dyn HeadingAdapter>,
+
+    /// TODO
+    pub image_adapter: Option<&'p dyn ImageAdapter>,
 }
 
 impl Debug for ComrakRenderPlugins<'_> {

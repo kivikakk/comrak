@@ -12,6 +12,7 @@ use std::io::{self, Write};
 use std::str;
 
 use crate::adapters::HeadingMeta;
+use crate::adapters::ImageMeta;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -817,25 +818,36 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</a>")?;
                 }
             }
-            NodeValue::Image(ref nl) => {
-                if entering {
-                    self.output.write_all(b"<img")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" src=\"")?;
-                    let url = nl.url.as_bytes();
-                    if self.options.render.unsafe_ || !dangerous_url(url) {
-                        self.escape_href(url)?;
+            NodeValue::Image(ref nl) => match self.plugins.render.image_adapter {
+                None => {
+                    if entering {
+                        self.output.write_all(b"<img")?;
+                        self.render_sourcepos(node)?;
+                        self.output.write_all(b" src=\"")?;
+                        let url = nl.url.as_bytes();
+                        if self.options.render.unsafe_ || !dangerous_url(url) {
+                            self.escape_href(url)?;
+                        }
+                        self.output.write_all(b"\" alt=\"")?;
+                        return Ok(true);
+                    } else {
+                        if !nl.title.is_empty() {
+                            self.output.write_all(b"\" title=\"")?;
+                            self.escape(nl.title.as_bytes())?;
+                        }
+                        self.output.write_all(b"\" />")?;
                     }
-                    self.output.write_all(b"\" alt=\"")?;
-                    return Ok(true);
-                } else {
-                    if !nl.title.is_empty() {
-                        self.output.write_all(b"\" title=\"")?;
-                        self.escape(nl.title.as_bytes())?;
-                    }
-                    self.output.write_all(b"\" />")?;
                 }
-            }
+                Some(adapter) => {
+                    let img_meta = adapter.render(
+                        self.output,
+                        ImageMeta {
+                            url: &nl.url,
+                            title: &nl.title,
+                        },
+                    )?;
+                }
+            },
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref nsc) => {
                 if entering {
