@@ -489,41 +489,25 @@ impl<'o> HtmlFormatter<'o> {
                             first_tag += 1;
                         }
 
-                        match (
-                            self.options.render.pre_lang_and_meta,
-                            self.options.render.github_pre_lang,
-                        ) {
-                            // If neither `pre_lang_and_meta` nor `github_pre_lang` is set to
-                            // `true`, use `<code class="language-{lang}">...</code>`
-                            (false, false) => {
-                                code_attr = format!(
-                                    "language-{}",
-                                    str::from_utf8(&ncb.info[..first_tag]).unwrap()
-                                );
-                                code_attributes.insert(String::from("class"), code_attr);
+                        if self.options.render.github_pre_lang {
+                            pre_attributes.insert(
+                                String::from("lang"),
+                                String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap(),
+                            );
+                        } else {
+                            code_attr = format!(
+                                "language-{}",
+                                str::from_utf8(&ncb.info[..first_tag]).unwrap()
+                            );
+                            code_attributes.insert(String::from("class"), code_attr);
+                        }
+
+                        match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
+                            Ok(meta) if meta.len() > 0 => {
+                                pre_attributes
+                                    .insert(String::from("meta"), String::from(meta.trim_start()));
                             }
-                            // If `pre_lang_and_meta` is set to `true`, supply both `lang` and
-                            // `meta` attributes
-                            (true, false) | (true, true) => {
-                                let lang =
-                                    String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap();
-                                pre_attributes.insert(String::from("lang"), lang);
-                                match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
-                                    Ok(meta) if meta.len() > 0 => {
-                                        pre_attributes.insert(
-                                            String::from("meta"),
-                                            String::from(meta.trim_start()),
-                                        );
-                                    }
-                                    _ => (),
-                                }
-                            }
-                            // If `github_pre_lang` is set to `true`, supply a `lang` attribute
-                            (false, true) => {
-                                let lang =
-                                    String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap();
-                                pre_attributes.insert(String::from("lang"), lang);
-                            }
+                            _ => (),
                         }
                     }
 

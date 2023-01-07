@@ -35,7 +35,6 @@ fn fuzz_doesnt_crash(md: String) {
         render: ::ComrakRenderOptions {
             hardbreaks: true,
             github_pre_lang: true,
-            pre_lang_and_meta: true,
             width: 80,
             unsafe_: true,
             escape: false,
@@ -193,7 +192,7 @@ fn syntax_highlighter_plugin() {
     pub struct MockAdapter {}
 
     impl SyntaxHighlighterAdapter for MockAdapter {
-        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+        fn highlight(&self, lang: Option<&str>, _meta: Option<&str>, code: &str) -> String {
             format!("<!--{}--><span>{}</span>", lang.unwrap(), code)
         }
 
@@ -1335,7 +1334,6 @@ fn exercise_full_api<'a>() {
         render: ::ComrakRenderOptions {
             hardbreaks: false,
             github_pre_lang: false,
-            pre_lang_and_meta: false,
             width: 123456,
             unsafe_: false,
             escape: false,
@@ -1345,7 +1343,7 @@ fn exercise_full_api<'a>() {
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
-        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+        fn highlight(&self, lang: Option<&str>, _meta: Option<&str>, code: &str) -> String {
             String::from(format!("{}{}", lang.unwrap(), code))
         }
 

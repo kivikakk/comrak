@@ -378,9 +378,6 @@ pub struct ComrakRenderOptions {
     /// ```
     pub github_pre_lang: bool,
 
-    /// Whether to include code block metadata.
-    pub pre_lang_and_meta: bool,
-
     /// The wrap column when outputting CommonMark.
     ///
     /// ```

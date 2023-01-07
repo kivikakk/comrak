@@ -4,10 +4,7 @@ extern crate comrak;
 extern crate syntect;
 
 use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{
-    markdown_to_html_with_plugins, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
-    ComrakPlugins, ComrakRenderOptions,
-};
+use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone)]
@@ -22,7 +19,7 @@ impl PotatoSyntaxAdapter {
 }
 
 impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
-    fn highlight(&self, lang: Option<&str>, code: &str) -> String {
+    fn highlight(&self, lang: Option<&str>, _meta: Option<&str>, code: &str) -> String {
         format!(
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",
             lang.unwrap(),
@@ -32,8 +29,6 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     }
 
     fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-        println!("build_pre_tag: {:?}", attributes);
-
         if attributes.contains_key("lang") {
             format!("<pre language=\"{}\">", attributes["lang"])
         } else {
@@ -42,8 +37,6 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     }
 
     fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
-        println!("build_code_tag: {:?}", attributes);
-
         if attributes.contains_key("class") {
             format!("<code class=\"{}\">", attributes["class"])
         } else {
@@ -54,14 +47,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
 
 fn main() {
     let adapter = PotatoSyntaxAdapter::new(42);
-    let options = ComrakOptions {
-        extension: ComrakExtensionOptions::default(),
-        parse: ComrakParseOptions::default(),
-        render: ComrakRenderOptions {
-            pre_lang_and_meta: true,
-            ..Default::default()
-        },
-    };
+    let options = ComrakOptions::default();
     let mut plugins = ComrakPlugins::default();
 
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
