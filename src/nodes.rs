@@ -3,6 +3,9 @@
 use arena_tree::Node;
 use std::cell::RefCell;
 
+#[cfg(feature = "shortcodes")]
+use parser::shortcodes::NodeShortCode;
+
 /// The core AST node enum.
 #[derive(Debug, Clone)]
 pub enum NodeValue {
@@ -146,6 +149,10 @@ pub enum NodeValue {
 
     /// **Inline**.  A footnote reference; the `Vec<u8>` is the referent footnote's name.
     FootnoteReference(Vec<u8>),
+
+    #[cfg(feature = "shortcodes")]
+    /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "emoji"
+    ShortCode(NodeShortCode),
 }
 
 /// Alignment of a single table cell.
@@ -449,6 +456,9 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
         ),
 
+        #[cfg(feature = "shortcodes")]
+        NodeValue::ShortCode(..) => !child.block(),
+
         NodeValue::Paragraph
         | NodeValue::Heading(..)
         | NodeValue::Emph
@@ -460,6 +470,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
 
         NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
 
+        #[cfg(not(feature = "shortcodes"))]
         NodeValue::TableCell => matches!(
             *child,
             NodeValue::Text(..)
@@ -468,6 +479,20 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Strong
                 | NodeValue::Link(..)
                 | NodeValue::Image(..)
+                | NodeValue::Strikethrough
+                | NodeValue::HtmlInline(..)
+        ),
+
+        #[cfg(feature = "shortcodes")]
+        NodeValue::TableCell => matches!(
+            *child,
+            NodeValue::Text(..)
+                | NodeValue::Code(..)
+                | NodeValue::Emph
+                | NodeValue::Strong
+                | NodeValue::Link(..)
+                | NodeValue::Image(..)
+                | NodeValue::ShortCode(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
         ),

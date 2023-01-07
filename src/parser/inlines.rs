@@ -2,6 +2,8 @@ use arena_tree::Node;
 use ctype::{ispunct, isspace};
 use entity;
 use nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
+#[cfg(feature = "shortcodes")]
+use parser::shortcodes::NodeShortCode;
 use parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference};
 use scanners;
 use std::cell::{Cell, RefCell};
@@ -91,6 +93,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if options.extension.superscript {
             s.special_chars[b'^' as usize] = true;
         }
+        #[cfg(feature = "shortcodes")]
+        if options.extension.shortcodes {
+            s.special_chars[b':' as usize] = true;
+        }
         for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
         }
@@ -113,6 +119,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace()),
+            #[cfg(feature = "shortcodes")]
+            ':' if self.options.extension.shortcodes => Some(self.handle_colons()),
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
             '-' => Some(self.handle_hyphen()),
             '.' => Some(self.handle_period()),
@@ -230,19 +238,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [[Option<&'d Delimiter<'a, 'd>>; 128]; 3] = [[None; 128]; 3];
-        for i in &mut openers_bottom {
-            i['*' as usize] = stack_bottom;
-            i['_' as usize] = stack_bottom;
-            i['\'' as usize] = stack_bottom;
-            i['"' as usize] = stack_bottom;
-            if self.options.extension.strikethrough {
-                i['~' as usize] = stack_bottom;
-            }
-            if self.options.extension.superscript {
-                i['^' as usize] = stack_bottom;
-            }
-        }
+        let mut openers_bottom: [Option<&'d Delimiter<'a, 'd>>; 11] = [stack_bottom; 11];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -260,6 +256,20 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
                 let mut opener = closer.unwrap().prev.get();
                 let mut opener_found = false;
+                let mut mod_three_rule_invoked = false;
+
+                let ix = match closer.unwrap().delim_char {
+                    b'~' => 0,
+                    b'^' => 1,
+                    b'"' => 2,
+                    b'\'' => 3,
+                    b'_' => 4,
+                    b'*' => {
+                        5 + (if closer.unwrap().can_open { 3 } else { 0 })
+                            + (closer.unwrap().length % 3)
+                    }
+                    _ => unreachable!(),
+                };
 
                 // Here's where we find the opener by searching down the stack,
                 // looking for matching delims with the `can_open` flag.
@@ -272,13 +282,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // This search short-circuits for openers we've previously
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
-                while opener.is_some()
-                    && !Self::del_ref_eq(
-                        opener,
-                        openers_bottom[closer.unwrap().length % 3]
-                            [closer.unwrap().delim_char as usize],
-                    )
-                {
+                while opener.is_some() && !Self::del_ref_eq(opener, openers_bottom[ix]) {
                     if opener.unwrap().can_open
                         && opener.unwrap().delim_char == closer.unwrap().delim_char
                     {
@@ -298,6 +302,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         if !odd_match {
                             opener_found = true;
                             break;
+                        } else {
+                            mod_three_rule_invoked = true;
                         }
                     }
                     opener = opener.unwrap().prev.get();
@@ -381,9 +387,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // so that the `opener` search can avoid looking for this
                 // same opener at the bottom of the stack later.
                 if !opener_found {
-                    let ix = old_closer.unwrap().length % 3;
-                    openers_bottom[ix][old_closer.unwrap().delim_char as usize] =
-                        old_closer.unwrap().prev.get();
+                    if !mod_three_rule_invoked {
+                        openers_bottom[ix] = old_closer.unwrap().prev.get();
+                    }
 
                     // Now that we've failed the `opener` search starting from
                     // `old_closer`, future opener searches will be searching it
@@ -849,6 +855,23 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
     }
 
+    #[cfg(feature = "shortcodes")]
+    pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
+        if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
+            let s = self.pos + 1;
+            let e = s + matchlen - 2;
+            let shortcode = &self.input[s..e];
+
+            if NodeShortCode::is_valid(shortcode.to_vec()) {
+                let inl = make_emoji(self.arena, &shortcode);
+                self.pos += matchlen;
+                return inl;
+            }
+        }
+        self.pos += 1;
+        make_inline(self.arena, NodeValue::Text(b":".to_vec()))
+    }
+
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 
@@ -1196,5 +1219,14 @@ fn make_autolink<'a>(
         arena,
         NodeValue::Text(entity::unescape_html(url)),
     ));
+    inl
+}
+
+#[cfg(feature = "shortcodes")]
+fn make_emoji<'a>(arena: &'a Arena<AstNode<'a>>, shortcode: &[u8]) -> &'a AstNode<'a> {
+    let inl = make_inline(
+        arena,
+        NodeValue::ShortCode(NodeShortCode::from(shortcode.to_vec())),
+    );
     inl
 }

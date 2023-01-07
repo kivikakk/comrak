@@ -76,6 +76,8 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 extern crate memchr;
+#[cfg(test)]
+extern crate ntest;
 extern crate once_cell;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 extern crate propfuzz;
@@ -84,8 +86,6 @@ extern crate regex;
 extern crate syntect;
 #[cfg(feature = "benchmarks")]
 extern crate test;
-#[cfg(test)]
-extern crate timebomb;
 extern crate typed_arena;
 extern crate unicode_categories;
 

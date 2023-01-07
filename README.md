@@ -70,11 +70,17 @@ Options:
           Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
           tasklist. Also enables --github-pre-lang
 
+      --relaxed-tasklist-character
+          Enable relaxing which character is allowed in a tasklists
+
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
 
       --unsafe
           Allow raw HTML and dangerous URLs
+
+      --gemojis
+          Translate gemojis into UTF-8 characters
 
       --escape
           Escape raw HTML instead of clobbering it
@@ -209,6 +215,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Footnotes
 - Description lists
 - Front matter
+- Shortcodes
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
