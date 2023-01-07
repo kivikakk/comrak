@@ -4,7 +4,10 @@ extern crate comrak;
 extern crate syntect;
 
 use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
+use comrak::{
+    markdown_to_html_with_plugins, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
+    ComrakPlugins, ComrakRenderOptions,
+};
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone)]
@@ -19,7 +22,7 @@ impl PotatoSyntaxAdapter {
 }
 
 impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
-    fn highlight(&self, lang: Option<&str>, _meta: Option<&str>, code: &str) -> String {
+    fn highlight(&self, lang: Option<&str>, meta: Option<&str>, code: &str) -> String {
         format!(
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",
             lang.unwrap(),
@@ -47,16 +50,20 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
 
 fn main() {
     let adapter = PotatoSyntaxAdapter::new(42);
-    let options = ComrakOptions::default();
+    let mut render = ComrakRenderOptions::default();
+    render.github_pre_lang = true;
+
+    let options = ComrakOptions {
+        extension: ComrakExtensionOptions::default(),
+        parse: ComrakParseOptions::default(),
+        render,
+    };
+
     let mut plugins = ComrakPlugins::default();
 
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
-    let input = concat!(
-        "```rust showLineNumbers {1-3,5,12}\n",
-        "fn main<'a>();\n",
-        "```"
-    );
+    let input = concat!("```rust\n", "fn main<'a>();\n", "```");
 
     let formatted = markdown_to_html_with_plugins(input, &options, &plugins);
 

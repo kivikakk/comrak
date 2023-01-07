@@ -497,20 +497,22 @@ impl<'o> HtmlFormatter<'o> {
                                 String::from("lang"),
                                 String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap(),
                             );
+
+                            match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
+                                Ok(meta) if meta.len() > 0 => {
+                                    pre_attributes.insert(
+                                        String::from("meta"),
+                                        String::from(meta.trim_start()),
+                                    );
+                                }
+                                _ => (),
+                            }
                         } else {
                             code_attr = format!(
                                 "language-{}",
                                 str::from_utf8(&ncb.info[..first_tag]).unwrap()
                             );
                             code_attributes.insert(String::from("class"), code_attr);
-                        }
-
-                        match String::from_utf8(Vec::from(&ncb.info[first_tag..])) {
-                            Ok(meta) if meta.len() > 0 => {
-                                pre_attributes
-                                    .insert(String::from("meta"), String::from(meta.trim_start()));
-                            }
-                            _ => (),
                         }
                     }
 
