@@ -7,19 +7,27 @@ use comrak::{
 };
 
 fn main() {
-    println!(
-        "{}",
-        render_heading("Some text.\n\n## Please hide me from search\n\nSome other text")
+    let adapter = CustomHeadingAdapter;
+    let options = ComrakOptions::default();
+    let mut plugins = ComrakPlugins::default();
+    plugins.render.heading_adapter = Some(&adapter);
+
+    print_html(
+        "Some text.\n\n## Please hide me from search\n\nSome other text",
+        &options,
+        &plugins,
     );
-    println!(
-        "{}",
-        render_heading("Some text.\n\n### Here is some `code`\n\nSome other text")
+    print_html(
+        "Some text.\n\n### Here is some `code`\n\nSome other text",
+        &options,
+        &plugins,
     );
-    println!(
-        "{}",
-        render_heading("Some text.\n\n### Here is some **bold** text and some *italicized* text\n\nSome other text")
+    print_html(
+        "Some text.\n\n### Here is some **bold** text and some *italicized* text\n\nSome other text",
+        &options,
+        &plugins
     );
-    println!("{}", render_heading("# Here is a [link](/)"));
+    print_html("# Here is a [link](/)", &options, &plugins);
 }
 
 struct CustomHeadingAdapter;
@@ -37,11 +45,7 @@ impl HeadingAdapter for CustomHeadingAdapter {
     }
 }
 
-fn render_heading(document: &str) -> String {
-    let adapter = CustomHeadingAdapter {};
-    let options = ComrakOptions::default();
-    let mut plugins = ComrakPlugins::default();
-
-    plugins.render.heading_adapter = Some(&adapter);
-    markdown_to_html_with_plugins(document, &options, &plugins)
+fn print_html(document: &str, options: &ComrakOptions, plugins: &ComrakPlugins) {
+    let html = markdown_to_html_with_plugins(document, options, plugins);
+    println!("{}", html);
 }

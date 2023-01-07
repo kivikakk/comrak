@@ -1361,6 +1361,7 @@ fn exercise_full_api<'a>() {
     let _ = ::ComrakPlugins {
         render: ::ComrakRenderPlugins {
             codefence_syntax_highlighter: Some(&syntax_highlighter_adapter),
+            heading_adapter: None,
         },
     };
 
