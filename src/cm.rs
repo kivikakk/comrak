@@ -4,6 +4,8 @@ use nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
     NodeValue,
 };
+#[cfg(feature = "shortcodes")]
+use parser::shortcodes::NodeShortCode;
 use parser::ComrakOptions;
 use scanners;
 use std;
@@ -335,6 +337,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
             NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering),
+            #[cfg(feature = "shortcodes")]
+            NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering),
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering),
             NodeValue::TableCell => self.format_table_cell(node, entering),
@@ -652,6 +656,18 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
+        }
+    }
+
+    #[cfg(feature = "shortcodes")]
+    fn format_shortcode(&mut self, ne: &NodeShortCode, entering: bool) {
+        if entering {
+            write!(self, ":").unwrap();
+        } else {
+            if let Some(shortcode) = ne.shortcode() {
+                self.output(shortcode.as_bytes(), false, Escaping::Literal);
+            }
+            write!(self, ":").unwrap();
         }
     }
 

@@ -2,11 +2,11 @@ use crate::nodes::{AstNode, NodeCode, NodeValue};
 use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
+use ntest::timeout;
 #[cfg(feature = "syntect")]
 use plugins::syntect::SyntectAdapter;
 use std::collections::HashMap;
 use strings::build_opening_tag;
-use timebomb::timeout_ms;
 
 #[cfg(not(target_arch = "wasm32"))]
 use propfuzz::prelude::*;
@@ -26,6 +26,8 @@ fn fuzz_doesnt_crash(md: String) {
             footnotes: true,
             description_lists: true,
             front_matter_delimiter: None,
+            #[cfg(feature = "shortcodes")]
+            shortcodes: true,
         },
         parse: ::ComrakParseOptions {
             smart: true,
@@ -235,6 +237,38 @@ fn syntect_plugin() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+}
+
+#[cfg(feature = "shortcodes")]
+#[test]
+fn emojis() {
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!("Hello, happy days! :smile:\n"),
+        concat!("<p>Hello, happy days! 😄</p>\n"),
+    );
+
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!(":smile::smile::smile::smile:\n"),
+        concat!("<p>😄😄😄😄</p>\n"),
+    );
+
+    // Test match
+    html_opts!(
+        [extension.shortcodes],
+        concat!(":smile:::smile:::smile:::smile:\n"),
+        concat!("<p>😄:😄:😄:😄</p>\n"),
+    );
+
+    // Test no match
+    html_opts!(
+        [extension.shortcodes],
+        concat!("Hello, happy days! :diego:\n"),
+        concat!("<p>Hello, happy days! :diego:</p>\n"),
+    );
 }
 
 #[test]
@@ -1008,6 +1042,7 @@ fn regression_back_to_back_ranges() {
 }
 
 #[test]
+#[timeout(4000)]
 fn pathological_emphases() {
     let mut s = String::with_capacity(50000 * 4);
     for _ in 0..50000 {
@@ -1019,7 +1054,7 @@ fn pathological_emphases() {
     exp.pop();
     exp += "</p>\n";
 
-    timeout_ms(move || html(&s, &exp), 4000);
+    html(&s, &exp);
 }
 
 #[test]
@@ -1325,6 +1360,8 @@ fn exercise_full_api<'a>() {
             footnotes: false,
             description_lists: false,
             front_matter_delimiter: None,
+            #[cfg(feature = "shortcodes")]
+            shortcodes: true,
         },
         parse: ::ComrakParseOptions {
             smart: false,
@@ -1446,6 +1483,10 @@ fn exercise_full_api<'a>() {
         ::nodes::NodeValue::Link(nl) | ::nodes::NodeValue::Image(nl) => {
             let _: Vec<u8> = nl.url;
             let _: Vec<u8> = nl.title;
+        }
+        #[cfg(feature = "shortcodes")]
+        ::nodes::NodeValue::ShortCode(ne) => {
+            let _: Option<String> = ne.shortcode();
         }
         ::nodes::NodeValue::FootnoteReference(name) => {
             let _: &Vec<u8> = name;
