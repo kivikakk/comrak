@@ -1,4 +1,7 @@
-use crate::nodes::{AstNode, NodeCode, NodeValue};
+use crate::{
+    adapters::{HeadingAdapter, HeadingMeta},
+    nodes::{AstNode, NodeCode, NodeValue},
+};
 use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
@@ -1393,12 +1396,21 @@ fn exercise_full_api<'a>() {
         }
     }
 
-    let syntax_highlighter_adapter = MockAdapter {};
+    impl HeadingAdapter for MockAdapter {
+        fn render(&self, heading: &HeadingMeta) -> String {
+            format!(
+                "<h{}>{}</h{}>",
+                heading.level, heading.content, heading.level
+            )
+        }
+    }
+
+    let mock_adapter = MockAdapter {};
 
     let _ = ::ComrakPlugins {
         render: ::ComrakRenderPlugins {
-            codefence_syntax_highlighter: Some(&syntax_highlighter_adapter),
-            heading_adapter: None,
+            codefence_syntax_highlighter: Some(&mock_adapter),
+            heading_adapter: Some(&mock_adapter),
         },
     };
 
