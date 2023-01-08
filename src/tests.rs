@@ -1397,11 +1397,12 @@ fn exercise_full_api<'a>() {
     }
 
     impl HeadingAdapter for MockAdapter {
-        fn render(&self, heading: &HeadingMeta) -> String {
-            format!(
-                "<h{}>{}</h{}>",
-                heading.level, heading.content, heading.level
-            )
+        fn enter(&self, heading: &HeadingMeta) -> String {
+            format!("<h{}>", heading.level)
+        }
+
+        fn exit(&self, heading: &HeadingMeta) -> String {
+            format!("</h{}>", heading.level)
         }
     }
 

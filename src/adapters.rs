@@ -38,5 +38,8 @@ pub struct HeadingMeta {
 /// Implement this adapter for creating a plugin for custom headings.
 pub trait HeadingAdapter {
     /// The rendering function for headings.
-    fn render(&self, heading: &HeadingMeta) -> String;
+    fn enter(&self, heading: &HeadingMeta) -> String;
+
+    /// Close tags.
+    fn exit(&self, heading: &HeadingMeta) -> String;
 }

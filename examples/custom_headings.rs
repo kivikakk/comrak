@@ -33,7 +33,7 @@ fn main() {
 struct CustomHeadingAdapter;
 
 impl HeadingAdapter for CustomHeadingAdapter {
-    fn render(&self, heading: &HeadingMeta) -> String {
+    fn enter(&self, heading: &HeadingMeta) -> String {
         let id = slug::slugify(&heading.content);
 
         let search_include = !&heading.content.contains("hide");
@@ -42,6 +42,10 @@ impl HeadingAdapter for CustomHeadingAdapter {
             "<h{} id=\"{}\" data-search-include=\"{}\">",
             heading.level, id, search_include
         )
+    }
+
+    fn exit(&self, heading: &HeadingMeta) -> String {
+        format!("</h{}>", heading.level)
     }
 }
 
