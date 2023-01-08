@@ -465,17 +465,15 @@ impl<'o> HtmlFormatter<'o> {
                             let mut text_content = Vec::with_capacity(20);
                             self.collect_text(node, &mut text_content);
 
-                            let content = &String::from_utf8(text_content).unwrap();
+                            let content = String::from_utf8(text_content).unwrap();
 
-                            let heading = HeadingMeta {
-                                level,
-                                content: String::from(content),
-                            };
+                            let heading = HeadingMeta { level, content };
 
                             let rendered = adapter.render(&heading);
                             write!(self.output, "{}", rendered)?;
                         }
                         None => {
+                            self.cr()?;
                             write!(self.output, "<h{}>", nch.level)?;
 
                             if let Some(ref prefix) = self.options.extension.header_ids {
