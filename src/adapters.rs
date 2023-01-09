@@ -4,8 +4,6 @@
 
 use std::collections::HashMap;
 
-use crate::nodes::NodeHeading;
-
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter {
     /// Generates a syntax highlighted HTML output.

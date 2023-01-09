@@ -491,6 +491,7 @@ impl<'o> HtmlFormatter<'o> {
                     };
 
                     if entering {
+                        self.cr()?;
                         write!(self.output, "{}", adapter.enter(&heading))?;
                     } else {
                         write!(self.output, "{}", adapter.exit(&heading))?;
