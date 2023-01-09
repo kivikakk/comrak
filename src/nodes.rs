@@ -294,7 +294,7 @@ pub struct NodeCodeBlock {
 #[derive(Default, Debug, Clone, Copy)]
 pub struct NodeHeading {
     /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
-    pub level: u32,
+    pub level: u8,
 
     /// Whether the heading is setext (if not, ATX).
     pub setext: bool,
