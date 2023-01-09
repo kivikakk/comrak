@@ -11,6 +11,8 @@ use std::io::{self, Write};
 use std::str;
 use strings::build_opening_tag;
 
+use crate::adapters::HeadingMeta;
+
 #[cfg(feature = "shortcodes")]
 extern crate emojis;
 
@@ -455,29 +457,47 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</dd>\n")?;
                 }
             }
-            NodeValue::Heading(ref nch) => {
-                if entering {
-                    self.cr()?;
-                    write!(self.output, "<h{}>", nch.level)?;
+            NodeValue::Heading(ref nch) => match self.plugins.render.heading_adapter {
+                None => {
+                    if entering {
+                        self.cr()?;
+                        write!(self.output, "<h{}>", nch.level)?;
 
-                    if let Some(ref prefix) = self.options.extension.header_ids {
-                        let mut text_content = Vec::with_capacity(20);
-                        self.collect_text(node, &mut text_content);
+                        if let Some(ref prefix) = self.options.extension.header_ids {
+                            let mut text_content = Vec::with_capacity(20);
+                            self.collect_text(node, &mut text_content);
 
-                        let mut id = String::from_utf8(text_content).unwrap();
-                        id = self.anchorizer.anchorize(id);
-                        write!(
-                            self.output,
-                            "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                            id,
-                            prefix,
-                            id
-                        )?;
+                            let mut id = String::from_utf8(text_content).unwrap();
+                            id = self.anchorizer.anchorize(id);
+                            write!(
+                                        self.output,
+                                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                                        id,
+                                        prefix,
+                                        id
+                                    )?;
+                        }
+                    } else {
+                        writeln!(self.output, "</h{}>", nch.level)?;
                     }
-                } else {
-                    writeln!(self.output, "</h{}>", nch.level)?;
                 }
-            }
+                Some(adapter) => {
+                    let mut text_content = Vec::with_capacity(20);
+                    self.collect_text(node, &mut text_content);
+                    let content = String::from_utf8(text_content).unwrap();
+                    let heading = HeadingMeta {
+                        level: nch.level,
+                        content,
+                    };
+
+                    if entering {
+                        self.cr()?;
+                        write!(self.output, "{}", adapter.enter(&heading))?;
+                    } else {
+                        write!(self.output, "{}", adapter.exit(&heading))?;
+                    }
+                }
+            },
             NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     self.cr()?;

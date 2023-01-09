@@ -10,7 +10,14 @@ readme = "README.md"
 keywords = ["markdown", "commonmark"]
 license = "BSD-2-Clause"
 categories = ["text-processing", "parsing", "command-line-utilities"]
-exclude = ["/hooks/*", "/script/*", "/vendor/*", "/.travis.yml", "/Makefile", "/spec_out.txt"]
+exclude = [
+    "/hooks/*",
+    "/script/*",
+    "/vendor/*",
+    "/.travis.yml",
+    "/Makefile",
+    "/spec_out.txt",
+]
 resolver = "2"
 
 [profile.release]
@@ -31,6 +38,7 @@ memchr = "2"
 pest = "2"
 pest_derive = "2"
 shell-words = { version = "1.0", optional = true }
+slug = "0.1.4"
 emojis = { version = "0.5.2", optional = true }
 
 [dev-dependencies]
@@ -48,9 +56,20 @@ shortcodes = ["emojis"]
 xdg = { version = "^2.1", optional = true }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
-syntect = { version = "5.0", optional = true, default-features = false, features = ["default-fancy"] }
+syntect = { version = "5.0", optional = true, default-features = false, features = [
+    "default-fancy",
+] }
 clap = { version = "4.0", optional = true, features = ["derive", "string"] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
-syntect = { version = "5.0", optional = true, default-features = false, features = ["default-themes", "default-syntaxes", "html", "regex-onig"] }
-clap = { version = "4.0", optional = true, features = ["derive", "string", "wrap_help"] }
+syntect = { version = "5.0", optional = true, default-features = false, features = [
+    "default-themes",
+    "default-syntaxes",
+    "html",
+    "regex-onig",
+] }
+clap = { version = "4.0", optional = true, features = [
+    "derive",
+    "string",
+    "wrap_help",
+] }

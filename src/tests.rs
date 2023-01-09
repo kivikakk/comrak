@@ -1,4 +1,7 @@
-use crate::nodes::{AstNode, NodeCode, NodeValue};
+use crate::{
+    adapters::{HeadingAdapter, HeadingMeta},
+    nodes::{AstNode, NodeCode, NodeValue},
+};
 use adapters::SyntaxHighlighterAdapter;
 use cm;
 use html;
@@ -218,6 +221,38 @@ fn syntax_highlighter_plugin() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+}
+
+#[test]
+fn heading_adapter_plugin() {
+    struct MockAdapter;
+
+    impl HeadingAdapter for MockAdapter {
+        fn enter(&self, heading: &HeadingMeta) -> String {
+            format!("<h{} data-heading=\"true\">", heading.level + 1)
+        }
+
+        fn exit(&self, heading: &HeadingMeta) -> String {
+            format!("</h{}>", heading.level + 1)
+        }
+    }
+
+    let mut plugins = ::ComrakPlugins::default();
+    let adapter = MockAdapter {};
+    plugins.render.heading_adapter = Some(&adapter);
+
+    let cases: Vec<(&str, &str)> = vec![
+        ("# Simple heading", "<h2 data-heading=\"true\">Simple heading</h2>"),
+        (
+            "## Heading with **bold text** and `code`",
+            "<h3 data-heading=\"true\">Heading with <strong>bold text</strong> and <code>code</code></h3>",
+        ),
+        ("###### Whoa, an h7!", "<h7 data-heading=\"true\">Whoa, an h7!</h7>"),
+        ("####### This is not a heading", "<p>####### This is not a heading</p>\n")
+    ];
+    for (input, expected) in cases {
+        html_plugins(input, expected, &plugins);
+    }
 }
 
 #[test]
@@ -1393,11 +1428,22 @@ fn exercise_full_api<'a>() {
         }
     }
 
-    let syntax_highlighter_adapter = MockAdapter {};
+    impl HeadingAdapter for MockAdapter {
+        fn enter(&self, heading: &HeadingMeta) -> String {
+            format!("<h{}>", heading.level)
+        }
+
+        fn exit(&self, heading: &HeadingMeta) -> String {
+            format!("</h{}>", heading.level)
+        }
+    }
+
+    let mock_adapter = MockAdapter {};
 
     let _ = ::ComrakPlugins {
         render: ::ComrakRenderPlugins {
-            codefence_syntax_highlighter: Some(&syntax_highlighter_adapter),
+            codefence_syntax_highlighter: Some(&mock_adapter),
+            heading_adapter: Some(&mock_adapter),
         },
     };
 
@@ -1440,7 +1486,7 @@ fn exercise_full_api<'a>() {
         }
         ::nodes::NodeValue::Paragraph => {}
         ::nodes::NodeValue::Heading(nh) => {
-            let _: u32 = nh.level;
+            let _: u8 = nh.level;
             let _: bool = nh.setext;
         }
         ::nodes::NodeValue::ThematicBreak => {}
