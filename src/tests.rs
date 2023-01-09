@@ -1486,7 +1486,7 @@ fn exercise_full_api<'a>() {
         }
         ::nodes::NodeValue::Paragraph => {}
         ::nodes::NodeValue::Heading(nh) => {
-            let _: u32 = nh.level;
+            let _: u8 = nh.level;
             let _: bool = nh.setext;
         }
         ::nodes::NodeValue::ThematicBreak => {}
