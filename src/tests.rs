@@ -1069,6 +1069,30 @@ fn footnote_in_table() {
 }
 
 #[test]
+fn footnote_with_superscript() {
+    html_opts!(
+        [extension.superscript, extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^1]\n",
+            "\n",
+            "[^1]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn1\" \
+             id=\"fnref1\">1</a></sup></p>\n",
+            "<section class=\"footnotes\">\n",
+            "<ol>\n",
+            "<li id=\"fn1\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref1\" \
+             class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn regression_back_to_back_ranges() {
     html(
         "**bold*****bold+italic***",
