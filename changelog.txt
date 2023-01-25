@@ -1,3 +1,14 @@
+### 0.16.0
+
+* Track which symbol was used to mark task item as checked by @felipesere in https://github.com/kivikakk/comrak/pull/252
+* improve tagfilter performance by @fiji-flo in https://github.com/kivikakk/comrak/pull/256
+* [ShortCode] Add support for gemojis via shortcodes extension by @eklipse2k8 in https://github.com/kivikakk/comrak/pull/260
+* "mod three rule" fix by @kivikakk in https://github.com/kivikakk/comrak/pull/262
+* Add `shortcodes` to the README by @gjtorikian in https://github.com/kivikakk/comrak/pull/263
+* Cargo.toml: remove timebomb by @kivikakk in https://github.com/kivikakk/comrak/pull/264
+* Add custom heading adapter by @lucperkins in https://github.com/kivikakk/comrak/pull/266
+* Keep track of "^" symbol when within footnotes by @gjtorikian in https://github.com/kivikakk/comrak/pull/274
+
 ### 0.15.0
 
 * table: fix start_line of Table itself by @kivikakk in https://github.com/kivikakk/comrak/pull/231

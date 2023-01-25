@@ -1,6 +1,6 @@
 [package]
 name = "comrak"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Asherah Connor <ashe@kivikakk.ee>"]
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
@@ -42,7 +42,7 @@ slug = "0.1.4"
 emojis = { version = "0.5.2", optional = true }
 
 [dev-dependencies]
-ntest = "*"
+ntest = "0.9"
 
 [target.'cfg(not(target_arch="wasm32"))'.dev-dependencies]
 propfuzz = "0.0.1"
