@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 
 jobs:
-  build_test_spec:
+  build_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,7 +20,22 @@ jobs:
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test
       run: env SPEC=false script/cibuild
-    - name: Run spec tests
+  build_spec:
+    runs-on: ubuntu-latest
+    needs: build_test
+    strategy:
+      matrix:
+        rust:
+          - nightly
+          - beta
+          - stable
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Obtain Rust
+      run: rustup override set ${{ matrix.rust }}
+    - name: Build and run spec tests
       run: env SPEC=true script/cibuild
   build_wasm:
     runs-on: ubuntu-latest
