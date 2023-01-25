@@ -814,10 +814,10 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     if self.footnote_ix == 0 {
                         self.output
-                            .write_all(b"<section class=\"footnotes\">\n<ol>\n")?;
+                            .write_all(b"<section class=\"footnotes\" data-footnotes>\n<ol>\n")?;
                     }
                     self.footnote_ix += 1;
-                    writeln!(self.output, "<li id=\"fn{}\">", self.footnote_ix)?;
+                    writeln!(self.output, "<li id=\"fn-{}\">", self.footnote_ix)?;
                 } else {
                     if self.put_footnote_backref()? {
                         self.output.write_all(b"\n")?;
@@ -830,7 +830,7 @@ impl<'o> HtmlFormatter<'o> {
                     let r = str::from_utf8(r).unwrap();
                     write!(
                         self.output,
-                        "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">{}</a></sup>",
+                        "<sup class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"fnref-{}\" data-footnote-ref>{}</a></sup>",
                         r, r, r
                     )?;
                 }
@@ -859,7 +859,7 @@ impl<'o> HtmlFormatter<'o> {
         self.written_footnote_ix = self.footnote_ix;
         write!(
             self.output,
-            "<a href=\"#fnref{}\" class=\"footnote-backref\">↩</a>",
+            "<a href=\"#fnref-{}\" class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a>",
             self.footnote_ix
         )?;
         Ok(true)
