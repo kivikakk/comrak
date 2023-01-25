@@ -1069,6 +1069,42 @@ fn footnote_in_table() {
 }
 
 #[test]
+fn footnote_with_superscript() {
+    html_opts!(
+        [extension.superscript, extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^1]\n",
+            "\n",
+            "Here is a longer footnote reference.[^ref]\n",
+            "\n",
+            "e = mc^2^.\n",
+            "\n",
+            "[^1]: Here is the footnote.\n",
+            "[^ref]: Here is another footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn1\" \
+             id=\"fnref1\">1</a></sup></p>\n",
+            "<p>Here is a longer footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn2\" \
+             id=\"fnref2\">2</a></sup></p>\n",
+            "<p>e = mc<sup>2</sup>.</p>\n",
+            "<section class=\"footnotes\">\n",
+            "<ol>\n",
+            "<li id=\"fn1\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref1\" \
+             class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn2\">\n",
+            "<p>Here is another footnote. <a href=\"#fnref2\" \
+             class=\"footnote-backref\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn regression_back_to_back_ranges() {
     html(
         "**bold*****bold+italic***",

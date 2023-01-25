@@ -26,6 +26,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a, 'd>>,
+    within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     special_chars: [bool; 256],
@@ -74,6 +75,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             delimiter_arena,
             last_delimiter: None,
             brackets: vec![],
+            within_brackets: false,
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             special_chars: [false; 256],
@@ -128,9 +130,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos += 1;
                 let inl = make_inline(self.arena, NodeValue::Text(b"[".to_vec()));
                 self.push_bracket(false, inl);
+                self.within_brackets = true;
                 Some(inl)
             }
-            ']' => self.handle_close_bracket(),
+            ']' => {
+                self.within_brackets = false;
+                self.handle_close_bracket()
+            }
             '!' => {
                 self.pos += 1;
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
@@ -143,7 +149,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 }
             }
             '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
-            '^' if self.options.extension.superscript => Some(self.handle_delim(b'^')),
+            '^' if self.options.extension.superscript && !self.within_brackets => {
+                Some(self.handle_delim(b'^'))
+            }
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -452,7 +460,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn find_special_char(&self) -> usize {
         for n in self.pos..self.input.len() {
             if self.special_chars[self.input[n] as usize] {
-                return n;
+                if self.input[n] == b'^' && self.within_brackets {
+                    // NO OP
+                } else {
+                    return n;
+                }
             }
             if self.options.parse.smart && self.smart_chars[self.input[n] as usize] {
                 return n;
