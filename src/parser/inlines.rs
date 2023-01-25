@@ -149,7 +149,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 }
             }
             '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
-            '^' if self.options.extension.superscript => Some(self.handle_delim(b'^')),
+            '^' if self.options.extension.superscript && !self.within_brackets => {
+                Some(self.handle_delim(b'^'))
+            }
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -458,7 +460,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn find_special_char(&self) -> usize {
         for n in self.pos..self.input.len() {
             if self.special_chars[self.input[n] as usize] {
-                return n;
+                if self.input[n] == b'^' && self.within_brackets {
+                    // NO OP
+                } else {
+                    return n;
+                }
             }
             if self.options.parse.smart && self.smart_chars[self.input[n] as usize] {
                 return n;
