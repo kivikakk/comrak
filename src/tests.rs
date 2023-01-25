@@ -1083,20 +1083,20 @@ fn footnote_with_superscript() {
             "[^ref]: Here is another footnote.\n",
         ),
         concat!(
-            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn1\" \
-             id=\"fnref1\">1</a></sup></p>\n",
-            "<p>Here is a longer footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn2\" \
-             id=\"fnref2\">2</a></sup></p>\n",
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-1\" \
+             id=\"fnref-1\" data-footnote-ref>1</a></sup></p>\n",
+            "<p>Here is a longer footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-2\" \
+             id=\"fnref-2\" data-footnote-ref>2</a></sup></p>\n",
             "<p>e = mc<sup>2</sup>.</p>\n",
-            "<section class=\"footnotes\">\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
             "<ol>\n",
-            "<li id=\"fn1\">\n",
-            "<p>Here is the footnote. <a href=\"#fnref1\" \
-             class=\"footnote-backref\">↩</a></p>\n",
+            "<li id=\"fn-1\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-1\" \
+             class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a></p>\n",
             "</li>\n",
-            "<li id=\"fn2\">\n",
-            "<p>Here is another footnote. <a href=\"#fnref2\" \
-             class=\"footnote-backref\">↩</a></p>\n",
+            "<li id=\"fn-2\">\n",
+            "<p>Here is another footnote. <a href=\"#fnref-2\" \
+             class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a></p>\n",
             "</li>\n",
             "</ol>\n",
             "</section>\n"
