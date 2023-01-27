@@ -398,6 +398,21 @@ pub struct ComrakRenderOptions {
     /// ```
     pub github_pre_lang: bool,
 
+    /// Enable full info strings for code blocks
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// assert_eq!(markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options),
+    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    ///
+    /// options.render.full_info_string = true;
+    /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
+    /// let re = regex::Regex::new(r#"data-meta="extra info""#).unwrap();
+    /// assert!(re.is_match(&html));
+    /// ```
+    pub full_info_string: bool,
+
     /// The wrap column when outputting CommonMark.
     ///
     /// ```
