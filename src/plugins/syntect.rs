@@ -1,12 +1,16 @@
 //! Adapter for the Syntect syntax highlighter plugin.
 
 use adapters::SyntaxHighlighterAdapter;
-use regex::Regex;
 use std::collections::HashMap;
 use strings::{build_opening_tag, extract_attributes_from_tag};
-use syntect::highlighting::ThemeSet;
-use syntect::html::highlighted_html_for_string;
-use syntect::parsing::SyntaxSet;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Color, ThemeSet};
+use syntect::html::{
+    append_highlighted_html_for_styled_line, highlighted_html_for_string, IncludeBackground,
+};
+use syntect::parsing::{SyntaxReference, SyntaxSet};
+use syntect::util::LinesWithEndings;
+use syntect::Error;
 
 #[derive(Debug)]
 /// Syntect syntax highlighter plugin.
@@ -39,12 +43,22 @@ impl<'a> SyntectAdapter<'a> {
         }
     }
 
-    fn remove_pre_tag(&self, highlighted_code: String) -> String {
-        let re: Regex = Regex::new("<pre[\\s]+.*?>").unwrap();
+    fn highlight_html(&self, code: &str, syntax: &SyntaxReference) -> Result<String, Error> {
+        // syntect::html::highlighted_html_for_string, without the opening/closing <pre>.
+        let theme = &self.theme_set.themes[self.theme];
+        let mut highlighter = HighlightLines::new(syntax, theme);
+        let mut output = String::new();
+        let bg = theme.settings.background.unwrap_or(Color::WHITE);
 
-        re.replace_all(highlighted_code.as_str(), "")
-            .to_string()
-            .replace("</pre>", "")
+        for line in LinesWithEndings::from(code) {
+            let regions = highlighter.highlight_line(line, &self.syntax_set)?;
+            append_highlighted_html_for_styled_line(
+                &regions[..],
+                IncludeBackground::IfDifferent(bg),
+                &mut output,
+            )?;
+        }
+        Ok(output)
     }
 }
 
@@ -72,13 +86,8 @@ impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
                     .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text())
             });
 
-        match highlighted_html_for_string(
-            code,
-            &self.syntax_set,
-            syntax,
-            &self.theme_set.themes[self.theme],
-        ) {
-            Ok(highlighted_code) => self.remove_pre_tag(highlighted_code),
+        match self.highlight_html(code, syntax) {
+            Ok(highlighted_code) => highlighted_code,
             Err(_) => code.into(),
         }
     }

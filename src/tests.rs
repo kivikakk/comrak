@@ -262,9 +262,9 @@ fn syntect_plugin() {
 
     let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
     let expected = concat!(
-        "<pre style=\"background-color:#2b303b;\"><code class=\"language-rust\">\n",
+        "<pre style=\"background-color:#2b303b;\"><code class=\"language-rust\">",
         "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
-        "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>\n",
+        "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>",
         "</code></pre>\n"
     );
 
