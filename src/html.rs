@@ -512,17 +512,24 @@ impl<'o> HtmlFormatter<'o> {
                             first_tag += 1;
                         }
 
+                        let lang_str = str::from_utf8(&ncb.info[..first_tag]).unwrap();
+                        let info_str = str::from_utf8(&ncb.info[first_tag..]).unwrap().trim();
+
                         if self.options.render.github_pre_lang {
-                            pre_attributes.insert(
-                                String::from("lang"),
-                                String::from_utf8(Vec::from(&ncb.info[..first_tag])).unwrap(),
-                            );
+                            pre_attributes.insert(String::from("lang"), lang_str.to_string());
+
+                            if self.options.render.full_info_string && !info_str.is_empty() {
+                                pre_attributes
+                                    .insert(String::from("data-meta"), info_str.trim().to_string());
+                            }
                         } else {
-                            code_attr = format!(
-                                "language-{}",
-                                str::from_utf8(&ncb.info[..first_tag]).unwrap()
-                            );
+                            code_attr = format!("language-{}", lang_str);
                             code_attributes.insert(String::from("class"), code_attr);
+
+                            if self.options.render.full_info_string && !info_str.is_empty() {
+                                code_attributes
+                                    .insert(String::from("data-meta"), info_str.to_string());
+                            }
                         }
                     }
 
