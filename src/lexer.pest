@@ -21,7 +21,22 @@ attribute_value = _{ (!(" " | "\t" | "\r" | "\n" | "\x0b" | "\x0c" | "\"" | "'" 
 attribute_value_spec = _{ space_char* ~ "=" ~ space_char* ~ attribute_value }
 attribute = _{ space_char+ ~ attribute_name ~ attribute_value_spec? }
 open_tag = _{ tag_name ~ attribute* ~ space_char* ~ "/"? ~ ">" }
-html_comment = _{ "!---->" | ("!--" ~ "-"? ~ !("\x00" | ">" | "-") ~ ANY ~ ("-"? ~ !("\x00" | "-") ~ ANY)* ~ "-->") }
+html_comment = _{
+    "!--" ~ (
+        ">" |
+        "->" |
+        (
+            (
+                (!("\x00" | "-") ~ ANY)+
+                |
+                ("-" ~ !("\x00" | "-") ~ ANY)
+                |
+                ("--" ~ !("\x00" | ">") ~ ANY)
+            )* ~
+            "-->"
+        )
+    )
+}
 processing_instruction = _{ "?" ~ ((!("?" | ">" | "\x00") ~ ANY)+ | "?" ~ !(">" | "\x00") ~ ANY | ">")* ~ "?>" }
 declaration = _{ "!" ~ 'A'..'Z'+ ~ space_char+ ~ (!(">" | "\x00") ~ ANY)* ~ ">" }
 cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ ANY)+ | "]" ~ (!("]" | "\x00") ~ ANY) | "]]" ~ (!(">" | "\x00") ~ ANY))* ~ "]]>" }
