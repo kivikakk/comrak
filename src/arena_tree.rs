@@ -215,7 +215,10 @@ impl<'a, T> Node<'a, T> {
         new_sibling.parent.set(self.parent.get());
         new_sibling.previous_sibling.set(Some(self));
         if let Some(next_sibling) = self.next_sibling.take() {
-            debug_assert!(std::ptr::eq(next_sibling.previous_sibling.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(
+                next_sibling.previous_sibling.get().unwrap(),
+                self
+            ));
             next_sibling.previous_sibling.set(Some(new_sibling));
             new_sibling.next_sibling.set(Some(next_sibling));
         } else if let Some(parent) = self.parent.get() {
@@ -232,7 +235,10 @@ impl<'a, T> Node<'a, T> {
         new_sibling.next_sibling.set(Some(self));
         if let Some(previous_sibling) = self.previous_sibling.take() {
             new_sibling.previous_sibling.set(Some(previous_sibling));
-            debug_assert!(std::ptr::eq(previous_sibling.next_sibling.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(
+                previous_sibling.next_sibling.get().unwrap(),
+                self
+            ));
             previous_sibling.next_sibling.set(Some(new_sibling));
         } else if let Some(parent) = self.parent.get() {
             debug_assert!(std::ptr::eq(parent.first_child.get().unwrap(), self));
