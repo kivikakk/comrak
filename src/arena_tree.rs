@@ -39,28 +39,24 @@ where
     T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        // FIXME: would be better not to build a vector for the children but I
-        // can't presently figure out the borrowing to use the debug_list API
-        let mut children = vec![];
-        let mut child = self.first_child.get();
-        while let Some(inner_child) = child {
-            children.push(inner_child);
-            child = inner_child.next_sibling.get();
+        struct Children<'a, T>(Option<&'a Node<'a, T>>);
+        impl<T: fmt::Debug> fmt::Debug for Children<'_, T> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+                f.debug_list()
+                    .entries(std::iter::successors(self.0, |child| {
+                        child.next_sibling.get()
+                    }))
+                    .finish()
+            }
         }
 
         let mut struct_fmt = f.debug_struct("Node");
         struct_fmt.field("data", &self.data);
-        struct_fmt.field("children", &children);
+        struct_fmt.field("children", &Children(self.first_child.get()));
         struct_fmt.finish()?;
 
         Ok(())
     }
-}
-
-fn same_ref<T>(a: &T, b: &T) -> bool {
-    let a: *const T = a;
-    let b: *const T = b;
-    a == b
 }
 
 impl<'a, T> Node<'a, T> {
@@ -106,7 +102,7 @@ impl<'a, T> Node<'a, T> {
 
     /// Returns whether two references point to the same node.
     pub fn same_node(&self, other: &Node<'a, T>) -> bool {
-        same_ref(self, other)
+        std::ptr::eq(self, other)
     }
 
     /// Return an iterator of references to this node and its ancestors.
@@ -219,11 +215,11 @@ impl<'a, T> Node<'a, T> {
         new_sibling.parent.set(self.parent.get());
         new_sibling.previous_sibling.set(Some(self));
         if let Some(next_sibling) = self.next_sibling.take() {
-            debug_assert!(same_ref(next_sibling.previous_sibling.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(next_sibling.previous_sibling.get().unwrap(), self));
             next_sibling.previous_sibling.set(Some(new_sibling));
             new_sibling.next_sibling.set(Some(next_sibling));
         } else if let Some(parent) = self.parent.get() {
-            debug_assert!(same_ref(parent.last_child.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(parent.last_child.get().unwrap(), self));
             parent.last_child.set(Some(new_sibling));
         }
         self.next_sibling.set(Some(new_sibling));
@@ -236,10 +232,10 @@ impl<'a, T> Node<'a, T> {
         new_sibling.next_sibling.set(Some(self));
         if let Some(previous_sibling) = self.previous_sibling.take() {
             new_sibling.previous_sibling.set(Some(previous_sibling));
-            debug_assert!(same_ref(previous_sibling.next_sibling.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(previous_sibling.next_sibling.get().unwrap(), self));
             previous_sibling.next_sibling.set(Some(new_sibling));
         } else if let Some(parent) = self.parent.get() {
-            debug_assert!(same_ref(parent.first_child.get().unwrap(), self));
+            debug_assert!(std::ptr::eq(parent.first_child.get().unwrap(), self));
             parent.first_child.set(Some(new_sibling));
         }
         self.previous_sibling.set(Some(new_sibling));
