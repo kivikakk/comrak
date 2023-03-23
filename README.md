@@ -66,9 +66,12 @@ Options:
       --github-pre-lang
           Use GitHub-style <pre lang> for code blocks
 
+      --full-info-string
+          Enable full info strings for code blocks
+
       --gfm
-          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
-          tasklist. Also enables --github-pre-lang
+          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and tasklist.
+          Also enables --github-pre-lang
 
       --relaxed-tasklist-character
           Enable relaxing which character is allowed in a tasklists
@@ -90,8 +93,8 @@ Options:
           
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
-          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists]
+          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript, footnotes,
+          description-lists]
 
   -t, --to <FORMAT>
           Specify output format
@@ -130,9 +133,8 @@ Options:
   -V, --version
           Print version information
 
-By default, Comrak will attempt to read command-line options from a config file specified by
---config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
-the file does not exist.
+By default, Comrak will attempt to read command-line options from a config file specified by --config-file.
+This behaviour can be disabled by passing --config-file none. It is not an error if the file does not exist.
 ```
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
