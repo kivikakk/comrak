@@ -300,11 +300,11 @@ Support this project with your organization. Your logo will show up here with a 
 
 ## Contact
 
-Ashe Connor \<ashe kivikakk ee\>
+Asherah Connor \<ashe kivikakk ee\>
 
 ## Legal
 
-Copyright (c) 2017–2021, Ashe Connor. Licensed under the [2-Clause BSD
+Copyright (c) 2017–2023, Asherah Connor. Licensed under the [2-Clause BSD
 License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
