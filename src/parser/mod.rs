@@ -1537,7 +1537,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         while subj.parse_inline(node) {}
 
-        subj.process_emphasis(None);
+        subj.process_emphasis(0);
 
         while subj.pop_bracket() {}
     }

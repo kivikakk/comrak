@@ -27,7 +27,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub refmap: &'r mut HashMap<Vec<u8>, Reference>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a, 'd>>,
+    brackets: Vec<Bracket<'a>>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -42,6 +42,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
 
 pub struct Delimiter<'a: 'd, 'd> {
     inl: &'a AstNode<'a>,
+    position: usize,
     length: usize,
     delim_char: u8,
     can_open: bool,
@@ -50,8 +51,7 @@ pub struct Delimiter<'a: 'd, 'd> {
     next: Cell<Option<&'d Delimiter<'a, 'd>>>,
 }
 
-struct Bracket<'a: 'd, 'd> {
-    previous_delimiter: Option<&'d Delimiter<'a, 'd>>,
+struct Bracket<'a> {
     inl_text: &'a AstNode<'a>,
     position: usize,
     image: bool,
@@ -242,42 +242,41 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     // different emphasis. Note also that "_"- and "*"-delimited regions have
     // complex rules for which can be opening and/or closing delimiters,
     // determined in `scan_delims`.
-    pub fn process_emphasis(&mut self, stack_bottom: Option<&'d Delimiter<'a, 'd>>) {
+    pub fn process_emphasis(&mut self, stack_bottom: usize) {
         let mut closer = self.last_delimiter;
 
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [Option<&'d Delimiter<'a, 'd>>; 11] = [stack_bottom; 11];
+        let mut openers_bottom: [usize; 11] = [stack_bottom; 11];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
         // emphasis on an entire block, `stack_bottom` is `None`, so `closer` references
         // the very bottom of the stack.
-        while closer.is_some() && !Self::del_ref_eq(closer.unwrap().prev.get(), stack_bottom) {
+        while closer.map_or(false, |c| {
+            c.prev.get().map_or(false, |p| p.position >= stack_bottom)
+        }) {
             closer = closer.unwrap().prev.get();
         }
 
-        while closer.is_some() {
-            if closer.unwrap().can_close {
+        while let Some(c) = closer {
+            if c.can_close {
                 // Each time through the outer `closer` loop we reset the opener
                 // to the element below the closer, and search down the stack
                 // for a matching opener.
 
-                let mut opener = closer.unwrap().prev.get();
+                let mut opener = c.prev.get();
                 let mut opener_found = false;
                 let mut mod_three_rule_invoked = false;
 
-                let ix = match closer.unwrap().delim_char {
+                let ix = match c.delim_char {
                     b'~' => 0,
                     b'^' => 1,
                     b'"' => 2,
                     b'\'' => 3,
                     b'_' => 4,
-                    b'*' => {
-                        5 + (if closer.unwrap().can_open { 3 } else { 0 })
-                            + (closer.unwrap().length % 3)
-                    }
+                    b'*' => 5 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
                     _ => unreachable!(),
                 };
 
@@ -292,10 +291,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // This search short-circuits for openers we've previously
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
-                while opener.is_some() && !Self::del_ref_eq(opener, openers_bottom[ix]) {
-                    if opener.unwrap().can_open
-                        && opener.unwrap().delim_char == closer.unwrap().delim_char
-                    {
+                while opener.map_or(false, |o| o.position >= openers_bottom[ix]) {
+                    let o = opener.unwrap();
+                    if o.can_open && o.delim_char == c.delim_char {
                         // This is a bit convoluted; see points 9 and 10 here:
                         // http://spec.commonmark.org/0.28/#can-open-emphasis.
                         // This is to aid processing of runs like this:
@@ -305,10 +303,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         // that matches the last ** or *, we need to skip it,
                         // and this algorithm ensures we do. (The sum of the
                         // lengths are a multiple of 3.)
-                        let odd_match = (closer.unwrap().can_open || opener.unwrap().can_close)
-                            && ((opener.unwrap().length + closer.unwrap().length) % 3 == 0)
-                            && !(opener.unwrap().length % 3 == 0
-                                && closer.unwrap().length % 3 == 0);
+                        let odd_match = (c.can_open || o.can_close)
+                            && ((o.length + c.length) % 3 == 0)
+                            && !(o.length % 3 == 0 && c.length % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -316,18 +313,18 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                             mod_three_rule_invoked = true;
                         }
                     }
-                    opener = opener.unwrap().prev.get();
+                    opener = o.prev.get();
                 }
 
-                let old_closer = closer;
+                let old_c = c;
 
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if closer.unwrap().delim_char == b'*'
-                    || closer.unwrap().delim_char == b'_'
-                    || (self.options.extension.strikethrough && closer.unwrap().delim_char == b'~')
-                    || (self.options.extension.superscript && closer.unwrap().delim_char == b'^')
+                if c.delim_char == b'*'
+                    || c.delim_char == b'_'
+                    || (self.options.extension.strikethrough && c.delim_char == b'~')
+                    || (self.options.extension.superscript && c.delim_char == b'^')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -343,22 +340,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         //
                         // In general though the closer will be the next
                         // delimiter up the stack.
-                        closer = self.insert_emph(opener.unwrap(), closer.unwrap());
+                        closer = self.insert_emph(opener.unwrap(), c);
                     } else {
                         // When no matching opener is found we move the closer
                         // up the stack, do some bookkeeping with old_closer
                         // (below), try again.
-                        closer = closer.unwrap().next.get();
+                        closer = c.next.get();
                     }
-                } else if closer.unwrap().delim_char == b'\'' {
-                    *closer
-                        .unwrap()
-                        .inl
-                        .data
-                        .borrow_mut()
-                        .value
-                        .text_mut()
-                        .unwrap() = "’".to_string().into_bytes();
+                } else if c.delim_char == b'\'' {
+                    *c.inl.data.borrow_mut().value.text_mut().unwrap() =
+                        "’".to_string().into_bytes();
                     if opener_found {
                         *opener
                             .unwrap()
@@ -369,16 +360,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                             .text_mut()
                             .unwrap() = "‘".to_string().into_bytes();
                     }
-                    closer = closer.unwrap().next.get();
-                } else if closer.unwrap().delim_char == b'"' {
-                    *closer
-                        .unwrap()
-                        .inl
-                        .data
-                        .borrow_mut()
-                        .value
-                        .text_mut()
-                        .unwrap() = "”".to_string().into_bytes();
+                    closer = c.next.get();
+                } else if c.delim_char == b'"' {
+                    *c.inl.data.borrow_mut().value.text_mut().unwrap() =
+                        "”".to_string().into_bytes();
                     if opener_found {
                         *opener
                             .unwrap()
@@ -389,7 +374,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                             .text_mut()
                             .unwrap() = "“".to_string().into_bytes();
                     }
-                    closer = closer.unwrap().next.get();
+                    closer = c.next.get();
                 }
 
                 // If the search for an opener was unsuccessful, then record
@@ -398,7 +383,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // same opener at the bottom of the stack later.
                 if !opener_found {
                     if !mod_three_rule_invoked {
-                        openers_bottom[ix] = old_closer.unwrap().prev.get();
+                        openers_bottom[ix] = old_c.position;
                     }
 
                     // Now that we've failed the `opener` search starting from
@@ -406,20 +391,22 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     // for openers - if `old_closer` can't be used as an opener
                     // then we know it's just text - remove it from the
                     // delimiter stack, leaving it in the AST as text
-                    if !old_closer.unwrap().can_open {
-                        self.remove_delimiter(old_closer.unwrap());
+                    if !old_c.can_open {
+                        self.remove_delimiter(old_c);
                     }
                 }
             } else {
                 // Closer is !can_close. Move up the stack
-                closer = closer.unwrap().next.get();
+                closer = c.next.get();
             }
         }
 
         // At this point the entire delimiter stack from `stack_bottom` up has
         // been scanned for matches, everything left is just text. Pop it all
         // off.
-        while self.last_delimiter.is_some() && !Self::del_ref_eq(self.last_delimiter, stack_bottom)
+        while self
+            .last_delimiter
+            .map_or(false, |d| d.position >= stack_bottom)
         {
             let last_del = self.last_delimiter.unwrap();
             self.remove_delimiter(last_del);
@@ -725,6 +712,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
             inl,
+            position: self.pos,
             length: inl.data.borrow().value.text().unwrap().len(),
             delim_char: c,
             can_open,
@@ -925,7 +913,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.brackets[len - 1].bracket_after = true;
         }
         self.brackets.push(Bracket {
-            previous_delimiter: self.last_delimiter,
             inl_text,
             position: self.pos,
             image,
@@ -1041,8 +1028,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     .unwrap()
                     .detach();
                 self.brackets[brackets_len - 1].inl_text.detach();
-                let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
-                self.process_emphasis(previous_delimiter);
+                self.process_emphasis(self.brackets[brackets_len - 1].position);
                 self.brackets.pop();
                 return None;
             }
@@ -1072,8 +1058,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             inl.append(tmp);
         }
         self.brackets[brackets_len - 1].inl_text.detach();
-        let previous_delimiter = self.brackets[brackets_len - 1].previous_delimiter;
-        self.process_emphasis(previous_delimiter);
+        self.process_emphasis(self.brackets[brackets_len - 1].position);
         self.brackets.pop();
         brackets_len -= 1;
 
