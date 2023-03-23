@@ -707,6 +707,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         self.offset = 0;
         self.column = 0;
+        self.first_nonspace = 0;
+        self.first_nonspace_column = 0;
+        self.indent = 0;
         self.blank = false;
         self.partially_consumed_tab = false;
 
