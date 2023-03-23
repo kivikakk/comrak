@@ -1,15 +1,17 @@
-use crate::{
-    adapters::{HeadingAdapter, HeadingMeta},
-    nodes::{AstNode, NodeCode, NodeValue},
-};
-use adapters::SyntaxHighlighterAdapter;
-use cm;
-use html;
-use ntest::timeout;
 #[cfg(feature = "syntect")]
-use plugins::syntect::SyntectAdapter;
+use crate::plugins::syntect::SyntectAdapter;
+use crate::{
+    adapters::SyntaxHighlighterAdapter,
+    adapters::{HeadingAdapter, HeadingMeta},
+    cm, format_commonmark, format_html, format_html_with_plugins, html, markdown_to_html, nodes,
+    nodes::{AstNode, NodeCode, NodeValue},
+    parse_document, parse_document_with_broken_link_callback,
+    strings::build_opening_tag,
+    Anchorizer, Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
+    ComrakRenderOptions, ComrakRenderPlugins, ListStyleType,
+};
+use ntest::timeout;
 use std::collections::HashMap;
-use strings::build_opening_tag;
 
 #[cfg(not(target_arch = "wasm32"))]
 use propfuzz::prelude::*;
@@ -17,8 +19,8 @@ use propfuzz::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 #[propfuzz]
 fn fuzz_doesnt_crash(md: String) {
-    let options = ::ComrakOptions {
-        extension: ::ComrakExtensionOptions {
+    let options = ComrakOptions {
+        extension: ComrakExtensionOptions {
             strikethrough: true,
             tagfilter: true,
             table: true,
@@ -32,23 +34,23 @@ fn fuzz_doesnt_crash(md: String) {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
         },
-        parse: ::ComrakParseOptions {
+        parse: ComrakParseOptions {
             smart: true,
             default_info_string: Some("Rust".to_string()),
             relaxed_tasklist_matching: true,
         },
-        render: ::ComrakRenderOptions {
+        render: ComrakRenderOptions {
             hardbreaks: true,
             github_pre_lang: true,
             full_info_string: true,
             width: 80,
             unsafe_: true,
             escape: false,
-            list_style: ::ListStyleType::Dash,
+            list_style: ListStyleType::Dash,
         },
     };
 
-    ::parse_document(&::Arena::new(), &md, &options);
+    parse_document(&Arena::new(), &md, &options);
 }
 
 #[track_caller]
@@ -70,12 +72,12 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 #[track_caller]
-fn commonmark(input: &str, expected: &str, opts: Option<&::ComrakOptions>) {
-    let arena = ::Arena::new();
-    let defaults = ::ComrakOptions::default();
+fn commonmark(input: &str, expected: &str, opts: Option<&ComrakOptions>) {
+    let arena = Arena::new();
+    let defaults = ComrakOptions::default();
     let options = opts.unwrap_or(&defaults);
 
-    let root = ::parse_document(&arena, input, options);
+    let root = parse_document(&arena, input, options);
     let mut output = vec![];
     cm::format_document(root, &options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
@@ -89,20 +91,20 @@ fn html(input: &str, expected: &str) {
 #[track_caller]
 fn html_opts<F>(input: &str, expected: &str, opts: F)
 where
-    F: Fn(&mut ::ComrakOptions),
+    F: Fn(&mut ComrakOptions),
 {
-    let arena = ::Arena::new();
-    let mut options = ::ComrakOptions::default();
+    let arena = Arena::new();
+    let mut options = ComrakOptions::default();
     opts(&mut options);
 
-    let root = ::parse_document(&arena, input, &options);
+    let root = parse_document(&arena, input, &options);
     let mut output = vec![];
     html::format_document(root, &options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
-    let root = ::parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
     let mut output_from_rt = vec![];
     html::format_document(root, &options, &mut output_from_rt).unwrap();
     compare_strs(
@@ -123,18 +125,18 @@ macro_rules! html_opts {
     };
 }
 
-fn html_plugins(input: &str, expected: &str, plugins: &::ComrakPlugins) {
-    let arena = ::Arena::new();
-    let options = ::ComrakOptions::default();
+fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
+    let arena = Arena::new();
+    let options = ComrakOptions::default();
 
-    let root = ::parse_document(&arena, input, &options);
+    let root = parse_document(&arena, input, &options);
     let mut output = vec![];
     html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
-    let root = ::parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
+    let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
     let mut output_from_rt = vec![];
     html::format_document_with_plugins(root, &options, &mut output_from_rt, &plugins).unwrap();
     compare_strs(
@@ -217,7 +219,7 @@ fn syntax_highlighter_plugin() {
         "</code></pre>\n"
     );
 
-    let mut plugins = ::ComrakPlugins::default();
+    let mut plugins = ComrakPlugins::default();
     let adapter = MockAdapter {};
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
@@ -238,7 +240,7 @@ fn heading_adapter_plugin() {
         }
     }
 
-    let mut plugins = ::ComrakPlugins::default();
+    let mut plugins = ComrakPlugins::default();
     let adapter = MockAdapter {};
     plugins.render.heading_adapter = Some(&adapter);
 
@@ -269,7 +271,7 @@ fn syntect_plugin() {
         "</code></pre>\n"
     );
 
-    let mut plugins = ::ComrakPlugins::default();
+    let mut plugins = ComrakPlugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
@@ -330,12 +332,12 @@ fn markdown_list_bullets() {
     let dash = concat!("- a\n");
     let plus = concat!("+ a\n");
     let star = concat!("* a\n");
-    let mut dash_opts = ::ComrakOptions::default();
-    dash_opts.render.list_style = ::ListStyleType::Dash;
-    let mut plus_opts = ::ComrakOptions::default();
-    plus_opts.render.list_style = ::ListStyleType::Plus;
-    let mut star_opts = ::ComrakOptions::default();
-    star_opts.render.list_style = ::ListStyleType::Star;
+    let mut dash_opts = ComrakOptions::default();
+    dash_opts.render.list_style = ListStyleType::Dash;
+    let mut plus_opts = ComrakOptions::default();
+    plus_opts.render.list_style = ListStyleType::Plus;
+    let mut star_opts = ComrakOptions::default();
+    star_opts.render.list_style = ListStyleType::Star;
 
     commonmark(dash, dash, Some(&dash_opts));
     commonmark(plus, dash, Some(&dash_opts));
@@ -360,7 +362,7 @@ fn thematic_breaks() {
 
 #[test]
 fn width_breaks() {
-    let mut options = ::ComrakOptions::default();
+    let mut options = ComrakOptions::default();
     options.render.width = 72;
     let input = concat!(
         "this should break because it has breakable characters. break right here newline\n",
@@ -555,9 +557,9 @@ fn blockquote_hard_linebreak_nonlazy_space() {
 fn backticks_num() {
     let input = "Some `code1`. More ``` code2 ```.\n";
 
-    let arena = ::Arena::new();
-    let options = ::ComrakOptions::default();
-    let root = ::parse_document(&arena, input, &options);
+    let arena = Arena::new();
+    let options = ComrakOptions::default();
+    let root = parse_document(&arena, input, &options);
 
     let code1 = NodeValue::Code(NodeCode {
         num_backticks: 1,
@@ -1245,19 +1247,19 @@ fn nested_tables_3() {
 #[test]
 fn no_stack_smash_html() {
     let s: String = ::std::iter::repeat('>').take(150_000).collect();
-    let arena = ::Arena::new();
-    let root = ::parse_document(&arena, &s, &::ComrakOptions::default());
+    let arena = Arena::new();
+    let root = parse_document(&arena, &s, &ComrakOptions::default());
     let mut output = vec![];
-    html::format_document(root, &::ComrakOptions::default(), &mut output).unwrap()
+    html::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
 }
 
 #[test]
 fn no_stack_smash_cm() {
     let s: String = ::std::iter::repeat('>').take(150_000).collect();
-    let arena = ::Arena::new();
-    let root = ::parse_document(&arena, &s, &::ComrakOptions::default());
+    let arena = Arena::new();
+    let root = parse_document(&arena, &s, &ComrakOptions::default());
     let mut output = vec![];
-    cm::format_document(root, &::ComrakOptions::default(), &mut output).unwrap()
+    cm::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
 }
 
 #[test]
@@ -1393,35 +1395,35 @@ fn case_insensitive_safety() {
 
 #[test]
 fn exercise_full_api<'a>() {
-    let arena = ::Arena::new();
-    let default_options = ::ComrakOptions::default();
-    let default_plugins = ::ComrakPlugins::default();
-    let node = ::parse_document(&arena, "# My document\n", &default_options);
+    let arena = Arena::new();
+    let default_options = ComrakOptions::default();
+    let default_plugins = ComrakPlugins::default();
+    let node = parse_document(&arena, "# My document\n", &default_options);
     let mut buffer = vec![];
 
     // Use every member of the exposed API without any defaults.
     // Not looking for specific outputs, just want to know if the API changes shape.
 
-    let _: std::io::Result<()> = ::format_commonmark(node, &default_options, &mut buffer);
+    let _: std::io::Result<()> = format_commonmark(node, &default_options, &mut buffer);
 
-    let _: std::io::Result<()> = ::format_html(node, &default_options, &mut buffer);
+    let _: std::io::Result<()> = format_html(node, &default_options, &mut buffer);
 
     let _: std::io::Result<()> =
-        ::format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
+        format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
 
-    let _: String = ::Anchorizer::new().anchorize("header".to_string());
+    let _: String = Anchorizer::new().anchorize("header".to_string());
 
-    let _: &AstNode = ::parse_document(&arena, "document", &default_options);
+    let _: &AstNode = parse_document(&arena, "document", &default_options);
 
-    let _: &AstNode = ::parse_document_with_broken_link_callback(
+    let _: &AstNode = parse_document_with_broken_link_callback(
         &arena,
         "document",
         &default_options,
         Some(&mut |_: &[u8]| Some((b"abc".to_vec(), b"xyz".to_vec()))),
     );
 
-    let _ = ::ComrakOptions {
-        extension: ::ComrakExtensionOptions {
+    let _ = ComrakOptions {
+        extension: ComrakExtensionOptions {
             strikethrough: false,
             tagfilter: false,
             table: false,
@@ -1435,19 +1437,19 @@ fn exercise_full_api<'a>() {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
         },
-        parse: ::ComrakParseOptions {
+        parse: ComrakParseOptions {
             smart: false,
             default_info_string: Some("abc".to_string()),
             relaxed_tasklist_matching: true,
         },
-        render: ::ComrakRenderOptions {
+        render: ComrakRenderOptions {
             hardbreaks: false,
             github_pre_lang: false,
             full_info_string: false,
             width: 123456,
             unsafe_: false,
             escape: false,
-            list_style: ::ListStyleType::Dash,
+            list_style: ListStyleType::Dash,
         },
     };
 
@@ -1478,101 +1480,101 @@ fn exercise_full_api<'a>() {
 
     let mock_adapter = MockAdapter {};
 
-    let _ = ::ComrakPlugins {
-        render: ::ComrakRenderPlugins {
+    let _ = ComrakPlugins {
+        render: ComrakRenderPlugins {
             codefence_syntax_highlighter: Some(&mock_adapter),
             heading_adapter: Some(&mock_adapter),
         },
     };
 
-    let _: String = ::markdown_to_html("# Yes", &default_options);
+    let _: String = markdown_to_html("# Yes", &default_options);
 
     //
 
     let ast = node.data.borrow();
     let _ = ast.start_line;
     match &ast.value {
-        ::nodes::NodeValue::Document => {}
-        ::nodes::NodeValue::FrontMatter(_) => {}
-        ::nodes::NodeValue::BlockQuote => {}
-        ::nodes::NodeValue::List(nl) | ::nodes::NodeValue::Item(nl) => {
+        nodes::NodeValue::Document => {}
+        nodes::NodeValue::FrontMatter(_) => {}
+        nodes::NodeValue::BlockQuote => {}
+        nodes::NodeValue::List(nl) | nodes::NodeValue::Item(nl) => {
             match nl.list_type {
-                ::nodes::ListType::Bullet => {}
-                ::nodes::ListType::Ordered => {}
+                nodes::ListType::Bullet => {}
+                nodes::ListType::Ordered => {}
             }
             let _: usize = nl.start;
             match nl.delimiter {
-                ::nodes::ListDelimType::Period => {}
-                ::nodes::ListDelimType::Paren => {}
+                nodes::ListDelimType::Period => {}
+                nodes::ListDelimType::Paren => {}
             }
             let _: u8 = nl.bullet_char;
             let _: bool = nl.tight;
         }
-        ::nodes::NodeValue::DescriptionList => {}
-        ::nodes::NodeValue::DescriptionItem(_ndi) => {}
-        ::nodes::NodeValue::DescriptionTerm => {}
-        ::nodes::NodeValue::DescriptionDetails => {}
-        ::nodes::NodeValue::CodeBlock(ncb) => {
+        nodes::NodeValue::DescriptionList => {}
+        nodes::NodeValue::DescriptionItem(_ndi) => {}
+        nodes::NodeValue::DescriptionTerm => {}
+        nodes::NodeValue::DescriptionDetails => {}
+        nodes::NodeValue::CodeBlock(ncb) => {
             let _: bool = ncb.fenced;
             let _: u8 = ncb.fence_char;
             let _: usize = ncb.fence_length;
             let _: Vec<u8> = ncb.info;
             let _: Vec<u8> = ncb.literal;
         }
-        ::nodes::NodeValue::HtmlBlock(nhb) => {
+        nodes::NodeValue::HtmlBlock(nhb) => {
             let _: Vec<u8> = nhb.literal;
         }
-        ::nodes::NodeValue::Paragraph => {}
-        ::nodes::NodeValue::Heading(nh) => {
+        nodes::NodeValue::Paragraph => {}
+        nodes::NodeValue::Heading(nh) => {
             let _: u8 = nh.level;
             let _: bool = nh.setext;
         }
-        ::nodes::NodeValue::ThematicBreak => {}
-        ::nodes::NodeValue::FootnoteDefinition(name) => {
+        nodes::NodeValue::ThematicBreak => {}
+        nodes::NodeValue::FootnoteDefinition(name) => {
             let _: &Vec<u8> = name;
         }
-        ::nodes::NodeValue::Table(aligns) => {
-            let _: &Vec<::nodes::TableAlignment> = aligns;
+        nodes::NodeValue::Table(aligns) => {
+            let _: &Vec<nodes::TableAlignment> = aligns;
             match aligns[0] {
-                ::nodes::TableAlignment::None => {}
-                ::nodes::TableAlignment::Left => {}
-                ::nodes::TableAlignment::Center => {}
-                ::nodes::TableAlignment::Right => {}
+                nodes::TableAlignment::None => {}
+                nodes::TableAlignment::Left => {}
+                nodes::TableAlignment::Center => {}
+                nodes::TableAlignment::Right => {}
             }
         }
-        ::nodes::NodeValue::TableRow(header) => {
+        nodes::NodeValue::TableRow(header) => {
             let _: &bool = header;
         }
-        ::nodes::NodeValue::TableCell => {}
-        ::nodes::NodeValue::Text(text) => {
+        nodes::NodeValue::TableCell => {}
+        nodes::NodeValue::Text(text) => {
             let _: &Vec<u8> = text;
         }
-        ::nodes::NodeValue::TaskItem { checked, symbol } => {
+        nodes::NodeValue::TaskItem { checked, symbol } => {
             let _: &bool = checked;
             let _: &u8 = symbol;
         }
-        ::nodes::NodeValue::SoftBreak => {}
-        ::nodes::NodeValue::LineBreak => {}
-        ::nodes::NodeValue::Code(code) => {
+        nodes::NodeValue::SoftBreak => {}
+        nodes::NodeValue::LineBreak => {}
+        nodes::NodeValue::Code(code) => {
             let _: usize = code.num_backticks;
             let _: Vec<u8> = code.literal;
         }
-        ::nodes::NodeValue::HtmlInline(html) => {
+        nodes::NodeValue::HtmlInline(html) => {
             let _: &Vec<u8> = html;
         }
-        ::nodes::NodeValue::Emph => {}
-        ::nodes::NodeValue::Strong => {}
-        ::nodes::NodeValue::Strikethrough => {}
-        ::nodes::NodeValue::Superscript => {}
-        ::nodes::NodeValue::Link(nl) | ::nodes::NodeValue::Image(nl) => {
+        nodes::NodeValue::Emph => {}
+        nodes::NodeValue::Strong => {}
+        nodes::NodeValue::Strikethrough => {}
+        nodes::NodeValue::Superscript => {}
+        nodes::NodeValue::Link(nl) | nodes::NodeValue::Image(nl) => {
             let _: Vec<u8> = nl.url;
             let _: Vec<u8> = nl.title;
         }
         #[cfg(feature = "shortcodes")]
-        ::nodes::NodeValue::ShortCode(ne) => {
+        nodes::NodeValue::ShortCode(ne) => {
             let _: Option<String> = ne.shortcode();
         }
-        ::nodes::NodeValue::FootnoteReference(name) => {
+        nodes::NodeValue::FootnoteReference(name) => {
             let _: &Vec<u8> = name;
         }
     }

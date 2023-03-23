@@ -1,11 +1,11 @@
-use arena_tree::Node;
-use nodes;
-use nodes::{Ast, AstNode, NodeValue, TableAlignment};
-use parser::Parser;
-use scanners;
+use crate::arena_tree::Node;
+use crate::nodes;
+use crate::nodes::{Ast, AstNode, NodeValue, TableAlignment};
+use crate::parser::Parser;
+use crate::scanners;
+use crate::strings::trim;
 use std::cell::RefCell;
 use std::cmp::min;
-use strings::trim;
 
 pub fn try_opening_block<'a, 'o, 'c>(
     parser: &mut Parser<'a, 'o, 'c>,

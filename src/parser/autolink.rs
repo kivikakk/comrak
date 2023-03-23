@@ -1,7 +1,7 @@
-use ctype::{isalnum, isalpha, isspace};
-use nodes::{AstNode, NodeLink, NodeValue};
+use crate::ctype::{isalnum, isalpha, isspace};
+use crate::nodes::{AstNode, NodeLink, NodeValue};
+use crate::parser::inlines::make_inline;
 use once_cell::sync::Lazy;
-use parser::inlines::make_inline;
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;

@@ -1,6 +1,6 @@
-use ctype::{ispunct, isspace};
-use entity;
-use parser::AutolinkType;
+use crate::ctype::{ispunct, isspace};
+use crate::entity;
+use crate::parser::AutolinkType;
 use std::collections::HashMap;
 use std::ptr;
 use std::str;

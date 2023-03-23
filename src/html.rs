@@ -1,20 +1,17 @@
-use ctype::isspace;
-use nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
+use crate::ctype::isspace;
+use crate::nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
+use crate::parser::{ComrakOptions, ComrakPlugins};
+use crate::scanners;
+use crate::strings::build_opening_tag;
 use once_cell::sync::Lazy;
-use parser::{ComrakOptions, ComrakPlugins};
 use regex::Regex;
-use scanners;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
 use std::str;
-use strings::build_opening_tag;
 
 use crate::adapters::HeadingMeta;
-
-#[cfg(feature = "shortcodes")]
-extern crate emojis;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(

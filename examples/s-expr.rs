@@ -7,8 +7,6 @@
 //  $ cargo run --example s-expr file1.md file2.md ...
 //  $ cat file.md | cargo run --example s-expr
 
-extern crate comrak;
-
 /// Spaces to indent nested nodes
 const INDENT: usize = 4;
 

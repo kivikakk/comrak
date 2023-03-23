@@ -1,5 +1,3 @@
-extern crate emojis;
-
 use std::str;
 
 /// The details of an inline emoji

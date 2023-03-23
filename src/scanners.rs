@@ -11,6 +11,7 @@
 
 use memchr::memmem;
 use pest::Parser;
+use pest_derive::Parser;
 use std::str;
 
 #[cfg(debug_assertions)]

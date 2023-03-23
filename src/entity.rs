@@ -1,4 +1,4 @@
-use ctype::isdigit;
+use crate::ctype::isdigit;
 use entities::ENTITIES;
 use std::char;
 use std::cmp::min;

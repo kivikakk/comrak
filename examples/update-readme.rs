@@ -1,6 +1,5 @@
 // Update the "comrak --help" text in Comrak's own README.
 
-extern crate comrak;
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{format_commonmark, parse_document, Arena, ComrakOptions};
 

@@ -1,6 +1,3 @@
-extern crate comrak;
-extern crate slug;
-
 use comrak::{
     adapters::{HeadingAdapter, HeadingMeta},
     markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins,

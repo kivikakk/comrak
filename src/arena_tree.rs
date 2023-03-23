@@ -387,9 +387,6 @@ traverse_iterator! {
     ReverseTraverse: last_child, previous_sibling
 }
 
-#[cfg(test)]
-extern crate typed_arena;
-
 #[test]
 fn it_works() {
     struct DropTracker<'a>(&'a Cell<u32>);
