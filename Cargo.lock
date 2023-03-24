@@ -518,7 +518,7 @@ dependencies = [
 [[package]]
 name = "pest"
 version = "2.5.6"
-source = "git+https://github.com/kivikakk/pest.git?branch=bare-errors#0c44c2bb912599333907dc90853449ce519bae79"
+source = "git+https://github.com/kivikakk/pest.git?branch=bare-errors#542997dac5b15877587b9a59212fe07ef82d25ce"
 dependencies = [
  "thiserror",
  "ucd-trie",
