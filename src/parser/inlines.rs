@@ -5,7 +5,7 @@ use crate::nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
-    unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference,
+    unwrap_into, unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference,
 };
 use crate::scanners;
 use crate::strings;
@@ -32,6 +32,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
+    no_link_openers: bool,
     special_chars: [bool; 256],
     skip_chars: [bool; 256],
     smart_chars: [bool; 256],
@@ -63,7 +64,6 @@ struct Bracket<'a> {
     inl_text: &'a AstNode<'a>,
     position: usize,
     image: bool,
-    active: bool,
     bracket_after: bool,
 }
 
@@ -89,6 +89,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             within_brackets: false,
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
+            no_link_openers: true,
             special_chars: [false; 256],
             skip_chars: [false; 256],
             smart_chars: [false; 256],
@@ -986,9 +987,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             inl_text,
             position: self.pos,
             image,
-            active: true,
             bracket_after: false,
         });
+        if !image {
+            self.no_link_openers = false;
+        }
     }
 
     pub fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
@@ -1000,12 +1003,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             return Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())));
         }
 
-        if !self.brackets[brackets_len - 1].active {
+        let is_image = self.brackets[brackets_len - 1].image;
+
+        if !is_image && self.no_link_openers {
             self.brackets.pop();
             return Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())));
         }
 
-        let is_image = self.brackets[brackets_len - 1].image;
         let after_link_text_pos = self.pos;
 
         // Try to find a link destination within parenthesis
@@ -1013,14 +1017,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let mut sps = 0;
         let mut url: &[u8] = &[];
         let mut n: usize = 0;
-        if self.peek_char() == Some(&(b'(')) && {
-            sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            unwrap_into_2(
+        if self.peek_char() == Some(&(b'('))
+            && unwrap_into(scanners::spacechars(&self.input[self.pos + 1..]), &mut sps)
+            && unwrap_into_2(
                 manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
                 &mut url,
                 &mut n,
             )
-        } {
+        {
             let starturl = self.pos + 1 + sps;
             let endurl = starturl + n;
             let starttitle = endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
@@ -1120,7 +1124,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             },
         );
 
-        let mut brackets_len = self.brackets.len();
+        let brackets_len = self.brackets.len();
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
         let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
         while let Some(tmp) = tmpch {
@@ -1130,20 +1134,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         self.brackets[brackets_len - 1].inl_text.detach();
         self.process_emphasis(self.brackets[brackets_len - 1].position);
         self.brackets.pop();
-        brackets_len -= 1;
 
         if !is_image {
-            let mut i = brackets_len as i32 - 1;
-            while i >= 0 {
-                if !self.brackets[i as usize].image {
-                    if !self.brackets[i as usize].active {
-                        break;
-                    } else {
-                        self.brackets[i as usize].active = false;
-                    }
-                }
-                i -= 1;
-            }
+            self.no_link_openers = true;
         }
     }
 
