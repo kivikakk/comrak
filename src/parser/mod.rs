@@ -661,29 +661,32 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn find_first_nonspace(&mut self, line: &[u8]) {
-        self.first_nonspace = self.offset;
-        self.first_nonspace_column = self.column;
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
 
-        loop {
-            if self.first_nonspace >= line.len() {
-                break;
-            }
-            match line[self.first_nonspace] {
-                32 => {
-                    self.first_nonspace += 1;
-                    self.first_nonspace_column += 1;
-                    chars_to_tab -= 1;
-                    if chars_to_tab == 0 {
+        if self.first_nonspace <= self.offset {
+            self.first_nonspace = self.offset;
+            self.first_nonspace_column = self.column;
+
+            loop {
+                if self.first_nonspace >= line.len() {
+                    break;
+                }
+                match line[self.first_nonspace] {
+                    32 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += 1;
+                        chars_to_tab -= 1;
+                        if chars_to_tab == 0 {
+                            chars_to_tab = TAB_STOP;
+                        }
+                    }
+                    9 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += chars_to_tab;
                         chars_to_tab = TAB_STOP;
                     }
+                    _ => break,
                 }
-                9 => {
-                    self.first_nonspace += 1;
-                    self.first_nonspace_column += chars_to_tab;
-                    chars_to_tab = TAB_STOP;
-                }
-                _ => break,
             }
         }
 
@@ -704,6 +707,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         self.offset = 0;
         self.column = 0;
+        self.first_nonspace = 0;
+        self.first_nonspace_column = 0;
+        self.indent = 0;
         self.blank = false;
         self.partially_consumed_tab = false;
 
