@@ -5,7 +5,7 @@ use crate::nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
-    unwrap_into, unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference,
+    unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference,
 };
 use crate::scanners;
 use crate::strings;
@@ -705,7 +705,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         } else if c == b'\'' || c == b'"' {
             (
                 numdelims,
-                left_flanking && !right_flanking && before_char != ']' && before_char != ')',
+                left_flanking
+                    && (!right_flanking || before_char == '(' || before_char == '[')
+                    && before_char != ']'
+                    && before_char != ')',
                 right_flanking,
             )
         } else {
@@ -1017,14 +1020,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let mut sps = 0;
         let mut url: &[u8] = &[];
         let mut n: usize = 0;
-        if self.peek_char() == Some(&(b'('))
-            && unwrap_into(scanners::spacechars(&self.input[self.pos + 1..]), &mut sps)
-            && unwrap_into_2(
+        if self.peek_char() == Some(&(b'(')) && {
+            sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
+            unwrap_into_2(
                 manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
                 &mut url,
                 &mut n,
             )
-        {
+        } {
             let starturl = self.pos + 1 + sps;
             let endurl = starturl + n;
             let starttitle = endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
@@ -1247,7 +1250,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
         }
     }
 
-    if i >= len {
+    if i >= len || nb_p != 0 {
         None
     } else {
         Some((&input[..i], i))
