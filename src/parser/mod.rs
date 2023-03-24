@@ -31,8 +31,11 @@ const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 macro_rules! node_matches {
-    ($node:expr, $pat:pat) => {{
-        matches!($node.data.borrow().value, $pat)
+    ($node:expr, $( $pat:pat )|+) => {{
+        matches!(
+            $node.data.borrow().value,
+            $( $pat )|+
+        )
     }};
 }
 
@@ -879,10 +882,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = matches!(self.current.data.borrow().value, NodeValue::Paragraph);
+        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
 
-        while !matches!(
-            container.data.borrow().value,
+        while !node_matches!(
+            container,
             NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
         ) {
             self.find_first_nonspace(line);
@@ -943,13 +946,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && (unwrap_into(
                     scanners::html_block_start(&line[self.first_nonspace..]),
                     &mut matched,
-                ) || match container.data.borrow().value {
-                    NodeValue::Paragraph => false,
-                    _ => unwrap_into(
+                ) || (!node_matches!(container, NodeValue::Paragraph)
+                    && unwrap_into(
                         scanners::html_block_start_7(&line[self.first_nonspace..]),
                         &mut matched,
-                    ),
-                })
+                    )))
             {
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
@@ -958,13 +959,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
             } else if !indented
-                && match container.data.borrow().value {
-                    NodeValue::Paragraph => unwrap_into(
-                        scanners::setext_heading_line(&line[self.first_nonspace..]),
-                        &mut sc,
-                    ),
-                    _ => false,
-                }
+                && node_matches!(container, NodeValue::Paragraph)
+                && unwrap_into(
+                    scanners::setext_heading_line(&line[self.first_nonspace..]),
+                    &mut sc,
+                )
             {
                 let has_content = {
                     let mut ast = container.data.borrow_mut();
@@ -1014,13 +1013,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if (!indented || matches!(container.data.borrow().value, NodeValue::List(..)))
+            } else if (!indented || node_matches!(container, NodeValue::List(..)))
                 && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,
                         self.first_nonspace,
-                        matches!(container.data.borrow().value, NodeValue::Paragraph),
+                        node_matches!(container, NodeValue::Paragraph),
                     ),
                     &mut matched,
                     &mut nl,
@@ -1334,7 +1333,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
             && !self.blank
-            && matches!(self.current.data.borrow().value, NodeValue::Paragraph)
+            && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);
         } else {
@@ -1541,8 +1540,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                     let mut subch = item.first_child();
                     while let Some(subitem) = subch {
-                        if nodes::ends_with_blank_line(subitem)
-                            && (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                        if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                            && nodes::ends_with_blank_line(subitem)
                         {
                             nl.tight = false;
                             break;
@@ -1757,14 +1756,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             return;
         }
 
-        match parent.data.borrow().value {
-            NodeValue::Paragraph => (),
-            _ => return,
+        if !node_matches!(parent, NodeValue::Paragraph) {
+            return;
         }
 
-        match parent.parent().unwrap().data.borrow().value {
-            NodeValue::Item(..) => (),
-            _ => return,
+        if !node_matches!(parent.parent().unwrap(), NodeValue::Item(..)) {
+            return;
         }
 
         *text = text[end..].to_vec();
