@@ -72,7 +72,23 @@ shortcode_rule = { ":" ~ ('A'..'Z' | 'a'..'z' | "-" | "_")+ ~ ":" }
 spacechars = { space_char+ }
 
 escaped_char = _{ "\\" ~ ANY }
-link_title = { "\"" ~ (escaped_char | (!("\"" | "\x00") ~ ANY))* ~ "\"" | "'" ~ (escaped_char | (!("'" | "\x00") ~ ANY))* ~ "'" | "(" ~ (escaped_char | (!("(" | ")" | "\x00") ~ ANY))* ~ ")" }
+link_title = {
+    (
+        "\"" ~
+        (escaped_char | (!("\"" | "\x00") ~ ANY))* ~
+        "\""
+    ) |
+    (
+        "'" ~
+        (escaped_char | (!("'" | "\x00") ~ ANY))* ~
+        "'"
+    ) |
+    (
+        "(" ~
+        (escaped_char | (!("(" | ")" | "\x00") ~ ANY))* ~
+        ")"
+    )
+}
 
 table_spacechar = _{ " " | "\t" | "\x0b" | "\x0c" }
 table_newline = _{ "\r"? ~ "\n" }
