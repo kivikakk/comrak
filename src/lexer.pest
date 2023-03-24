@@ -45,7 +45,6 @@ html_tag = { open_tag | close_tag | html_comment | processing_instruction | decl
 html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }
 
 setext_heading_line = { ("="+ | "-"+) ~ (" " | "\t")* ~ ("\r" | "\n") }
-thematic_break = { (("*" ~ (" " | "\t")*){3,} | ("_" ~ (" " | "\t")*){3,} | ("-" ~ (" " | "\t")*){3,}) ~ (" " | "\t")* ~ ("\r" | "\n") }
 
 footnote_definition = { "[^" ~ (!("]" | "\r" | "\n" | "\x00" | "\t") ~ ANY)+ ~ "]:" ~ (" " | "\t")* }
 
