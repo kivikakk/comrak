@@ -141,14 +141,6 @@ pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
 }
 
 #[inline(always)]
-pub fn thematic_break(line: &[u8]) -> Option<usize> {
-    if line[0] != b'*' && line[0] != b'-' && line[0] != b'_' {
-        return None;
-    }
-    search(Rule::thematic_break, line)
-}
-
-#[inline(always)]
 pub fn footnote_definition(line: &[u8]) -> Option<usize> {
     search(Rule::footnote_definition, line)
 }

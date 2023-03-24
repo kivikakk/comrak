@@ -115,6 +115,7 @@ pub struct Parser<'a, 'o, 'c> {
     line_number: u32,
     offset: usize,
     column: usize,
+    thematic_break_kill_pos: usize,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
@@ -585,6 +586,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             line_number: 0,
             offset: 0,
             column: 0,
+            thematic_break_kill_pos: 0,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
@@ -660,6 +662,51 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
+    fn scan_thematic_break_inner(&mut self, line: &[u8]) -> (usize, bool) {
+        let mut i = self.first_nonspace;
+
+        if i >= line.len() {
+            return (i, false);
+        }
+
+        let c = line[i];
+        if c != b'*' && c != b'_' && c != b'-' {
+            return (i, false);
+        }
+
+        let mut count = 1;
+        let mut nextc;
+        loop {
+            i += 1;
+            if i >= line.len() {
+                return (i, false);
+            }
+            nextc = line[i];
+
+            if nextc == c {
+                count += 1;
+            } else if nextc != b' ' && nextc != b'\t' {
+                break;
+            }
+        }
+
+        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+            ((i - self.first_nonspace) + 1, true)
+        } else {
+            (i, false)
+        }
+    }
+
+    fn scan_thematic_break(&mut self, line: &[u8]) -> Option<usize> {
+        let (offset, found) = self.scan_thematic_break_inner(line);
+        if !found {
+            self.thematic_break_kill_pos = offset;
+            None
+        } else {
+            Some(offset)
+        }
+    }
+
     fn find_first_nonspace(&mut self, line: &[u8]) {
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
 
@@ -710,6 +757,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         self.first_nonspace = 0;
         self.first_nonspace_column = 0;
         self.indent = 0;
+        self.thematic_break_kill_pos = 0;
         self.blank = false;
         self.partially_consumed_tab = false;
 
@@ -934,13 +982,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     self.advance_offset(line, adv, false);
                 }
             } else if !indented
-                && match (&container.data.borrow().value, all_matched) {
-                    (&NodeValue::Paragraph, false) => false,
-                    _ => unwrap_into(
-                        scanners::thematic_break(&line[self.first_nonspace..]),
-                        &mut matched,
-                    ),
-                }
+                && !matches!(
+                    (&container.data.borrow().value, all_matched),
+                    (&NodeValue::Paragraph, false)
+                )
+                && self.thematic_break_kill_pos <= self.first_nonspace
+                && unwrap_into(self.scan_thematic_break(line), &mut matched)
             {
                 *container = self.add_child(*container, NodeValue::ThematicBreak);
                 let adv = line.len() - 1 - self.offset;
