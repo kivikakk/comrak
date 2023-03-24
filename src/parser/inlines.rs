@@ -356,9 +356,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         // (below), try again.
                         closer = c.next.get();
                     }
-                } else if c.delim_char == b'\'' {
+                } else if c.delim_char == b'\'' || c.delim_char == b'"' {
                     *c.inl.data.borrow_mut().value.text_mut().unwrap() =
-                        "’".to_string().into_bytes();
+                        if c.delim_char == b'\'' { "’" } else { "”" }
+                            .to_string()
+                            .into_bytes();
+                    closer = c.next.get();
+
                     if opener_found {
                         *opener
                             .unwrap()
@@ -367,23 +371,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                             .borrow_mut()
                             .value
                             .text_mut()
-                            .unwrap() = "‘".to_string().into_bytes();
+                            .unwrap() = if old_c.delim_char == b'\'' {
+                            "‘"
+                        } else {
+                            "“"
+                        }
+                        .to_string()
+                        .into_bytes();
+                        self.remove_delimiter(opener.unwrap());
+                        self.remove_delimiter(old_c);
                     }
-                    closer = c.next.get();
-                } else if c.delim_char == b'"' {
-                    *c.inl.data.borrow_mut().value.text_mut().unwrap() =
-                        "”".to_string().into_bytes();
-                    if opener_found {
-                        *opener
-                            .unwrap()
-                            .inl
-                            .data
-                            .borrow_mut()
-                            .value
-                            .text_mut()
-                            .unwrap() = "“".to_string().into_bytes();
-                    }
-                    closer = c.next.get();
                 }
 
                 // If the search for an opener was unsuccessful, then record
@@ -417,8 +414,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             .last_delimiter
             .map_or(false, |d| d.position >= stack_bottom)
         {
-            let last_del = self.last_delimiter.unwrap();
-            self.remove_delimiter(last_del);
+            self.remove_delimiter(self.last_delimiter.unwrap());
         }
     }
 
