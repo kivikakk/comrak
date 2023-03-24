@@ -154,22 +154,31 @@ pub fn trim(line: &mut Vec<u8>) {
     rtrim(line);
 }
 
+pub fn ltrim_slice(mut i: &[u8]) -> &[u8] {
+    while let [first, rest @ ..] = i {
+        if isspace(*first) {
+            i = rest;
+        } else {
+            break;
+        }
+    }
+    i
+}
+
 pub fn rtrim_slice(mut i: &[u8]) -> &[u8] {
-    let mut len = i.len();
-    while len > 0 && isspace(i[len - 1]) {
-        i = &i[..len - 1];
-        len -= 1;
+    while let [rest @ .., last] = i {
+        if isspace(*last) {
+            i = rest;
+        } else {
+            break;
+        }
     }
     i
 }
 
 pub fn trim_slice(mut i: &[u8]) -> &[u8] {
+    i = ltrim_slice(i);
     i = rtrim_slice(i);
-    let mut len = i.len();
-    while len > 0 && isspace(i[0]) {
-        i = &i[1..];
-        len -= 1;
-    }
     i
 }
 
