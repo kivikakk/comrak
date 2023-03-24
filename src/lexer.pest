@@ -21,28 +21,40 @@ attribute_value = _{ (!(" " | "\t" | "\r" | "\n" | "\x0b" | "\x0c" | "\"" | "'" 
 attribute_value_spec = _{ space_char* ~ "=" ~ space_char* ~ attribute_value }
 attribute = _{ space_char+ ~ attribute_name ~ attribute_value_spec? }
 open_tag = _{ tag_name ~ attribute* ~ space_char* ~ "/"? ~ ">" }
-html_comment = _{
-    "!--" ~ (
-        ">" |
-        "->" |
-        (
-            (
-                (!("\x00" | "-") ~ ANY)+
-                |
-                ("-" ~ !("\x00" | "-") ~ ANY)
-                |
-                ("--" ~ !("\x00" | ">") ~ ANY)
-            )* ~
-            "-->"
-        )
-    )
-}
-processing_instruction = _{ "?" ~ ((!("?" | ">" | "\x00") ~ ANY)+ | "?" ~ !(">" | "\x00") ~ ANY | ">")* ~ "?>" }
-declaration = _{ "!" ~ 'A'..'Z'+ ~ space_char+ ~ (!(">" | "\x00") ~ ANY)* ~ ">" }
-cdata = _{ "![CDATA[" ~ ((!("]" | "\x00") ~ ANY)+ | "]" ~ (!("]" | "\x00") ~ ANY) | "]]" ~ (!(">" | "\x00") ~ ANY))* ~ "]]>" }
-html_tag = { open_tag | close_tag | html_comment | processing_instruction | declaration | cdata }
+
+html_tag = { open_tag | close_tag }
 
 html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }
+
+html_comment = {
+    "--->" |
+     (
+        "-" ~
+        ("-"? ~ !("\x00" | ">" | "-") ~ ANY) ~
+        ("-"? ~ !("\x00" | "-") ~ ANY)* ~
+        "-->"
+    )
+}
+html_processing_instruction = {
+    (
+        (!("?" | ">" | "\x00") ~ ANY)+ |
+        ("?" ~ !(">" | "\x00") ~ ANY) |
+        ">"
+    )+
+}
+html_declaration = {
+    ('A'..'Z')+ ~
+    space_char+ ~
+    (!(">" | "\x00") ~ ANY)*
+}
+html_cdata = {
+    "CDATA[" ~
+    (
+        (!("]" | "\x00") ~ ANY)+ |
+        ("]" ~ !("]" | "\x00") ~ ANY) |
+        ("]]" ~ !(">" | "\x00") ~ ANY)
+    )*
+}
 
 setext_heading_line = { ("="+ | "-"+) ~ (" " | "\t")* ~ ("\r" | "\n") }
 

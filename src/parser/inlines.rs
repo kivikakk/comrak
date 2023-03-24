@@ -24,6 +24,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     options: &'o ComrakOptions,
     pub input: &'i [u8],
     pub pos: usize,
+    flags: Flags,
     pub refmap: &'r mut HashMap<Vec<u8>, Reference>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
@@ -38,6 +39,13 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     // then give it back when the Subject goes out of scope. Needs to be a mutable reference so we
     // can call the FnMut and let it mutate its captured variables.
     callback: Option<&'subj mut Callback<'c>>,
+}
+
+#[derive(Default)]
+struct Flags {
+    skip_html_cdata: bool,
+    skip_html_declaration: bool,
+    skip_html_pi: bool,
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
@@ -73,6 +81,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             options,
             input,
             pos: 0,
+            flags: Flags::default(),
             refmap,
             delimiter_arena,
             last_delimiter: None,
@@ -897,11 +906,76 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             return inl;
         }
 
-        if let Some(matchlen) = scanners::html_tag(&self.input[self.pos..]) {
-            let contents = &self.input[self.pos - 1..self.pos + matchlen];
-            let inl = make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
-            self.pos += matchlen;
-            return inl;
+        // Most comments below are verbatim from cmark upstream.
+        if self.pos + 2 <= self.input.len() {
+            let c = self.input[self.pos];
+            if c == b'!' {
+                let c = self.input[self.pos + 1];
+                if c == b'-' {
+                    if let Some(matchlen) = scanners::html_comment(&self.input[self.pos + 2..]) {
+                        let contents = &self.input[self.pos - 1..self.pos + matchlen + 2];
+                        let inl = make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
+                        self.pos += matchlen + 2;
+                        return inl;
+                    }
+                } else if c == b'[' {
+                    if !self.flags.skip_html_cdata {
+                        if let Some(matchlen) = scanners::html_cdata(&self.input[self.pos + 2..]) {
+                            // The regex doesn't require the final "]]>". But if we're not at
+                            // the end of input, it must come after the match. Otherwise,
+                            // disable subsequent scans to avoid quadratic behavior.
+
+                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
+                            if self.pos + matchlen + 5 > self.input.len() {
+                                self.flags.skip_html_cdata = true;
+                            } else {
+                                let contents = &self.input[self.pos - 1..self.pos + matchlen + 5];
+                                let inl = make_inline(
+                                    self.arena,
+                                    NodeValue::HtmlInline(contents.to_vec()),
+                                );
+                                self.pos += matchlen + 5;
+                                return inl;
+                            }
+                        }
+                    }
+                } else if !self.flags.skip_html_declaration {
+                    if let Some(matchlen) = scanners::html_declaration(&self.input[self.pos + 1..])
+                    {
+                        // Adding 2 to matchlen for prefix "!", suffix ">"
+                        if self.pos + matchlen + 2 > self.input.len() {
+                            self.flags.skip_html_declaration = true;
+                        } else {
+                            let contents = &self.input[self.pos - 1..self.pos + matchlen + 2];
+                            let inl =
+                                make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
+                            self.pos += matchlen + 2;
+                            return inl;
+                        }
+                    }
+                }
+            } else if c == b'?' {
+                if !self.flags.skip_html_pi {
+                    // Note that we allow an empty match.
+                    let matchlen =
+                        scanners::html_processing_instruction(&self.input[self.pos + 1..])
+                            .unwrap_or(0);
+                    // Adding 3 to matchlen fro prefix "?", suffix "?>"
+                    if self.pos + matchlen + 3 > self.input.len() {
+                        self.flags.skip_html_pi = true;
+                    } else {
+                        let contents = &self.input[self.pos - 1..self.pos + matchlen + 3];
+                        let inl = make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
+                        self.pos += matchlen + 3;
+                        return inl;
+                    }
+                }
+            } else if let Some(matchlen) = scanners::html_tag(&self.input[self.pos..]) {
+                let contents = &self.input[self.pos - 1..self.pos + matchlen];
+                let inl = make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
+                self.pos += matchlen;
+                return inl;
+            }
         }
 
         make_inline(self.arena, NodeValue::Text(b"<".to_vec()))

@@ -166,6 +166,26 @@ pub fn html_tag(line: &[u8]) -> Option<usize> {
 }
 
 #[inline(always)]
+pub fn html_comment(line: &[u8]) -> Option<usize> {
+    search(Rule::html_comment, line)
+}
+
+#[inline(always)]
+pub fn html_processing_instruction(line: &[u8]) -> Option<usize> {
+    search(Rule::html_processing_instruction, line)
+}
+
+#[inline(always)]
+pub fn html_declaration(line: &[u8]) -> Option<usize> {
+    search(Rule::html_declaration, line)
+}
+
+#[inline(always)]
+pub fn html_cdata(line: &[u8]) -> Option<usize> {
+    search(Rule::html_cdata, line)
+}
+
+#[inline(always)]
 pub fn spacechars(line: &[u8]) -> Option<usize> {
     search(Rule::spacechars, line)
 }
