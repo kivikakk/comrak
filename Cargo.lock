@@ -134,7 +134,7 @@ dependencies = [
  "memchr",
  "ntest",
  "once_cell",
- "pest",
+ "pest 2.5.6",
  "pest_derive",
  "propfuzz",
  "regex",
@@ -516,12 +516,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pest"
+version = "2.5.6"
+source = "git+https://github.com/kivikakk/pest.git?branch=bare-errors#0c44c2bb912599333907dc90853449ce519bae79"
+dependencies = [
+ "thiserror",
+ "ucd-trie",
+]
+
+[[package]]
 name = "pest_derive"
 version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96504449aa860c8dcde14f9fba5c58dc6658688ca1fe363589d6327b8662c603"
 dependencies = [
- "pest",
+ "pest 2.5.2",
  "pest_generator",
 ]
 
@@ -531,7 +540,7 @@ version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "798e0220d1111ae63d66cb66a5dcb3fc2d986d520b98e49e1852bfdb11d7c5e7"
 dependencies = [
- "pest",
+ "pest 2.5.2",
  "pest_meta",
  "proc-macro2",
  "quote",
@@ -545,7 +554,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "984298b75898e30a843e278a9f2452c31e349a073a0ce6fd950a12a74464e065"
 dependencies = [
  "once_cell",
- "pest",
+ "pest 2.5.2",
  "sha1",
 ]
 
