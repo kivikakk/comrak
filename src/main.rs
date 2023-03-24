@@ -1,21 +1,10 @@
 //! The `comrak` binary.
 
-extern crate comrak;
-
-#[macro_use]
-extern crate clap;
-extern crate shell_words;
-
-#[cfg(all(not(windows), not(target_arch = "wasm32")))]
-extern crate xdg;
-
 use comrak::{
-    Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
-    ComrakRenderOptions, ListStyleType,
+    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena,
+    ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
+    ListStyleType,
 };
-
-use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::plugins::syntect::SyntectAdapter;
 use std::boxed::Box;
 use std::env;
 use std::error::Error;
@@ -24,7 +13,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::process;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;

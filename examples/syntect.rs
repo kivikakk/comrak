@@ -1,7 +1,5 @@
 //! This example shows how to use the bundled syntect plugin.
 
-extern crate comrak;
-
 use comrak::plugins::syntect::SyntectAdapter;
 use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
 

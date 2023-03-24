@@ -1,7 +1,5 @@
 // Samples used in the README.  Wanna make sure they work as advertised.
 
-extern crate comrak;
-
 fn small() {
     use comrak::{markdown_to_html, ComrakOptions};
 

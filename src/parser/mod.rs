@@ -4,25 +4,25 @@ mod inlines;
 pub mod shortcodes;
 mod table;
 
-use adapters::SyntaxHighlighterAdapter;
-use arena_tree::Node;
-use ctype::{isdigit, isspace};
-use entity;
-use nodes;
-use nodes::{
+use crate::adapters::SyntaxHighlighterAdapter;
+use crate::arena_tree::Node;
+use crate::ctype::{isdigit, isspace};
+use crate::entity;
+use crate::nodes;
+use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
+use crate::scanners;
+use crate::strings;
 use once_cell::sync::OnceCell;
 use regex::bytes::{Regex, RegexBuilder};
-use scanners;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::str;
-use strings;
 use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
@@ -58,7 +58,6 @@ pub fn parse_document<'a>(
 /// described in the [GFM spec](https://github.github.com/gfm/#matches).
 ///
 /// ```
-/// extern crate comrak;
 /// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, ComrakOptions};
 /// use comrak::nodes::{AstNode, NodeValue};
 ///
@@ -416,8 +415,6 @@ pub struct ComrakRenderOptions {
     /// The wrap column when outputting CommonMark.
     ///
     /// ```
-    /// # extern crate typed_arena;
-    /// # extern crate comrak;
     /// # use comrak::{parse_document, ComrakOptions, format_commonmark};
     /// # fn main() {
     /// # let arena = typed_arena::Arena::new();

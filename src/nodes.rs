@@ -1,10 +1,10 @@
 //! The CommonMark AST.
 
-use arena_tree::Node;
+use crate::arena_tree::Node;
 use std::cell::RefCell;
 
 #[cfg(feature = "shortcodes")]
-use parser::shortcodes::NodeShortCode;
+use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
 #[derive(Debug, Clone)]

@@ -1,8 +1,5 @@
 //! This example shows how to implement a syntax highlighter plugin.
 
-extern crate comrak;
-extern crate syntect;
-
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
 use std::collections::HashMap;
