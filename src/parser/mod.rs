@@ -1078,13 +1078,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 };
 
                 match new_container {
-                    Some((new_container, replace)) => {
+                    Some((new_container, replace, mark_visited)) => {
                         if replace {
                             container.insert_after(new_container);
                             container.detach();
                             *container = new_container;
                         } else {
                             *container = new_container;
+                        }
+                        if mark_visited {
+                            container.data.borrow_mut().table_visited = true;
                         }
                     }
                     _ => break,

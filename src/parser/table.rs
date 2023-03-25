@@ -11,7 +11,7 @@ pub fn try_opening_block<'a, 'o, 'c>(
     parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
     let aligns = match container.data.borrow().value {
         NodeValue::Paragraph => None,
         NodeValue::Table(ref aligns) => Some(aligns.clone()),
@@ -28,28 +28,24 @@ fn try_opening_header<'a, 'o, 'c>(
     parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
     if container.data.borrow().table_visited {
-        return Some((container, false));
+        return Some((container, false, false));
     }
 
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
-        return Some((container, false));
+        return Some((container, false, false));
     }
 
     let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
     let header_row = match row(&container.data.borrow().content) {
         Some(header_row) => header_row,
-        None => {
-            container.data.borrow_mut().table_visited = true;
-            return Some((container, false));
-        }
+        None => return Some((container, false, true)),
     };
 
     if header_row.cells.len() != marker_row.cells.len() {
-        container.data.borrow_mut().table_visited = true;
-        return Some((container, false));
+        return Some((container, false, true));
     }
 
     if header_row.paragraph_offset > 0 {
@@ -90,7 +86,7 @@ fn try_opening_header<'a, 'o, 'c>(
     let offset = line.len() - 1 - parser.offset;
     parser.advance_offset(line, offset, false);
 
-    Some((table, true))
+    Some((table, true, false))
 }
 
 fn try_opening_row<'a, 'o, 'c>(
@@ -98,7 +94,7 @@ fn try_opening_row<'a, 'o, 'c>(
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
     if parser.blank {
         return None;
     }
@@ -120,7 +116,7 @@ fn try_opening_row<'a, 'o, 'c>(
     let offset = line.len() - 1 - parser.offset;
     parser.advance_offset(line, offset, false);
 
-    Some((new_row, false))
+    Some((new_row, false, false))
 }
 
 struct Row {
