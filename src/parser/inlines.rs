@@ -1018,11 +1018,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let mut n: usize = 0;
         if self.peek_char() == Some(&(b'(')) && {
             sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            unwrap_into_2(
-                manual_scan_link_url(&self.input[self.pos + 1 + sps..]),
-                &mut url,
-                &mut n,
-            )
+            let offset = self.pos + 1 + sps;
+            offset < self.input.len()
+                && unwrap_into_2(
+                    manual_scan_link_url(&self.input[offset..]),
+                    &mut url,
+                    &mut n,
+                )
         } {
             let starturl = self.pos + 1 + sps;
             let endurl = starturl + n;

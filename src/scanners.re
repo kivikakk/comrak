@@ -1,32 +1,11 @@
-use memchr::memmem;
-use std::str;
-use pest::Parser;
-use pest_derive::Parser;
-
-#[cfg(debug_assertions)]
-const _LEXER: &str = include_str!("lexer.pest");
-
-#[derive(Parser)]
-#[grammar = "lexer.pest"]
-struct Lexer;
-
-#[inline(always)]
-fn search(rule: Rule, line: &[u8]) -> Option<usize> {
-    if let Ok(pairs) = Lexer::parse(rule, unsafe { str::from_utf8_unchecked(line) }) {
-        Some(pairs.last().unwrap().as_span().end())
-    } else {
-        None
-    }
-}
-#[inline(always)]
-fn is_match(rule: Rule, line: &[u8]) -> bool {
-    Lexer::parse(rule, unsafe { str::from_utf8_unchecked(line) }).is_ok()
-}
-
 // TODO: consider dropping all the #[inline(always)], we probably don't know
 // better than rustc.
 
 /*!re2c
+    re2c:case-insensitive    = 1;
+    re2c:encoding:utf8       = 1;
+    re2c:encoding-policy     = substitute;
+
     re2c:define:YYCTYPE      = u8;
     re2c:define:YYPEEK       = "*s.get_unchecked(cursor)";
     re2c:define:YYSKIP       = "cursor += 1;";
@@ -35,6 +14,53 @@ fn is_match(rule: Rule, line: &[u8]) -> bool {
     re2c:define:YYBACKUPCTX  = "ctxmarker = cursor;";
     re2c:define:YYRESTORECTX = "cursor = ctxmarker;";
     re2c:yyfill:enable       = 0;
+    re2c:indent:string       = '    ';
+    re2c:indent:top          = 1;
+
+    wordchar = [^\x00-\x20];
+
+    spacechar = [ \t\v\f\r\n];
+
+    reg_char     = [^\\()\x00-\x20];
+
+    escaped_char = [\\][!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~-];
+
+    tagname = [A-Za-z][A-Za-z0-9-]*;
+
+    blocktagname = 'address'|'article'|'aside'|'base'|'basefont'|'blockquote'|'body'|'caption'|'center'|'col'|'colgroup'|'dd'|'details'|'dialog'|'dir'|'div'|'dl'|'dt'|'fieldset'|'figcaption'|'figure'|'footer'|'form'|'frame'|'frameset'|'h1'|'h2'|'h3'|'h4'|'h5'|'h6'|'head'|'header'|'hr'|'html'|'iframe'|'legend'|'li'|'link'|'main'|'menu'|'menuitem'|'nav'|'noframes'|'ol'|'optgroup'|'option'|'p'|'param'|'section'|'source'|'title'|'summary'|'table'|'tbody'|'td'|'tfoot'|'th'|'thead'|'title'|'tr'|'track'|'ul';
+
+    attributename = [a-zA-Z_:][a-zA-Z0-9:._-]*;
+
+    unquotedvalue = [^ \t\r\n\v\f"'=<>`\x00]+;
+    singlequotedvalue = ['][^'\x00]*['];
+    doublequotedvalue = ["][^"\x00]*["];
+
+    attributevalue = unquotedvalue | singlequotedvalue | doublequotedvalue;
+
+    attributevaluespec = spacechar* [=] spacechar* attributevalue;
+
+    attribute = spacechar+ attributename attributevaluespec?;
+
+    opentag = tagname attribute* spacechar* [/]? [>];
+    closetag = [/] tagname spacechar* [>];
+
+    htmlcomment = "--" ([^\x00-]+ | "-" [^\x00-] | "--" [^\x00>])* "-->";
+
+    processinginstruction = ([^?>\x00]+ | [?][^>\x00] | [>])+;
+
+    declaration = [A-Z]+ spacechar+ [^>\x00]*;
+
+    cdata = "CDATA[" ([^\]\x00]+ | "]" [^\]\x00] | "]]" [^>\x00])*;
+
+    htmltag = opentag | closetag;
+
+    in_parens_nosp   = [(] (reg_char|escaped_char|[\\])* [)];
+
+    in_double_quotes = ["] (escaped_char|[^"\x00])* ["];
+    in_single_quotes = ['] (escaped_char|[^'\x00])* ['];
+    in_parens        = [(] (escaped_char|[^)\x00])* [)];
+
+    scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
 */
 
 #[inline(always)]
@@ -122,39 +148,28 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
 }
 
 #[inline(always)]
-pub fn html_block_start(line: &[u8]) -> Option<usize> {
-    const STR2: &'static [u8] = b"<!--";
-    const STR3: &'static [u8] = b"<?";
-    const STR5: &'static [u8] = b"<![CDATA[";
-
-    if !line.starts_with(b"<") {
-        return None;
-    }
-
-    if is_match(Rule::html_block_start_1, line) {
-        Some(1)
-    } else if line.starts_with(STR2) {
-        Some(2)
-    } else if line.starts_with(STR3) {
-        Some(3)
-    } else if is_match(Rule::html_block_start_4, line) {
-        Some(4)
-    } else if line.starts_with(STR5) {
-        Some(5)
-    } else if is_match(Rule::html_block_start_6, line) {
-        Some(6)
-    } else {
-        None
-    }
+pub fn html_block_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [<] ('script'|'pre'|'textarea'|'style') (spacechar | [>]) { return Some(1); }
+    '<!--' { return Some(2); }
+    '<?' { return Some(3); }
+    '<!' [A-Z] { return Some(4); }
+    '<![CDATA[' { return Some(5); }
+    [<] [/]? blocktagname (spacechar | [/]? [>])  { return Some(6); }
+    * { return None; }
+*/
 }
 
 #[inline(always)]
-pub fn html_block_start_7(line: &[u8]) -> Option<usize> {
-    if is_match(Rule::html_block_start_7, line) {
-        Some(7)
-    } else {
-        None
-    }
+pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [<] (opentag | closetag) [\t\n\f ]* [\r\n] { return Some(7); }
+    * { return None; }
+*/
 }
 
 pub enum SetextChar {
@@ -163,102 +178,205 @@ pub enum SetextChar {
 }
 
 #[inline(always)]
-pub fn setext_heading_line(line: &[u8]) -> Option<SetextChar> {
-    if (line[0] == b'=' || line[0] == b'-') && is_match(Rule::setext_heading_line, line) {
-        if line[0] == b'=' {
-            Some(SetextChar::Equals)
-        } else {
-            Some(SetextChar::Hyphen)
-        }
-    } else {
-        None
+pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [=]+ [ \t]* [\r\n] { return Some(SetextChar::Equals); }
+    [-]+ [ \t]* [\r\n] { return Some(SetextChar::Hyphen); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn footnote_definition(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    '[^' ([^\] \r\n\x00\t]+) ']:' [ \t]* { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn scheme(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    scheme [:] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn autolink_uri(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    scheme [:][^\x00-\x20<>]*[>]  { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn autolink_email(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+
+        [@]
+        [a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?
+        ([.][a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*
+        [>] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn html_tag(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    htmltag { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn html_comment(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    htmlcomment { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    processinginstruction { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn html_declaration(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    declaration { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn html_cdata(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    cdata { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn spacechars(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+/*!re2c
+    [ \t\v\f\r\n]+ { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn link_title(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    ["] (escaped_char|[^"\x00])* ["]   { return Some(cursor); }
+    ['] (escaped_char|[^'\x00])* ['] { return Some(cursor); }
+    [(] (escaped_char|[^()\x00])* [)]  { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+#[inline(always)]
+pub fn dangerous_url(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    'data:image/' ('png'|'gif'|'jpeg'|'webp') { return None; }
+    'javascript:' | 'vbscript:' | 'file:' | 'data:' { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+/*!re2c
+
+    table_spacechar = [ \t\v\f];
+    table_newline = [\r]?[\n];
+
+    table_marker = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
+    table_cell = (escaped_char|[^\x00|\r\n])+;
+
+*/
+
+#[inline(always)]
+pub fn table_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [|]? table_marker ([|] table_marker)* [|]? table_spacechar* table_newline {
+        return Some(cursor);
     }
+    * { return None; }
+*/
 }
 
 #[inline(always)]
-pub fn footnote_definition(line: &[u8]) -> Option<usize> {
-    search(Rule::footnote_definition, line)
+pub fn table_cell(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    // In fact, `table_cell` matches non-empty table cells only. The empty
+    // string is also a valid table cell, but is handled by the default rule.
+    // This approach prevents re2c's match-empty-string warning.
+    table_cell { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 #[inline(always)]
-pub fn scheme(line: &[u8]) -> Option<usize> {
-    search(Rule::scheme_rule, line)
+pub fn table_cell_end(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+/*!re2c
+    [|] table_spacechar* { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 #[inline(always)]
-pub fn autolink_uri(line: &[u8]) -> Option<usize> {
-    search(Rule::autolink_uri, line)
-}
-
-#[inline(always)]
-pub fn autolink_email(line: &[u8]) -> Option<usize> {
-    search(Rule::autolink_email, line)
-}
-
-#[inline(always)]
-pub fn html_tag(line: &[u8]) -> Option<usize> {
-    search(Rule::html_tag, line)
-}
-
-#[inline(always)]
-pub fn html_comment(line: &[u8]) -> Option<usize> {
-    search(Rule::html_comment, line)
-}
-
-#[inline(always)]
-pub fn html_processing_instruction(line: &[u8]) -> Option<usize> {
-    search(Rule::html_processing_instruction, line)
-}
-
-#[inline(always)]
-pub fn html_declaration(line: &[u8]) -> Option<usize> {
-    search(Rule::html_declaration, line)
-}
-
-#[inline(always)]
-pub fn html_cdata(line: &[u8]) -> Option<usize> {
-    search(Rule::html_cdata, line)
-}
-
-#[inline(always)]
-pub fn spacechars(line: &[u8]) -> Option<usize> {
-    search(Rule::spacechars, line)
-}
-
-#[inline(always)]
-pub fn link_title(line: &[u8]) -> Option<usize> {
-    search(Rule::link_title, line)
+pub fn table_row_end(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    table_spacechar* table_newline { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 #[cfg(feature = "shortcodes")]
 #[inline(always)]
-pub fn shortcode(line: &[u8]) -> Option<usize> {
-    search(Rule::shortcode_rule, line)
-}
-
-#[inline(always)]
-pub fn table_start(line: &[u8]) -> Option<usize> {
-    search(Rule::table_start, line)
-}
-
-#[inline(always)]
-pub fn table_cell(line: &[u8]) -> Option<usize> {
-    search(Rule::table_cell, line)
-}
-
-#[inline(always)]
-pub fn table_cell_end(line: &[u8]) -> Option<usize> {
-    search(Rule::table_cell_end, line)
-}
-
-#[inline(always)]
-pub fn table_row_end(line: &[u8]) -> Option<usize> {
-    search(Rule::table_row_end, line)
-}
-
-#[inline(always)]
-pub fn dangerous_url(line: &[u8]) -> Option<usize> {
-    search(Rule::dangerous_url, line)
+pub fn shortcode(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [:] [A-Za-z_-]+ [:] { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 // vim: set ft=rust:

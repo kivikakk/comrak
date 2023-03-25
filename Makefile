@@ -1,5 +1,5 @@
 src/scanners.rs: src/scanners.re
-	re2rust -W -Werror --case-insensitive -i --no-generation-date -8 --encoding-policy substitute -o $@ $<
+	re2rust -W -Werror -i --no-generation-date -o $@ $<
 
 bench:
 	cargo build --release
