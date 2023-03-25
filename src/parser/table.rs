@@ -123,33 +123,20 @@ struct Row {
 fn row(string: &[u8]) -> Option<Row> {
     let len = string.len();
     let mut cells = vec![];
-    let mut offset = 0;
 
-    if len > 0 && string[0] == b'|' {
-        // XXX: see if we need to replace with a table_cell_end scan
-        offset += 1;
-    }
+    let mut offset = scanners::table_cell_end(string).unwrap_or(0);
 
     let mut paragraph_offset: usize = 0;
-    let mut cell_matched: usize = 1;
-    let mut pipe_matched: usize = 1;
     let mut expect_more_cells = true;
 
     while offset < len && expect_more_cells {
-        cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
-        pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
+        let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
+        let pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
-            let cell_end_offset = offset + cell_matched - 1;
-
-            if string[cell_end_offset] == b'\n' || string[cell_end_offset] == b'\r' {
-                paragraph_offset = cell_end_offset;
-                cells.clear();
-            } else {
-                let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
-                trim(&mut cell);
-                cells.push(cell);
-            }
+            let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
+            trim(&mut cell);
+            cells.push(cell);
         }
 
         offset += cell_matched + pipe_matched;
@@ -157,8 +144,17 @@ fn row(string: &[u8]) -> Option<Row> {
         if pipe_matched > 0 {
             expect_more_cells = true;
         } else {
-            offset += scanners::table_row_end(&string[offset..]).unwrap_or(0);
-            expect_more_cells = false;
+            let row_end_offset = scanners::table_row_end(&string[offset..]).unwrap_or(0);
+            offset += row_end_offset;
+
+            if row_end_offset > 0 && offset != len {
+                paragraph_offset = offset;
+                cells.clear();
+                offset += scanners::table_cell_end(&string[offset..]).unwrap_or(0);
+                expect_more_cells = true;
+            } else {
+                expect_more_cells = false;
+            }
         }
     }
 
