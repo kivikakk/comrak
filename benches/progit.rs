@@ -1,5 +1,7 @@
 #![feature(test)]
 
+extern crate test;
+
 use comrak::{format_html, parse_document, Arena, ComrakOptions};
 use test::Bencher;
 
