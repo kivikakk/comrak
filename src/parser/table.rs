@@ -33,12 +33,12 @@ fn try_opening_header<'a, 'o, 'c>(
         return Some((container, false));
     }
 
+    let marker_row = row(&line[parser.first_nonspace..]).unwrap();
+
     let header_row = match row(&container.data.borrow().content) {
         Some(header_row) => header_row,
         None => return Some((container, false)),
     };
-
-    let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
     if header_row.cells.len() != marker_row.cells.len() {
         return Some((container, false));
@@ -126,15 +126,18 @@ fn row(string: &[u8]) -> Option<Row> {
     let mut offset = 0;
 
     if len > 0 && string[0] == b'|' {
+        // XXX: see if we need to replace with a table_cell_end scan
         offset += 1;
     }
 
     let mut paragraph_offset: usize = 0;
+    let mut cell_matched: usize = 1;
+    let mut pipe_matched: usize = 1;
+    let mut expect_more_cells = true;
 
-    loop {
-        let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
-        let mut pipe_matched =
-            scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
+    while offset < len && expect_more_cells {
+        cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
+        pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
             let cell_end_offset = offset + cell_matched - 1;
@@ -151,13 +154,11 @@ fn row(string: &[u8]) -> Option<Row> {
 
         offset += cell_matched + pipe_matched;
 
-        if pipe_matched == 0 {
-            pipe_matched = scanners::table_row_end(&string[offset..]).unwrap_or(0);
-            offset += pipe_matched;
-        }
-
-        if !((cell_matched > 0 || pipe_matched > 0) && offset < len) {
-            break;
+        if pipe_matched > 0 {
+            expect_more_cells = true;
+        } else {
+            offset += scanners::table_row_end(&string[offset..]).unwrap_or(0);
+            expect_more_cells = false;
         }
     }
 
@@ -165,8 +166,8 @@ fn row(string: &[u8]) -> Option<Row> {
         None
     } else {
         Some(Row {
-            paragraph_offset: paragraph_offset,
-            cells: cells,
+            paragraph_offset,
+            cells,
         })
     }
 }
