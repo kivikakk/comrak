@@ -1608,3 +1608,10 @@ of dashes"/>
 "##,
     );
 }
+
+#[test]
+fn nul_at_eof() {
+    html("foo\0", "<p>foo\u{fffd}</p>\n");
+    html("foo\0ba", "<p>foo\u{fffd}ba</p>\n");
+    html("foo\0ba\0", "<p>foo\u{fffd}ba\u{fffd}</p>\n");
+}
