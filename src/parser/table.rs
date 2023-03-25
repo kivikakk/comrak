@@ -29,6 +29,10 @@ fn try_opening_header<'a, 'o, 'c>(
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool)> {
+    if container.data.borrow().table_visited {
+        return Some((container, false));
+    }
+
     if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
         return Some((container, false));
     }
@@ -37,10 +41,14 @@ fn try_opening_header<'a, 'o, 'c>(
 
     let header_row = match row(&container.data.borrow().content) {
         Some(header_row) => header_row,
-        None => return Some((container, false)),
+        None => {
+            container.data.borrow_mut().table_visited = true;
+            return Some((container, false));
+        }
     };
 
     if header_row.cells.len() != marker_row.cells.len() {
+        container.data.borrow_mut().table_visited = true;
         return Some((container, false));
     }
 

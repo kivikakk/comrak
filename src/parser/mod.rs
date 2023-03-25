@@ -102,6 +102,7 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         start_line: 0,
         open: true,
         last_line_blank: false,
+        table_visited: false,
     })));
     let mut parser = Parser::new(arena, root, options, callback);
     parser.feed(buffer);

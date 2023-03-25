@@ -1264,6 +1264,7 @@ pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a A
         start_line: 0,
         open: false,
         last_line_blank: false,
+        table_visited: false,
     };
     arena.alloc(Node::new(RefCell::new(ast)))
 }
