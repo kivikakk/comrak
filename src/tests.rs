@@ -1587,3 +1587,23 @@ fn regression_424() {
         "<p><em>text</em> <a href=\"#section\">link</a></p>\n",
     );
 }
+
+#[test]
+fn example_61() {
+    html(
+        r##"
+`Foo
+----
+`
+
+<a title="a lot
+---
+of dashes"/>
+"##,
+        r##"<h2>`Foo</h2>
+<p>`</p>
+<h2>&lt;a title=&quot;a lot</h2>
+<p>of dashes&quot;/&gt;</p>
+"##,
+    );
+}
