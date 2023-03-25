@@ -1579,3 +1579,11 @@ fn exercise_full_api<'a>() {
         }
     }
 }
+
+#[test]
+fn regression_424() {
+    html(
+        "*text* [link](#section)",
+        "<p><em>text</em> <a href=\"#section\">link</a></p>\n",
+    );
+}

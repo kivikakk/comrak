@@ -254,8 +254,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     // complex rules for which can be opening and/or closing delimiters,
     // determined in `scan_delims`.
     pub fn process_emphasis(&mut self, stack_bottom: usize) {
-        let mut closer = self.last_delimiter;
-
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
@@ -265,10 +263,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // the delimiter directly above `stack_bottom`. In the case where we are processing
         // emphasis on an entire block, `stack_bottom` is `None`, so `closer` references
         // the very bottom of the stack.
-        while closer.map_or(false, |c| {
-            c.prev.get().map_or(false, |p| p.position >= stack_bottom)
-        }) {
-            closer = closer.unwrap().prev.get();
+        let mut candidate = self.last_delimiter;
+        let mut closer: Option<&Delimiter> = None;
+        while candidate.map_or(false, |c| c.position >= stack_bottom) {
+            closer = candidate;
+            candidate = candidate.unwrap().prev.get();
         }
 
         while let Some(c) = closer {
