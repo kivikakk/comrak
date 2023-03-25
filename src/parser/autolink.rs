@@ -120,7 +120,7 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
         }
     }
 
-    if uscore1 > 0 || uscore2 > 0 {
+    if (uscore1 > 0 || uscore2 > 0) && np <= 10 {
         None
     } else if allow_short || np > 0 {
         Some(data.len())
