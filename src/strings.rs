@@ -259,18 +259,6 @@ pub fn normalize_label(i: &[u8]) -> Vec<u8> {
     v.into_bytes()
 }
 
-pub fn build_opening_tag(tag: &str, attributes: &HashMap<String, String>) -> String {
-    let mut tag_parts = vec![format!("<{}", tag)];
-
-    for (attr, val) in attributes {
-        tag_parts.push(format!(" {}=\"{}\"", attr, val));
-    }
-
-    tag_parts.push(String::from(">"));
-
-    tag_parts.join("")
-}
-
 #[cfg(feature = "syntect")]
 pub fn extract_attributes_from_tag(html_tag: &str) -> HashMap<String, String> {
     let re = regex::Regex::new("([a-zA-Z_:][-a-zA-Z0-9_:.]+)=([\"'])(.*?)([\"'])").unwrap();

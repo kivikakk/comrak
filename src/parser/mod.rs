@@ -105,8 +105,8 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         table_visited: false,
     })));
     let mut parser = Parser::new(arena, root, options, callback);
-    parser.feed(buffer);
-    parser.finish()
+    let remains = parser.feed(buffer, true);
+    parser.finish(remains.as_deref())
 }
 
 type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
@@ -126,6 +126,7 @@ pub struct Parser<'a, 'o, 'c> {
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: usize,
+    last_buffer_ended_with_cr: bool,
     options: &'o ComrakOptions,
     callback: Option<Callback<'c>>,
 }
@@ -597,14 +598,20 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
+            last_buffer_ended_with_cr: false,
             options,
             callback,
         }
     }
 
-    fn feed(&mut self, s: &str) {
-        let mut i = 0;
+    fn feed(&mut self, s: &str, eof: bool) -> Option<Vec<u8>> {
+        let mut buffer = 0;
         let s = s.as_bytes();
+
+        if self.last_buffer_ended_with_cr && s.len() > 0 && s[0] == b'\n' {
+            buffer += 1;
+        }
+        self.last_buffer_ended_with_cr = false;
 
         if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
             let front_matter_pattern = RegexBuilder::new(&format!(
@@ -615,54 +622,78 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             .dot_matches_new_line(true)
             .build()
             .unwrap();
-            if let Some(front_matter_size) = front_matter_pattern.shortest_match(s) {
-                i += front_matter_size;
-                let node = self.add_child(self.root, NodeValue::FrontMatter(s[..i].to_vec()));
+            if let Some(front_matter_size) = front_matter_pattern.shortest_match(&s[buffer..]) {
+                let node = self.add_child(
+                    self.root,
+                    NodeValue::FrontMatter(s[buffer..buffer + front_matter_size].to_vec()),
+                );
+                buffer += front_matter_size;
                 self.finalize(node).unwrap();
             }
         }
 
-        let sz = s.len();
+        let end = s.len();
         let mut linebuf = vec![];
 
-        while i < sz {
-            let mut process = true;
-            let mut eol = i;
-            while eol < sz {
+        while buffer < end {
+            let mut process = false;
+            let mut eol = buffer;
+            while eol < end {
                 if strings::is_line_end_char(s[eol]) {
+                    process = true;
                     break;
                 }
                 if s[eol] == 0 {
-                    process = false;
+                    assert!(eol < end); // ??? XXX
                     break;
                 }
                 eol += 1;
             }
 
+            if eol >= end && eof {
+                process = true;
+            }
+
             if process {
                 if !linebuf.is_empty() {
-                    linebuf.extend_from_slice(&s[i..eol]);
+                    linebuf.extend_from_slice(&s[buffer..eol]);
                     self.process_line(&linebuf);
                     linebuf.truncate(0);
-                } else if sz > eol && s[eol] == b'\n' {
-                    self.process_line(&s[i..eol + 1]);
                 } else {
-                    self.process_line(&s[i..eol]);
-                }
-
-                i = eol;
-                if i < sz && s[i] == b'\r' {
-                    i += 1;
-                }
-                if i < sz && s[i] == b'\n' {
-                    i += 1;
+                    self.process_line(&s[buffer..eol]);
                 }
             } else {
-                debug_assert!(eol < sz && s[eol] == b'\0');
-                linebuf.extend_from_slice(&s[i..eol]);
-                linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
-                i = eol + 1;
+                if eol < end && s[eol] == b'\0' {
+                    linebuf.extend_from_slice(&s[buffer..eol]);
+                    linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
+                } else {
+                    linebuf.extend_from_slice(&s[buffer..eol]);
+                }
             }
+
+            buffer = eol;
+            if buffer < end {
+                if s[buffer] == b'\0' {
+                    buffer += 1;
+                } else {
+                    if s[buffer] == b'\r' {
+                        buffer += 1;
+                        if buffer == end {
+                            self.last_buffer_ended_with_cr = true;
+                        }
+                    }
+                    if buffer < end && s[buffer] == b'\n' {
+                        buffer += 1;
+                    }
+                }
+            }
+        }
+
+        if !linebuf.is_empty() {
+            assert!(eof);
+            Some(linebuf)
+        } else {
+            None
         }
     }
 
@@ -1429,7 +1460,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn finish(&mut self) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: Option<&[u8]>) -> &'a AstNode<'a> {
+        if let Some(s) = remaining {
+            self.process_line(s);
+        }
+
         self.finalize_document();
         self.postprocess_text_nodes(self.root);
         self.root

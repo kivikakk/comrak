@@ -3,12 +3,13 @@ use crate::plugins::syntect::SyntectAdapter;
 use crate::{
     adapters::SyntaxHighlighterAdapter,
     adapters::{HeadingAdapter, HeadingMeta},
-    cm, format_commonmark, format_html, format_html_with_plugins, html, markdown_to_html, nodes,
+    cm, format_commonmark, format_html, format_html_with_plugins, html,
+    html::build_opening_tag,
+    markdown_to_html, nodes,
     nodes::{AstNode, NodeCode, NodeValue},
-    parse_document, parse_document_with_broken_link_callback,
-    strings::build_opening_tag,
-    Anchorizer, Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
-    ComrakRenderOptions, ComrakRenderPlugins, ListStyleType,
+    parse_document, parse_document_with_broken_link_callback, Anchorizer, Arena,
+    ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
+    ComrakRenderPlugins, ListStyleType,
 };
 use ntest::timeout;
 use std::collections::HashMap;

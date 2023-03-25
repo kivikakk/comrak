@@ -2,7 +2,6 @@ use crate::ctype::isspace;
 use crate::nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
 use crate::parser::{ComrakOptions, ComrakPlugins};
 use crate::scanners;
-use crate::strings::build_opening_tag;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::borrow::Cow;
@@ -243,6 +242,40 @@ fn dangerous_url(input: &[u8]) -> bool {
     scanners::dangerous_url(input).is_some()
 }
 
+fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+    let mut offset = 0;
+    for (i, &byte) in buffer.iter().enumerate() {
+        if NEEDS_ESCAPED[byte as usize] {
+            let esc: &[u8] = match byte {
+                b'"' => b"&quot;",
+                b'&' => b"&amp;",
+                b'<' => b"&lt;",
+                b'>' => b"&gt;",
+                _ => unreachable!(),
+            };
+            output.write_all(&buffer[offset..i])?;
+            output.write_all(esc)?;
+            offset = i + 1;
+        }
+    }
+    output.write_all(&buffer[offset..])?;
+    Ok(())
+}
+
+pub fn build_opening_tag(tag: &str, attributes: &HashMap<String, String>) -> String {
+    let mut out = Vec::with_capacity(80);
+    write!(out, "<{}", tag).unwrap();
+
+    for (attr, val) in attributes {
+        write!(out, " {}=\"", attr).unwrap();
+        escape(&mut out, val.as_bytes()).unwrap();
+        write!(out, "\"").unwrap()
+    }
+
+    write!(out, ">").unwrap();
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 impl<'o> HtmlFormatter<'o> {
     fn new(
         options: &'o ComrakOptions,
@@ -267,23 +300,7 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        let mut offset = 0;
-        for (i, &byte) in buffer.iter().enumerate() {
-            if NEEDS_ESCAPED[byte as usize] {
-                let esc: &[u8] = match byte {
-                    b'"' => b"&quot;",
-                    b'&' => b"&amp;",
-                    b'<' => b"&lt;",
-                    b'>' => b"&gt;",
-                    _ => unreachable!(),
-                };
-                self.output.write_all(&buffer[offset..i])?;
-                self.output.write_all(esc)?;
-                offset = i + 1;
-            }
-        }
-        self.output.write_all(&buffer[offset..])?;
-        Ok(())
+        escape(&mut self.output, buffer)
     }
 
     fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
