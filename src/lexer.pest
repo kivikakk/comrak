@@ -27,13 +27,22 @@ html_tag = { open_tag | close_tag }
 html_block_start_7 = { "<" ~ (open_tag | close_tag) ~ ("\t" | "\x0c" | " ")* ~ ("\r" | "\n") }
 
 html_comment = {
-    "--->" |
-     (
-        "-" ~
-        ("-"? ~ !("\x00" | ">" | "-") ~ ANY) ~
-        ("-"? ~ !("\x00" | "-") ~ ANY)* ~
-        "-->"
-    )
+    "--" ~
+    (
+        // ([^\x00-]+) |
+        (
+            (!("^\x00" | "-") ~ ANY)+
+        ) |
+        (
+            "-" ~
+            (!("^\x00" | "-") ~ ANY)
+        ) |
+        (
+            "--" ~
+            (!("^\x00" | ">") ~ ANY)
+        )
+    )* ~
+    "-->"
 }
 html_processing_instruction = {
     (
