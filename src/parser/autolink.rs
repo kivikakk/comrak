@@ -255,7 +255,6 @@ fn email_match<'a>(
     let size = contents.len();
 
     let mut rewind = 0;
-    let mut ns = 0;
 
     while rewind < i {
         let c = contents[i - rewind - 1];
@@ -265,19 +264,14 @@ fn email_match<'a>(
             continue;
         }
 
-        if c == b'/' {
-            ns += 1;
-        }
-
         break;
     }
 
-    if rewind == 0 || ns > 0 {
+    if rewind == 0 {
         return None;
     }
 
-    let mut link_end = 0;
-    let mut nb = 0;
+    let mut link_end = 1;
     let mut np = 0;
 
     while link_end < size - i {
@@ -286,7 +280,7 @@ fn email_match<'a>(
         if isalnum(c) {
             // empty
         } else if c == b'@' {
-            nb += 1;
+            return None;
         } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
             np += 1;
         } else if c != b'-' && c != b'_' {
@@ -297,7 +291,6 @@ fn email_match<'a>(
     }
 
     if link_end < 2
-        || nb != 1
         || np == 0
         || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
     {
@@ -305,6 +298,9 @@ fn email_match<'a>(
     }
 
     link_end = autolink_delim(&contents[i..], link_end);
+    if link_end == 0 {
+        return None;
+    }
 
     let mut url = b"mailto:".to_vec();
     url.extend_from_slice(&contents[i - rewind..link_end + i]);
