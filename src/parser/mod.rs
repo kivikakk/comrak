@@ -644,7 +644,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     break;
                 }
                 if s[eol] == 0 {
-                    assert!(eol < end); // ??? XXX
                     break;
                 }
                 eol += 1;
