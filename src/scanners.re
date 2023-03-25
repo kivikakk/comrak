@@ -27,12 +27,14 @@ fn is_match(rule: Rule, line: &[u8]) -> bool {
 // better than rustc.
 
 /*!re2c
-    re2c:define:YYCTYPE   = u8;
-    re2c:define:YYPEEK    = "*s.get_unchecked(cursor)";
-    re2c:define:YYSKIP    = "cursor += 1;";
-    re2c:define:YYBACKUP  = "marker = cursor;";
-    re2c:define:YYRESTORE = "cursor = marker;";
-    re2c:yyfill:enable    = 0;
+    re2c:define:YYCTYPE      = u8;
+    re2c:define:YYPEEK       = "*s.get_unchecked(cursor)";
+    re2c:define:YYSKIP       = "cursor += 1;";
+    re2c:define:YYBACKUP     = "marker = cursor;";
+    re2c:define:YYRESTORE    = "cursor = marker;";
+    re2c:define:YYBACKUPCTX  = "ctxmarker = cursor;";
+    re2c:define:YYRESTORECTX = "cursor = ctxmarker;";
+    re2c:yyfill:enable       = 0;
 */
 
 #[inline(always)]
@@ -56,39 +58,67 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
 }
 
 #[inline(always)]
-pub fn html_block_end_2(line: &[u8]) -> bool {
-    memmem::find(line, b"-->").is_some()
+pub fn html_block_end_2(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [^\n\x00]* '-->' { return true; }
+    * { return false; }
+*/
 }
 
 #[inline(always)]
-pub fn html_block_end_3(line: &[u8]) -> bool {
-    memmem::find(line, b"?>").is_some()
+pub fn html_block_end_3(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [^\n\x00]* '?>' { return true; }
+    * { return false; }
+*/
 }
 
 #[inline(always)]
-pub fn html_block_end_4(line: &[u8]) -> bool {
-    line.contains(&b'>')
+pub fn html_block_end_4(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [^\n\x00]* '>' { return true; }
+    * { return false; }
+*/
 }
 
 #[inline(always)]
-pub fn html_block_end_5(line: &[u8]) -> bool {
-    memmem::find(line, b"]]>").is_some()
+pub fn html_block_end_5(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+/*!re2c
+    [^\n\x00]* ']]>' { return true; }
+    * { return false; }
+*/
 }
 
 #[inline(always)]
-pub fn open_code_fence(line: &[u8]) -> Option<usize> {
-    if line[0] != b'`' && line[0] != b'~' {
-        return None;
-    }
-    search(Rule::open_code_fence, line)
+pub fn open_code_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+/*!re2c
+    [`]{3,} / [^`\r\n\x00]*[\r\n] { return Some(cursor); }
+    [~]{3,} / [^\r\n\x00]*[\r\n] { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 #[inline(always)]
-pub fn close_code_fence(line: &[u8]) -> Option<usize> {
-    if line[0] != b'`' && line[0] != b'~' {
-        return None;
-    }
-    search(Rule::close_code_fence, line)
+pub fn close_code_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+/*!re2c
+    [`]{3,} / [ \t]*[\r\n] { return Some(cursor); }
+    [~]{3,} / [ \t]*[\r\n] { return Some(cursor); }
+    * { return None; }
+*/
 }
 
 #[inline(always)]

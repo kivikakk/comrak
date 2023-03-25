@@ -1955,39 +1955,2893 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
 }
 
 #[inline(always)]
-pub fn html_block_end_2(line: &[u8]) -> bool {
-    memmem::find(line, b"-->").is_some()
+pub fn html_block_end_2(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yyaccept : usize = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x7F => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x2D => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						yystate = 5;
+						continue 'yyl;
+					}
+					0xE0 => {
+						yystate = 6;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						yystate = 7;
+						continue 'yyl;
+					}
+					0xED => {
+						yystate = 8;
+						continue 'yyl;
+					}
+					0xF0 => {
+						yystate = 9;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						yystate = 10;
+						continue 'yyl;
+					}
+					0xF4 => {
+						yystate = 11;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return false; }
+			3 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x2D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			6 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			7 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			12 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				yystate = 13;
+				continue 'yyl;
+			}
+			13 => {
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x2D => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			14 => {
+				cursor = marker;
+				if yyaccept == 0 {
+					yystate = 2;
+					continue 'yyl;
+				} else {
+					yystate = 25;
+					continue 'yyl;
+				}
+			}
+			15 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x2D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			16 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			17 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			18 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			19 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			20 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			21 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			22 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			23 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x3D |
+					0x3F ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x2D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 24;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			24 => {
+				yyaccept = 1;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x2C |
+					0x2E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x2D => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 25;
+						continue 'yyl;
+					}
+				}
+			}
+			25 => { return true; }
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
-pub fn html_block_end_3(line: &[u8]) -> bool {
-    memmem::find(line, b"?>").is_some()
+pub fn html_block_end_3(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yyaccept : usize = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3E |
+					0x40 ..= 0x7F => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x3F => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						yystate = 5;
+						continue 'yyl;
+					}
+					0xE0 => {
+						yystate = 6;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						yystate = 7;
+						continue 'yyl;
+					}
+					0xED => {
+						yystate = 8;
+						continue 'yyl;
+					}
+					0xF0 => {
+						yystate = 9;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						yystate = 10;
+						continue 'yyl;
+					}
+					0xF4 => {
+						yystate = 11;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return false; }
+			3 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x3F ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			6 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			7 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			12 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				yystate = 13;
+				continue 'yyl;
+			}
+			13 => {
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3E |
+					0x40 ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x3F => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			14 => {
+				cursor = marker;
+				if yyaccept == 0 {
+					yystate = 2;
+					continue 'yyl;
+				} else {
+					yystate = 24;
+					continue 'yyl;
+				}
+			}
+			15 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x40 ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0x3F => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			16 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			17 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			18 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			19 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			20 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			21 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			22 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			23 => {
+				yyaccept = 1;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3E |
+					0x40 ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x3F => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 24;
+						continue 'yyl;
+					}
+				}
+			}
+			24 => { return true; }
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
-pub fn html_block_end_4(line: &[u8]) -> bool {
-    line.contains(&b'>')
+pub fn html_block_end_4(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yyaccept : usize = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x3F ..= 0x7F => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x3E => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						yystate = 6;
+						continue 'yyl;
+					}
+					0xE0 => {
+						yystate = 7;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						yystate = 8;
+						continue 'yyl;
+					}
+					0xED => {
+						yystate = 9;
+						continue 'yyl;
+					}
+					0xF0 => {
+						yystate = 10;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						yystate = 11;
+						continue 'yyl;
+					}
+					0xF4 => {
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return false; }
+			3 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 14;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				yyaccept = 1;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x3F ..= 0x7F => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 5;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => { return true; }
+			6 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			7 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			12 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			13 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				yystate = 14;
+				continue 'yyl;
+			}
+			14 => {
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x3F ..= 0x7F => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			15 => {
+				cursor = marker;
+				if yyaccept == 0 {
+					yystate = 2;
+					continue 'yyl;
+				} else {
+					yystate = 5;
+					continue 'yyl;
+				}
+			}
+			16 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			17 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			18 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			19 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			20 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			21 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			22 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 15;
+						continue 'yyl;
+					}
+				}
+			}
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
-pub fn html_block_end_5(line: &[u8]) -> bool {
-    memmem::find(line, b"]]>").is_some()
+pub fn html_block_end_5(s: &[u8]) -> bool {
+    let mut cursor = 0;
+    let mut marker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yyaccept : usize = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x5C |
+					0x5E ..= 0x7F => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x5D => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						yystate = 5;
+						continue 'yyl;
+					}
+					0xE0 => {
+						yystate = 6;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						yystate = 7;
+						continue 'yyl;
+					}
+					0xED => {
+						yystate = 8;
+						continue 'yyl;
+					}
+					0xF0 => {
+						yystate = 9;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						yystate = 10;
+						continue 'yyl;
+					}
+					0xF4 => {
+						yystate = 11;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return false; }
+			3 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x5C |
+					0x5E ..= 0x7F |
+					0xC2 ..= 0xF4 => {
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x5D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			6 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			7 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				yyaccept = 0;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			12 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				yystate = 13;
+				continue 'yyl;
+			}
+			13 => {
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x5C |
+					0x5E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x5D => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			14 => {
+				cursor = marker;
+				if yyaccept == 0 {
+					yystate = 2;
+					continue 'yyl;
+				} else {
+					yystate = 25;
+					continue 'yyl;
+				}
+			}
+			15 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x5C |
+					0x5E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x5D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			16 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			17 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			18 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			19 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			20 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			21 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			22 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			23 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x3D |
+					0x3F ..= 0x5C |
+					0x5E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x3E => {
+						cursor += 1;
+						yystate = 24;
+						continue 'yyl;
+					}
+					0x5D => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 14;
+						continue 'yyl;
+					}
+				}
+			}
+			24 => {
+				yyaccept = 1;
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x5C |
+					0x5E ..= 0x7F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x5D => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 25;
+						continue 'yyl;
+					}
+				}
+			}
+			25 => { return true; }
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
-pub fn open_code_fence(line: &[u8]) -> Option<usize> {
-    if line[0] != b'`' && line[0] != b'~' {
-        return None;
-    }
-    search(Rule::open_code_fence, line)
+pub fn open_code_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x60 => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x7E => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return None; }
+			3 => {
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x60 => {
+						cursor += 1;
+						yystate = 5;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x7E => {
+						cursor += 1;
+						yystate = 7;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x60 => {
+						cursor += 1;
+						yystate = 8;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			6 => {
+				cursor = marker;
+				yystate = 2;
+				continue 'yyl;
+			}
+			7 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x7E => {
+						cursor += 1;
+						yystate = 9;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x0C |
+					0x0E ..= 0x5F |
+					0x61 ..= 0x7F => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 10;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 11;
+						continue 'yyl;
+					}
+					0x60 => {
+						cursor += 1;
+						yystate = 8;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0xE0 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 14;
+						continue 'yyl;
+					}
+					0xED => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xF0 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xF4 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x0C |
+					0x0E ..= 0x7D |
+					0x7F => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0x7E => {
+						cursor += 1;
+						yystate = 9;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xE0 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0xED => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 24;
+						continue 'yyl;
+					}
+					0xF0 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 25;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 26;
+						continue 'yyl;
+					}
+					0xF4 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 27;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x0C |
+					0x0E ..= 0x5F |
+					0x61 ..= 0x7F => {
+						cursor += 1;
+						yystate = 10;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						cursor += 1;
+						yystate = 11;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 14;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 15;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 16;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 17;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 18;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				cursor = ctxmarker;
+				{ return Some(cursor); }
+			}
+			12 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 10;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			13 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			14 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			15 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			16 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 14;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			17 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 14;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			18 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 14;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			19 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x01 ..= 0x09 |
+					0x0B ..= 0x0C |
+					0x0E ..= 0x7F => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						cursor += 1;
+						yystate = 20;
+						continue 'yyl;
+					}
+					0xC2 ..= 0xDF => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					0xE0 => {
+						cursor += 1;
+						yystate = 22;
+						continue 'yyl;
+					}
+					0xE1 ..= 0xEC |
+					0xEE ..= 0xEF => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					0xED => {
+						cursor += 1;
+						yystate = 24;
+						continue 'yyl;
+					}
+					0xF0 => {
+						cursor += 1;
+						yystate = 25;
+						continue 'yyl;
+					}
+					0xF1 ..= 0xF3 => {
+						cursor += 1;
+						yystate = 26;
+						continue 'yyl;
+					}
+					0xF4 => {
+						cursor += 1;
+						yystate = 27;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			20 => {
+				cursor = ctxmarker;
+				{ return Some(cursor); }
+			}
+			21 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 19;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			22 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0xA0 ..= 0xBF => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			23 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			24 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x9F => {
+						cursor += 1;
+						yystate = 21;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			25 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x90 ..= 0xBF => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			26 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0xBF => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			27 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x80 ..= 0x8F => {
+						cursor += 1;
+						yystate = 23;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
-pub fn close_code_fence(line: &[u8]) -> Option<usize> {
-    if line[0] != b'`' && line[0] != b'~' {
-        return None;
-    }
-    search(Rule::close_code_fence, line)
+pub fn close_code_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+
+{
+	#[allow(unused_assignments)]
+	let mut yych : u8 = 0;
+	let mut yystate : usize = 0;
+	'yyl: loop {
+		match yystate {
+			0 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				cursor += 1;
+				match yych {
+					0x60 => {
+						yystate = 3;
+						continue 'yyl;
+					}
+					0x7E => {
+						yystate = 4;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 1;
+						continue 'yyl;
+					}
+				}
+			}
+			1 => {
+				yystate = 2;
+				continue 'yyl;
+			}
+			2 => { return None; }
+			3 => {
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x60 => {
+						cursor += 1;
+						yystate = 5;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			4 => {
+				marker = cursor;
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x7E => {
+						cursor += 1;
+						yystate = 7;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 2;
+						continue 'yyl;
+					}
+				}
+			}
+			5 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x60 => {
+						cursor += 1;
+						yystate = 8;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			6 => {
+				cursor = marker;
+				yystate = 2;
+				continue 'yyl;
+			}
+			7 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x7E => {
+						cursor += 1;
+						yystate = 9;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			8 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x09 |
+					0x20 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 10;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 11;
+						continue 'yyl;
+					}
+					0x60 => {
+						cursor += 1;
+						yystate = 8;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			9 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x09 |
+					0x20 => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						ctxmarker = cursor;
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					0x7E => {
+						cursor += 1;
+						yystate = 9;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			10 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x09 |
+					0x20 => {
+						cursor += 1;
+						yystate = 10;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						cursor += 1;
+						yystate = 11;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			11 => {
+				cursor = ctxmarker;
+				{ return Some(cursor); }
+			}
+			12 => {
+				yych = unsafe {*s.get_unchecked(cursor)};
+				match yych {
+					0x09 |
+					0x20 => {
+						cursor += 1;
+						yystate = 12;
+						continue 'yyl;
+					}
+					0x0A |
+					0x0D => {
+						cursor += 1;
+						yystate = 13;
+						continue 'yyl;
+					}
+					_ => {
+						yystate = 6;
+						continue 'yyl;
+					}
+				}
+			}
+			13 => {
+				cursor = ctxmarker;
+				{ return Some(cursor); }
+			}
+			_ => {
+				panic!("internal lexer error")
+			}
+		}
+	}
+}
+
 }
 
 #[inline(always)]
