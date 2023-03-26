@@ -662,16 +662,16 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::Strong => {
                 if entering {
-                    self.output.write_all(b"<strong>")?;
+                    self.output.write_all(b"<b>")?;
                 } else {
-                    self.output.write_all(b"</strong>")?;
+                    self.output.write_all(b"</b>")?;
                 }
             }
             NodeValue::Emph => {
                 if entering {
-                    self.output.write_all(b"<em>")?;
+                    self.output.write_all(b"<i>")?;
                 } else {
-                    self.output.write_all(b"</em>")?;
+                    self.output.write_all(b"</i>")?;
                 }
             }
             NodeValue::Strikethrough => {

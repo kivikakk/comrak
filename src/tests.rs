@@ -173,7 +173,7 @@ fn basic() {
             "Okay.\n"
         ),
         concat!(
-            "<p>My <strong>document</strong>.</p>\n",
+            "<p>My <b>document</b>.</p>\n",
             "<p>It's mine.</p>\n",
             "<blockquote>\n",
             "<p>Yes.</p>\n",
@@ -248,7 +248,7 @@ fn heading_adapter_plugin() {
         ("# Simple heading", "<h2 data-heading=\"true\">Simple heading</h2>"),
         (
             "## Heading with **bold text** and `code`",
-            "<h3 data-heading=\"true\">Heading with <strong>bold text</strong> and <code>code</code></h3>",
+            "<h3 data-heading=\"true\">Heading with <b>bold text</b> and <code>code</code></h3>",
         ),
         ("###### Whoa, an h7!", "<h7 data-heading=\"true\">Whoa, an h7!</h7>"),
         ("####### This is not a heading", "<p>####### This is not a heading</p>\n")
@@ -416,16 +416,16 @@ fn html_block_1() {
         concat!(
             "<script>\n",
             "*ok* </script> *ok*\n",
-            "<p><em>ok</em></p>\n",
-            "<p><em>ok</em></p>\n",
+            "<p><i>ok</i></p>\n",
+            "<p><i>ok</i></p>\n",
             "<pre x>\n",
             "*ok*\n",
             "</style>\n",
-            "<p><em>ok</em></p>\n",
+            "<p><i>ok</i></p>\n",
             "<style>\n",
             "*ok*\n",
             "</style>\n",
-            "<p><em>ok</em></p>\n"
+            "<p><i>ok</i></p>\n"
         ),
     );
 }
@@ -439,7 +439,7 @@ fn html_block_2() {
             "   <!-- abc\n",
             "\n",
             "ok --> *hi*\n",
-            "<p><em>hi</em></p>\n"
+            "<p><i>hi</i></p>\n"
         ),
     );
 }
@@ -449,7 +449,7 @@ fn html_block_3() {
     html_opts!(
         [render.unsafe_],
         concat!(" <? o\n", "k ?> *a*\n", "*a*\n"),
-        concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"),
+        concat!(" <? o\n", "k ?> *a*\n", "<p><i>a</i></p>\n"),
     );
 }
 
@@ -480,7 +480,7 @@ fn html_block_5() {
             "hm >\n",
             "*ok*\n",
             "]]> *ok*\n",
-            "<p><em>ok</em></p>\n"
+            "<p><i>ok</i></p>\n"
         ),
     );
 }
@@ -620,7 +620,7 @@ fn pointy_brace() {
             "\n",
             "Email autolink: <bill@microsoft.com>\n",
             "\n",
-            "* Inline <em>tag</em> **ha**.\n",
+            "* Inline <i>tag</i> **ha**.\n",
             "* Inline <!-- comment --> **ha**.\n",
             "* Inline <? processing instruction ?> **ha**.\n",
             "* Inline <!DECLARATION OKAY> **ha**.\n",
@@ -632,11 +632,11 @@ fn pointy_brace() {
             "<p>Email autolink: <a \
              href=\"mailto:bill@microsoft.com\">bill@microsoft.com</a></p>\n",
             "<ul>\n",
-            "<li>Inline <em>tag</em> <strong>ha</strong>.</li>\n",
-            "<li>Inline <!-- comment --> <strong>ha</strong>.</li>\n",
-            "<li>Inline <? processing instruction ?> <strong>ha</strong>.</li>\n",
-            "<li>Inline <!DECLARATION OKAY> <strong>ha</strong>.</li>\n",
-            "<li>Inline <![CDATA[ok]ha **ha** ]]> <strong>ha</strong>.</li>\n",
+            "<li>Inline <i>tag</i> <b>ha</b>.</li>\n",
+            "<li>Inline <!-- comment --> <b>ha</b>.</li>\n",
+            "<li>Inline <? processing instruction ?> <b>ha</b>.</li>\n",
+            "<li>Inline <!DECLARATION OKAY> <b>ha</b>.</li>\n",
+            "<li>Inline <![CDATA[ok]ha **ha** ]]> <b>ha</b>.</li>\n",
             "</ul>\n"
         ),
     );
@@ -920,7 +920,7 @@ fn tasklist_32() {
         concat!(
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> List item 1</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" /> This list item is <strong>bold</strong></li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" /> This list item is <b>bold</b></li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> There is some <code>code</code> here</li>\n",
             "</ul>\n"
         ),
@@ -1111,7 +1111,7 @@ fn footnote_with_superscript() {
 fn regression_back_to_back_ranges() {
     html(
         "**bold*****bold+italic***",
-        "<p><strong>bold</strong><em><strong>bold+italic</strong></em></p>\n",
+        "<p><b>bold</b><i><b>bold+italic</b></i></p>\n",
     );
 }
 
@@ -1347,7 +1347,7 @@ fn description_lists() {
             "<dd>\n",
             "<p>Definition 1</p>\n",
             "</dd>\n",
-            "<dt>Term 2 with <em>inline markup</em></dt>\n",
+            "<dt>Term 2 with <i>inline markup</i></dt>\n",
             "<dd>\n",
             "<p>Definition 2</p>\n",
             "</dd>\n",
@@ -1374,7 +1374,7 @@ fn description_lists() {
             "<dd>\n",
             "<p>Definition 1</p>\n",
             "</dd>\n",
-            "<dt>Term 2 with <em>inline markup</em></dt>\n",
+            "<dt>Term 2 with <i>inline markup</i></dt>\n",
             "<dd>\n",
             "<p>Definition 2</p>\n",
             "</dd>\n",

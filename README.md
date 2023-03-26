@@ -142,7 +142,7 @@ And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 ``` rust
 use comrak::{markdown_to_html, ComrakOptions};
 assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
-           "<p>Hello, <strong>世界</strong>!</p>\n");
+           "<p>Hello, <b>世界</b>!</p>\n");
 ```
 
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:

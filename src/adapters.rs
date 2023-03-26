@@ -32,7 +32,7 @@ pub struct HeadingMeta {
     pub level: u8,
 
     /// The content of the heading as a "flattened" string&mdash;flattened in the sense that any
-    /// `<strong>` or other tags are removed. In the Markdown heading `## This is **bold**`, for
+    /// `<b>` or other tags are removed. In the Markdown heading `## This is **bold**`, for
     /// example, the would be the string `"This is bold"`.
     pub content: String,
 }
