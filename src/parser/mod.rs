@@ -27,6 +27,8 @@ use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
 
+use self::inlines::RefMap;
+
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
@@ -114,7 +116,7 @@ type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
-    refmap: HashMap<Vec<u8>, Reference>,
+    refmap: RefMap,
     root: &'a AstNode<'a>,
     current: &'a AstNode<'a>,
     line_number: u32,
@@ -128,6 +130,7 @@ pub struct Parser<'a, 'o, 'c> {
     partially_consumed_tab: bool,
     last_line_length: usize,
     last_buffer_ended_with_cr: bool,
+    total_size: usize,
     options: &'o ComrakOptions,
     callback: Option<Callback<'c>>,
 }
@@ -586,7 +589,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     ) -> Self {
         Parser {
             arena,
-            refmap: HashMap::new(),
+            refmap: RefMap::new(),
             root,
             current: root,
             line_number: 0,
@@ -600,6 +603,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             partially_consumed_tab: false,
             last_line_length: 0,
             last_buffer_ended_with_cr: false,
+            total_size: 0,
             options,
             callback,
         }
@@ -608,6 +612,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn feed(&mut self, linebuf: &mut Vec<u8>, s: &str, eof: bool) {
         let mut buffer = 0;
         let s = s.as_bytes();
+
+        if s.len() > usize::MAX - self.total_size {
+            self.total_size = usize::MAX;
+        } else {
+            self.total_size += s.len();
+        }
 
         if self.last_buffer_ended_with_cr && s.len() > 0 && s[0] == b'\n' {
             buffer += 1;
@@ -1468,6 +1478,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         self.finalize(self.root);
+
+        self.refmap.max_ref_size = if self.total_size > 100000 {
+            self.total_size
+        } else {
+            100000
+        };
+
         self.process_inlines();
         if self.options.extension.footnotes {
             self.process_footnotes();
@@ -1877,7 +1894,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         lab = strings::normalize_label(&lab);
         if !lab.is_empty() {
-            subj.refmap.entry(lab.to_vec()).or_insert(Reference {
+            subj.refmap.map.entry(lab.to_vec()).or_insert(Reference {
                 url: strings::clean_url(&url),
                 title: strings::clean_title(&title),
             });
