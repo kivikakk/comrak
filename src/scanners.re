@@ -63,7 +63,6 @@
     scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
 */
 
-#[inline(always)]
 pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -74,7 +73,6 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_block_end_1(s: &[u8]) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
@@ -85,7 +83,6 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
 */
 }
 
-#[inline(always)]
 pub fn html_block_end_2(s: &[u8]) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
@@ -96,7 +93,6 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
 */
 }
 
-#[inline(always)]
 pub fn html_block_end_3(s: &[u8]) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
@@ -107,7 +103,6 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
 */
 }
 
-#[inline(always)]
 pub fn html_block_end_4(s: &[u8]) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
@@ -118,7 +113,6 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
 */
 }
 
-#[inline(always)]
 pub fn html_block_end_5(s: &[u8]) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
@@ -129,7 +123,6 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
 */
 }
 
-#[inline(always)]
 pub fn open_code_fence(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -142,7 +135,6 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn close_code_fence(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -155,7 +147,6 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_block_start(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -171,7 +162,6 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -187,7 +177,6 @@ pub enum SetextChar {
     Hyphen,
 }
 
-#[inline(always)]
 pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -199,7 +188,6 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
 */
 }
 
-#[inline(always)]
 pub fn footnote_definition(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -210,7 +198,6 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn scheme(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -221,7 +208,6 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn autolink_uri(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -232,7 +218,6 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn autolink_email(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -247,7 +232,6 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_tag(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -258,7 +242,6 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_comment(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -269,7 +252,6 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -280,7 +262,6 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_declaration(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -291,7 +272,6 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn html_cdata(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -302,7 +282,6 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn spacechars(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
@@ -312,7 +291,6 @@ pub fn spacechars(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn link_title(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -325,7 +303,6 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn dangerous_url(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -347,7 +324,6 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
 
 */
 
-#[inline(always)]
 pub fn table_start(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -360,7 +336,6 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn table_cell(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -374,7 +349,6 @@ pub fn table_cell(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn table_cell_end(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
@@ -384,7 +358,6 @@ pub fn table_cell_end(s: &[u8]) -> Option<usize> {
 */
 }
 
-#[inline(always)]
 pub fn table_row_end(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -396,7 +369,6 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
 }
 
 #[cfg(feature = "shortcodes")]
-#[inline(always)]
 pub fn shortcode(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
