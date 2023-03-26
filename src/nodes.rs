@@ -12,8 +12,8 @@ pub enum NodeValue {
     /// The root of every CommonMark document.  Contains **blocks**.
     Document,
 
-    /// Non-Markdown front matter. Treated as an opaque blob.
-    FrontMatter(Vec<u8>),
+    /// Non-Markdown front matter.  Treated as an opaque blob.
+    FrontMatter(String),
 
     /// **Block**. A [block quote](https://github.github.com/gfm/#block-quotes).  Contains other
     /// **blocks**.
@@ -85,9 +85,9 @@ pub enum NodeValue {
     /// children.
     ThematicBreak,
 
-    /// **Block**. A footnote definition.  The `Vec<u8>` is the footnote's name.
+    /// **Block**. A footnote definition.  The `String` is the footnote's name.
     /// Contains other **blocks**.
-    FootnoteDefinition(Vec<u8>),
+    FootnoteDefinition(String),
 
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
@@ -102,7 +102,7 @@ pub enum NodeValue {
 
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
-    Text(Vec<u8>),
+    Text(String),
 
     /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     TaskItem {
@@ -123,7 +123,7 @@ pub enum NodeValue {
     Code(NodeCode),
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
-    HtmlInline(Vec<u8>),
+    HtmlInline(String),
 
     /// **Inline**.  [Emphasised](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
@@ -146,8 +146,8 @@ pub enum NodeValue {
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
 
-    /// **Inline**.  A footnote reference; the `Vec<u8>` is the referent footnote's name.
-    FootnoteReference(Vec<u8>),
+    /// **Inline**.  A footnote reference; the `String` is the referent footnote's name.
+    FootnoteReference(String),
 
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "emoji"
@@ -180,20 +180,20 @@ pub struct NodeCode {
     /// As the contents are not interpreted as Markdown at all,
     /// they are contained within this structure,
     /// rather than inserted into a child inline of any kind.
-    pub literal: Vec<u8>,
+    pub literal: String,
 }
 
 /// The details of a link's destination, or an image's source.
 #[derive(Debug, Clone)]
 pub struct NodeLink {
     /// The URL for the link destination or image source.
-    pub url: Vec<u8>,
+    pub url: String,
 
     /// The title for the link or image.
     ///
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
-    pub title: Vec<u8>,
+    pub title: String,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
@@ -215,7 +215,7 @@ pub struct NodeList {
     pub delimiter: ListDelimType,
 
     /// For bullet lists, the character used for each bullet.
-    pub bullet_char: u8,
+    pub bullet_char: char,
 
     /// Whether the list is [tight](https://github.github.com/gfm/#tight), i.e. whether the
     /// paragraphs are wrapped in `<p>` tags when formatted as HTML.
@@ -271,7 +271,7 @@ pub struct NodeCodeBlock {
     pub fenced: bool,
 
     /// For fenced code blocks, the fence character itself (`` ` `` or `~`).
-    pub fence_char: u8,
+    pub fence_char: char,
 
     /// For fenced code blocks, the length of the fence.
     pub fence_length: usize,
@@ -281,12 +281,12 @@ pub struct NodeCodeBlock {
 
     /// For fenced code blocks, the [info string](https://github.github.com/gfm/#info-string) after
     /// the opening fence, if any.
-    pub info: Vec<u8>,
+    pub info: String,
 
     /// The literal contents of the code block.  As the contents are not interpreted as Markdown at
     /// all, they are contained within this structure, rather than inserted into a child inline of
     /// any kind.
-    pub literal: Vec<u8>,
+    pub literal: String,
 }
 
 /// The metadata of a heading.
@@ -307,7 +307,7 @@ pub struct NodeHtmlBlock {
 
     /// The literal contents of the HTML block.  Per NodeCodeBlock, the content is included here
     /// rather than in any inline.
-    pub literal: Vec<u8>,
+    pub literal: String,
 }
 
 impl NodeValue {
@@ -346,7 +346,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&Vec<u8>> {
+    pub fn text(&self) -> Option<&String> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
@@ -356,7 +356,7 @@ impl NodeValue {
     /// Return a mutable reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&mut Vec<u8>> {
+    pub fn text_mut(&mut self) -> Option<&String> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,
@@ -383,7 +383,7 @@ pub struct Ast {
     /// The line in the input document the node starts at.
     pub start_line: u32,
 
-    pub(crate) content: Vec<u8>,
+    pub(crate) content: String,
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
     pub(crate) table_visited: bool,
@@ -394,7 +394,7 @@ impl Ast {
     pub fn new(value: NodeValue) -> Self {
         Ast {
             value,
-            content: vec![],
+            content: String::new(),
             start_line: 0,
             open: true,
             last_line_blank: false,
