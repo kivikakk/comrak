@@ -106,10 +106,9 @@ pub enum NodeValue {
 
     /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     TaskItem {
-        /// The `bool` `checked` indicates whether it is checked or not.
-        checked: bool,
-        /// The `symbol` that was used in the brackets to mark a task as `checked`.
-        symbol: u8,
+        /// The symbol that was used in the brackets to mark a task item
+        /// as checked, or None if the item is unchecked.
+        symbol: Option<char>,
     },
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If

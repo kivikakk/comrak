@@ -1816,8 +1816,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let checkbox = inlines::make_inline(
             self.arena,
             NodeValue::TaskItem {
-                checked: symbol != b' ',
-                symbol: symbol,
+                symbol: if symbol == b' ' {
+                    None
+                } else {
+                    // TODO: parse this from char to begin with
+                    Some(symbol as char)
+                },
             },
         );
         node.insert_before(checkbox);

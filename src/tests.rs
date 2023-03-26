@@ -1550,9 +1550,8 @@ fn exercise_full_api<'a>() {
         nodes::NodeValue::Text(text) => {
             let _: &Vec<u8> = text;
         }
-        nodes::NodeValue::TaskItem { checked, symbol } => {
-            let _: &bool = checked;
-            let _: &u8 = symbol;
+        nodes::NodeValue::TaskItem { symbol } => {
+            let _: &Option<char> = symbol;
         }
         nodes::NodeValue::SoftBreak => {}
         nodes::NodeValue::LineBreak => {}
