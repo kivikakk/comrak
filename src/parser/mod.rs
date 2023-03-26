@@ -105,8 +105,9 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         table_visited: false,
     })));
     let mut parser = Parser::new(arena, root, options, callback);
-    let remains = parser.feed(buffer, true);
-    parser.finish(remains.as_deref())
+    let mut linebuf = Vec::with_capacity(buffer.len());
+    parser.feed(&mut linebuf, buffer, true);
+    parser.finish(linebuf)
 }
 
 type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
@@ -604,7 +605,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn feed(&mut self, s: &str, eof: bool) -> Option<Vec<u8>> {
+    fn feed(&mut self, linebuf: &mut Vec<u8>, s: &str, eof: bool) {
         let mut buffer = 0;
         let s = s.as_bytes();
 
@@ -633,7 +634,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         let end = s.len();
-        let mut linebuf = vec![];
 
         while buffer < end {
             let mut process = false;
@@ -686,13 +686,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     }
                 }
             }
-        }
-
-        if !linebuf.is_empty() {
-            assert!(eof);
-            Some(linebuf)
-        } else {
-            None
         }
     }
 
@@ -1459,9 +1452,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn finish(&mut self, remaining: Option<&[u8]>) -> &'a AstNode<'a> {
-        if let Some(s) = remaining {
-            self.process_line(s);
+    fn finish(&mut self, remaining: Vec<u8>) -> &'a AstNode<'a> {
+        if !remaining.is_empty() {
+            self.process_line(&remaining);
         }
 
         self.finalize_document();
