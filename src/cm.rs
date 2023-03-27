@@ -8,6 +8,7 @@ use crate::nodes::{
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::ComrakOptions;
 use crate::scanners;
+use crate::strings::trim_start_match;
 use crate::{nodes, ComrakPlugins};
 
 use std::cmp::max;
@@ -628,7 +629,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {
         if is_autolink(node, nl) {
             if entering {
-                write!(self, "<{}>", nl.url.trim_start_matches("mailto:")).unwrap();
+                write!(self, "<{}>", trim_start_match(&nl.url, "mailto:")).unwrap();
                 return false;
             }
         } else if entering {
@@ -811,7 +812,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
         },
     };
 
-    nl.url.trim_start_matches("mailto:") == link_text
+    trim_start_match(&nl.url, "mailto:") == link_text
 }
 
 fn table_escape<'a>(node: &'a AstNode<'a>, c: u8) -> bool {

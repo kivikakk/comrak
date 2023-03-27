@@ -275,17 +275,89 @@ pub fn extract_attributes_from_tag(html_tag: &str) -> HashMap<String, String> {
     attributes
 }
 
+pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'s str, &'s str)> {
+    s = trim_start_match(s, "\u{feff}");
+
+    if !s.starts_with(delimiter) {
+        return None;
+    }
+    let mut start = delimiter.len();
+    if s[start..].starts_with("\n") {
+        start += 1;
+    } else if s[start..].starts_with("\r\n") {
+        start += 2;
+    } else {
+        return None;
+    }
+
+    start += match s[start..]
+        .find(&("\n".to_string() + delimiter + "\r\n"))
+        .or_else(|| s[start..].find(&("\n".to_string() + delimiter + "\n")))
+    {
+        Some(n) => n + 1 + delimiter.len(),
+        None => return None,
+    };
+
+    start += if s[start..].starts_with("\n") {
+        1
+    } else if s[start..].starts_with("\r\n") {
+        2
+    } else {
+        return None;
+    };
+
+    start += if s[start..].starts_with("\n") {
+        1
+    } else if s[start..].starts_with("\r\n") {
+        2
+    } else {
+        0
+    };
+
+    Some((&s[..start], &s[start..]))
+}
+
+pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
+    if s.starts_with(pat) {
+        &s[pat.len()..]
+    } else {
+        s
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
-    use super::normalize_code;
+    use super::{normalize_code, split_off_front_matter};
 
     #[test]
-    pub fn normalize_code_handles_lone_newline() {
+    fn normalize_code_handles_lone_newline() {
         assert_eq!(normalize_code(&[b'\n']), vec![b' ']);
     }
 
     #[test]
-    pub fn normalize_code_handles_lone_space() {
+    fn normalize_code_handles_lone_space() {
         assert_eq!(normalize_code(&[b' ']), vec![b' ']);
+    }
+
+    #[test]
+    fn front_matter() {
+        assert_eq!(
+            split_off_front_matter("---\nfoo: bar\n---\nHiiii", "---"),
+            Some(("---\nfoo: bar\n---\n", "Hiiii"))
+        );
+        assert_eq!(
+            split_off_front_matter(
+                "\u{feff}!@#\r\n\r\nfoo: !@# \r\nquux\n!@#\r\n\n\nYes!\n",
+                "!@#"
+            ),
+            Some(("!@#\r\n\r\nfoo: !@# \r\nquux\n!@#\r\n\n", "\nYes!\n"))
+        );
+        assert_eq!(
+            split_off_front_matter(
+                "\u{feff}!@#\r\n\r\nfoo: \n!@# \r\nquux\n!@#\r\n\n\nYes!\n",
+                "!@#"
+            ),
+            Some(("!@#\r\n\r\nfoo: \n!@# \r\nquux\n!@#\r\n\n", "\nYes!\n"))
+        );
     }
 }
