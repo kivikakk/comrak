@@ -30,29 +30,20 @@ fn iter_nodes<'a, W: Write>(
     macro_rules! try_node_inline {
         ($node:expr, $name:ident) => {{
             if let $name(t) = $node {
-                return write!(
-                    writer,
-                    concat!(stringify!($name), "({:?})"),
-                    String::from_utf8_lossy(&t)
-                );
+                return write!(writer, concat!(stringify!($name), "({:?})"), t,);
             }
         }};
     }
 
     match &node.data.borrow().value {
-        Text(t) => write!(writer, "{:?}", String::from_utf8_lossy(&t))?,
+        Text(t) => write!(writer, "{:?}", t)?,
         value => {
             try_node_inline!(value, FootnoteDefinition);
             try_node_inline!(value, FootnoteReference);
             try_node_inline!(value, HtmlInline);
 
             if let Code(code) = value {
-                return write!(
-                    writer,
-                    "Code({:?}, {})",
-                    String::from_utf8_lossy(&code.literal),
-                    code.num_backticks
-                );
+                return write!(writer, "Code({:?}, {})", code.literal, code.num_backticks);
             }
 
             let has_blocks = node.children().any(|c| c.data.borrow().value.block());

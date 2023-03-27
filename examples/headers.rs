@@ -25,23 +25,23 @@ fn get_document_title(document: &str) -> String {
             continue;
         }
 
-        let mut text = Vec::new();
+        let mut text = String::new();
         collect_text(node, &mut text);
 
         // The input was already known good UTF-8 (document: &str) so comrak
         // guarantees the output will be too.
-        return String::from_utf8(text).unwrap();
+        return text;
     }
 
     "Untitled Document".to_string()
 }
 
-fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut String) {
     match node.data.borrow().value {
         NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-            output.extend_from_slice(literal)
+            output.push_str(literal)
         }
-        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
+        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
         _ => {
             for n in node.children() {
                 collect_text(n, output);

@@ -1,5 +1,8 @@
 // Update the "comrak --help" text in Comrak's own README.
 
+use std::fmt::Write;
+use std::str;
+
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::{format_commonmark, parse_document, Arena, ComrakOptions};
 
@@ -25,22 +28,23 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     iter_nodes(doc, &|node| {
         if let NodeValue::CodeBlock(ref mut ncb) = node.data.borrow_mut().value {
             // Look for the Cargo.toml example block.
-            if ncb.info == "toml".as_bytes() && ncb.literal.starts_with(&DEPENDENCIES.as_bytes()) {
-                let mut content = DEPENDENCIES.as_bytes().to_vec();
+            if ncb.info == "toml" && ncb.literal.starts_with(DEPENDENCIES) {
+                let mut content = DEPENDENCIES.to_string();
                 let mut version_parts = comrak::version().split('.').collect::<Vec<&str>>();
                 version_parts.pop();
-                content.extend("\"".bytes());
-                content.extend(version_parts.join(".").bytes());
-                content.extend("\"".bytes());
+                write!(content, "\"{}\"", version_parts.join(".")).unwrap();
                 ncb.literal = content;
             }
 
             // Look for a console code block whose contents starts with the HELP string.
             // Replace its contents with the same string and the actual command output.
-            if ncb.info == "console".as_bytes() && ncb.literal.starts_with(&HELP.as_bytes()) {
-                let mut content = HELP.as_bytes().to_vec();
+            if ncb.info == "console" && ncb.literal.starts_with(HELP) {
+                let mut content = HELP.to_string();
                 let mut cmd = std::process::Command::new("cargo");
-                content.extend(cmd.args(&["run", "--", "--help"]).output().unwrap().stdout);
+                content.push_str(
+                    str::from_utf8(&cmd.args(&["run", "--", "--help"]).output().unwrap().stdout)
+                        .unwrap(),
+                );
                 ncb.literal = content;
             }
         }

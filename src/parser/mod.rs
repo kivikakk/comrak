@@ -14,9 +14,9 @@ use crate::nodes::{
     NodeHtmlBlock, NodeList, NodeValue,
 };
 use crate::scanners;
-use crate::strings;
+use crate::strings::{self, shift_buf_left};
 use once_cell::sync::OnceCell;
-use regex::bytes::{Regex, RegexBuilder};
+use regex::{Regex, RegexBuilder};
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -74,10 +74,10 @@ pub fn parse_document<'a>(
 ///     &arena,
 ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
 ///     &ComrakOptions::default(),
-///     Some(&mut |link_ref: &[u8]| match link_ref {
-///         b"foo" => Some((
-///             b"https://www.rust-lang.org/".to_vec(),
-///             b"The Rust Language".to_vec(),
+///     Some(&mut |link_ref: &str| match link_ref {
+///         "foo" => Some((
+///             "https://www.rust-lang.org/".to_string(),
+///             "The Rust Language".to_string(),
 ///         )),
 ///         _ => None,
 ///     }),
@@ -100,7 +100,7 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
-        content: vec![],
+        content: String::new(),
         start_line: 0,
         open: true,
         last_line_blank: false,
@@ -112,7 +112,7 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     parser.finish(linebuf)
 }
 
-type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
+type Callback<'c> = &'c mut dyn FnMut(&str) -> Option<(String, String)>;
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
@@ -571,8 +571,8 @@ impl Debug for ComrakRenderPlugins<'_> {
 
 #[derive(Clone)]
 pub struct Reference {
-    pub url: Vec<u8>,
-    pub title: Vec<u8>,
+    pub url: String,
+    pub title: String,
 }
 
 struct FootnoteDefinition<'a> {
@@ -625,6 +625,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         self.last_buffer_ended_with_cr = false;
 
         if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
+            // TODO: re2c
             let front_matter_pattern = RegexBuilder::new(&format!(
                 "\\A(?:\u{feff})?{delim}\\r?\\n.*^{delim}\\r?\\n(?:\\r?\\n)?",
                 delim = regex::escape(delimiter)
@@ -633,10 +634,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             .dot_matches_new_line(true)
             .build()
             .unwrap();
-            if let Some(front_matter_size) = front_matter_pattern.shortest_match(&s[buffer..]) {
+
+            // We've only advanced `s` past a \n; we are valid UTF-8.
+            let buffer_to_check = unsafe { str::from_utf8_unchecked(&s[buffer..]) };
+            if let Some(front_matter_size) = front_matter_pattern.shortest_match(buffer_to_check) {
                 let node = self.add_child(
                     self.root,
-                    NodeValue::FrontMatter(s[buffer..buffer + front_matter_size].to_vec()),
+                    NodeValue::FrontMatter(buffer_to_check[..front_matter_size].to_string()),
                 );
                 buffer += front_matter_size;
                 self.finalize(node).unwrap();
@@ -971,8 +975,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     fence_char: line[first_nonspace],
                     fence_length: matched,
                     fence_offset: first_nonspace - offset,
-                    info: Vec::with_capacity(10),
-                    literal: Vec::new(),
+                    info: String::with_capacity(10),
+                    literal: String::new(),
                 };
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
                 self.advance_offset(line, first_nonspace + matched - offset, false);
@@ -988,7 +992,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             {
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
-                    literal: Vec::new(),
+                    literal: String::new(),
                 };
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
@@ -1036,7 +1040,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
-                *container = self.add_child(*container, NodeValue::FootnoteDefinition(c.to_vec()));
+                *container = self.add_child(
+                    *container,
+                    NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
+                );
             } else if !indented
                 && self.options.extension.description_lists
                 && line[self.first_nonspace] == b':'
@@ -1099,8 +1106,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     fence_char: 0,
                     fence_length: 0,
                     fence_offset: 0,
-                    info: vec![],
-                    literal: Vec::new(),
+                    info: String::new(),
+                    literal: String::new(),
                 };
                 *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
             } else {
@@ -1454,11 +1461,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
             for _ in 0..chars_to_tab {
-                ast.content.push(b' ');
+                ast.content.push(' ');
             }
         }
         if self.offset < line.len() {
-            ast.content.extend_from_slice(&line[self.offset..]);
+            ast.content
+                .push_str(str::from_utf8(&line[self.offset..]).unwrap()); // TODO: try propagating &[u8] to &str up from here
         }
     }
 
@@ -1495,11 +1503,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         self.finalize_borrowed(node, &mut *node.data.borrow_mut())
     }
 
-    fn resolve_reference_link_definitions(&mut self, content: &mut Vec<u8>) -> bool {
+    fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
         {
             let mut pos = 0;
-            let mut seek: &[u8] = &*content;
+            let mut seek: &[u8] = &*content.as_bytes();
             while !seek.is_empty()
                 && seek[0] == b'['
                 && unwrap_into(self.parse_reference_inline(seek), &mut pos)
@@ -1510,10 +1518,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         if seeked != 0 {
-            *content = content[seeked..].to_vec();
+            *content = content[seeked..].to_string();
         }
 
-        !strings::is_blank(content)
+        !strings::is_blank(content.as_bytes())
     }
 
     fn finalize_borrowed(
@@ -1537,18 +1545,18 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             NodeValue::CodeBlock(ref mut ncb) => {
                 if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
-                    content.push(b'\n');
+                    content.push('\n');
                 } else {
                     let mut pos = 0;
                     while pos < content.len() {
-                        if strings::is_line_end_char(content[pos]) {
+                        if strings::is_line_end_char(content.as_bytes()[pos]) {
                             break;
                         }
                         pos += 1;
                     }
                     assert!(pos < content.len());
 
-                    let mut tmp = entity::unescape_html(&content[..pos]);
+                    let mut tmp = entity::unescape_html(&content.as_bytes()[..pos]);
                     strings::trim(&mut tmp);
                     strings::unescape(&mut tmp);
                     if tmp.is_empty() {
@@ -1557,19 +1565,20 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             .parse
                             .default_info_string
                             .as_ref()
-                            .map_or(vec![], |s| s.as_bytes().to_vec());
+                            .map_or(String::new(), |s| s.clone());
                     } else {
-                        ncb.info = tmp;
+                        ncb.info = String::from_utf8(tmp).unwrap();
                     }
 
-                    if content[pos] == b'\r' {
+                    if content.as_bytes()[pos] == b'\r' {
                         pos += 1;
                     }
-                    if content[pos] == b'\n' {
+                    if content.as_bytes()[pos] == b'\n' {
                         pos += 1;
                     }
 
-                    *content = content[pos..].to_vec();
+                    shift_buf_left(unsafe { content.as_bytes_mut() }, pos);
+                    content.truncate(content.len() - pos);
                 }
                 mem::swap(&mut ncb.literal, content);
             }
@@ -1625,7 +1634,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
         let delimiter_arena = Arena::new();
         let node_data = node.data.borrow();
-        let content = strings::rtrim_slice(&node_data.content);
+        let content = strings::rtrim_slice(&node_data.content.as_bytes());
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -1653,10 +1662,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let mut v = map.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
             for f in v {
-                if f.ix.is_some() {
+                if let Some(ix) = f.ix {
                     match f.node.data.borrow_mut().value {
                         NodeValue::FootnoteDefinition(ref mut name) => {
-                            *name = format!("{}", f.ix.unwrap()).into_bytes();
+                            *name = format!("{}", ix);
                         }
                         _ => unreachable!(),
                     }
@@ -1668,7 +1677,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn find_footnote_definitions(
         node: &'a AstNode<'a>,
-        map: &mut HashMap<Vec<u8>, FootnoteDefinition<'a>>,
+        map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref name) => {
@@ -1688,35 +1697,37 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn find_footnote_references(
         node: &'a AstNode<'a>,
-        map: &mut HashMap<Vec<u8>, FootnoteDefinition>,
-        ix: &mut u32,
+        map: &mut HashMap<String, FootnoteDefinition>,
+        ixp: &mut u32,
     ) {
         let mut ast = node.data.borrow_mut();
         let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut name) => {
                 if let Some(ref mut footnote) = map.get_mut(name) {
-                    if footnote.ix.is_none() {
-                        *ix += 1;
-                        footnote.ix = Some(*ix);
-                    }
-                    *name = format!("{}", footnote.ix.unwrap()).into_bytes();
+                    let ix = match footnote.ix {
+                        Some(ix) => ix,
+                        None => {
+                            *ixp += 1;
+                            footnote.ix = Some(*ixp);
+                            *ixp
+                        }
+                    };
+                    *name = format!("{}", ix);
                 } else {
                     replace = Some(name.clone());
                 }
             }
             _ => {
                 for n in node.children() {
-                    Self::find_footnote_references(n, map, ix);
+                    Self::find_footnote_references(n, map, ixp);
                 }
             }
         }
 
         if let Some(mut label) = replace {
-            label.insert(0, b'[');
-            label.insert(1, b'^');
-            let len = label.len();
-            label.insert(len, b']');
+            label.insert_str(0, "[^");
+            label.push(']');
             ast.value = NodeValue::Text(label);
         }
     }
@@ -1745,7 +1756,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
-                                    root.extend_from_slice(adj);
+                                    root.push_str(adj);
                                     ns.detach();
                                 }
                                 _ => {
@@ -1776,7 +1787,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
+    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut String) {
         if self.options.extension.tasklist {
             self.process_tasklist(node, text);
         }
@@ -1786,16 +1797,20 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut Vec<u8>) {
+    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+        // TODO: re2c
         static TASKLIST: OnceCell<Regex> = OnceCell::new();
         let r = TASKLIST.get_or_init(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
 
         let (symbol, end) = match r.captures(text) {
             None => return,
-            Some(c) => (c.get(2).unwrap().as_bytes()[0], c.get(0).unwrap().end()),
+            Some(c) => (c.get(2).unwrap().as_str(), c.get(0).unwrap().end()),
         };
 
-        if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, b' ' | b'x' | b'X') {
+        assert!(symbol.len() == 1);
+        let symbol = symbol.chars().next().unwrap();
+
+        if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, ' ' | 'x' | 'X') {
             return;
         }
 
@@ -1812,16 +1827,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             return;
         }
 
-        *text = text[end..].to_vec();
+        shift_buf_left(unsafe { text.as_bytes_mut() }, end);
+        text.truncate(text.len() - end);
+
         let checkbox = inlines::make_inline(
             self.arena,
             NodeValue::TaskItem {
-                symbol: if symbol == b' ' {
-                    None
-                } else {
-                    // TODO: parse this from char to begin with
-                    Some(symbol as char)
-                },
+                symbol: if symbol == ' ' { None } else { Some(symbol) },
             },
         );
         node.insert_before(checkbox);
@@ -1840,17 +1852,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.callback.as_mut(),
         );
 
-        let mut lab: Vec<u8> = match subj.link_label() {
-            Some(lab) => {
-                if lab.is_empty() {
-                    return None;
-                } else {
-                    lab
-                }
-            }
-            None => return None,
-        }
-        .to_vec();
+        let mut lab: String = match subj.link_label() {
+            Some(lab) if !lab.is_empty() => lab.to_string(),
+            _ => return None,
+        };
 
         if subj.peek_char() != Some(&(b':')) {
             return None;
@@ -1898,9 +1903,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         lab = strings::normalize_label(&lab);
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab.to_vec()).or_insert(Reference {
-                url: strings::clean_url(&url),
-                title: strings::clean_title(&title),
+            subj.refmap.map.entry(lab).or_insert(Reference {
+                url: String::from_utf8(strings::clean_url(&url)).unwrap(),
+                title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });
         }
         Some(subj.pos)

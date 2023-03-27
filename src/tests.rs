@@ -564,13 +564,13 @@ fn backticks_num() {
 
     let code1 = NodeValue::Code(NodeCode {
         num_backticks: 1,
-        literal: b"code1".to_vec(),
+        literal: "code1".to_string(),
     });
     asssert_node_eq(root, &[0, 1], &code1);
 
     let code2 = NodeValue::Code(NodeCode {
         num_backticks: 3,
-        literal: b"code2".to_vec(),
+        literal: "code2".to_string(),
     });
     asssert_node_eq(root, &[0, 3], &code2);
 }
@@ -1420,7 +1420,7 @@ fn exercise_full_api<'a>() {
         &arena,
         "document",
         &default_options,
-        Some(&mut |_: &[u8]| Some((b"abc".to_vec(), b"xyz".to_vec()))),
+        Some(&mut |_: &str| Some(("abc".to_string(), "xyz".to_string()))),
     );
 
     let _ = ComrakOptions {
@@ -1519,11 +1519,11 @@ fn exercise_full_api<'a>() {
             let _: bool = ncb.fenced;
             let _: u8 = ncb.fence_char;
             let _: usize = ncb.fence_length;
-            let _: Vec<u8> = ncb.info;
-            let _: Vec<u8> = ncb.literal;
+            let _: String = ncb.info;
+            let _: String = ncb.literal;
         }
         nodes::NodeValue::HtmlBlock(nhb) => {
-            let _: Vec<u8> = nhb.literal;
+            let _: String = nhb.literal;
         }
         nodes::NodeValue::Paragraph => {}
         nodes::NodeValue::Heading(nh) => {
@@ -1532,7 +1532,7 @@ fn exercise_full_api<'a>() {
         }
         nodes::NodeValue::ThematicBreak => {}
         nodes::NodeValue::FootnoteDefinition(name) => {
-            let _: &Vec<u8> = name;
+            let _: &String = name;
         }
         nodes::NodeValue::Table(aligns) => {
             let _: &Vec<nodes::TableAlignment> = aligns;
@@ -1548,7 +1548,7 @@ fn exercise_full_api<'a>() {
         }
         nodes::NodeValue::TableCell => {}
         nodes::NodeValue::Text(text) => {
-            let _: &Vec<u8> = text;
+            let _: &String = text;
         }
         nodes::NodeValue::TaskItem { symbol } => {
             let _: &Option<char> = symbol;
@@ -1557,25 +1557,25 @@ fn exercise_full_api<'a>() {
         nodes::NodeValue::LineBreak => {}
         nodes::NodeValue::Code(code) => {
             let _: usize = code.num_backticks;
-            let _: Vec<u8> = code.literal;
+            let _: String = code.literal;
         }
         nodes::NodeValue::HtmlInline(html) => {
-            let _: &Vec<u8> = html;
+            let _: &String = html;
         }
         nodes::NodeValue::Emph => {}
         nodes::NodeValue::Strong => {}
         nodes::NodeValue::Strikethrough => {}
         nodes::NodeValue::Superscript => {}
         nodes::NodeValue::Link(nl) | nodes::NodeValue::Image(nl) => {
-            let _: Vec<u8> = nl.url;
-            let _: Vec<u8> = nl.title;
+            let _: String = nl.url;
+            let _: String = nl.title;
         }
         #[cfg(feature = "shortcodes")]
         nodes::NodeValue::ShortCode(ne) => {
             let _: Option<String> = ne.shortcode();
         }
         nodes::NodeValue::FootnoteReference(name) => {
-            let _: &Vec<u8> = name;
+            let _: &String = name;
         }
     }
 }

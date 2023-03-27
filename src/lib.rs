@@ -39,8 +39,8 @@
 //! iter_nodes(root, &|node| {
 //!     match &mut node.data.borrow_mut().value {
 //!         &mut NodeValue::Text(ref mut text) => {
-//!             let orig = std::mem::replace(text, vec![]);
-//!             *text = String::from_utf8(orig).unwrap().replace("my", "your").as_bytes().to_vec();
+//!             let orig = std::mem::replace(text, String::new());
+//!             *text = orig.replace("my", "your");
 //!         }
 //!         _ => (),
 //!     }

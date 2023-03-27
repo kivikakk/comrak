@@ -215,7 +215,7 @@ pub struct NodeList {
     pub delimiter: ListDelimType,
 
     /// For bullet lists, the character used for each bullet.
-    pub bullet_char: char,
+    pub bullet_char: u8,
 
     /// Whether the list is [tight](https://github.github.com/gfm/#tight), i.e. whether the
     /// paragraphs are wrapped in `<p>` tags when formatted as HTML.
@@ -271,7 +271,7 @@ pub struct NodeCodeBlock {
     pub fenced: bool,
 
     /// For fenced code blocks, the fence character itself (`` ` `` or `~`).
-    pub fence_char: char,
+    pub fence_char: u8,
 
     /// For fenced code blocks, the length of the fence.
     pub fence_length: usize,
@@ -356,7 +356,7 @@ impl NodeValue {
     /// Return a mutable reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&String> {
+    pub fn text_mut(&mut self) -> Option<&mut String> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,

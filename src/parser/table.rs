@@ -39,7 +39,7 @@ fn try_opening_header<'a, 'o, 'c>(
 
     let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
-    let header_row = match row(&container.data.borrow().content) {
+    let header_row = match row(&container.data.borrow().content.as_bytes()) {
         Some(header_row) => header_row,
         None => return Some((container, false, true)),
     };
@@ -52,13 +52,14 @@ fn try_opening_header<'a, 'o, 'c>(
         try_inserting_table_header_paragraph(
             parser,
             container,
-            &container.data.borrow().content,
+            &container.data.borrow().content.as_bytes(),
             header_row.paragraph_offset,
         );
     }
 
     let mut alignments = vec![];
     for cell in marker_row.cells {
+        let cell = cell.as_bytes();
         let left = !cell.is_empty() && cell[0] == b':';
         let right = !cell.is_empty() && cell[cell.len() - 1] == b':';
         alignments.push(if left && right {
@@ -121,7 +122,7 @@ fn try_opening_row<'a, 'o, 'c>(
 
 struct Row {
     paragraph_offset: usize,
-    cells: Vec<Vec<u8>>,
+    cells: Vec<String>,
 }
 
 fn row(string: &[u8]) -> Option<Row> {
@@ -140,7 +141,7 @@ fn row(string: &[u8]) -> Option<Row> {
         if cell_matched > 0 || pipe_matched > 0 {
             let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
             trim(&mut cell);
-            cells.push(cell);
+            cells.push(String::from_utf8(cell).unwrap());
         }
 
         offset += cell_matched + pipe_matched;
@@ -188,7 +189,7 @@ fn try_inserting_table_header_paragraph<'a, 'o, 'c>(
     }
 
     let mut paragraph = Ast::new(NodeValue::Paragraph);
-    paragraph.content = paragraph_content;
+    paragraph.content = String::from_utf8(paragraph_content).unwrap();
     let node = parser.arena.alloc(Node::new(RefCell::new(paragraph)));
     container.insert_before(node);
 }

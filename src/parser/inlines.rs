@@ -51,7 +51,7 @@ struct Flags {
 }
 
 pub struct RefMap {
-    pub map: HashMap<Vec<u8>, Reference>,
+    pub map: HashMap<String, Reference>,
     pub(crate) max_ref_size: usize,
     ref_size: usize,
 }
@@ -65,7 +65,7 @@ impl RefMap {
         }
     }
 
-    fn lookup(&mut self, lab: &[u8]) -> Option<Reference> {
+    fn lookup(&mut self, lab: &str) -> Option<Reference> {
         match self.map.get(lab) {
             Some(entry) => {
                 let size = entry.url.len() + entry.title.len();
@@ -172,7 +172,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '.' => Some(self.handle_period()),
             '[' => {
                 self.pos += 1;
-                let inl = make_inline(self.arena, NodeValue::Text(b"[".to_vec()));
+                let inl = make_inline(self.arena, NodeValue::Text("[".to_string()));
                 self.push_bracket(false, inl);
                 self.within_brackets = true;
                 Some(inl)
@@ -185,11 +185,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos += 1;
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
-                    let inl = make_inline(self.arena, NodeValue::Text(b"![".to_vec()));
+                    let inl = make_inline(self.arena, NodeValue::Text("![".to_string()));
                     self.push_bracket(true, inl);
                     Some(inl)
                 } else {
-                    Some(make_inline(self.arena, NodeValue::Text(b"!".to_vec())))
+                    Some(make_inline(self.arena, NodeValue::Text("!".to_string())))
                 }
             }
             '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
@@ -216,7 +216,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     strings::ltrim(&mut contents);
                 }
 
-                Some(make_inline(self.arena, NodeValue::Text(contents)))
+                Some(make_inline(
+                    self.arena,
+                    NodeValue::Text(String::from_utf8(contents).unwrap()),
+                ))
             }
         };
 
@@ -390,9 +393,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     }
                 } else if c.delim_char == b'\'' || c.delim_char == b'"' {
                     *c.inl.data.borrow_mut().value.text_mut().unwrap() =
-                        if c.delim_char == b'\'' { "’" } else { "”" }
-                            .to_string()
-                            .into_bytes();
+                        if c.delim_char == b'\'' { "’" } else { "”" }.to_string();
                     closer = c.next.get();
 
                     if opener_found {
@@ -408,8 +409,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         } else {
                             "“"
                         }
-                        .to_string()
-                        .into_bytes();
+                        .to_string();
                         self.remove_delimiter(opener.unwrap());
                         self.remove_delimiter(old_c);
                     }
@@ -559,14 +559,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         match endpos {
             None => {
                 self.pos = startpos;
-                make_inline(self.arena, NodeValue::Text(vec![b'`'; openticks]))
+                make_inline(self.arena, NodeValue::Text("`".repeat(openticks)))
             }
             Some(endpos) => {
                 let buf = &self.input[startpos..endpos - openticks];
                 let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
-                    literal: buf,
+                    literal: String::from_utf8(buf).unwrap(),
                 };
                 make_inline(self.arena, NodeValue::Code(code))
             }
@@ -586,15 +586,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = if c == b'\'' && self.options.parse.smart {
-            b"\xE2\x80\x99".to_vec()
+            "’".to_string()
         } else if c == b'"' && self.options.parse.smart {
             if can_close {
-                b"\xE2\x90\x9D".to_vec()
+                "”".to_string()
             } else {
-                b"\xE2\x80\x9C".to_vec()
+                "“".to_string()
             }
         } else {
-            self.input[self.pos - numdelims..self.pos].to_vec()
+            str::from_utf8(&self.input[self.pos - numdelims..self.pos])
+                .unwrap()
+                .to_string()
         };
         let inl = make_inline(self.arena, NodeValue::Text(contents));
 
@@ -610,7 +612,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         self.pos += 1;
 
         if !self.options.parse.smart || self.peek_char().map_or(false, |&c| c != b'-') {
-            return make_inline(self.arena, NodeValue::Text(vec![b'-']));
+            return make_inline(self.arena, NodeValue::Text("-".to_string()));
         }
 
         while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
@@ -629,14 +631,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             (2, (numhyphens - 4) / 3)
         };
 
-        let mut buf = vec![];
-        for _ in 0..ems {
-            buf.extend_from_slice(b"\xE2\x80\x94");
-        }
-        for _ in 0..ens {
-            buf.extend_from_slice(b"\xE2\x80\x93");
-        }
+        let ens = if ens > 0 { ens as usize } else { 0 };
+        let ems = if ems > 0 { ems as usize } else { 0 };
 
+        let mut buf = String::with_capacity(3 * (ems + ens));
+        buf.push_str(&"—".repeat(ems));
+        buf.push_str(&"–".repeat(ens));
         make_inline(self.arena, NodeValue::Text(buf))
     }
 
@@ -646,12 +646,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos += 1;
             if self.peek_char().map_or(false, |&c| c == b'.') {
                 self.pos += 1;
-                make_inline(self.arena, NodeValue::Text(b"\xE2\x80\xA6".to_vec()))
+                make_inline(self.arena, NodeValue::Text("…".to_string()))
             } else {
-                make_inline(self.arena, NodeValue::Text(b"..".to_vec()))
+                make_inline(self.arena, NodeValue::Text("..".to_string()))
             }
         } else {
-            make_inline(self.arena, NodeValue::Text(b".".to_vec()))
+            make_inline(self.arena, NodeValue::Text(".".to_string()))
         }
     }
 
@@ -774,7 +774,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opener: &'d Delimiter<'a, 'd>,
         closer: &'d Delimiter<'a, 'd>,
     ) -> Option<&'d Delimiter<'a, 'd>> {
-        let opener_char = opener.inl.data.borrow().value.text().unwrap()[0];
+        let opener_char = opener.inl.data.borrow().value.text().unwrap().as_bytes()[0];
         let mut opener_num_chars = opener.inl.data.borrow().value.text().unwrap().len();
         let mut closer_num_chars = closer.inl.data.borrow().value.text().unwrap().len();
         let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
@@ -866,11 +866,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if self.peek_char().map_or(false, |&c| ispunct(c)) {
             self.pos += 1;
             // TODO
-            make_inline(self.arena, NodeValue::Text(vec![self.input[self.pos - 1]]))
+            make_inline(
+                self.arena,
+                NodeValue::Text(String::from_utf8(vec![self.input[self.pos - 1]]).unwrap()),
+            )
         } else if !self.eof() && self.skip_line_end() {
             make_inline(self.arena, NodeValue::LineBreak)
         } else {
-            make_inline(self.arena, NodeValue::Text(b"\\".to_vec()))
+            make_inline(self.arena, NodeValue::Text("\\".to_string()))
         }
     }
 
@@ -889,10 +892,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
-            None => make_inline(self.arena, NodeValue::Text(b"&".to_vec())),
+            None => make_inline(self.arena, NodeValue::Text("&".to_string())),
             Some((entity, len)) => {
                 self.pos += len;
-                make_inline(self.arena, NodeValue::Text(entity))
+                make_inline(
+                    self.arena,
+                    NodeValue::Text(String::from_utf8(entity).unwrap()),
+                )
             }
         }
     }
@@ -911,7 +917,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             }
         }
         self.pos += 1;
-        make_inline(self.arena, NodeValue::Text(b":".to_vec()))
+        make_inline(self.arena, NodeValue::Text(":".to_string()))
     }
 
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
@@ -1000,12 +1006,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         if let Some(matchlen) = matchlen {
             let contents = &self.input[self.pos - 1..self.pos + matchlen];
-            let inl = make_inline(self.arena, NodeValue::HtmlInline(contents.to_vec()));
+            let inl = make_inline(
+                self.arena,
+                NodeValue::HtmlInline(str::from_utf8(contents).unwrap().to_string()),
+            );
             self.pos += matchlen;
             return inl;
         }
 
-        make_inline(self.arena, NodeValue::Text(b"<".to_vec()))
+        make_inline(self.arena, NodeValue::Text("<".to_string()))
     }
 
     pub fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
@@ -1030,14 +1039,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         let brackets_len = self.brackets.len();
         if brackets_len == 0 {
-            return Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())));
+            return Some(make_inline(self.arena, NodeValue::Text("]".to_string())));
         }
 
         let is_image = self.brackets[brackets_len - 1].image;
 
         if !is_image && self.no_link_openers {
             self.brackets.pop();
-            return Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())));
+            return Some(make_inline(self.arena, NodeValue::Text("]".to_string())));
         }
 
         let after_link_text_pos = self.pos;
@@ -1071,7 +1080,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos = endall + 1;
                 let url = strings::clean_url(url);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                self.close_bracket_match(is_image, url, title);
+                self.close_bracket_match(
+                    is_image,
+                    String::from_utf8(url).unwrap(),
+                    String::from_utf8(title).unwrap(),
+                );
                 return None;
             } else {
                 self.pos = after_link_text_pos;
@@ -1081,8 +1094,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // Try to see if this is a reference link
 
         let (mut lab, mut found_label) = match self.link_label() {
-            Some(lab) => (lab.to_vec(), true),
-            None => (vec![], false),
+            Some(lab) => (lab.to_string(), true),
+            None => ("".to_string(), false),
         };
 
         if !found_label {
@@ -1090,12 +1103,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].to_vec();
+            lab = str::from_utf8(
+                &self.input[self.brackets[brackets_len - 1].position..initial_pos - 1],
+            )
+            .unwrap()
+            .to_string();
             found_label = true;
         }
 
         // Need to normalize both to lookup in refmap and to call callback
-        lab = strings::normalize_label(&lab);
+        let lab = strings::normalize_label(&lab);
         let mut reff = if found_label {
             self.refmap.lookup(&lab)
         } else {
@@ -1114,7 +1131,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             return None;
         }
 
-        let mut text: Option<Vec<u8>> = None;
+        let mut text: Option<String> = None;
         if self.options.extension.footnotes
             && match self.brackets[brackets_len - 1].inl_text.next_sibling() {
                 Some(n) => {
@@ -1125,8 +1142,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             }
         {
             let text = text.unwrap();
-            if text.len() > 1 && text[0] == b'^' {
-                let inl = make_inline(self.arena, NodeValue::FootnoteReference(text[1..].to_vec()));
+            if text.len() > 1 && text.as_bytes()[0] == b'^' {
+                let inl = make_inline(
+                    self.arena,
+                    NodeValue::FootnoteReference(text[1..].to_string()),
+                );
                 self.brackets[brackets_len - 1].inl_text.insert_before(inl);
                 self.brackets[brackets_len - 1]
                     .inl_text
@@ -1142,10 +1162,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         self.brackets.pop();
         self.pos = initial_pos;
-        Some(make_inline(self.arena, NodeValue::Text(b"]".to_vec())))
+        Some(make_inline(self.arena, NodeValue::Text("]".to_string())))
     }
 
-    pub fn close_bracket_match(&mut self, is_image: bool, url: Vec<u8>, title: Vec<u8>) {
+    pub fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
         let nl = NodeLink { url, title };
         let inl = make_inline(
             self.arena,
@@ -1172,7 +1192,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
     }
 
-    pub fn link_label(&mut self) -> Option<&[u8]> {
+    pub fn link_label(&mut self) -> Option<&str> {
         let startpos = self.pos;
 
         if self.peek_char() != Some(&(b'[')) {
@@ -1204,7 +1224,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if c == b']' {
             let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
             self.pos += 1;
-            Some(raw_label)
+            Some(str::from_utf8(raw_label).unwrap())
         } else {
             self.pos = startpos;
             None
@@ -1289,7 +1309,7 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
 pub fn make_inline<'a>(arena: &'a Arena<AstNode<'a>>, value: NodeValue) -> &'a AstNode<'a> {
     let ast = Ast {
         value,
-        content: vec![],
+        content: String::new(),
         start_line: 0,
         open: false,
         last_line_blank: false,
@@ -1306,13 +1326,13 @@ fn make_autolink<'a>(
     let inl = make_inline(
         arena,
         NodeValue::Link(NodeLink {
-            url: strings::clean_autolink(url, kind),
-            title: vec![],
+            url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
+            title: String::new(),
         }),
     );
     inl.append(make_inline(
         arena,
-        NodeValue::Text(entity::unescape_html(url)),
+        NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
     ));
     inl
 }

@@ -81,10 +81,11 @@ pub fn normalize_code(v: &[u8]) -> Vec<u8> {
     r
 }
 
-pub fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
+pub fn remove_trailing_blank_lines(line: &mut String) {
+    let line_bytes = line.as_bytes();
     let mut i = line.len() - 1;
     loop {
-        let c = line[i];
+        let c = line_bytes[i];
 
         if c != b' ' && c != b'\t' && !is_line_end_char(c) {
             break;
@@ -99,7 +100,7 @@ pub fn remove_trailing_blank_lines(line: &mut Vec<u8>) {
     }
 
     for i in i..line.len() {
-        let c = line[i];
+        let c = line_bytes[i];
 
         if !is_line_end_char(c) {
             continue;
@@ -183,7 +184,7 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
     i
 }
 
-fn shift_buf_left(buf: &mut [u8], n: usize) {
+pub fn shift_buf_left(buf: &mut [u8], n: usize) {
     assert!(n <= buf.len());
     let keep = buf.len() - n;
     unsafe {
@@ -240,11 +241,14 @@ pub fn is_blank(s: &[u8]) -> bool {
     true
 }
 
-pub fn normalize_label(i: &[u8]) -> Vec<u8> {
-    let i = trim_slice(i);
+pub fn normalize_label(i: &str) -> String {
+    // trim_slice only removes bytes from start and end that match isspace();
+    // result is UTF-8.
+    let i = unsafe { str::from_utf8_unchecked(trim_slice(i.as_bytes())) };
+
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
-    for c in unsafe { str::from_utf8_unchecked(i) }.chars() {
+    for c in i.chars() {
         for e in c.to_lowercase() {
             if e.is_whitespace() {
                 if !last_was_whitespace {
@@ -257,7 +261,7 @@ pub fn normalize_label(i: &[u8]) -> Vec<u8> {
             }
         }
     }
-    v.into_bytes()
+    v
 }
 
 #[cfg(feature = "syntect")]
