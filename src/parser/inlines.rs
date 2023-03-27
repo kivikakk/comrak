@@ -25,7 +25,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub input: &'i [u8],
     pub pos: usize,
     flags: Flags,
-    pub refmap: &'r mut HashMap<Vec<u8>, Reference>,
+    pub refmap: &'r mut RefMap,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
@@ -48,6 +48,37 @@ struct Flags {
     skip_html_declaration: bool,
     skip_html_pi: bool,
     skip_html_comment: bool,
+}
+
+pub struct RefMap {
+    pub map: HashMap<Vec<u8>, Reference>,
+    pub(crate) max_ref_size: usize,
+    ref_size: usize,
+}
+
+impl RefMap {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+            max_ref_size: usize::MAX,
+            ref_size: 0,
+        }
+    }
+
+    fn lookup(&mut self, lab: &[u8]) -> Option<Reference> {
+        match self.map.get(lab) {
+            Some(entry) => {
+                let size = entry.url.len() + entry.title.len();
+                if size > self.max_ref_size - self.ref_size {
+                    None
+                } else {
+                    self.ref_size += size;
+                    Some(entry.clone())
+                }
+            }
+            None => None,
+        }
+    }
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
@@ -73,7 +104,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         arena: &'a Arena<AstNode<'a>>,
         options: &'o ComrakOptions,
         input: &'i [u8],
-        refmap: &'r mut HashMap<Vec<u8>, Reference>,
+        refmap: &'r mut RefMap,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
         callback: Option<&'subj mut Callback<'c>>,
     ) -> Self {
@@ -1066,7 +1097,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // Need to normalize both to lookup in refmap and to call callback
         lab = strings::normalize_label(&lab);
         let mut reff = if found_label {
-            self.refmap.get(&lab).cloned()
+            self.refmap.lookup(&lab)
         } else {
             None
         };
