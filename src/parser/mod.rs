@@ -15,8 +15,6 @@ use crate::nodes::{
 };
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter};
-use once_cell::sync::OnceCell;
-use regex::Regex;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -1787,17 +1785,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
-        // TODO: re2c
-        static TASKLIST: OnceCell<Regex> = OnceCell::new();
-        let r = TASKLIST.get_or_init(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
-
-        let (symbol, end) = match r.captures(text) {
+        let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
+            Some(p) => p,
             None => return,
-            Some(c) => (c.get(2).unwrap().as_str(), c.get(0).unwrap().end()),
         };
 
-        assert!(symbol.len() == 1);
-        let symbol = symbol.chars().next().unwrap();
+        let symbol = symbol as char;
 
         if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, ' ' | 'x' | 'X') {
             return;

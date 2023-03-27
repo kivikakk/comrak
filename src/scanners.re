@@ -376,4 +376,24 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
 */
 }
 
+// Returns both the length of the match, and the tasklist character.
+pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+
+    let t1;
+/*!stags:re2c format = 'let mut @@{tag} = 0;'; */
+
+/*!local:re2c
+    re2c:define:YYSTAGP = "@@{tag} = cursor;";
+    re2c:tags = 1;
+
+    spacechar* [[] @t1 [^\x00\r\n] [\]] (spacechar | [\x00]) {
+        return Some((cursor, s[t1]));
+    }
+    * { return None; }
+*/
+}
+
 // vim: set ft=rust:
