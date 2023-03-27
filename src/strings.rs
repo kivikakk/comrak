@@ -99,10 +99,8 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
         i -= 1;
     }
 
-    for i in i..line.len() {
-        let c = line_bytes[i];
-
-        if !is_line_end_char(c) {
+    for (i, c) in line_bytes.iter().enumerate().take(line.len()).skip(i) {
+        if !is_line_end_char(*c) {
             continue;
         }
 

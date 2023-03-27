@@ -18,7 +18,7 @@ pub fn format_document<'a>(
     options: &ComrakOptions,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, &options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
@@ -174,7 +174,7 @@ const NEEDS_ESCAPED : [bool; 256] = [
 ];
 
 fn tagfilter(literal: &[u8]) -> bool {
-    static TAGFILTER_BLACKLIST: [&'static str; 9] = [
+    static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
         "textarea",
         "style",
@@ -364,8 +364,7 @@ impl<'o> HtmlFormatter<'o> {
         while let Some((node, plain, phase)) = stack.pop() {
             match phase {
                 Phase::Pre => {
-                    let new_plain;
-                    if plain {
+                    let new_plain = if plain {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
@@ -377,11 +376,11 @@ impl<'o> HtmlFormatter<'o> {
                             }
                             _ => (),
                         }
-                        new_plain = plain;
+                        plain
                     } else {
                         stack.push((node, false, Phase::Post));
-                        new_plain = self.format_node(node, true)?;
-                    }
+                        self.format_node(node, true)?
+                    };
 
                     for ch in node.reverse_children() {
                         stack.push((ch, new_plain, Phase::Pre));
@@ -397,7 +396,7 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
-    fn collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+    fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
         match node.data.borrow().value {
             NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
                 output.extend_from_slice(literal.as_bytes())
@@ -405,7 +404,7 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
             _ => {
                 for n in node.children() {
-                    self.collect_text(n, output);
+                    Self::collect_text(n, output);
                 }
             }
         }
@@ -479,7 +478,7 @@ impl<'o> HtmlFormatter<'o> {
 
                         if let Some(ref prefix) = self.options.extension.header_ids {
                             let mut text_content = Vec::with_capacity(20);
-                            self.collect_text(node, &mut text_content);
+                            Self::collect_text(node, &mut text_content);
 
                             let mut id = String::from_utf8(text_content).unwrap();
                             id = self.anchorizer.anchorize(id);
@@ -497,7 +496,7 @@ impl<'o> HtmlFormatter<'o> {
                 }
                 Some(adapter) => {
                     let mut text_content = Vec::with_capacity(20);
-                    self.collect_text(node, &mut text_content);
+                    Self::collect_text(node, &mut text_content);
                     let content = String::from_utf8(text_content).unwrap();
                     let heading = HeadingMeta {
                         level: nch.level,
@@ -558,7 +557,7 @@ impl<'o> HtmlFormatter<'o> {
                                 build_opening_tag("code", &code_attributes).as_bytes(),
                             )?;
 
-                            self.escape(&literal)?;
+                            self.escape(literal)?;
 
                             self.output.write_all(b"</code></pre>\n")?
                         }
@@ -671,7 +670,7 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     let literal = literal.as_bytes();
                     if self.options.render.escape {
-                        self.escape(&literal)?;
+                        self.escape(literal)?;
                     } else if !self.options.render.unsafe_ {
                         self.output.write_all(b"<!-- raw HTML omitted -->")?;
                     } else if self.options.extension.tagfilter && tagfilter(literal) {
@@ -719,7 +718,7 @@ impl<'o> HtmlFormatter<'o> {
                     }
                     if !nl.title.is_empty() {
                         self.output.write_all(b"\" title=\"")?;
-                        self.escape(&nl.title.as_bytes())?;
+                        self.escape(nl.title.as_bytes())?;
                     }
                     self.output.write_all(b"\">")?;
                 } else {
@@ -738,7 +737,7 @@ impl<'o> HtmlFormatter<'o> {
                 } else {
                     if !nl.title.is_empty() {
                         self.output.write_all(b"\" title=\"")?;
-                        self.escape(&nl.title.as_bytes())?;
+                        self.escape(nl.title.as_bytes())?;
                     }
                     self.output.write_all(b"\" />")?;
                 }

@@ -80,7 +80,7 @@ fn commonmark(input: &str, expected: &str, opts: Option<&ComrakOptions>) {
 
     let root = parse_document(&arena, input, options);
     let mut output = vec![];
-    cm::format_document(root, &options, &mut output).unwrap();
+    cm::format_document(root, options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 }
 
@@ -132,14 +132,14 @@ fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
 
     let root = parse_document(&arena, input, &options);
     let mut output = vec![];
-    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+    html::format_document_with_plugins(root, &options, &mut output, plugins).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
     let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);
     let mut output_from_rt = vec![];
-    html::format_document_with_plugins(root, &options, &mut output_from_rt, &plugins).unwrap();
+    html::format_document_with_plugins(root, &options, &mut output_from_rt, plugins).unwrap();
     compare_strs(
         &String::from_utf8(output_from_rt).unwrap(),
         expected,
@@ -1247,7 +1247,7 @@ fn nested_tables_3() {
 
 #[test]
 fn no_stack_smash_html() {
-    let s: String = ::std::iter::repeat('>').take(150_000).collect();
+    let s: String = ">".repeat(150_000);
     let arena = Arena::new();
     let root = parse_document(&arena, &s, &ComrakOptions::default());
     let mut output = vec![];
@@ -1256,7 +1256,7 @@ fn no_stack_smash_html() {
 
 #[test]
 fn no_stack_smash_cm() {
-    let s: String = ::std::iter::repeat('>').take(150_000).collect();
+    let s: String = ">".repeat(150_000);
     let arena = Arena::new();
     let root = parse_document(&arena, &s, &ComrakOptions::default());
     let mut output = vec![];
@@ -1457,15 +1457,15 @@ fn exercise_full_api<'a>() {
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
         fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-            String::from(format!("{}{}", lang.unwrap(), code))
+            format!("{}{}", lang.unwrap(), code)
         }
 
         fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("pre", &attributes)
+            build_opening_tag("pre", attributes)
         }
 
         fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("code", &attributes)
+            build_opening_tag("code", attributes)
         }
     }
 

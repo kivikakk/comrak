@@ -619,7 +619,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.total_size += s.len();
         }
 
-        if self.last_buffer_ended_with_cr && s.len() > 0 && s[0] == b'\n' {
+        if self.last_buffer_ended_with_cr && !s.is_empty() && s[0] == b'\n' {
             buffer += 1;
         }
         self.last_buffer_ended_with_cr = false;
@@ -670,18 +670,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             if process {
                 if !linebuf.is_empty() {
                     linebuf.extend_from_slice(&s[buffer..eol]);
-                    self.process_line(&linebuf);
+                    self.process_line(linebuf);
                     linebuf.truncate(0);
                 } else {
                     self.process_line(&s[buffer..eol]);
                 }
+            } else if eol < end && s[eol] == b'\0' {
+                linebuf.extend_from_slice(&s[buffer..eol]);
+                linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
             } else {
-                if eol < end && s[eol] == b'\0' {
-                    linebuf.extend_from_slice(&s[buffer..eol]);
-                    linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
-                } else {
-                    linebuf.extend_from_slice(&s[buffer..eol]);
-                }
+                linebuf.extend_from_slice(&s[buffer..eol]);
             }
 
             buffer = eol;
@@ -804,7 +802,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         if self.line_number == 0
             && line.len() >= 3
-            && unsafe { str::from_utf8_unchecked(line) }.starts_with("\u{feff}")
+            && unsafe { str::from_utf8_unchecked(line) }.starts_with('\u{feff}')
         {
             self.offset += 3;
         }
@@ -935,7 +933,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-                *container = self.add_child(*container, NodeValue::BlockQuote);
+                *container = self.add_child(container, NodeValue::BlockQuote);
             } else if !indented
                 && unwrap_into(
                     scanners::atx_heading_start(&line[self.first_nonspace..]),
@@ -945,7 +943,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
-                *container = self.add_child(*container, NodeValue::Heading(NodeHeading::default()));
+                *container = self.add_child(container, NodeValue::Heading(NodeHeading::default()));
 
                 let mut hashpos = line[self.first_nonspace..]
                     .iter()
@@ -978,7 +976,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     info: String::with_capacity(10),
                     literal: String::new(),
                 };
-                *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
+                *container = self.add_child(container, NodeValue::CodeBlock(ncb));
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented
                 && (unwrap_into(
@@ -995,7 +993,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     literal: String::new(),
                 };
 
-                *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
+                *container = self.add_child(container, NodeValue::HtmlBlock(nhb));
             } else if !indented
                 && node_matches!(container, NodeValue::Paragraph)
                 && unwrap_into(
@@ -1026,7 +1024,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && self.thematic_break_kill_pos <= self.first_nonspace
                 && unwrap_into(self.scan_thematic_break(line), &mut matched)
             {
-                *container = self.add_child(*container, NodeValue::ThematicBreak);
+                *container = self.add_child(container, NodeValue::ThematicBreak);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
             } else if !indented
@@ -1041,7 +1039,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 *container = self.add_child(
-                    *container,
+                    container,
                     NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
                 );
             } else if !indented
@@ -1077,7 +1075,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 }
 
                 let i = self.column - save_column;
-                if i >= 5 || i < 1 || strings::is_line_end_char(line[self.offset]) {
+                if !(1..5).contains(&i) || strings::is_line_end_char(line[self.offset]) {
                     nl.padding = matched + 1;
                     self.offset = save_offset;
                     self.column = save_column;
@@ -1095,10 +1093,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
                     _ => true,
                 } {
-                    *container = self.add_child(*container, NodeValue::List(nl));
+                    *container = self.add_child(container, NodeValue::List(nl));
                 }
 
-                *container = self.add_child(*container, NodeValue::Item(nl));
+                *container = self.add_child(container, NodeValue::Item(nl));
             } else if indented && !maybe_lazy && !self.blank {
                 self.advance_offset(line, CODE_INDENT, true);
                 let ncb = NodeCodeBlock {
@@ -1109,10 +1107,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     info: String::new(),
                     literal: String::new(),
                 };
-                *container = self.add_child(*container, NodeValue::CodeBlock(ncb));
+                *container = self.add_child(container, NodeValue::CodeBlock(ncb));
             } else {
                 let new_container = if !indented && self.options.extension.table {
-                    table::try_opening_block(self, *container, line)
+                    table::try_opening_block(self, container, line)
                 } else {
                     None
                 };
@@ -1500,14 +1498,14 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-        self.finalize_borrowed(node, &mut *node.data.borrow_mut())
+        self.finalize_borrowed(node, &mut node.data.borrow_mut())
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
         {
             let mut pos = 0;
-            let mut seek: &[u8] = &*content.as_bytes();
+            let mut seek: &[u8] = content.as_bytes();
             while !seek.is_empty()
                 && seek[0] == b'['
                 && unwrap_into(self.parse_reference_inline(seek), &mut pos)
@@ -1633,7 +1631,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
         let delimiter_arena = Arena::new();
         let node_data = node.data.borrow();
-        let content = strings::rtrim_slice(&node_data.content.as_bytes());
+        let content = strings::rtrim_slice(node_data.content.as_bytes());
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -1658,7 +1656,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         Self::find_footnote_references(self.root, &mut map, &mut ix);
 
         if ix > 0 {
-            let mut v = map.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+            let mut v = map.into_values().collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
             for f in v {
                 if let Some(ix) = f.ix {
@@ -1902,7 +1900,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         lab = strings::normalize_label(&lab);
         if !lab.is_empty() {
             subj.refmap.map.entry(lab).or_insert(Reference {
-                url: String::from_utf8(strings::clean_url(&url)).unwrap(),
+                url: String::from_utf8(strings::clean_url(url)).unwrap(),
                 title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });
         }
@@ -2061,23 +2059,19 @@ fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AutolinkType {
-    URI,
+    Uri,
     Email,
 }
 
 #[derive(Debug, Clone, Copy)]
 /// Options for bulleted list redering in markdown. See `link_style` in [ComrakRenderOptions] for more details.
+#[derive(Default)]
 pub enum ListStyleType {
     /// The `-` character
+    #[default]
     Dash = 45,
     /// The `+` character
     Plus = 43,
     /// The `*` character
     Star = 42,
-}
-
-impl Default for ListStyleType {
-    fn default() -> Self {
-        ListStyleType::Dash
-    }
 }

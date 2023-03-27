@@ -927,7 +927,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             let inl = make_autolink(
                 self.arena,
                 &self.input[self.pos..self.pos + matchlen - 1],
-                AutolinkType::URI,
+                AutolinkType::Uri,
             );
             self.pos += matchlen;
             return inl;
@@ -955,12 +955,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         matchlen = Some(4);
                     } else if self.input[self.pos + 3] == b'-' && self.input[self.pos + 4] == b'>' {
                         matchlen = Some(5);
+                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
+                        matchlen = Some(m + 1);
                     } else {
-                        if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
-                            matchlen = Some(m + 1);
-                        } else {
-                            self.flags.skip_html_comment = true;
-                        }
+                        self.flags.skip_html_comment = true;
                     }
                 } else if c == b'[' {
                     if !self.flags.skip_html_cdata {

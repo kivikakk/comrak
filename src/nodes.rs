@@ -233,35 +233,25 @@ pub struct NodeDescriptionItem {
 }
 
 /// The type of list.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum ListType {
     /// A bullet list, i.e. an unordered list.
+    #[default]
     Bullet,
 
     /// An ordered list.
     Ordered,
 }
 
-impl Default for ListType {
-    fn default() -> ListType {
-        ListType::Bullet
-    }
-}
-
 /// The delimiter for ordered lists, i.e. the character which appears after each number.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum ListDelimType {
     /// A period character `.`.
+    #[default]
     Period,
 
     /// A paren character `)`.
     Paren,
-}
-
-impl Default for ListDelimType {
-    fn default() -> ListDelimType {
-        ListDelimType::Period
-    }
 }
 
 /// The metadata and data of a code block (fenced or indented).

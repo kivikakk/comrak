@@ -34,7 +34,7 @@ fn large() {
 
     iter_nodes(root, &|node| {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-            let orig = std::mem::replace(text, String::new());
+            let orig = std::mem::take(text);
             *text = orig.replace("my", "your");
         }
     });

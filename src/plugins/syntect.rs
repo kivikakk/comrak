@@ -25,7 +25,7 @@ impl<'a> SyntectAdapter<'a> {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
     pub fn new(theme: &'a str) -> Self {
         SyntectAdapter {
-            theme: &theme,
+            theme,
             syntax_set: SyntaxSet::load_defaults_newlines(),
             theme_set: ThemeSet::load_defaults(),
         }

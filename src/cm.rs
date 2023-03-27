@@ -9,7 +9,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::ComrakOptions;
 use crate::scanners;
 use crate::{nodes, ComrakPlugins};
-use std;
+
 use std::cmp::max;
 use std::io::{self, Write};
 
@@ -58,7 +58,7 @@ struct CommonMarkFormatter<'a, 'o> {
 enum Escaping {
     Literal,
     Normal,
-    URL,
+    Url,
     Title,
 }
 
@@ -209,7 +209,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                         && (c == b'.' || c == b')')
                         && follows_digit
                         && (nextc == 0 || isspace(nextc)))))
-                || (escaping == Escaping::URL
+                || (escaping == Escaping::Url
                     && (c == b'`'
                         || c == b'<'
                         || c == b'>'
@@ -221,7 +221,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     && (c == b'`' || c == b'<' || c == b'>' || c == b'"' || c == b'\\')));
 
         if needs_escaping {
-            if escaping == Escaping::URL && isspace(c) {
+            if escaping == Escaping::Url && isspace(c) {
                 write!(self.v, "%{:2X}", c).unwrap();
                 self.column += 3;
             } else if ispunct(c) {
@@ -310,7 +310,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
         match node.data.borrow().value {
             NodeValue::Document => (),
-            NodeValue::FrontMatter(ref fm) => self.format_front_matter(&fm.as_bytes(), entering),
+            NodeValue::FrontMatter(ref fm) => self.format_front_matter(fm.as_bytes(), entering),
             NodeValue::BlockQuote => self.format_block_quote(entering),
             NodeValue::List(..) => self.format_list(node, entering),
             NodeValue::Item(..) => self.format_item(node, entering),
@@ -324,15 +324,15 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::ThematicBreak => self.format_thematic_break(entering),
             NodeValue::Paragraph => self.format_paragraph(entering),
             NodeValue::Text(ref literal) => {
-                self.format_text(&literal.as_bytes(), allow_wrap, entering)
+                self.format_text(literal.as_bytes(), allow_wrap, entering)
             }
             NodeValue::LineBreak => self.format_line_break(entering),
             NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering),
             NodeValue::Code(ref code) => {
-                self.format_code(&code.literal.as_bytes(), allow_wrap, entering)
+                self.format_code(code.literal.as_bytes(), allow_wrap, entering)
             }
             NodeValue::HtmlInline(ref literal) => {
-                self.format_html_inline(&literal.as_bytes(), entering)
+                self.format_html_inline(literal.as_bytes(), entering)
             }
             NodeValue::Strong => self.format_strong(),
             NodeValue::Emph => self.format_emph(node),
@@ -348,7 +348,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::TableCell => self.format_table_cell(node, entering),
             NodeValue::FootnoteDefinition(_) => self.format_footnote_definition(entering),
             NodeValue::FootnoteReference(ref r) => {
-                self.format_footnote_reference(&r.as_bytes(), entering)
+                self.format_footnote_reference(r.as_bytes(), entering)
             }
         };
         true
@@ -485,21 +485,21 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             {
                 write!(self, "    ").unwrap();
                 write!(self.prefix, "    ").unwrap();
-                self.write_all(&literal).unwrap();
+                self.write_all(literal).unwrap();
                 let new_len = self.prefix.len() - 4;
                 self.prefix.truncate(new_len);
             } else {
                 let fence_char = if info.contains(&b'`') { b'~' } else { b'`' };
-                let numticks = max(3, longest_char_sequence(&literal, fence_char) + 1);
+                let numticks = max(3, longest_char_sequence(literal, fence_char) + 1);
                 for _ in 0..numticks {
                     write!(self, "{}", fence_char as char).unwrap();
                 }
                 if !info.is_empty() {
                     write!(self, " ").unwrap();
-                    self.write_all(&info).unwrap();
+                    self.write_all(info).unwrap();
                 }
                 self.cr();
-                self.write_all(&literal).unwrap();
+                self.write_all(literal).unwrap();
                 self.cr();
                 for _ in 0..numticks {
                     write!(self, "{}", fence_char as char).unwrap();
@@ -512,7 +512,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_html_block(&mut self, nhb: &NodeHtmlBlock, entering: bool) {
         if entering {
             self.blankline();
-            self.write_all(&nhb.literal.as_bytes()).unwrap();
+            self.write_all(nhb.literal.as_bytes()).unwrap();
             self.blankline();
         }
     }
@@ -635,16 +635,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             write!(self, "[").unwrap();
         } else {
             write!(self, "](").unwrap();
-            self.output(&nl.url.as_bytes(), false, Escaping::URL);
+            self.output(nl.url.as_bytes(), false, Escaping::Url);
             if !nl.title.is_empty() {
                 write!(self, " \"").unwrap();
-                self.output(&nl.title.as_bytes(), false, Escaping::Title);
+                self.output(nl.title.as_bytes(), false, Escaping::Title);
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
         }
 
-        return true;
+        true
     }
 
     fn format_image(&mut self, nl: &NodeLink, allow_wrap: bool, entering: bool) {
@@ -652,10 +652,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             write!(self, "![").unwrap();
         } else {
             write!(self, "](").unwrap();
-            self.output(&nl.url.as_bytes(), false, Escaping::URL);
+            self.output(nl.url.as_bytes(), false, Escaping::Url);
             if !nl.title.is_empty() {
                 self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
-                self.output(&nl.title.as_bytes(), false, Escaping::Title);
+                self.output(nl.title.as_bytes(), false, Escaping::Title);
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
@@ -795,7 +795,7 @@ fn shortest_unused_sequence(literal: &[u8], f: u8) -> usize {
 }
 
 fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
-    if nl.url.is_empty() || scanners::scheme(&nl.url.as_bytes()).is_none() {
+    if nl.url.is_empty() || scanners::scheme(nl.url.as_bytes()).is_none() {
         return false;
     }
 

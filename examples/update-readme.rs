@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
                 let mut content = HELP.to_string();
                 let mut cmd = std::process::Command::new("cargo");
                 content.push_str(
-                    str::from_utf8(&cmd.args(&["run", "--", "--help"]).output().unwrap().stdout)
+                    str::from_utf8(&cmd.args(["run", "--", "--help"]).output().unwrap().stdout)
                         .unwrap(),
                 );
                 ncb.literal = content;

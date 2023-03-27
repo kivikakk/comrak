@@ -7,8 +7,8 @@ use crate::strings::trim;
 use std::cell::RefCell;
 use std::cmp::min;
 
-pub fn try_opening_block<'a, 'o, 'c>(
-    parser: &mut Parser<'a, 'o, 'c>,
+pub fn try_opening_block<'a>(
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
@@ -24,8 +24,8 @@ pub fn try_opening_block<'a, 'o, 'c>(
     }
 }
 
-fn try_opening_header<'a, 'o, 'c>(
-    parser: &mut Parser<'a, 'o, 'c>,
+fn try_opening_header<'a>(
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
@@ -39,7 +39,7 @@ fn try_opening_header<'a, 'o, 'c>(
 
     let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
-    let header_row = match row(&container.data.borrow().content.as_bytes()) {
+    let header_row = match row(container.data.borrow().content.as_bytes()) {
         Some(header_row) => header_row,
         None => return Some((container, false, true)),
     };
@@ -52,7 +52,7 @@ fn try_opening_header<'a, 'o, 'c>(
         try_inserting_table_header_paragraph(
             parser,
             container,
-            &container.data.borrow().content.as_bytes(),
+            container.data.borrow().content.as_bytes(),
             header_row.paragraph_offset,
         );
     }
@@ -90,8 +90,8 @@ fn try_opening_header<'a, 'o, 'c>(
     Some((table, true, false))
 }
 
-fn try_opening_row<'a, 'o, 'c>(
-    parser: &mut Parser<'a, 'o, 'c>,
+fn try_opening_row<'a>(
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
     line: &[u8],
@@ -173,8 +173,8 @@ fn row(string: &[u8]) -> Option<Row> {
     }
 }
 
-fn try_inserting_table_header_paragraph<'a, 'o, 'c>(
-    parser: &mut Parser<'a, 'o, 'c>,
+fn try_inserting_table_header_paragraph<'a>(
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     parent_string: &[u8],
     paragraph_offset: usize,
@@ -182,7 +182,7 @@ fn try_inserting_table_header_paragraph<'a, 'o, 'c>(
     let mut paragraph_content = unescape_pipes(&parent_string[..paragraph_offset]);
     trim(&mut paragraph_content);
 
-    if !container.parent().is_some()
+    if container.parent().is_none()
         || !nodes::can_contain_type(container.parent().unwrap(), &NodeValue::Paragraph)
     {
         return;
