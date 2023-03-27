@@ -1,6 +1,3 @@
-// TODO: consider dropping all the #[inline(always)], we probably don't know
-// better than rustc.
-
 /*!re2c
     re2c:case-insensitive    = 1;
     re2c:encoding:utf8       = 1;
