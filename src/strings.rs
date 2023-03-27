@@ -184,7 +184,7 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
     i
 }
 
-pub fn shift_buf_left(buf: &mut [u8], n: usize) {
+fn shift_buf_left(buf: &mut [u8], n: usize) {
     assert!(n <= buf.len());
     let keep = buf.len() - n;
     unsafe {

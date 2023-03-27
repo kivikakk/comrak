@@ -14,7 +14,7 @@ use crate::nodes::{
     NodeHtmlBlock, NodeList, NodeValue,
 };
 use crate::scanners;
-use crate::strings::{self, shift_buf_left};
+use crate::strings;
 use once_cell::sync::OnceCell;
 use regex::{Regex, RegexBuilder};
 use std::cell::RefCell;
@@ -1577,8 +1577,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         pos += 1;
                     }
 
-                    shift_buf_left(unsafe { content.as_bytes_mut() }, pos);
-                    content.truncate(content.len() - pos);
+                    content.drain(..pos);
                 }
                 mem::swap(&mut ncb.literal, content);
             }
@@ -1827,8 +1826,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             return;
         }
 
-        shift_buf_left(unsafe { text.as_bytes_mut() }, end);
-        text.truncate(text.len() - end);
+        text.drain(..end);
 
         let checkbox = inlines::make_inline(
             self.arena,
