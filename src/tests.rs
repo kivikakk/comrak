@@ -3,12 +3,13 @@ use crate::plugins::syntect::SyntectAdapter;
 use crate::{
     adapters::SyntaxHighlighterAdapter,
     adapters::{HeadingAdapter, HeadingMeta},
-    cm, format_commonmark, format_html, format_html_with_plugins, html, markdown_to_html, nodes,
+    cm, format_commonmark, format_html, format_html_with_plugins, html,
+    html::build_opening_tag,
+    markdown_to_html, nodes,
     nodes::{AstNode, NodeCode, NodeValue},
-    parse_document, parse_document_with_broken_link_callback,
-    strings::build_opening_tag,
-    Anchorizer, Arena, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins,
-    ComrakRenderOptions, ComrakRenderPlugins, ListStyleType,
+    parse_document, parse_document_with_broken_link_callback, Anchorizer, Arena,
+    ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
+    ComrakRenderPlugins, ListStyleType,
 };
 use ntest::timeout;
 use std::collections::HashMap;
@@ -1578,4 +1579,39 @@ fn exercise_full_api<'a>() {
             let _: &Vec<u8> = name;
         }
     }
+}
+
+#[test]
+fn regression_424() {
+    html(
+        "*text* [link](#section)",
+        "<p><em>text</em> <a href=\"#section\">link</a></p>\n",
+    );
+}
+
+#[test]
+fn example_61() {
+    html(
+        r##"
+`Foo
+----
+`
+
+<a title="a lot
+---
+of dashes"/>
+"##,
+        r##"<h2>`Foo</h2>
+<p>`</p>
+<h2>&lt;a title=&quot;a lot</h2>
+<p>of dashes&quot;/&gt;</p>
+"##,
+    );
+}
+
+#[test]
+fn nul_at_eof() {
+    html("foo\0", "<p>foo\u{fffd}</p>\n");
+    html("foo\0ba", "<p>foo\u{fffd}ba</p>\n");
+    html("foo\0ba\0", "<p>foo\u{fffd}ba\u{fffd}</p>\n");
 }

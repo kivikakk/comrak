@@ -11,7 +11,7 @@ pub fn try_opening_block<'a, 'o, 'c>(
     parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
     let aligns = match container.data.borrow().value {
         NodeValue::Paragraph => None,
         NodeValue::Table(ref aligns) => Some(aligns.clone()),
@@ -28,20 +28,24 @@ fn try_opening_header<'a, 'o, 'c>(
     parser: &mut Parser<'a, 'o, 'c>,
     container: &'a AstNode<'a>,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
-    if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
-        return Some((container, false));
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
+    if container.data.borrow().table_visited {
+        return Some((container, false, false));
     }
 
-    let header_row = match row(&container.data.borrow().content) {
-        Some(header_row) => header_row,
-        None => return Some((container, false)),
-    };
+    if scanners::table_start(&line[parser.first_nonspace..]).is_none() {
+        return Some((container, false, false));
+    }
 
     let marker_row = row(&line[parser.first_nonspace..]).unwrap();
 
+    let header_row = match row(&container.data.borrow().content) {
+        Some(header_row) => header_row,
+        None => return Some((container, false, true)),
+    };
+
     if header_row.cells.len() != marker_row.cells.len() {
-        return Some((container, false));
+        return Some((container, false, true));
     }
 
     if header_row.paragraph_offset > 0 {
@@ -82,7 +86,7 @@ fn try_opening_header<'a, 'o, 'c>(
     let offset = line.len() - 1 - parser.offset;
     parser.advance_offset(line, offset, false);
 
-    Some((table, true))
+    Some((table, true, false))
 }
 
 fn try_opening_row<'a, 'o, 'c>(
@@ -90,7 +94,7 @@ fn try_opening_row<'a, 'o, 'c>(
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool)> {
+) -> Option<(&'a AstNode<'a>, bool, bool)> {
     if parser.blank {
         return None;
     }
@@ -112,7 +116,7 @@ fn try_opening_row<'a, 'o, 'c>(
     let offset = line.len() - 1 - parser.offset;
     parser.advance_offset(line, offset, false);
 
-    Some((new_row, false))
+    Some((new_row, false, false))
 }
 
 struct Row {
@@ -123,41 +127,38 @@ struct Row {
 fn row(string: &[u8]) -> Option<Row> {
     let len = string.len();
     let mut cells = vec![];
-    let mut offset = 0;
 
-    if len > 0 && string[0] == b'|' {
-        offset += 1;
-    }
+    let mut offset = scanners::table_cell_end(string).unwrap_or(0);
 
     let mut paragraph_offset: usize = 0;
+    let mut expect_more_cells = true;
 
-    loop {
+    while offset < len && expect_more_cells {
         let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
-        let mut pipe_matched =
-            scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
+        let pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
-            let cell_end_offset = offset + cell_matched - 1;
-
-            if string[cell_end_offset] == b'\n' || string[cell_end_offset] == b'\r' {
-                paragraph_offset = cell_end_offset;
-                cells.clear();
-            } else {
-                let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
-                trim(&mut cell);
-                cells.push(cell);
-            }
+            let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
+            trim(&mut cell);
+            cells.push(cell);
         }
 
         offset += cell_matched + pipe_matched;
 
-        if pipe_matched == 0 {
-            pipe_matched = scanners::table_row_end(&string[offset..]).unwrap_or(0);
-            offset += pipe_matched;
-        }
+        if pipe_matched > 0 {
+            expect_more_cells = true;
+        } else {
+            let row_end_offset = scanners::table_row_end(&string[offset..]).unwrap_or(0);
+            offset += row_end_offset;
 
-        if !((cell_matched > 0 || pipe_matched > 0) && offset < len) {
-            break;
+            if row_end_offset > 0 && offset != len {
+                paragraph_offset = offset;
+                cells.clear();
+                offset += scanners::table_cell_end(&string[offset..]).unwrap_or(0);
+                expect_more_cells = true;
+            } else {
+                expect_more_cells = false;
+            }
         }
     }
 
@@ -165,8 +166,8 @@ fn row(string: &[u8]) -> Option<Row> {
         None
     } else {
         Some(Row {
-            paragraph_offset: paragraph_offset,
-            cells: cells,
+            paragraph_offset,
+            cells,
         })
     }
 }

@@ -154,22 +154,31 @@ pub fn trim(line: &mut Vec<u8>) {
     rtrim(line);
 }
 
+pub fn ltrim_slice(mut i: &[u8]) -> &[u8] {
+    while let [first, rest @ ..] = i {
+        if isspace(*first) {
+            i = rest;
+        } else {
+            break;
+        }
+    }
+    i
+}
+
 pub fn rtrim_slice(mut i: &[u8]) -> &[u8] {
-    let mut len = i.len();
-    while len > 0 && isspace(i[len - 1]) {
-        i = &i[..len - 1];
-        len -= 1;
+    while let [rest @ .., last] = i {
+        if isspace(*last) {
+            i = rest;
+        } else {
+            break;
+        }
     }
     i
 }
 
 pub fn trim_slice(mut i: &[u8]) -> &[u8] {
+    i = ltrim_slice(i);
     i = rtrim_slice(i);
-    let mut len = i.len();
-    while len > 0 && isspace(i[0]) {
-        i = &i[1..];
-        len -= 1;
-    }
     i
 }
 
@@ -248,18 +257,6 @@ pub fn normalize_label(i: &[u8]) -> Vec<u8> {
         }
     }
     v.into_bytes()
-}
-
-pub fn build_opening_tag(tag: &str, attributes: &HashMap<String, String>) -> String {
-    let mut tag_parts = vec![format!("<{}", tag)];
-
-    for (attr, val) in attributes {
-        tag_parts.push(format!(" {}=\"{}\"", attr, val));
-    }
-
-    tag_parts.push(String::from(">"));
-
-    tag_parts.join("")
 }
 
 #[cfg(feature = "syntect")]

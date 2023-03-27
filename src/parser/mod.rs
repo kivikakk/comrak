@@ -31,8 +31,11 @@ const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 macro_rules! node_matches {
-    ($node:expr, $pat:pat) => {{
-        matches!($node.data.borrow().value, $pat)
+    ($node:expr, $( $pat:pat )|+) => {{
+        matches!(
+            $node.data.borrow().value,
+            $( $pat )|+
+        )
     }};
 }
 
@@ -99,10 +102,12 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         start_line: 0,
         open: true,
         last_line_blank: false,
+        table_visited: false,
     })));
     let mut parser = Parser::new(arena, root, options, callback);
-    parser.feed(buffer);
-    parser.finish()
+    let mut linebuf = Vec::with_capacity(buffer.len());
+    parser.feed(&mut linebuf, buffer, true);
+    parser.finish(linebuf)
 }
 
 type Callback<'c> = &'c mut dyn FnMut(&[u8]) -> Option<(Vec<u8>, Vec<u8>)>;
@@ -115,12 +120,14 @@ pub struct Parser<'a, 'o, 'c> {
     line_number: u32,
     offset: usize,
     column: usize,
+    thematic_break_kill_pos: usize,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
     last_line_length: usize,
+    last_buffer_ended_with_cr: bool,
     options: &'o ComrakOptions,
     callback: Option<Callback<'c>>,
 }
@@ -585,20 +592,27 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             line_number: 0,
             offset: 0,
             column: 0,
+            thematic_break_kill_pos: 0,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
             last_line_length: 0,
+            last_buffer_ended_with_cr: false,
             options,
             callback,
         }
     }
 
-    fn feed(&mut self, s: &str) {
-        let mut i = 0;
+    fn feed(&mut self, linebuf: &mut Vec<u8>, s: &str, eof: bool) {
+        let mut buffer = 0;
         let s = s.as_bytes();
+
+        if self.last_buffer_ended_with_cr && s.len() > 0 && s[0] == b'\n' {
+            buffer += 1;
+        }
+        self.last_buffer_ended_with_cr = false;
 
         if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
             let front_matter_pattern = RegexBuilder::new(&format!(
@@ -609,81 +623,144 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             .dot_matches_new_line(true)
             .build()
             .unwrap();
-            if let Some(front_matter_size) = front_matter_pattern.shortest_match(s) {
-                i += front_matter_size;
-                let node = self.add_child(self.root, NodeValue::FrontMatter(s[..i].to_vec()));
+            if let Some(front_matter_size) = front_matter_pattern.shortest_match(&s[buffer..]) {
+                let node = self.add_child(
+                    self.root,
+                    NodeValue::FrontMatter(s[buffer..buffer + front_matter_size].to_vec()),
+                );
+                buffer += front_matter_size;
                 self.finalize(node).unwrap();
             }
         }
 
-        let sz = s.len();
-        let mut linebuf = vec![];
+        let end = s.len();
 
-        while i < sz {
-            let mut process = true;
-            let mut eol = i;
-            while eol < sz {
+        while buffer < end {
+            let mut process = false;
+            let mut eol = buffer;
+            while eol < end {
                 if strings::is_line_end_char(s[eol]) {
+                    process = true;
                     break;
                 }
                 if s[eol] == 0 {
-                    process = false;
                     break;
                 }
                 eol += 1;
             }
 
+            if eol >= end && eof {
+                process = true;
+            }
+
             if process {
                 if !linebuf.is_empty() {
-                    linebuf.extend_from_slice(&s[i..eol]);
+                    linebuf.extend_from_slice(&s[buffer..eol]);
                     self.process_line(&linebuf);
                     linebuf.truncate(0);
-                } else if sz > eol && s[eol] == b'\n' {
-                    self.process_line(&s[i..eol + 1]);
                 } else {
-                    self.process_line(&s[i..eol]);
-                }
-
-                i = eol;
-                if i < sz && s[i] == b'\r' {
-                    i += 1;
-                }
-                if i < sz && s[i] == b'\n' {
-                    i += 1;
+                    self.process_line(&s[buffer..eol]);
                 }
             } else {
-                debug_assert!(eol < sz && s[eol] == b'\0');
-                linebuf.extend_from_slice(&s[i..eol]);
-                linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
-                i = eol + 1;
+                if eol < end && s[eol] == b'\0' {
+                    linebuf.extend_from_slice(&s[buffer..eol]);
+                    linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
+                } else {
+                    linebuf.extend_from_slice(&s[buffer..eol]);
+                }
+            }
+
+            buffer = eol;
+            if buffer < end {
+                if s[buffer] == b'\0' {
+                    buffer += 1;
+                } else {
+                    if s[buffer] == b'\r' {
+                        buffer += 1;
+                        if buffer == end {
+                            self.last_buffer_ended_with_cr = true;
+                        }
+                    }
+                    if buffer < end && s[buffer] == b'\n' {
+                        buffer += 1;
+                    }
+                }
             }
         }
     }
 
-    fn find_first_nonspace(&mut self, line: &[u8]) {
-        self.first_nonspace = self.offset;
-        self.first_nonspace_column = self.column;
-        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+    fn scan_thematic_break_inner(&mut self, line: &[u8]) -> (usize, bool) {
+        let mut i = self.first_nonspace;
 
+        if i >= line.len() {
+            return (i, false);
+        }
+
+        let c = line[i];
+        if c != b'*' && c != b'_' && c != b'-' {
+            return (i, false);
+        }
+
+        let mut count = 1;
+        let mut nextc;
         loop {
-            if self.first_nonspace >= line.len() {
+            i += 1;
+            if i >= line.len() {
+                return (i, false);
+            }
+            nextc = line[i];
+
+            if nextc == c {
+                count += 1;
+            } else if nextc != b' ' && nextc != b'\t' {
                 break;
             }
-            match line[self.first_nonspace] {
-                32 => {
-                    self.first_nonspace += 1;
-                    self.first_nonspace_column += 1;
-                    chars_to_tab -= 1;
-                    if chars_to_tab == 0 {
+        }
+
+        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+            ((i - self.first_nonspace) + 1, true)
+        } else {
+            (i, false)
+        }
+    }
+
+    fn scan_thematic_break(&mut self, line: &[u8]) -> Option<usize> {
+        let (offset, found) = self.scan_thematic_break_inner(line);
+        if !found {
+            self.thematic_break_kill_pos = offset;
+            None
+        } else {
+            Some(offset)
+        }
+    }
+
+    fn find_first_nonspace(&mut self, line: &[u8]) {
+        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+
+        if self.first_nonspace <= self.offset {
+            self.first_nonspace = self.offset;
+            self.first_nonspace_column = self.column;
+
+            loop {
+                if self.first_nonspace >= line.len() {
+                    break;
+                }
+                match line[self.first_nonspace] {
+                    32 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += 1;
+                        chars_to_tab -= 1;
+                        if chars_to_tab == 0 {
+                            chars_to_tab = TAB_STOP;
+                        }
+                    }
+                    9 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += chars_to_tab;
                         chars_to_tab = TAB_STOP;
                     }
+                    _ => break,
                 }
-                9 => {
-                    self.first_nonspace += 1;
-                    self.first_nonspace_column += chars_to_tab;
-                    chars_to_tab = TAB_STOP;
-                }
-                _ => break,
             }
         }
 
@@ -704,6 +781,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         self.offset = 0;
         self.column = 0;
+        self.first_nonspace = 0;
+        self.first_nonspace_column = 0;
+        self.indent = 0;
+        self.thematic_break_kill_pos = 0;
         self.blank = false;
         self.partially_consumed_tab = false;
 
@@ -825,10 +906,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = matches!(self.current.data.borrow().value, NodeValue::Paragraph);
+        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
 
-        while !matches!(
-            container.data.borrow().value,
+        while !node_matches!(
+            container,
             NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
         ) {
             self.find_first_nonspace(line);
@@ -889,13 +970,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && (unwrap_into(
                     scanners::html_block_start(&line[self.first_nonspace..]),
                     &mut matched,
-                ) || match container.data.borrow().value {
-                    NodeValue::Paragraph => false,
-                    _ => unwrap_into(
+                ) || (!node_matches!(container, NodeValue::Paragraph)
+                    && unwrap_into(
                         scanners::html_block_start_7(&line[self.first_nonspace..]),
                         &mut matched,
-                    ),
-                })
+                    )))
             {
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
@@ -904,13 +983,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                 *container = self.add_child(*container, NodeValue::HtmlBlock(nhb));
             } else if !indented
-                && match container.data.borrow().value {
-                    NodeValue::Paragraph => unwrap_into(
-                        scanners::setext_heading_line(&line[self.first_nonspace..]),
-                        &mut sc,
-                    ),
-                    _ => false,
-                }
+                && node_matches!(container, NodeValue::Paragraph)
+                && unwrap_into(
+                    scanners::setext_heading_line(&line[self.first_nonspace..]),
+                    &mut sc,
+                )
             {
                 let has_content = {
                     let mut ast = container.data.borrow_mut();
@@ -928,13 +1005,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     self.advance_offset(line, adv, false);
                 }
             } else if !indented
-                && match (&container.data.borrow().value, all_matched) {
-                    (&NodeValue::Paragraph, false) => false,
-                    _ => unwrap_into(
-                        scanners::thematic_break(&line[self.first_nonspace..]),
-                        &mut matched,
-                    ),
-                }
+                && !matches!(
+                    (&container.data.borrow().value, all_matched),
+                    (&NodeValue::Paragraph, false)
+                )
+                && self.thematic_break_kill_pos <= self.first_nonspace
+                && unwrap_into(self.scan_thematic_break(line), &mut matched)
             {
                 *container = self.add_child(*container, NodeValue::ThematicBreak);
                 let adv = line.len() - 1 - self.offset;
@@ -961,13 +1037,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if (!indented || matches!(container.data.borrow().value, NodeValue::List(..)))
+            } else if (!indented || node_matches!(container, NodeValue::List(..)))
                 && self.indent < 4
                 && unwrap_into_2(
                     parse_list_marker(
                         line,
                         self.first_nonspace,
-                        matches!(container.data.borrow().value, NodeValue::Paragraph),
+                        node_matches!(container, NodeValue::Paragraph),
                     ),
                     &mut matched,
                     &mut nl,
@@ -1025,13 +1101,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 };
 
                 match new_container {
-                    Some((new_container, replace)) => {
+                    Some((new_container, replace, mark_visited)) => {
                         if replace {
                             container.insert_after(new_container);
                             container.detach();
                             *container = new_container;
                         } else {
                             *container = new_container;
+                        }
+                        if mark_visited {
+                            container.data.borrow_mut().table_visited = true;
                         }
                     }
                     _ => break,
@@ -1281,7 +1360,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
             && !self.blank
-            && matches!(self.current.data.borrow().value, NodeValue::Paragraph)
+            && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);
         } else {
@@ -1373,7 +1452,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn finish(&mut self) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: Vec<u8>) -> &'a AstNode<'a> {
+        if !remaining.is_empty() {
+            self.process_line(&remaining);
+        }
+
         self.finalize_document();
         self.postprocess_text_nodes(self.root);
         self.root
@@ -1488,8 +1571,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                     let mut subch = item.first_child();
                     while let Some(subitem) = subch {
-                        if nodes::ends_with_blank_line(subitem)
-                            && (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                        if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                            && nodes::ends_with_blank_line(subitem)
                         {
                             nl.tight = false;
                             break;
@@ -1537,7 +1620,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         while subj.parse_inline(node) {}
 
-        subj.process_emphasis(None);
+        subj.process_emphasis(0);
 
         while subj.pop_bracket() {}
     }
@@ -1704,14 +1787,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             return;
         }
 
-        match parent.data.borrow().value {
-            NodeValue::Paragraph => (),
-            _ => return,
+        if !node_matches!(parent, NodeValue::Paragraph) {
+            return;
         }
 
-        match parent.parent().unwrap().data.borrow().value {
-            NodeValue::Item(..) => (),
-            _ => return,
+        if !node_matches!(parent.parent().unwrap(), NodeValue::Item(..)) {
+            return;
         }
 
         *text = text[end..].to_vec();

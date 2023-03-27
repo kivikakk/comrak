@@ -387,6 +387,7 @@ pub struct Ast {
     pub(crate) content: Vec<u8>,
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
+    pub(crate) table_visited: bool,
 }
 
 impl Ast {
@@ -398,6 +399,7 @@ impl Ast {
             start_line: 0,
             open: true,
             last_line_blank: false,
+            table_visited: false,
         }
     }
 }
