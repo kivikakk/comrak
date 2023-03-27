@@ -1,6 +1,7 @@
 use crate::ctype::{ispunct, isspace};
 use crate::entity;
 use crate::parser::AutolinkType;
+#[cfg(feature = "syntect")]
 use std::collections::HashMap;
 use std::ptr;
 use std::str;
