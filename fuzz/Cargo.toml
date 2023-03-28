@@ -9,10 +9,8 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-
-[dependencies.comrak]
-path = ".."
-features = ["shortcodes"]
+arbitrary = { version = "1", features = ["derive"] }
+comrak = { path = "..", features = ["shortcodes", "arbitrary"] }
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -22,7 +20,13 @@ members = ["."]
 debug = 1
 
 [[bin]]
-name = "markdown_to_html"
-path = "fuzz_targets/markdown_to_html.rs"
+name = "all_options"
+path = "fuzz_targets/all_options.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_options"
+path = "fuzz_targets/fuzz_options.rs"
 test = false
 doc = false
