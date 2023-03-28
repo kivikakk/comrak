@@ -30,3 +30,15 @@ name = "fuzz_options"
 path = "fuzz_targets/fuzz_options.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "cli_default"
+path = "fuzz_targets/cli_default.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "gfm"
+path = "fuzz_targets/gfm.rs"
+test = false
+doc = false
