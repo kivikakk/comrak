@@ -608,19 +608,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn feed(&mut self, linebuf: &mut Vec<u8>, mut s: &str, eof: bool) {
-        match (
+        if let (0, Some(delimiter)) = (
             self.total_size,
             &self.options.extension.front_matter_delimiter,
         ) {
-            (0, Some(delimiter)) => {
-                if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
-                    let node =
-                        self.add_child(self.root, NodeValue::FrontMatter(front_matter.to_string()));
-                    s = rest;
-                    self.finalize(node).unwrap();
-                }
+            if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
+                let node =
+                    self.add_child(self.root, NodeValue::FrontMatter(front_matter.to_string()));
+                s = rest;
+                self.finalize(node).unwrap();
             }
-            _ => {}
         }
 
         let s = s.as_bytes();

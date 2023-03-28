@@ -282,7 +282,7 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
         return None;
     }
     let mut start = delimiter.len();
-    if s[start..].starts_with("\n") {
+    if s[start..].starts_with('\n') {
         start += 1;
     } else if s[start..].starts_with("\r\n") {
         start += 2;
@@ -298,7 +298,7 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
         None => return None,
     };
 
-    start += if s[start..].starts_with("\n") {
+    start += if s[start..].starts_with('\n') {
         1
     } else if s[start..].starts_with("\r\n") {
         2
@@ -306,7 +306,7 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
         return None;
     };
 
-    start += if s[start..].starts_with("\n") {
+    start += if s[start..].starts_with('\n') {
         1
     } else if s[start..].starts_with("\r\n") {
         2
@@ -318,11 +318,7 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
 }
 
 pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
-    if s.starts_with(pat) {
-        &s[pat.len()..]
-    } else {
-        s
-    }
+    s.strip_prefix(pat).unwrap_or(s)
 }
 
 #[cfg(test)]
