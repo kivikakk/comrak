@@ -253,10 +253,8 @@ depending on your use-case. Here are some other projects to consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
-  want). `cargo doc` uses this, as do many other projects in the ecosystem.
-- [Ben Navetta](https://github.com/bnavetta)'s [`rcmark`](https://github.com/bnavetta/rcmark) is a set of bindings to
-  `libcmark`. It hasn't been updated in a while, though there's an [open pull
-  request](https://github.com/bnavetta/rcmark/pull/2).
+  want). `cargo doc` uses this, as do many other projects in the ecosystem.  It appears semi-maintained as of March 2023.
+- [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
 - Know of another library? Please open a PR to add it\!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
@@ -280,8 +278,8 @@ Thank you to comrak's many contributors for PRs and issues opened\!
 Become a financial contributor and help sustain Comrak's development.  I'm
 self-employed --- open-source software relies on the collective.
 
-* [GitHub Sponsors](https://github.com/sponsors/kivikakk)
-* [Open Collective](https://opencollective.com/comrak/contribute)
+- [GitHub Sponsors](https://github.com/sponsors/kivikakk)
+- [Open Collective](https://opencollective.com/comrak/contribute)
 
 #### Individuals
 
