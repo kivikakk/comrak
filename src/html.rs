@@ -858,6 +858,8 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::TaskItem(symbol) => {
                 if entering {
+                    self.cr()?;
+                    self.output.write_all(b"<li>")?;
                     write!(
                         self.output,
                         "<input type=\"checkbox\" disabled=\"\" {}/> ",
@@ -867,6 +869,8 @@ impl<'o> HtmlFormatter<'o> {
                             ""
                         }
                     )?;
+                } else {
+                    self.output.write_all(b"</li>\n")?;
                 }
             }
         }

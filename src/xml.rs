@@ -246,14 +246,6 @@ impl<'o> XmlFormatter<'o> {
                             write!(self.output, " align=\"{}\"", xml_align)?;
                         }
                     }
-
-                    // if let Some(header_row) = table.first_child() {
-                    //     if header_row == node {
-                    //         if let Some(alignment) = node.data.borrow().alignment {
-                    //             write!(self.output, " align=\"{}\"", alignment.xml_name())?;
-                    //         }
-                    //     }
-                    // }
                 }
                 NodeValue::FootnoteDefinition(_) => {
                     // TODO
@@ -282,18 +274,11 @@ impl<'o> XmlFormatter<'o> {
                     //     )?;
                     // }
                 }
-                NodeValue::TaskItem(_) => {
-                    // TODO
-                    // if entering {
-                    //     if checked {
-                    //         self.output.write_all(
-                    //             b"<input type=\"checkbox\" disabled=\"\" checked=\"\" /> ",
-                    //         )?;
-                    //     } else {
-                    //         self.output
-                    //             .write_all(b"<input type=\"checkbox\" disabled=\"\" /> ")?;
-                    //     }
-                    // }
+                NodeValue::TaskItem(Some(_)) => {
+                    self.output.write_all(b" completed=\"true\"")?;
+                }
+                NodeValue::TaskItem(None) => {
+                    self.output.write_all(b" completed=\"false\"")?;
                 }
                 #[cfg(feature = "shortcodes")]
                 NodeValue::ShortCode(_) => {

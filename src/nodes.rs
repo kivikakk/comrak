@@ -350,6 +350,7 @@ impl NodeValue {
                 | NodeValue::Table(..)
                 | NodeValue::TableRow(..)
                 | NodeValue::TableCell
+                | NodeValue::TaskItem(..)
         )
     }
 
@@ -511,9 +512,12 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::FootnoteDefinition(_)
         | NodeValue::DescriptionTerm
         | NodeValue::DescriptionDetails
-        | NodeValue::Item(..) => child.block() && !matches!(*child, NodeValue::Item(..)),
+        | NodeValue::Item(..)
+        | NodeValue::TaskItem(..) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+        }
 
-        NodeValue::List(..) => matches!(*child, NodeValue::Item(..)),
+        NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
 
         NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
 
@@ -574,7 +578,9 @@ pub(crate) fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
             return true;
         }
         match cur.data.borrow().value {
-            NodeValue::List(..) | NodeValue::Item(..) => it = cur.last_child(),
+            NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
+                it = cur.last_child()
+            }
             _ => it = None,
         };
     }

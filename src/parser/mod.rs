@@ -1819,11 +1819,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         text.drain(..end);
 
-        let checkbox = inlines::make_inline(
-            self.arena,
-            NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
-        );
-        node.insert_before(checkbox);
+        parent.parent().unwrap().data.borrow_mut().value =
+            NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
