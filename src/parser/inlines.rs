@@ -949,10 +949,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             let c = self.input[self.pos];
             if c == b'!' && !self.flags.skip_html_comment {
                 let c = self.input[self.pos + 1];
-                if c == b'-' && self.input[self.pos + 2] == b'-' {
-                    if self.input[self.pos + 3] == b'>' {
+                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
+                    if self.peek_char_n(3) == Some(&b'>') {
                         matchlen = Some(4);
-                    } else if self.input[self.pos + 3] == b'-' && self.input[self.pos + 4] == b'>' {
+                    } else if self.peek_char_n(3) == Some(&b'-') && self.peek_char_n(4) == Some(&b'>') {
                         matchlen = Some(5);
                     } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
                         matchlen = Some(m + 1);
@@ -960,7 +960,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         self.flags.skip_html_comment = true;
                     }
                 } else if c == b'[' {
-                    if !self.flags.skip_html_cdata {
+                    if !self.flags.skip_html_cdata && self.pos + 3 <= self.input.len() {
                         if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
                             // The regex doesn't require the final "]]>". But if we're not at
                             // the end of input, it must come after the match. Otherwise,
