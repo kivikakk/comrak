@@ -9,7 +9,7 @@ use std::boxed::Box;
 use std::env;
 use std::error::Error;
 use std::fs;
-use std::io::Read;
+use std::io::{BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::process;
 
@@ -264,14 +264,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     if let Some(output_filename) = cli.output {
-        formatter(
-            root,
-            &options,
-            &mut fs::File::create(output_filename)?,
-            &plugins,
-        )?;
+        let mut bw = BufWriter::new(fs::File::create(output_filename)?);
+        formatter(root, &options, &mut bw, &plugins)?;
+        bw.flush()?;
     } else {
-        formatter(root, &options, &mut std::io::stdout(), &plugins)?;
+        let mut bw = BufWriter::new(std::io::stdout().lock());
+        formatter(root, &options, &mut bw, &plugins)?;
+        bw.flush()?;
     };
 
     process::exit(EXIT_SUCCESS);

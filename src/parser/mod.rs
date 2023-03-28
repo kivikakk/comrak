@@ -512,20 +512,21 @@ pub struct ComrakRenderOptions {
 
 #[derive(Default, Debug)]
 /// Umbrella plugins struct.
-pub struct ComrakPlugins<'a> {
+pub struct ComrakPlugins<'p> {
     /// Configure render-time plugins.
-    pub render: ComrakRenderPlugins<'a>,
+    pub render: ComrakRenderPlugins<'p>,
 }
 
 #[derive(Default)]
 /// Plugins for alternative rendering.
-pub struct ComrakRenderPlugins<'a> {
+pub struct ComrakRenderPlugins<'p> {
     /// Provide a syntax highlighter adapter implementation for syntax
     /// highlighting of codefence blocks.
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions, ComrakPlugins, markdown_to_html_with_plugins};
     /// # use comrak::adapters::SyntaxHighlighterAdapter;
     /// use std::collections::HashMap;
+    /// use std::io::{self, Write};
     /// let options = ComrakOptions::default();
     /// let mut plugins = ComrakPlugins::default();
     /// let input = "```rust\nfn main<'a>();\n```";
@@ -535,16 +536,16 @@ pub struct ComrakRenderPlugins<'a> {
     ///
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {
-    ///     fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-    ///         String::from(format!("<span class=\"lang-{}\">{}</span>", lang.unwrap(), code))
+    ///     fn write_highlighted(&self, output: &mut dyn Write, lang: Option<&str>, code: &str) -> io::Result<()> {
+    ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
     ///     }
     ///
-    /// fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-    ///         String::from("<pre lang=\"rust\">")
+    ///     fn write_pre_tag(&self, output: &mut dyn Write, _attributes: HashMap<String, String>) -> io::Result<()> {
+    ///         output.write_all(b"<pre lang=\"rust\">")
     ///     }
     ///
-    /// fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
-    ///         String::from("<code class=\"language-rust\">")
+    ///     fn write_code_tag(&self, output: &mut dyn Write, _attributes: HashMap<String, String>) -> io::Result<()> {
+    ///         output.write_all(b"<code class=\"language-rust\">")
     ///     }
     /// }
     ///
@@ -554,10 +555,10 @@ pub struct ComrakRenderPlugins<'a> {
     /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
     ///            "<pre lang=\"rust\"><code class=\"language-rust\"><span class=\"lang-rust\">fn main<'a>();\n</span></code></pre>\n");
     /// ```
-    pub codefence_syntax_highlighter: Option<&'a dyn SyntaxHighlighterAdapter>,
+    pub codefence_syntax_highlighter: Option<&'p dyn SyntaxHighlighterAdapter>,
 
     /// Optional heading adapter
-    pub heading_adapter: Option<&'a dyn HeadingAdapter>,
+    pub heading_adapter: Option<&'p dyn HeadingAdapter>,
 }
 
 impl Debug for ComrakRenderPlugins<'_> {
