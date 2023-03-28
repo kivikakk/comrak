@@ -242,7 +242,7 @@ fn dangerous_url(input: &[u8]) -> bool {
     scanners::dangerous_url(input).is_some()
 }
 
-fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
     let mut offset = 0;
     for (i, &byte) in buffer.iter().enumerate() {
         if NEEDS_ESCAPED[byte as usize] {
@@ -262,18 +262,22 @@ fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
     Ok(())
 }
 
-pub fn build_opening_tag(tag: &str, attributes: &HashMap<String, String>) -> String {
-    let mut out = Vec::with_capacity(80);
-    write!(out, "<{}", tag).unwrap();
-
+pub fn write_opening_tag<Str>(
+    output: &mut dyn Write,
+    tag: &str,
+    attributes: impl IntoIterator<Item = (Str, Str)>,
+) -> io::Result<()>
+where
+    Str: AsRef<str>,
+{
+    write!(output, "<{}", tag)?;
     for (attr, val) in attributes {
-        write!(out, " {}=\"", attr).unwrap();
-        escape(&mut out, val.as_bytes()).unwrap();
-        write!(out, "\"").unwrap()
+        write!(output, " {}=\"", attr.as_ref())?;
+        escape(output, val.as_ref().as_bytes())?;
+        output.write_all(b"\"")?;
     }
-
-    write!(out, ">").unwrap();
-    unsafe { String::from_utf8_unchecked(out) }
+    output.write_all(b">")?;
+    Ok(())
 }
 
 impl<'o> HtmlFormatter<'o> {
@@ -505,9 +509,9 @@ impl<'o> HtmlFormatter<'o> {
 
                     if entering {
                         self.cr()?;
-                        write!(self.output, "{}", adapter.enter(&heading))?;
+                        adapter.enter(self.output, &heading)?;
                     } else {
-                        write!(self.output, "{}", adapter.exit(&heading))?;
+                        adapter.exit(self.output, &heading)?;
                     }
                 }
             },
@@ -551,33 +555,24 @@ impl<'o> HtmlFormatter<'o> {
 
                     match self.plugins.render.codefence_syntax_highlighter {
                         None => {
-                            self.output
-                                .write_all(build_opening_tag("pre", &pre_attributes).as_bytes())?;
-                            self.output.write_all(
-                                build_opening_tag("code", &code_attributes).as_bytes(),
-                            )?;
+                            write_opening_tag(self.output, "pre", pre_attributes)?;
+                            write_opening_tag(self.output, "code", code_attributes)?;
 
                             self.escape(literal)?;
 
                             self.output.write_all(b"</code></pre>\n")?
                         }
                         Some(highlighter) => {
-                            self.output
-                                .write_all(highlighter.build_pre_tag(&pre_attributes).as_bytes())?;
-                            self.output.write_all(
-                                highlighter.build_code_tag(&code_attributes).as_bytes(),
-                            )?;
+                            highlighter.write_pre_tag(self.output, pre_attributes)?;
+                            highlighter.write_code_tag(self.output, code_attributes)?;
 
-                            self.output.write_all(
-                                highlighter
-                                    .highlight(
-                                        match str::from_utf8(&info[..first_tag]) {
-                                            Ok(lang) => Some(lang),
-                                            Err(_) => None,
-                                        },
-                                        &ncb.literal,
-                                    )
-                                    .as_bytes(),
+                            highlighter.write_highlighted(
+                                self.output,
+                                match str::from_utf8(&info[..first_tag]) {
+                                    Ok(lang) => Some(lang),
+                                    Err(_) => None,
+                                },
+                                &ncb.literal,
                             )?;
 
                             self.output.write_all(b"</code></pre>\n")?

@@ -2,6 +2,7 @@ use comrak::{
     adapters::{HeadingAdapter, HeadingMeta},
     markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins,
 };
+use std::io::{self, Write};
 
 fn main() {
     let adapter = CustomHeadingAdapter;
@@ -30,19 +31,20 @@ fn main() {
 struct CustomHeadingAdapter;
 
 impl HeadingAdapter for CustomHeadingAdapter {
-    fn enter(&self, heading: &HeadingMeta) -> String {
+    fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
         let id = slug::slugify(&heading.content);
 
         let search_include = !&heading.content.contains("hide");
 
-        format!(
+        write!(
+            output,
             "<h{} id=\"{}\" data-search-include=\"{}\">",
             heading.level, id, search_include
         )
     }
 
-    fn exit(&self, heading: &HeadingMeta) -> String {
-        format!("</h{}>", heading.level)
+    fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+        write!(output, "</h{}>", heading.level)
     }
 }
 

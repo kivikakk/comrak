@@ -3,6 +3,7 @@
 //! Each plugin has to implement one of the traits available in this module.
 
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter {
@@ -10,19 +11,32 @@ pub trait SyntaxHighlighterAdapter {
     ///
     /// lang: Name of the programming language (the info string of the codefence block after the initial "```" part).
     /// code: The source code to be syntax highlighted.
-    fn highlight(&self, lang: Option<&str>, code: &str) -> String;
+    fn write_highlighted(
+        &self,
+        output: &mut dyn Write,
+        lang: Option<&str>,
+        code: &str,
+    ) -> io::Result<()>;
 
     /// Generates the opening `<pre>` tag. Some syntax highlighter libraries might include their own
     /// `<pre>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by comrak.
-    fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String;
+    fn write_pre_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()>;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
     /// `<code>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by comrak.
-    fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String;
+    fn write_code_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()>;
 }
 
 /// The struct passed to the [`HeadingAdapter`] for custom heading implementations.
@@ -43,8 +57,8 @@ pub struct HeadingMeta {
 /// leave the AST content of the heading unchanged.
 pub trait HeadingAdapter {
     /// Called prior to rendering
-    fn enter(&self, heading: &HeadingMeta) -> String;
+    fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
 
     /// Close tags.
-    fn exit(&self, heading: &HeadingMeta) -> String;
+    fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
 }

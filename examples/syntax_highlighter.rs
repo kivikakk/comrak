@@ -3,6 +3,7 @@
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 #[derive(Debug, Copy, Clone)]
 pub struct PotatoSyntaxAdapter {
@@ -16,8 +17,14 @@ impl PotatoSyntaxAdapter {
 }
 
 impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
-    fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-        format!(
+    fn write_highlighted(
+        &self,
+        output: &mut dyn Write,
+        lang: Option<&str>,
+        code: &str,
+    ) -> io::Result<()> {
+        write!(
+            output,
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",
             lang.unwrap(),
             code,
@@ -25,19 +32,27 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
         )
     }
 
-    fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
+    fn write_pre_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
         if attributes.contains_key("lang") {
-            format!("<pre lang=\"{}\">", attributes["lang"])
+            write!(output, "<pre lang=\"{}\">", attributes["lang"])
         } else {
-            String::from("<pre>")
+            output.write_all(b"<pre>")
         }
     }
 
-    fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
+    fn write_code_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
         if attributes.contains_key("class") {
-            format!("<code class=\"{}\">", attributes["class"])
+            write!(output, "<code class=\"{}\">", attributes["class"])
         } else {
-            String::from("<code>")
+            output.write_all(b"<code>")
         }
     }
 }

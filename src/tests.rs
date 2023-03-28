@@ -3,9 +3,7 @@ use crate::plugins::syntect::SyntectAdapter;
 use crate::{
     adapters::SyntaxHighlighterAdapter,
     adapters::{HeadingAdapter, HeadingMeta},
-    cm, format_commonmark, format_html, format_html_with_plugins, html,
-    html::build_opening_tag,
-    markdown_to_html, nodes,
+    cm, format_commonmark, format_html, format_html_with_plugins, html, markdown_to_html, nodes,
     nodes::{AstNode, NodeCode, NodeValue},
     parse_document, parse_document_with_broken_link_callback, Anchorizer, Arena,
     ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
@@ -13,6 +11,7 @@ use crate::{
 };
 use ntest::timeout;
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 #[cfg(not(target_arch = "wasm32"))]
 use propfuzz::prelude::*;
@@ -211,16 +210,29 @@ fn syntax_highlighter_plugin() {
     pub struct MockAdapter {}
 
     impl SyntaxHighlighterAdapter for MockAdapter {
-        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-            format!("<!--{}--><span>{}</span>", lang.unwrap(), code)
+        fn write_highlighted(
+            &self,
+            output: &mut dyn Write,
+            lang: Option<&str>,
+            code: &str,
+        ) -> io::Result<()> {
+            write!(output, "<!--{}--><span>{}</span>", lang.unwrap(), code)
         }
 
-        fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("pre", attributes)
+        fn write_pre_tag(
+            &self,
+            output: &mut dyn Write,
+            attributes: HashMap<String, String>,
+        ) -> io::Result<()> {
+            html::write_opening_tag(output, "pre", attributes)
         }
 
-        fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("code", attributes)
+        fn write_code_tag(
+            &self,
+            output: &mut dyn Write,
+            attributes: HashMap<String, String>,
+        ) -> io::Result<()> {
+            html::write_opening_tag(output, "code", attributes)
         }
     }
 
@@ -242,12 +254,12 @@ fn heading_adapter_plugin() {
     struct MockAdapter;
 
     impl HeadingAdapter for MockAdapter {
-        fn enter(&self, heading: &HeadingMeta) -> String {
-            format!("<h{} data-heading=\"true\">", heading.level + 1)
+        fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+            write!(output, "<h{} data-heading=\"true\">", heading.level + 1)
         }
 
-        fn exit(&self, heading: &HeadingMeta) -> String {
-            format!("</h{}>", heading.level + 1)
+        fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+            write!(output, "</h{}>", heading.level + 1)
         }
     }
 
@@ -1466,26 +1478,39 @@ fn exercise_full_api() {
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
-        fn highlight(&self, lang: Option<&str>, code: &str) -> String {
-            format!("{}{}", lang.unwrap(), code)
+        fn write_highlighted(
+            &self,
+            _output: &mut dyn Write,
+            _lang: Option<&str>,
+            _code: &str,
+        ) -> io::Result<()> {
+            unreachable!()
         }
 
-        fn build_pre_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("pre", attributes)
+        fn write_pre_tag(
+            &self,
+            _output: &mut dyn Write,
+            _attributes: HashMap<String, String>,
+        ) -> io::Result<()> {
+            unreachable!()
         }
 
-        fn build_code_tag(&self, attributes: &HashMap<String, String>) -> String {
-            build_opening_tag("code", attributes)
+        fn write_code_tag(
+            &self,
+            _output: &mut dyn Write,
+            _attributes: HashMap<String, String>,
+        ) -> io::Result<()> {
+            unreachable!()
         }
     }
 
     impl HeadingAdapter for MockAdapter {
-        fn enter(&self, heading: &HeadingMeta) -> String {
-            format!("<h{}>", heading.level)
+        fn enter(&self, _output: &mut dyn Write, _heading: &HeadingMeta) -> io::Result<()> {
+            unreachable!()
         }
 
-        fn exit(&self, heading: &HeadingMeta) -> String {
-            format!("</h{}>", heading.level)
+        fn exit(&self, _output: &mut dyn Write, _heading: &HeadingMeta) -> io::Result<()> {
+            unreachable!()
         }
     }
 
