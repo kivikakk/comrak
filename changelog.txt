@@ -1,3 +1,7 @@
+### 0.17.1
+
+* Fix some panics found by trivial fuzzing.
+
 Missed from the 0.17.0 changelog:
 
 * Add footnote attributes that mirror cmark-gfm by @digitalmoksha in https://github.com/kivikakk/comrak/pull/273
