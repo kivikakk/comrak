@@ -1,3 +1,27 @@
+### 0.17.0
+
+This contains some breaking changes from an API point of view, but output is
+largely unchanged.  Spec compliance is improved, and benchmark runtime is over
+20% faster.
+
+* SECURITY: GHSA-8hqf-xjwp-p67v / Quadratic runtime when parsing Markdown (GHSL-2023-047)
+  * <https://github.com/kivikakk/comrak/security/advisories/GHSA-8hqf-xjwp-p67v>
+  * A variety of quadratic runtime issues that could lead to DoS were reported
+    and addressed.
+  * We replaced pest with an re2c-based scanner.
+* SECURITY: GHSA-xxmq-4vph-956w / Excessive output when parsing Markdown (GHSL-2023-048)
+  * <https://github.com/kivikakk/comrak/security/advisories/GHSA-xxmq-4vph-956w>
+  * Reference output is limited to 100Kb.
+* SECURITY: GHSA-5r3x-p7xx-x6q5 / Attacker controlled data in AST nodes is not validated (GHSL-2023-049)
+  * <https://github.com/kivikakk/comrak/security/advisories/GHSA-5r3x-p7xx-x6q5>
+  * AST nodes no longer store raw `Vec<u8>`s, and instead store `String`s.
+* Various API points were cleaned up.
+* Comrak now targets Rust 2018.
+
+Many thanks to @philipturnbull and @darakian of the GitHub Security Lab for
+bringing these issues to my attention and detailing the reproduction steps for
+each case.
+
 ### 0.16.0
 
 * Track which symbol was used to mark task item as checked by @felipesere in https://github.com/kivikakk/comrak/pull/252
