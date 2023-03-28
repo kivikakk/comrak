@@ -14,9 +14,7 @@ use crate::nodes::{
     NodeHtmlBlock, NodeList, NodeValue,
 };
 use crate::scanners;
-use crate::strings;
-use once_cell::sync::OnceCell;
-use regex::{Regex, RegexBuilder};
+use crate::strings::{self, split_off_front_matter};
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -609,8 +607,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn feed(&mut self, linebuf: &mut Vec<u8>, s: &str, eof: bool) {
-        let mut buffer = 0;
+    fn feed(&mut self, linebuf: &mut Vec<u8>, mut s: &str, eof: bool) {
+        if let (0, Some(delimiter)) = (
+            self.total_size,
+            &self.options.extension.front_matter_delimiter,
+        ) {
+            if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
+                let node =
+                    self.add_child(self.root, NodeValue::FrontMatter(front_matter.to_string()));
+                s = rest;
+                self.finalize(node).unwrap();
+            }
+        }
+
         let s = s.as_bytes();
 
         if s.len() > usize::MAX - self.total_size {
@@ -619,33 +628,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.total_size += s.len();
         }
 
+        let mut buffer = 0;
         if self.last_buffer_ended_with_cr && !s.is_empty() && s[0] == b'\n' {
             buffer += 1;
         }
         self.last_buffer_ended_with_cr = false;
-
-        if let Some(ref delimiter) = self.options.extension.front_matter_delimiter {
-            // TODO: re2c
-            let front_matter_pattern = RegexBuilder::new(&format!(
-                "\\A(?:\u{feff})?{delim}\\r?\\n.*^{delim}\\r?\\n(?:\\r?\\n)?",
-                delim = regex::escape(delimiter)
-            ))
-            .multi_line(true)
-            .dot_matches_new_line(true)
-            .build()
-            .unwrap();
-
-            // We've only advanced `s` past a \n; we are valid UTF-8.
-            let buffer_to_check = unsafe { str::from_utf8_unchecked(&s[buffer..]) };
-            if let Some(front_matter_size) = front_matter_pattern.shortest_match(buffer_to_check) {
-                let node = self.add_child(
-                    self.root,
-                    NodeValue::FrontMatter(buffer_to_check[..front_matter_size].to_string()),
-                );
-                buffer += front_matter_size;
-                self.finalize(node).unwrap();
-            }
-        }
 
         let end = s.len();
 
@@ -1795,17 +1782,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
-        // TODO: re2c
-        static TASKLIST: OnceCell<Regex> = OnceCell::new();
-        let r = TASKLIST.get_or_init(|| Regex::new(r"\A(\s*\[(.)\])(?:\z|\s)").unwrap());
-
-        let (symbol, end) = match r.captures(text) {
+        let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
+            Some(p) => p,
             None => return,
-            Some(c) => (c.get(2).unwrap().as_str(), c.get(0).unwrap().end()),
         };
 
-        assert!(symbol.len() == 1);
-        let symbol = symbol.chars().next().unwrap();
+        let symbol = symbol as char;
 
         if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, ' ' | 'x' | 'X') {
             return;

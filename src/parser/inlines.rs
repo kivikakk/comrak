@@ -865,7 +865,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         self.pos += 1;
         if self.peek_char().map_or(false, |&c| ispunct(c)) {
             self.pos += 1;
-            // TODO
             make_inline(
                 self.arena,
                 NodeValue::Text(String::from_utf8(vec![self.input[self.pos - 1]]).unwrap()),

@@ -22543,4 +22543,427 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
     }
 }
 
+// Returns both the length of the match, and the tasklist character.
+pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+
+    let t1;
+    let mut yyt1 = 0;
+
+    {
+        #[allow(unused_assignments)]
+        let mut yych: u8 = 0;
+        let mut yystate: usize = 0;
+        'yyl: loop {
+            match yystate {
+                0 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    cursor += 1;
+                    match yych {
+                        0x09..=0x0D | 0x20 => {
+                            yystate = 3;
+                            continue 'yyl;
+                        }
+                        0x5B => {
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                1 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                2 => {
+                    return None;
+                }
+                3 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09..=0x0D | 0x20 => {
+                            cursor += 1;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x5B => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7F => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0xC2..=0xDF => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        0xE0 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 10;
+                            continue 'yyl;
+                        }
+                        0xE1..=0xEC | 0xEE..=0xEF => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        0xED => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0xF0 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 13;
+                            continue 'yyl;
+                        }
+                        0xF1..=0xF3 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        0xF4 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 15;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                5 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09..=0x0D | 0x20 => {
+                            cursor += 1;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x5B => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                6 => {
+                    cursor = marker;
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7F => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0xC2..=0xDF => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        0xE0 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 10;
+                            continue 'yyl;
+                        }
+                        0xE1..=0xEC | 0xEE..=0xEF => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        0xED => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0xF0 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 13;
+                            continue 'yyl;
+                        }
+                        0xF1..=0xF3 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        0xF4 => {
+                            yyt1 = cursor;
+                            cursor += 1;
+                            yystate = 15;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                8 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x5D => {
+                            cursor += 1;
+                            yystate = 16;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                9 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x80..=0xBF => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                10 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0xA0..=0xBF => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                11 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x80..=0xBF => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                12 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x80..=0x9F => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                13 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x90..=0xBF => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                14 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x80..=0xBF => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                15 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x80..=0x8F => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                16 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x00 | 0x09..=0x0D | 0x20 => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                17 => {
+                    t1 = yyt1;
+                    {
+                        return Some((cursor, s[t1]));
+                    }
+                }
+                _ => {
+                    panic!("internal lexer error")
+                }
+            }
+        }
+    }
+}
+
 // vim: set ft=rust:

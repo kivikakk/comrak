@@ -1395,7 +1395,7 @@ fn case_insensitive_safety() {
 }
 
 #[test]
-fn exercise_full_api<'a>() {
+fn exercise_full_api() {
     let arena = Arena::new();
     let default_options = ComrakOptions::default();
     let default_plugins = ComrakPlugins::default();
