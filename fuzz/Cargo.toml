@@ -1,0 +1,32 @@
+[package]
+name = "comrak-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+comrak = { path = "..", features = ["shortcodes", "arbitrary"] }
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "all_options"
+path = "fuzz_targets/all_options.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_options"
+path = "fuzz_targets/fuzz_options.rs"
+test = false
+doc = false

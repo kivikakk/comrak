@@ -22955,6 +22955,9 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 17 => {
                     t1 = yyt1;
                     {
+                        if cursor == len + 1 {
+                            cursor -= 1;
+                        }
                         return Some((cursor, s[t1]));
                     }
                 }
