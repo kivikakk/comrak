@@ -168,6 +168,17 @@ pub enum TableAlignment {
     Right,
 }
 
+impl TableAlignment {
+    pub(crate) fn xml_name(&self) -> Option<&'static str> {
+        match *self {
+            TableAlignment::None => None,
+            TableAlignment::Left => Some("left"),
+            TableAlignment::Center => Some("center"),
+            TableAlignment::Right => Some("right"),
+        }
+    }
+}
+
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
 #[derive(Debug, Clone)]
 pub struct NodeCode {

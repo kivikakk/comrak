@@ -227,84 +227,32 @@ impl<'o> XmlFormatter<'o> {
                     self.output.write_all(b"\"")?;
                 }
                 NodeValue::Table(..) => {
-                    // TODO
-                    // if entering {
-                    //     self.output.write_all(b"<table>\n")?;
-                    // } else {
-                    //     if !node
-                    //         .last_child()
-                    //         .unwrap()
-                    //         .same_node(node.first_child().unwrap())
-                    //     {
-                    //         self.output.write_all(b"</tbody>\n")?;
-                    //     }
-                    //     self.output.write_all(b"</table>\n")?;
-                    // }
+                    // noop
                 }
-                NodeValue::TableRow(_header) => {
-                    // TODO
-                    // if entering {
-                    //     if header {
-                    //         self.output.write_all(b"<thead>\n")?;
-                    //     } else if let Some(n) = node.previous_sibling() {
-                    //         if let NodeValue::TableRow(true) = n.data.borrow().value {
-                    //             self.output.write_all(b"<tbody>\n")?;
-                    //         }
-                    //     }
-                    //     self.output.write_all(b"<tr>")?;
-                    // } else {
-                    //     self.output.write_all(b"</tr>")?;
-                    //     if header {
-                    //         self.output.write_all(b"</thead>")?;
-                    //     }
-                    // }
+                NodeValue::TableRow(..) => {
+                    // noop
                 }
                 NodeValue::TableCell => {
-                    // TODO
-                    // let row = &node.parent().unwrap().data.borrow().value;
-                    // let in_header = match *row {
-                    //     NodeValue::TableRow(header) => header,
-                    //     _ => panic!(),
-                    // };
+                    let mut ancestors = node.ancestors().skip(1);
 
-                    // let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
-                    // let alignments = match *table {
-                    //     NodeValue::Table(ref alignments) => alignments,
-                    //     _ => panic!(),
-                    // };
+                    let header_row = &ancestors.next().unwrap().data.borrow().value;
+                    let table = &ancestors.next().unwrap().data.borrow().value;
 
-                    // if entering {
-                    //     if in_header {
-                    //         self.output.write_all(b"<th")?;
-                    //     } else {
-                    //         self.output.write_all(b"<td")?;
-                    //     }
+                    if let (NodeValue::TableRow(true), NodeValue::Table(aligns)) =
+                        (header_row, table)
+                    {
+                        let ix = node.preceding_siblings().count() - 1;
+                        if let Some(xml_align) = aligns[ix].xml_name() {
+                            write!(self.output, " align=\"{}\"", xml_align)?;
+                        }
+                    }
 
-                    //     let mut start = node.parent().unwrap().first_child().unwrap();
-                    //     let mut i = 0;
-                    //     while !start.same_node(node) {
-                    //         i += 1;
-                    //         start = start.next_sibling().unwrap();
-                    //     }
-
-                    //     match alignments[i] {
-                    //         TableAlignment::Left => {
-                    //             self.output.write_all(b" align=\"left\"")?;
+                    // if let Some(header_row) = table.first_child() {
+                    //     if header_row == node {
+                    //         if let Some(alignment) = node.data.borrow().alignment {
+                    //             write!(self.output, " align=\"{}\"", alignment.xml_name())?;
                     //         }
-                    //         TableAlignment::Right => {
-                    //             self.output.write_all(b" align=\"right\"")?;
-                    //         }
-                    //         TableAlignment::Center => {
-                    //             self.output.write_all(b" align=\"center\"")?;
-                    //         }
-                    //         TableAlignment::None => (),
                     //     }
-
-                    //     self.output.write_all(b">")?;
-                    // } else if in_header {
-                    //     self.output.write_all(b"</th>")?;
-                    // } else {
-                    //     self.output.write_all(b"</td>")?;
                     // }
                 }
                 NodeValue::FootnoteDefinition(_) => {
