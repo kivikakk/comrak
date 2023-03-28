@@ -18,7 +18,7 @@ pub fn format_document<'a>(
     options: &ComrakOptions,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, &options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
@@ -174,7 +174,7 @@ const NEEDS_ESCAPED : [bool; 256] = [
 ];
 
 fn tagfilter(literal: &[u8]) -> bool {
-    static TAGFILTER_BLACKLIST: [&'static str; 9] = [
+    static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
         "textarea",
         "style",
@@ -364,24 +364,23 @@ impl<'o> HtmlFormatter<'o> {
         while let Some((node, plain, phase)) = stack.pop() {
             match phase {
                 Phase::Pre => {
-                    let new_plain;
-                    if plain {
+                    let new_plain = if plain {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal) => {
-                                self.escape(literal)?;
+                                self.escape(literal.as_bytes())?;
                             }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
                                 self.output.write_all(b" ")?;
                             }
                             _ => (),
                         }
-                        new_plain = plain;
+                        plain
                     } else {
                         stack.push((node, false, Phase::Post));
-                        new_plain = self.format_node(node, true)?;
-                    }
+                        self.format_node(node, true)?
+                    };
 
                     for ch in node.reverse_children() {
                         stack.push((ch, new_plain, Phase::Pre));
@@ -397,15 +396,15 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
-    fn collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+    fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
         match node.data.borrow().value {
             NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-                output.extend_from_slice(literal)
+                output.extend_from_slice(literal.as_bytes())
             }
             NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
             _ => {
                 for n in node.children() {
-                    self.collect_text(n, output);
+                    Self::collect_text(n, output);
                 }
             }
         }
@@ -479,7 +478,7 @@ impl<'o> HtmlFormatter<'o> {
 
                         if let Some(ref prefix) = self.options.extension.header_ids {
                             let mut text_content = Vec::with_capacity(20);
-                            self.collect_text(node, &mut text_content);
+                            Self::collect_text(node, &mut text_content);
 
                             let mut id = String::from_utf8(text_content).unwrap();
                             id = self.anchorizer.anchorize(id);
@@ -497,7 +496,7 @@ impl<'o> HtmlFormatter<'o> {
                 }
                 Some(adapter) => {
                     let mut text_content = Vec::with_capacity(20);
-                    self.collect_text(node, &mut text_content);
+                    Self::collect_text(node, &mut text_content);
                     let content = String::from_utf8(text_content).unwrap();
                     let heading = HeadingMeta {
                         level: nch.level,
@@ -521,13 +520,16 @@ impl<'o> HtmlFormatter<'o> {
                     let mut code_attributes: HashMap<String, String> = HashMap::new();
                     let code_attr: String;
 
-                    if !ncb.info.is_empty() {
-                        while first_tag < ncb.info.len() && !isspace(ncb.info[first_tag]) {
+                    let literal = &ncb.literal.as_bytes();
+                    let info = &ncb.info.as_bytes();
+
+                    if !info.is_empty() {
+                        while first_tag < info.len() && !isspace(info[first_tag]) {
                             first_tag += 1;
                         }
 
-                        let lang_str = str::from_utf8(&ncb.info[..first_tag]).unwrap();
-                        let info_str = str::from_utf8(&ncb.info[first_tag..]).unwrap().trim();
+                        let lang_str = str::from_utf8(&info[..first_tag]).unwrap();
+                        let info_str = str::from_utf8(&info[first_tag..]).unwrap().trim();
 
                         if self.options.render.github_pre_lang {
                             pre_attributes.insert(String::from("lang"), lang_str.to_string());
@@ -555,7 +557,7 @@ impl<'o> HtmlFormatter<'o> {
                                 build_opening_tag("code", &code_attributes).as_bytes(),
                             )?;
 
-                            self.escape(&ncb.literal)?;
+                            self.escape(literal)?;
 
                             self.output.write_all(b"</code></pre>\n")?
                         }
@@ -569,11 +571,11 @@ impl<'o> HtmlFormatter<'o> {
                             self.output.write_all(
                                 highlighter
                                     .highlight(
-                                        match str::from_utf8(&ncb.info[..first_tag]) {
+                                        match str::from_utf8(&info[..first_tag]) {
                                             Ok(lang) => Some(lang),
                                             Err(_) => None,
                                         },
-                                        str::from_utf8(ncb.literal.as_slice()).unwrap(),
+                                        &ncb.literal,
                                     )
                                     .as_bytes(),
                             )?;
@@ -586,14 +588,15 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::HtmlBlock(ref nhb) => {
                 if entering {
                     self.cr()?;
+                    let literal = nhb.literal.as_bytes();
                     if self.options.render.escape {
-                        self.escape(&nhb.literal)?;
+                        self.escape(literal)?;
                     } else if !self.options.render.unsafe_ {
                         self.output.write_all(b"<!-- raw HTML omitted -->")?;
                     } else if self.options.extension.tagfilter {
-                        tagfilter_block(&nhb.literal, &mut self.output)?;
+                        tagfilter_block(literal, &mut self.output)?;
                     } else {
-                        self.output.write_all(&nhb.literal)?;
+                        self.output.write_all(literal)?;
                     }
                     self.cr()?;
                 }
@@ -639,7 +642,7 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::Text(ref literal) => {
                 if entering {
-                    self.escape(literal)?;
+                    self.escape(literal.as_bytes())?;
                 }
             }
             NodeValue::LineBreak => {
@@ -659,14 +662,15 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::Code(NodeCode { ref literal, .. }) => {
                 if entering {
                     self.output.write_all(b"<code>")?;
-                    self.escape(literal)?;
+                    self.escape(literal.as_bytes())?;
                     self.output.write_all(b"</code>")?;
                 }
             }
             NodeValue::HtmlInline(ref literal) => {
                 if entering {
+                    let literal = literal.as_bytes();
                     if self.options.render.escape {
-                        self.escape(&literal)?;
+                        self.escape(literal)?;
                     } else if !self.options.render.unsafe_ {
                         self.output.write_all(b"<!-- raw HTML omitted -->")?;
                     } else if self.options.extension.tagfilter && tagfilter(literal) {
@@ -708,12 +712,13 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::Link(ref nl) => {
                 if entering {
                     self.output.write_all(b"<a href=\"")?;
-                    if self.options.render.unsafe_ || !dangerous_url(&nl.url) {
-                        self.escape_href(&nl.url)?;
+                    let url = nl.url.as_bytes();
+                    if self.options.render.unsafe_ || !dangerous_url(url) {
+                        self.escape_href(url)?;
                     }
                     if !nl.title.is_empty() {
                         self.output.write_all(b"\" title=\"")?;
-                        self.escape(&nl.title)?;
+                        self.escape(nl.title.as_bytes())?;
                     }
                     self.output.write_all(b"\">")?;
                 } else {
@@ -723,15 +728,16 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::Image(ref nl) => {
                 if entering {
                     self.output.write_all(b"<img src=\"")?;
-                    if self.options.render.unsafe_ || !dangerous_url(&nl.url) {
-                        self.escape_href(&nl.url)?;
+                    let url = nl.url.as_bytes();
+                    if self.options.render.unsafe_ || !dangerous_url(url) {
+                        self.escape_href(url)?;
                     }
                     self.output.write_all(b"\" alt=\"")?;
                     return Ok(true);
                 } else {
                     if !nl.title.is_empty() {
                         self.output.write_all(b"\" title=\"")?;
-                        self.escape(&nl.title)?;
+                        self.escape(nl.title.as_bytes())?;
                     }
                     self.output.write_all(b"\" />")?;
                 }
@@ -848,7 +854,6 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::FootnoteReference(ref r) => {
                 if entering {
-                    let r = str::from_utf8(r).unwrap();
                     write!(
                         self.output,
                         "<sup class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"fnref-{}\" data-footnote-ref>{}</a></sup>",
@@ -856,16 +861,17 @@ impl<'o> HtmlFormatter<'o> {
                     )?;
                 }
             }
-            NodeValue::TaskItem { checked, .. } => {
+            NodeValue::TaskItem { symbol } => {
                 if entering {
-                    if checked {
-                        self.output.write_all(
-                            b"<input type=\"checkbox\" disabled=\"\" checked=\"\" /> ",
-                        )?;
-                    } else {
-                        self.output
-                            .write_all(b"<input type=\"checkbox\" disabled=\"\" /> ")?;
-                    }
+                    write!(
+                        self.output,
+                        "<input type=\"checkbox\" disabled=\"\" {}/> ",
+                        if symbol.is_some() {
+                            "checked=\"\" "
+                        } else {
+                            ""
+                        }
+                    )?;
                 }
             }
         }

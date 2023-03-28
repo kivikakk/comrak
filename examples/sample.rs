@@ -34,12 +34,8 @@ fn large() {
 
     iter_nodes(root, &|node| {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-            let orig = std::mem::replace(text, vec![]);
-            *text = String::from_utf8(orig)
-                .unwrap()
-                .replace("my", "your")
-                .as_bytes()
-                .to_vec();
+            let orig = std::mem::take(text);
+            *text = orig.replace("my", "your");
         }
     });
 

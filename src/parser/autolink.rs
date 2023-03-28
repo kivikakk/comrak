@@ -9,8 +9,9 @@ use unicode_categories::UnicodeCategories;
 pub fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
-    contents: &mut Vec<u8>,
+    contents_str: &mut String,
 ) {
+    let contents = contents_str.as_bytes();
     let len = contents.len();
     let mut i = 0;
 
@@ -46,11 +47,11 @@ pub fn process_autolinks<'a>(
             i -= reverse;
             node.insert_after(post);
             if i + skip < len {
-                let remain = contents[i + skip..].to_vec();
+                let remain = str::from_utf8(&contents[i + skip..]).unwrap();
                 assert!(!remain.is_empty());
-                post.insert_after(make_inline(arena, NodeValue::Text(remain)));
+                post.insert_after(make_inline(arena, NodeValue::Text(remain.to_string())));
             }
-            contents.truncate(i);
+            contents_str.truncate(i);
             return;
         }
     }
@@ -88,14 +89,24 @@ fn www_match<'a>(
 
     link_end = autolink_delim(&contents[i..], link_end);
 
-    let mut url = b"http://".to_vec();
-    url.extend_from_slice(&contents[i..link_end + i]);
+    let mut url = "http://".to_string();
+    url.push_str(str::from_utf8(&contents[i..link_end + i]).unwrap());
 
-    let inl = make_inline(arena, NodeValue::Link(NodeLink { url, title: vec![] }));
+    let inl = make_inline(
+        arena,
+        NodeValue::Link(NodeLink {
+            url,
+            title: String::new(),
+        }),
+    );
 
     inl.append(make_inline(
         arena,
-        NodeValue::Text(contents[i..link_end + i].to_vec()),
+        NodeValue::Text(
+            str::from_utf8(&contents[i..link_end + i])
+                .unwrap()
+                .to_string(),
+        ),
     ));
     Some((inl, 0, link_end))
 }
@@ -197,7 +208,7 @@ fn url_match<'a>(
     contents: &[u8],
     i: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    const SCHEMES: [&'static [u8]; 3] = [b"http", b"https", b"ftp"];
+    const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
     let size = contents.len();
 
@@ -226,12 +237,14 @@ fn url_match<'a>(
 
     link_end = autolink_delim(&contents[i..], link_end);
 
-    let url = contents[i - rewind..i + link_end].to_vec();
+    let url = str::from_utf8(&contents[i - rewind..i + link_end])
+        .unwrap()
+        .to_string();
     let inl = make_inline(
         arena,
         NodeValue::Link(NodeLink {
             url: url.clone(),
-            title: vec![],
+            title: String::new(),
         }),
     );
 
@@ -302,14 +315,18 @@ fn email_match<'a>(
         return None;
     }
 
-    let mut url = b"mailto:".to_vec();
-    url.extend_from_slice(&contents[i - rewind..link_end + i]);
+    let mut url = "mailto:".to_string();
+    let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
+    url.push_str(text);
 
-    let inl = make_inline(arena, NodeValue::Link(NodeLink { url, title: vec![] }));
-
-    inl.append(make_inline(
+    let inl = make_inline(
         arena,
-        NodeValue::Text(contents[i - rewind..link_end + i].to_vec()),
-    ));
+        NodeValue::Link(NodeLink {
+            url,
+            title: String::new(),
+        }),
+    );
+
+    inl.append(make_inline(arena, NodeValue::Text(text.to_string())));
     Some((inl, rewind, rewind + link_end))
 }
