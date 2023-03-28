@@ -70,6 +70,8 @@
 )]
 #![allow(unknown_lints, clippy::doc_markdown, cyclomatic_complexity)]
 
+use std::io::BufWriter;
+
 pub mod adapters;
 pub mod arena_tree;
 mod cm;
@@ -113,9 +115,9 @@ pub fn markdown_to_html_with_plugins(
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut s = Vec::new();
-    format_html_with_plugins(root, options, &mut s, plugins).unwrap();
-    String::from_utf8(s).unwrap()
+    let mut bw = BufWriter::new(Vec::new());
+    format_html_with_plugins(root, options, &mut bw, plugins).unwrap();
+    String::from_utf8(bw.into_inner().unwrap()).unwrap()
 }
 
 /// Return the version of the crate.
@@ -127,7 +129,7 @@ pub fn version() -> &'static str {
 pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut s = Vec::new();
-    format_commonmark(root, options, &mut s).unwrap();
-    String::from_utf8(s).unwrap()
+    let mut bw = BufWriter::new(Vec::new());
+    format_commonmark(root, options, &mut bw).unwrap();
+    String::from_utf8(bw.into_inner().unwrap()).unwrap()
 }
