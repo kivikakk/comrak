@@ -1,3 +1,9 @@
+Missed from the 0.17.0 changelog:
+
+* Add footnote attributes that mirror cmark-gfm by @digitalmoksha in https://github.com/kivikakk/comrak/pull/273
+* Add support for full_info_string render option by @digitalmoksha in https://github.com/kivikakk/comrak/pull/276
+* chore: improve debug performance by @conradludgate in https://github.com/kivikakk/comrak/pull/283
+
 ### 0.17.0
 
 This contains some breaking changes from an API point of view, but output is
