@@ -12,6 +12,7 @@ libfuzzer-sys = "0.4"
 
 [dependencies.comrak]
 path = ".."
+features = ["shortcodes"]
 
 # Prevent this from interfering with workspaces
 [workspace]

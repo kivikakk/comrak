@@ -88,17 +88,23 @@ fn commonmark(input: &str, expected: &str, opts: Option<&ComrakOptions>) {
 
 #[track_caller]
 pub fn html(input: &str, expected: &str) {
-    html_opts(input, expected, |_| ());
+    html_opts_i(input, expected, |_| ());
 }
 
 #[track_caller]
-fn html_opts<F>(input: &str, expected: &str, opts: F)
+fn html_opts_i<F>(input: &str, expected: &str, opts: F)
 where
     F: Fn(&mut ComrakOptions),
 {
-    let arena = Arena::new();
     let mut options = ComrakOptions::default();
     opts(&mut options);
+
+    html_opts_w(input, expected, &options);
+}
+
+#[track_caller]
+fn html_opts_w(input: &str, expected: &str, options: &ComrakOptions) {
+    let arena = Arena::new();
 
     let root = parse_document(&arena, input, &options);
     let mut output = vec![];
@@ -122,11 +128,13 @@ macro_rules! html_opts {
         html_opts!([$($optclass.$optname),*], $lhs, $rhs)
     };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr) => {
-        html_opts($lhs, $rhs, |opts| {
+        crate::tests::html_opts_i($lhs, $rhs, |opts| {
             $(opts.$optclass.$optname = true;)*
         });
     };
 }
+
+pub(crate) use html_opts;
 
 fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
     let arena = Arena::new();
@@ -941,7 +949,7 @@ fn superscript() {
 
 #[test]
 fn header_ids() {
-    html_opts(
+    html_opts_i(
         concat!(
             "# Hi.\n",
             "## Hi 1.\n",

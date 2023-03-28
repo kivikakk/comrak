@@ -390,6 +390,9 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
     re2c:tags = 1;
 
     spacechar* [[] @t1 [^\x00\r\n] [\]] (spacechar | [\x00]) {
+        if cursor == len + 1 {
+            cursor -= 1;
+        }
         return Some((cursor, s[t1]));
     }
     * { return None; }

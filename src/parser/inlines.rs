@@ -952,7 +952,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
                     if self.peek_char_n(3) == Some(&b'>') {
                         matchlen = Some(4);
-                    } else if self.peek_char_n(3) == Some(&b'-') && self.peek_char_n(4) == Some(&b'>') {
+                    } else if self.peek_char_n(3) == Some(&b'-')
+                        && self.peek_char_n(4) == Some(&b'>')
+                    {
                         matchlen = Some(5);
                     } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
                         matchlen = Some(m + 1);
