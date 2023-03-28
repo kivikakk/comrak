@@ -17,9 +17,11 @@ use std::collections::HashMap;
 #[cfg(not(target_arch = "wasm32"))]
 use propfuzz::prelude::*;
 
+mod fuzz;
+
 #[cfg(not(target_arch = "wasm32"))]
 #[propfuzz]
-fn fuzz_doesnt_crash(md: String) {
+fn propfuzz_doesnt_crash(md: String) {
     let options = ComrakOptions {
         extension: ComrakExtensionOptions {
             strikethrough: true,
@@ -85,7 +87,7 @@ fn commonmark(input: &str, expected: &str, opts: Option<&ComrakOptions>) {
 }
 
 #[track_caller]
-fn html(input: &str, expected: &str) {
+pub fn html(input: &str, expected: &str) {
     html_opts(input, expected, |_| ());
 }
 
