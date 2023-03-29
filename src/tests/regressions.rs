@@ -146,6 +146,7 @@ fn sourcepos_para() {
 }
 
 #[test]
+#[cfg(feature = "shortcodes")]
 fn gemoji() {
     html_opts!([extension.shortcodes], ":x:", "<p>❌</p>\n");
 }

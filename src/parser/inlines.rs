@@ -11,6 +11,7 @@ use crate::scanners;
 use crate::strings;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::ptr;
 use std::str;
 use typed_arena::Arena;
@@ -544,14 +545,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if self.input[self.pos] == b'\n' {
             self.pos += 1;
         }
+        let inl = if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
+            self.make_inline(NodeValue::LineBreak, nlpos, self.pos - 1)
+        } else {
+            self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
+        };
         self.line += 1;
         self.column_offset = -(self.pos as isize);
         self.skip_spaces();
-        if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
-            self.make_inline(NodeValue::LineBreak, 0, 0)
-        } else {
-            self.make_inline(NodeValue::SoftBreak, 0, 0)
-        }
+        inl
     }
 
     pub fn take_while(&mut self, c: u8) -> usize {
@@ -968,7 +970,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
     #[cfg(feature = "shortcodes")]
     pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
-        use std::convert::TryFrom;
         self.pos += 1;
 
         if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
@@ -1226,13 +1227,19 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             if text.len() > 1 && text.as_bytes()[0] == b'^' {
                 let inl = self.make_inline(
                     NodeValue::FootnoteReference(text[1..].to_string()),
-                    self.brackets[brackets_len - 1]
-                        .inl_text
-                        .data
-                        .borrow()
-                        .start_column,
-                    (self.pos as isize + self.column_offset + self.block_offset as isize) as usize,
+                    // Overridden immediately below.
+                    self.pos,
+                    self.pos,
                 );
+                inl.data.borrow_mut().start_column = self.brackets[brackets_len - 1]
+                    .inl_text
+                    .data
+                    .borrow()
+                    .start_column;
+                inl.data.borrow_mut().end_column = usize::try_from(
+                    self.pos as isize + self.column_offset + self.block_offset as isize,
+                )
+                .unwrap();
                 self.brackets[brackets_len - 1].inl_text.insert_before(inl);
                 self.brackets[brackets_len - 1]
                     .inl_text
@@ -1336,17 +1343,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         start_column: usize,
         end_column: usize,
     ) -> &'a AstNode<'a> {
+        let start_column =
+            start_column as isize + 1 + self.column_offset + self.block_offset as isize;
+        let end_column = end_column as isize + 1 + self.column_offset + self.block_offset as isize;
+
         let ast = Ast {
             value,
             content: String::new(),
             start_line: self.line,
-            start_column: (start_column as isize
-                + 1
-                + self.column_offset
-                + self.block_offset as isize) as usize,
+            start_column: usize::try_from(start_column).unwrap(),
             end_line: self.line,
-            end_column: (end_column as isize + 1 + self.column_offset + self.block_offset as isize)
-                as usize,
+            end_column: usize::try_from(end_column).unwrap(),
             internal_offset: 0,
             open: false,
             last_line_blank: false,
