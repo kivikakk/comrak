@@ -125,20 +125,6 @@ impl<'o> XmlFormatter<'o> {
         Ok(())
     }
 
-    fn _collect_text<'a>(&self, node: &'a AstNode<'a>, output: &mut Vec<u8>) {
-        match node.data.borrow().value {
-            NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-                output.extend_from_slice(literal.as_bytes())
-            }
-            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
-            _ => {
-                for n in node.children() {
-                    self._collect_text(n, output);
-                }
-            }
-        }
-    }
-
     fn indent(&mut self) -> io::Result<()> {
         for _ in 0..self.indent {
             self.output.write_all(b" ")?;
@@ -247,32 +233,15 @@ impl<'o> XmlFormatter<'o> {
                         }
                     }
                 }
-                NodeValue::FootnoteDefinition(_) => {
-                    // TODO
-                    // if entering {
-                    //     if self.footnote_ix == 0 {
-                    //         self.output
-                    //             .write_all(b"<section class=\"footnotes\">\n<ol>\n")?;
-                    //     }
-                    //     self.footnote_ix += 1;
-                    //     writeln!(self.output, "<li id=\"fn{}\">", self.footnote_ix)?;
-                    // } else {
-                    //     if self.put_footnote_backref()? {
-                    //         self.output.write_all(b"\n")?;
-                    //     }
-                    //     self.output.write_all(b"</li>\n")?;
-                    // }
+                NodeValue::FootnoteDefinition(ref fd) => {
+                    self.output.write_all(b" label=\"")?;
+                    self.escape(fd.as_bytes())?;
+                    self.output.write_all(b"\"")?;
                 }
-                NodeValue::FootnoteReference(ref _r) => {
-                    // TODO
-                    // if entering {
-                    //     let r = str::from_utf8(r).unwrap();
-                    //     write!(
-                    //         self.output,
-                    //         "<sup class=\"footnote-ref\"><a href=\"#fn{}\" id=\"fnref{}\">{}</a></sup>",
-                    //         r, r, r
-                    //     )?;
-                    // }
+                NodeValue::FootnoteReference(ref fr) => {
+                    self.output.write_all(b" label=\"")?;
+                    self.escape(fr.as_bytes())?;
+                    self.output.write_all(b"\"")?;
                 }
                 NodeValue::TaskItem(Some(_)) => {
                     self.output.write_all(b" completed=\"true\"")?;
