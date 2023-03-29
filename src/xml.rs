@@ -11,7 +11,7 @@ pub fn format_document<'a>(
     options: &ComrakOptions,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, &options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
@@ -92,8 +92,7 @@ impl<'o> XmlFormatter<'o> {
         while let Some((node, plain, phase)) = stack.pop() {
             match phase {
                 Phase::Pre => {
-                    let new_plain;
-                    if plain {
+                    let new_plain = if plain {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
@@ -105,11 +104,11 @@ impl<'o> XmlFormatter<'o> {
                             }
                             _ => (),
                         }
-                        new_plain = plain;
+                        plain
                     } else {
                         stack.push((node, false, Phase::Post));
-                        new_plain = self.format_node(node, true)?;
-                    }
+                        self.format_node(node, true)?
+                    };
 
                     for ch in node.reverse_children() {
                         stack.push((ch, new_plain, Phase::Pre));
@@ -266,9 +265,9 @@ impl<'o> XmlFormatter<'o> {
         } else if node.first_child().is_some() {
             self.indent -= 2;
             self.indent()?;
-            write!(
+            writeln!(
                 self.output,
-                "</{}>\n",
+                "</{}>",
                 node.data.borrow().value.xml_node_name()
             )?;
         }

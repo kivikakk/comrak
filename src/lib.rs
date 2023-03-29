@@ -68,7 +68,13 @@
     unstable_features,
     unused_import_braces
 )]
-#![allow(unknown_lints, clippy::doc_markdown, cyclomatic_complexity)]
+#![allow(
+    unknown_lints,
+    clippy::doc_markdown,
+    cyclomatic_complexity,
+    clippy::bool_to_int_with_if,
+    clippy::too_many_arguments
+)]
 
 use std::io::BufWriter;
 

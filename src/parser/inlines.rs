@@ -969,23 +969,23 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     #[cfg(feature = "shortcodes")]
     pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
         use std::convert::TryFrom;
+        self.pos += 1;
 
         if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
-            let s = self.pos + 1;
-            let e = s + matchlen - 2;
-            let shortcode = unsafe { str::from_utf8_unchecked(&self.input[s..e]) };
+            let shortcode =
+                unsafe { str::from_utf8_unchecked(&self.input[self.pos..self.pos + matchlen - 1]) };
 
             if let Ok(nsc) = NodeShortCode::try_from(shortcode) {
+                self.pos += matchlen;
                 let inl = self.make_inline(
                     NodeValue::ShortCode(nsc),
                     self.pos - 1 - matchlen,
                     self.pos - 1,
                 );
-                self.pos += matchlen;
                 return inl;
             }
         }
-        self.pos += 1;
+
         self.make_inline(NodeValue::Text(":".to_string()), self.pos - 1, self.pos - 1)
     }
 

@@ -22464,7 +22464,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
                     };
                     cursor += 1;
                     match yych {
-                        0x3A => {
+                        0x2D | 0x41..=0x5A | 0x5F | 0x61..=0x7A => {
                             yystate = 3;
                             continue 'yyl;
                         }
@@ -22494,6 +22494,11 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
                         0x2D | 0x41..=0x5A | 0x5F | 0x61..=0x7A => {
                             cursor += 1;
                             yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {

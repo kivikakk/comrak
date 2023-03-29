@@ -6,7 +6,7 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-pub fn process_autolinks<'a, 'n>(
+pub fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,

@@ -144,3 +144,8 @@ fn sourcepos_para() {
         "<p data-sourcepos=\"1:1-2:3\">abc\ndef</p>\n<p data-sourcepos=\"4:1-4:3\">ghi</p>\n",
     );
 }
+
+#[test]
+fn gemoji() {
+    html_opts!([extension.shortcodes], ":x:", "<p>❌</p>\n");
+}
