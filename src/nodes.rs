@@ -438,13 +438,14 @@ pub struct Ast {
     pub value: NodeValue,
 
     /// The line in the input document the node starts at.
-    pub start_line: u32,
+    pub start_line: usize,
     /// The column in the input document the node starts at.
-    pub start_column: u32,
+    pub start_column: usize,
     /// The line in the input document the node ends at.
-    pub end_line: u32,
+    pub end_line: usize,
     /// The column in the input document the node ends at.
-    pub end_column: u32,
+    pub end_column: usize,
+    pub(crate) internal_offset: usize,
 
     pub(crate) content: String,
     pub(crate) open: bool,
@@ -454,14 +455,15 @@ pub struct Ast {
 
 impl Ast {
     /// Create a new AST node with the given value.
-    pub fn new(value: NodeValue) -> Self {
+    pub fn new(value: NodeValue, start_line: usize, start_column: usize) -> Self {
         Ast {
             value,
             content: String::new(),
-            start_line: 0,
-            start_column: 0,
-            end_line: 0,
+            start_line,
+            start_column,
+            end_line: start_line,
             end_column: 0,
+            internal_offset: 0,
             open: true,
             last_line_blank: false,
             table_visited: false,
@@ -472,23 +474,8 @@ impl Ast {
 /// The type of a node within the document.
 ///
 /// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are allocated in.
-/// `AstNode`s are almost handled as a reference itself bound by `'a`.  Child `Ast`s are wrapped in
-/// `RefCell` for interior mutability.
-///
-/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
-///
-/// ```no_run
-/// # use comrak::nodes::{AstNode, NodeValue};
-/// let root = AstNode::from(NodeValue::Document);
-/// ```
+/// Child `Ast`s are wrapped in `RefCell` for interior mutability.
 pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
-
-impl<'a> From<NodeValue> for AstNode<'a> {
-    /// Create a new AST node with the given value.
-    fn from(value: NodeValue) -> Self {
-        Node::new(RefCell::new(Ast::new(value)))
-    }
-}
 
 pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
     node.last_child().map_or(false, |n| n.data.borrow().open)

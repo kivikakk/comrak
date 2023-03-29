@@ -135,3 +135,12 @@ fn nul_at_eof() {
     html("foo\0ba", "<p>foo\u{fffd}ba</p>\n");
     html("foo\0ba\0", "<p>foo\u{fffd}ba\u{fffd}</p>\n");
 }
+
+#[test]
+fn sourcepos_para() {
+    html_opts!(
+        [render.sourcepos],
+        "abc\ndef\n\nghi\n",
+        "<p data-sourcepos=\"1:1-2:3\">abc\ndef</p>\n<p data-sourcepos=\"4:1-4:3\">ghi</p>\n",
+    );
+}

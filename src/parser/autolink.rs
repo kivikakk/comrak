@@ -14,6 +14,10 @@ pub fn process_autolinks<'a>(
     let contents = contents_str.as_bytes();
     let len = contents.len();
     let mut i = 0;
+    let (start_line, start_column) = {
+        let node_ast = node.data.borrow();
+        (node_ast.start_line, node_ast.start_column)
+    };
 
     while i < len {
         let mut post_org = None;
@@ -21,19 +25,19 @@ pub fn process_autolinks<'a>(
         while i < len {
             match contents[i] {
                 b':' => {
-                    post_org = url_match(arena, contents, i);
+                    post_org = url_match(arena, contents, i, start_line, start_column + i);
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'w' => {
-                    post_org = www_match(arena, contents, i);
+                    post_org = www_match(arena, contents, i, start_line, start_column + i);
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'@' => {
-                    post_org = email_match(arena, contents, i);
+                    post_org = email_match(arena, contents, i, start_line, start_column + i);
                     if post_org.is_some() {
                         break;
                     }
@@ -49,7 +53,14 @@ pub fn process_autolinks<'a>(
             if i + skip < len {
                 let remain = str::from_utf8(&contents[i + skip..]).unwrap();
                 assert!(!remain.is_empty());
-                post.insert_after(make_inline(arena, NodeValue::Text(remain.to_string())));
+                post.insert_after(make_inline(
+                    arena,
+                    NodeValue::Text(remain.to_string()),
+                    start_line,
+                    start_column + i,
+                    start_line,
+                    start_column + i + skip, // TODO check
+                ));
             }
             contents_str.truncate(i);
             return;
@@ -61,6 +72,8 @@ fn www_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    start_line: usize,
+    start_column: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static WWW_DELIMS: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -98,6 +111,10 @@ fn www_match<'a>(
             url,
             title: String::new(),
         }),
+        start_line,
+        start_column,
+        start_line,
+        start_column + link_end,
     );
 
     inl.append(make_inline(
@@ -107,6 +124,10 @@ fn www_match<'a>(
                 .unwrap()
                 .to_string(),
         ),
+        start_line,
+        start_column,
+        start_line,
+        start_column + i,
     ));
     Some((inl, 0, link_end))
 }
@@ -207,6 +228,8 @@ fn url_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    start_line: usize,
+    start_column: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
@@ -246,9 +269,20 @@ fn url_match<'a>(
             url: url.clone(),
             title: String::new(),
         }),
+        start_line,
+        start_column - rewind,
+        start_line,
+        start_column + link_end,
     );
 
-    inl.append(make_inline(arena, NodeValue::Text(url)));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(url),
+        start_line,
+        start_column - rewind,
+        start_line,
+        start_column + link_end,
+    ));
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -256,6 +290,8 @@ fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    start_line: usize,
+    start_column: usize,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static EMAIL_OK_SET: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -325,8 +361,19 @@ fn email_match<'a>(
             url,
             title: String::new(),
         }),
+        start_line,
+        start_column - rewind,
+        start_line,
+        start_column + link_end,
     );
 
-    inl.append(make_inline(arena, NodeValue::Text(text.to_string())));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(text.to_string()),
+        start_line,
+        start_column - rewind,
+        start_line,
+        start_column + link_end,
+    ));
     Some((inl, rewind, rewind + link_end))
 }

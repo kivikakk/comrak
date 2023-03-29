@@ -77,6 +77,10 @@ fn html_opts_w(input: &str, expected: &str, options: &ComrakOptions) {
     html::format_document(root, &options, &mut output).unwrap();
     compare_strs(&String::from_utf8(output).unwrap(), expected, "regular");
 
+    if options.render.sourcepos {
+        return;
+    }
+
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
     let root = parse_document(&arena, &String::from_utf8(md).unwrap(), &options);

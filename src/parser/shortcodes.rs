@@ -16,8 +16,8 @@ impl NodeShortCode {
         &self.0
     }
 
-    pub fn emoji(&self) -> Option<&'static str> {
-        Some(emojis::get_by_shortcode(&self.0)?.as_str())
+    pub fn emoji(&self) -> &'static str {
+        emojis::get_by_shortcode(&self.0).unwrap().as_str()
     }
 }
 

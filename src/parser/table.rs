@@ -7,6 +7,8 @@ use crate::strings::trim;
 use std::cell::RefCell;
 use std::cmp::min;
 
+use super::inlines::count_newlines;
+
 pub fn try_opening_block<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
@@ -49,19 +51,14 @@ fn try_opening_header<'a>(
     }
 
     if header_row.paragraph_offset > 0 {
-        try_inserting_table_header_paragraph(
-            parser,
-            container,
-            container.data.borrow().content.as_bytes(),
-            header_row.paragraph_offset,
-        );
+        try_inserting_table_header_paragraph(parser, container, header_row.paragraph_offset);
     }
 
     let mut alignments = vec![];
     for cell in marker_row.cells {
-        let cell = cell.as_bytes();
-        let left = !cell.is_empty() && cell[0] == b':';
-        let right = !cell.is_empty() && cell[cell.len() - 1] == b':';
+        let cell_content = cell.content.as_bytes();
+        let left = !cell_content.is_empty() && cell_content[0] == b':';
+        let right = !cell_content.is_empty() && cell_content[cell_content.len() - 1] == b':';
         alignments.push(if left && right {
             TableAlignment::Center
         } else if left {
@@ -73,15 +70,36 @@ fn try_opening_header<'a>(
         });
     }
 
-    let mut child = Ast::new(NodeValue::Table(alignments));
-    child.start_line = container.data.borrow().start_line;
+    let (start_line, start_column) = {
+        let container_ast = container.data.borrow();
+        (container_ast.start_line, container_ast.start_column)
+    };
+    let child = Ast::new(NodeValue::Table(alignments), start_line, start_column);
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
-    let header = parser.add_child(table, NodeValue::TableRow(true));
-    for header_str in header_row.cells {
-        let header_cell = parser.add_child(header, NodeValue::TableCell);
-        header_cell.data.borrow_mut().content = header_str;
+    let header = parser.add_child(table, NodeValue::TableRow(true), start_column);
+    {
+        let header_ast = &mut header.data.borrow_mut();
+        header_ast.start_line = start_line;
+        header_ast.end_line = start_line;
+        header_ast.end_column = start_column + container.data.borrow().content.as_bytes().len()
+            - 2
+            - header_row.paragraph_offset;
+    }
+
+    for cell in header_row.cells {
+        let ast_cell = parser.add_child(
+            header,
+            NodeValue::TableCell,
+            start_column + cell.start_offset - header_row.paragraph_offset,
+        );
+        let ast = &mut ast_cell.data.borrow_mut();
+        ast.start_line = start_line;
+        ast.end_line = start_line;
+        ast.internal_offset = cell.internal_offset;
+        ast.end_column = start_column + cell.end_offset - header_row.paragraph_offset;
+        ast.content = cell.content.clone();
     }
 
     let offset = line.len() - 1 - parser.offset;
@@ -99,18 +117,34 @@ fn try_opening_row<'a>(
     if parser.blank {
         return None;
     }
+    let (start_column, end_column) = {
+        let container_ast = container.data.borrow();
+        (container_ast.start_column, container_ast.end_column)
+    };
     let this_row = row(&line[parser.first_nonspace..]).unwrap();
-    let new_row = parser.add_child(container, NodeValue::TableRow(false));
+    let new_row = parser.add_child(container, NodeValue::TableRow(false), start_column);
+    {
+        let new_row_ast = &mut new_row.data.borrow_mut();
+        new_row_ast.end_column = end_column;
+    }
 
     let mut i = 0;
     while i < min(alignments.len(), this_row.cells.len()) {
-        let cell = parser.add_child(new_row, NodeValue::TableCell);
-        cell.data.borrow_mut().content = this_row.cells[i].clone();
+        let cell = &this_row.cells[i];
+        let cell_node = parser.add_child(
+            new_row,
+            NodeValue::TableCell,
+            start_column + cell.start_offset,
+        );
+        let cell_ast = &mut cell_node.data.borrow_mut();
+        cell_ast.internal_offset = cell.internal_offset;
+        cell_ast.end_column = start_column + cell.end_offset;
+        cell_ast.content = cell.content.clone();
         i += 1;
     }
 
     while i < alignments.len() {
-        parser.add_child(new_row, NodeValue::TableCell);
+        parser.add_child(new_row, NodeValue::TableCell, 0);
         i += 1;
     }
 
@@ -122,16 +156,23 @@ fn try_opening_row<'a>(
 
 struct Row {
     paragraph_offset: usize,
-    cells: Vec<String>,
+    cells: Vec<Cell>,
+}
+
+struct Cell {
+    start_offset: usize,
+    end_offset: usize,
+    internal_offset: usize,
+    content: String,
 }
 
 fn row(string: &[u8]) -> Option<Row> {
     let len = string.len();
-    let mut cells = vec![];
+    let mut cells: Vec<Cell> = vec![];
 
     let mut offset = scanners::table_cell_end(string).unwrap_or(0);
 
-    let mut paragraph_offset: usize = 0;
+    let mut paragraph_offset = 0;
     let mut expect_more_cells = true;
 
     while offset < len && expect_more_cells {
@@ -141,7 +182,21 @@ fn row(string: &[u8]) -> Option<Row> {
         if cell_matched > 0 || pipe_matched > 0 {
             let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
             trim(&mut cell);
-            cells.push(String::from_utf8(cell).unwrap());
+
+            let mut start_offset = offset;
+            let mut internal_offset = 0;
+
+            while start_offset > paragraph_offset && string[start_offset - 1] != b'|' {
+                start_offset -= 1;
+                internal_offset += 1;
+            }
+
+            cells.push(Cell {
+                start_offset,
+                end_offset: offset + cell_matched - 1,
+                internal_offset,
+                content: String::from_utf8(cell).unwrap(),
+            });
         }
 
         offset += cell_matched + pipe_matched;
@@ -176,10 +231,13 @@ fn row(string: &[u8]) -> Option<Row> {
 fn try_inserting_table_header_paragraph<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
-    parent_string: &[u8],
     paragraph_offset: usize,
 ) {
-    let mut paragraph_content = unescape_pipes(&parent_string[..paragraph_offset]);
+    let container_ast = &mut container.data.borrow_mut();
+
+    let preface = &container_ast.content.as_bytes()[..paragraph_offset];
+    let mut paragraph_content = unescape_pipes(preface);
+    let (newlines, _since_newline) = count_newlines(&paragraph_content);
     trim(&mut paragraph_content);
 
     if container.parent().is_none()
@@ -188,7 +246,31 @@ fn try_inserting_table_header_paragraph<'a>(
         return;
     }
 
-    let mut paragraph = Ast::new(NodeValue::Paragraph);
+    let start_line = container_ast.start_line;
+    let start_column = container_ast.start_column;
+
+    let mut paragraph = Ast::new(NodeValue::Paragraph, start_line, start_column);
+    paragraph.end_line = start_line + newlines - 1;
+
+    // XXX We don't have the last_line_length to go on by this point,
+    // so we have no idea what the end column should be.
+    // We can't track it in row() like we do paragraph_offset, because
+    // we've already discarded the leading whitespace for that line.
+    // This is hard to avoid with this backtracking approach to
+    // creating the pre-table paragraph — we're doing the work of
+    // finalize() here, but without the parser state at that time.
+    // Approximate by just counting the line length as it is and adding
+    // to the start column.
+    paragraph.end_column = start_column - 1
+        + preface
+            .iter()
+            .rev()
+            .skip(1)
+            .take_while(|&&c| c != b'\n')
+            .count();
+
+    container_ast.start_line += newlines;
+
     paragraph.content = String::from_utf8(paragraph_content).unwrap();
     let node = parser.arena.alloc(Node::new(RefCell::new(paragraph)));
     container.insert_before(node);
