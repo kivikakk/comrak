@@ -6,18 +6,16 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-pub fn process_autolinks<'a>(
+pub fn process_autolinks<'a, 'n>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
+    start_line: usize,
+    start_column: usize,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
     let mut i = 0;
-    let (start_line, start_column) = {
-        let node_ast = node.data.borrow();
-        (node_ast.start_line, node_ast.start_column)
-    };
 
     while i < len {
         let mut post_org = None;

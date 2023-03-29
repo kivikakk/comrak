@@ -128,11 +128,21 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-/// Render Markdown to CommonMark.
+/// Render Markdown back to CommonMark.
 pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut bw = BufWriter::new(Vec::new());
     format_commonmark(root, options, &mut bw).unwrap();
+    String::from_utf8(bw.into_inner().unwrap()).unwrap()
+}
+
+/// Render Markdown to CommonMark XML.
+/// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
+pub fn markdown_to_commonmark_xml(md: &str, options: &ComrakOptions) -> String {
+    let arena = Arena::new();
+    let root = parse_document(&arena, md, options);
+    let mut bw = BufWriter::new(Vec::new());
+    format_xml(root, options, &mut bw).unwrap();
     String::from_utf8(bw.into_inner().unwrap()).unwrap()
 }

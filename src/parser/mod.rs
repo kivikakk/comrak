@@ -518,9 +518,10 @@ pub struct ComrakRenderOptions {
     /// Include source position attributes in XML output.
     ///
     /// ```rust
+    /// # use comrak::{markdown_to_commonmark_xml, ComrakOptions};
     /// let mut options = ComrakOptions::default();
     /// options.render.sourcepos = true;
-    /// let input = "Hello *world*!"
+    /// let input = "Hello *world*!";
     /// let xml = markdown_to_commonmark_xml(input, &options);
     /// assert!(xml.contains("<emph sourcepos=\"1:7-1:13\">"));
     /// ```
@@ -1828,14 +1829,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             while let Some(n) = nch {
                 let mut this_bracket = false;
                 loop {
-                    match n.data.borrow_mut().value {
+                    let n_ast = &mut n.data.borrow_mut();
+
+                    let start_line = n_ast.start_line;
+                    let start_column = n_ast.start_column;
+
+                    match n_ast.value {
                         // Join adjacent text nodes together
                         NodeValue::Text(ref mut root) => {
                             let ns = match n.next_sibling() {
                                 Some(ns) => ns,
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root);
+                                    self.postprocess_text_node(n, root, start_line, start_column);
                                     break;
                                 }
                             };
@@ -1847,7 +1853,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 }
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root);
+                                    self.postprocess_text_node(n, root, start_line, start_column);
                                     break;
                                 }
                             }
@@ -1873,13 +1879,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+    fn postprocess_text_node(
+        &mut self,
+        node: &'a AstNode<'a>,
+        text: &mut String,
+        start_line: usize,
+        start_column: usize,
+    ) {
         if self.options.extension.tasklist {
             self.process_tasklist(node, text);
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(self.arena, node, text);
+            autolink::process_autolinks(self.arena, node, text, start_line, start_column);
         }
     }
 
