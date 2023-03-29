@@ -1400,6 +1400,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             parent = self.finalize(parent).unwrap();
         }
 
+        assert!(start_column > 0);
+
         let child = Ast::new(value, self.line_number, start_column);
         let node = self.arena.alloc(Node::new(RefCell::new(child)));
         parent.append(node);
@@ -1614,9 +1616,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             ast.end_line = self.line_number;
             ast.end_column = self.curline_end_col;
         } else {
-            if matches!(ast.value, NodeValue::Paragraph) {
-                eprintln!("uwu");
-            }
             ast.end_line = self.line_number - 1;
             ast.end_column = self.last_line_length;
         }

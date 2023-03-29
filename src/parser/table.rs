@@ -129,6 +129,8 @@ fn try_opening_row<'a>(
     }
 
     let mut i = 0;
+    let mut last_column = start_column;
+
     while i < min(alignments.len(), this_row.cells.len()) {
         let cell = &this_row.cells[i];
         let cell_node = parser.add_child(
@@ -140,11 +142,13 @@ fn try_opening_row<'a>(
         cell_ast.internal_offset = cell.internal_offset;
         cell_ast.end_column = start_column + cell.end_offset;
         cell_ast.content = cell.content.clone();
+
+        last_column = cell_ast.end_column;
         i += 1;
     }
 
     while i < alignments.len() {
-        parser.add_child(new_row, NodeValue::TableCell, 0);
+        parser.add_child(new_row, NodeValue::TableCell, last_column);
         i += 1;
     }
 
