@@ -70,6 +70,7 @@ struct Cli {
 
     /// Translate gemojis into UTF-8 characters
     #[arg(long)]
+    #[cfg(feature = "shortcodes")]
     gemojis: bool,
 
     /// Escape raw HTML instead of clobbering it

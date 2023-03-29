@@ -904,13 +904,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
     #[cfg(feature = "shortcodes")]
     pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
+        use std::convert::TryFrom;
+
         if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
             let s = self.pos + 1;
             let e = s + matchlen - 2;
-            let shortcode = &self.input[s..e];
+            let shortcode = unsafe { str::from_utf8_unchecked(&self.input[s..e]) };
 
-            if NodeShortCode::is_valid(shortcode.to_vec()) {
-                let inl = make_emoji(self.arena, &shortcode);
+            if let Ok(nsc) = NodeShortCode::try_from(shortcode) {
+                let inl = make_inline(self.arena, NodeValue::ShortCode(nsc));
                 self.pos += matchlen;
                 return inl;
             }
@@ -1336,14 +1338,5 @@ fn make_autolink<'a>(
         arena,
         NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
     ));
-    inl
-}
-
-#[cfg(feature = "shortcodes")]
-fn make_emoji<'a>(arena: &'a Arena<AstNode<'a>>, shortcode: &[u8]) -> &'a AstNode<'a> {
-    let inl = make_inline(
-        arena,
-        NodeValue::ShortCode(NodeShortCode::from(shortcode.to_vec())),
-    );
     inl
 }

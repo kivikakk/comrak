@@ -194,7 +194,7 @@ fn exercise_full_api() {
         }
         #[cfg(feature = "shortcodes")]
         nodes::NodeValue::ShortCode(ne) => {
-            let _: Option<String> = ne.shortcode();
+            let _: &str = ne.shortcode();
         }
         nodes::NodeValue::FootnoteReference(name) => {
             let _: &String = name;

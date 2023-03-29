@@ -679,10 +679,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_shortcode(&mut self, ne: &NodeShortCode, entering: bool) {
         if entering {
             write!(self, ":").unwrap();
-        } else {
-            if let Some(shortcode) = ne.shortcode() {
-                self.output(shortcode.as_bytes(), false, Escaping::Literal);
-            }
+            self.output(ne.shortcode().as_bytes(), false, Escaping::Literal);
             write!(self, ":").unwrap();
         }
     }

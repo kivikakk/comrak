@@ -148,7 +148,7 @@ pub enum NodeValue {
     FootnoteReference(String),
 
     #[cfg(feature = "shortcodes")]
-    /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "emoji"
+    /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
 }
 
