@@ -113,11 +113,11 @@ struct Cli {
     #[arg(long, value_name = "THEME", default_value = "base16-ocean.dark")]
     syntax_highlighting: String,
 
-    /// Specify bullet character for lists (-, +, *) in CommonMark ouput
+    /// Specify bullet character for lists (-, +, *) in CommonMark output
     #[arg(long, value_enum, default_value_t = ListStyle::Dash)]
     list_style: ListStyle,
 
-    /// Include source position attribute in XML output
+    /// Include source position attribute in HTML and XML output
     #[arg(long)]
     sourcepos: bool,
 }
