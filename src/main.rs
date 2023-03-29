@@ -1,8 +1,9 @@
 //! The `comrak` binary.
 
 use comrak::{
-    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena, ExtensionOptions,
-    ListStyleType, Options, ParseOptions, Plugins, RenderOptions,
+    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena,
+    ExtensionOptionsBuilder, ListStyleType, Options, ParseOptionsBuilder, Plugins,
+    RenderOptionsBuilder,
 };
 use std::boxed::Box;
 use std::env;
@@ -194,36 +195,42 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
-    let mut extension = ExtensionOptions::default();
-    extension.strikethrough = exts.contains(&Extension::Strikethrough) || cli.gfm;
-    extension.tagfilter = exts.contains(&Extension::Tagfilter) || cli.gfm;
-    extension.table = exts.contains(&Extension::Table) || cli.gfm;
-    extension.autolink = exts.contains(&Extension::Autolink) || cli.gfm;
-    extension.tasklist = exts.contains(&Extension::Tasklist) || cli.gfm;
-    extension.superscript = exts.contains(&Extension::Superscript);
-    extension.header_ids = cli.header_ids;
-    extension.footnotes = exts.contains(&Extension::Footnotes);
-    extension.description_lists = exts.contains(&Extension::DescriptionLists);
-    extension.front_matter_delimiter = cli.front_matter_delimiter;
+    let mut extension = ExtensionOptionsBuilder::default();
+    extension
+        .strikethrough(exts.contains(&Extension::Strikethrough) || cli.gfm)
+        .tagfilter(exts.contains(&Extension::Tagfilter) || cli.gfm)
+        .table(exts.contains(&Extension::Table) || cli.gfm)
+        .autolink(exts.contains(&Extension::Autolink) || cli.gfm)
+        .tasklist(exts.contains(&Extension::Tasklist) || cli.gfm)
+        .superscript(exts.contains(&Extension::Superscript))
+        .header_ids(cli.header_ids)
+        .footnotes(exts.contains(&Extension::Footnotes))
+        .description_lists(exts.contains(&Extension::DescriptionLists))
+        .front_matter_delimiter(cli.front_matter_delimiter);
+
     #[cfg(feature = "shortcodes")]
     {
-        extension.shortcodes = cli.gemojis;
+        extension.shortcodes(cli.gemojis);
     }
 
-    let mut parse = ParseOptions::default();
-    parse.smart = cli.smart;
-    parse.default_info_string = cli.default_info_string;
-    parse.relaxed_tasklist_matching = cli.relaxed_tasklist_character;
+    let extension = extension.build()?;
 
-    let mut render = RenderOptions::default();
-    render.hardbreaks = cli.hardbreaks;
-    render.github_pre_lang = cli.github_pre_lang || cli.gfm;
-    render.full_info_string = cli.full_info_string;
-    render.width = cli.width;
-    render.unsafe_ = cli.unsafe_;
-    render.escape = cli.escape;
-    render.list_style = cli.list_style.into();
-    render.sourcepos = cli.sourcepos;
+    let parse = ParseOptionsBuilder::default()
+        .smart(cli.smart)
+        .default_info_string(cli.default_info_string)
+        .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
+        .build()?;
+
+    let render = RenderOptionsBuilder::default()
+        .hardbreaks(cli.hardbreaks)
+        .github_pre_lang(cli.github_pre_lang || cli.gfm)
+        .full_info_string(cli.full_info_string)
+        .width(cli.width)
+        .unsafe_(cli.unsafe_)
+        .escape(cli.escape)
+        .list_style(cli.list_style.into())
+        .sourcepos(cli.sourcepos)
+        .build()?;
 
     let options = Options {
         extension,

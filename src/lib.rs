@@ -100,8 +100,9 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use html::Anchorizer;
 pub use parser::{
-    parse_document, parse_document_with_broken_link_callback, ExtensionOptions, ListStyleType,
-    Options, ParseOptions, Plugins, RenderOptions, RenderPlugins,
+    parse_document, parse_document_with_broken_link_callback, ExtensionOptions,
+    ExtensionOptionsBuilder, ListStyleType, Options, ParseOptions, ParseOptionsBuilder, Plugins,
+    PluginsBuilder, RenderOptions, RenderOptionsBuilder, RenderPlugins, RenderPluginsBuilder,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
