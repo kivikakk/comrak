@@ -922,6 +922,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     pub fn handle_backslash(&mut self) -> &'a AstNode<'a> {
+        let startpos = self.pos;
         self.pos += 1;
         if self.peek_char().map_or(false, |&c| ispunct(c)) {
             self.pos += 1;
@@ -931,7 +932,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos - 1,
             )
         } else if !self.eof() && self.skip_line_end() {
-            self.make_inline(NodeValue::LineBreak, 0, 0) // XXX: will these/other zeroes underflow?
+            self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1)
         } else {
             self.make_inline(
                 NodeValue::Text("\\".to_string()),
@@ -1268,13 +1269,18 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             } else {
                 NodeValue::Link(nl)
             },
-            self.brackets[brackets_len - 1]
-                .inl_text
-                .data
-                .borrow()
-                .start_column,
-            (self.pos as isize + self.column_offset + self.block_offset as isize) as usize,
+            // Manually set below.
+            self.pos,
+            self.pos,
         );
+        inl.data.borrow_mut().start_column = self.brackets[brackets_len - 1]
+            .inl_text
+            .data
+            .borrow()
+            .start_column;
+        inl.data.borrow_mut().end_column =
+            usize::try_from(self.pos as isize + self.column_offset + self.block_offset as isize)
+                .unwrap();
 
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
         let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();

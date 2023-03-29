@@ -87,3 +87,13 @@ fn footnote_def() {
         "<p data-sourcepos=\"1:1-2:5\">\u{15}\u{b}<br data-sourcepos=\"1:3-1:3\" />\n[^ ]:</p>\n",
     );
 }
+
+#[test]
+fn line_end() {
+    html("\u{2}\n\\\n\t-", "<p>\u{2}\n<br />\n-</p>\n");
+}
+
+#[test]
+fn x() {
+    html("[;\0V\n]::g\n[;\0V\n]", "<p><a href=\":g\">;�V\n</a></p>\n");
+}
