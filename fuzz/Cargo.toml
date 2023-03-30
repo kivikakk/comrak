@@ -42,3 +42,9 @@ name = "gfm"
 path = "fuzz_targets/gfm.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "quadratic"
+path = "fuzz_targets/quadratic.rs"
+test = false
+doc = false
