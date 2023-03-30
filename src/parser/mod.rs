@@ -2050,15 +2050,20 @@ pub enum AutolinkType {
     Email,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for bulleted list redering in markdown. See `link_style` in [ComrakRenderOptions] for more details.
 pub enum ListStyleType {
     /// The `-` character
-    #[default]
     Dash = 45,
     /// The `+` character
     Plus = 43,
     /// The `*` character
     Star = 42,
+}
+
+impl Default for ListStyleType {
+    fn default() -> Self {
+        ListStyleType::Dash
+    }
 }
