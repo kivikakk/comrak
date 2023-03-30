@@ -8,7 +8,7 @@ use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
-use crate::nodes;
+use crate::nodes::{self, LineColumn};
 use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
@@ -99,10 +99,7 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
         content: String::new(),
-        start_line: 1,
-        start_column: 1,
-        end_line: 1,
-        end_column: 1,
+        sourcepos: (1, 1, 1, 1).into(),
         internal_offset: 0,
         open: true,
         last_line_blank: false,
@@ -1402,7 +1399,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         assert!(start_column > 0);
 
-        let child = Ast::new(value, self.line_number, start_column);
+        let child = Ast::new(value, (self.line_number, start_column).into());
         let node = self.arena.alloc(Node::new(RefCell::new(child)));
         parent.append(node);
         node
@@ -1428,7 +1425,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
                 NodeValue::Item(..) => {
                     container.first_child().is_some()
-                        || container.data.borrow().start_line != self.line_number
+                        || container.data.borrow().sourcepos.start.line != self.line_number
                 }
                 _ => true,
             };
@@ -1605,19 +1602,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let parent = node.parent();
 
         if self.curline_len == 0 {
-            ast.end_line = self.line_number;
-            ast.end_column = self.last_line_length;
+            ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced,
             NodeValue::Heading(ref nh) => nh.setext,
             _ => false,
         } {
-            ast.end_line = self.line_number;
-            ast.end_column = self.curline_end_col;
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else {
-            ast.end_line = self.line_number - 1;
-            ast.end_column = self.last_line_length;
+            ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
 
         match ast.value {
@@ -1723,8 +1717,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.arena,
             self.options,
             content,
-            node_data.start_line,
-            node_data.start_column - 1 + node_data.internal_offset,
+            node_data.sourcepos.start.line,
+            node_data.sourcepos.start.column - 1 + node_data.internal_offset,
             &mut self.refmap,
             &delimiter_arena,
             self.callback.as_mut(),
@@ -1830,8 +1824,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 loop {
                     let n_ast = &mut n.data.borrow_mut();
 
-                    let start_line = n_ast.start_line;
-                    let start_column = n_ast.start_column;
+                    let start = n_ast.sourcepos.start;
 
                     match n_ast.value {
                         // Join adjacent text nodes together
@@ -1840,7 +1833,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 Some(ns) => ns,
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, start_line, start_column);
+                                    self.postprocess_text_node(n, root, start);
                                     break;
                                 }
                             };
@@ -1852,7 +1845,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 }
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, start_line, start_column);
+                                    self.postprocess_text_node(n, root, start);
                                     break;
                                 }
                             }
@@ -1882,15 +1875,14 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
-        start_line: usize,
-        start_column: usize,
+        start: LineColumn,
     ) {
         if self.options.extension.tasklist {
             self.process_tasklist(node, text);
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(self.arena, node, text, start_line, start_column);
+            autolink::process_autolinks(self.arena, node, text, start);
         }
     }
 

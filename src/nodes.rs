@@ -2,6 +2,7 @@
 
 use crate::arena_tree::Node;
 use std::cell::RefCell;
+use std::convert::TryFrom;
 
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -437,14 +438,8 @@ pub struct Ast {
     /// The node value itself.
     pub value: NodeValue,
 
-    /// The line in the input document the node starts at.
-    pub start_line: usize,
-    /// The column in the input document the node starts at.
-    pub start_column: usize,
-    /// The line in the input document the node ends at.
-    pub end_line: usize,
-    /// The column in the input document the node ends at.
-    pub end_column: usize,
+    /// The positions in the source document this node comes from.
+    pub sourcepos: Sourcepos,
     pub(crate) internal_offset: usize,
 
     pub(crate) content: String,
@@ -453,16 +448,75 @@ pub struct Ast {
     pub(crate) table_visited: bool,
 }
 
+/// Represents the position in the source Markdown this node was rendered from.
+#[derive(Debug, Clone, Copy)]
+pub struct Sourcepos {
+    /// The line and column of the first character of this node.
+    pub start: LineColumn,
+    /// The line and column of the last character of this node.
+    pub end: LineColumn,
+}
+
+impl std::fmt::Display for Sourcepos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}-{}:{}",
+            self.start.line, self.start.column, self.end.line, self.end.column,
+        )
+    }
+}
+
+impl From<(usize, usize, usize, usize)> for Sourcepos {
+    fn from(sp: (usize, usize, usize, usize)) -> Sourcepos {
+        Sourcepos {
+            start: LineColumn {
+                line: sp.0,
+                column: sp.1,
+            },
+            end: LineColumn {
+                line: sp.2,
+                column: sp.3,
+            },
+        }
+    }
+}
+
+/// Represents the 1-based line and column positions of a given character.
+#[derive(Debug, Clone, Copy)]
+pub struct LineColumn {
+    /// The 1-based line number of the character.
+    pub line: usize,
+    /// The 1-based column number of the character.
+    pub column: usize,
+}
+
+impl From<(usize, usize)> for LineColumn {
+    fn from(lc: (usize, usize)) -> LineColumn {
+        LineColumn {
+            line: lc.0,
+            column: lc.1,
+        }
+    }
+}
+
+impl LineColumn {
+    /// Return a new LineColumn based on this one, with the column adjusted by offset.
+    pub fn column_add(&self, offset: isize) -> LineColumn {
+        LineColumn {
+            line: self.line,
+            column: usize::try_from((self.column as isize) + offset).unwrap(),
+        }
+    }
+}
+
 impl Ast {
     /// Create a new AST node with the given value.
-    pub fn new(value: NodeValue, start_line: usize, start_column: usize) -> Self {
+    pub fn new(value: NodeValue, start: LineColumn) -> Self {
         Ast {
             value,
             content: String::new(),
-            start_line,
-            start_column,
-            end_line: start_line,
-            end_column: 0,
+            sourcepos: (start.line, start.column, start.line, 0).into(),
             internal_offset: 0,
             open: true,
             last_line_blank: false,
@@ -583,28 +637,4 @@ pub(crate) fn containing_block<'a>(node: &'a AstNode<'a>) -> Option<&'a AstNode<
         ch = n.parent();
     }
     None
-}
-
-/// Represents the position in the source Markdown this node was rendered from.
-#[derive(Debug, Clone, Copy)]
-pub struct Sourcepos {
-    /// The 1-based line number of the first character of this node.
-    pub start_line: usize,
-    /// The 1-based column number of the first character of this node.
-    pub start_column: usize,
-    /// The 1-based line number of the last character of this node.
-    pub end_line: usize,
-    /// The 1-based columnnumber of the last character of this node.
-    pub end_column: usize,
-}
-
-impl From<&Ast> for Sourcepos {
-    fn from(ast: &Ast) -> Sourcepos {
-        Sourcepos {
-            start_line: ast.start_line,
-            start_column: ast.start_column,
-            end_line: ast.end_line,
-            end_column: ast.end_column,
-        }
-    }
 }

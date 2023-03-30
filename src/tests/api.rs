@@ -123,7 +123,10 @@ fn exercise_full_api() {
     //
 
     let ast = node.data.borrow();
-    let _ = ast.start_line;
+    let _: usize = ast.sourcepos.start.line;
+    let _: usize = ast.sourcepos.start.column;
+    let _: usize = ast.sourcepos.end.line;
+    let _: usize = ast.sourcepos.end.column;
     match &ast.value {
         nodes::NodeValue::Document => {}
         nodes::NodeValue::FrontMatter(_) => {}

@@ -1,7 +1,7 @@
 use crate::arena_tree::Node;
 use crate::ctype::{ispunct, isspace};
 use crate::entity;
-use crate::nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue};
+use crate::nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue, Sourcepos};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
@@ -531,8 +531,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if newlines > 0 {
             self.line += newlines;
             let node_ast = &mut node.data.borrow_mut();
-            node_ast.end_line += newlines;
-            node_ast.end_column = since_newline;
+            node_ast.sourcepos.end.line += newlines;
+            node_ast.sourcepos.end.column = since_newline;
             self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
         }
     }
@@ -884,11 +884,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos,
         );
         {
-            let emph_ast = &mut emph.data.borrow_mut();
-            emph_ast.start_line = opener.inl.data.borrow().start_line;
-            emph_ast.start_column = opener.inl.data.borrow().start_column;
-            emph_ast.end_line = closer.inl.data.borrow().end_line;
-            emph_ast.end_column = closer.inl.data.borrow().end_column;
+            emph.data.borrow_mut().sourcepos = (
+                opener.inl.data.borrow().sourcepos.start.line,
+                opener.inl.data.borrow().sourcepos.start.column,
+                closer.inl.data.borrow().sourcepos.end.line,
+                closer.inl.data.borrow().sourcepos.end.column,
+            )
+                .into();
         }
 
         // Drop all the interior AST nodes into the emphasis node
@@ -1232,12 +1234,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     self.pos,
                     self.pos,
                 );
-                inl.data.borrow_mut().start_column = self.brackets[brackets_len - 1]
+                inl.data.borrow_mut().sourcepos.start.column = self.brackets[brackets_len - 1]
                     .inl_text
                     .data
                     .borrow()
-                    .start_column;
-                inl.data.borrow_mut().end_column = usize::try_from(
+                    .sourcepos
+                    .start
+                    .column;
+                inl.data.borrow_mut().sourcepos.end.column = usize::try_from(
                     self.pos as isize + self.column_offset + self.block_offset as isize,
                 )
                 .unwrap();
@@ -1273,12 +1277,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos,
             self.pos,
         );
-        inl.data.borrow_mut().start_column = self.brackets[brackets_len - 1]
+        inl.data.borrow_mut().sourcepos.start.column = self.brackets[brackets_len - 1]
             .inl_text
             .data
             .borrow()
-            .start_column;
-        inl.data.borrow_mut().end_column =
+            .sourcepos
+            .start
+            .column;
+        inl.data.borrow_mut().sourcepos.end.column =
             usize::try_from(self.pos as isize + self.column_offset + self.block_offset as isize)
                 .unwrap();
 
@@ -1356,10 +1362,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let ast = Ast {
             value,
             content: String::new(),
-            start_line: self.line,
-            start_column: usize::try_from(start_column).unwrap(),
-            end_line: self.line,
-            end_column: usize::try_from(end_column).unwrap(),
+            sourcepos: (
+                self.line,
+                usize::try_from(start_column).unwrap(),
+                self.line,
+                usize::try_from(end_column).unwrap(),
+            )
+                .into(),
             internal_offset: 0,
             open: false,
             last_line_blank: false,
@@ -1462,18 +1471,12 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
 pub fn make_inline<'a>(
     arena: &'a Arena<AstNode<'a>>,
     value: NodeValue,
-    start_line: usize,
-    start_column: usize,
-    end_line: usize,
-    end_column: usize,
+    sourcepos: Sourcepos,
 ) -> &'a AstNode<'a> {
     let ast = Ast {
         value,
         content: String::new(),
-        start_line,
-        start_column,
-        end_line,
-        end_column,
+        sourcepos,
         internal_offset: 0,
         open: false,
         last_line_blank: false,

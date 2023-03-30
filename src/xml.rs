@@ -139,12 +139,8 @@ impl<'o> XmlFormatter<'o> {
 
             write!(self.output, "<{}", ast.value.xml_node_name())?;
 
-            if self.options.render.sourcepos && ast.start_line != 0 {
-                write!(
-                    self.output,
-                    " sourcepos=\"{}:{}-{}:{}\"",
-                    ast.start_line, ast.start_column, ast.end_line, ast.end_column,
-                )?;
+            if self.options.render.sourcepos && ast.sourcepos.start.line != 0 {
+                write!(self.output, " sourcepos=\"{}\"", ast.sourcepos)?;
             }
 
             let mut was_literal = false;

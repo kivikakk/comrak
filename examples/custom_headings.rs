@@ -46,12 +46,8 @@ impl HeadingAdapter for CustomHeadingAdapter {
 
         write!(output, "<h{}", heading.level)?;
 
-        if let Some(sp) = sourcepos {
-            write!(
-                output,
-                " data-sourcepos=\"{}:{}-{}:{}\"",
-                sp.start_line, sp.start_column, sp.end_line, sp.end_column,
-            )?;
+        if let Some(sourcepos) = sourcepos {
+            write!(output, " data-sourcepos=\"{}\"", sourcepos)?;
         }
 
         write!(

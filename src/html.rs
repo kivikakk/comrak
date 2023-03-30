@@ -8,7 +8,6 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
-use std::ops::Deref;
 use std::str;
 
 use crate::adapters::HeadingMeta;
@@ -532,7 +531,7 @@ impl<'o> HtmlFormatter<'o> {
                             self.output,
                             &heading,
                             if self.options.render.sourcepos {
-                                Some(node.data.borrow().deref().into())
+                                Some(node.data.borrow().sourcepos)
                             } else {
                                 None
                             },
@@ -582,13 +581,8 @@ impl<'o> HtmlFormatter<'o> {
 
                     if self.options.render.sourcepos {
                         let ast = node.data.borrow();
-                        pre_attributes.insert(
-                            "data-sourcepos".to_string(),
-                            format!(
-                                "{}:{}-{}:{}",
-                                ast.start_line, ast.start_column, ast.end_line, ast.end_column
-                            ),
-                        );
+                        pre_attributes
+                            .insert("data-sourcepos".to_string(), ast.sourcepos.to_string());
                     }
 
                     match self.plugins.render.codefence_syntax_highlighter {
@@ -951,11 +945,7 @@ impl<'o> HtmlFormatter<'o> {
     fn render_sourcepos<'a>(&mut self, node: &'a AstNode<'a>) -> io::Result<()> {
         if self.options.render.sourcepos {
             let ast = node.data.borrow();
-            write!(
-                self.output,
-                " data-sourcepos=\"{}:{}-{}:{}\"",
-                ast.start_line, ast.start_column, ast.end_line, ast.end_column,
-            )?;
+            write!(self.output, " data-sourcepos=\"{}\"", ast.sourcepos)?;
         }
         Ok(())
     }

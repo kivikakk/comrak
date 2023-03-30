@@ -70,35 +70,32 @@ fn try_opening_header<'a>(
         });
     }
 
-    let (start_line, start_column) = {
-        let container_ast = container.data.borrow();
-        (container_ast.start_line, container_ast.start_column)
-    };
-    let child = Ast::new(NodeValue::Table(alignments), start_line, start_column);
+    let start = container.data.borrow().sourcepos.start;
+    let child = Ast::new(NodeValue::Table(alignments), start);
     let table = parser.arena.alloc(Node::new(RefCell::new(child)));
     container.append(table);
 
-    let header = parser.add_child(table, NodeValue::TableRow(true), start_column);
+    let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
     {
         let header_ast = &mut header.data.borrow_mut();
-        header_ast.start_line = start_line;
-        header_ast.end_line = start_line;
-        header_ast.end_column = start_column + container.data.borrow().content.as_bytes().len()
-            - 2
-            - header_row.paragraph_offset;
+        header_ast.sourcepos.start.line = start.line;
+        header_ast.sourcepos.end = start.column_add(
+            (container.data.borrow().content.as_bytes().len() - 2 - header_row.paragraph_offset)
+                as isize,
+        );
     }
 
     for cell in header_row.cells {
         let ast_cell = parser.add_child(
             header,
             NodeValue::TableCell,
-            start_column + cell.start_offset - header_row.paragraph_offset,
+            start.column + cell.start_offset - header_row.paragraph_offset,
         );
         let ast = &mut ast_cell.data.borrow_mut();
-        ast.start_line = start_line;
-        ast.end_line = start_line;
+        ast.sourcepos.start.line = start.line;
+        ast.sourcepos.end =
+            start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
         ast.internal_offset = cell.internal_offset;
-        ast.end_column = start_column + cell.end_offset - header_row.paragraph_offset;
         ast.content = cell.content.clone();
     }
 
@@ -117,33 +114,33 @@ fn try_opening_row<'a>(
     if parser.blank {
         return None;
     }
-    let (start_column, end_column) = {
-        let container_ast = container.data.borrow();
-        (container_ast.start_column, container_ast.end_column)
-    };
+    let sourcepos = container.data.borrow().sourcepos;
     let this_row = row(&line[parser.first_nonspace..]).unwrap();
-    let new_row = parser.add_child(container, NodeValue::TableRow(false), start_column);
+    let new_row = parser.add_child(
+        container,
+        NodeValue::TableRow(false),
+        sourcepos.start.column,
+    );
     {
-        let new_row_ast = &mut new_row.data.borrow_mut();
-        new_row_ast.end_column = end_column;
+        new_row.data.borrow_mut().sourcepos.end.column = sourcepos.end.column;
     }
 
     let mut i = 0;
-    let mut last_column = start_column;
+    let mut last_column = sourcepos.start.column;
 
     while i < min(alignments.len(), this_row.cells.len()) {
         let cell = &this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
             NodeValue::TableCell,
-            start_column + cell.start_offset,
+            sourcepos.start.column + cell.start_offset,
         );
         let cell_ast = &mut cell_node.data.borrow_mut();
         cell_ast.internal_offset = cell.internal_offset;
-        cell_ast.end_column = start_column + cell.end_offset;
+        cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
         cell_ast.content = cell.content.clone();
 
-        last_column = cell_ast.end_column;
+        last_column = cell_ast.sourcepos.end.column;
         i += 1;
     }
 
@@ -250,11 +247,10 @@ fn try_inserting_table_header_paragraph<'a>(
         return;
     }
 
-    let start_line = container_ast.start_line;
-    let start_column = container_ast.start_column;
+    let start = container_ast.sourcepos.start;
 
-    let mut paragraph = Ast::new(NodeValue::Paragraph, start_line, start_column);
-    paragraph.end_line = start_line + newlines - 1;
+    let mut paragraph = Ast::new(NodeValue::Paragraph, start);
+    paragraph.sourcepos.end.line = start.line + newlines - 1;
 
     // XXX We don't have the last_line_length to go on by this point,
     // so we have no idea what the end column should be.
@@ -265,7 +261,7 @@ fn try_inserting_table_header_paragraph<'a>(
     // finalize() here, but without the parser state at that time.
     // Approximate by just counting the line length as it is and adding
     // to the start column.
-    paragraph.end_column = start_column - 1
+    paragraph.sourcepos.end.column = start.column - 1
         + preface
             .iter()
             .rev()
@@ -273,7 +269,7 @@ fn try_inserting_table_header_paragraph<'a>(
             .take_while(|&&c| c != b'\n')
             .count();
 
-    container_ast.start_line += newlines;
+    container_ast.sourcepos.start.line += newlines;
 
     paragraph.content = String::from_utf8(paragraph_content).unwrap();
     let node = parser.arena.alloc(Node::new(RefCell::new(paragraph)));
