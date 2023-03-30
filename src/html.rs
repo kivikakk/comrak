@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
+use std::ops::Deref;
 use std::str;
 
 use crate::adapters::HeadingMeta;
@@ -525,10 +526,17 @@ impl<'o> HtmlFormatter<'o> {
                         content,
                     };
 
-                    // TODO: sourcepos for heading adapter
                     if entering {
                         self.cr()?;
-                        adapter.enter(self.output, &heading)?;
+                        adapter.enter(
+                            self.output,
+                            &heading,
+                            if self.options.render.sourcepos {
+                                Some(node.data.borrow().deref().into())
+                            } else {
+                                None
+                            },
+                        )?;
                     } else {
                         adapter.exit(self.output, &heading)?;
                     }
@@ -572,7 +580,16 @@ impl<'o> HtmlFormatter<'o> {
                         }
                     }
 
-                    // TODO: add sourcepos to pre_attributes
+                    if self.options.render.sourcepos {
+                        let ast = node.data.borrow();
+                        pre_attributes.insert(
+                            "data-sourcepos".to_string(),
+                            format!(
+                                "{}:{}-{}:{}",
+                                ast.start_line, ast.start_column, ast.end_line, ast.end_column
+                            ),
+                        );
+                    }
 
                     match self.plugins.render.codefence_syntax_highlighter {
                         None => {
@@ -602,7 +619,7 @@ impl<'o> HtmlFormatter<'o> {
                 }
             }
             NodeValue::HtmlBlock(ref nhb) => {
-                // TODO: what does upstream do about CMARK_HTML_BLOCK and sourcepos?
+                // No sourcepos.
                 if entering {
                     self.cr()?;
                     let literal = nhb.literal.as_bytes();
@@ -694,7 +711,7 @@ impl<'o> HtmlFormatter<'o> {
                 }
             }
             NodeValue::HtmlInline(ref literal) => {
-                // TODO: CMARK_HTML_INLINE sourcepos does what?
+                // No sourcepos.
                 if entering {
                     let literal = literal.as_bytes();
                     if self.options.render.escape {

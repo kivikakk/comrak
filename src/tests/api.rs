@@ -1,4 +1,7 @@
-use crate::adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter};
+use crate::{
+    adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
+    nodes::Sourcepos,
+};
 
 use super::*;
 
@@ -92,7 +95,12 @@ fn exercise_full_api() {
     }
 
     impl HeadingAdapter for MockAdapter {
-        fn enter(&self, _output: &mut dyn Write, _heading: &HeadingMeta) -> io::Result<()> {
+        fn enter(
+            &self,
+            _output: &mut dyn Write,
+            _heading: &HeadingMeta,
+            _sourcepos: Option<Sourcepos>,
+        ) -> io::Result<()> {
             unreachable!()
         }
 

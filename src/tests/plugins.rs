@@ -1,4 +1,7 @@
-use crate::adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter};
+use crate::{
+    adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
+    nodes::Sourcepos,
+};
 
 use super::*;
 
@@ -51,7 +54,12 @@ fn heading_adapter_plugin() {
     struct MockAdapter;
 
     impl HeadingAdapter for MockAdapter {
-        fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+        fn enter(
+            &self,
+            output: &mut dyn Write,
+            heading: &HeadingMeta,
+            _sourcepos: Option<Sourcepos>,
+        ) -> io::Result<()> {
             write!(output, "<h{} data-heading=\"true\">", heading.level + 1)
         }
 

@@ -584,3 +584,27 @@ pub(crate) fn containing_block<'a>(node: &'a AstNode<'a>) -> Option<&'a AstNode<
     }
     None
 }
+
+/// Represents the position in the source Markdown this node was rendered from.
+#[derive(Debug, Clone, Copy)]
+pub struct Sourcepos {
+    /// The 1-based line number of the first character of this node.
+    pub start_line: usize,
+    /// The 1-based column number of the first character of this node.
+    pub start_column: usize,
+    /// The 1-based line number of the last character of this node.
+    pub end_line: usize,
+    /// The 1-based columnnumber of the last character of this node.
+    pub end_column: usize,
+}
+
+impl From<&Ast> for Sourcepos {
+    fn from(ast: &Ast) -> Sourcepos {
+        Sourcepos {
+            start_line: ast.start_line,
+            start_column: ast.start_column,
+            end_line: ast.end_line,
+            end_column: ast.end_column,
+        }
+    }
+}
