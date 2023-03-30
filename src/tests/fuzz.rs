@@ -94,6 +94,6 @@ fn line_end() {
 }
 
 #[test]
-fn x() {
+fn bracket_match() {
     html("[;\0V\n]::g\n[;\0V\n]", "<p><a href=\":g\">;�V\n</a></p>\n");
 }
