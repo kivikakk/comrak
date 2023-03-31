@@ -1081,7 +1081,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 *container = self.add_child(
                     container,
                     NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
-                    self.first_nonspace + matched + 1, // TODO: double-check
+                    self.first_nonspace + 1,
                 );
                 container.data.borrow_mut().internal_offset = matched;
             } else if !indented
