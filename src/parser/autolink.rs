@@ -368,7 +368,7 @@ fn email_match<'a>(
             start.line,
             start.column - rewind,
             start.line,
-            start.column + link_end,
+            start.column + link_end - 1,
         )
             .into(),
     );
@@ -380,7 +380,7 @@ fn email_match<'a>(
             start.line,
             start.column - rewind,
             start.line,
-            start.column + link_end,
+            start.column + link_end - 1,
         )
             .into(),
     ));

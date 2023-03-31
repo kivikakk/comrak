@@ -449,7 +449,7 @@ pub struct Ast {
 }
 
 /// Represents the position in the source Markdown this node was rendered from.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sourcepos {
     /// The line and column of the first character of this node.
     pub start: LineColumn,
@@ -483,7 +483,7 @@ impl From<(usize, usize, usize, usize)> for Sourcepos {
 }
 
 /// Represents the 1-based line and column positions of a given character.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LineColumn {
     /// The 1-based line number of the character.
     pub line: usize,

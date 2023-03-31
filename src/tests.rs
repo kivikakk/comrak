@@ -1,7 +1,8 @@
-use crate::nodes::{AstNode, NodeValue};
+use crate::nodes::{AstNode, NodeValue, Sourcepos};
 use crate::*;
 use std::collections::HashMap;
 use std::io::{self, Write};
+use std::panic;
 
 mod api;
 mod autolink;
@@ -177,4 +178,113 @@ fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &Nod
     let expected = format!("{:?}", expected);
 
     compare_strs(&actual, &expected, "ast comparison");
+}
+
+macro_rules! ast {
+    (($name:tt ($spsl:literal:$spsc:literal-$spel:literal:$spec:literal))) => {
+        ast!(($name ($spsl:$spsc-$spel:$spec) []))
+    };
+    (($name:tt ($spsl:literal:$spsc:literal-$spel:literal:$spec:literal) $content:tt)) => {
+        AstMatchTree {
+            name: stringify!($name).to_string(),
+            sourcepos: ($spsl, $spsc, $spel, $spec).into(),
+            content: ast!($content),
+        }
+    };
+
+    ($text:literal) => {AstMatchContent::Text($text.to_string())};
+    ([ $( $children:tt )* ]) => {
+        AstMatchContent::Children(vec![ $( ast!($children), )* ])
+    };
+}
+
+pub(crate) use ast;
+
+#[track_caller]
+fn assert_ast_match_i<F>(md: &str, amt: AstMatchTree, opts: F)
+where
+    F: Fn(&mut ComrakOptions),
+{
+    let mut options = ComrakOptions::default();
+    options.render.sourcepos = true;
+    opts(&mut options);
+
+    let result = panic::catch_unwind(|| {
+        let arena = Arena::new();
+        let root = parse_document(&arena, md, &options);
+
+        amt.assert_match(root);
+    });
+
+    if let Err(_) = result {
+        let arena = Arena::new();
+        let root = parse_document(&arena, md, &options);
+
+        let mut output = vec![];
+        format_xml(root, &options, &mut output).unwrap();
+        eprintln!("{}", std::str::from_utf8(&output).unwrap());
+    }
+}
+
+macro_rules! assert_ast_match {
+    ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt,) => {
+        assert_ast_match!(
+            [ $( $optclass.$optname ),* ],
+            $( $md )+,
+            $amt
+        )
+    };
+    ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt) => {
+        crate::tests::assert_ast_match_i(
+            concat!( $( $md ),+ ),
+            ast!($amt),
+            |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = true;)*},
+        );
+    };
+}
+
+pub(crate) use assert_ast_match;
+
+struct AstMatchTree {
+    name: String,
+    sourcepos: Sourcepos,
+    content: AstMatchContent,
+}
+
+enum AstMatchContent {
+    Text(String),
+    Children(Vec<AstMatchTree>),
+}
+
+impl AstMatchTree {
+    fn assert_match<'a>(&self, node: &'a AstNode<'a>) {
+        let ast = node.data.borrow();
+        assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");
+        assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");
+
+        match &self.content {
+            AstMatchContent::Text(text) => {
+                assert_eq!(
+                    0,
+                    node.children().count(),
+                    "text node should have no children"
+                );
+                assert_eq!(
+                    text,
+                    ast.value.text().unwrap(),
+                    "text node content should match"
+                );
+            }
+            AstMatchContent::Children(children) => {
+                assert_eq!(
+                    children.len(),
+                    node.children().count(),
+                    "children count should match"
+                );
+                for (e, a) in children.iter().zip(node.children()) {
+                    e.assert_match(a);
+                }
+            }
+        }
+    }
 }
