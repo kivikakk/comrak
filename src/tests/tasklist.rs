@@ -98,3 +98,58 @@ fn tasklist_32() {
         ),
     );
 }
+
+#[test]
+fn sourcepos() {
+    assert_ast_match!(
+        [],
+        "h\n"
+        "- [ ] xy\n"
+        "  - [x] zw\n",
+        (document (1:1-3:10) [
+            (paragraph (1:1-1:1) [
+                (text (1:1-1:1) "h")
+            ])
+            (list (2:1-3:10) [
+                (item (2:1-3:10) [
+                    (paragraph (2:3-2:8) [
+                        (text (2:3-2:8) "[ ] xy")
+                    ])
+                    (list (3:3-3:10) [
+                        (item (3:3-3:10) [
+                            (paragraph (3:5-3:10) [
+                                (text (3:5-3:10) "[x] zw")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist],
+        "h\n"
+        "- [ ] xy\n"
+        "  - [x] zw\n",
+        (document (1:1-3:10) [
+            (paragraph (1:1-1:1) [
+                (text (1:1-1:1) "h")
+            ])
+            (list (2:1-3:10) [
+                (taskitem (2:1-3:10) [
+                    (paragraph (2:7-2:8) [
+                        (text (2:7-2:8) "xy")
+                    ])
+                    (list (3:3-3:10) [
+                        (taskitem (3:3-3:10) [
+                            (paragraph (3:9-3:10) [
+                                (text (3:9-3:10) "zw")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}

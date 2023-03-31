@@ -10,8 +10,8 @@ pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
-    sourcepos: Sourcepos,
-) -> usize {
+    sourcepos: &mut Sourcepos,
+) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
     let mut i = 0;
@@ -66,11 +66,10 @@ pub(crate) fn process_autolinks<'a>(
                 ));
             }
             contents_str.truncate(i);
-            return len - i;
+            sourcepos.end.column -= len - i;
+            return;
         }
     }
-
-    0
 }
 
 fn www_match<'a>(

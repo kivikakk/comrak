@@ -420,7 +420,7 @@ impl NodeValue {
             NodeValue::HtmlInline(..) => "html_inline",
             NodeValue::Strikethrough => "strikethrough",
             NodeValue::FrontMatter(_) => "frontmatter",
-            NodeValue::TaskItem { .. } => "tasklist",
+            NodeValue::TaskItem { .. } => "taskitem",
             NodeValue::Superscript => "superscript",
             NodeValue::FootnoteReference(_) => "footnote_reference",
             #[cfg(feature = "shortcodes")]

@@ -841,14 +841,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        // self.last_line_length = line.len();
-        // if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\n' {
-        //     self.last_line_length -= 1;
-        // }
-        // if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\r' {
-        //     self.last_line_length -= 1;
-        // }
-
         self.last_line_length = self.curline_end_col;
 
         self.curline_len = 0;
@@ -1532,7 +1524,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
         if self.offset < line.len() {
             ast.content
-                .push_str(str::from_utf8(&line[self.offset..]).unwrap()); // TODO: try propagating &[u8] to &str up from here
+                .push_str(str::from_utf8(&line[self.offset..]).unwrap());
         }
     }
 
@@ -1822,9 +1814,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             while let Some(n) = nch {
                 let mut this_bracket = false;
                 let n_ast = &mut n.data.borrow_mut();
-                let endcolrewind = loop {
-                    let sourcepos = n_ast.sourcepos;
+                let mut sourcepos = n_ast.sourcepos;
 
+                loop {
                     match n_ast.value {
                         // Join adjacent text nodes together
                         NodeValue::Text(ref mut root) => {
@@ -1832,30 +1824,33 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 Some(ns) => ns,
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    break self.postprocess_text_node(n, root, sourcepos);
+                                    self.postprocess_text_node(n, root, &mut sourcepos);
+                                    break;
                                 }
                             };
 
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
+                                    sourcepos.end.column = ns.data.borrow().sourcepos.end.column;
                                     ns.detach();
                                 }
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    break self.postprocess_text_node(n, root, sourcepos);
+                                    self.postprocess_text_node(n, root, &mut sourcepos);
+                                    break;
                                 }
                             }
                         }
                         NodeValue::Link(..) | NodeValue::Image(..) => {
                             this_bracket = true;
-                            break 0;
+                            break;
                         }
-                        _ => break 0,
+                        _ => break,
                     }
-                };
+                }
 
-                n_ast.sourcepos.end.column -= endcolrewind;
+                n_ast.sourcepos = sourcepos;
 
                 if !this_bracket {
                     children.push(n);
@@ -1874,23 +1869,23 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
-        sourcepos: Sourcepos,
-    ) -> usize {
-        let mut endcolrewind = 0;
-
+        sourcepos: &mut Sourcepos,
+    ) {
         if self.options.extension.tasklist {
-            self.process_tasklist(node, text);
+            self.process_tasklist(node, text, sourcepos);
         }
 
         if self.options.extension.autolink {
-            endcolrewind += autolink::process_autolinks(self.arena, node, text, sourcepos);
+            autolink::process_autolinks(self.arena, node, text, sourcepos);
         }
-
-        endcolrewind
     }
 
-    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
-        // TODO sourcepos adjustments
+    fn process_tasklist(
+        &mut self,
+        node: &'a AstNode<'a>,
+        text: &mut String,
+        sourcepos: &mut Sourcepos,
+    ) {
         let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
             Some(p) => p,
             None => return,
@@ -1916,6 +1911,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         text.drain(..end);
+
+        sourcepos.start.column += end;
+        parent.data.borrow_mut().sourcepos.start.column += end;
 
         parent.parent().unwrap().data.borrow_mut().value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
