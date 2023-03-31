@@ -1,3 +1,10 @@
+### 0.18.0
+
+* Improve performance of bundled plugins, and streaming I/O by @kivikakk in https://github.com/kivikakk/comrak/pull/288
+* Implement Default for enums without using #[default] attribute by @silverpill in https://github.com/kivikakk/comrak/pull/293
+* XML and sourcepos support by @kivikakk in https://github.com/kivikakk/comrak/pull/232
+* Add a quadratic fuzzer by @philipturnbull in https://github.com/kivikakk/comrak/pull/295
+
 ### 0.17.1
 
 * Fix some panics found by trivial fuzzing.

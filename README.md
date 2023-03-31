@@ -22,7 +22,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.17"
+comrak = "0.18"
 ```
 
 Comrak supports Rust stable.
@@ -70,8 +70,8 @@ Options:
           Enable full info strings for code blocks
 
       --gfm
-          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and tasklist.
-          Also enables --github-pre-lang
+          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
+          tasklist. Also enables --github-pre-lang
 
       --relaxed-tasklist-character
           Enable relaxing which character is allowed in a tasklists
@@ -93,14 +93,14 @@ Options:
           
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
-          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript, footnotes,
-          description-lists]
+          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
+          footnotes, description-lists]
 
   -t, --to <FORMAT>
           Specify output format
           
           [default: html]
-          [possible values: html, commonmark]
+          [possible values: html, xml, commonmark]
 
   -o, --output <FILE>
           Write output to FILE instead of stdout
@@ -122,10 +122,13 @@ Options:
           [default: base16-ocean.dark]
 
       --list-style <LIST_STYLE>
-          Specify bullet character for lists (-, +, *) in CommonMark ouput
+          Specify bullet character for lists (-, +, *) in CommonMark output
           
           [default: dash]
           [possible values: dash, plus, star]
+
+      --sourcepos
+          Include source position attribute in HTML and XML output
 
   -h, --help
           Print help information (use `-h` for a summary)
@@ -133,8 +136,9 @@ Options:
   -V, --version
           Print version information
 
-By default, Comrak will attempt to read command-line options from a config file specified by --config-file.
-This behaviour can be disabled by passing --config-file none. It is not an error if the file does not exist.
+By default, Comrak will attempt to read command-line options from a config file specified by
+--config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
+the file does not exist.
 ```
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:

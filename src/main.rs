@@ -277,7 +277,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;
     } else {
-        let mut bw = BufWriter::new(std::io::stdout().lock());
+        let stdout = std::io::stdout();
+        let mut bw = BufWriter::new(stdout.lock());
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;
     };
