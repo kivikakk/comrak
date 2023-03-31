@@ -658,7 +658,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let start = self.pos;
         self.pos += 1;
 
-        if !self.options.parse.smart || self.peek_char().map_or(false, |&c| c != b'-') {
+        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
             return self.make_inline(NodeValue::Text("-".to_string()), self.pos - 1, self.pos - 1);
         }
 
