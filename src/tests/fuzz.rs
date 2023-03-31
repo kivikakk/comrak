@@ -1,42 +1,5 @@
 use super::{html, html_opts};
 
-/// To be used when moving from the all_options fuzz target to here.
-/// Reduce to the actual necessary options to reproduce.
-#[allow(dead_code)]
-#[cfg(feature = "shortcodes")]
-fn all_options() -> crate::ComrakOptions {
-    crate::ComrakOptions {
-        extension: crate::ComrakExtensionOptions {
-            strikethrough: true,
-            tagfilter: true,
-            table: true,
-            autolink: true,
-            tasklist: true,
-            superscript: true,
-            header_ids: Some("user-content-".to_string()),
-            footnotes: true,
-            description_lists: true,
-            front_matter_delimiter: Some("---".to_string()),
-            shortcodes: true,
-        },
-        parse: crate::ComrakParseOptions {
-            smart: true,
-            default_info_string: Some("rust".to_string()),
-            relaxed_tasklist_matching: true,
-        },
-        render: crate::ComrakRenderOptions {
-            hardbreaks: true,
-            github_pre_lang: true,
-            full_info_string: true,
-            width: 80,
-            unsafe_: true,
-            escape: true,
-            list_style: crate::ListStyleType::Star,
-            sourcepos: true,
-        },
-    }
-}
-
 #[test]
 fn pointy_brace_open() {
     html("<!-", "<p>&lt;!-</p>\n");
@@ -96,4 +59,22 @@ fn line_end() {
 #[test]
 fn bracket_match() {
     html("[;\0V\n]::g\n[;\0V\n]", "<p><a href=\":g\">;�V\n</a></p>\n");
+}
+
+#[test]
+fn trailing_hyphen() {
+    html_opts!(
+        [extension.autolink, parse.smart, render.sourcepos],
+        "3@.l-",
+        "<p data-sourcepos=\"1:1-1:5\">3@.l-</p>\n"
+    );
+}
+
+#[test]
+fn trailing_hyphen_matches() {
+    html_opts!(
+        [extension.autolink, parse.smart, render.sourcepos],
+        "3@.l--",
+        "<p data-sourcepos=\"1:1-1:6\"><a href=\"mailto:3@.l\">3@.l</a>–</p>\n"
+    );
 }

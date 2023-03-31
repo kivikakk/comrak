@@ -988,7 +988,9 @@ impl<'o> HtmlFormatter<'o> {
     fn render_sourcepos<'a>(&mut self, node: &'a AstNode<'a>) -> io::Result<()> {
         if self.options.render.sourcepos {
             let ast = node.data.borrow();
-            write!(self.output, " data-sourcepos=\"{}\"", ast.sourcepos)?;
+            if ast.sourcepos.start.line > 0 {
+                write!(self.output, " data-sourcepos=\"{}\"", ast.sourcepos)?;
+            }
         }
         Ok(())
     }

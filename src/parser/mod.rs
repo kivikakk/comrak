@@ -1900,7 +1900,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(self.arena, node, text, sourcepos);
+            autolink::process_autolinks(self.arena, node, text);
         }
     }
 
@@ -1936,6 +1936,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         text.drain(..end);
 
+        // These are sound only because the exact text that we've matched and
+        // the count thereof (i.e. "end") will precisely map to characters in
+        // the source document.
         sourcepos.start.column += end;
         parent.data.borrow_mut().sourcepos.start.column += end;
 

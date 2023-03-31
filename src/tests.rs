@@ -99,10 +99,42 @@ macro_rules! html_opts {
         html_opts!([$($optclass.$optname),*], $lhs, $rhs)
     };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr) => {
-        crate::tests::html_opts_i($lhs, $rhs, |opts| {
+        $crate::tests::html_opts_i($lhs, $rhs, |opts| {
             $(opts.$optclass.$optname = true;)*
         });
     };
+    ([all], $lhs:expr, $rhs:expr) => {
+        $crate::tests::html_opts_w($lhs, $rhs, &$crate::ComrakOptions {
+            extension: $crate::ComrakExtensionOptions {
+                strikethrough: true,
+                tagfilter: true,
+                table: true,
+                autolink: true,
+                tasklist: true,
+                superscript: true,
+                header_ids: Some("user-content-".to_string()),
+                footnotes: true,
+                description_lists: true,
+                front_matter_delimiter: Some("---".to_string()),
+                shortcodes: true,
+            },
+            parse: $crate::ComrakParseOptions {
+                smart: true,
+                default_info_string: Some("rust".to_string()),
+                relaxed_tasklist_matching: true,
+            },
+            render: $crate::ComrakRenderOptions {
+                hardbreaks: true,
+                github_pre_lang: true,
+                full_info_string: true,
+                width: 80,
+                unsafe_: true,
+                escape: true,
+                list_style: $crate::ListStyleType::Star,
+                sourcepos: true,
+            },
+        });
+    }
 }
 
 pub(crate) use html_opts;
@@ -180,14 +212,25 @@ fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &Nod
     compare_strs(&actual, &expected, "ast comparison");
 }
 
-macro_rules! ast {
-    (($name:tt ($spsl:literal:$spsc:literal-$spel:literal:$spec:literal))) => {
-        ast!(($name ($spsl:$spsc-$spel:$spec) []))
+macro_rules! sourcepos {
+    (($spsl:literal:$spsc:literal-$spel:literal:$spec:literal)) => {
+        ($spsl, $spsc, $spel, $spec).into()
     };
-    (($name:tt ($spsl:literal:$spsc:literal-$spel:literal:$spec:literal) $content:tt)) => {
+    ((XXX)) => {
+        (0, 1, 0, 1).into()
+    };
+}
+
+pub(crate) use sourcepos;
+
+macro_rules! ast {
+    (($name:tt $sp:tt)) => {
+        ast!(($name $sp []))
+    };
+    (($name:tt $sp:tt $content:tt)) => {
         AstMatchTree {
             name: stringify!($name).to_string(),
-            sourcepos: ($spsl, $spsc, $spel, $spec).into(),
+            sourcepos: sourcepos!($sp),
             content: ast!($content),
         }
     };
@@ -259,6 +302,7 @@ enum AstMatchContent {
 }
 
 impl AstMatchTree {
+    #[track_caller]
     fn assert_match<'a>(&self, node: &'a AstNode<'a>) {
         let ast = node.data.borrow();
         assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");

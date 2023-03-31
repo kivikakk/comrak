@@ -1,5 +1,5 @@
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, LineColumn, NodeLink, NodeValue, Sourcepos};
+use crate::nodes::{AstNode, NodeLink, NodeValue};
 use crate::parser::inlines::make_inline;
 use once_cell::sync::Lazy;
 use std::str;
@@ -10,7 +10,6 @@ pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
-    sourcepos: &mut Sourcepos,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -22,22 +21,19 @@ pub(crate) fn process_autolinks<'a>(
         while i < len {
             match contents[i] {
                 b':' => {
-                    post_org =
-                        url_match(arena, contents, i, sourcepos.start.column_add(i as isize));
+                    post_org = url_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'w' => {
-                    post_org =
-                        www_match(arena, contents, i, sourcepos.start.column_add(i as isize));
+                    post_org = www_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'@' => {
-                    post_org =
-                        email_match(arena, contents, i, sourcepos.start.column_add(i as isize));
+                    post_org = email_match(arena, contents, i);
                     if post_org.is_some() {
                         break;
                     }
@@ -56,17 +52,10 @@ pub(crate) fn process_autolinks<'a>(
                 post.insert_after(make_inline(
                     arena,
                     NodeValue::Text(remain.to_string()),
-                    (
-                        sourcepos.start.line,
-                        sourcepos.start.column + i + skip,
-                        sourcepos.end.line,
-                        sourcepos.end.column,
-                    )
-                        .into(),
+                    (0, 1, 0, 1).into(),
                 ));
             }
             contents_str.truncate(i);
-            sourcepos.end.column -= len - i;
             return;
         }
     }
@@ -76,7 +65,6 @@ fn www_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
-    start: LineColumn,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static WWW_DELIMS: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -114,13 +102,7 @@ fn www_match<'a>(
             url,
             title: String::new(),
         }),
-        (
-            start.line,
-            start.column,
-            start.line,
-            start.column + link_end,
-        )
-            .into(),
+        (0, 1, 0, 1).into(),
     );
 
     inl.append(make_inline(
@@ -130,7 +112,7 @@ fn www_match<'a>(
                 .unwrap()
                 .to_string(),
         ),
-        (start.line, start.column, start.line, start.column + i).into(),
+        (0, 1, 0, 1).into(),
     ));
     Some((inl, 0, link_end))
 }
@@ -231,7 +213,6 @@ fn url_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
-    start: LineColumn,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
@@ -271,25 +252,13 @@ fn url_match<'a>(
             url: url.clone(),
             title: String::new(),
         }),
-        (
-            start.line,
-            start.column - rewind,
-            start.line,
-            start.column + link_end,
-        )
-            .into(),
+        (0, 1, 0, 1).into(),
     );
 
     inl.append(make_inline(
         arena,
         NodeValue::Text(url),
-        (
-            start.line,
-            start.column - rewind,
-            start.line,
-            start.column + link_end,
-        )
-            .into(),
+        (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
 }
@@ -298,7 +267,6 @@ fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
-    start: LineColumn,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static EMAIL_OK_SET: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -368,25 +336,13 @@ fn email_match<'a>(
             url,
             title: String::new(),
         }),
-        (
-            start.line,
-            start.column - rewind,
-            start.line,
-            start.column + link_end - 1,
-        )
-            .into(),
+        (0, 1, 0, 1).into(),
     );
 
     inl.append(make_inline(
         arena,
         NodeValue::Text(text.to_string()),
-        (
-            start.line,
-            start.column - rewind,
-            start.line,
-            start.column + link_end - 1,
-        )
-            .into(),
+        (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
 }
