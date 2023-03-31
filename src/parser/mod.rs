@@ -265,6 +265,8 @@ pub struct ComrakExtensionOptions {
     /// Each term must be defined in one paragraph, followed by a blank line,
     /// and then by the details.  Details begins with a colon.
     ///
+    /// Not (yet) compatible with render.sourcepos.
+    ///
     /// ``` md
     /// First term
     ///
@@ -513,6 +515,8 @@ pub struct ComrakRenderOptions {
     pub list_style: ListStyleType,
 
     /// Include source position attributes in XML output.
+    ///
+    /// Not yet compatible with extension.description_lists.
     ///
     /// ```rust
     /// # use comrak::{markdown_to_commonmark_xml, ComrakOptions};
@@ -1342,7 +1346,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
             last_child.detach();
 
-            // TODO: all the start_column stuff is probably wrong
+            // TODO: description list sourcepos is totally broken.
             let list = match container.last_child() {
                 Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
                     reopen_ast_nodes(lc);

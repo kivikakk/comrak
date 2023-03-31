@@ -56,3 +56,21 @@ fn description_lists() {
         ),
     );
 }
+
+// #[test]
+// fn sourcepos() {
+//     // So much work to do here still.
+//     assert_ast_match!(
+//         [extension.description_lists],
+//         "ta\n"
+//         "\n"
+//         ": da\n"
+//         "\n"
+//         "t*b*\n"
+//         "\n"
+//         ": d_b_\n",
+//         (document (1:1-1:1) [
+
+//         ])
+//     );
+// }
