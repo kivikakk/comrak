@@ -146,9 +146,19 @@ pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
 /// Render Markdown to CommonMark XML.
 /// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
 pub fn markdown_to_commonmark_xml(md: &str, options: &ComrakOptions) -> String {
+    markdown_to_commonmark_xml_with_plugins(md, options, &ComrakPlugins::default())
+}
+
+/// Render Markdown to CommonMark XML using plugins.
+/// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
+pub fn markdown_to_commonmark_xml_with_plugins(
+    md: &str,
+    options: &ComrakOptions,
+    plugins: &ComrakPlugins,
+) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut bw = BufWriter::new(Vec::new());
-    format_xml(root, options, &mut bw).unwrap();
+    format_xml_with_plugins(root, options, &mut bw, plugins).unwrap();
     String::from_utf8(bw.into_inner().unwrap()).unwrap()
 }
