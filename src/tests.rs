@@ -216,13 +216,15 @@ where
         amt.assert_match(root);
     });
 
-    if let Err(_) = result {
+    if let Err(err) = result {
         let arena = Arena::new();
         let root = parse_document(&arena, md, &options);
 
         let mut output = vec![];
         format_xml(root, &options, &mut output).unwrap();
         eprintln!("{}", std::str::from_utf8(&output).unwrap());
+
+        panic::resume_unwind(err)
     }
 }
 

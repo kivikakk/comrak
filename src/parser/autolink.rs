@@ -1,17 +1,17 @@
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, LineColumn, NodeLink, NodeValue};
+use crate::nodes::{AstNode, LineColumn, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::make_inline;
 use once_cell::sync::Lazy;
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-pub fn process_autolinks<'a>(
+pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
-    start: LineColumn,
-) {
+    sourcepos: Sourcepos,
+) -> usize {
     let contents = contents_str.as_bytes();
     let len = contents.len();
     let mut i = 0;
@@ -22,19 +22,22 @@ pub fn process_autolinks<'a>(
         while i < len {
             match contents[i] {
                 b':' => {
-                    post_org = url_match(arena, contents, i, start.column_add(i as isize));
+                    post_org =
+                        url_match(arena, contents, i, sourcepos.start.column_add(i as isize));
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'w' => {
-                    post_org = www_match(arena, contents, i, start.column_add(i as isize));
+                    post_org =
+                        www_match(arena, contents, i, sourcepos.start.column_add(i as isize));
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'@' => {
-                    post_org = email_match(arena, contents, i, start.column_add(i as isize));
+                    post_org =
+                        email_match(arena, contents, i, sourcepos.start.column_add(i as isize));
                     if post_org.is_some() {
                         break;
                     }
@@ -54,18 +57,20 @@ pub fn process_autolinks<'a>(
                     arena,
                     NodeValue::Text(remain.to_string()),
                     (
-                        start.line,
-                        start.column + i,
-                        start.line,
-                        start.column + i + skip, // TODO check
+                        sourcepos.start.line,
+                        sourcepos.start.column + i + skip,
+                        sourcepos.end.line,
+                        sourcepos.end.column,
                     )
                         .into(),
                 ));
             }
             contents_str.truncate(i);
-            return;
+            return len - i;
         }
     }
+
+    0
 }
 
 fn www_match<'a>(

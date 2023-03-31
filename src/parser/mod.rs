@@ -8,7 +8,7 @@ use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
-use crate::nodes::{self, LineColumn};
+use crate::nodes::{self, Sourcepos};
 use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
@@ -1821,10 +1821,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
             while let Some(n) = nch {
                 let mut this_bracket = false;
-                loop {
-                    let n_ast = &mut n.data.borrow_mut();
-
-                    let start = n_ast.sourcepos.start;
+                let n_ast = &mut n.data.borrow_mut();
+                let endcolrewind = loop {
+                    let sourcepos = n_ast.sourcepos;
 
                     match n_ast.value {
                         // Join adjacent text nodes together
@@ -1833,8 +1832,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 Some(ns) => ns,
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, start);
-                                    break;
+                                    break self.postprocess_text_node(n, root, sourcepos);
                                 }
                             };
 
@@ -1845,18 +1843,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 }
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, start);
-                                    break;
+                                    break self.postprocess_text_node(n, root, sourcepos);
                                 }
                             }
                         }
                         NodeValue::Link(..) | NodeValue::Image(..) => {
                             this_bracket = true;
-                            break;
+                            break 0;
                         }
-                        _ => break,
+                        _ => break 0,
                     }
-                }
+                };
+
+                n_ast.sourcepos.end.column -= endcolrewind;
 
                 if !this_bracket {
                     children.push(n);
@@ -1875,18 +1874,23 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
-        start: LineColumn,
-    ) {
+        sourcepos: Sourcepos,
+    ) -> usize {
+        let mut endcolrewind = 0;
+
         if self.options.extension.tasklist {
             self.process_tasklist(node, text);
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(self.arena, node, text, start);
+            endcolrewind += autolink::process_autolinks(self.arena, node, text, sourcepos);
         }
+
+        endcolrewind
     }
 
     fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+        // TODO sourcepos adjustments
         let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
             Some(p) => p,
             None => return,

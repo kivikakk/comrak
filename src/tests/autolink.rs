@@ -56,40 +56,40 @@ fn autolink_no_link_bad() {
 fn sourcepos_correctly_restores_context() {
     assert_ast_match!(
         [],
-        "ab _cde_ f@g.ee *hijkl* m",
-        (document (1:1-1:25) [
-            (paragraph (1:1-1:25) [
+        "ab _cde_ f@g.ee h*ijklm* n",
+        (document (1:1-1:26) [
+            (paragraph (1:1-1:26) [
                 (text (1:1-1:3) "ab ")
                 (emph (1:4-1:8) [
                     (text (1:5-1:7) "cde")
                 ])
-                (text (1:9-1:16) " f@g.ee ")
-                (emph (1:17-1:23) [
-                    (text (1:18-1:22) "hijkl")
+                (text (1:9-1:17) " f@g.ee h")
+                (emph (1:18-1:24) [
+                    (text (1:19-1:23) "ijklm")
                 ])
-                (text (1:24-1:25) " m")
+                (text (1:25-1:26) " n")
             ])
         ])
     );
 
     assert_ast_match!(
         [extension.autolink],
-        "ab _cde_ f@g.ee *hijkl* m",
-        (document (1:1-1:25) [
-            (paragraph (1:1-1:25) [
+        "ab _cde_ f@g.ee h*ijklm* n",
+        (document (1:1-1:26) [
+            (paragraph (1:1-1:26) [
                 (text (1:1-1:3) "ab ")
                 (emph (1:4-1:8) [
                     (text (1:5-1:7) "cde")
                 ])
-                (text (1:9-1:10) " ")
+                (text (1:9-1:9) " ")
                 (link (1:10-1:15) [
                     (text (1:10-1:15) "f@g.ee")
                 ])
-                (text (1:16-1:16) " ")
-                (emph (1:17-1:23) [
-                    (text (1:18-1:22) "hijkl")
+                (text (1:16-1:17) " h")
+                (emph (1:18-1:24) [
+                    (text (1:19-1:23) "ijklm")
                 ])
-                (text (1:24-1:25) " m")
+                (text (1:25-1:26) " n")
             ])
         ])
     );
