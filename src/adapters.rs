@@ -5,6 +5,8 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
+use crate::nodes::Sourcepos;
+
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter {
     /// Generates a syntax highlighted HTML output.
@@ -56,9 +58,14 @@ pub struct HeadingMeta {
 /// defines what's rendered after it. Both methods provide access to a [`HeadingMeta`] struct and
 /// leave the AST content of the heading unchanged.
 pub trait HeadingAdapter {
-    /// Called prior to rendering
-    fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
+    /// Render the opening tag.
+    fn enter(
+        &self,
+        output: &mut dyn Write,
+        heading: &HeadingMeta,
+        sourcepos: Option<Sourcepos>,
+    ) -> io::Result<()>;
 
-    /// Close tags.
+    /// Render the closing tag.
     fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
 }

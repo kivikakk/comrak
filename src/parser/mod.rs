@@ -8,7 +8,7 @@ use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
-use crate::nodes;
+use crate::nodes::{self, Sourcepos};
 use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
@@ -99,7 +99,8 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
         content: String::new(),
-        start_line: 0,
+        sourcepos: (1, 1, 1, 1).into(),
+        internal_offset: 0,
         open: true,
         last_line_blank: false,
         table_visited: false,
@@ -117,7 +118,7 @@ pub struct Parser<'a, 'o, 'c> {
     refmap: RefMap,
     root: &'a AstNode<'a>,
     current: &'a AstNode<'a>,
-    line_number: u32,
+    line_number: usize,
     offset: usize,
     column: usize,
     thematic_break_kill_pos: usize,
@@ -126,6 +127,8 @@ pub struct Parser<'a, 'o, 'c> {
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
+    curline_len: usize,
+    curline_end_col: usize,
     last_line_length: usize,
     last_buffer_ended_with_cr: bool,
     total_size: usize,
@@ -261,6 +264,8 @@ pub struct ComrakExtensionOptions {
     ///
     /// Each term must be defined in one paragraph, followed by a blank line,
     /// and then by the details.  Details begins with a colon.
+    ///
+    /// Not (yet) compatible with render.sourcepos.
     ///
     /// ``` md
     /// First term
@@ -508,6 +513,20 @@ pub struct ComrakRenderOptions {
     ///            "* one\n* two\n* three\n");
     /// ```
     pub list_style: ListStyleType,
+
+    /// Include source position attributes in XML output.
+    ///
+    /// Not yet compatible with extension.description_lists.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_commonmark_xml, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.render.sourcepos = true;
+    /// let input = "Hello *world*!";
+    /// let xml = markdown_to_commonmark_xml(input, &options);
+    /// assert!(xml.contains("<emph sourcepos=\"1:7-1:13\">"));
+    /// ```
+    pub sourcepos: bool,
 }
 
 #[derive(Default, Debug)]
@@ -604,6 +623,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
+            curline_len: 0,
+            curline_end_col: 0,
             last_line_length: 0,
             last_buffer_ended_with_cr: false,
             total_size: 0,
@@ -618,8 +639,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             &self.options.extension.front_matter_delimiter,
         ) {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
-                let node =
-                    self.add_child(self.root, NodeValue::FrontMatter(front_matter.to_string()));
+                let node = self.add_child(
+                    self.root,
+                    NodeValue::FrontMatter(front_matter.to_string()),
+                    1,
+                );
                 s = rest;
                 self.finalize(node).unwrap();
             }
@@ -783,6 +807,15 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             line
         };
 
+        self.curline_len = line.len();
+        self.curline_end_col = line.len();
+        if self.curline_end_col > 0 && line[self.curline_end_col - 1] == b'\n' {
+            self.curline_end_col -= 1;
+        }
+        if self.curline_end_col > 0 && line[self.curline_end_col - 1] == b'\r' {
+            self.curline_end_col -= 1;
+        }
+
         self.offset = 0;
         self.column = 0;
         self.first_nonspace = 0;
@@ -812,13 +845,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        self.last_line_length = line.len();
-        if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\n' {
-            self.last_line_length -= 1;
-        }
-        if self.last_line_length > 0 && line[self.last_line_length - 1] == b'\r' {
-            self.last_line_length -= 1;
-        }
+        self.last_line_length = self.curline_end_col;
+
+        self.curline_len = 0;
+        self.curline_end_col = 0;
     }
 
     fn check_open_blocks(
@@ -920,12 +950,15 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let indented = self.indent >= CODE_INDENT;
 
             if !indented && line[self.first_nonspace] == b'>' {
+                let blockquote_startpos = self.first_nonspace;
+
                 let offset = self.first_nonspace + 1 - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-                *container = self.add_child(container, NodeValue::BlockQuote);
+                *container =
+                    self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
             } else if !indented
                 && unwrap_into(
                     scanners::atx_heading_start(&line[self.first_nonspace..]),
@@ -935,7 +968,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
-                *container = self.add_child(container, NodeValue::Heading(NodeHeading::default()));
+                *container = self.add_child(
+                    container,
+                    NodeValue::Heading(NodeHeading::default()),
+                    heading_startpos + 1,
+                );
 
                 let mut hashpos = line[self.first_nonspace..]
                     .iter()
@@ -948,10 +985,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     hashpos += 1;
                 }
 
-                container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+                let container_ast = &mut container.data.borrow_mut();
+                container_ast.value = NodeValue::Heading(NodeHeading {
                     level,
                     setext: false,
                 });
+                container_ast.internal_offset = matched;
             } else if !indented
                 && unwrap_into(
                     scanners::open_code_fence(&line[self.first_nonspace..]),
@@ -968,7 +1007,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     info: String::with_capacity(10),
                     literal: String::new(),
                 };
-                *container = self.add_child(container, NodeValue::CodeBlock(ncb));
+                *container = self.add_child(
+                    container,
+                    NodeValue::CodeBlock(ncb),
+                    self.first_nonspace + 1,
+                );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented
                 && (unwrap_into(
@@ -985,7 +1028,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     literal: String::new(),
                 };
 
-                *container = self.add_child(container, NodeValue::HtmlBlock(nhb));
+                *container = self.add_child(
+                    container,
+                    NodeValue::HtmlBlock(nhb),
+                    self.first_nonspace + 1,
+                );
             } else if !indented
                 && node_matches!(container, NodeValue::Paragraph)
                 && unwrap_into(
@@ -1016,7 +1063,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 && self.thematic_break_kill_pos <= self.first_nonspace
                 && unwrap_into(self.scan_thematic_break(line), &mut matched)
             {
-                *container = self.add_child(container, NodeValue::ThematicBreak);
+                *container =
+                    self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
             } else if !indented
@@ -1033,7 +1081,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 *container = self.add_child(
                     container,
                     NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
+                    self.first_nonspace + 1,
                 );
+                container.data.borrow_mut().internal_offset = matched;
             } else if !indented
                 && self.options.extension.description_lists
                 && line[self.first_nonspace] == b':'
@@ -1085,10 +1135,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
                     _ => true,
                 } {
-                    *container = self.add_child(container, NodeValue::List(nl));
+                    *container =
+                        self.add_child(container, NodeValue::List(nl), self.first_nonspace + 1);
                 }
 
-                *container = self.add_child(container, NodeValue::Item(nl));
+                *container =
+                    self.add_child(container, NodeValue::Item(nl), self.first_nonspace + 1);
             } else if indented && !maybe_lazy && !self.blank {
                 self.advance_offset(line, CODE_INDENT, true);
                 let ncb = NodeCodeBlock {
@@ -1099,7 +1151,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     info: String::new(),
                     literal: String::new(),
                 };
-                *container = self.add_child(container, NodeValue::CodeBlock(ncb));
+                *container = self.add_child(container, NodeValue::CodeBlock(ncb), self.offset + 1);
             } else {
                 let new_container = if !indented && self.options.extension.table {
                     table::try_opening_block(self, container, line)
@@ -1293,13 +1345,37 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             // is added to it. If not, create a new list.
 
             last_child.detach();
+            let last_child_sourcepos = last_child.data.borrow().sourcepos;
 
+            // TODO: description list sourcepos has issues.
+            //
+            // DescriptionItem:
+            //   For all but the last, the end line/col is wrong.
+            //   Where it should be l:c, it gives (l+1):0.
+            //
+            // DescriptionTerm:
+            //   All are incorrect; they all give the start line/col of
+            //   the DescriptionDetails, and the end line/col is completely off.
+            //
+            // descriptionDetails:
+            //   Same as the DescriptionItem.  All but last, the end line/col
+            //   is (l+1):0.
+            //
+            // See crate::tests::description_lists::sourcepos.
             let list = match container.last_child() {
                 Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
                     reopen_ast_nodes(lc);
                     lc
                 }
-                _ => self.add_child(container, NodeValue::DescriptionList),
+                _ => {
+                    let list = self.add_child(
+                        container,
+                        NodeValue::DescriptionList,
+                        self.first_nonspace + 1,
+                    );
+                    list.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+                    list
+                }
             };
 
             let metadata = NodeDescriptionItem {
@@ -1307,9 +1383,15 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 padding: 2,
             };
 
-            let item = self.add_child(list, NodeValue::DescriptionItem(metadata));
-            let term = self.add_child(item, NodeValue::DescriptionTerm);
-            let details = self.add_child(item, NodeValue::DescriptionDetails);
+            let item = self.add_child(
+                list,
+                NodeValue::DescriptionItem(metadata),
+                self.first_nonspace + 1,
+            );
+            item.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+            let term = self.add_child(item, NodeValue::DescriptionTerm, self.first_nonspace + 1);
+            let details =
+                self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
             term.append(last_child);
 
@@ -1321,13 +1403,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn add_child(&mut self, mut parent: &'a AstNode<'a>, value: NodeValue) -> &'a AstNode<'a> {
+    fn add_child(
+        &mut self,
+        mut parent: &'a AstNode<'a>,
+        value: NodeValue,
+        start_column: usize,
+    ) -> &'a AstNode<'a> {
         while !nodes::can_contain_type(parent, &value) {
             parent = self.finalize(parent).unwrap();
         }
 
-        let mut child = Ast::new(value);
-        child.start_line = self.line_number;
+        assert!(start_column > 0);
+
+        let child = Ast::new(value, (self.line_number, start_column).into());
         let node = self.arena.alloc(Node::new(RefCell::new(child)));
         parent.append(node);
         node
@@ -1353,7 +1441,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
                 NodeValue::Item(..) => {
                     container.first_child().is_some()
-                        || container.data.borrow().start_line != self.line_number
+                        || container.data.borrow().sourcepos.start.line != self.line_number
                 }
                 _ => true,
             };
@@ -1432,7 +1520,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             self.add_line(container, &line);
                         }
                     } else {
-                        container = self.add_child(container, NodeValue::Paragraph);
+                        container = self.add_child(
+                            container,
+                            NodeValue::Paragraph,
+                            self.first_nonspace + 1,
+                        );
                         let count = self.first_nonspace - self.offset;
                         self.advance_offset(line, count, false);
                         self.add_line(container, line);
@@ -1456,7 +1548,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
         if self.offset < line.len() {
             ast.content
-                .push_str(str::from_utf8(&line[self.offset..]).unwrap()); // TODO: try propagating &[u8] to &str up from here
+                .push_str(str::from_utf8(&line[self.offset..]).unwrap());
         }
     }
 
@@ -1524,6 +1616,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         let content = &mut ast.content;
         let parent = node.parent();
+
+        if self.curline_len == 0 {
+            ast.sourcepos.end = (self.line_number, self.last_line_length).into();
+        } else if match ast.value {
+            NodeValue::Document => true,
+            NodeValue::CodeBlock(ref ncb) => ncb.fenced,
+            NodeValue::Heading(ref nh) => nh.setext,
+            _ => false,
+        } {
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+        } else {
+            ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
+        }
 
         match ast.value {
             NodeValue::Paragraph => {
@@ -1628,6 +1733,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.arena,
             self.options,
             content,
+            node_data.sourcepos.start.line,
+            node_data.sourcepos.start.column - 1 + node_data.internal_offset,
             &mut self.refmap,
             &delimiter_arena,
             self.callback.as_mut(),
@@ -1730,15 +1837,18 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
             while let Some(n) = nch {
                 let mut this_bracket = false;
+                let n_ast = &mut n.data.borrow_mut();
+                let mut sourcepos = n_ast.sourcepos;
+
                 loop {
-                    match n.data.borrow_mut().value {
+                    match n_ast.value {
                         // Join adjacent text nodes together
                         NodeValue::Text(ref mut root) => {
                             let ns = match n.next_sibling() {
                                 Some(ns) => ns,
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root);
+                                    self.postprocess_text_node(n, root, &mut sourcepos);
                                     break;
                                 }
                             };
@@ -1746,11 +1856,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
+                                    sourcepos.end.column = ns.data.borrow().sourcepos.end.column;
                                     ns.detach();
                                 }
                                 _ => {
                                     // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root);
+                                    self.postprocess_text_node(n, root, &mut sourcepos);
                                     break;
                                 }
                             }
@@ -1762,6 +1873,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         _ => break,
                     }
                 }
+
+                n_ast.sourcepos = sourcepos;
 
                 if !this_bracket {
                     children.push(n);
@@ -1776,9 +1889,14 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn postprocess_text_node(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+    fn postprocess_text_node(
+        &mut self,
+        node: &'a AstNode<'a>,
+        text: &mut String,
+        sourcepos: &mut Sourcepos,
+    ) {
         if self.options.extension.tasklist {
-            self.process_tasklist(node, text);
+            self.process_tasklist(node, text, sourcepos);
         }
 
         if self.options.extension.autolink {
@@ -1786,7 +1904,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn process_tasklist(&mut self, node: &'a AstNode<'a>, text: &mut String) {
+    fn process_tasklist(
+        &mut self,
+        node: &'a AstNode<'a>,
+        text: &mut String,
+        sourcepos: &mut Sourcepos,
+    ) {
         let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
             Some(p) => p,
             None => return,
@@ -1813,13 +1936,14 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         text.drain(..end);
 
-        let checkbox = inlines::make_inline(
-            self.arena,
-            NodeValue::TaskItem {
-                symbol: if symbol == ' ' { None } else { Some(symbol) },
-            },
-        );
-        node.insert_before(checkbox);
+        // These are sound only because the exact text that we've matched and
+        // the count thereof (i.e. "end") will precisely map to characters in
+        // the source document.
+        sourcepos.start.column += end;
+        parent.data.borrow_mut().sourcepos.start.column += end;
+
+        parent.parent().unwrap().data.borrow_mut().value =
+            NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
@@ -1830,6 +1954,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.arena,
             self.options,
             content,
+            0, // XXX -1 in upstream; never used?
+            0,
             &mut self.refmap,
             &delimiter_arena,
             self.callback.as_mut(),

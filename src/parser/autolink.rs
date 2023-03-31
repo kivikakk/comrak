@@ -6,7 +6,7 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-pub fn process_autolinks<'a>(
+pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
@@ -49,7 +49,11 @@ pub fn process_autolinks<'a>(
             if i + skip < len {
                 let remain = str::from_utf8(&contents[i + skip..]).unwrap();
                 assert!(!remain.is_empty());
-                post.insert_after(make_inline(arena, NodeValue::Text(remain.to_string())));
+                post.insert_after(make_inline(
+                    arena,
+                    NodeValue::Text(remain.to_string()),
+                    (0, 1, 0, 1).into(),
+                ));
             }
             contents_str.truncate(i);
             return;
@@ -98,6 +102,7 @@ fn www_match<'a>(
             url,
             title: String::new(),
         }),
+        (0, 1, 0, 1).into(),
     );
 
     inl.append(make_inline(
@@ -107,6 +112,7 @@ fn www_match<'a>(
                 .unwrap()
                 .to_string(),
         ),
+        (0, 1, 0, 1).into(),
     ));
     Some((inl, 0, link_end))
 }
@@ -246,9 +252,14 @@ fn url_match<'a>(
             url: url.clone(),
             title: String::new(),
         }),
+        (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(arena, NodeValue::Text(url)));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(url),
+        (0, 1, 0, 1).into(),
+    ));
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -325,8 +336,13 @@ fn email_match<'a>(
             url,
             title: String::new(),
         }),
+        (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(arena, NodeValue::Text(text.to_string())));
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(text.to_string()),
+        (0, 1, 0, 1).into(),
+    ));
     Some((inl, rewind, rewind + link_end))
 }

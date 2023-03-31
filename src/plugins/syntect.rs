@@ -191,7 +191,7 @@ impl SyntectAdapterBuilder {
     /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter {
         SyntectAdapter {
-            theme: self.theme.unwrap_or("InspiredGitHub".into()),
+            theme: self.theme.unwrap_or_else(|| "InspiredGitHub".into()),
             syntax_set: self
                 .syntax_set
                 .unwrap_or_else(SyntaxSet::load_defaults_newlines),

@@ -277,11 +277,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             None => return false,
         };
 
-        if let NodeValue::Item(..) = tmp.data.borrow().value {
-            if let NodeValue::List(ref nl) = tmp.parent().unwrap().data.borrow().value {
-                return nl.tight;
+        match tmp.data.borrow().value {
+            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
+                if let NodeValue::List(ref nl) = tmp.parent().unwrap().data.borrow().value {
+                    return nl.tight;
+                }
+                return false;
             }
-            return false;
+            _ => {}
         }
 
         let parent = match tmp.parent() {
@@ -289,10 +292,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             None => return false,
         };
 
-        if let NodeValue::Item(..) = parent.data.borrow().value {
-            if let NodeValue::List(ref nl) = parent.parent().unwrap().data.borrow().value {
-                return nl.tight;
+        match parent.data.borrow().value {
+            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
+                if let NodeValue::List(ref nl) = parent.parent().unwrap().data.borrow().value {
+                    return nl.tight;
+                }
             }
+            _ => {}
         }
 
         false
@@ -302,8 +308,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
-        if !(matches!(node.data.borrow().value, NodeValue::Item(..))
-            && node.previous_sibling().is_none()
+        if !(matches!(
+            node.data.borrow().value,
+            NodeValue::Item(..) | NodeValue::TaskItem(..)
+        ) && node.previous_sibling().is_none()
             && entering)
         {
             self.in_tight_list_item = self.get_in_tight_list_item(node);
@@ -337,7 +345,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Strong => self.format_strong(),
             NodeValue::Emph => self.format_emph(node),
-            NodeValue::TaskItem { symbol } => self.format_task_item(symbol, entering),
+            NodeValue::TaskItem(symbol) => self.format_task_item(symbol, node, entering),
             NodeValue::Strikethrough => self.format_strikethrough(),
             NodeValue::Superscript => self.format_superscript(),
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
@@ -465,7 +473,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             let first_in_list_item = node.previous_sibling().is_none()
                 && match node.parent() {
                     Some(parent) => {
-                        matches!(parent.data.borrow().value, NodeValue::Item(..))
+                        matches!(
+                            parent.data.borrow().value,
+                            NodeValue::Item(..) | NodeValue::TaskItem(..)
+                        )
                     }
                     _ => false,
                 };
@@ -612,7 +623,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.write_all(&[emph_delim]).unwrap();
     }
 
-    fn format_task_item(&mut self, symbol: Option<char>, entering: bool) {
+    fn format_task_item(&mut self, symbol: Option<char>, node: &'a AstNode<'a>, entering: bool) {
+        self.format_item(node, entering);
         if entering {
             write!(self, "[{}] ", symbol.unwrap_or(' ')).unwrap();
         }
@@ -667,10 +679,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_shortcode(&mut self, ne: &NodeShortCode, entering: bool) {
         if entering {
             write!(self, ":").unwrap();
-        } else {
-            if let Some(shortcode) = ne.shortcode() {
-                self.output(shortcode.as_bytes(), false, Escaping::Literal);
-            }
+            self.output(ne.shortcode().as_bytes(), false, Escaping::Literal);
             write!(self, ":").unwrap();
         }
     }

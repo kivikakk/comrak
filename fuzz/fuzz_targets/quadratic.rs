@@ -237,6 +237,7 @@ struct FuzzComrakRenderOptions {
     unsafe_: bool,
     escape: bool,
     list_style: ListStyleType,
+    sourcepos: bool,
 }
 
 impl FuzzComrakRenderOptions {
@@ -249,6 +250,7 @@ impl FuzzComrakRenderOptions {
             unsafe_: self.unsafe_,
             escape: self.escape,
             list_style: self.list_style,
+            sourcepos: self.sourcepos,
         }
     }
 }

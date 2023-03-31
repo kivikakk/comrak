@@ -37,6 +37,7 @@ fuzz_target!(|s: &str| {
                 unsafe_: true,
                 escape: true,
                 list_style: ListStyleType::Star,
+                sourcepos: true,
             },
         },
     );
