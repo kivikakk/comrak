@@ -1345,18 +1345,37 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             // is added to it. If not, create a new list.
 
             last_child.detach();
+            let last_child_sourcepos = last_child.data.borrow().sourcepos;
 
-            // TODO: description list sourcepos is totally broken.
+            // TODO: description list sourcepos has issues.
+            //
+            // DescriptionItem:
+            //   For all but the last, the end line/col is wrong.
+            //   Where it should be l:c, it gives (l+1):0.
+            //
+            // DescriptionTerm:
+            //   All are incorrect; they all give the start line/col of
+            //   the DescriptionDetails, and the end line/col is completely off.
+            //
+            // descriptionDetails:
+            //   Same as the DescriptionItem.  All but last, the end line/col
+            //   is (l+1):0.
+            //
+            // See crate::tests::description_lists::sourcepos.
             let list = match container.last_child() {
                 Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
                     reopen_ast_nodes(lc);
                     lc
                 }
-                _ => self.add_child(
-                    container,
-                    NodeValue::DescriptionList,
-                    self.first_nonspace + 1,
-                ),
+                _ => {
+                    let list = self.add_child(
+                        container,
+                        NodeValue::DescriptionList,
+                        self.first_nonspace + 1,
+                    );
+                    list.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+                    list
+                }
             };
 
             let metadata = NodeDescriptionItem {
@@ -1369,6 +1388,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 NodeValue::DescriptionItem(metadata),
                 self.first_nonspace + 1,
             );
+            item.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
             let term = self.add_child(item, NodeValue::DescriptionTerm, self.first_nonspace + 1);
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
