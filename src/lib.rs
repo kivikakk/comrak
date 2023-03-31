@@ -83,7 +83,7 @@ pub mod arena_tree;
 mod cm;
 mod ctype;
 mod entity;
-mod html;
+pub mod html;
 pub mod nodes;
 mod parser;
 pub mod plugins;

@@ -1,3 +1,4 @@
+//! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
 use crate::nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
 use crate::parser::{ComrakOptions, ComrakPlugins};
@@ -40,9 +41,9 @@ pub fn format_document_with_plugins<'a>(
     Ok(())
 }
 
-pub struct WriteWithLast<'w> {
+struct WriteWithLast<'w> {
     output: &'w mut dyn Write,
-    pub last_was_lf: Cell<bool>,
+    last_was_lf: Cell<bool>,
 }
 
 impl<'w> Write for WriteWithLast<'w> {
@@ -242,6 +243,19 @@ fn dangerous_url(input: &[u8]) -> bool {
     scanners::dangerous_url(input).is_some()
 }
 
+/// Writes buffer to output, escaping anything that could be interpreted as an
+/// HTML tag.
+///
+/// Namely:
+///
+/// * U+0022 QUOTATION MARK " is rendered as &quot;
+/// * U+0026 AMPERSAND & is rendered as &amp;
+/// * U+003C LESS-THAN SIGN < is rendered as &lt;
+/// * U+003E GREATER-THAN SIGN > is rendered as &gt;
+/// * Everything else is passed through unchanged.
+///
+/// Note that this is appropriate and sufficient for free text, but not for
+/// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
     let mut offset = 0;
     for (i, &byte) in buffer.iter().enumerate() {
@@ -262,6 +276,76 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
     Ok(())
 }
 
+/// Writes buffer to output, escaping in a manner appropriate for URLs in HTML
+/// attributes.
+///
+/// Namely:
+///
+/// * U+0026 AMPERSAND & is rendered as &amp;
+/// * U+0027 APOSTROPHE ' is rendered as &#x27;
+/// * Alphanumeric and a range of non-URL safe characters.
+///
+/// The inclusion of characters like "%" in those which are not escaped is
+/// explained somewhat here:
+///
+/// https://github.com/github/cmark-gfm/blob/c32ef78bae851cb83b7ad52d0fbff880acdcd44a/src/houdini_href_e.c#L7-L31
+///
+/// In other words, if a CommonMark user enters:
+///
+/// ```markdown
+/// [hi](https://ddg.gg/?q=a%20b)
+/// ```
+///
+/// We assume they actually want the query string "?q=a%20b", a search for
+/// the string "a b", rather than "?q=a%2520b", a search for the literal
+/// string "a%20b".
+pub fn escape_href(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+    static HREF_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
+        let mut a = [false; 256];
+        for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
+            a[c as usize] = true;
+        }
+        for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
+            a[c as usize] = true;
+        }
+        a
+    });
+
+    let size = buffer.len();
+    let mut i = 0;
+
+    while i < size {
+        let org = i;
+        while i < size && HREF_SAFE[buffer[i] as usize] {
+            i += 1;
+        }
+
+        if i > org {
+            output.write_all(&buffer[org..i])?;
+        }
+
+        if i >= size {
+            break;
+        }
+
+        match buffer[i] as char {
+            '&' => {
+                output.write_all(b"&amp;")?;
+            }
+            '\'' => {
+                output.write_all(b"&#x27;")?;
+            }
+            _ => write!(output, "%{:02X}", buffer[i])?,
+        }
+
+        i += 1;
+    }
+
+    Ok(())
+}
+
+/// Writes an opening HTML tag, using an iterator to enumerate the attributes.
+/// Note that attribute values are automatically escaped.
 pub fn write_opening_tag<Str>(
     output: &mut dyn Write,
     tag: &str,
@@ -308,48 +392,7 @@ impl<'o> HtmlFormatter<'o> {
     }
 
     fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
-        static HREF_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
-            let mut a = [false; 256];
-            for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
-                a[c as usize] = true;
-            }
-            for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
-                a[c as usize] = true;
-            }
-            a
-        });
-
-        let size = buffer.len();
-        let mut i = 0;
-
-        while i < size {
-            let org = i;
-            while i < size && HREF_SAFE[buffer[i] as usize] {
-                i += 1;
-            }
-
-            if i > org {
-                self.output.write_all(&buffer[org..i])?;
-            }
-
-            if i >= size {
-                break;
-            }
-
-            match buffer[i] as char {
-                '&' => {
-                    self.output.write_all(b"&amp;")?;
-                }
-                '\'' => {
-                    self.output.write_all(b"&#x27;")?;
-                }
-                _ => write!(self.output, "%{:02X}", buffer[i])?,
-            }
-
-            i += 1;
-        }
-
-        Ok(())
+        escape_href(&mut self.output, buffer)
     }
 
     fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
