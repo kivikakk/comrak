@@ -105,21 +105,19 @@ impl Anchorizer {
         static REJECTED_CHARS: Lazy<Regex> =
             Lazy::new(|| Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap());
 
-        let mut id = header;
-        id = id.to_lowercase();
-        id = REJECTED_CHARS.replace_all(&id, "").to_string();
-        id = id.replace(' ', "-");
+        let mut id = header.to_lowercase();
+        id = REJECTED_CHARS.replace_all(&id, "").replace(' ', "-");
 
         let mut uniq = 0;
         id = loop {
             let anchor = if uniq == 0 {
-                Cow::from(&*id)
+                Cow::from(&id)
             } else {
-                Cow::from(format!("{}-{}", &id, uniq))
+                Cow::from(format!("{}-{}", id, uniq))
             };
 
             if !self.0.contains(&*anchor) {
-                break anchor.to_string();
+                break anchor.into_owned();
             }
 
             uniq += 1;
