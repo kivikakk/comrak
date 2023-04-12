@@ -854,6 +854,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
                     level,
                     setext: false,
+                    id: None,
                 });
             } else if !indented
                 && unwrap_into(
@@ -911,6 +912,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             scanners::SetextChar::Hyphen => 2,
                         },
                         setext: true,
+                        id: None,
                     });
                     let adv = line.len() - 1 - self.offset;
                     self.advance_offset(line, adv, false);
