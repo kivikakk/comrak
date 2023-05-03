@@ -1229,7 +1229,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             let text = text.unwrap();
             if text.len() > 1 && text.as_bytes()[0] == b'^' {
                 let inl = self.make_inline(
-                    NodeValue::FootnoteReference(text[1..].to_string()),
+                    NodeValue::FootnoteReference(text[1..].to_string(), 0),
                     // Overridden immediately below.
                     self.pos,
                     self.pos,

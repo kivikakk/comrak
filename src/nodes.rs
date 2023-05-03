@@ -146,7 +146,7 @@ pub enum NodeValue {
     Image(NodeLink),
 
     /// **Inline**.  A footnote reference; the `String` is the referent footnote's name.
-    FootnoteReference(String),
+    FootnoteReference(String, u32),
 
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
@@ -422,7 +422,7 @@ impl NodeValue {
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",
             NodeValue::Superscript => "superscript",
-            NodeValue::FootnoteReference(_) => "footnote_reference",
+            NodeValue::FootnoteReference(_, _) => "footnote_reference",
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
         }

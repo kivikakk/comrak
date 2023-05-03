@@ -600,7 +600,8 @@ pub struct Reference {
 struct FootnoteDefinition<'a> {
     ix: Option<u32>,
     node: &'a AstNode<'a>,
-}
+    name: String,
+ }
 
 impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn new(
@@ -1761,7 +1762,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if let Some(ix) = f.ix {
                     match f.node.data.borrow_mut().value {
                         NodeValue::FootnoteDefinition(ref mut name) => {
-                            *name = format!("{}", ix);
+                            *name = format!("{}", f.name);
                         }
                         _ => unreachable!(),
                     }
@@ -1780,7 +1781,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 node.detach();
                 map.insert(
                     strings::normalize_label(name),
-                    FootnoteDefinition { ix: None, node },
+                    FootnoteDefinition { ix: None, node, name: strings::normalize_label(name) },
                 );
             }
             _ => {
@@ -1799,7 +1800,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut ast = node.data.borrow_mut();
         let mut replace = None;
         match ast.value {
-            NodeValue::FootnoteReference(ref mut name) => {
+            NodeValue::FootnoteReference(ref mut name, ref mut index) => {
                 if let Some(ref mut footnote) = map.get_mut(name) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
@@ -1809,7 +1810,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             *ixp
                         }
                     };
-                    *name = format!("{}", ix);
+                    *index = ix;
                 } else {
                     replace = Some(name.clone());
                 }

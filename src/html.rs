@@ -701,13 +701,14 @@ impl<'o> HtmlFormatter<'o> {
                         self.render_sourcepos(node)?;
                         self.output.write_all(b">")?;
                     } else {
-                        if matches!(
-                            node.parent().unwrap().data.borrow().value,
-                            NodeValue::FootnoteDefinition(..)
-                        ) && node.next_sibling().is_none()
-                        {
-                            self.output.write_all(b" ")?;
-                            self.put_footnote_backref()?;
+                        match &node.parent().unwrap().data.borrow().value {
+                            NodeValue::FootnoteDefinition(name) => {
+                                if node.next_sibling().is_none() {
+                                    self.output.write_all(b" ")?;
+                                    self.put_footnote_backref(&name)?;
+                                }
+                            }
+                            _ => {}
                         }
                         self.output.write_all(b"</p>\n")?;
                     }
@@ -931,7 +932,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</td>")?;
                 }
             }
-            NodeValue::FootnoteDefinition(_) => {
+            NodeValue::FootnoteDefinition(ref name) => {
                 if entering {
                     if self.footnote_ix == 0 {
                         self.output.write_all(b"<section")?;
@@ -942,21 +943,21 @@ impl<'o> HtmlFormatter<'o> {
                     self.footnote_ix += 1;
                     self.output.write_all(b"<li")?;
                     self.render_sourcepos(node)?;
-                    writeln!(self.output, " id=\"fn-{}\">", self.footnote_ix)?;
+                    writeln!(self.output, " id=\"fn-{}\">", name)?;
                 } else {
-                    if self.put_footnote_backref()? {
+                    if self.put_footnote_backref(name)? {
                         self.output.write_all(b"\n")?;
                     }
                     self.output.write_all(b"</li>\n")?;
                 }
             }
-            NodeValue::FootnoteReference(ref r) => {
+            NodeValue::FootnoteReference(ref r, ix) => {
                 if entering {
                     self.output.write_all(b"<sup")?;
                     self.render_sourcepos(node)?;
                     write!(
                         self.output, " class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"fnref-{}\" data-footnote-ref>{}</a></sup>",
-                        r, r, r
+                        r, r, ix
                     )?;
                 }
             }
@@ -993,7 +994,7 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
-    fn put_footnote_backref(&mut self) -> io::Result<bool> {
+    fn put_footnote_backref(&mut self, name: &str) -> io::Result<bool> {
         if self.written_footnote_ix >= self.footnote_ix {
             return Ok(false);
         }
@@ -1001,8 +1002,8 @@ impl<'o> HtmlFormatter<'o> {
         self.written_footnote_ix = self.footnote_ix;
         write!(
             self.output,
-            "<a href=\"#fnref-{}\" class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a>",
-            self.footnote_ix
+            "<a href=\"#fnref-{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}\" aria-label=\"Back to reference {}\">↩</a>",
+            name, self.footnote_ix, self.footnote_ix
         )?;
         Ok(true)
     }
