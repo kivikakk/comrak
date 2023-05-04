@@ -601,7 +601,7 @@ struct FootnoteDefinition<'a> {
     ix: Option<u32>,
     node: &'a AstNode<'a>,
     name: String,
- }
+}
 
 impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn new(
@@ -1759,7 +1759,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let mut v = map.into_values().collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
             for f in v {
-                if let Some(ix) = f.ix {
+                if f.ix.is_some() {
                     match f.node.data.borrow_mut().value {
                         NodeValue::FootnoteDefinition(ref mut name) => {
                             *name = format!("{}", f.name);
@@ -1781,7 +1781,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 node.detach();
                 map.insert(
                     strings::normalize_label(name),
-                    FootnoteDefinition { ix: None, node, name: strings::normalize_label(name) },
+                    FootnoteDefinition {
+                        ix: None,
+                        node,
+                        name: strings::normalize_label(name),
+                    },
                 );
             }
             _ => {
@@ -1800,8 +1804,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut ast = node.data.borrow_mut();
         let mut replace = None;
         match ast.value {
-            NodeValue::FootnoteReference(ref mut name, ref mut index) => {
-                if let Some(ref mut footnote) = map.get_mut(name) {
+            NodeValue::FootnoteReference(ref mut nfr) => {
+                if let Some(ref mut footnote) = map.get_mut(&nfr.name) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
                         None => {
@@ -1810,9 +1814,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             *ixp
                         }
                     };
-                    *index = ix;
+                    nfr.ix = ix;
                 } else {
-                    replace = Some(name.clone());
+                    replace = Some(nfr.name.clone());
                 }
             }
             _ => {

@@ -951,13 +951,13 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</li>\n")?;
                 }
             }
-            NodeValue::FootnoteReference(ref r, ix) => {
+            NodeValue::FootnoteReference(ref nfr) => {
                 if entering {
                     self.output.write_all(b"<sup")?;
                     self.render_sourcepos(node)?;
                     write!(
                         self.output, " class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"fnref-{}\" data-footnote-ref>{}</a></sup>",
-                        r, r, ix
+                        nfr.name, nfr.name, nfr.ix,
                     )?;
                 }
             }

@@ -145,8 +145,8 @@ pub enum NodeValue {
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
     Image(NodeLink),
 
-    /// **Inline**.  A footnote reference; the `String` is the referent footnote's name.
-    FootnoteReference(String, u32),
+    /// **Inline**.  A footnote reference.
+    FootnoteReference(NodeFootnoteReference),
 
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
@@ -329,6 +329,16 @@ pub struct NodeHtmlBlock {
     pub literal: String,
 }
 
+/// The metadata of a footnote reference.
+#[derive(Debug, Default, Clone)]
+pub struct NodeFootnoteReference {
+    /// The name of the footnote.
+    pub name: String,
+
+    /// The index of the footnote in the document.
+    pub ix: u32,
+}
+
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
@@ -422,7 +432,7 @@ impl NodeValue {
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",
             NodeValue::Superscript => "superscript",
-            NodeValue::FootnoteReference(_, _) => "footnote_reference",
+            NodeValue::FootnoteReference(..) => "footnote_reference",
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
         }

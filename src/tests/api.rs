@@ -207,8 +207,9 @@ fn exercise_full_api() {
         nodes::NodeValue::ShortCode(ne) => {
             let _: &str = ne.shortcode();
         }
-        nodes::NodeValue::FootnoteReference(name, _) => {
-            let _: &String = name;
+        nodes::NodeValue::FootnoteReference(nfr) => {
+            let _: String = nfr.name;
+            let _: u32 = nfr.ix;
         }
     }
 }
