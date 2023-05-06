@@ -250,6 +250,9 @@ impl<'o> XmlFormatter<'o> {
                     self.escape(nsc.shortcode().as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
+
+                NodeValue::Subscript => {}
+                NodeValue::Highlight => {}
             }
 
             if node.first_child().is_some() {

@@ -48,6 +48,8 @@ fn exercise_full_api() {
             front_matter_delimiter: None,
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
+            highlight: false,
+            subscript: false
         },
         parse: ComrakParseOptions {
             smart: false,
@@ -210,5 +212,7 @@ fn exercise_full_api() {
         nodes::NodeValue::FootnoteReference(name) => {
             let _: &String = name;
         }
+        nodes::NodeValue::Subscript => {}
+        nodes::NodeValue::Highlight => {}
     }
 }

@@ -979,6 +979,24 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</li>\n")?;
                 }
             }
+            NodeValue::Subscript => {
+                if entering {
+                    self.output.write_all(b"<sub")?;
+                    self.render_sourcepos(node)?;
+                    self.output.write_all(b">")?;
+                } else {
+                    self.output.write_all(b"</sub>")?;
+                }
+            }
+            NodeValue::Highlight => {
+                if entering {
+                    self.output.write_all(b"<mark")?;
+                    self.render_sourcepos(node)?;
+                    self.output.write_all(b">")?;
+                } else {
+                    self.output.write_all(b"</mark>")?;
+                }
+            }
         }
         Ok(false)
     }

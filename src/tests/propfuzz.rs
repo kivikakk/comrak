@@ -20,6 +20,8 @@ fn propfuzz_doesnt_crash(md: String) {
             front_matter_delimiter: None,
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
+            highlight: true,
+            subscript: true
         },
         parse: ComrakParseOptions {
             smart: true,

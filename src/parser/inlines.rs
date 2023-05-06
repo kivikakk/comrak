@@ -145,12 +145,19 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
         }
+        if options.extension.subscript {
+            s.special_chars[b'~' as usize] = true;
+        }
         if options.extension.superscript {
             s.special_chars[b'^' as usize] = true;
         }
         #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
             s.special_chars[b':' as usize] = true;
+        }
+        if options.extension.highlight {
+            s.special_chars[b'=' as usize] = true;
+            s.skip_chars[b'=' as usize] = true;
         }
         for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
@@ -210,10 +217,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     ))
                 }
             }
-            '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
-            '^' if self.options.extension.superscript && !self.within_brackets => {
-                Some(self.handle_delim(b'^'))
-            }
+            '~' if (self.options.extension.subscript && !self.within_brackets) || self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
+            '^' if self.options.extension.superscript && !self.within_brackets => Some(self.handle_delim(b'^')),
+            '=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -337,10 +343,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 let ix = match c.delim_char {
                     b'~' => 0,
                     b'^' => 1,
-                    b'"' => 2,
-                    b'\'' => 3,
-                    b'_' => 4,
-                    b'*' => 5 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
+                    b'=' => 2,
+                    b'"' => 3,
+                    b'\'' => 4,
+                    b'_' => 5,
+                    b'*' => 6 + (if c.can_open { 2 } else { 0 }) + (c.length % 3),
                     _ => unreachable!(),
                 };
 
@@ -387,8 +394,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // both get passed.
                 if c.delim_char == b'*'
                     || c.delim_char == b'_'
-                    || (self.options.extension.strikethrough && c.delim_char == b'~')
+                    || ((self.options.extension.strikethrough || self.options.extension.subscript) && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
+                    || (self.options.extension.highlight && c.delim_char == b'=')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -837,13 +845,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
 
-        if self.options.extension.strikethrough
-            && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
-        {
-            return None;
-        }
-
         opener
             .inl
             .data
@@ -870,9 +871,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         let emph = self.make_inline(
-            if self.options.extension.strikethrough && opener_char == b'~' {
+            if self.options.extension.highlight && opener_char == b'=' && use_delims == 2 {
+                NodeValue::Highlight
+            } else if self.options.extension.strikethrough && opener_char == b'~' && use_delims == 2 {
                 NodeValue::Strikethrough
-            } else if self.options.extension.superscript && opener_char == b'^' {
+            } else if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
+                NodeValue::Subscript
+            } else if self.options.extension.superscript && opener_char == b'^' && use_delims == 1 {
                 NodeValue::Superscript
             } else if use_delims == 1 {
                 NodeValue::Emph

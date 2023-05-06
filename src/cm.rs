@@ -359,6 +359,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::FootnoteReference(ref r) => {
                 self.format_footnote_reference(r.as_bytes(), entering)
             }
+            NodeValue::Subscript => self.format_subscript(),
+            NodeValue::Highlight => self.format_highlight(),
         };
         true
     }
@@ -631,11 +633,19 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn format_strikethrough(&mut self) {
-        write!(self, "~").unwrap();
+        write!(self, "~~").unwrap();
     }
 
     fn format_superscript(&mut self) {
         write!(self, "^").unwrap();
+    }
+
+    fn format_subscript(&mut self) {
+        write!(self, "~").unwrap();
+    }
+
+    fn format_highlight(&mut self) {
+        write!(self, "==").unwrap();
     }
 
     fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {

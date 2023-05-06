@@ -135,7 +135,7 @@ pub enum NodeValue {
     /// per the GFM spec.
     Strikethrough,
 
-    /// **Inline**.  Superscript.  Enabled with `ext_superscript` option.
+    /// **Inline**.  Superscript.
     Superscript,
 
     /// **Inline**.  A [link](https://github.github.com/gfm/#links) to some URL, with possible
@@ -151,6 +151,12 @@ pub enum NodeValue {
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
+
+    /// **Inline**.  Supscript.
+    Subscript,
+
+    /// **Inline**.  Highlight.
+    Highlight,
 }
 
 /// Alignment of a single table cell.
@@ -425,6 +431,8 @@ impl NodeValue {
             NodeValue::FootnoteReference(_) => "footnote_reference",
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
+            NodeValue::Subscript => "subscript",
+            NodeValue::Highlight => "highlight"
         }
     }
 }

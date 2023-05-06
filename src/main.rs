@@ -142,6 +142,8 @@ enum Extension {
     Superscript,
     Footnotes,
     DescriptionLists,
+    Subscript,
+    Highlight
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -209,6 +211,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             front_matter_delimiter: cli.front_matter_delimiter,
             #[cfg(feature = "shortcodes")]
             shortcodes: cli.gemojis,
+            subscript: exts.contains(&Extension::Subscript),
+            highlight: exts.contains(&Extension::Highlight)
         },
         parse: ComrakParseOptions {
             smart: cli.smart,
