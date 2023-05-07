@@ -49,7 +49,8 @@ fn exercise_full_api() {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
             highlight: false,
-            subscript: false
+            subscript: false,
+            insert: false
         },
         parse: ComrakParseOptions {
             smart: false,
@@ -214,5 +215,6 @@ fn exercise_full_api() {
         }
         nodes::NodeValue::Subscript => {}
         nodes::NodeValue::Highlight => {}
+        nodes::NodeValue::Insert => {}
     }
 }

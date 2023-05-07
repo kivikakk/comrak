@@ -93,8 +93,7 @@ Options:
           
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
-          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists, subscript, highlight]
+          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript, footnotes, description-lists, subscript, highlight, insert]
 
   -t, --to <FORMAT>
           Specify output format

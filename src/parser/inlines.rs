@@ -159,6 +159,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             s.special_chars[b'=' as usize] = true;
             s.skip_chars[b'=' as usize] = true;
         }
+        if options.extension.insert {
+            s.special_chars[b'+' as usize] = true;
+            s.skip_chars[b'+' as usize] = true;
+        }
+
         for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
         }
@@ -220,6 +225,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '~' if (self.options.extension.subscript && !self.within_brackets) || self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
             '^' if self.options.extension.superscript && !self.within_brackets => Some(self.handle_delim(b'^')),
             '=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
+            '+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -317,7 +323,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 11] = [stack_bottom; 11];
+        let mut openers_bottom: [usize; 13] = [stack_bottom; 13];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -344,10 +350,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     b'~' => 0,
                     b'^' => 1,
                     b'=' => 2,
-                    b'"' => 3,
-                    b'\'' => 4,
-                    b'_' => 5,
-                    b'*' => 6 + (if c.can_open { 2 } else { 0 }) + (c.length % 3),
+                    b'+' => 3,
+                    b'"' => 4,
+                    b'\'' => 5,
+                    b'_' => 6,
+                    b'*' => 7 + if c.can_open { 3 } else { 0 } + (c.length % 3),
                     _ => unreachable!(),
                 };
 
@@ -397,6 +404,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     || ((self.options.extension.strikethrough || self.options.extension.subscript) && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
                     || (self.options.extension.highlight && c.delim_char == b'=')
+                    || (self.options.extension.insert && c.delim_char == b'+')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -845,6 +853,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
 
+        if (self.options.extension.strikethrough
+            && opener_char == b'~'
+            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)) && !self.options.extension.subscript
+        {
+            return None;
+        }
+
         opener
             .inl
             .data
@@ -873,10 +888,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let emph = self.make_inline(
             if self.options.extension.highlight && opener_char == b'=' && use_delims == 2 {
                 NodeValue::Highlight
+            } else if self.options.extension.insert && opener_char == b'+' && use_delims == 2 {
+                NodeValue::Insert
             } else if self.options.extension.strikethrough && opener_char == b'~' && use_delims == 2 {
                 NodeValue::Strikethrough
             } else if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
                 NodeValue::Subscript
+            } else if !self.options.extension.subscript && self.options.extension.strikethrough && opener_char == b'~' && use_delims == 1 {
+                NodeValue::Strikethrough
             } else if self.options.extension.superscript && opener_char == b'^' && use_delims == 1 {
                 NodeValue::Superscript
             } else if use_delims == 1 {

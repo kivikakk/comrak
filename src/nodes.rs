@@ -152,11 +152,14 @@ pub enum NodeValue {
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
 
-    /// **Inline**.  Supscript.
+    /// **Inline**.  Subscript.
     Subscript,
 
     /// **Inline**.  Highlight.
     Highlight,
+
+    /// **Inline**.  Insert.
+    Insert,
 }
 
 /// Alignment of a single table cell.
@@ -432,7 +435,8 @@ impl NodeValue {
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
             NodeValue::Subscript => "subscript",
-            NodeValue::Highlight => "highlight"
+            NodeValue::Highlight => "highlight",
+            NodeValue::Insert => "insert"
         }
     }
 }

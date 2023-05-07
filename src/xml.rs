@@ -253,6 +253,7 @@ impl<'o> XmlFormatter<'o> {
 
                 NodeValue::Subscript => {}
                 NodeValue::Highlight => {}
+                NodeValue::Insert => {}
             }
 
             if node.first_child().is_some() {

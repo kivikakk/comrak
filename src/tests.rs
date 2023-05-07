@@ -12,6 +12,7 @@ mod footnotes;
 mod fuzz;
 mod header_ids;
 mod highlight;
+mod insert;
 mod options;
 mod plugins;
 mod propfuzz;

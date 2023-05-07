@@ -351,7 +351,7 @@ pub struct ComrakExtensionOptions {
     /// let mut options = ComrakOptions::default();
     /// options.extension.subscript = true;
     /// assert_eq!(markdown_to_html("Water is H~2~O.\n", &options),
-    ///            "<p><p>Water is H<sup>2</sup>O.</p></p>\n");
+    ///            "<p>Water is H<sup>2</sup>O.</p>\n");
     /// ```
     pub subscript: bool,
 
@@ -365,6 +365,17 @@ pub struct ComrakExtensionOptions {
     ///            "<p>This is an <mark>important</mark> word.</p>\n");
     /// ```
     pub highlight: bool,
+
+    /// Enables the highlight Comrak extension.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    /// options.extension.highlight = true;
+    /// assert_eq!(markdown_to_html("This is an ++inserted++ text.\n", &options),
+    ///            "<p>This is an <ins>inserted</ins> text.</p>\n");
+    /// ```
+    pub insert: bool,
 }
 
 #[derive(Default, Debug, Clone)]

@@ -21,7 +21,8 @@ fn propfuzz_doesnt_crash(md: String) {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
             highlight: true,
-            subscript: true
+            subscript: true,
+            insert: true
         },
         parse: ComrakParseOptions {
             smart: true,

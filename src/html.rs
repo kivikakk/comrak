@@ -997,6 +997,15 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</mark>")?;
                 }
             }
+            NodeValue::Insert => {
+                if entering {
+                    self.output.write_all(b"<ins")?;
+                    self.render_sourcepos(node)?;
+                    self.output.write_all(b">")?;
+                } else {
+                    self.output.write_all(b"</ins>")?;
+                }
+            }
         }
         Ok(false)
     }

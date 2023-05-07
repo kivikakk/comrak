@@ -361,6 +361,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Subscript => self.format_subscript(),
             NodeValue::Highlight => self.format_highlight(),
+            NodeValue::Insert => self.format_insert(),
         };
         true
     }
@@ -646,6 +647,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
     fn format_highlight(&mut self) {
         write!(self, "==").unwrap();
+    }
+
+    fn format_insert(&mut self) {
+        write!(self, "++").unwrap();
     }
 
     fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {
