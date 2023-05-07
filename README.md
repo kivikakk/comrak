@@ -54,7 +54,7 @@ Arguments:
 Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
-          
+
           [default: /Users/kivikakk/.config/comrak/config]
 
       --hardbreaks
@@ -90,14 +90,15 @@ Options:
 
   -e, --extension <EXTENSION>
           Specify extension name(s) to use
-          
+
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
-          
-          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript, footnotes, description-lists, subscript, highlight, insert]
+
+          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
+          footnotes, description-lists, subscript, highlight, insert]
 
   -t, --to <FORMAT>
           Specify output format
-          
+
           [default: html]
           [possible values: html, xml, commonmark]
 
@@ -106,7 +107,7 @@ Options:
 
       --width <WIDTH>
           Specify wrap width (0 = nowrap)
-          
+
           [default: 0]
 
       --header-ids <PREFIX>
@@ -117,12 +118,12 @@ Options:
 
       --syntax-highlighting <THEME>
           Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling
-          
+
           [default: base16-ocean.dark]
 
       --list-style <LIST_STYLE>
           Specify bullet character for lists (-, +, *) in CommonMark output
-          
+
           [default: dash]
           [possible values: dash, plus, star]
 
@@ -223,6 +224,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Shortcodes
 - Subscript
 - Highlight
+- Insert
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
