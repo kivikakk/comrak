@@ -22,7 +22,7 @@ fn propfuzz_doesnt_crash(md: String) {
             shortcodes: true,
             highlight: true,
             subscript: true,
-            insert: true
+            insert: true,
         },
         parse: ComrakParseOptions {
             smart: true,

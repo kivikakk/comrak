@@ -50,7 +50,7 @@ fn exercise_full_api() {
             shortcodes: true,
             highlight: false,
             subscript: false,
-            insert: false
+            insert: false,
         },
         parse: ComrakParseOptions {
             smart: false,

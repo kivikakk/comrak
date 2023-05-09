@@ -436,7 +436,7 @@ impl NodeValue {
             NodeValue::ShortCode(_) => "shortcode",
             NodeValue::Subscript => "subscript",
             NodeValue::Highlight => "highlight",
-            NodeValue::Insert => "insert"
+            NodeValue::Insert => "insert",
         }
     }
 }

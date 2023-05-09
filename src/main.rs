@@ -144,7 +144,7 @@ enum Extension {
     DescriptionLists,
     Subscript,
     Highlight,
-    Insert
+    Insert,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -214,7 +214,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             shortcodes: cli.gemojis,
             subscript: exts.contains(&Extension::Subscript),
             highlight: exts.contains(&Extension::Highlight),
-            insert: exts.contains(&Extension::Insert)
+            insert: exts.contains(&Extension::Insert),
         },
         parse: ComrakParseOptions {
             smart: cli.smart,

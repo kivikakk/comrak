@@ -222,8 +222,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     ))
                 }
             }
-            '~' if (self.options.extension.subscript && !self.within_brackets) || self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
-            '^' if self.options.extension.superscript && !self.within_brackets => Some(self.handle_delim(b'^')),
+            '~' if (self.options.extension.subscript && !self.within_brackets)
+                || self.options.extension.strikethrough =>
+            {
+                Some(self.handle_delim(b'~'))
+            }
+            '^' if self.options.extension.superscript && !self.within_brackets => {
+                Some(self.handle_delim(b'^'))
+            }
             '=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             '+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
             _ => {
@@ -401,7 +407,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 // both get passed.
                 if c.delim_char == b'*'
                     || c.delim_char == b'_'
-                    || ((self.options.extension.strikethrough || self.options.extension.subscript) && c.delim_char == b'~')
+                    || ((self.options.extension.strikethrough || self.options.extension.subscript)
+                        && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
                     || (self.options.extension.highlight && c.delim_char == b'=')
                     || (self.options.extension.insert && c.delim_char == b'+')
@@ -855,7 +862,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         if (self.options.extension.strikethrough
             && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)) && !self.options.extension.subscript
+            && (opener_num_chars != closer_num_chars || opener_num_chars > 0))
+            && !self.options.extension.subscript
         {
             return None;
         }
@@ -890,11 +898,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 NodeValue::Highlight
             } else if self.options.extension.insert && opener_char == b'+' && use_delims == 2 {
                 NodeValue::Insert
-            } else if self.options.extension.strikethrough && opener_char == b'~' && use_delims == 2 {
+            } else if self.options.extension.strikethrough && opener_char == b'~' && use_delims == 2
+            {
                 NodeValue::Strikethrough
             } else if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
                 NodeValue::Subscript
-            } else if !self.options.extension.subscript && self.options.extension.strikethrough && opener_char == b'~' && use_delims == 1 {
+            } else if !self.options.extension.subscript
+                && self.options.extension.strikethrough
+                && opener_char == b'~'
+                && use_delims == 1
+            {
                 NodeValue::Strikethrough
             } else if self.options.extension.superscript && opener_char == b'^' && use_delims == 1 {
                 NodeValue::Superscript
