@@ -1766,7 +1766,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 if f.ix.is_some() {
                     match f.node.data.borrow_mut().value {
                         NodeValue::FootnoteDefinition(ref mut nfd) => {
-                            nfd.name = format!("{}", f.name);
+                            nfd.name = f.name.to_string();
                             nfd.total_references = f.total_references;
                         }
                         _ => unreachable!(),

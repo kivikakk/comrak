@@ -1,6 +1,8 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
-use crate::nodes::{AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeValue, TableAlignment};
+use crate::nodes::{
+    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeValue, TableAlignment,
+};
 use crate::parser::{ComrakOptions, ComrakPlugins};
 use crate::scanners;
 use once_cell::sync::Lazy;
@@ -701,14 +703,13 @@ impl<'o> HtmlFormatter<'o> {
                         self.render_sourcepos(node)?;
                         self.output.write_all(b">")?;
                     } else {
-                        match &node.parent().unwrap().data.borrow().value {
-                            NodeValue::FootnoteDefinition(nfd) => {
-                                if node.next_sibling().is_none() {
-                                    self.output.write_all(b" ")?;
-                                    self.put_footnote_backref(&nfd)?;
-                                }
+                        if let NodeValue::FootnoteDefinition(nfd) =
+                            &node.parent().unwrap().data.borrow().value
+                        {
+                            if node.next_sibling().is_none() {
+                                self.output.write_all(b" ")?;
+                                self.put_footnote_backref(nfd)?;
                             }
-                            _ => {}
                         }
                         self.output.write_all(b"</p>\n")?;
                     }
@@ -945,7 +946,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.render_sourcepos(node)?;
                     writeln!(self.output, " id=\"fn-{}\">", nfd.name)?;
                 } else {
-                    if self.put_footnote_backref(&nfd)? {
+                    if self.put_footnote_backref(nfd)? {
                         self.output.write_all(b"\n")?;
                     }
                     self.output.write_all(b"</li>\n")?;

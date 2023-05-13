@@ -357,7 +357,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::TableCell => self.format_table_cell(node, entering),
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)
-            },
+            }
             NodeValue::FootnoteReference(ref nfr) => {
                 self.format_footnote_reference(nfr.name.as_bytes(), entering)
             }
