@@ -88,7 +88,7 @@ pub enum NodeValue {
 
     /// **Block**. A footnote definition.  The `String` is the footnote's name.
     /// Contains other **blocks**.
-    FootnoteDefinition(String),
+    FootnoteDefinition(NodeFootnoteDefinition),
 
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
@@ -329,11 +329,24 @@ pub struct NodeHtmlBlock {
     pub literal: String,
 }
 
+/// The metadata of a footnote definition.
+#[derive(Debug, Default, Clone)]
+pub struct NodeFootnoteDefinition {
+    /// The name of the footnote.
+    pub name: String,
+
+    /// Total number of references to this footnote
+    pub total_references: u32,
+}
+
 /// The metadata of a footnote reference.
 #[derive(Debug, Default, Clone)]
 pub struct NodeFootnoteReference {
     /// The name of the footnote.
     pub name: String,
+
+    /// The index of reference to the same footnote
+    pub ref_num: u32,
 
     /// The index of the footnote in the document.
     pub ix: u32,

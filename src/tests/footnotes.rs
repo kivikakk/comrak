@@ -7,7 +7,7 @@ fn footnotes() {
         concat!(
             "Here is a[^nowhere] footnote reference,[^1] and another.[^longnote]\n",
             "\n",
-            "This is another note.[^note]\n",
+            "This is another note.[^note] And footnote[^longnote] is referenced again.\n",
             "\n",
             "[^note]: Hi.\n",
             "\n",
@@ -27,8 +27,9 @@ fn footnotes() {
             "<p>Here is a[^nowhere] footnote reference,<sup class=\"footnote-ref\"><a href=\"#fn-1\" \
              id=\"fnref-1\" data-footnote-ref>1</a></sup> and another.<sup class=\"footnote-ref\"><a \
              href=\"#fn-longnote\" id=\"fnref-longnote\" data-footnote-ref>2</a></sup></p>\n",
-            "<p>This is another note.<sup class=\"footnote-ref\"><a href=\"#fn-note\" \
-             id=\"fnref-note\" data-footnote-ref>3</a></sup></p>\n",
+            "<p>This is another note.<sup class=\"footnote-ref\"><a \
+             href=\"#fn-note\" id=\"fnref-note\" data-footnote-ref>3</a></sup> And footnote<sup class=\"footnote-ref\"><a \
+             href=\"#fn-longnote\" id=\"fnref-longnote-2\" data-footnote-ref>2</a></sup> is referenced again.</p>\n",
             "<p>This is regular content.</p>\n",
             "<section class=\"footnotes\" data-footnotes>\n",
             "<ol>\n",
@@ -41,7 +42,8 @@ fn footnotes() {
             "<p>Subsequent paragraphs are indented.</p>\n",
             "<pre><code>code\n",
             "</code></pre>\n",
-            "<a href=\"#fnref-longnote\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a>\n",
+            "<a href=\"#fnref-longnote\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a> \
+             <a href=\"#fnref-longnote-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2-2\" aria-label=\"Back to reference 2-2\">↩<sup class=\"footnote-ref\">2</sup></a>\n",
             "</li>\n",
             "<li id=\"fn-note\">\n",
             "<p>Hi. <a href=\"#fnref-note\" \
@@ -94,7 +96,7 @@ fn footnote_in_table() {
             "</thead>\n",
             "<tbody>\n",
             "<tr>\n",
-            "<td>foot <sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup></td>\n",
+            "<td>foot <sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1-2\" data-footnote-ref>1</a></sup></td>\n",
             "<td>note</td>\n",
             "</tr>\n",
             "</tbody>\n",
@@ -102,7 +104,7 @@ fn footnote_in_table() {
             "<section class=\"footnotes\" data-footnotes>\n",
             "<ol>\n",
             "<li id=\"fn-1\">\n",
-            "<p>a footnote <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "<p>a footnote <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a> <a href=\"#fnref-1-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1-2\" aria-label=\"Back to reference 1-2\">↩<sup class=\"footnote-ref\">2</sup></a></p>\n",
             "</li>\n",
             "</ol>\n",
             "</section>\n",

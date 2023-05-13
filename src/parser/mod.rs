@@ -8,7 +8,7 @@ use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
-use crate::nodes::{self, Sourcepos};
+use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
 use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
@@ -601,6 +601,7 @@ struct FootnoteDefinition<'a> {
     ix: Option<u32>,
     node: &'a AstNode<'a>,
     name: String,
+    total_references: u32,
 }
 
 impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
@@ -1081,7 +1082,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 self.advance_offset(line, offset, false);
                 *container = self.add_child(
                     container,
-                    NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
+                    NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                        name: str::from_utf8(c).unwrap().to_string(),
+                        total_references: 0,
+                    }),
                     self.first_nonspace + 1,
                 );
                 container.data.borrow_mut().internal_offset = matched;
@@ -1761,8 +1765,9 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             for f in v {
                 if f.ix.is_some() {
                     match f.node.data.borrow_mut().value {
-                        NodeValue::FootnoteDefinition(ref mut name) => {
-                            *name = format!("{}", f.name);
+                        NodeValue::FootnoteDefinition(ref mut nfd) => {
+                            nfd.name = format!("{}", f.name);
+                            nfd.total_references = f.total_references;
                         }
                         _ => unreachable!(),
                     }
@@ -1777,14 +1782,15 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
-            NodeValue::FootnoteDefinition(ref name) => {
+            NodeValue::FootnoteDefinition(ref nfd) => {
                 node.detach();
                 map.insert(
-                    strings::normalize_label(name),
+                    strings::normalize_label(&nfd.name),
                     FootnoteDefinition {
                         ix: None,
                         node,
-                        name: strings::normalize_label(name),
+                        name: strings::normalize_label(&nfd.name),
+                        total_references: 0,
                     },
                 );
             }
@@ -1814,6 +1820,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             *ixp
                         }
                     };
+                    footnote.total_references += 1;
+                    nfr.ref_num = footnote.total_references;
                     nfr.ix = ix;
                 } else {
                     replace = Some(nfr.name.clone());

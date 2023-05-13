@@ -1231,6 +1231,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 let inl = self.make_inline(
                     NodeValue::FootnoteReference(NodeFootnoteReference {
                         name: text[1..].to_string(),
+                        ref_num: 0,
                         ix: 0,
                     }),
                     // Overridden immediately below.

@@ -164,8 +164,9 @@ fn exercise_full_api() {
             let _: bool = nh.setext;
         }
         nodes::NodeValue::ThematicBreak => {}
-        nodes::NodeValue::FootnoteDefinition(name) => {
-            let _: &String = name;
+        nodes::NodeValue::FootnoteDefinition(nfd) => {
+            let _: &String = &nfd.name;
+            let _: u32 = nfd.total_references;
         }
         nodes::NodeValue::Table(aligns) => {
             let _: &Vec<nodes::TableAlignment> = aligns;
