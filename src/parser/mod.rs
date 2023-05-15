@@ -329,8 +329,8 @@ pub struct ComrakExtensionOptions {
     pub front_matter_delimiter: Option<String>,
 
     #[cfg(feature = "shortcodes")]
-    /// Available if "shortcodes" feature is enabled.  Phrases wrapped inside of ':' blocks will be
-    /// replaced with emojis.
+    #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
+    /// Phrases wrapped inside of ':' blocks will be replaced with emojis.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
