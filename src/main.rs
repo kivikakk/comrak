@@ -194,21 +194,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
+    let mut extension = ExtensionOptions::default();
+    extension.strikethrough = exts.contains(&Extension::Strikethrough) || cli.gfm;
+    extension.tagfilter = exts.contains(&Extension::Tagfilter) || cli.gfm;
+    extension.table = exts.contains(&Extension::Table) || cli.gfm;
+    extension.autolink = exts.contains(&Extension::Autolink) || cli.gfm;
+    extension.tasklist = exts.contains(&Extension::Tasklist) || cli.gfm;
+    extension.superscript = exts.contains(&Extension::Superscript);
+    extension.header_ids = cli.header_ids;
+    extension.footnotes = exts.contains(&Extension::Footnotes);
+    extension.description_lists = exts.contains(&Extension::DescriptionLists);
+    extension.front_matter_delimiter = cli.front_matter_delimiter;
+    #[cfg(feature = "shortcodes")]
+    {
+        extension.shortcodes = cli.gemojis;
+    }
+
     let options = Options {
-        extension: ExtensionOptions {
-            strikethrough: exts.contains(&Extension::Strikethrough) || cli.gfm,
-            tagfilter: exts.contains(&Extension::Tagfilter) || cli.gfm,
-            table: exts.contains(&Extension::Table) || cli.gfm,
-            autolink: exts.contains(&Extension::Autolink) || cli.gfm,
-            tasklist: exts.contains(&Extension::Tasklist) || cli.gfm,
-            superscript: exts.contains(&Extension::Superscript),
-            header_ids: cli.header_ids,
-            footnotes: exts.contains(&Extension::Footnotes),
-            description_lists: exts.contains(&Extension::DescriptionLists),
-            front_matter_delimiter: cli.front_matter_delimiter,
-            #[cfg(feature = "shortcodes")]
-            shortcodes: cli.gemojis,
-        },
+        extension,
         parse: ParseOptions {
             smart: cli.smart,
             default_info_string: cli.default_info_string,

@@ -150,6 +150,9 @@ pub struct Options {
     pub render: RenderOptions,
 }
 
+// NOTE: The shortcodes feature adds a new field, so mark this as non-exhaustive since it's part of
+// the public API
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
