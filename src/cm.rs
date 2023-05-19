@@ -740,7 +740,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
         }
     }
-    fn format_footnote_definition(&mut self, name: &String, entering: bool) {
+    fn format_footnote_definition(&mut self, name: &str, entering: bool) {
         if entering {
             self.footnote_ix += 1;
             writeln!(self, "[^{}]:", name).unwrap();
