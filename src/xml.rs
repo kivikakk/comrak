@@ -230,12 +230,12 @@ impl<'o> XmlFormatter<'o> {
                 }
                 NodeValue::FootnoteDefinition(ref fd) => {
                     self.output.write_all(b" label=\"")?;
-                    self.escape(fd.as_bytes())?;
+                    self.escape(fd.name.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
-                NodeValue::FootnoteReference(ref fr) => {
+                NodeValue::FootnoteReference(ref nfr) => {
                     self.output.write_all(b" label=\"")?;
-                    self.escape(fr.as_bytes())?;
+                    self.escape(nfr.name.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
                 NodeValue::TaskItem(Some(_)) => {

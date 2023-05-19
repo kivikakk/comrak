@@ -164,8 +164,9 @@ fn exercise_full_api() {
             let _: bool = nh.setext;
         }
         nodes::NodeValue::ThematicBreak => {}
-        nodes::NodeValue::FootnoteDefinition(name) => {
-            let _: &String = name;
+        nodes::NodeValue::FootnoteDefinition(nfd) => {
+            let _: &String = &nfd.name;
+            let _: u32 = nfd.total_references;
         }
         nodes::NodeValue::Table(aligns) => {
             let _: &Vec<nodes::TableAlignment> = aligns;
@@ -207,8 +208,9 @@ fn exercise_full_api() {
         nodes::NodeValue::ShortCode(ne) => {
             let _: &str = ne.shortcode();
         }
-        nodes::NodeValue::FootnoteReference(name) => {
-            let _: &String = name;
+        nodes::NodeValue::FootnoteReference(nfr) => {
+            let _: String = nfr.name;
+            let _: u32 = nfr.ix;
         }
     }
 }

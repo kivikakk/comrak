@@ -355,9 +355,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering),
             NodeValue::TableCell => self.format_table_cell(node, entering),
-            NodeValue::FootnoteDefinition(_) => self.format_footnote_definition(entering),
-            NodeValue::FootnoteReference(ref r) => {
-                self.format_footnote_reference(r.as_bytes(), entering)
+            NodeValue::FootnoteDefinition(ref nfd) => {
+                self.format_footnote_definition(&nfd.name, entering)
+            }
+            NodeValue::FootnoteReference(ref nfr) => {
+                self.format_footnote_reference(nfr.name.as_bytes(), entering)
             }
         };
         true
@@ -738,11 +740,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
         }
     }
-    fn format_footnote_definition(&mut self, entering: bool) {
+    fn format_footnote_definition(&mut self, name: &str, entering: bool) {
         if entering {
             self.footnote_ix += 1;
-            let footnote_ix = self.footnote_ix;
-            writeln!(self, "[^{}]:", footnote_ix).unwrap();
+            writeln!(self, "[^{}]:", name).unwrap();
             write!(self.prefix, "    ").unwrap();
         } else {
             let new_len = self.prefix.len() - 4;

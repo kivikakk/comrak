@@ -8,7 +8,7 @@ use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
-use crate::nodes::{self, Sourcepos};
+use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
 use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
@@ -256,7 +256,7 @@ pub struct ComrakExtensionOptions {
     /// let mut options = ComrakOptions::default();
     /// options.extension.footnotes = true;
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
-    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup>.</p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-1\">\n<p>A greeting. <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a></p>\n</li>\n</ol>\n</section>\n");
+    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-x\" id=\"fnref-x\" data-footnote-ref>1</a></sup>.</p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-x\">\n<p>A greeting. <a href=\"#fnref-x\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
     pub footnotes: bool,
 
@@ -600,6 +600,8 @@ pub struct Reference {
 struct FootnoteDefinition<'a> {
     ix: Option<u32>,
     node: &'a AstNode<'a>,
+    name: String,
+    total_references: u32,
 }
 
 impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
@@ -1080,7 +1082,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 self.advance_offset(line, offset, false);
                 *container = self.add_child(
                     container,
-                    NodeValue::FootnoteDefinition(str::from_utf8(c).unwrap().to_string()),
+                    NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                        name: str::from_utf8(c).unwrap().to_string(),
+                        total_references: 0,
+                    }),
                     self.first_nonspace + 1,
                 );
                 container.data.borrow_mut().internal_offset = matched;
@@ -1758,10 +1763,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let mut v = map.into_values().collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
             for f in v {
-                if let Some(ix) = f.ix {
+                if f.ix.is_some() {
                     match f.node.data.borrow_mut().value {
-                        NodeValue::FootnoteDefinition(ref mut name) => {
-                            *name = format!("{}", ix);
+                        NodeValue::FootnoteDefinition(ref mut nfd) => {
+                            nfd.name = f.name.to_string();
+                            nfd.total_references = f.total_references;
                         }
                         _ => unreachable!(),
                     }
@@ -1776,11 +1782,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
-            NodeValue::FootnoteDefinition(ref name) => {
+            NodeValue::FootnoteDefinition(ref nfd) => {
                 node.detach();
                 map.insert(
-                    strings::normalize_label(name),
-                    FootnoteDefinition { ix: None, node },
+                    strings::normalize_label(&nfd.name),
+                    FootnoteDefinition {
+                        ix: None,
+                        node,
+                        name: strings::normalize_label(&nfd.name),
+                        total_references: 0,
+                    },
                 );
             }
             _ => {
@@ -1799,8 +1810,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut ast = node.data.borrow_mut();
         let mut replace = None;
         match ast.value {
-            NodeValue::FootnoteReference(ref mut name) => {
-                if let Some(ref mut footnote) = map.get_mut(name) {
+            NodeValue::FootnoteReference(ref mut nfr) => {
+                if let Some(ref mut footnote) = map.get_mut(&nfr.name) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
                         None => {
@@ -1809,9 +1820,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             *ixp
                         }
                     };
-                    *name = format!("{}", ix);
+                    footnote.total_references += 1;
+                    nfr.ref_num = footnote.total_references;
+                    nfr.ix = ix;
                 } else {
-                    replace = Some(name.clone());
+                    replace = Some(nfr.name.clone());
                 }
             }
             _ => {

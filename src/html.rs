@@ -1,6 +1,8 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
-use crate::nodes::{AstNode, ListType, NodeCode, NodeValue, TableAlignment};
+use crate::nodes::{
+    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeValue, TableAlignment,
+};
 use crate::parser::{ComrakOptions, ComrakPlugins};
 use crate::scanners;
 use once_cell::sync::Lazy;
@@ -701,13 +703,13 @@ impl<'o> HtmlFormatter<'o> {
                         self.render_sourcepos(node)?;
                         self.output.write_all(b">")?;
                     } else {
-                        if matches!(
-                            node.parent().unwrap().data.borrow().value,
-                            NodeValue::FootnoteDefinition(..)
-                        ) && node.next_sibling().is_none()
+                        if let NodeValue::FootnoteDefinition(nfd) =
+                            &node.parent().unwrap().data.borrow().value
                         {
-                            self.output.write_all(b" ")?;
-                            self.put_footnote_backref()?;
+                            if node.next_sibling().is_none() {
+                                self.output.write_all(b" ")?;
+                                self.put_footnote_backref(nfd)?;
+                            }
                         }
                         self.output.write_all(b"</p>\n")?;
                     }
@@ -931,7 +933,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</td>")?;
                 }
             }
-            NodeValue::FootnoteDefinition(_) => {
+            NodeValue::FootnoteDefinition(ref nfd) => {
                 if entering {
                     if self.footnote_ix == 0 {
                         self.output.write_all(b"<section")?;
@@ -942,21 +944,27 @@ impl<'o> HtmlFormatter<'o> {
                     self.footnote_ix += 1;
                     self.output.write_all(b"<li")?;
                     self.render_sourcepos(node)?;
-                    writeln!(self.output, " id=\"fn-{}\">", self.footnote_ix)?;
+                    writeln!(self.output, " id=\"fn-{}\">", nfd.name)?;
                 } else {
-                    if self.put_footnote_backref()? {
+                    if self.put_footnote_backref(nfd)? {
                         self.output.write_all(b"\n")?;
                     }
                     self.output.write_all(b"</li>\n")?;
                 }
             }
-            NodeValue::FootnoteReference(ref r) => {
+            NodeValue::FootnoteReference(ref nfr) => {
                 if entering {
+                    let mut ref_id = format!("fnref-{}", nfr.name);
+
                     self.output.write_all(b"<sup")?;
                     self.render_sourcepos(node)?;
+
+                    if nfr.ref_num > 1 {
+                        ref_id = format!("{}-{}", ref_id, nfr.ref_num);
+                    }
                     write!(
-                        self.output, " class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"fnref-{}\" data-footnote-ref>{}</a></sup>",
-                        r, r, r
+                        self.output, " class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"{}\" data-footnote-ref>{}</a></sup>",
+                        nfr.name, ref_id, nfr.ix,
                     )?;
                 }
             }
@@ -993,17 +1001,29 @@ impl<'o> HtmlFormatter<'o> {
         Ok(())
     }
 
-    fn put_footnote_backref(&mut self) -> io::Result<bool> {
+    fn put_footnote_backref(&mut self, nfd: &NodeFootnoteDefinition) -> io::Result<bool> {
         if self.written_footnote_ix >= self.footnote_ix {
             return Ok(false);
         }
 
         self.written_footnote_ix = self.footnote_ix;
-        write!(
-            self.output,
-            "<a href=\"#fnref-{}\" class=\"footnote-backref\" data-footnote-backref aria-label=\"Back to content\">↩</a>",
-            self.footnote_ix
-        )?;
+
+        let mut ref_suffix = String::new();
+        let mut superscript = String::new();
+
+        for ref_num in 1..=nfd.total_references {
+            if ref_num > 1 {
+                ref_suffix = format!("-{}", ref_num);
+                superscript = format!("<sup class=\"footnote-ref\">{}</sup>", ref_num);
+                write!(self.output, " ")?;
+            }
+
+            write!(
+                self.output,
+                "<a href=\"#fnref-{}{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}{}\" aria-label=\"Back to reference {}{}\">↩{}</a>",
+                nfd.name, ref_suffix, self.footnote_ix, ref_suffix, self.footnote_ix, ref_suffix, superscript
+            )?;
+        }
         Ok(true)
     }
 }
