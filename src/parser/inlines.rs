@@ -1,7 +1,7 @@
 use crate::arena_tree::Node;
 use crate::ctype::{ispunct, isspace};
 use crate::entity;
-use crate::nodes::{Ast, AstNode, NodeCode, NodeLink, NodeValue, Sourcepos};
+use crate::nodes::{Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeValue, Sourcepos};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
@@ -1266,7 +1266,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             let text = text.unwrap();
             if text.len() > 1 && text.as_bytes()[0] == b'^' {
                 let inl = self.make_inline(
-                    NodeValue::FootnoteReference(text[1..].to_string()),
+                    NodeValue::FootnoteReference(NodeFootnoteReference {
+                        name: text[1..].to_string(),
+                        ref_num: 0,
+                        ix: 0,
+                    }),
                     // Overridden immediately below.
                     self.pos,
                     self.pos,
