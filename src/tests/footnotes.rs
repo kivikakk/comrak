@@ -148,6 +148,28 @@ fn footnote_with_superscript() {
 }
 
 #[test]
+fn footnote_escapes_name() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^😄ref]\n",
+            "\n",
+            "[^😄ref]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-%F0%9F%98%84ref\" id=\"fnref-%F0%9F%98%84ref\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-%F0%9F%98%84ref\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-%F0%9F%98%84ref\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.footnotes],
