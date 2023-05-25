@@ -170,6 +170,28 @@ fn footnote_escapes_name() {
 }
 
 #[test]
+fn footnote_case_insensitive_and_case_preserving() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^AB] and [^ab]\n",
+            "\n",
+            "[^aB]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-aB\" id=\"fnref-aB\" data-footnote-ref>1</a></sup> and <sup class=\"footnote-ref\"><a href=\"#fn-aB\" id=\"fnref-aB-2\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-aB\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-aB\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a> <a href=\"#fnref-aB-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1-2\" aria-label=\"Back to reference 1-2\">↩<sup class=\"footnote-ref\">2</sup></a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.footnotes],
