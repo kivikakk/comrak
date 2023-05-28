@@ -944,7 +944,9 @@ impl<'o> HtmlFormatter<'o> {
                     self.footnote_ix += 1;
                     self.output.write_all(b"<li")?;
                     self.render_sourcepos(node)?;
-                    writeln!(self.output, " id=\"fn-{}\">", nfd.name)?;
+                    self.output.write_all(b" id=\"fn-")?;
+                    self.escape_href(nfd.name.as_bytes())?;
+                    self.output.write_all(b"\">")?;
                 } else {
                     if self.put_footnote_backref(nfd)? {
                         self.output.write_all(b"\n")?;
@@ -962,10 +964,13 @@ impl<'o> HtmlFormatter<'o> {
                     if nfr.ref_num > 1 {
                         ref_id = format!("{}-{}", ref_id, nfr.ref_num);
                     }
-                    write!(
-                        self.output, " class=\"footnote-ref\"><a href=\"#fn-{}\" id=\"{}\" data-footnote-ref>{}</a></sup>",
-                        nfr.name, ref_id, nfr.ix,
-                    )?;
+
+                    self.output
+                        .write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
+                    self.escape_href(nfr.name.as_bytes())?;
+                    self.output.write_all(b"\" id=\"")?;
+                    self.escape_href(ref_id.as_bytes())?;
+                    write!(self.output, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
                 }
             }
             NodeValue::TaskItem(symbol) => {
@@ -1018,10 +1023,12 @@ impl<'o> HtmlFormatter<'o> {
                 write!(self.output, " ")?;
             }
 
+            self.output.write_all(b"<a href=\"#fnref-")?;
+            self.escape_href(nfd.name.as_bytes())?;
             write!(
                 self.output,
-                "<a href=\"#fnref-{}{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}{}\" aria-label=\"Back to reference {}{}\">↩{}</a>",
-                nfd.name, ref_suffix, self.footnote_ix, ref_suffix, self.footnote_ix, ref_suffix, superscript
+                "{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}{}\" aria-label=\"Back to reference {}{}\">↩{}</a>",
+                ref_suffix, self.footnote_ix, ref_suffix, self.footnote_ix, ref_suffix, superscript
             )?;
         }
         Ok(true)
