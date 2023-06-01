@@ -4,6 +4,12 @@ use crate::parser::AutolinkType;
 use std::ptr;
 use std::str;
 
+#[derive(PartialEq, Eq)]
+pub enum Case {
+    Preserve,
+    DontPreserve,
+}
+
 pub fn unescape(v: &mut Vec<u8>) {
     let mut r = 0;
     let mut prev = None;
@@ -237,7 +243,7 @@ pub fn is_blank(s: &[u8]) -> bool {
     true
 }
 
-pub fn normalize_label(i: &str, preserve_case: bool) -> String {
+pub fn normalize_label(i: &str, casing: Case) -> String {
     // trim_slice only removes bytes from start and end that match isspace();
     // result is UTF-8.
     let i = unsafe { str::from_utf8_unchecked(trim_slice(i.as_bytes())) };
@@ -252,10 +258,9 @@ pub fn normalize_label(i: &str, preserve_case: bool) -> String {
             }
         } else {
             last_was_whitespace = false;
-            if preserve_case {
-                v.push(c);
-            } else {
-                v.push_str(&c.to_lowercase().to_string());
+            match casing {
+                Case::Preserve => v.push(c),
+                Case::DontPreserve => v.push_str(&c.to_lowercase().to_string()),
             }
         }
     }
@@ -311,6 +316,7 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
 #[cfg(test)]
 pub mod tests {
     use super::{normalize_code, normalize_label, split_off_front_matter};
+    use crate::strings::Case;
 
     #[test]
     fn normalize_code_handles_lone_newline() {
@@ -346,13 +352,22 @@ pub mod tests {
 
     #[test]
     fn normalize_label_lowercase() {
-        assert_eq!(normalize_label("  Foo\u{A0}BAR  ", false), "foo bar");
-        assert_eq!(normalize_label("  FooİBAR  ", false), "fooi\u{307}bar");
+        assert_eq!(
+            normalize_label("  Foo\u{A0}BAR  ", Case::DontPreserve),
+            "foo bar"
+        );
+        assert_eq!(
+            normalize_label("  FooİBAR  ", Case::DontPreserve),
+            "fooi\u{307}bar"
+        );
     }
 
     #[test]
     fn normalize_label_preserve() {
-        assert_eq!(normalize_label("  Foo\u{A0}BAR  ", true), "Foo BAR");
-        assert_eq!(normalize_label("  FooİBAR  ", true), "FooİBAR");
+        assert_eq!(
+            normalize_label("  Foo\u{A0}BAR  ", Case::Preserve),
+            "Foo BAR"
+        );
+        assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
     }
 }

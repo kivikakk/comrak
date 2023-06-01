@@ -9,6 +9,7 @@ use crate::parser::{
 };
 use crate::scanners;
 use crate::strings;
+use crate::strings::Case;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -1197,7 +1198,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         // Need to normalize both to lookup in refmap and to call callback
-        let lab = strings::normalize_label(&lab, false);
+        let lab = strings::normalize_label(&lab, Case::DontPreserve);
         let mut reff = if found_label {
             self.refmap.lookup(&lab)
         } else {
