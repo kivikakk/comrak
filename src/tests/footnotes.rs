@@ -192,6 +192,46 @@ fn footnote_case_insensitive_and_case_preserving() {
 }
 
 #[test]
+fn footnote_name_parsed_into_multiple_nodes() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Foo.[^_ab]\n",
+            "\n",
+            "[^_ab]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Foo.<sup class=\"footnote-ref\"><a href=\"#fn-_ab\" id=\"fnref-_ab\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-_ab\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-_ab\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
+fn footnote_invalid_with_missing_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo.[^]\n\n[^]: Here is the footnote.\n",
+        "<p>Foo.[^]</p>\n<p>[^]: Here is the footnote.</p>\n"
+    );
+}
+
+#[test]
+fn footnote_does_not_allow_spaces_in_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo.[^one two]\n\n[^one two]: Here is the footnote.\n",
+        "<p>Foo.[^one two]</p>\n<p>[^one two]: Here is the footnote.</p>\n"
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.footnotes],

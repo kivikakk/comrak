@@ -1216,18 +1216,40 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             return None;
         }
 
-        let mut text: Option<String> = None;
+        let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
+
         if self.options.extension.footnotes
-            && match self.brackets[brackets_len - 1].inl_text.next_sibling() {
+            && match bracket_inl_text.next_sibling() {
                 Some(n) => {
-                    text = n.data.borrow().value.text().cloned();
-                    text.is_some() && n.next_sibling().is_none()
+                    if n.data.borrow().value.text().is_some() {
+                        n.data.borrow().value.text().unwrap().as_bytes()[0] == b'^'
+                    } else {
+                        false
+                    }
                 }
                 _ => false,
             }
         {
-            let text = text.unwrap();
-            if text.len() > 1 && text.as_bytes()[0] == b'^' {
+            let mut text = String::new();
+            let mut sibling_iterator = bracket_inl_text.following_siblings();
+
+            // Skip the initial node, which holds the `[`
+            sibling_iterator.next().unwrap();
+
+            // The footnote name could have been parsed into multiple text/htmlinline nodes.
+            // For example `[^_foo]` gives `^`, `_`, and `foo`. So pull them together.
+            // Since we're handling the closing bracket, the only siblings at this point are
+            // related to the footnote name.
+            for sibling in sibling_iterator {
+                match sibling.data.borrow().value {
+                    NodeValue::Text(ref literal) | NodeValue::HtmlInline(ref literal) => {
+                        text.push_str(literal);
+                    }
+                    _ => {}
+                };
+            }
+
+            if text.len() > 1 {
                 let inl = self.make_inline(
                     NodeValue::FootnoteReference(NodeFootnoteReference {
                         name: text[1..].to_string(),
@@ -1238,24 +1260,25 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     self.pos,
                     self.pos,
                 );
-                inl.data.borrow_mut().sourcepos.start.column = self.brackets[brackets_len - 1]
-                    .inl_text
-                    .data
-                    .borrow()
-                    .sourcepos
-                    .start
-                    .column;
+                inl.data.borrow_mut().sourcepos.start.column =
+                    bracket_inl_text.data.borrow().sourcepos.start.column;
                 inl.data.borrow_mut().sourcepos.end.column = usize::try_from(
                     self.pos as isize + self.column_offset + self.block_offset as isize,
                 )
                 .unwrap();
-                self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-                self.brackets[brackets_len - 1]
-                    .inl_text
-                    .next_sibling()
-                    .unwrap()
-                    .detach();
-                self.brackets[brackets_len - 1].inl_text.detach();
+                bracket_inl_text.insert_before(inl);
+
+                // detach all the nodes, including bracket_inl_text
+                sibling_iterator = bracket_inl_text.following_siblings();
+                for sibling in sibling_iterator {
+                    match sibling.data.borrow().value {
+                        NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
+                            sibling.detach();
+                        }
+                        _ => {}
+                    };
+                }
+
                 self.process_emphasis(self.brackets[brackets_len - 1].position);
                 self.brackets.pop();
                 return None;
