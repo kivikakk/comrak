@@ -463,12 +463,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // At this point the entire delimiter stack from `stack_bottom` up has
         // been scanned for matches, everything left is just text. Pop it all
         // off.
-        while self
-            .last_delimiter
-            .map_or(false, |d| d.position >= stack_bottom)
-        {
-            self.remove_delimiter(self.last_delimiter.unwrap());
-        }
+        self.remove_delimiters(stack_bottom);
     }
 
     fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'd>) {
@@ -480,6 +475,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
         if delimiter.prev.get().is_some() {
             delimiter.prev.get().unwrap().next.set(delimiter.next.get());
+        }
+    }
+
+    fn remove_delimiters(&mut self, stack_bottom: usize) {
+        while self
+            .last_delimiter
+            .map_or(false, |d| d.position >= stack_bottom)
+        {
+            self.remove_delimiter(self.last_delimiter.unwrap());
         }
     }
 
@@ -1286,7 +1290,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     };
                 }
 
-                self.process_emphasis(self.brackets[brackets_len - 1].position);
+                // We don't need to process emphasis for footnote names, so cleanup
+                // any outstanding delimiters
+                self.remove_delimiters(self.brackets[brackets_len - 1].position);
+
                 self.brackets.pop();
                 return None;
             }

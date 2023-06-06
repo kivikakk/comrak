@@ -232,6 +232,24 @@ fn footnote_does_not_allow_spaces_in_name() {
 }
 
 #[test]
+fn footnote_does_not_expand_emphasis_in_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo[^**one**]\n[^**one**]: bar\n",
+        concat!(
+            "<p>Foo<sup class=\"footnote-ref\"><a href=\"#fn-**one**\" id=\"fnref-**one**\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-**one**\">\n",
+            "<p>bar <a href=\"#fnref-**one**\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.footnotes],
