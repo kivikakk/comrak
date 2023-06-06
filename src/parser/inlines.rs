@@ -1223,7 +1223,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             && match bracket_inl_text.next_sibling() {
                 Some(n) => {
                     if n.data.borrow().value.text().is_some() {
-                        n.data.borrow().value.text().unwrap().as_bytes()[0] == b'^'
+                        n.data
+                            .borrow()
+                            .value
+                            .text()
+                            .unwrap()
+                            .as_bytes()
+                            .starts_with(&[b'^'])
                     } else {
                         false
                     }
