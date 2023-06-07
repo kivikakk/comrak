@@ -54,3 +54,9 @@ name = "gfm_sourcepos"
 path = "fuzz_targets/gfm_sourcepos.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "gfm_footnotes"
+path = "fuzz_targets/gfm_footnotes.rs"
+test = false
+doc = false

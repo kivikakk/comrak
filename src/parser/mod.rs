@@ -14,7 +14,7 @@ use crate::nodes::{
     NodeHtmlBlock, NodeList, NodeValue,
 };
 use crate::scanners;
-use crate::strings::{self, split_off_front_matter};
+use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -1785,11 +1785,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             NodeValue::FootnoteDefinition(ref nfd) => {
                 node.detach();
                 map.insert(
-                    strings::normalize_label(&nfd.name, false),
+                    strings::normalize_label(&nfd.name, Case::DontPreserve),
                     FootnoteDefinition {
                         ix: None,
                         node,
-                        name: strings::normalize_label(&nfd.name, true),
+                        name: strings::normalize_label(&nfd.name, Case::Preserve),
                         total_references: 0,
                     },
                 );
@@ -1811,7 +1811,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
-                let normalized = strings::normalize_label(&nfr.name, false);
+                let normalized = strings::normalize_label(&nfr.name, Case::DontPreserve);
                 if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
@@ -1824,7 +1824,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     footnote.total_references += 1;
                     nfr.ref_num = footnote.total_references;
                     nfr.ix = ix;
-                    nfr.name = strings::normalize_label(&footnote.name, true);
+                    nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
                 } else {
                     replace = Some(nfr.name.clone());
                 }
@@ -2025,7 +2025,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        lab = strings::normalize_label(&lab, false);
+        lab = strings::normalize_label(&lab, Case::DontPreserve);
         if !lab.is_empty() {
             subj.refmap.map.entry(lab).or_insert(Reference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),
