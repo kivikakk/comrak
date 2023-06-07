@@ -39,7 +39,10 @@ fn try_opening_header<'a>(
         return Some((container, false, false));
     }
 
-    let marker_row = row(&line[parser.first_nonspace..]).unwrap();
+    let marker_row = match row(&line[parser.first_nonspace..]) {
+        Some(marker_row) => marker_row,
+        None => return Some((container, false, true)),
+    };
 
     let header_row = match row(container.data.borrow().content.as_bytes()) {
         Some(header_row) => header_row,
@@ -115,7 +118,11 @@ fn try_opening_row<'a>(
         return None;
     }
     let sourcepos = container.data.borrow().sourcepos;
-    let this_row = row(&line[parser.first_nonspace..]).unwrap();
+    let this_row = match row(&line[parser.first_nonspace..]) {
+        Some(this_row) => this_row,
+        None => return None,
+    };
+
     let new_row = parser.add_child(
         container,
         NodeValue::TableRow(false),
@@ -175,6 +182,7 @@ fn row(string: &[u8]) -> Option<Row> {
 
     let mut paragraph_offset = 0;
     let mut expect_more_cells = true;
+    let mut max_columns_abort = false;
 
     while offset < len && expect_more_cells {
         let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
@@ -190,6 +198,12 @@ fn row(string: &[u8]) -> Option<Row> {
             while start_offset > paragraph_offset && string[start_offset - 1] != b'|' {
                 start_offset -= 1;
                 internal_offset += 1;
+            }
+
+            // set an upper limit on the number of columns
+            if cells.len() == u16::MAX.into() {
+                max_columns_abort = true;
+                break;
             }
 
             cells.push(Cell {
@@ -219,7 +233,7 @@ fn row(string: &[u8]) -> Option<Row> {
         }
     }
 
-    if offset != len || cells.is_empty() {
+    if offset != len || cells.is_empty() || max_columns_abort {
         None
     } else {
         Some(Row {
