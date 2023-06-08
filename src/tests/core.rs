@@ -334,6 +334,10 @@ fn links() {
             '\n'
         ),
     );
+    html(
+        r"[Link Text](\#)",
+        concat!(r##"<p><a href="#">Link Text</a></p>"##, '\n'),
+    );
 }
 
 #[test]

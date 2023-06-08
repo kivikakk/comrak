@@ -17,18 +17,15 @@ pub fn unescape(v: &mut Vec<u8>) {
 
     while r < v.len() {
         if v[r] == b'\\' && r + 1 < v.len() && ispunct(v[r + 1]) {
-            if v[r + 1] != b'\\' {
-                if let Some(prev) = prev {
-                    let window = &mut v[(prev + 1 - found)..r];
-                    shift_buf_left(window, found);
-                }
-
-                prev = Some(r);
-            } else {
-                prev = Some(r);
+            if v[r + 1] == b'\\' {
                 r += 1;
             }
 
+            if let Some(prev) = prev {
+                let window = &mut v[(prev + 1 - found)..r];
+                shift_buf_left(window, found);
+            }
+            prev = Some(r);
             found += 1;
         }
         r += 1;
