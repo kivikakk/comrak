@@ -201,7 +201,7 @@ fn row(string: &[u8]) -> Option<Row> {
             }
 
             // set an upper limit on the number of columns
-            if cells.len() == u16::MAX.into() {
+            if cells.len() == <u16 as Into<usize>>::into(u16::MAX) {
                 max_columns_abort = true;
                 break;
             }
