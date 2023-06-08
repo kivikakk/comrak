@@ -291,13 +291,13 @@ fn email_match<'a>(
         }
 
         if c == b':' {
-            if validate_protocol("mailto".to_string(), contents, i - rewind - 1) {
+            if validate_protocol("mailto", contents, i - rewind - 1) {
                 auto_mailto = false;
                 rewind += 1;
                 continue;
             }
 
-            if validate_protocol("xmpp".to_string(), contents, i - rewind - 1) {
+            if validate_protocol("xmpp", contents, i - rewind - 1) {
                 is_xmpp = true;
                 auto_mailto = false;
                 rewind += 1;
@@ -370,7 +370,7 @@ fn email_match<'a>(
     Some((inl, rewind, rewind + link_end))
 }
 
-fn validate_protocol(protocol: String, contents: &[u8], cursor: usize) -> bool {
+fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
     let size = contents.len();
     let mut rewind = 0;
 
