@@ -308,13 +308,13 @@ fn links() {
     );
     html(
         concat!(
-            r"Where are you [going](#1\\.-link (today))?",
+            r"Where are you [going](#1\.-link (today))?",
             "\n",
             "\n",
             "[Where am I?](/here)\n"
         ),
         concat!(
-            "<p>Where are you <a href=\"#1%5C.-link\" \
+            "<p>Where are you <a href=\"#1.-link\" \
              title=\"today\">going</a>?</p>\n",
             "<p><a href=\"/here\">Where am I?</a></p>\n"
         ),
