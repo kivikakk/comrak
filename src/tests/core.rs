@@ -306,6 +306,38 @@ fn links() {
             "<p><a href=\"/here\">Where am I?</a></p>\n"
         ),
     );
+    html(
+        concat!(
+            r"Where are you [going](#1\.-link (today))?",
+            "\n",
+            "\n",
+            "[Where am I?](/here)\n"
+        ),
+        concat!(
+            "<p>Where are you <a href=\"#1.-link\" \
+             title=\"today\">going</a>?</p>\n",
+            "<p><a href=\"/here\">Where am I?</a></p>\n"
+        ),
+    );
+    html(
+        r"[Link Text](\\\\)",
+        concat!(r##"<p><a href="%5C%5C">Link Text</a></p>"##, '\n'),
+    );
+    html(
+        r"[Link Text](\\\\\\\\\\)",
+        concat!(r##"<p><a href="%5C%5C%5C%5C%5C">Link Text</a></p>"##, '\n'),
+    );
+    html(
+        r"[Link Text](\\\\ (title))",
+        concat!(
+            r##"<p><a href="%5C%5C" title="title">Link Text</a></p>"##,
+            '\n'
+        ),
+    );
+    html(
+        r"[Link Text](\#)",
+        concat!(r##"<p><a href="#">Link Text</a></p>"##, '\n'),
+    );
 }
 
 #[test]
