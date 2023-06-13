@@ -212,5 +212,6 @@ fn exercise_full_api() {
             let _: String = nfr.name;
             let _: u32 = nfr.ix;
         }
+        nodes::NodeValue::MultilineBlockQuote(_) => {}
     }
 }

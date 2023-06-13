@@ -22548,6 +22548,318 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
     }
 }
 
+pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+
+    {
+        #[allow(unused_assignments)]
+        let mut yych: u8 = 0;
+        let mut yystate: usize = 0;
+        'yyl: loop {
+            match yystate {
+                0 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    cursor += 1;
+                    match yych {
+                        0x3E => {
+                            yystate = 3;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                1 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                2 => {
+                    return None;
+                }
+                3 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                5 => {
+                    cursor = marker;
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                6 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09 | 0x20 => {
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x0A | 0x0D => {
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09 | 0x20 => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x0A | 0x0D => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                8 => {
+                    cursor = ctxmarker;
+                    {
+                        return Some(cursor);
+                    }
+                }
+                _ => {
+                    panic!("internal lexer error")
+                }
+            }
+        }
+    }
+}
+
+pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+
+    {
+        #[allow(unused_assignments)]
+        let mut yych: u8 = 0;
+        let mut yystate: usize = 0;
+        'yyl: loop {
+            match yystate {
+                0 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    cursor += 1;
+                    match yych {
+                        0x3E => {
+                            yystate = 3;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                1 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                2 => {
+                    return None;
+                }
+                3 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                5 => {
+                    cursor = marker;
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                6 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09 | 0x20 => {
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x0A | 0x0D => {
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x09 | 0x20 => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x0A | 0x0D => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                8 => {
+                    cursor = ctxmarker;
+                    {
+                        return Some(cursor);
+                    }
+                }
+                _ => {
+                    panic!("internal lexer error")
+                }
+            }
+        }
+    }
+}
+
 // Returns both the length of the match, and the tasklist character.
 pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
     let mut cursor = 0;
