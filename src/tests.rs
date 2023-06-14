@@ -6,6 +6,7 @@ use std::panic;
 
 mod api;
 mod autolink;
+mod commonmark;
 mod core;
 mod description_lists;
 mod footnotes;

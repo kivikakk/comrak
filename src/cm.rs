@@ -308,13 +308,23 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
-        if !(matches!(
-            node.data.borrow().value,
-            NodeValue::Item(..) | NodeValue::TaskItem(..)
-        ) && node.previous_sibling().is_none()
-            && entering)
-        {
-            self.in_tight_list_item = self.get_in_tight_list_item(node);
+        let parent_node = node.parent();
+        if entering {
+            if parent_node.is_some()
+                && matches!(
+                    parent_node.unwrap().data.borrow().value,
+                    NodeValue::Item(..) | NodeValue::TaskItem(..)
+                )
+            {
+                self.in_tight_list_item = self.get_in_tight_list_item(node);
+            }
+        } else if matches!(node.data.borrow().value, NodeValue::List(..)) {
+            self.in_tight_list_item = parent_node.is_some()
+                && matches!(
+                    parent_node.unwrap().data.borrow().value,
+                    NodeValue::Item(..) | NodeValue::TaskItem(..)
+                )
+                && self.get_in_tight_list_item(node);
         }
 
         match node.data.borrow().value {
@@ -343,7 +353,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::HtmlInline(ref literal) => {
                 self.format_html_inline(literal.as_bytes(), entering)
             }
-            NodeValue::Strong => self.format_strong(),
+            NodeValue::Strong => {
+                if parent_node.is_none()
+                    || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong)
+                {
+                    self.format_strong();
+                }
+            }
             NodeValue::Emph => self.format_emph(node),
             NodeValue::TaskItem(symbol) => self.format_task_item(symbol, node, entering),
             NodeValue::Strikethrough => self.format_strikethrough(),
@@ -410,13 +426,12 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let marker_width = if parent.list_type == ListType::Bullet {
             2
         } else {
-            let mut list_number = parent.start;
+            let list_number = match node.data.borrow().value {
+                NodeValue::Item(ref ni) => ni.start,
+                NodeValue::TaskItem(_) => parent.start,
+                _ => unreachable!(),
+            };
             let list_delim = parent.delimiter;
-            let mut tmpch = node;
-            while let Some(tmp) = tmpch.previous_sibling() {
-                tmpch = tmp;
-                list_number += 1;
-            }
             write!(
                 listmarker,
                 "{}{}{}",
