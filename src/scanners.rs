@@ -6178,14 +6178,19 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                             yystate = 59;
                             continue 'yyl;
                         }
-                        0x54 | 0x74 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 60;
                             continue 'yyl;
                         }
-                        0x55 | 0x75 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 61;
+                            continue 'yyl;
+                        }
+                        0x55 | 0x75 => {
+                            cursor += 1;
+                            yystate = 62;
                             continue 'yyl;
                         }
                         _ => {
@@ -6205,12 +6210,12 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 62;
+                            yystate = 63;
                             continue 'yyl;
                         }
                         0x42 | 0x62 => {
                             cursor += 1;
-                            yystate = 63;
+                            yystate = 64;
                             continue 'yyl;
                         }
                         0x44 | 0x64 => {
@@ -6220,27 +6225,27 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 64;
+                            yystate = 65;
                             continue 'yyl;
                         }
                         0x46 | 0x66 => {
                             cursor += 1;
-                            yystate = 65;
+                            yystate = 66;
                             continue 'yyl;
                         }
                         0x48 | 0x68 => {
                             cursor += 1;
-                            yystate = 66;
+                            yystate = 67;
                             continue 'yyl;
                         }
                         0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 67;
+                            yystate = 68;
                             continue 'yyl;
                         }
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 68;
+                            yystate = 69;
                             continue 'yyl;
                         }
                         _ => {
@@ -6280,7 +6285,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x2D => {
                             cursor += 1;
-                            yystate = 69;
+                            yystate = 70;
                             continue 'yyl;
                         }
                         _ => {
@@ -6303,7 +6308,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x43 | 0x63 => {
                             cursor += 1;
-                            yystate = 70;
+                            yystate = 71;
                             continue 'yyl;
                         }
                         _ => {
@@ -6356,9 +6361,14 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                             yystate = 59;
                             continue 'yyl;
                         }
+                        0x4F | 0x6F => {
+                            cursor += 1;
+                            yystate = 60;
+                            continue 'yyl;
+                        }
                         0x55 | 0x75 => {
                             cursor += 1;
-                            yystate = 61;
+                            yystate = 62;
                             continue 'yyl;
                         }
                         _ => {
@@ -6378,12 +6388,12 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 62;
+                            yystate = 63;
                             continue 'yyl;
                         }
                         0x42 | 0x62 => {
                             cursor += 1;
-                            yystate = 63;
+                            yystate = 64;
                             continue 'yyl;
                         }
                         0x44 | 0x64 => {
@@ -6393,22 +6403,22 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x46 | 0x66 => {
                             cursor += 1;
-                            yystate = 65;
+                            yystate = 66;
                             continue 'yyl;
                         }
                         0x48 | 0x68 => {
                             cursor += 1;
-                            yystate = 66;
+                            yystate = 67;
                             continue 'yyl;
                         }
                         0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 67;
+                            yystate = 68;
                             continue 'yyl;
                         }
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 68;
+                            yystate = 69;
                             continue 'yyl;
                         }
                         _ => {
@@ -6428,7 +6438,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x44 | 0x64 => {
                             cursor += 1;
-                            yystate = 71;
+                            yystate = 72;
                             continue 'yyl;
                         }
                         _ => {
@@ -6448,7 +6458,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 72;
+                            yystate = 73;
                             continue 'yyl;
                         }
                         _ => {
@@ -6468,7 +6478,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 73;
+                            yystate = 74;
                             continue 'yyl;
                         }
                         _ => {
@@ -6488,7 +6498,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x53 | 0x73 => {
                             cursor += 1;
-                            yystate = 74;
+                            yystate = 75;
                             continue 'yyl;
                         }
                         _ => {
@@ -6508,7 +6518,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 75;
+                            yystate = 76;
                             continue 'yyl;
                         }
                         _ => {
@@ -6528,7 +6538,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x44 | 0x64 => {
                             cursor += 1;
-                            yystate = 76;
+                            yystate = 77;
                             continue 'yyl;
                         }
                         _ => {
@@ -6548,7 +6558,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x50 | 0x70 => {
                             cursor += 1;
-                            yystate = 77;
+                            yystate = 78;
                             continue 'yyl;
                         }
                         _ => {
@@ -6568,7 +6578,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4E | 0x6E => {
                             cursor += 1;
-                            yystate = 78;
+                            yystate = 79;
                             continue 'yyl;
                         }
                         _ => {
@@ -6588,7 +6598,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4C | 0x6C => {
                             cursor += 1;
-                            yystate = 79;
+                            yystate = 80;
                             continue 'yyl;
                         }
                         _ => {
@@ -6633,7 +6643,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 80;
+                            yystate = 81;
                             continue 'yyl;
                         }
                         _ => {
@@ -6653,7 +6663,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 81;
+                            yystate = 82;
                             continue 'yyl;
                         }
                         0x52 | 0x56 | 0x72 | 0x76 => {
@@ -6678,12 +6688,12 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 82;
+                            yystate = 83;
                             continue 'yyl;
                         }
                         0x47 | 0x67 => {
                             cursor += 1;
-                            yystate = 83;
+                            yystate = 84;
                             continue 'yyl;
                         }
                         _ => {
@@ -6703,12 +6713,12 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 78;
+                            yystate = 79;
                             continue 'yyl;
                         }
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 84;
+                            yystate = 85;
                             continue 'yyl;
                         }
                         _ => {
@@ -6728,7 +6738,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 85;
+                            yystate = 86;
                             continue 'yyl;
                         }
                         _ => {
@@ -6748,7 +6758,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 86;
+                            yystate = 87;
                             continue 'yyl;
                         }
                         _ => {
@@ -6788,7 +6798,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 87;
+                            yystate = 88;
                             continue 'yyl;
                         }
                         _ => {
@@ -6808,7 +6818,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x47 | 0x67 => {
                             cursor += 1;
-                            yystate = 88;
+                            yystate = 89;
                             continue 'yyl;
                         }
                         _ => {
@@ -6838,7 +6848,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x4E | 0x6E => {
                             cursor += 1;
-                            yystate = 89;
+                            yystate = 90;
                             continue 'yyl;
                         }
                         _ => {
@@ -6858,7 +6868,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 90;
+                            yystate = 91;
                             continue 'yyl;
                         }
                         _ => {
@@ -6878,7 +6888,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4E | 0x6E => {
                             cursor += 1;
-                            yystate = 91;
+                            yystate = 92;
                             continue 'yyl;
                         }
                         _ => {
@@ -6918,7 +6928,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x46 | 0x66 => {
                             cursor += 1;
-                            yystate = 92;
+                            yystate = 93;
                             continue 'yyl;
                         }
                         _ => {
@@ -6938,7 +6948,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 93;
+                            yystate = 94;
                             continue 'yyl;
                         }
                         _ => {
@@ -6981,7 +6991,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 94;
+                            yystate = 95;
                             continue 'yyl;
                         }
                         _ => {
@@ -7001,7 +7011,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 95;
+                            yystate = 96;
                             continue 'yyl;
                         }
                         _ => {
@@ -7021,7 +7031,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 96;
+                            yystate = 97;
                             continue 'yyl;
                         }
                         _ => {
@@ -7041,7 +7051,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x43 | 0x63 => {
                             cursor += 1;
-                            yystate = 77;
+                            yystate = 78;
                             continue 'yyl;
                         }
                         _ => {
@@ -7059,9 +7069,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x59 | 0x79 => {
+                        0x55 | 0x75 => {
                             cursor += 1;
-                            yystate = 97;
+                            yystate = 98;
                             continue 'yyl;
                         }
                         _ => {
@@ -7079,9 +7089,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4D | 0x6D => {
+                        0x59 | 0x79 => {
                             cursor += 1;
-                            yystate = 98;
+                            yystate = 99;
                             continue 'yyl;
                         }
                         _ => {
@@ -7099,9 +7109,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x42 | 0x62 => {
+                        0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 99;
+                            yystate = 100;
                             continue 'yyl;
                         }
                         _ => {
@@ -7111,6 +7121,26 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 63 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x42 | 0x62 => {
+                            cursor += 1;
+                            yystate = 101;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                64 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7130,7 +7160,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                64 => {
+                65 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7141,7 +7171,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x58 | 0x78 => {
                             cursor += 1;
-                            yystate = 100;
+                            yystate = 102;
                             continue 'yyl;
                         }
                         _ => {
@@ -7150,7 +7180,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                65 => {
+                66 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7161,7 +7191,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 101;
+                            yystate = 103;
                             continue 'yyl;
                         }
                         _ => {
@@ -7170,7 +7200,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                66 => {
+                67 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7191,7 +7221,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 102;
+                            yystate = 104;
                             continue 'yyl;
                         }
                         _ => {
@@ -7200,7 +7230,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                67 => {
+                68 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7211,7 +7241,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 99;
+                            yystate = 101;
                             continue 'yyl;
                         }
                         _ => {
@@ -7220,7 +7250,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                68 => {
+                69 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7241,7 +7271,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 103;
+                            yystate = 105;
                             continue 'yyl;
                         }
                         _ => {
@@ -7249,29 +7279,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                             continue 'yyl;
                         }
                     }
-                }
-                69 => {
-                    return Some(2);
                 }
                 70 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x44 | 0x64 => {
-                            cursor += 1;
-                            yystate = 104;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
+                    return Some(2);
                 }
                 71 => {
                     yych = unsafe {
@@ -7282,9 +7292,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x44 | 0x64 => {
                             cursor += 1;
-                            yystate = 105;
+                            yystate = 106;
                             continue 'yyl;
                         }
                         _ => {
@@ -7302,9 +7312,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 106;
+                            yystate = 107;
                             continue 'yyl;
                         }
                         _ => {
@@ -7322,9 +7332,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x44 | 0x64 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 107;
+                            yystate = 108;
                             continue 'yyl;
                         }
                         _ => {
@@ -7342,9 +7352,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x44 | 0x64 => {
                             cursor += 1;
-                            yystate = 108;
+                            yystate = 109;
                             continue 'yyl;
                         }
                         _ => {
@@ -7362,9 +7372,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
+                        0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 109;
+                            yystate = 110;
                             continue 'yyl;
                         }
                         _ => {
@@ -7374,6 +7384,26 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 76 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 111;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                77 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7393,26 +7423,6 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                77 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 110;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
                 78 => {
                     yych = unsafe {
                         if cursor < len {
@@ -7424,7 +7434,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 111;
+                            yystate = 112;
                             continue 'yyl;
                         }
                         _ => {
@@ -7434,6 +7444,26 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 79 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 113;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                80 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7454,27 +7484,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x47 | 0x67 => {
                             cursor += 1;
-                            yystate = 112;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                80 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x41 | 0x61 => {
-                            cursor += 1;
-                            yystate = 113;
+                            yystate = 114;
                             continue 'yyl;
                         }
                         _ => {
@@ -7492,9 +7502,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4C | 0x6C => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 114;
+                            yystate = 115;
                             continue 'yyl;
                         }
                         _ => {
@@ -7514,7 +7524,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4C | 0x6C => {
                             cursor += 1;
-                            yystate = 115;
+                            yystate = 116;
                             continue 'yyl;
                         }
                         _ => {
@@ -7532,12 +7542,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
-                            cursor += 1;
-                            yystate = 116;
-                            continue 'yyl;
-                        }
-                        0x55 | 0x75 => {
+                        0x4C | 0x6C => {
                             cursor += 1;
                             yystate = 117;
                             continue 'yyl;
@@ -7557,9 +7562,14 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4D | 0x6D => {
+                        0x43 | 0x63 => {
                             cursor += 1;
-                            yystate = 38;
+                            yystate = 118;
+                            continue 'yyl;
+                        }
+                        0x55 | 0x75 => {
+                            cursor += 1;
+                            yystate = 119;
                             continue 'yyl;
                         }
                         _ => {
@@ -7579,7 +7589,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 118;
+                            yystate = 38;
                             continue 'yyl;
                         }
                         _ => {
@@ -7597,9 +7607,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x44 | 0x64 => {
+                        0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 119;
+                            yystate = 120;
                             continue 'yyl;
                         }
                         _ => {
@@ -7617,9 +7627,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x44 | 0x64 => {
                             cursor += 1;
-                            yystate = 120;
+                            yystate = 121;
                             continue 'yyl;
                         }
                         _ => {
@@ -7637,9 +7647,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 121;
+                            yystate = 122;
                             continue 'yyl;
                         }
                         _ => {
@@ -7649,6 +7659,26 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 89 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x45 | 0x65 => {
+                            cursor += 1;
+                            yystate = 123;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                90 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7668,7 +7698,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                90 => {
+                91 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7688,7 +7718,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                91 => {
+                92 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -7699,27 +7729,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x55 | 0x75 => {
                             cursor += 1;
-                            yystate = 122;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                92 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x52 | 0x72 => {
-                            cursor += 1;
-                            yystate = 123;
+                            yystate = 124;
                             continue 'yyl;
                         }
                         _ => {
@@ -7737,14 +7747,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x47 | 0x67 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 112;
-                            continue 'yyl;
-                        }
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 124;
+                            yystate = 125;
                             continue 'yyl;
                         }
                         _ => {
@@ -7762,9 +7767,14 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x47 | 0x67 => {
                             cursor += 1;
-                            yystate = 84;
+                            yystate = 114;
+                            continue 'yyl;
+                        }
+                        0x49 | 0x69 => {
+                            cursor += 1;
+                            yystate = 126;
                             continue 'yyl;
                         }
                         _ => {
@@ -7782,9 +7792,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x09..=0x0D | 0x20 | 0x3E => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 125;
+                            yystate = 85;
                             continue 'yyl;
                         }
                         _ => {
@@ -7802,9 +7812,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x09..=0x0D | 0x20 | 0x3E => {
                             cursor += 1;
-                            yystate = 126;
+                            yystate = 127;
                             continue 'yyl;
                         }
                         _ => {
@@ -7822,9 +7832,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4C | 0x6C => {
+                        0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 57;
+                            yystate = 128;
                             continue 'yyl;
                         }
                         _ => {
@@ -7842,9 +7852,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4D | 0x6D => {
+                        0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 127;
+                            yystate = 129;
                             continue 'yyl;
                         }
                         _ => {
@@ -7864,7 +7874,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4C | 0x6C => {
                             cursor += 1;
-                            yystate = 107;
+                            yystate = 57;
                             continue 'yyl;
                         }
                         _ => {
@@ -7882,9 +7892,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 128;
+                            yystate = 130;
                             continue 'yyl;
                         }
                         _ => {
@@ -7902,9 +7912,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x4C | 0x6C => {
                             cursor += 1;
-                            yystate = 129;
+                            yystate = 109;
                             continue 'yyl;
                         }
                         _ => {
@@ -7922,9 +7932,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 130;
+                            yystate = 131;
                             continue 'yyl;
                         }
                         _ => {
@@ -7942,9 +7952,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 89;
+                            yystate = 132;
                             continue 'yyl;
                         }
                         _ => {
@@ -7964,7 +7974,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 131;
+                            yystate = 133;
                             continue 'yyl;
                         }
                         _ => {
@@ -7982,9 +7992,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x43 | 0x63 => {
                             cursor += 1;
-                            yystate = 132;
+                            yystate = 90;
                             continue 'yyl;
                         }
                         _ => {
@@ -8002,9 +8012,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 99;
+                            yystate = 134;
                             continue 'yyl;
                         }
                         _ => {
@@ -8024,7 +8034,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 38;
+                            yystate = 135;
                             continue 'yyl;
                         }
                         _ => {
@@ -8034,6 +8044,46 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 108 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 101;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                109 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x45 | 0x65 => {
+                            cursor += 1;
+                            yystate = 38;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                110 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8054,47 +8104,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x46 | 0x66 => {
                             cursor += 1;
-                            yystate = 133;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                109 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x4B | 0x6B => {
-                            cursor += 1;
-                            yystate = 134;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                110 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 124;
+                            yystate = 136;
                             continue 'yyl;
                         }
                         _ => {
@@ -8112,9 +8122,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x4B | 0x6B => {
                             cursor += 1;
-                            yystate = 135;
+                            yystate = 137;
                             continue 'yyl;
                         }
                         _ => {
@@ -8132,9 +8142,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 136;
+                            yystate = 126;
                             continue 'yyl;
                         }
                         _ => {
@@ -8152,9 +8162,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 137;
+                            yystate = 138;
                             continue 'yyl;
                         }
                         _ => {
@@ -8172,9 +8182,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 138;
+                            yystate = 139;
                             continue 'yyl;
                         }
                         _ => {
@@ -8192,9 +8202,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x44 | 0x64 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 139;
+                            yystate = 140;
                             continue 'yyl;
                         }
                         _ => {
@@ -8204,6 +8214,46 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 116 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x4F | 0x6F => {
+                            cursor += 1;
+                            yystate = 141;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                117 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x44 | 0x64 => {
+                            cursor += 1;
+                            yystate = 142;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                118 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8223,7 +8273,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                117 => {
+                119 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8234,7 +8284,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 107;
+                            yystate = 109;
                             continue 'yyl;
                         }
                         _ => {
@@ -8243,7 +8293,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                118 => {
+                120 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8254,7 +8304,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 140;
+                            yystate = 143;
                             continue 'yyl;
                         }
                         _ => {
@@ -8263,7 +8313,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                119 => {
+                121 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8284,7 +8334,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 135;
+                            yystate = 138;
                             continue 'yyl;
                         }
                         _ => {
@@ -8293,7 +8343,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                120 => {
+                122 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8304,7 +8354,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 107;
+                            yystate = 109;
                             continue 'yyl;
                         }
                         _ => {
@@ -8313,7 +8363,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                121 => {
+                123 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8324,7 +8374,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4E | 0x6E => {
                             cursor += 1;
-                            yystate = 130;
+                            yystate = 133;
                             continue 'yyl;
                         }
                         _ => {
@@ -8333,7 +8383,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                122 => {
+                124 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8354,89 +8404,6 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x49 | 0x69 => {
                             cursor += 1;
-                            yystate = 141;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                123 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x41 | 0x61 => {
-                            cursor += 1;
-                            yystate = 142;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                124 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x4F | 0x6F => {
-                            cursor += 1;
-                            yystate = 90;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                125 => {
-                    return Some(1);
-                }
-                126 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x50 | 0x70 => {
-                            cursor += 1;
-                            yystate = 143;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                127 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x41 | 0x61 => {
-                            cursor += 1;
                             yystate = 144;
                             continue 'yyl;
                         }
@@ -8446,7 +8413,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                128 => {
+                125 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8466,7 +8433,110 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
+                126 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x4F | 0x6F => {
+                            cursor += 1;
+                            yystate = 91;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                127 => {
+                    return Some(1);
+                }
+                128 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x50 | 0x70 => {
+                            cursor += 1;
+                            yystate = 146;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
                 129 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 109;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                130 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x41 | 0x61 => {
+                            cursor += 1;
+                            yystate = 147;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                131 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x41 | 0x61 => {
+                            cursor += 1;
+                            yystate = 148;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                132 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8486,7 +8556,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                130 => {
+                133 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8506,66 +8576,6 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                131 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 146;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                132 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x53 | 0x73 => {
-                            cursor += 1;
-                            yystate = 147;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                133 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x4F | 0x6F => {
-                            cursor += 1;
-                            yystate = 148;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
                 134 => {
                     yych = unsafe {
                         if cursor < len {
@@ -8575,7 +8585,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x51 | 0x71 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 149;
                             continue 'yyl;
@@ -8595,9 +8605,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x53 | 0x73 => {
                             cursor += 1;
-                            yystate = 38;
+                            yystate = 150;
                             continue 'yyl;
                         }
                         _ => {
@@ -8617,7 +8627,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 150;
+                            yystate = 151;
                             continue 'yyl;
                         }
                         _ => {
@@ -8635,9 +8645,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4C | 0x6C => {
+                        0x51 | 0x71 => {
                             cursor += 1;
-                            yystate = 147;
+                            yystate = 152;
                             continue 'yyl;
                         }
                         _ => {
@@ -8655,7 +8665,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x47 | 0x67 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
                             yystate = 38;
                             continue 'yyl;
@@ -8675,9 +8685,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x53 | 0x73 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 151;
+                            yystate = 153;
                             continue 'yyl;
                         }
                         _ => {
@@ -8687,6 +8697,66 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 140 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x4C | 0x6C => {
+                            cursor += 1;
+                            yystate = 150;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                141 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x47 | 0x67 => {
+                            cursor += 1;
+                            yystate = 38;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                142 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x53 | 0x73 => {
+                            cursor += 1;
+                            yystate = 154;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                143 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8707,67 +8777,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                         0x53 | 0x73 => {
                             cursor += 1;
-                            yystate = 151;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                141 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 152;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                142 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x4D | 0x6D => {
-                            cursor += 1;
-                            yystate = 153;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                143 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 95;
+                            yystate = 154;
                             continue 'yyl;
                         }
                         _ => {
@@ -8785,9 +8795,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 76;
+                            yystate = 155;
                             continue 'yyl;
                         }
                         _ => {
@@ -8805,9 +8815,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 154;
+                            yystate = 156;
                             continue 'yyl;
                         }
                         _ => {
@@ -8825,9 +8835,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 155;
+                            yystate = 96;
                             continue 'yyl;
                         }
                         _ => {
@@ -8837,6 +8847,66 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 147 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x52 | 0x72 => {
+                            cursor += 1;
+                            yystate = 77;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                148 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x52 | 0x72 => {
+                            cursor += 1;
+                            yystate = 157;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                149 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x41 | 0x61 => {
+                            cursor += 1;
+                            yystate = 158;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                150 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8856,7 +8926,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                148 => {
+                151 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -8867,67 +8937,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x4E | 0x6E => {
                             cursor += 1;
-                            yystate = 129;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                149 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x55 | 0x75 => {
-                            cursor += 1;
-                            yystate = 156;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                150 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x55 | 0x75 => {
-                            cursor += 1;
-                            yystate = 157;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                151 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x45 | 0x65 => {
-                            cursor += 1;
-                            yystate = 129;
+                            yystate = 132;
                             continue 'yyl;
                         }
                         _ => {
@@ -8945,9 +8955,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x55 | 0x75 => {
                             cursor += 1;
-                            yystate = 84;
+                            yystate = 159;
                             continue 'yyl;
                         }
                         _ => {
@@ -8965,9 +8975,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x55 | 0x75 => {
                             cursor += 1;
-                            yystate = 147;
+                            yystate = 160;
                             continue 'yyl;
                         }
                         _ => {
@@ -8987,7 +8997,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 158;
+                            yystate = 132;
                             continue 'yyl;
                         }
                         _ => {
@@ -9005,9 +9015,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x5B => {
+                        0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 159;
+                            yystate = 85;
                             continue 'yyl;
                         }
                         _ => {
@@ -9025,9 +9035,9 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 160;
+                            yystate = 150;
                             continue 'yyl;
                         }
                         _ => {
@@ -9037,6 +9047,66 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     }
                 }
                 157 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x45 | 0x65 => {
+                            cursor += 1;
+                            yystate = 161;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                158 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x5B => {
+                            cursor += 1;
+                            yystate = 162;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                159 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x4F | 0x6F => {
+                            cursor += 1;
+                            yystate = 163;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                160 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -9056,7 +9126,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                158 => {
+                161 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -9067,7 +9137,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 95;
+                            yystate = 96;
                             continue 'yyl;
                         }
                         _ => {
@@ -9076,10 +9146,10 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                159 => {
+                162 => {
                     return Some(5);
                 }
-                160 => {
+                163 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -9090,7 +9160,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     match yych {
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 107;
+                            yystate = 109;
                             continue 'yyl;
                         }
                         _ => {
