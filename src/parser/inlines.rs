@@ -1244,6 +1244,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             let mut text = String::new();
             let mut sibling_iterator = bracket_inl_text.following_siblings();
 
+            self.pos = initial_pos;
+
             // Skip the initial node, which holds the `[`
             sibling_iterator.next().unwrap();
 

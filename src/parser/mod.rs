@@ -1759,6 +1759,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut ix = 0;
         Self::find_footnote_references(self.root, &mut map, &mut ix);
 
+        if !map.is_empty() {
+            // In order for references to be found inside footnote definitions,
+            // such as `[^1]: another reference[^2]`,
+            // the node needed to remain in the AST. Now we can remove them.
+            Self::cleanup_footnote_definitions(self.root);
+        }
+
         if ix > 0 {
             let mut v = map.into_values().collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
@@ -1783,7 +1790,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     ) {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref nfd) => {
-                node.detach();
                 map.insert(
                     strings::normalize_label(&nfd.name, Case::DontPreserve),
                     FootnoteDefinition {
@@ -1840,6 +1846,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             label.insert_str(0, "[^");
             label.push(']');
             ast.value = NodeValue::Text(label);
+        }
+    }
+
+    fn cleanup_footnote_definitions(node: &'a AstNode<'a>) {
+        match node.data.borrow().value {
+            NodeValue::FootnoteDefinition(_) => {
+                node.detach();
+            }
+            _ => {
+                for n in node.children() {
+                    Self::cleanup_footnote_definitions(n);
+                }
+            }
         }
     }
 
