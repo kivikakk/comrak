@@ -10,7 +10,7 @@ fn tasklist() {
     html_opts!(
         [extension.tasklist, parse.relaxed_tasklist_matching],
         "* [*]",
-        "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> </li>\n</ul>\n",
+        "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> </li>\n</ul>\n",
     );
 }
 

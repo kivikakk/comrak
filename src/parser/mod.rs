@@ -222,7 +222,7 @@ pub struct ExtensionOptions {
     /// options.extension.tasklist = true;
     /// options.render.unsafe_ = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
-    ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Done</li>\n\
+    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
     pub tasklist: bool,

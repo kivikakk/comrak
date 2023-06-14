@@ -977,7 +977,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b">")?;
                     write!(
                         self.output,
-                        "<input type=\"checkbox\" disabled=\"\" {}/> ",
+                        "<input type=\"checkbox\" {}disabled=\"\" /> ",
                         if symbol.is_some() {
                             "checked=\"\" "
                         } else {
