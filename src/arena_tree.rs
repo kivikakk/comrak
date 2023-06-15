@@ -7,7 +7,7 @@ A DOM-like tree data structure based on `&Node` references.
 Any non-trivial tree involves reference cycles
 (e.g. if a node has a first child, the parent of the child is that node).
 To enable this, nodes need to live in an arena allocator
-such as `arena::TypedArena` distrubuted with rustc (which is `#[unstable]` as of this writing)
+such as `arena::TypedArena` distributed with rustc (which is `#[unstable]` as of this writing)
 or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
 
 If you need mutability in the node’s `data`,
@@ -33,7 +33,7 @@ pub struct Node<'a, T: 'a> {
 }
 
 /// A simple Debug implementation that prints the children as a tree, without
-/// ilooping through the various interior pointer cycles.
+/// looping through the various interior pointer cycles.
 impl<'a, T: 'a> fmt::Debug for Node<'a, T>
 where
     T: fmt::Debug,
@@ -95,7 +95,7 @@ impl<'a, T> Node<'a, T> {
         self.previous_sibling.get()
     }
 
-    /// Return a reference to the previous sibling of this node, unless it is a last child.
+    /// Return a reference to the next sibling of this node, unless it is a last child.
     pub fn next_sibling(&self) -> Option<&'a Node<'a, T>> {
         self.next_sibling.get()
     }

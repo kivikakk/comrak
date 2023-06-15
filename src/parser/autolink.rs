@@ -278,6 +278,8 @@ fn email_match<'a>(
 
     let size = contents.len();
 
+    let mut auto_mailto = true;
+    let mut is_xmpp = false;
     let mut rewind = 0;
 
     while rewind < i {
@@ -286,6 +288,21 @@ fn email_match<'a>(
         if isalnum(c) || EMAIL_OK_SET[c as usize] {
             rewind += 1;
             continue;
+        }
+
+        if c == b':' {
+            if validate_protocol("mailto", contents, i - rewind - 1) {
+                auto_mailto = false;
+                rewind += 1;
+                continue;
+            }
+
+            if validate_protocol("xmpp", contents, i - rewind - 1) {
+                is_xmpp = true;
+                auto_mailto = false;
+                rewind += 1;
+                continue;
+            }
         }
 
         break;
@@ -307,6 +324,8 @@ fn email_match<'a>(
             return None;
         } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
             np += 1;
+        } else if c == b'/' && is_xmpp {
+            // xmpp allows a `/` in the url
         } else if c != b'-' && c != b'_' {
             break;
         }
@@ -326,7 +345,11 @@ fn email_match<'a>(
         return None;
     }
 
-    let mut url = "mailto:".to_string();
+    let mut url = if auto_mailto {
+        "mailto:".to_string()
+    } else {
+        "".to_string()
+    };
     let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
     url.push_str(text);
 
@@ -345,4 +368,16 @@ fn email_match<'a>(
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
+}
+
+fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
+    let size = contents.len();
+    let mut rewind = 0;
+
+    while rewind < cursor && isalpha(contents[cursor - rewind - 1]) {
+        rewind += 1;
+    }
+
+    size - cursor + rewind >= protocol.len()
+        && &contents[cursor - rewind..cursor] == protocol.as_bytes()
 }

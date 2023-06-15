@@ -21,6 +21,10 @@ exclude = [
 resolver = "2"
 edition = "2018"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [profile.release]
 lto = true
 

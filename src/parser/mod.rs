@@ -14,7 +14,7 @@ use crate::nodes::{
     NodeHtmlBlock, NodeList, NodeValue,
 };
 use crate::scanners;
-use crate::strings::{self, split_off_front_matter};
+use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -329,8 +329,8 @@ pub struct ComrakExtensionOptions {
     pub front_matter_delimiter: Option<String>,
 
     #[cfg(feature = "shortcodes")]
-    /// Available if "shortcodes" feature is enabled.  Phrases wrapped inside of ':' blocks will be
-    /// replaced with emojis.
+    #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
+    /// Phrases wrapped inside of ':' blocks will be replaced with emojis.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, ComrakOptions};
@@ -1792,6 +1792,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut ix = 0;
         Self::find_footnote_references(self.root, &mut map, &mut ix);
 
+        if !map.is_empty() {
+            // In order for references to be found inside footnote definitions,
+            // such as `[^1]: another reference[^2]`,
+            // the node needed to remain in the AST. Now we can remove them.
+            Self::cleanup_footnote_definitions(self.root);
+        }
+
         if ix > 0 {
             let mut v = map.into_values().collect::<Vec<_>>();
             v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
@@ -1816,13 +1823,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     ) {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref nfd) => {
-                node.detach();
                 map.insert(
-                    strings::normalize_label(&nfd.name),
+                    strings::normalize_label(&nfd.name, Case::DontPreserve),
                     FootnoteDefinition {
                         ix: None,
                         node,
-                        name: strings::normalize_label(&nfd.name),
+                        name: strings::normalize_label(&nfd.name, Case::Preserve),
                         total_references: 0,
                     },
                 );
@@ -1844,7 +1850,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
-                if let Some(ref mut footnote) = map.get_mut(&nfr.name) {
+                let normalized = strings::normalize_label(&nfr.name, Case::DontPreserve);
+                if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
                         None => {
@@ -1856,6 +1863,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     footnote.total_references += 1;
                     nfr.ref_num = footnote.total_references;
                     nfr.ix = ix;
+                    nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
                 } else {
                     replace = Some(nfr.name.clone());
                 }
@@ -1871,6 +1879,19 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             label.insert_str(0, "[^");
             label.push(']');
             ast.value = NodeValue::Text(label);
+        }
+    }
+
+    fn cleanup_footnote_definitions(node: &'a AstNode<'a>) {
+        match node.data.borrow().value {
+            NodeValue::FootnoteDefinition(_) => {
+                node.detach();
+            }
+            _ => {
+                for n in node.children() {
+                    Self::cleanup_footnote_definitions(n);
+                }
+            }
         }
     }
 
@@ -2056,7 +2077,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        lab = strings::normalize_label(&lab);
+        lab = strings::normalize_label(&lab, Case::DontPreserve);
         if !lab.is_empty() {
             subj.refmap.map.entry(lab).or_insert(Reference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),

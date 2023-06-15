@@ -148,6 +148,108 @@ fn footnote_with_superscript() {
 }
 
 #[test]
+fn footnote_escapes_name() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^😄ref]\n",
+            "\n",
+            "[^😄ref]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-%F0%9F%98%84ref\" id=\"fnref-%F0%9F%98%84ref\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-%F0%9F%98%84ref\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-%F0%9F%98%84ref\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
+fn footnote_case_insensitive_and_case_preserving() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Here is a footnote reference.[^AB] and [^ab]\n",
+            "\n",
+            "[^aB]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Here is a footnote reference.<sup class=\"footnote-ref\"><a href=\"#fn-aB\" id=\"fnref-aB\" data-footnote-ref>1</a></sup> and <sup class=\"footnote-ref\"><a href=\"#fn-aB\" id=\"fnref-aB-2\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-aB\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-aB\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a> <a href=\"#fnref-aB-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1-2\" aria-label=\"Back to reference 1-2\">↩<sup class=\"footnote-ref\">2</sup></a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
+fn footnote_name_parsed_into_multiple_nodes() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "Foo.[^_ab]\n",
+            "\n",
+            "[^_ab]: Here is the footnote.\n",
+        ),
+        concat!(
+            "<p>Foo.<sup class=\"footnote-ref\"><a href=\"#fn-_ab\" id=\"fnref-_ab\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-_ab\">\n",
+            "<p>Here is the footnote. <a href=\"#fnref-_ab\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
+fn footnote_invalid_with_missing_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo.[^]\n\n[^]: Here is the footnote.\n",
+        "<p>Foo.[^]</p>\n<p>[^]: Here is the footnote.</p>\n"
+    );
+}
+
+#[test]
+fn footnote_does_not_allow_spaces_in_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo.[^one two]\n\n[^one two]: Here is the footnote.\n",
+        "<p>Foo.[^one two]</p>\n<p>[^one two]: Here is the footnote.</p>\n"
+    );
+}
+
+#[test]
+fn footnote_does_not_expand_emphasis_in_name() {
+    html_opts!(
+        [extension.footnotes],
+        "Foo[^**one**]\n[^**one**]: bar\n",
+        concat!(
+            "<p>Foo<sup class=\"footnote-ref\"><a href=\"#fn-**one**\" id=\"fnref-**one**\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-**one**\">\n",
+            "<p>bar <a href=\"#fnref-**one**\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.footnotes],
