@@ -6,10 +6,10 @@ use crate::nodes::{
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::ComrakOptions;
+use crate::parser::Options;
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::{nodes, ComrakPlugins};
+use crate::{nodes, Plugins};
 
 use std::cmp::max;
 use std::io::{self, Write};
@@ -17,18 +17,18 @@ use std::io::{self, Write};
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
-    _plugins: &ComrakPlugins,
+    _plugins: &Plugins,
 ) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
@@ -41,7 +41,7 @@ pub fn format_document_with_plugins<'a>(
 
 struct CommonMarkFormatter<'a, 'o> {
     node: &'a AstNode<'a>,
-    options: &'o ComrakOptions,
+    options: &'o Options,
     v: Vec<u8>,
     prefix: Vec<u8>,
     column: usize,
@@ -75,7 +75,7 @@ impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
 }
 
 impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
-    fn new(node: &'a AstNode<'a>, options: &'o ComrakOptions) -> Self {
+    fn new(node: &'a AstNode<'a>, options: &'o Options) -> Self {
         CommonMarkFormatter {
             node,
             options,

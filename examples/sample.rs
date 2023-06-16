@@ -1,17 +1,17 @@
 // Samples used in the README.  Wanna make sure they work as advertised.
 
 fn small() {
-    use comrak::{markdown_to_html, ComrakOptions};
+    use comrak::{markdown_to_html, Options};
 
     assert_eq!(
-        markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
+        markdown_to_html("Hello, **世界**!", &Options::default()),
         "<p>Hello, <strong>世界</strong>!</p>\n"
     );
 }
 
 fn large() {
     use comrak::nodes::{AstNode, NodeValue};
-    use comrak::{format_html, parse_document, Arena, ComrakOptions};
+    use comrak::{format_html, parse_document, Arena, Options};
 
     // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
     let arena = Arena::new();
@@ -19,7 +19,7 @@ fn large() {
     let root = parse_document(
         &arena,
         "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
-        &ComrakOptions::default(),
+        &Options::default(),
     );
 
     fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
@@ -40,7 +40,7 @@ fn large() {
     });
 
     let mut html = vec![];
-    format_html(root, &ComrakOptions::default(), &mut html).unwrap();
+    format_html(root, &Options::default(), &mut html).unwrap();
 
     assert_eq!(
         String::from_utf8(html).unwrap(),

@@ -8,8 +8,8 @@ use super::*;
 #[test]
 fn exercise_full_api() {
     let arena = Arena::new();
-    let default_options = ComrakOptions::default();
-    let default_plugins = ComrakPlugins::default();
+    let default_options = Options::default();
+    let default_plugins = Plugins::default();
     let node = parse_document(&arena, "# My document\n", &default_options);
     let mut buffer = vec![];
 
@@ -34,8 +34,8 @@ fn exercise_full_api() {
         Some(&mut |_: &str| Some(("abc".to_string(), "xyz".to_string()))),
     );
 
-    let _ = ComrakOptions {
-        extension: ComrakExtensionOptions {
+    let _ = Options {
+        extension: ExtensionOptions {
             strikethrough: false,
             tagfilter: false,
             table: false,
@@ -49,12 +49,12 @@ fn exercise_full_api() {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
         },
-        parse: ComrakParseOptions {
+        parse: ParseOptions {
             smart: false,
             default_info_string: Some("abc".to_string()),
             relaxed_tasklist_matching: true,
         },
-        render: ComrakRenderOptions {
+        render: RenderOptions {
             hardbreaks: false,
             github_pre_lang: false,
             full_info_string: false,
@@ -111,8 +111,8 @@ fn exercise_full_api() {
 
     let mock_adapter = MockAdapter {};
 
-    let _ = ComrakPlugins {
-        render: ComrakRenderPlugins {
+    let _ = Plugins {
+        render: RenderPlugins {
             codefence_syntax_highlighter: Some(&mock_adapter),
             heading_adapter: Some(&mock_adapter),
         },

@@ -7,8 +7,8 @@
 //! You can use `comrak::markdown_to_html` directly:
 //!
 //! ```
-//! use comrak::{markdown_to_html, ComrakOptions};
-//! assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
+//! use comrak::{markdown_to_html, Options};
+//! assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
 //!            "<p>Hello, <strong>世界</strong>!</p>\n");
 //! ```
 //!
@@ -16,7 +16,7 @@
 //! formatter:
 //!
 //! ```
-//! use comrak::{Arena, parse_document, format_html, ComrakOptions};
+//! use comrak::{Arena, parse_document, format_html, Options};
 //! use comrak::nodes::{AstNode, NodeValue};
 //!
 //! # fn main() {
@@ -26,7 +26,7 @@
 //! let root = parse_document(
 //!     &arena,
 //!     "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
-//!     &ComrakOptions::default());
+//!     &Options::default());
 //!
 //! fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
 //!     where F : Fn(&'a AstNode<'a>) {
@@ -47,7 +47,7 @@
 //! });
 //!
 //! let mut html = vec![];
-//! format_html(root, &ComrakOptions::default(), &mut html).unwrap();
+//! format_html(root, &Options::default(), &mut html).unwrap();
 //!
 //! assert_eq!(
 //!     String::from_utf8(html).unwrap(),
@@ -100,29 +100,37 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use html::Anchorizer;
 pub use parser::{
-    parse_document, parse_document_with_broken_link_callback, ComrakExtensionOptions,
-    ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions, ComrakRenderPlugins,
-    ListStyleType,
+    parse_document, parse_document_with_broken_link_callback, ExtensionOptions, ListStyleType,
+    Options, ParseOptions, Plugins, RenderOptions, RenderPlugins,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
+/// Legacy naming of [`ExtensionOptions`]
+pub type ComrakExtensionOptions = ExtensionOptions;
+/// Legacy naming of [`Options`]
+pub type ComrakOptions = Options;
+/// Legacy naming of [`ParseOptions`]
+pub type ComrakParseOptions = ParseOptions;
+/// Legacy naming of [`Plugins`]
+pub type ComrakPlugins<'a> = Plugins<'a>;
+/// Legacy naming of [`RenderOptions`]
+pub type ComrakRenderOptions = RenderOptions;
+/// Legacy naming of [`RenderPlugins`]
+pub type ComrakRenderPlugins<'a> = RenderPlugins<'a>;
+
 /// Render Markdown to HTML.
 ///
 /// See the documentation of the crate root for an example.
-pub fn markdown_to_html(md: &str, options: &ComrakOptions) -> String {
-    markdown_to_html_with_plugins(md, options, &ComrakPlugins::default())
+pub fn markdown_to_html(md: &str, options: &Options) -> String {
+    markdown_to_html_with_plugins(md, options, &Plugins::default())
 }
 
 /// Render Markdown to HTML using plugins.
 ///
 /// See the documentation of the crate root for an example.
-pub fn markdown_to_html_with_plugins(
-    md: &str,
-    options: &ComrakOptions,
-    plugins: &ComrakPlugins,
-) -> String {
+pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plugins) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut bw = BufWriter::new(Vec::new());
@@ -136,7 +144,7 @@ pub fn version() -> &'static str {
 }
 
 /// Render Markdown back to CommonMark.
-pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
+pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut bw = BufWriter::new(Vec::new());
@@ -146,16 +154,16 @@ pub fn markdown_to_commonmark(md: &str, options: &ComrakOptions) -> String {
 
 /// Render Markdown to CommonMark XML.
 /// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
-pub fn markdown_to_commonmark_xml(md: &str, options: &ComrakOptions) -> String {
-    markdown_to_commonmark_xml_with_plugins(md, options, &ComrakPlugins::default())
+pub fn markdown_to_commonmark_xml(md: &str, options: &Options) -> String {
+    markdown_to_commonmark_xml_with_plugins(md, options, &Plugins::default())
 }
 
 /// Render Markdown to CommonMark XML using plugins.
 /// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
 pub fn markdown_to_commonmark_xml_with_plugins(
     md: &str,
-    options: &ComrakOptions,
-    plugins: &ComrakPlugins,
+    options: &Options,
+    plugins: &Plugins,
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);

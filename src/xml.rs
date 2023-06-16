@@ -1,5 +1,5 @@
 use crate::nodes::{AstNode, ListType, NodeCode, NodeValue};
-use crate::parser::{ComrakOptions, ComrakPlugins};
+use crate::parser::{Options, Plugins};
 use once_cell::sync::Lazy;
 use std::io::{self, Write};
 
@@ -8,18 +8,18 @@ use crate::nodes::NodeHtmlBlock;
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
-    plugins: &ComrakPlugins,
+    plugins: &Plugins,
 ) -> io::Result<()> {
     output.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
     output.write_all(b"<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n")?;
@@ -29,17 +29,13 @@ pub fn format_document_with_plugins<'a>(
 
 struct XmlFormatter<'o> {
     output: &'o mut dyn Write,
-    options: &'o ComrakOptions,
-    _plugins: &'o ComrakPlugins<'o>,
+    options: &'o Options,
+    _plugins: &'o Plugins<'o>,
     indent: u32,
 }
 
 impl<'o> XmlFormatter<'o> {
-    fn new(
-        options: &'o ComrakOptions,
-        output: &'o mut dyn Write,
-        plugins: &'o ComrakPlugins,
-    ) -> Self {
+    fn new(options: &'o Options, output: &'o mut dyn Write, plugins: &'o Plugins) -> Self {
         XmlFormatter {
             options,
             output,

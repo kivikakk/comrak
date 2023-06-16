@@ -45,7 +45,7 @@ macro_rules! node_matches {
 pub fn parse_document<'a>(
     arena: &'a Arena<AstNode<'a>>,
     buffer: &str,
-    options: &ComrakOptions,
+    options: &Options,
 ) -> &'a AstNode<'a> {
     parse_document_with_broken_link_callback(arena, buffer, options, None)
 }
@@ -61,7 +61,7 @@ pub fn parse_document<'a>(
 /// described in the [GFM spec](https://github.github.com/gfm/#matches).
 ///
 /// ```
-/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, ComrakOptions};
+/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, Options};
 /// use comrak::nodes::{AstNode, NodeValue};
 ///
 /// # fn main() -> std::io::Result<()> {
@@ -71,7 +71,7 @@ pub fn parse_document<'a>(
 /// let root = parse_document_with_broken_link_callback(
 ///     &arena,
 ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
-///     &ComrakOptions::default(),
+///     &Options::default(),
 ///     Some(&mut |link_ref: &str| match link_ref {
 ///         "foo" => Some((
 ///             "https://www.rust-lang.org/".to_string(),
@@ -82,7 +82,7 @@ pub fn parse_document<'a>(
 /// );
 ///
 /// let mut output = Vec::new();
-/// format_html(root, &ComrakOptions::default(), &mut output)?;
+/// format_html(root, &Options::default(), &mut output)?;
 /// let output_str = std::str::from_utf8(&output).expect("invalid UTF-8");
 /// assert_eq!(output_str, "<h1>Cool input!</h1>\n<p>Wow look at this cool \
 ///                 <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
@@ -93,7 +93,7 @@ pub fn parse_document<'a>(
 pub fn parse_document_with_broken_link_callback<'a, 'c>(
     arena: &'a Arena<AstNode<'a>>,
     buffer: &str,
-    options: &ComrakOptions,
+    options: &Options,
     callback: Option<Callback<'c>>,
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
@@ -132,35 +132,35 @@ pub struct Parser<'a, 'o, 'c> {
     last_line_length: usize,
     last_buffer_ended_with_cr: bool,
     total_size: usize,
-    options: &'o ComrakOptions,
+    options: &'o Options,
     callback: Option<Callback<'c>>,
 }
 
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Umbrella options struct.
-pub struct ComrakOptions {
+pub struct Options {
     /// Enable CommonMark extensions.
-    pub extension: ComrakExtensionOptions,
+    pub extension: ExtensionOptions,
 
     /// Configure parse-time options.
-    pub parse: ComrakParseOptions,
+    pub parse: ParseOptions,
 
     /// Configure render-time options.
-    pub render: ComrakRenderOptions,
+    pub render: RenderOptions,
 }
 
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
-pub struct ComrakExtensionOptions {
+pub struct ExtensionOptions {
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.strikethrough = true;
     /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
     ///            "<p>Hello <del>world</del> there.</p>\n");
@@ -172,8 +172,8 @@ pub struct ComrakExtensionOptions {
     /// from the GFM spec.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.tagfilter = true;
     /// options.render.unsafe_ = true;
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
@@ -185,8 +185,8 @@ pub struct ComrakExtensionOptions {
     /// from the GFM spec.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.table = true;
     /// assert_eq!(markdown_to_html("| a | b |\n|---|---|\n| c | d |\n", &options),
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
@@ -198,8 +198,8 @@ pub struct ComrakExtensionOptions {
     /// from the GFM spec.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.autolink = true;
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
@@ -214,8 +214,8 @@ pub struct ComrakExtensionOptions {
     /// rendered.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.tasklist = true;
     /// options.render.unsafe_ = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
@@ -227,8 +227,8 @@ pub struct ComrakExtensionOptions {
     /// Enables the superscript Comrak extension.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.superscript = true;
     /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
@@ -238,8 +238,8 @@ pub struct ComrakExtensionOptions {
     /// Enables the header IDs Comrak extension.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.header_ids = Some("user-content-".to_string());
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
@@ -252,8 +252,8 @@ pub struct ComrakExtensionOptions {
     /// [Kramdown](https://kramdown.gettalong.org/syntax.html#footnotes).
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.footnotes = true;
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-x\" id=\"fnref-x\" data-footnote-ref>1</a></sup>.</p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-x\">\n<p>A greeting. <a href=\"#fnref-x\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n");
@@ -280,8 +280,8 @@ pub struct ComrakExtensionOptions {
     /// ```
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
@@ -306,18 +306,18 @@ pub struct ComrakExtensionOptions {
     /// ```
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// options.extension.front_matter_delimiter = Some("---".to_owned());
     /// assert_eq!(
     ///     markdown_to_html("---\nlayout: post\n---\nText\n", &options),
-    ///     markdown_to_html("Text\n", &ComrakOptions::default()));
+    ///     markdown_to_html("Text\n", &Options::default()));
     /// ```
     ///
     /// ```
-    /// # use comrak::{format_commonmark, Arena, ComrakOptions};
+    /// # use comrak::{format_commonmark, Arena, Options};
     /// use comrak::parse_document;
-    /// let mut options = ComrakOptions::default();
+    /// let mut options = Options::default();
     /// options.extension.front_matter_delimiter = Some("---".to_owned());
     /// let arena = Arena::new();
     /// let input ="---\nlayout: post\n---\nText\n";
@@ -333,8 +333,8 @@ pub struct ComrakExtensionOptions {
     /// Phrases wrapped inside of ':' blocks will be replaced with emojis.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("Happy Friday! :smile:", &options),
     ///            "<p>Happy Friday! :smile:</p>\n");
     ///
@@ -348,12 +348,12 @@ pub struct ComrakExtensionOptions {
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
-pub struct ComrakParseOptions {
+pub struct ParseOptions {
     /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>'Hello,' &quot;world&quot; ...</p>\n");
     ///
@@ -366,8 +366,8 @@ pub struct ComrakParseOptions {
     /// The default info string for fenced code blocks.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
     ///            "<pre><code>fn hello();\n</code></pre>\n");
     ///
@@ -384,13 +384,13 @@ pub struct ComrakParseOptions {
 #[derive(Default, Debug, Clone, Copy)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
-pub struct ComrakRenderOptions {
+pub struct RenderOptions {
     /// [Soft line breaks](http://spec.commonmark.org/0.27/#soft-line-breaks) in the input
     /// translate into hard line breaks in the output.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.\nWorld.</p>\n");
     ///
@@ -403,8 +403,8 @@ pub struct ComrakRenderOptions {
     /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     ///
@@ -417,8 +417,8 @@ pub struct ComrakRenderOptions {
     /// Enable full info strings for code blocks
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options),
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     ///
@@ -432,10 +432,10 @@ pub struct ComrakRenderOptions {
     /// The wrap column when outputting CommonMark.
     ///
     /// ```
-    /// # use comrak::{parse_document, ComrakOptions, format_commonmark};
+    /// # use comrak::{parse_document, Options, format_commonmark};
     /// # fn main() {
     /// # let arena = typed_arena::Arena::new();
-    /// let mut options = ComrakOptions::default();
+    /// let mut options = Options::default();
     /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
     /// let mut output = vec![];
     /// format_commonmark(node, &options, &mut output).unwrap();
@@ -454,8 +454,8 @@ pub struct ComrakRenderOptions {
     /// Allow rendering of raw HTML and potentially dangerous links.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// let input = "<script>\nalert('xyz');\n</script>\n\n\
     ///              Possibly <marquee>annoying</marquee>.\n\n\
     ///              [Dangerous](javascript:alert(document.cookie)).\n\n\
@@ -478,8 +478,8 @@ pub struct ComrakRenderOptions {
 
     /// Escape raw HTML instead of clobbering it.
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
     /// let input = "<i>italic text</i>";
     ///
     /// assert_eq!(markdown_to_html(input, &options),
@@ -498,8 +498,8 @@ pub struct ComrakRenderOptions {
     /// * `ListStyleType::Star` to use `*`
     ///
     /// ```rust
-    /// # use comrak::{markdown_to_commonmark, ComrakOptions, ListStyleType};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_commonmark, Options, ListStyleType};
+    /// let mut options = Options::default();
     /// let input = "- one\n- two\n- three";
     /// assert_eq!(markdown_to_commonmark(input, &options),
     ///            "- one\n- two\n- three\n"); // default is Dash
@@ -519,8 +519,8 @@ pub struct ComrakRenderOptions {
     /// Not yet compatible with extension.description_lists.
     ///
     /// ```rust
-    /// # use comrak::{markdown_to_commonmark_xml, ComrakOptions};
-    /// let mut options = ComrakOptions::default();
+    /// # use comrak::{markdown_to_commonmark_xml, Options};
+    /// let mut options = Options::default();
     /// options.render.sourcepos = true;
     /// let input = "Hello *world*!";
     /// let xml = markdown_to_commonmark_xml(input, &options);
@@ -531,23 +531,23 @@ pub struct ComrakRenderOptions {
 
 #[derive(Default, Debug)]
 /// Umbrella plugins struct.
-pub struct ComrakPlugins<'p> {
+pub struct Plugins<'p> {
     /// Configure render-time plugins.
-    pub render: ComrakRenderPlugins<'p>,
+    pub render: RenderPlugins<'p>,
 }
 
 #[derive(Default)]
 /// Plugins for alternative rendering.
-pub struct ComrakRenderPlugins<'p> {
+pub struct RenderPlugins<'p> {
     /// Provide a syntax highlighter adapter implementation for syntax
     /// highlighting of codefence blocks.
     /// ```
-    /// # use comrak::{markdown_to_html, ComrakOptions, ComrakPlugins, markdown_to_html_with_plugins};
+    /// # use comrak::{markdown_to_html, Options, Plugins, markdown_to_html_with_plugins};
     /// # use comrak::adapters::SyntaxHighlighterAdapter;
     /// use std::collections::HashMap;
     /// use std::io::{self, Write};
-    /// let options = ComrakOptions::default();
-    /// let mut plugins = ComrakPlugins::default();
+    /// let options = Options::default();
+    /// let mut plugins = Plugins::default();
     /// let input = "```rust\nfn main<'a>();\n```";
     ///
     /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
@@ -580,9 +580,9 @@ pub struct ComrakRenderPlugins<'p> {
     pub heading_adapter: Option<&'p dyn HeadingAdapter>,
 }
 
-impl Debug for ComrakRenderPlugins<'_> {
+impl Debug for RenderPlugins<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ComrakRenderPlugins")
+        f.debug_struct("RenderPlugins")
             .field(
                 "codefence_syntax_highlighter",
                 &"impl SyntaxHighlighterAdapter",
@@ -608,7 +608,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
     fn new(
         arena: &'a Arena<AstNode<'a>>,
         root: &'a AstNode<'a>,
-        options: &'o ComrakOptions,
+        options: &'o Options,
         callback: Option<Callback<'c>>,
     ) -> Self {
         Parser {
@@ -2212,7 +2212,7 @@ pub enum AutolinkType {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Options for bulleted list redering in markdown. See `link_style` in [ComrakRenderOptions] for more details.
+/// Options for bulleted list redering in markdown. See `link_style` in [RenderOptions] for more details.
 pub enum ListStyleType {
     /// The `-` character
     Dash = 45,

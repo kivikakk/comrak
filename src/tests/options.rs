@@ -5,11 +5,11 @@ fn markdown_list_bullets() {
     let dash = concat!("- a\n");
     let plus = concat!("+ a\n");
     let star = concat!("* a\n");
-    let mut dash_opts = ComrakOptions::default();
+    let mut dash_opts = Options::default();
     dash_opts.render.list_style = ListStyleType::Dash;
-    let mut plus_opts = ComrakOptions::default();
+    let mut plus_opts = Options::default();
     plus_opts.render.list_style = ListStyleType::Plus;
-    let mut star_opts = ComrakOptions::default();
+    let mut star_opts = Options::default();
     star_opts.render.list_style = ListStyleType::Star;
 
     commonmark(dash, dash, Some(&dash_opts));
@@ -27,7 +27,7 @@ fn markdown_list_bullets() {
 
 #[test]
 fn width_breaks() {
-    let mut options = ComrakOptions::default();
+    let mut options = Options::default();
     options.render.width = 72;
     let input = concat!(
         "this should break because it has breakable characters. break right here newline\n",

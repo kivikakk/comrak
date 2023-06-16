@@ -81,18 +81,18 @@ fn no_panic_on_empty_bookended_atx_headers() {
 fn no_stack_smash_html() {
     let s: String = ">".repeat(150_000);
     let arena = Arena::new();
-    let root = parse_document(&arena, &s, &ComrakOptions::default());
+    let root = parse_document(&arena, &s, &Options::default());
     let mut output = vec![];
-    html::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
+    html::format_document(root, &Options::default(), &mut output).unwrap()
 }
 
 #[test]
 fn no_stack_smash_cm() {
     let s: String = ">".repeat(150_000);
     let arena = Arena::new();
-    let root = parse_document(&arena, &s, &ComrakOptions::default());
+    let root = parse_document(&arena, &s, &Options::default());
     let mut output = vec![];
-    cm::format_document(root, &ComrakOptions::default(), &mut output).unwrap()
+    cm::format_document(root, &Options::default(), &mut output).unwrap()
 }
 
 #[test]

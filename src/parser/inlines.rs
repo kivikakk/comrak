@@ -4,9 +4,7 @@ use crate::entity;
 use crate::nodes::{Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeValue, Sourcepos};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{
-    unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, ComrakOptions, Reference,
-};
+use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
 use crate::scanners;
 use crate::strings;
 use crate::strings::Case;
@@ -23,7 +21,7 @@ const MAX_LINK_LABEL_LENGTH: usize = 1000;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub arena: &'a Arena<AstNode<'a>>,
-    options: &'o ComrakOptions,
+    options: &'o Options,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -107,7 +105,7 @@ struct Bracket<'a> {
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
-        options: &'o ComrakOptions,
+        options: &'o Options,
         input: &'i [u8],
         line: usize,
         block_offset: usize,

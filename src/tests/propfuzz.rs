@@ -6,8 +6,8 @@ use propfuzz::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 #[propfuzz]
 fn propfuzz_doesnt_crash(md: String) {
-    let options = ComrakOptions {
-        extension: ComrakExtensionOptions {
+    let options = Options {
+        extension: ExtensionOptions {
             strikethrough: true,
             tagfilter: true,
             table: true,
@@ -21,12 +21,12 @@ fn propfuzz_doesnt_crash(md: String) {
             #[cfg(feature = "shortcodes")]
             shortcodes: true,
         },
-        parse: ComrakParseOptions {
+        parse: ParseOptions {
             smart: true,
             default_info_string: Some("Rust".to_string()),
             relaxed_tasklist_matching: true,
         },
-        render: ComrakRenderOptions {
+        render: RenderOptions {
             hardbreaks: true,
             github_pre_lang: true,
             full_info_string: true,

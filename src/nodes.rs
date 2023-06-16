@@ -111,7 +111,7 @@ pub enum NodeValue {
     TaskItem(Option<char>),
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
-    /// the `hardbreaks` option is set in `ComrakOptions` during formatting, it will be formatted
+    /// the `hardbreaks` option is set in `Options` during formatting, it will be formatted
     /// as a `LineBreak`.
     SoftBreak,
 

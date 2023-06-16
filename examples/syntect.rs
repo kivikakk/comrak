@@ -1,12 +1,12 @@
 //! This example shows how to use the bundled syntect plugin.
 
 use comrak::plugins::syntect::SyntectAdapter;
-use comrak::{markdown_to_html_with_plugins, ComrakOptions, ComrakPlugins};
+use comrak::{markdown_to_html_with_plugins, Options, Plugins};
 
 fn main() {
     let adapter = SyntectAdapter::new("base16-ocean.dark");
-    let options = ComrakOptions::default();
-    let mut plugins = ComrakPlugins::default();
+    let options = Options::default();
+    let mut plugins = Plugins::default();
 
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 

@@ -1,10 +1,10 @@
-// Update the "comrak --help" text in Comrak's own README.
+// Update the "comrak --help" text in 's own README.
 
 use std::fmt::Write;
 use std::str;
 
 use comrak::nodes::{AstNode, NodeValue};
-use comrak::{format_commonmark, parse_document, Arena, ComrakOptions};
+use comrak::{format_commonmark, parse_document, Arena, Options};
 
 const DEPENDENCIES: &str = "[dependencies]\ncomrak = ";
 const HELP: &str = "$ comrak --help\n";
@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let arena = Arena::new();
 
     let readme = std::fs::read_to_string("README.md")?;
-    let doc = parse_document(&arena, &readme, &ComrakOptions::default());
+    let doc = parse_document(&arena, &readme, &Options::default());
 
     fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
     where
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     });
 
     let mut out = vec![];
-    format_commonmark(doc, &ComrakOptions::default(), &mut out).unwrap();
+    format_commonmark(doc, &Options::default(), &mut out).unwrap();
 
     std::fs::write("README.md", &out)?;
 
