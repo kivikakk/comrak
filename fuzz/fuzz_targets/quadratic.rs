@@ -2,8 +2,8 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    markdown_to_html, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
-    ComrakRenderOptions, ListStyleType,
+    markdown_to_html, ExtensionOptions, Options, ParseOptions,
+    RenderOptions, ListStyleType,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
 use libfuzzer_sys::fuzz_target;
@@ -165,15 +165,15 @@ impl Markdown {
 }
 
 #[derive(Arbitrary, Debug)]
-struct FuzzComrakOptions {
-    extension: FuzzComrakExtensionOptions,
-    parse: FuzzComrakParseOptions,
-    render: FuzzComrakRenderOptions,
+struct FuzzOptions {
+    extension: FuzzExtensionOptions,
+    parse: FuzzParseOptions,
+    render: FuzzRenderOptions,
 }
 
-impl FuzzComrakOptions {
-    fn to_options(&self) -> ComrakOptions {
-        ComrakOptions {
+impl FuzzOptions {
+    fn to_options(&self) -> Options {
+        Options {
             extension: self.extension.to_options(),
             parse: self.parse.to_options(),
             render: self.render.to_options(),
@@ -182,7 +182,7 @@ impl FuzzComrakOptions {
 }
 
 #[derive(Arbitrary, Debug)]
-struct FuzzComrakExtensionOptions {
+struct FuzzExtensionOptions {
     strikethrough: bool,
     tagfilter: bool,
     table: bool,
@@ -194,9 +194,9 @@ struct FuzzComrakExtensionOptions {
     shortcodes: bool,
 }
 
-impl FuzzComrakExtensionOptions {
-    fn to_options(&self) -> ComrakExtensionOptions {
-        ComrakExtensionOptions {
+impl FuzzExtensionOptions {
+    fn to_options(&self) -> ExtensionOptions {
+        ExtensionOptions {
             strikethrough: self.strikethrough,
             tagfilter: self.tagfilter,
             table: self.table,
@@ -213,14 +213,14 @@ impl FuzzComrakExtensionOptions {
 }
 
 #[derive(Arbitrary, Debug)]
-struct FuzzComrakParseOptions {
+struct FuzzParseOptions {
     smart: bool,
     relaxed_tasklist_matching: bool,
 }
 
-impl FuzzComrakParseOptions {
-    fn to_options(&self) -> ComrakParseOptions {
-        ComrakParseOptions {
+impl FuzzParseOptions {
+    fn to_options(&self) -> ParseOptions {
+        ParseOptions {
             smart: self.smart,
             default_info_string: None,
             relaxed_tasklist_matching: self.relaxed_tasklist_matching,
@@ -229,7 +229,7 @@ impl FuzzComrakParseOptions {
 }
 
 #[derive(Arbitrary, Debug)]
-struct FuzzComrakRenderOptions {
+struct FuzzRenderOptions {
     hardbreaks: bool,
     github_pre_lang: bool,
     full_info_string: bool,
@@ -240,9 +240,9 @@ struct FuzzComrakRenderOptions {
     sourcepos: bool,
 }
 
-impl FuzzComrakRenderOptions {
-    fn to_options(&self) -> ComrakRenderOptions {
-        ComrakRenderOptions {
+impl FuzzRenderOptions {
+    fn to_options(&self) -> RenderOptions {
+        RenderOptions {
             hardbreaks: self.hardbreaks,
             github_pre_lang: self.github_pre_lang,
             full_info_string: self.full_info_string,
@@ -260,7 +260,7 @@ impl FuzzComrakRenderOptions {
 /// parsing options.
 #[derive(Arbitrary, Debug)]
 struct Input {
-    options: FuzzComrakOptions,
+    options: FuzzOptions,
     markdown: Markdown,
 }
 

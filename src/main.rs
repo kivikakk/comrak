@@ -1,9 +1,8 @@
 //! The `comrak` binary.
 
 use comrak::{
-    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena,
-    ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakPlugins, ComrakRenderOptions,
-    ListStyleType,
+    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena, ExtensionOptions,
+    ListStyleType, Options, ParseOptions, Plugins, RenderOptions,
 };
 use std::boxed::Box;
 use std::env;
@@ -195,8 +194,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
-    let options = ComrakOptions {
-        extension: ComrakExtensionOptions {
+    let options = Options {
+        extension: ExtensionOptions {
             strikethrough: exts.contains(&Extension::Strikethrough) || cli.gfm,
             tagfilter: exts.contains(&Extension::Tagfilter) || cli.gfm,
             table: exts.contains(&Extension::Table) || cli.gfm,
@@ -210,12 +209,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             #[cfg(feature = "shortcodes")]
             shortcodes: cli.gemojis,
         },
-        parse: ComrakParseOptions {
+        parse: ParseOptions {
             smart: cli.smart,
             default_info_string: cli.default_info_string,
             relaxed_tasklist_matching: cli.relaxed_tasklist_character,
         },
-        render: ComrakRenderOptions {
+        render: RenderOptions {
             hardbreaks: cli.hardbreaks,
             github_pre_lang: cli.github_pre_lang || cli.gfm,
             full_info_string: cli.full_info_string,
@@ -228,7 +227,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let syntax_highlighter: Option<&dyn SyntaxHighlighterAdapter>;
-    let mut plugins: ComrakPlugins = ComrakPlugins::default();
+    let mut plugins: Plugins = Plugins::default();
     let adapter: SyntectAdapter;
 
     let theme = cli.syntax_highlighting;

@@ -239,7 +239,7 @@ fn backticks_num() {
     let input = "Some `code1`. More ``` code2 ```.\n";
 
     let arena = Arena::new();
-    let options = ComrakOptions::default();
+    let options = Options::default();
     let root = parse_document(&arena, input, &options);
 
     let code1 = NodeValue::Code(NodeCode {

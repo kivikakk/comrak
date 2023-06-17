@@ -42,7 +42,7 @@ fn syntax_highlighter_plugin() {
         "</code></pre>\n"
     );
 
-    let mut plugins = ComrakPlugins::default();
+    let mut plugins = Plugins::default();
     let adapter = MockAdapter {};
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
@@ -68,7 +68,7 @@ fn heading_adapter_plugin() {
         }
     }
 
-    let mut plugins = ComrakPlugins::default();
+    let mut plugins = Plugins::default();
     let adapter = MockAdapter {};
     plugins.render.heading_adapter = Some(&adapter);
 
@@ -99,7 +99,7 @@ fn syntect_plugin() {
         "</code></pre>\n"
     );
 
-    let mut plugins = ComrakPlugins::default();
+    let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);

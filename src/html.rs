@@ -3,7 +3,7 @@ use crate::ctype::isspace;
 use crate::nodes::{
     AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeValue, TableAlignment,
 };
-use crate::parser::{ComrakOptions, ComrakPlugins};
+use crate::parser::{Options, Plugins};
 use crate::scanners;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -18,18 +18,18 @@ use crate::adapters::HeadingMeta;
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    format_document_with_plugins(root, options, output, &ComrakPlugins::default())
+    format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
-    options: &ComrakOptions,
+    options: &Options,
     output: &mut dyn Write,
-    plugins: &ComrakPlugins,
+    plugins: &Plugins,
 ) -> io::Result<()> {
     let mut writer = WriteWithLast {
         output,
@@ -131,11 +131,11 @@ impl Anchorizer {
 
 struct HtmlFormatter<'o> {
     output: &'o mut WriteWithLast<'o>,
-    options: &'o ComrakOptions,
+    options: &'o Options,
     anchorizer: Anchorizer,
     footnote_ix: u32,
     written_footnote_ix: u32,
-    plugins: &'o ComrakPlugins<'o>,
+    plugins: &'o Plugins<'o>,
 }
 
 #[rustfmt::skip]
@@ -365,11 +365,7 @@ where
 }
 
 impl<'o> HtmlFormatter<'o> {
-    fn new(
-        options: &'o ComrakOptions,
-        output: &'o mut WriteWithLast<'o>,
-        plugins: &'o ComrakPlugins,
-    ) -> Self {
+    fn new(options: &'o Options, output: &'o mut WriteWithLast<'o>, plugins: &'o Plugins) -> Self {
         HtmlFormatter {
             options,
             output,

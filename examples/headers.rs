@@ -2,7 +2,7 @@
 
 use comrak::{
     nodes::{AstNode, NodeCode, NodeValue},
-    parse_document, Arena, ComrakOptions,
+    parse_document, Arena, Options,
 };
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
 
 fn get_document_title(document: &str) -> String {
     let arena = Arena::new();
-    let root = parse_document(&arena, document, &ComrakOptions::default());
+    let root = parse_document(&arena, document, &Options::default());
 
     for node in root.children() {
         let header = match node.data.clone().into_inner().value {

@@ -144,8 +144,8 @@ the file does not exist.
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
 ``` rust
-use comrak::{markdown_to_html, ComrakOptions};
-assert_eq!(markdown_to_html("Hello, **世界**!", &ComrakOptions::default()),
+use comrak::{markdown_to_html, Options};
+assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
            "<p>Hello, <strong>世界</strong>!</p>\n");
 ```
 
@@ -153,7 +153,7 @@ Or you can parse the input into an AST yourself, manipulate it, and then use you
 
 ``` rust
 extern crate comrak;
-use comrak::{parse_document, format_html, Arena, ComrakOptions};
+use comrak::{parse_document, format_html, Arena, Options};
 use comrak::nodes::{AstNode, NodeValue};
 
 // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
@@ -162,7 +162,7 @@ let arena = Arena::new();
 let root = parse_document(
     &arena,
     "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
-    &ComrakOptions::default());
+    &Options::default());
 
 fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
     where F : Fn(&'a AstNode<'a>) {
@@ -183,7 +183,7 @@ iter_nodes(root, &|node| {
 });
 
 let mut html = vec![];
-format_html(root, &ComrakOptions::default(), &mut html).unwrap();
+format_html(root, &Options::default(), &mut html).unwrap();
 
 assert_eq!(
     String::from_utf8(html).unwrap(),
@@ -224,7 +224,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Shortcodes
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
-[`ComrakOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakOptions.html).
+[`Options` struct](https://docs.rs/comrak/newest/comrak/struct.Options.html).
 
 ## Plugins
 
@@ -233,7 +233,7 @@ By default none are enabled; they are individually enabled with each parse by se
 At the moment syntax highlighting of codefence blocks is the only feature that can be enhanced with plugins.
 
 Create an implementation of the `SyntaxHighlighterAdapter` trait, and then provide an instance of such adapter to
-`ComrakPlugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the
+`Plugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the
 `markdown_to_html_with_plugins` function, which accepts your plugin as a parameter.
 
 See the `syntax_highlighter.rs` and `syntect.rs` examples for more details.
@@ -242,7 +242,7 @@ See the `syntax_highlighter.rs` and `syntect.rs` examples for more details.
 
 [`syntect`](https://github.com/trishume/syntect) is a syntax highlighting library for Rust. By default, `comrak` offers
 a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it as your
-`ComrakPlugins` option.
+`Plugins` option.
 
 ## Related projects
 

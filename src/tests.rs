@@ -42,9 +42,9 @@ fn compare_strs(output: &str, expected: &str, kind: &str) {
 }
 
 #[track_caller]
-fn commonmark(input: &str, expected: &str, opts: Option<&ComrakOptions>) {
+fn commonmark(input: &str, expected: &str, opts: Option<&Options>) {
     let arena = Arena::new();
-    let defaults = ComrakOptions::default();
+    let defaults = Options::default();
     let options = opts.unwrap_or(&defaults);
 
     let root = parse_document(&arena, input, options);
@@ -61,16 +61,16 @@ pub fn html(input: &str, expected: &str) {
 #[track_caller]
 fn html_opts_i<F>(input: &str, expected: &str, opts: F)
 where
-    F: Fn(&mut ComrakOptions),
+    F: Fn(&mut Options),
 {
-    let mut options = ComrakOptions::default();
+    let mut options = Options::default();
     opts(&mut options);
 
     html_opts_w(input, expected, &options);
 }
 
 #[track_caller]
-fn html_opts_w(input: &str, expected: &str, options: &ComrakOptions) {
+fn html_opts_w(input: &str, expected: &str, options: &Options) {
     let arena = Arena::new();
 
     let root = parse_document(&arena, input, &options);
@@ -104,8 +104,8 @@ macro_rules! html_opts {
         });
     };
     ([all], $lhs:expr, $rhs:expr) => {
-        $crate::tests::html_opts_w($lhs, $rhs, &$crate::ComrakOptions {
-            extension: $crate::ComrakExtensionOptions {
+        $crate::tests::html_opts_w($lhs, $rhs, &$crate::Options {
+            extension: $crate::ExtensionOptions {
                 strikethrough: true,
                 tagfilter: true,
                 table: true,
@@ -118,12 +118,12 @@ macro_rules! html_opts {
                 front_matter_delimiter: Some("---".to_string()),
                 shortcodes: true,
             },
-            parse: $crate::ComrakParseOptions {
+            parse: $crate::ParseOptions {
                 smart: true,
                 default_info_string: Some("rust".to_string()),
                 relaxed_tasklist_matching: true,
             },
-            render: $crate::ComrakRenderOptions {
+            render: $crate::RenderOptions {
                 hardbreaks: true,
                 github_pre_lang: true,
                 full_info_string: true,
@@ -140,9 +140,9 @@ macro_rules! html_opts {
 pub(crate) use html_opts;
 
 #[track_caller]
-fn html_plugins(input: &str, expected: &str, plugins: &ComrakPlugins) {
+fn html_plugins(input: &str, expected: &str, plugins: &Plugins) {
     let arena = Arena::new();
-    let options = ComrakOptions::default();
+    let options = Options::default();
 
     let root = parse_document(&arena, input, &options);
     let mut output = vec![];
@@ -173,10 +173,10 @@ fn xml(input: &str, expected: &str) {
 #[track_caller]
 fn xml_opts<F>(input: &str, expected: &str, opts: F)
 where
-    F: Fn(&mut ComrakOptions),
+    F: Fn(&mut Options),
 {
     let arena = Arena::new();
-    let mut options = ComrakOptions::default();
+    let mut options = Options::default();
     opts(&mut options);
 
     let root = parse_document(&arena, input, &options);
@@ -246,9 +246,9 @@ pub(crate) use ast;
 #[track_caller]
 fn assert_ast_match_i<F>(md: &str, amt: AstMatchTree, opts: F)
 where
-    F: Fn(&mut ComrakOptions),
+    F: Fn(&mut Options),
 {
-    let mut options = ComrakOptions::default();
+    let mut options = Options::default();
     options.render.sourcepos = true;
     opts(&mut options);
 
