@@ -3,15 +3,15 @@
 use libfuzzer_sys::fuzz_target;
 
 use comrak::{
-    markdown_to_html, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
-    ComrakRenderOptions, ListStyleType,
+    markdown_to_html, ExtensionOptions, Options, ParseOptions,
+    RenderOptions, ListStyleType,
 };
 
 fuzz_target!(|s: &str| {
     markdown_to_html(
         s,
-        &ComrakOptions {
-            extension: ComrakExtensionOptions {
+        &Options {
+            extension: ExtensionOptions {
                 strikethrough: true,
                 tagfilter: true,
                 table: true,
@@ -24,12 +24,12 @@ fuzz_target!(|s: &str| {
                 front_matter_delimiter: Some("---".to_string()),
                 shortcodes: true,
             },
-            parse: ComrakParseOptions {
+            parse: ParseOptions {
                 smart: true,
                 default_info_string: Some("rust".to_string()),
                 relaxed_tasklist_matching: true,
             },
-            render: ComrakRenderOptions {
+            render: RenderOptions {
                 hardbreaks: true,
                 github_pre_lang: true,
                 full_info_string: true,

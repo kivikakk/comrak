@@ -2,12 +2,12 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use comrak::{markdown_to_html, ComrakOptions};
+use comrak::{markdown_to_html, Options};
 
 #[derive(Debug, arbitrary::Arbitrary)]
 struct FuzzInput<'s> {
     s: &'s str,
-    opts: ComrakOptions,
+    opts: Options,
 }
 
 fuzz_target!(|i: FuzzInput| {

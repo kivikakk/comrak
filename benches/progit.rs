@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use comrak::{format_html, parse_document, Arena, ComrakOptions};
+use comrak::{format_html, parse_document, Arena, Options};
 use test::Bencher;
 
 #[bench]
@@ -15,8 +15,8 @@ fn bench_progit(b: &mut Bencher) {
     file.read_to_string(&mut s).unwrap();
     b.iter(|| {
         let arena = Arena::new();
-        let root = parse_document(&arena, &s, &ComrakOptions::default());
+        let root = parse_document(&arena, &s, &Options::default());
         let mut output = vec![];
-        format_html(root, &ComrakOptions::default(), &mut output).unwrap()
+        format_html(root, &Options::default(), &mut output).unwrap()
     });
 }
