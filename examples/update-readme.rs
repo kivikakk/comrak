@@ -1,4 +1,4 @@
-// Update the "comrak --help" text in 's own README.
+// Update the "comrak --help" text in Comrak's own README.
 
 use std::fmt::Write;
 use std::str;
