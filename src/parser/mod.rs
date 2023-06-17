@@ -150,6 +150,7 @@ pub struct Options {
     pub render: RenderOptions,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
@@ -345,6 +346,7 @@ pub struct ExtensionOptions {
     pub shortcodes: bool,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
@@ -381,6 +383,7 @@ pub struct ParseOptions {
     pub relaxed_tasklist_matching: bool,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone, Copy)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
@@ -529,6 +532,7 @@ pub struct RenderOptions {
     pub sourcepos: bool,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug)]
 /// Umbrella plugins struct.
 pub struct Plugins<'p> {
@@ -536,6 +540,7 @@ pub struct Plugins<'p> {
     pub render: RenderPlugins<'p>,
 }
 
+#[non_exhaustive]
 #[derive(Default)]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {

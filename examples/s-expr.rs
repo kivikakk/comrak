@@ -74,18 +74,18 @@ fn iter_nodes<'a, W: Write>(
 fn dump(source: &str) -> io::Result<()> {
     let arena = Arena::new();
 
+    let mut extension = ExtensionOptions::default();
+    extension.strikethrough = true;
+    extension.tagfilter = true;
+    extension.table = true;
+    extension.autolink = true;
+    extension.tasklist = true;
+    extension.superscript = true;
+    extension.footnotes = true;
+    extension.description_lists = true;
+
     let opts = Options {
-        extension: ExtensionOptions {
-            strikethrough: true,
-            tagfilter: true,
-            table: true,
-            autolink: true,
-            tasklist: true,
-            superscript: true,
-            footnotes: true,
-            description_lists: true,
-            ..ExtensionOptions::default()
-        },
+        extension,
         ..Options::default()
     };
 
