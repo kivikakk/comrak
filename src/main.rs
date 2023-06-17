@@ -210,23 +210,25 @@ fn main() -> Result<(), Box<dyn Error>> {
         extension.shortcodes = cli.gemojis;
     }
 
+    let mut parse = ParseOptions::default();
+    parse.smart = cli.smart;
+    parse.default_info_string = cli.default_info_string;
+    parse.relaxed_tasklist_matching = cli.relaxed_tasklist_character;
+
+    let mut render = RenderOptions::default();
+    render.hardbreaks = cli.hardbreaks;
+    render.github_pre_lang = cli.github_pre_lang || cli.gfm;
+    render.full_info_string = cli.full_info_string;
+    render.width = cli.width;
+    render.unsafe_ = cli.unsafe_;
+    render.escape = cli.escape;
+    render.list_style = cli.list_style.into();
+    render.sourcepos = cli.sourcepos;
+
     let options = Options {
         extension,
-        parse: ParseOptions {
-            smart: cli.smart,
-            default_info_string: cli.default_info_string,
-            relaxed_tasklist_matching: cli.relaxed_tasklist_character,
-        },
-        render: RenderOptions {
-            hardbreaks: cli.hardbreaks,
-            github_pre_lang: cli.github_pre_lang || cli.gfm,
-            full_info_string: cli.full_info_string,
-            width: cli.width,
-            unsafe_: cli.unsafe_,
-            escape: cli.escape,
-            list_style: cli.list_style.into(),
-            sourcepos: cli.sourcepos,
-        },
+        parse,
+        render,
     };
 
     let syntax_highlighter: Option<&dyn SyntaxHighlighterAdapter>;

@@ -196,19 +196,19 @@ struct FuzzExtensionOptions {
 
 impl FuzzExtensionOptions {
     fn to_options(&self) -> ExtensionOptions {
-        ExtensionOptions {
-            strikethrough: self.strikethrough,
-            tagfilter: self.tagfilter,
-            table: self.table,
-            autolink: self.autolink,
-            tasklist: self.tasklist,
-            superscript: self.superscript,
-            footnotes: self.footnotes,
-            description_lists: self.description_lists,
-            shortcodes: self.shortcodes,
-            front_matter_delimiter: None,
-            header_ids: None,
-        }
+        let mut extension = ExtensionOptions::default();
+        extension.strikethrough = self.strikethrough;
+        extension.tagfilter = self.tagfilter;
+        extension.table = self.table;
+        extension.autolink = self.autolink;
+        extension.tasklist = self.tasklist;
+        extension.superscript = self.superscript;
+        extension.footnotes = self.footnotes;
+        extension.description_lists = self.description_lists;
+        extension.shortcodes = self.shortcodes;
+        extension.front_matter_delimiter = None;
+        extension.header_ids = None;
+        extension
     }
 }
 
@@ -220,11 +220,11 @@ struct FuzzParseOptions {
 
 impl FuzzParseOptions {
     fn to_options(&self) -> ParseOptions {
-        ParseOptions {
-            smart: self.smart,
-            default_info_string: None,
-            relaxed_tasklist_matching: self.relaxed_tasklist_matching,
-        }
+        let mut parse = ParseOptions::default();
+        parse.smart = self.smart;
+        parse.default_info_string = None;
+        parse.relaxed_tasklist_matching = self.relaxed_tasklist_matching;
+        parse
     }
 }
 
@@ -242,16 +242,16 @@ struct FuzzRenderOptions {
 
 impl FuzzRenderOptions {
     fn to_options(&self) -> RenderOptions {
-        RenderOptions {
-            hardbreaks: self.hardbreaks,
-            github_pre_lang: self.github_pre_lang,
-            full_info_string: self.full_info_string,
-            width: self.width,
-            unsafe_: self.unsafe_,
-            escape: self.escape,
-            list_style: self.list_style,
-            sourcepos: self.sourcepos,
-        }
+        let mut render = RenderOptions::default();
+        render.hardbreaks = self.hardbreaks;
+        render.github_pre_lang = self.github_pre_lang;
+        render.full_info_string = self.full_info_string;
+        render.width = self.width;
+        render.unsafe_ = self.unsafe_;
+        render.escape = self.escape;
+        render.list_style = self.list_style;
+        render.sourcepos = self.sourcepos;
+        render
     }
 }
 
