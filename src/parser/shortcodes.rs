@@ -1,7 +1,7 @@
 use std::{convert::TryFrom, str};
 
 /// The details of an inline emoji.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeShortCode(
     /// A short code that is translated into an emoji
     String,

@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NodeValue {
     /// The root of every CommonMark document.  Contains **blocks**.
     Document,
@@ -154,7 +154,7 @@ pub enum NodeValue {
 }
 
 /// Alignment of a single table cell.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TableAlignment {
     /// Cell content is unaligned.
     None,
@@ -181,7 +181,7 @@ impl TableAlignment {
 }
 
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeCode {
     /// The URL for the link destination or image source.
     pub num_backticks: usize,
@@ -194,7 +194,7 @@ pub struct NodeCode {
 }
 
 /// The details of a link's destination, or an image's source.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeLink {
     /// The URL for the link destination or image source.
     pub url: String,
@@ -207,7 +207,7 @@ pub struct NodeLink {
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct NodeList {
     /// The kind of list (bullet (unordered) or ordered).
     pub list_type: ListType,
@@ -233,7 +233,7 @@ pub struct NodeList {
 }
 
 /// The metadata of a description list
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct NodeDescriptionItem {
     /// Number of spaces before the list marker.
     pub marker_offset: usize,
@@ -243,7 +243,7 @@ pub struct NodeDescriptionItem {
 }
 
 /// The type of list.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ListType {
     /// A bullet list, i.e. an unordered list.
     Bullet,
@@ -259,7 +259,7 @@ impl Default for ListType {
 }
 
 /// The delimiter for ordered lists, i.e. the character which appears after each number.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ListDelimType {
     /// A period character `.`.
     Period,
@@ -284,7 +284,7 @@ impl ListDelimType {
 }
 
 /// The metadata and data of a code block (fenced or indented).
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeCodeBlock {
     /// Whether the code block is fenced.
     pub fenced: bool,
@@ -309,7 +309,7 @@ pub struct NodeCodeBlock {
 }
 
 /// The metadata of a heading.
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NodeHeading {
     /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
     pub level: u8,
@@ -319,7 +319,7 @@ pub struct NodeHeading {
 }
 
 /// The metadata of an included HTML block.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct NodeHtmlBlock {
     /// The HTML block's type
     pub block_type: u8,
@@ -330,7 +330,7 @@ pub struct NodeHtmlBlock {
 }
 
 /// The metadata of a footnote definition.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct NodeFootnoteDefinition {
     /// The name of the footnote.
     pub name: String,
@@ -340,7 +340,7 @@ pub struct NodeFootnoteDefinition {
 }
 
 /// The metadata of a footnote reference.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct NodeFootnoteReference {
     /// The name of the footnote.
     pub name: String,
@@ -456,7 +456,7 @@ impl NodeValue {
 ///
 /// The struct contains metadata about the node's position in the original document, and the core
 /// enum, `NodeValue`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ast {
     /// The node value itself.
     pub value: NodeValue,
