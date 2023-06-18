@@ -25,21 +25,21 @@ fn tasklist() {
         concat!(
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Green</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Papayawhip</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Papayawhip</li>\n",
             "</ul>\n",
             "<!-- end list -->\n",
             "<ol>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Bird</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> McHale</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Parish</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Parish</li>\n",
             "</ol>\n",
             "<!-- end list -->\n",
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Red\n",
             "<ul>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Green\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Green\n",
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
             "</ul>\n",
@@ -58,7 +58,7 @@ fn tasklist_relaxed_regression() {
         "* [!] Red\n",
         concat!(
             "<ul>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Red</li>\n",
             "</ul>\n"
         ),
     );
@@ -74,7 +74,7 @@ fn tasklist_relaxed_regression() {
         "* [!] Red\n",
         concat!(
             "<ul>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> Red</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Red</li>\n",
             "</ul>\n"
         ),
     );
@@ -93,7 +93,7 @@ fn tasklist_32() {
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> List item 1</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> This list item is <strong>bold</strong></li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> There is some <code>code</code> here</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> There is some <code>code</code> here</li>\n",
             "</ul>\n"
         ),
     );

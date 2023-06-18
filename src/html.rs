@@ -760,12 +760,17 @@ impl<'o> HtmlFormatter<'o> {
                 }
             }
             NodeValue::Strong => {
-                if entering {
-                    self.output.write_all(b"<strong")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
-                } else {
-                    self.output.write_all(b"</strong>")?;
+                let parent_node = node.parent();
+                if parent_node.is_none()
+                    || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong)
+                {
+                    if entering {
+                        self.output.write_all(b"<strong")?;
+                        self.render_sourcepos(node)?;
+                        self.output.write_all(b">")?;
+                    } else {
+                        self.output.write_all(b"</strong>")?;
+                    }
                 }
             }
             NodeValue::Emph => {
@@ -977,7 +982,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b">")?;
                     write!(
                         self.output,
-                        "<input type=\"checkbox\" disabled=\"\" {}/> ",
+                        "<input type=\"checkbox\" {}disabled=\"\" /> ",
                         if symbol.is_some() {
                             "checked=\"\" "
                         } else {

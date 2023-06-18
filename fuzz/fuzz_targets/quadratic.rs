@@ -2,7 +2,8 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    markdown_to_html, ExtensionOptions, Options, ParseOptions,
+    markdown_to_html, markdown_to_commonmark, markdown_to_commonmark_xml,
+    ExtensionOptions, Options, ParseOptions,
     RenderOptions, ListStyleType,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
@@ -273,19 +274,21 @@ fn fuzz_one_input(input: &Input, num_bytes: usize) -> (usize, Duration, f64) {
     let now = Instant::now();
     {
         let _ = markdown_to_html(&markdown, &input.options.to_options());
+        let _ = markdown_to_commonmark(&markdown, &input.options.to_options());
+        let _ = markdown_to_commonmark_xml(&markdown, &input.options.to_options());
     }
+
     let duration = now.elapsed();
+    let byte_length = markdown.len() * 3;
+    let duration_per_byte = duration.as_secs_f64() / (byte_length as f64);
 
     if DEBUG {
         println!(
             "do_one: {} bytes, duration = {:?}",
-            markdown.len(),
+            byte_length,
             duration
         );
     }
-
-    let byte_length = markdown.len();
-    let duration_per_byte = duration.as_secs_f64() / (markdown.len() as f64);
 
     (
         byte_length,

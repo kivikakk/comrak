@@ -1,9 +1,12 @@
 use crate::nodes::{AstNode, ListType, NodeCode, NodeValue};
 use crate::parser::{Options, Plugins};
 use once_cell::sync::Lazy;
+use std::cmp;
 use std::io::{self, Write};
 
 use crate::nodes::NodeHtmlBlock;
+
+const MAX_INDENT: u32 = 40;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -121,7 +124,7 @@ impl<'o> XmlFormatter<'o> {
     }
 
     fn indent(&mut self) -> io::Result<()> {
-        for _ in 0..self.indent {
+        for _ in 0..(cmp::min(self.indent, MAX_INDENT)) {
             self.output.write_all(b" ")?;
         }
         Ok(())
