@@ -6,7 +6,7 @@ Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+cont
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-Rust port of [github's `cmark-gfm`](https://github.com/github/cmark). _Currently synced with release `0.29.0.gfm.11`_
+Rust port of [github's `cmark-gfm`](https://github.com/github/cmark). *Currently synced with release `0.29.0.gfm.11`*.
 
 - [Installation](#installation)
 - [Usage](#usage)
