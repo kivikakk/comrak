@@ -17,8 +17,25 @@ pub(crate) fn process_autolinks<'a>(
 
     while i < len {
         let mut post_org = None;
+        let mut bracket_opening = 0;
 
+        // cmark-gfm ignores links inside brackets, such as `[[http://example.com]`
         while i < len {
+            match contents[i] {
+                b'[' => {
+                    bracket_opening += 1;
+                }
+                b']' => {
+                    bracket_opening -= 1;
+                }
+                _ => (),
+            }
+
+            if bracket_opening > 0 {
+                i += 1;
+                continue;
+            }
+
             match contents[i] {
                 b':' => {
                     post_org = url_match(arena, contents, i);

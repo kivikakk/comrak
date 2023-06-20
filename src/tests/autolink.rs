@@ -53,6 +53,23 @@ fn autolink_no_link_bad() {
 }
 
 #[test]
+fn autolink_ignore_links_in_brackets() {
+    let examples = [
+        ["[https://foo.com]", "<p>[https://foo.com]</p>\n"],
+        ["[[https://foo.com]]", "<p>[[https://foo.com]]</p>\n"],
+        ["[[Foo|https://foo.com]]", "<p>[[Foo|https://foo.com]]</p>\n"],
+        [
+            "[<https://foo.com>]",
+            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n"
+        ],
+    ];
+
+    for example in examples {
+        html_opts!([extension.autolink], example[0], example[1]);
+    }
+}
+
+#[test]
 fn sourcepos_correctly_restores_context() {
     // There's unsoundness in trying to maintain and adjust sourcepos
     // when doing autolinks in the light of:
