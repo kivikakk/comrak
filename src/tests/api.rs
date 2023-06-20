@@ -52,7 +52,8 @@ fn exercise_full_api() {
         parse: ParseOptions {
             smart: false,
             default_info_string: Some("abc".to_string()),
-            relaxed_tasklist_matching: true,
+            relaxed_tasklist_matching: false,
+            relaxed_autolinks: false,
         },
         render: RenderOptions {
             hardbreaks: false,

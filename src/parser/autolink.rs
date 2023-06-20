@@ -10,6 +10,7 @@ pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
+    relaxed_autolinks: bool,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -21,19 +22,21 @@ pub(crate) fn process_autolinks<'a>(
 
         // cmark-gfm ignores links inside brackets, such as `[[http://example.com]`
         while i < len {
-            match contents[i] {
-                b'[' => {
-                    bracket_opening += 1;
+            if !relaxed_autolinks {
+                match contents[i] {
+                    b'[' => {
+                        bracket_opening += 1;
+                    }
+                    b']' => {
+                        bracket_opening -= 1;
+                    }
+                    _ => (),
                 }
-                b']' => {
-                    bracket_opening -= 1;
-                }
-                _ => (),
-            }
 
-            if bracket_opening > 0 {
-                i += 1;
-                continue;
+                if bracket_opening > 0 {
+                    i += 1;
+                    continue;
+                }
             }
 
             match contents[i] {
@@ -170,7 +173,9 @@ fn is_valid_hostchar(ch: char) -> bool {
 fn autolink_delim(data: &[u8], mut link_end: usize) -> usize {
     static LINK_END_ASSORTMENT: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
-        for c in &[b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"'] {
+        for c in &[
+            b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"', b'[', b']',
+        ] {
             sc[*c as usize] = true;
         }
         sc
