@@ -25,6 +25,7 @@ fn propfuzz_doesnt_crash(md: String) {
             smart: true,
             default_info_string: Some("Rust".to_string()),
             relaxed_tasklist_matching: true,
+            relaxed_autolinks: true,
         },
         render: RenderOptions {
             hardbreaks: true,

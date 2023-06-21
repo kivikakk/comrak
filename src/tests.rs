@@ -123,6 +123,7 @@ macro_rules! html_opts {
                 smart: true,
                 default_info_string: Some("rust".to_string()),
                 relaxed_tasklist_matching: true,
+                relaxed_autolinks: true,
             },
             render: $crate::RenderOptions {
                 hardbreaks: true,

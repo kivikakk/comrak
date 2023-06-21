@@ -217,6 +217,7 @@ impl FuzzExtensionOptions {
 struct FuzzParseOptions {
     smart: bool,
     relaxed_tasklist_matching: bool,
+    relaxed_autolinks: bool,
 }
 
 impl FuzzParseOptions {
@@ -225,6 +226,7 @@ impl FuzzParseOptions {
         parse.smart = self.smart;
         parse.default_info_string = None;
         parse.relaxed_tasklist_matching = self.relaxed_tasklist_matching;
+        parse.relaxed_autolinks = self.relaxed_autolinks;
         parse
     }
 }

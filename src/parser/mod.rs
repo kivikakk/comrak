@@ -390,6 +390,21 @@ pub struct ParseOptions {
 
     /// Whether or not a simple `x` or `X` is used for tasklist or any other symbol is allowed.
     pub relaxed_tasklist_matching: bool,
+
+    /// Relax parsing of autolinks, allowing links to be detected inside brackets.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.autolink = true;
+    /// assert_eq!(markdown_to_html("[https://foo.com]", &options),
+    ///            "<p>[https://foo.com]</p>\n");
+    ///
+    /// options.parse.relaxed_autolinks = true;
+    /// assert_eq!(markdown_to_html("[https://foo.com]", &options),
+    ///            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n");
+    /// ```
+    pub relaxed_autolinks: bool,
 }
 
 #[non_exhaustive]
@@ -1954,7 +1969,12 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(self.arena, node, text);
+            autolink::process_autolinks(
+                self.arena,
+                node,
+                text,
+                self.options.parse.relaxed_autolinks,
+            );
         }
     }
 

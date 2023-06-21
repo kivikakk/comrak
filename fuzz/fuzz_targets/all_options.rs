@@ -25,6 +25,7 @@ fuzz_target!(|s: &str| {
     parse.smart = true;
     parse.default_info_string = Some("rust".to_string());
     parse.relaxed_tasklist_matching = true;
+    parse.relaxed_autolinks = true;
 
     let mut render = RenderOptions::default();
     render.hardbreaks = true;
