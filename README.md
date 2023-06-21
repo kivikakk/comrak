@@ -220,6 +220,7 @@ make bench-all
 
 which will run benchmarks across all, and report the time take by each as well as relative time.
 
+Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will comment the results on the pull request in a tabular format comparing the 4 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note Benchmarks won't be automatically run on each push.
 
 
 
