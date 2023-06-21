@@ -197,6 +197,32 @@ assert_eq!(
      </ol>\n");
 ```
 
+## Benchmarking
+
+For running benchmarks, you will need to [install hyperfine](https://github.com/sharkdp/hyperfine#installation) and optionally cmake.
+
+If you want to just run benchmark for comrak, with current state of repo, you can simply run
+```bash
+make bench-comrak
+```
+
+This will build comrak in release mode, and run benchmark on it. You will see the time measurements as reported by hyperfine in the console.
+
+Makefile also provides a way to run benchmarks for comark current state (with your changes), comrak main branch, cmark-gfm and pulldown-cmark. For this you will need to install cmake. After that make sure that you have set-up the git submodules. In case you have not installed submodules when cloning, you can do it by running
+```bash
+git submodule update --init
+```
+
+After this is done, you can run 
+```bash
+make bench-all
+```
+
+which will run benchmarks across all, and report the time take by each as well as relative time.
+
+
+
+
 ## Security
 
 As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https://github.com/github/cmark-gfm#security),
