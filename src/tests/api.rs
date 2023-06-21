@@ -34,38 +34,35 @@ fn exercise_full_api() {
         Some(&mut |_: &str| Some(("abc".to_string(), "xyz".to_string()))),
     );
 
-    let _ = Options {
-        extension: ExtensionOptions {
-            strikethrough: false,
-            tagfilter: false,
-            table: false,
-            autolink: false,
-            tasklist: false,
-            superscript: false,
-            header_ids: Some("abc".to_string()),
-            footnotes: false,
-            description_lists: false,
-            front_matter_delimiter: None,
-            #[cfg(feature = "shortcodes")]
-            shortcodes: true,
-        },
-        parse: ParseOptions {
-            smart: false,
-            default_info_string: Some("abc".to_string()),
-            relaxed_tasklist_matching: false,
-            relaxed_autolinks: false,
-        },
-        render: RenderOptions {
-            hardbreaks: false,
-            github_pre_lang: false,
-            full_info_string: false,
-            width: 123456,
-            unsafe_: false,
-            escape: false,
-            list_style: ListStyleType::Dash,
-            sourcepos: false,
-        },
-    };
+    let mut extension = ExtensionOptionsBuilder::default();
+    extension.strikethrough(false);
+    extension.tagfilter(false);
+    extension.table(false);
+    extension.autolink(false);
+    extension.tasklist(false);
+    extension.superscript(false);
+    extension.header_ids(Some("abc".to_string()));
+    extension.footnotes(false);
+    extension.description_lists(false);
+    extension.front_matter_delimiter(None);
+    #[cfg(feature = "shortcodes")]
+    extension.shortcodes(true);
+
+    let mut parse = ParseOptionsBuilder::default();
+    parse.smart(false);
+    parse.default_info_string(Some("abc".to_string()));
+    parse.relaxed_tasklist_matching(false);
+    parse.relaxed_autolinks(false);
+
+    let mut render = RenderOptionsBuilder::default();
+    render.hardbreaks(false);
+    render.github_pre_lang(false);
+    render.full_info_string(false);
+    render.width(123456);
+    render.unsafe_(false);
+    render.escape(false);
+    render.list_style(ListStyleType::Dash);
+    render.sourcepos(false);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
@@ -112,12 +109,12 @@ fn exercise_full_api() {
 
     let mock_adapter = MockAdapter {};
 
-    let _ = Plugins {
-        render: RenderPlugins {
-            codefence_syntax_highlighter: Some(&mock_adapter),
-            heading_adapter: Some(&mock_adapter),
-        },
-    };
+    let mut render_plugins = RenderPluginsBuilder::default();
+    render_plugins.codefence_syntax_highlighter(Some(&mock_adapter));
+    render_plugins.heading_adapter(Some(&mock_adapter));
+
+    let mut plugins = PluginsBuilder::default();
+    plugins.render(render_plugins.build().unwrap());
 
     let _: String = markdown_to_html("# Yes", &default_options);
 
