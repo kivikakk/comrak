@@ -35,9 +35,11 @@ build-pulldown-cmark:
 bench-comrak: build-comrak-branch
 	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
 	cd benches && \
-	hyperfine --prepare 'sudo sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' --warmup 3 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT} './bench.sh ./{binary}'
+	hyperfine --warmup 3 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT} './bench.sh ./{binary}'
 
 bench-all: binaries
 	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
 	cd benches && \
-	hyperfine --prepare 'sudo sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' --warmup 3 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md
+	hyperfine --warmup 10 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
+	echo "\n\nRun on" `date -u` >> ${ROOT}/bench-output.md
+
