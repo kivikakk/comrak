@@ -101,6 +101,21 @@ fn syntect_plugin() {
                 "</code></pre>\n"
             ),
         ),
+        (
+            // Language should still be highlighted when delimited by a comma
+            "\
+            ```rust,ignore\n\
+            fn main() {}\n\
+            ```\n\
+            ",
+            "\
+            <pre style=\"background-color:#2b303b;\"><code class=\"language-rust,ignore\">\
+                <span style=\"color:#b48ead;\">fn </span>\
+                <span style=\"color:#8fa1b3;\">main</span>\
+                <span style=\"color:#c0c5ce;\">() {}\n</span>\
+            </code></pre>\n\
+            ",
+        ),
     ];
 
     let mut plugins = Plugins::default();
