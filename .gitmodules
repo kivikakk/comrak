@@ -4,3 +4,6 @@
 [submodule "vendor/pulldown-cmark"]
 	path = vendor/pulldown-cmark
 	url = https://github.com/raphlinus/pulldown-cmark.git
+[submodule "vendor/markdown-it"]
+	path = vendor/markdown-it
+	url = https://github.com/rlidwka/markdown-it.rs.git

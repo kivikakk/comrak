@@ -10,7 +10,7 @@ bench:
 	cargo build --release
 	(cd vendor/cmark-gfm/; make bench PROG=../../target/release/comrak)
 
-binaries: build-comrak-branch build-comrak-master build-cmark-gfm build-pulldown-cmark
+binaries: build-comrak-branch build-comrak-master build-cmark-gfm build-pulldown-cmark build-markdown-it
 
 build-comrak-branch:
 	cargo build --release
@@ -27,6 +27,11 @@ build-cmark-gfm:
 	make && \
 	cp build/src/cmark-gfm ${ROOT}/benches/cmark-gfm
 
+build-markdown-it:
+	cd ${ROOT}/vendor/markdown-it && \
+	cargo build --release && \
+	cp target/release/markdown-it ${ROOT}/benches/markdown-it
+
 build-pulldown-cmark:
 	cd ${ROOT}/vendor/pulldown-cmark && \
 	cargo build --release && \
@@ -40,6 +45,6 @@ bench-comrak: build-comrak-branch
 bench-all: binaries
 	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
 	cd benches && \
-	hyperfine --warmup 10 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
+	hyperfine --warmup 10 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm,markdown-it './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
 	echo "\n\nRun on" `date -u` >> ${ROOT}/bench-output.md
 
