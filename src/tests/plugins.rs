@@ -91,16 +91,22 @@ fn heading_adapter_plugin() {
 fn syntect_plugin() {
     let adapter = crate::plugins::syntect::SyntectAdapter::new("base16-ocean.dark");
 
-    let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
-    let expected = concat!(
-        "<pre style=\"background-color:#2b303b;\"><code class=\"language-rust\">",
-        "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
-        "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>",
-        "</code></pre>\n"
-    );
+    let cases = vec![
+        (
+            concat!("```rust\n", "fn main<'a>();\n", "```\n"),
+            concat!(
+                "<pre style=\"background-color:#2b303b;\"><code class=\"language-rust\">",
+                "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
+                "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>",
+                "</code></pre>\n"
+            ),
+        ),
+    ];
 
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
-    html_plugins(input, expected, &plugins);
+    for (input, expected) in cases {
+        html_plugins(input, expected, &plugins);
+    }
 }
