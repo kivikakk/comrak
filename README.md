@@ -201,14 +201,14 @@ assert_eq!(
 
 For running benchmarks, you will need to [install hyperfine](https://github.com/sharkdp/hyperfine#installation) and optionally cmake.
 
-If you want to just run benchmark for comrak, with current state of repo, you can simply run
+If you want to just run the benchmark for `comrak`, with the current state of the repo, you can simply run
 ```bash
 make bench-comrak
 ```
 
 This will build comrak in release mode, and run benchmark on it. You will see the time measurements as reported by hyperfine in the console.
 
-Makefile also provides a way to run benchmarks for comark current state (with your changes), comrak main branch, cmark-gfm and pulldown-cmark. For this you will need to install cmake. After that make sure that you have set-up the git submodules. In case you have not installed submodules when cloning, you can do it by running
+Makefile also provides a way to run benchmarks for `comrak` current state (with your changes), `comrak` main branch, [`cmark-gfm`](https://github.com/github/cmark-gfm), [`pulldown-cmark`](https://github.com/raphlinus/pulldown-cmark) and [`markdown-it.rs`](https://github.com/rlidwka/markdown-it.rs). For this you will need to install `cmake`. After that make sure that you have set-up the git submodules. In case you have not installed submodules when cloning, you can do it by running
 ```bash
 git submodule update --init
 ```
@@ -220,7 +220,7 @@ make bench-all
 
 which will run benchmarks across all, and report the time take by each as well as relative time.
 
-Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will comment the results on the pull request in a tabular format comparing the 4 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note Benchmarks won't be automatically run on each push.
+Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will add a comment with the results on the pull request in a tabular format comparing the 5 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note benchmarks won't be automatically run on each push.
 
 
 
