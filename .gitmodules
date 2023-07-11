@@ -1,3 +1,9 @@
 [submodule "vendor/cmark-gfm"]
 	path = vendor/cmark-gfm
 	url = https://github.com/kivikakk/cmark-gfm.git
+[submodule "vendor/pulldown-cmark"]
+	path = vendor/pulldown-cmark
+	url = https://github.com/raphlinus/pulldown-cmark.git
+[submodule "vendor/markdown-it"]
+	path = vendor/markdown-it
+	url = https://github.com/rlidwka/markdown-it.rs.git

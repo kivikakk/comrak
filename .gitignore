@@ -2,3 +2,9 @@ target
 comrak-*
 .vscode
 .idea
+vendor/comrak
+vendor/progit
+benches/cmark-gfm
+benches/comrak-*
+benches/pulldown-cmark
+benches/markdown-it
