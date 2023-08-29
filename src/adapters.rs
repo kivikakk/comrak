@@ -8,7 +8,7 @@ use std::io::{self, Write};
 use crate::nodes::Sourcepos;
 
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
-pub trait SyntaxHighlighterAdapter {
+pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// Generates a syntax highlighted HTML output.
     ///
     /// lang: Name of the programming language (the info string of the codefence block after the initial "```" part).
@@ -57,7 +57,7 @@ pub struct HeadingMeta {
 /// method defines what's rendered prior the AST content of the heading while the `exit` method
 /// defines what's rendered after it. Both methods provide access to a [`HeadingMeta`] struct and
 /// leave the AST content of the heading unchanged.
-pub trait HeadingAdapter {
+pub trait HeadingAdapter: Send + Sync {
     /// Render the opening tag.
     fn enter(
         &self,
