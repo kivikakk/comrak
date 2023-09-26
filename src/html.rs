@@ -1,7 +1,7 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
 use crate::nodes::{
-    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeValue, TableAlignment,
+    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeTable, NodeValue, TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::scanners;
@@ -893,7 +893,7 @@ impl<'o> HtmlFormatter<'o> {
 
                 let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
                 let alignments = match *table {
-                    NodeValue::Table(ref alignments) => alignments,
+                    NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
                     _ => panic!(),
                 };
 

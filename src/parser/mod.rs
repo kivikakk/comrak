@@ -1105,6 +1105,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 self.advance_offset(line, adv, false);
             } else if !indented
                 && self.options.extension.footnotes
+                && depth < MAX_LIST_DEPTH
                 && unwrap_into(
                     scanners::footnote_definition(&line[self.first_nonspace..]),
                     &mut matched,

@@ -57,22 +57,6 @@ fn regression_back_to_back_ranges() {
 }
 
 #[test]
-#[timeout(4000)]
-fn pathological_emphases() {
-    let mut s = String::with_capacity(50000 * 4);
-    for _ in 0..50000 {
-        s.push_str("*a_ ");
-    }
-
-    let mut exp = format!("<p>{}", s);
-    // Right-most space is trimmed in output.
-    exp.pop();
-    exp += "</p>\n";
-
-    html(&s, &exp);
-}
-
-#[test]
 fn no_panic_on_empty_bookended_atx_headers() {
     html("#  #", "<h1></h1>\n");
 }

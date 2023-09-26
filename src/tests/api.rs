@@ -166,9 +166,11 @@ fn exercise_full_api() {
             let _: &String = &nfd.name;
             let _: u32 = nfd.total_references;
         }
-        nodes::NodeValue::Table(aligns) => {
-            let _: &Vec<nodes::TableAlignment> = aligns;
-            match aligns[0] {
+        nodes::NodeValue::Table(nt) => {
+            let _: &Vec<nodes::TableAlignment> = &nt.alignments;
+            let _: usize = nt.num_nonempty_cells;
+            let _: usize = nt.num_rows;
+            match nt.alignments[0] {
                 nodes::TableAlignment::None => {}
                 nodes::TableAlignment::Left => {}
                 nodes::TableAlignment::Center => {}

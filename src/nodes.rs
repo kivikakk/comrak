@@ -92,7 +92,7 @@ pub enum NodeValue {
 
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
-    Table(Vec<TableAlignment>),
+    Table(NodeTable),
 
     /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
     /// Contains table cells.
@@ -178,6 +178,22 @@ impl TableAlignment {
             TableAlignment::Right => Some("right"),
         }
     }
+}
+
+/// The metadata of a table
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeTable {
+    /// The table alignments
+    pub alignments: Vec<TableAlignment>,
+
+    /// Number of columns of the table
+    pub num_columns: usize,
+
+    /// Number of rows of the table
+    pub num_rows: usize,
+
+    /// Number of non-empty, non-autocompleted cells
+    pub num_nonempty_cells: usize,
 }
 
 /// An inline [code span](https://github.github.com/gfm/#code-spans).

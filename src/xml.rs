@@ -1,4 +1,4 @@
-use crate::nodes::{AstNode, ListType, NodeCode, NodeValue};
+use crate::nodes::{AstNode, ListType, NodeCode, NodeTable, NodeValue};
 use crate::parser::{Options, Plugins};
 use once_cell::sync::Lazy;
 use std::cmp;
@@ -218,11 +218,13 @@ impl<'o> XmlFormatter<'o> {
                     let header_row = &ancestors.next().unwrap().data.borrow().value;
                     let table = &ancestors.next().unwrap().data.borrow().value;
 
-                    if let (NodeValue::TableRow(true), NodeValue::Table(aligns)) =
-                        (header_row, table)
+                    if let (
+                        NodeValue::TableRow(true),
+                        NodeValue::Table(NodeTable { alignments, .. }),
+                    ) = (header_row, table)
                     {
                         let ix = node.preceding_siblings().count() - 1;
-                        if let Some(xml_align) = aligns[ix].xml_name() {
+                        if let Some(xml_align) = alignments[ix].xml_name() {
                             write!(self.output, " align=\"{}\"", xml_align)?;
                         }
                     }
