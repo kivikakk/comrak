@@ -316,7 +316,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
     table_spacechar = [ \t\v\f];
     table_newline = [\r]?[\n];
 
-    table_marker = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
+    table_delimiter = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
     table_cell = (escaped_char|[^\x00|\r\n])+;
 
 */
@@ -326,7 +326,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [|]? table_marker ([|] table_marker)* [|]? table_spacechar* table_newline {
+    [|]? table_delimiter ([|] table_delimiter)* [|]? table_spacechar* table_newline {
         return Some(cursor);
     }
     * { return None; }

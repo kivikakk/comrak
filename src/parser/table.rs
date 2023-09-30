@@ -42,8 +42,8 @@ fn try_opening_header<'a>(
         return Some((container, false, false));
     }
 
-    let marker_row = match row(&line[parser.first_nonspace..]) {
-        Some(marker_row) => marker_row,
+    let delimiter_row = match row(&line[parser.first_nonspace..]) {
+        Some(delimiter_row) => delimiter_row,
         None => return Some((container, false, true)),
     };
 
@@ -52,7 +52,7 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    if header_row.cells.len() != marker_row.cells.len() {
+    if header_row.cells.len() != delimiter_row.cells.len() {
         return Some((container, false, true));
     }
 
@@ -61,7 +61,7 @@ fn try_opening_header<'a>(
     }
 
     let mut alignments = vec![];
-    for cell in marker_row.cells {
+    for cell in delimiter_row.cells {
         let cell_content = cell.content.as_bytes();
         let left = !cell_content.is_empty() && cell_content[0] == b':';
         let right = !cell_content.is_empty() && cell_content[cell_content.len() - 1] == b':';
