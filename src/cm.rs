@@ -2,7 +2,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeValue,
+    NodeTable, NodeValue,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -732,7 +732,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             if in_header && node.next_sibling().is_none() {
                 let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
                 let alignments = match *table {
-                    NodeValue::Table(ref alignments) => alignments,
+                    NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
                     _ => panic!(),
                 };
 

@@ -13,6 +13,7 @@ mod footnotes;
 mod fuzz;
 mod header_ids;
 mod options;
+mod pathological;
 mod plugins;
 mod propfuzz;
 mod regressions;
