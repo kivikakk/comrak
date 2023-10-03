@@ -1,3 +1,30 @@
+### 0.19.0
+
+* Simplify anchorize() by @kornelski in https://github.com/kivikakk/comrak/pull/297
+* Use footnote name for reference id by @digitalmoksha in https://github.com/kivikakk/comrak/pull/300
+* Escape footnote name by @digitalmoksha in https://github.com/kivikakk/comrak/pull/308
+* Add in-doc labels for public facing features by @CosmicHorrorDev in https://github.com/kivikakk/comrak/pull/304
+* build(deps): bump xml-rs from 0.8.4 to 0.8.14 by @dependabot in https://github.com/kivikakk/comrak/pull/312
+* Handle footnote names that have been parsed into multiple nodes by @digitalmoksha in https://github.com/kivikakk/comrak/pull/311
+* Sync with cmark-gfm-0.29.0.gfm.3 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/313
+* Sync with cmark-gfm-0.29.0.gfm.4 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/314
+* Sync with cmark-gfm-0.29.0.gfm.5 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/315
+* Fix backslash in a link issue by @vpetrigo in https://github.com/kivikakk/comrak/pull/317
+* Sync with cmark-gfm-0.29.0.gfm.7 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/318
+* Rename `ComrakFoo` types to just `Foo` for easier usage by @tgross35 in https://github.com/kivikakk/comrak/pull/320
+* Make `ComrakExtensionOptions` non-exhaustive by @CosmicHorrorDev in https://github.com/kivikakk/comrak/pull/305
+* Add builder derive and non_exhaustive for option structs by @YJDoc2 in https://github.com/kivikakk/comrak/pull/292
+* add PartialEq and Eq derive for Ast and its components by @YJDoc2 in https://github.com/kivikakk/comrak/pull/322
+* Sync with cmark-gfm-0.29.0.gfm.11 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/319
+* Fix autolink detection inside wiki style link brackets by @digitalmoksha in https://github.com/kivikakk/comrak/pull/325
+* Add CI for running benchmarks by @YJDoc2 in https://github.com/kivikakk/comrak/pull/326
+* Make adapters Send + Sync by @lucperkins in https://github.com/kivikakk/comrak/pull/337
+* docs: fix-up broken docs.rs link by @silverjam in https://github.com/kivikakk/comrak/pull/341
+* Use github/cmark-gfm submodule by @digitalmoksha in https://github.com/kivikakk/comrak/pull/344
+* Sync with cmark-gfm-0.29.0.gfm.12 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/343
+* Sync with cmark-gfm-0.29.0.gfm.13 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/345
+
+
 ### 0.18.0
 
 * Improve performance of bundled plugins, and streaming I/O by @kivikakk in https://github.com/kivikakk/comrak/pull/288
