@@ -88,8 +88,8 @@ fn heading_adapter_plugin() {
 
 #[test]
 #[cfg(feature = "syntect")]
-fn syntect_plugin() {
-    let adapter = crate::plugins::syntect::SyntectAdapter::new("base16-ocean.dark");
+fn syntect_plugin_with_base16_ocean_dark_theme() {
+    let adapter = crate::plugins::syntect::SyntectAdapter::new(Some("base16-ocean.dark"));
 
     let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
     let expected = concat!(
@@ -97,6 +97,26 @@ fn syntect_plugin() {
         "<span style=\"color:#b48ead;\">fn </span><span style=\"color:#8fa1b3;\">main</span><span style=\"color:#c0c5ce;\">",
         "&lt;</span><span style=\"color:#b48ead;\">&#39;a</span><span style=\"color:#c0c5ce;\">&gt;();\n</span>",
         "</code></pre>\n"
+    );
+
+    let mut plugins = Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    html_plugins(input, expected, &plugins);
+}
+
+#[test]
+#[cfg(feature = "syntect")]
+fn syntect_plugin_with_css_classes() {
+    let adapter = crate::plugins::syntect::SyntectAdapter::new(None);
+
+    let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
+    let expected = concat!(
+        "<pre class=\"syntax-highlighting\"><code class=\"language-rust\">",
+        "<span class=\"source rust\"><span class=\"meta function rust\"><span class=\"meta function rust\"><span class=\"storage type function rust\">fn</span> </span><span class=\"entity name function rust\">main</span></span><span class=\"meta generic rust\"><span class=\"punctuation definition generic begin rust\">&lt;</span>",
+        "<span class=\"storage modifier lifetime rust\">&#39;a</span><span class=\"punctuation definition generic end rust\">&gt;</span></span><span class=\"meta function rust\"><span class=\"meta function parameters rust\"><span class=\"punctuation section parameters begin rust\">(</span></span><span class=\"meta function rust\">",
+        "<span class=\"meta function parameters rust\"><span class=\"punctuation section parameters end rust\">)</span></span></span></span><span class=\"punctuation terminator rust\">;</span>\n</span>",
+        "</code></pre>\n",
     );
 
     let mut plugins = Plugins::default();

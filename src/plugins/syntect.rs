@@ -6,7 +6,9 @@ use std::collections::{hash_map, HashMap};
 use std::io::{self, Write};
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Color, ThemeSet};
-use syntect::html::{append_highlighted_html_for_styled_line, IncludeBackground};
+use syntect::html::{
+    append_highlighted_html_for_styled_line, ClassStyle, ClassedHTMLGenerator, IncludeBackground,
+};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 use syntect::Error;
@@ -14,35 +16,58 @@ use syntect::Error;
 #[derive(Debug)]
 /// Syntect syntax highlighter plugin.
 pub struct SyntectAdapter {
-    theme: String,
+    theme: Option<String>,
     syntax_set: SyntaxSet,
     theme_set: ThemeSet,
 }
 
 impl SyntectAdapter {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
-    pub fn new(theme: &str) -> Self {
+    pub fn new(theme: Option<&str>) -> Self {
         SyntectAdapter {
-            theme: theme.into(),
+            theme: match theme {
+                Some(t) => Some(t.into()),
+                None => None,
+            },
             syntax_set: SyntaxSet::load_defaults_newlines(),
             theme_set: ThemeSet::load_defaults(),
         }
     }
 
     fn highlight_html(&self, code: &str, syntax: &SyntaxReference) -> Result<String, Error> {
-        // syntect::html::highlighted_html_for_string, without the opening/closing <pre>.
-        let theme = &self.theme_set.themes[&self.theme];
-        let mut highlighter = HighlightLines::new(syntax, theme);
         let mut output = String::new();
-        let bg = theme.settings.background.unwrap_or(Color::WHITE);
 
-        for line in LinesWithEndings::from(code) {
-            let regions = highlighter.highlight_line(line, &self.syntax_set)?;
-            append_highlighted_html_for_styled_line(
-                &regions[..],
-                IncludeBackground::IfDifferent(bg),
-                &mut output,
-            )?;
+        match &self.theme {
+            Some(theme) => {
+                // syntect::html::highlighted_html_for_string, without the opening/closing <pre>.
+                let theme = &self.theme_set.themes[theme];
+                let mut highlighter = HighlightLines::new(syntax, theme);
+
+                let bg = theme.settings.background.unwrap_or(Color::WHITE);
+
+                for line in LinesWithEndings::from(code) {
+                    let regions = highlighter.highlight_line(line, &self.syntax_set)?;
+                    append_highlighted_html_for_styled_line(
+                        &regions[..],
+                        IncludeBackground::IfDifferent(bg),
+                        &mut output,
+                    )?;
+                }
+            }
+            None => {
+                // fall back to HTML classes
+                let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
+                    syntax,
+                    &self.syntax_set,
+                    ClassStyle::Spaced,
+                );
+                for line in LinesWithEndings::from(code) {
+                    html_generator
+                        .parse_html_for_line_which_includes_newline(line)
+                        .unwrap();
+                }
+                output = html_generator.finalize();
+            }
         }
         Ok(output)
     }
@@ -82,16 +107,26 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
     ) -> io::Result<()> {
-        let theme = &self.theme_set.themes[&self.theme];
-        let colour = theme.settings.background.unwrap_or(Color::WHITE);
+        match &self.theme {
+            Some(theme) => {
+                let theme = &self.theme_set.themes[theme];
+                let colour = theme.settings.background.unwrap_or(Color::WHITE);
 
-        let style = format!(
-            "background-color:#{:02x}{:02x}{:02x};",
-            colour.r, colour.g, colour.b
-        );
+                let style = format!(
+                    "background-color:#{:02x}{:02x}{:02x};",
+                    colour.r, colour.g, colour.b
+                );
 
-        let mut pre_attributes = SyntectPreAttributes::new(attributes, &style);
-        html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
+                let mut pre_attributes = SyntectPreAttributes::new(attributes, &style);
+                html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
+            }
+            None => {
+                let mut attributes: HashMap<String, String> = HashMap::new();
+                attributes.insert(String::from("class"), String::from("syntax-highlighting"));
+
+                html::write_opening_tag(output, "pre", attributes)
+            }
+        }
     }
 
     fn write_code_tag(
@@ -191,7 +226,7 @@ impl SyntectAdapterBuilder {
     /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter {
         SyntectAdapter {
-            theme: self.theme.unwrap_or_else(|| "InspiredGitHub".into()),
+            theme: Some(self.theme.unwrap_or_else(|| "InspiredGitHub".into())),
             syntax_set: self
                 .syntax_set
                 .unwrap_or_else(SyntaxSet::load_defaults_newlines),

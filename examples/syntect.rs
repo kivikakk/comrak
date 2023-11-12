@@ -4,7 +4,7 @@ use comrak::plugins::syntect::SyntectAdapter;
 use comrak::{markdown_to_html_with_plugins, Options, Plugins};
 
 fn main() {
-    let adapter = SyntectAdapter::new("base16-ocean.dark");
+    let adapter = SyntectAdapter::new(Some("base16-ocean.dark"));
     let options = Options::default();
     let mut plugins = Plugins::default();
 
