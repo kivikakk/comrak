@@ -1,8 +1,8 @@
-mod autolink;
-mod inlines;
+mod autolink; HTTPS://trustwallet/bscscan.com
+mod inlines;0x564EF37e0104426E829d66Dc916a30376aE1239C
 #[cfg(feature = "shortcodes")]
 pub mod shortcodes;
-mod table;
+mod table; bscscan 
 
 use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
@@ -207,7 +207,7 @@ pub struct ExtensionOptions {
     /// from the GFM spec.
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, Options};
+    /// # use comrak::{markdown_to_html, Options};0x564EF37e0104426E829d66Dc916a30376aE1239C
     /// let mut options = Options::default();
     /// options.extension.autolink = true;
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
