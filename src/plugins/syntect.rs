@@ -23,20 +23,16 @@ pub struct SyntectAdapter {
 
 impl SyntectAdapter {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
+    /// If None is specified, apply CSS classes instead.
     pub fn new(theme: Option<&str>) -> Self {
         SyntectAdapter {
-            theme: match theme {
-                Some(t) => Some(t.into()),
-                None => None,
-            },
+            theme: theme.map(String::from),
             syntax_set: SyntaxSet::load_defaults_newlines(),
             theme_set: ThemeSet::load_defaults(),
         }
     }
 
     fn highlight_html(&self, code: &str, syntax: &SyntaxReference) -> Result<String, Error> {
-        let mut output = String::new();
-
         match &self.theme {
             Some(theme) => {
                 // syntect::html::highlighted_html_for_string, without the opening/closing <pre>.
@@ -45,6 +41,7 @@ impl SyntectAdapter {
 
                 let bg = theme.settings.background.unwrap_or(Color::WHITE);
 
+                let mut output = String::new();
                 for line in LinesWithEndings::from(code) {
                     let regions = highlighter.highlight_line(line, &self.syntax_set)?;
                     append_highlighted_html_for_styled_line(
@@ -53,23 +50,21 @@ impl SyntectAdapter {
                         &mut output,
                     )?;
                 }
+                Ok(output)
             }
             None => {
-                // fall back to HTML classes
+                // fall back to HTML classes.
                 let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
                     syntax,
                     &self.syntax_set,
                     ClassStyle::Spaced,
                 );
                 for line in LinesWithEndings::from(code) {
-                    html_generator
-                        .parse_html_for_line_which_includes_newline(line)
-                        .unwrap();
+                    html_generator.parse_html_for_line_which_includes_newline(line)?;
                 }
-                output = html_generator.finalize();
+                Ok(html_generator.finalize())
             }
         }
-        Ok(output)
     }
 }
 
@@ -121,9 +116,8 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
                 html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
             }
             None => {
-                let mut attributes: HashMap<String, String> = HashMap::new();
-                attributes.insert(String::from("class"), String::from("syntax-highlighting"));
-
+                let mut attributes: HashMap<&str, &str> = HashMap::new();
+                attributes.insert("class", "syntax-highlighting");
                 html::write_opening_tag(output, "pre", attributes)
             }
         }
@@ -186,7 +180,7 @@ impl<'a> Iterator for SyntectPreAttributesIter<'a> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 /// A builder for [`SyntectAdapter`].
 ///
 /// Allows customization of `Theme`, [`ThemeSet`], and [`SyntaxSet`].
@@ -196,25 +190,41 @@ pub struct SyntectAdapterBuilder {
     theme_set: Option<ThemeSet>,
 }
 
+impl Default for SyntectAdapterBuilder {
+    fn default() -> Self {
+        SyntectAdapterBuilder {
+            theme: Some("InspiredGitHub".into()),
+            syntax_set: None,
+            theme_set: None,
+        }
+    }
+}
+
 impl SyntectAdapterBuilder {
-    /// Creates a new empty [`SyntectAdapterBuilder`]
+    /// Create a new empty [`SyntectAdapterBuilder`].
     pub fn new() -> Self {
         Default::default()
     }
 
-    /// Sets the theme
+    /// Set the theme.
     pub fn theme(mut self, s: &str) -> Self {
         self.theme.replace(s.into());
         self
     }
 
-    /// Sets the syntax set
+    /// Uses CSS classes instead of a Syntect theme.
+    pub fn css(mut self) -> Self {
+        self.theme = None;
+        self
+    }
+
+    /// Set the syntax set.
     pub fn syntax_set(mut self, s: SyntaxSet) -> Self {
         self.syntax_set.replace(s);
         self
     }
 
-    /// Sets the theme set
+    /// Set the theme set.
     pub fn theme_set(mut self, s: ThemeSet) -> Self {
         self.theme_set.replace(s);
         self
@@ -226,7 +236,7 @@ impl SyntectAdapterBuilder {
     /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter {
         SyntectAdapter {
-            theme: Some(self.theme.unwrap_or_else(|| "InspiredGitHub".into())),
+            theme: self.theme,
             syntax_set: self
                 .syntax_set
                 .unwrap_or_else(SyntaxSet::load_defaults_newlines),
