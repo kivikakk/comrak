@@ -916,13 +916,13 @@ impl<'o> HtmlFormatter<'o> {
 
                     match alignments[i] {
                         TableAlignment::Left => {
-                            self.output.write_all(b" align=\"left\"")?;
+                            self.output.write_all(b" style=\"text-align: left\"")?;
                         }
                         TableAlignment::Right => {
-                            self.output.write_all(b" align=\"right\"")?;
+                            self.output.write_all(b" style=\"text-align: right\"")?;
                         }
                         TableAlignment::Center => {
-                            self.output.write_all(b" align=\"center\"")?;
+                            self.output.write_all(b" style=\"text-align: center\"")?;
                         }
                         TableAlignment::None => (),
                     }
