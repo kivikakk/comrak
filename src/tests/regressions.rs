@@ -1,5 +1,4 @@
 use super::*;
-use ntest::timeout;
 
 #[test]
 fn pointy_brace() {

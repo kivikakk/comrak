@@ -251,7 +251,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     if theme.is_empty() || theme == "none" {
         syntax_highlighter = None;
     } else {
-        adapter = SyntectAdapter::new(&theme);
+        adapter = SyntectAdapter::new(Some(&theme));
         syntax_highlighter = Some(&adapter);
     }
 

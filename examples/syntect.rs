@@ -1,10 +1,15 @@
 //! This example shows how to use the bundled syntect plugin.
 
-use comrak::plugins::syntect::SyntectAdapter;
+use comrak::plugins::syntect::SyntectAdapterBuilder;
 use comrak::{markdown_to_html_with_plugins, Options, Plugins};
 
 fn main() {
-    let adapter = SyntectAdapter::new("base16-ocean.dark");
+    run_with(SyntectAdapterBuilder::new().theme("base16-ocean.dark"));
+    run_with(SyntectAdapterBuilder::new().css());
+}
+
+fn run_with(builder: SyntectAdapterBuilder) {
+    let adapter = builder.build();
     let options = Options::default();
     let mut plugins = Plugins::default();
 
