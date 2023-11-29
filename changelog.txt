@@ -1,3 +1,10 @@
+### 0.20.0
+
+* build(deps): bump rustix from 0.36.11 to 0.36.16 in /fuzz by @dependabot in https://github.com/kivikakk/comrak/pull/346
+* Use Nix for CI. by @charlottia in https://github.com/kivikakk/comrak/pull/338
+* Allow for Syntect to simply generate CSS classes by @gjtorikian in https://github.com/kivikakk/comrak/pull/347
+
+
 ### 0.19.0
 
 * Simplify anchorize() by @kornelski in https://github.com/kivikakk/comrak/pull/297
