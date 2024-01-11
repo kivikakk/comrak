@@ -26,6 +26,7 @@ fn propfuzz_doesnt_crash(md: String) {
             default_info_string: Some("Rust".to_string()),
             relaxed_tasklist_matching: true,
             relaxed_autolinks: true,
+            akkoma_autolinks: true,
         },
         render: RenderOptions {
             hardbreaks: true,

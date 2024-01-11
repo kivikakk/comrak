@@ -64,6 +64,10 @@ struct Cli {
     #[arg(long)]
     relaxed_autolinks: bool,
 
+    /// Enable Akkoma-specific autolink parsing, i.e. don't autolink @x@y.com like an email.
+    #[arg(long)]
+    akkoma_autolinks: bool,
+
     /// Default value for fenced code block's info strings if none is given
     #[arg(long, value_name = "INFO")]
     default_info_string: Option<String>,
@@ -224,6 +228,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .default_info_string(cli.default_info_string)
         .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
         .relaxed_autolinks(cli.relaxed_autolinks)
+        .akkoma_autolinks(cli.akkoma_autolinks)
         .build()?;
 
     let render = RenderOptionsBuilder::default()

@@ -405,6 +405,21 @@ pub struct ParseOptions {
     ///            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n");
     /// ```
     pub relaxed_autolinks: bool,
+
+    /// Enable Akkoma-specific autolink parsing, i.e. don't autolink @x@y.com like an email.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.autolink = true;
+    /// assert_eq!(markdown_to_html("@abc@def.com", &options),
+    ///            "<p>@<a href=\"mailto:abc@def.com\">abc@def.com</a></p>\n");
+    ///
+    /// options.parse.akkoma_autolinks = true;
+    /// assert_eq!(markdown_to_html("@abc@def.com", &options),
+    ///            "<p>@abc@def.com</p>\n");
+    /// ```
+    pub akkoma_autolinks: bool,
 }
 
 #[non_exhaustive]

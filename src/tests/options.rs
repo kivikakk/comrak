@@ -62,3 +62,18 @@ fn smart_chars() {
         "<p>Hm. Hm.. hm… yes- indeed– quite—!</p>\n",
     );
 }
+
+#[test]
+fn akkoma_autolinks() {
+    html_opts!(
+        [extension.autolink],
+        "@abc @abc@def.com abc@def.com\n",
+        "<p>@abc @<a href=\"mailto:abc@def.com\">abc@def.com</a> <a href=\"mailto:abc@def.com\">abc@def.com</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, parse.akkoma_autolinks],
+        "@abc @abc@def.com abc@def.com\n",
+        "<p>@abc @abc@def.com <a href=\"mailto:abc@def.com\">abc@def.com</a></p>\n",
+    );
+}
