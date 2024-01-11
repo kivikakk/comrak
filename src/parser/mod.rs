@@ -1990,6 +1990,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 node,
                 text,
                 self.options.parse.relaxed_autolinks,
+                self.options.parse.akkoma_autolinks,
             );
         }
     }

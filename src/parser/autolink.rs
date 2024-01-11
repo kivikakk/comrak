@@ -11,6 +11,7 @@ pub(crate) fn process_autolinks<'a>(
     node: &'a AstNode<'a>,
     contents_str: &mut String,
     relaxed_autolinks: bool,
+    akkoma_autolinks: bool,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -53,7 +54,7 @@ pub(crate) fn process_autolinks<'a>(
                     }
                 }
                 b'@' => {
-                    post_org = email_match(arena, contents, i);
+                    post_org = email_match(arena, contents, i, akkoma_autolinks);
                     if post_org.is_some() {
                         break;
                     }
@@ -289,6 +290,7 @@ fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    akkoma_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static EMAIL_OK_SET: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -325,6 +327,8 @@ fn email_match<'a>(
                 rewind += 1;
                 continue;
             }
+        } else if akkoma_autolinks && c == b'@' {
+            return None;
         }
 
         break;
