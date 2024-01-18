@@ -1,4 +1,4 @@
-# Comrak
+# [Comrak](https://hrzn.ee/kivikakk/comrak)
 
 [![Build Status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml) ![Spec
 Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![Financial Contributors on Open
@@ -302,7 +302,10 @@ Contributions are highly encouraged; where possible I practice [Optimistic Mergi
 described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this
 project.
 
-Thank you to comrak's many contributors for PRs and issues opened\!
+For now the preferred method is [pull requests on GitHub](https://github.com/kivikakk/comrak), in
+order to maximise the number of eyes, but a mailing list for patches is in the works.
+
+Thank you to Comrak's many contributors for PRs and issues opened\!
 
 ### Code Contributors
 
@@ -338,11 +341,11 @@ Support this project with your organization. Your logo will show up here with a 
 
 ## Contact
 
-Asherah Connor \<ashe kivikakk ee\>
+Ashe Connor \<ashe kivikakk ee\>
 
 ## Legal
 
-Copyright (c) 2017–2023, Asherah Connor. Licensed under the [2-Clause BSD
+Copyright (c) 2017–2024, Asherah Connor. Licensed under the [2-Clause BSD
 License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
