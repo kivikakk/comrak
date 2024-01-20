@@ -804,6 +804,9 @@ impl<'o> HtmlFormatter<'o> {
                 if entering {
                     self.output.write_all(b"<a")?;
                     self.render_sourcepos(node)?;
+                    if self.options.render.target_blank {
+                        self.output.write_all(b" target=\"_blank\"")?;
+                    }
                     self.output.write_all(b" href=\"")?;
                     let url = nl.url.as_bytes();
                     if self.options.render.unsafe_ || !dangerous_url(url) {

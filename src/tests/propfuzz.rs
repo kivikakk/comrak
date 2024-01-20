@@ -36,6 +36,7 @@ fn propfuzz_doesnt_crash(md: String) {
             escape: false,
             list_style: ListStyleType::Dash,
             sourcepos: true,
+            target_blank: false,
         },
     };
 

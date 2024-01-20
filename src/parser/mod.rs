@@ -555,6 +555,18 @@ pub struct RenderOptions {
     /// assert!(xml.contains("<emph sourcepos=\"1:7-1:13\">"));
     /// ```
     pub sourcepos: bool,
+
+    /// Make all links in the document open in a new tab by setting `target="_blank"`.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.render.target_blank = true;
+    /// let input = "Hello [world](https://www.github.com)!";
+    /// let html = markdown_to_html(input, &options);
+    /// assert!(html.contains("target=\"_blank\""));
+    /// 
+    pub target_blank: bool,
 }
 
 #[non_exhaustive]
