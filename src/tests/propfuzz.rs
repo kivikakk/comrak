@@ -17,6 +17,7 @@ fn propfuzz_doesnt_crash(md: String) {
             header_ids: Some("user-content-".to_string()),
             footnotes: true,
             description_lists: true,
+            multiline_block_quotes: true,
             front_matter_delimiter: None,
             #[cfg(feature = "shortcodes")]
             shortcodes: true,

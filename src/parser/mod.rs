@@ -340,6 +340,29 @@ pub struct ExtensionOptions {
     /// ```
     pub front_matter_delimiter: Option<String>,
 
+    /// Enables the multiline block quote extension.
+    ///
+    /// Place `>>>` before and after text to make it into
+    /// a block quote.
+    ///
+    /// ``` md
+    /// Paragraph one
+    ///
+    /// >>>
+    /// Paragraph two
+    ///
+    /// - one
+    /// - two
+    /// >>>
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.multiline_block_quotes = true;
+    /// assert_eq!(markdown_to_html(">>>\nparagraph\n>>>", &options),
+    ///            "<blockquote>\n<p>paragraph</p>\n</blockquote>\n");
+    /// ```
+    pub multiline_block_quotes: bool,
+
     #[cfg(feature = "shortcodes")]
     #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
     /// Phrases wrapped inside of ':' blocks will be replaced with emojis.
@@ -999,6 +1022,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let indented = self.indent >= CODE_INDENT;
 
             if !indented
+                && self.options.extension.multiline_block_quotes
                 && unwrap_into(
                     scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..]),
                     &mut matched,

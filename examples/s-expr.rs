@@ -83,6 +83,7 @@ fn dump(source: &str) -> io::Result<()> {
         .superscript(true)
         .footnotes(true)
         .description_lists(true)
+        .multiline_block_quotes(true)
         .build()
         .unwrap();
 

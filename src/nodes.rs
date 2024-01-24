@@ -480,7 +480,7 @@ impl NodeValue {
             NodeValue::FootnoteReference(..) => "footnote_reference",
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
-            NodeValue::MultilineBlockQuote(_) => "block_quote",
+            NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
         }
     }
 }

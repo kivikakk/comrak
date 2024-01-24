@@ -18,6 +18,7 @@ fuzz_target!(|s: &str| {
     extension.header_ids = Some("user-content-".to_string());
     extension.footnotes = true;
     extension.description_lists = true;
+    extension.multiline_block_quotes = true;
     extension.front_matter_delimiter = Some("---".to_string());
     extension.shortcodes = true;
 
