@@ -993,6 +993,17 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</li>\n")?;
                 }
             }
+            NodeValue::MultilineBlockQuote(_) => {
+                if entering {
+                    self.cr()?;
+                    self.output.write_all(b"<blockquote")?;
+                    self.render_sourcepos(node)?;
+                    self.output.write_all(b">\n")?;
+                } else {
+                    self.cr()?;
+                    self.output.write_all(b"</blockquote>\n")?;
+                }
+            }
         }
         Ok(false)
     }

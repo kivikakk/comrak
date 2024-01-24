@@ -146,6 +146,7 @@ enum Extension {
     Superscript,
     Footnotes,
     DescriptionLists,
+    MultilineBlockQuotes,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -210,6 +211,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .header_ids(cli.header_ids)
         .footnotes(exts.contains(&Extension::Footnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))
+        .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
         .front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]

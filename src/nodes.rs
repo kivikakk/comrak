@@ -7,6 +7,8 @@ use std::convert::TryFrom;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 
+use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NodeValue {
@@ -151,6 +153,19 @@ pub enum NodeValue {
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
+
+    /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
+    /// lines and contains other **blocks**.
+    ///
+    /// ``` md
+    /// >>>
+    /// A paragraph.
+    ///
+    /// - item one
+    /// - item two
+    /// >>>
+    /// ```
+    MultilineBlockQuote(NodeMultilineBlockQuote),
 }
 
 /// Alignment of a single table cell.
@@ -391,6 +406,7 @@ impl NodeValue {
                 | NodeValue::TableRow(..)
                 | NodeValue::TableCell
                 | NodeValue::TaskItem(..)
+                | NodeValue::MultilineBlockQuote(_)
         )
     }
 
@@ -464,6 +480,7 @@ impl NodeValue {
             NodeValue::FootnoteReference(..) => "footnote_reference",
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
+            NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
         }
     }
 }
@@ -646,6 +663,10 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
         ),
+
+        NodeValue::MultilineBlockQuote(_) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+        }
 
         _ => false,
     }

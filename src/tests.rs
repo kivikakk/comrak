@@ -12,6 +12,7 @@ mod description_lists;
 mod footnotes;
 mod fuzz;
 mod header_ids;
+mod multiline_block_quotes;
 mod options;
 mod pathological;
 mod plugins;
@@ -117,6 +118,7 @@ macro_rules! html_opts {
                 header_ids: Some("user-content-".to_string()),
                 footnotes: true,
                 description_lists: true,
+                multiline_block_quotes: true,
                 front_matter_delimiter: Some("---".to_string()),
                 shortcodes: true,
             },

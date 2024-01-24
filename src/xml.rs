@@ -172,6 +172,7 @@ impl<'o> XmlFormatter<'o> {
                 }
                 NodeValue::FrontMatter(_) => (),
                 NodeValue::BlockQuote => {}
+                NodeValue::MultilineBlockQuote(..) => {}
                 NodeValue::Item(..) => {}
                 NodeValue::DescriptionList => {}
                 NodeValue::DescriptionItem(..) => (),

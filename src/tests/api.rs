@@ -44,6 +44,7 @@ fn exercise_full_api() {
     extension.header_ids(Some("abc".to_string()));
     extension.footnotes(false);
     extension.description_lists(false);
+    extension.multiline_block_quotes(false);
     extension.front_matter_delimiter(None);
     #[cfg(feature = "shortcodes")]
     extension.shortcodes(true);
@@ -211,6 +212,10 @@ fn exercise_full_api() {
         nodes::NodeValue::FootnoteReference(nfr) => {
             let _: String = nfr.name;
             let _: u32 = nfr.ix;
+        }
+        nodes::NodeValue::MultilineBlockQuote(mbc) => {
+            let _: usize = mbc.fence_length;
+            let _: usize = mbc.fence_offset;
         }
     }
 }

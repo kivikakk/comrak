@@ -4,6 +4,8 @@ mod inlines;
 pub mod shortcodes;
 mod table;
 
+pub mod multiline_block_quote;
+
 use crate::adapters::SyntaxHighlighterAdapter;
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
@@ -25,6 +27,7 @@ use std::str;
 use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
+use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 use self::inlines::RefMap;
 
@@ -336,6 +339,31 @@ pub struct ExtensionOptions {
     /// assert_eq!(&String::from_utf8(buf).unwrap(), input);
     /// ```
     pub front_matter_delimiter: Option<String>,
+
+    /// Enables the multiline block quote extension.
+    ///
+    /// Place `>>>` before and after text to make it into
+    /// a block quote.
+    ///
+    /// ``` md
+    /// Paragraph one
+    ///
+    /// >>>
+    /// Paragraph two
+    ///
+    /// - one
+    /// - two
+    /// >>>
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.multiline_block_quotes = true;
+    /// assert_eq!(markdown_to_html(">>>\nparagraph\n>>>", &options),
+    ///            "<blockquote>\n<p>paragraph</p>\n</blockquote>\n");
+    /// ```
+    pub multiline_block_quotes: bool,
 
     #[cfg(feature = "shortcodes")]
     #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
@@ -963,6 +991,16 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         return (false, container, should_continue);
                     }
                 }
+                NodeValue::MultilineBlockQuote(..) => {
+                    if !self.parse_multiline_block_quote_prefix(
+                        line,
+                        container,
+                        ast,
+                        &mut should_continue,
+                    ) {
+                        return (false, container, should_continue);
+                    }
+                }
                 _ => {}
             }
         }
@@ -985,7 +1023,26 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if !indented && line[self.first_nonspace] == b'>' {
+            if !indented
+                && self.options.extension.multiline_block_quotes
+                && unwrap_into(
+                    scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..]),
+                    &mut matched,
+                )
+            {
+                let first_nonspace = self.first_nonspace;
+                let offset = self.offset;
+                let nmbc = NodeMultilineBlockQuote {
+                    fence_length: matched,
+                    fence_offset: first_nonspace - offset,
+                };
+                *container = self.add_child(
+                    container,
+                    NodeValue::MultilineBlockQuote(nmbc),
+                    self.first_nonspace + 1,
+                );
+                self.advance_offset(line, first_nonspace + matched - offset, false);
+            } else if !indented && line[self.first_nonspace] == b'>' {
                 let blockquote_startpos = self.first_nonspace;
 
                 let offset = self.first_nonspace + 1 - self.offset;
@@ -1444,6 +1501,51 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
     }
 
+    fn parse_multiline_block_quote_prefix(
+        &mut self,
+        line: &[u8],
+        container: &'a AstNode<'a>,
+        ast: &mut Ast,
+        should_continue: &mut bool,
+    ) -> bool {
+        let (fence_length, fence_offset) = match ast.value {
+            NodeValue::MultilineBlockQuote(ref node_value) => {
+                (node_value.fence_length, node_value.fence_offset)
+            }
+            _ => unreachable!(),
+        };
+
+        let matched = if self.indent <= 3 && line[self.first_nonspace] == b'>' {
+            scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
+        } else {
+            0
+        };
+
+        if matched >= fence_length {
+            *should_continue = false;
+            self.advance_offset(line, matched, false);
+
+            // The last child, like an indented codeblock, could be left open.
+            // Make sure it's finalized.
+            if nodes::last_child_is_open(container) {
+                let child = container.last_child().unwrap();
+                let child_ast = &mut *child.data.borrow_mut();
+
+                self.finalize_borrowed(child, child_ast).unwrap();
+            }
+
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return false;
+        }
+
+        let mut i = fence_offset;
+        while i > 0 && strings::is_space_or_tab(line[self.offset]) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        true
+    }
+
     fn add_child(
         &mut self,
         mut parent: &'a AstNode<'a>,
@@ -1484,6 +1586,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     container.first_child().is_some()
                         || container.data.borrow().sourcepos.start.line != self.line_number
                 }
+                NodeValue::MultilineBlockQuote(..) => false,
                 _ => true,
             };
 
@@ -1664,6 +1767,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced,
             NodeValue::Heading(ref nh) => nh.setext,
+            NodeValue::MultilineBlockQuote(..) => true,
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();

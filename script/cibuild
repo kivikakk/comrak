@@ -34,6 +34,8 @@ if [ x"$SPEC" = "xtrue" ]; then
 	# python3 roundtrip_tests.py --spec extensions-table-prefer-style-attributes.txt "$PROGRAM_ARG --table-prefer-style-attributes" --extensions "table strikethrough autolink tagfilter footnotes tasklist" || failed=1
 	python3 roundtrip_tests.py --spec extensions-full-info-string.txt "$PROGRAM_ARG --full-info-string" \
 		|| failed=1
+	python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/multiline_blockquote.txt "$PROGRAM_ARG -e multiline-block-quotes" \
+		|| failed=1
 
 	python3 spec_tests.py --no-normalize --spec regression.txt "$PROGRAM_ARG" \
 		|| failed=1

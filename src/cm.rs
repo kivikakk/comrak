@@ -377,6 +377,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::FootnoteReference(ref nfr) => {
                 self.format_footnote_reference(nfr.name.as_bytes(), entering)
             }
+            NodeValue::MultilineBlockQuote(..) => self.format_block_quote(entering),
         };
         true
     }
