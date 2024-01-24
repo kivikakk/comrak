@@ -2,7 +2,7 @@
   description = "comrak";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-23.05;
+    nixpkgs.url = github:NixOS/nixpkgs/nixos-23.11;
 
     crane = {
       url = "github:ipetkov/crane";
@@ -10,7 +10,7 @@
     };
 
     fenix = {
-      url = "github:nix-community/fenix";
+      url = "github:nix-community/fenix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-analyzer-src.follows = "";
     };
@@ -33,9 +33,7 @@
     ...
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-      };
+      pkgs = import nixpkgs {inherit system;};
 
       inherit (pkgs) lib;
 
@@ -45,21 +43,18 @@
       commonArgs = {
         inherit src;
 
-        buildInputs =
-          [
-          ]
-          ++ lib.optionals pkgs.stdenv.isDarwin [
-            pkgs.libiconv
-          ];
+        buildInputs = lib.optionals pkgs.stdenv.isDarwin [
+          pkgs.libiconv
+        ];
       };
 
-      craneLibLLvmTools =
-        craneLib.overrideToolchain
-        (fenix.packages.${system}.complete.withComponents [
-          "cargo"
-          "llvm-tools"
-          "rustc"
-        ]);
+      toolchain = fenix.packages.${system}.complete;
+
+      craneLibLLvmTools = craneLib.overrideToolchain (toolchain.withComponents [
+        "cargo"
+        "llvm-tools"
+        "rustc"
+      ]);
 
       cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
@@ -126,9 +121,12 @@
       devShells.default = pkgs.mkShell {
         inputsFrom = builtins.attrValues self.checks.${system};
 
-        nativeBuildInputs = with pkgs; [
-          cargo
-          rustc
+        nativeBuildInputs = [
+          (toolchain.withComponents [
+            "cargo"
+            "rustc"
+          ])
+          pkgs.cargo-fuzz
         ];
       };
     });
