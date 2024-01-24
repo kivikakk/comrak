@@ -355,6 +355,8 @@ pub struct ExtensionOptions {
     /// - two
     /// >>>
     /// ```
+    ///
+    /// ```
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.multiline_block_quotes = true;
