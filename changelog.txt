@@ -1,3 +1,8 @@
+### 0.21.0
+
+* Add a multiline blockquote extension by @digitalmoksha in https://github.com/kivikakk/comrak/pull/359
+
+
 ### 0.20.0
 
 * build(deps): bump rustix from 0.36.11 to 0.36.16 in /fuzz by @dependabot in https://github.com/kivikakk/comrak/pull/346
