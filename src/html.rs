@@ -31,6 +31,15 @@ pub fn format_document_with_plugins<'a>(
     output: &mut dyn Write,
     plugins: &Plugins,
 ) -> io::Result<()> {
+    if options.render.width > 0 {
+        output.write_all(b"<!DOCTYPE html>\n")?;
+        output.write_all(b"<html>\n<head> <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>")?;
+        let body_tag = format!(
+            "<body style=\"width: {}%; margin: auto\">",
+            options.render.width
+        );
+        output.write_all(body_tag.as_bytes())?;
+    }
     let mut writer = WriteWithLast {
         output,
         last_was_lf: Cell::new(true),
@@ -39,6 +48,10 @@ pub fn format_document_with_plugins<'a>(
     f.format(root, false)?;
     if f.footnote_ix > 0 {
         f.output.write_all(b"</ol>\n</section>\n")?;
+    }
+    if options.render.width > 0 {
+        output.write_all(b"</body>\n")?;
+        output.write_all(b"</html>\n")?;
     }
     Ok(())
 }
