@@ -255,7 +255,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Shortcodes
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
-[`ComrakExtensionOptions` struct](https://docs.rs/comrak/newest/comrak/struct.ComrakExtensionOptions.html).
+[`ComrakExtensionOptions` struct](https://docs.rs/comrak/newest/comrak/type.ComrakExtensionOptions.html).
 
 ## Plugins
 
