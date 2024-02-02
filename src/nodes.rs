@@ -5,9 +5,9 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 
 #[cfg(feature = "shortcodes")]
-use crate::parser::shortcodes::NodeShortCode;
+pub use crate::parser::shortcodes::NodeShortCode;
 
-use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]

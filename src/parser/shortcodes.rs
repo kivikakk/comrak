@@ -8,14 +8,17 @@ pub struct NodeShortCode(
 );
 
 impl NodeShortCode {
+    /// Checks whether the input is a valid short code.
     pub fn is_valid(value: &str) -> bool {
         emojis::get_by_shortcode(value).is_some()
     }
 
+    /// Get the underlying shortcode.
     pub fn shortcode(&self) -> &str {
         &self.0
     }
 
+    /// Get the emoji for this short code.
     pub fn emoji(&self) -> &'static str {
         emojis::get_by_shortcode(&self.0).unwrap().as_str()
     }
