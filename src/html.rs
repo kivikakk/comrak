@@ -1,7 +1,8 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
 use crate::nodes::{
-    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeTable, NodeValue, TableAlignment,
+    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeMathBlock, NodeTable,
+    NodeValue, TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::scanners;
@@ -417,6 +418,9 @@ impl<'o> HtmlFormatter<'o> {
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
                                 self.output.write_all(b" ")?;
                             }
+                            NodeValue::Math(NodeMath { ref literal, .. }) => {
+                                self.escape(literal.as_bytes())?;
+                            }
                             _ => (),
                         }
                         plain
@@ -445,6 +449,9 @@ impl<'o> HtmlFormatter<'o> {
                 output.extend_from_slice(literal.as_bytes())
             }
             NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
+            NodeValue::Math(NodeMath { ref literal, .. }) => {
+                output.extend_from_slice(literal.as_bytes())
+            }
             _ => {
                 for n in node.children() {
                     Self::collect_text(n, output);
@@ -582,71 +589,77 @@ impl<'o> HtmlFormatter<'o> {
             },
             NodeValue::CodeBlock(ref ncb) => {
                 if entering {
-                    self.cr()?;
+                    if ncb.info.eq("math") {
+                        self.render_math_block(node, &ncb.literal)?;
+                    } else {
+                        self.cr()?;
 
-                    let mut first_tag = 0;
-                    let mut pre_attributes: HashMap<String, String> = HashMap::new();
-                    let mut code_attributes: HashMap<String, String> = HashMap::new();
-                    let code_attr: String;
+                        let mut first_tag = 0;
+                        let mut pre_attributes: HashMap<String, String> = HashMap::new();
+                        let mut code_attributes: HashMap<String, String> = HashMap::new();
+                        let code_attr: String;
 
-                    let literal = &ncb.literal.as_bytes();
-                    let info = &ncb.info.as_bytes();
+                        let literal = &ncb.literal.as_bytes();
+                        let info = &ncb.info.as_bytes();
 
-                    if !info.is_empty() {
-                        while first_tag < info.len() && !isspace(info[first_tag]) {
-                            first_tag += 1;
-                        }
-
-                        let lang_str = str::from_utf8(&info[..first_tag]).unwrap();
-                        let info_str = str::from_utf8(&info[first_tag..]).unwrap().trim();
-
-                        if self.options.render.github_pre_lang {
-                            pre_attributes.insert(String::from("lang"), lang_str.to_string());
-
-                            if self.options.render.full_info_string && !info_str.is_empty() {
-                                pre_attributes
-                                    .insert(String::from("data-meta"), info_str.trim().to_string());
+                        if !info.is_empty() {
+                            while first_tag < info.len() && !isspace(info[first_tag]) {
+                                first_tag += 1;
                             }
-                        } else {
-                            code_attr = format!("language-{}", lang_str);
-                            code_attributes.insert(String::from("class"), code_attr);
 
-                            if self.options.render.full_info_string && !info_str.is_empty() {
-                                code_attributes
-                                    .insert(String::from("data-meta"), info_str.to_string());
+                            let lang_str = str::from_utf8(&info[..first_tag]).unwrap();
+                            let info_str = str::from_utf8(&info[first_tag..]).unwrap().trim();
+
+                            if self.options.render.github_pre_lang {
+                                pre_attributes.insert(String::from("lang"), lang_str.to_string());
+
+                                if self.options.render.full_info_string && !info_str.is_empty() {
+                                    pre_attributes.insert(
+                                        String::from("data-meta"),
+                                        info_str.trim().to_string(),
+                                    );
+                                }
+                            } else {
+                                code_attr = format!("language-{}", lang_str);
+                                code_attributes.insert(String::from("class"), code_attr);
+
+                                if self.options.render.full_info_string && !info_str.is_empty() {
+                                    code_attributes
+                                        .insert(String::from("data-meta"), info_str.to_string());
+                                }
                             }
                         }
-                    }
 
-                    if self.options.render.sourcepos {
-                        let ast = node.data.borrow();
-                        pre_attributes
-                            .insert("data-sourcepos".to_string(), ast.sourcepos.to_string());
-                    }
-
-                    match self.plugins.render.codefence_syntax_highlighter {
-                        None => {
-                            write_opening_tag(self.output, "pre", pre_attributes)?;
-                            write_opening_tag(self.output, "code", code_attributes)?;
-
-                            self.escape(literal)?;
-
-                            self.output.write_all(b"</code></pre>\n")?
+                        if self.options.render.sourcepos {
+                            let ast = node.data.borrow();
+                            pre_attributes
+                                .insert("data-sourcepos".to_string(), ast.sourcepos.to_string());
                         }
-                        Some(highlighter) => {
-                            highlighter.write_pre_tag(self.output, pre_attributes)?;
-                            highlighter.write_code_tag(self.output, code_attributes)?;
 
-                            highlighter.write_highlighted(
-                                self.output,
-                                match str::from_utf8(&info[..first_tag]) {
-                                    Ok(lang) => Some(lang),
-                                    Err(_) => None,
-                                },
-                                &ncb.literal,
-                            )?;
+                        match self.plugins.render.codefence_syntax_highlighter {
+                            None => {
+                                write_opening_tag(self.output, "pre", pre_attributes)?;
+                                write_opening_tag(self.output, "code", code_attributes)?;
 
-                            self.output.write_all(b"</code></pre>\n")?
+                                self.escape(literal)?;
+
+                                self.output.write_all(b"</code></pre>\n")?
+                            }
+                            Some(highlighter) => {
+                                highlighter.write_pre_tag(self.output, pre_attributes)?;
+                                highlighter.write_code_tag(self.output, code_attributes)?;
+
+                                highlighter.write_highlighted(
+                                    self.output,
+                                    match str::from_utf8(&info[..first_tag]) {
+                                        Ok(lang) => Some(lang),
+                                        Err(_) => None,
+                                    },
+                                    &ncb.literal,
+                                )?;
+
+                                self.output.write_all(b"</code></pre>\n")?
+                            }
                         }
                     }
                 }
@@ -1015,6 +1028,34 @@ impl<'o> HtmlFormatter<'o> {
                     }
                 }
             }
+            NodeValue::Math(NodeMath {
+                ref literal,
+                display_math,
+                ..
+            }) => {
+                if entering {
+                    let mut code_attributes: Vec<(String, String)> = Vec::new();
+                    let style_attr = if display_math { "display" } else { "inline" };
+
+                    code_attributes
+                        .push((String::from("data-math-style"), String::from(style_attr)));
+
+                    if self.options.render.sourcepos {
+                        let ast = node.data.borrow();
+                        code_attributes
+                            .push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+                    }
+
+                    write_opening_tag(self.output, "code", code_attributes)?;
+                    self.escape(literal.as_bytes())?;
+                    self.output.write_all(b"</code>")?;
+                }
+            }
+            NodeValue::MathBlock(NodeMathBlock { ref literal, .. }) => {
+                if entering {
+                    self.render_math_block(node, literal)?;
+                }
+            }
         }
         Ok(false)
     }
@@ -1055,5 +1096,37 @@ impl<'o> HtmlFormatter<'o> {
             )?;
         }
         Ok(true)
+    }
+
+    fn render_math_block<'a>(&mut self, node: &'a AstNode<'a>, literal: &String) -> io::Result<()> {
+        self.cr()?;
+
+        // use vectors to ensure attributes always written in the same order,
+        // for testing stability
+        let mut pre_attributes: Vec<(String, String)> = Vec::new();
+        let mut code_attributes: Vec<(String, String)> = Vec::new();
+        let lang_str = "math";
+
+        if self.options.render.github_pre_lang {
+            pre_attributes.push((String::from("lang"), lang_str.to_string()));
+            pre_attributes.push((String::from("data-math-style"), String::from("display")));
+        } else {
+            let code_attr = format!("language-{}", lang_str);
+            code_attributes.push((String::from("class"), code_attr));
+            code_attributes.push((String::from("data-math-style"), String::from("display")));
+        }
+
+        if self.options.render.sourcepos {
+            let ast = node.data.borrow();
+            pre_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+        }
+
+        write_opening_tag(self.output, "pre", pre_attributes)?;
+        write_opening_tag(self.output, "code", code_attributes)?;
+
+        self.escape(literal.as_bytes())?;
+        self.output.write_all(b"</code></pre>\n")?;
+
+        Ok(())
     }
 }

@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
+pub use crate::parser::math::{NodeMath, NodeMathBlock};
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 /// The core AST node enum.
@@ -126,7 +127,7 @@ pub enum NodeValue {
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
 
-    /// **Inline**.  [Emphasised](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
+    /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
     Emph,
 
@@ -153,6 +154,26 @@ pub enum NodeValue {
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
+
+    /// **Inline**, A math span. Contains raw text which is not parsed as Markdown.
+    /// Dollar math or GitLab math
+    ///
+    /// Inline math $1 + 2$ and $`1 + 2`$
+    ///
+    /// Display math $$1 + 2$$
+    Math(NodeMath),
+
+    /// **Block**. A math block.  Contains raw text which is not parsed as Markdown.
+    /// Dollar math or GitLab math
+    ///
+    /// $$
+    /// 1 + 2
+    /// $$
+    ///
+    /// ```math
+    /// 1 + 2
+    /// ```
+    MathBlock(NodeMathBlock),
 
     /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
     /// lines and contains other **blocks**.
@@ -217,7 +238,7 @@ pub struct NodeTable {
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeCode {
-    /// The URL for the link destination or image source.
+    /// The number of backticks
     pub num_backticks: usize,
 
     /// The content of the inline code span.
@@ -410,6 +431,7 @@ impl NodeValue {
                 | NodeValue::TableCell
                 | NodeValue::TaskItem(..)
                 | NodeValue::MultilineBlockQuote(_)
+                | NodeValue::MathBlock(..)
         )
     }
 
@@ -444,7 +466,10 @@ impl NodeValue {
     pub(crate) fn accepts_lines(&self) -> bool {
         matches!(
             *self,
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
+            NodeValue::Paragraph
+                | NodeValue::Heading(..)
+                | NodeValue::CodeBlock(..)
+                | NodeValue::MathBlock(..)
         )
     }
 
@@ -485,6 +510,9 @@ impl NodeValue {
             NodeValue::ShortCode(_) => "shortcode",
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
             NodeValue::Escaped => "escaped",
+            NodeValue::MathBlock(..) => "math_block",
+            NodeValue::Math(..) => "math",
+            NodeValue::MathBlock(..) => "math_block",
         }
     }
 }
@@ -652,6 +680,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Image(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
+                | NodeValue::Math(..)
         ),
 
         #[cfg(feature = "shortcodes")]
@@ -666,6 +695,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::ShortCode(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
+                | NodeValue::Math(..)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {

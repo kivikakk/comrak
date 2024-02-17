@@ -2,7 +2,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeTable, NodeValue,
+    NodeMath, NodeMathBlock, NodeTable, NodeValue,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -381,6 +381,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Escaped => {
                 // noop - automatic escaping is already being done
             }
+            NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
+            NodeValue::MathBlock(ref nmb) => self.format_math_block(node, nmb, entering),
         };
         true
     }
@@ -408,7 +410,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             && match node.next_sibling() {
                 Some(next_sibling) => matches!(
                     next_sibling.data.borrow().value,
-                    NodeValue::CodeBlock(..) | NodeValue::List(..)
+                    NodeValue::CodeBlock(..) | NodeValue::List(..) | NodeValue::MathBlock(..)
                 ),
                 _ => false,
             }
@@ -775,6 +777,83 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             self.write_all(b"[^").unwrap();
             self.write_all(r).unwrap();
             self.write_all(b"]").unwrap();
+        }
+    }
+
+    fn format_math(&mut self, math: &NodeMath, allow_wrap: bool, entering: bool) {
+        if entering {
+            let literal = math.literal.as_bytes();
+            let start_fence = if math.dollar_math {
+                if math.display_math {
+                    "$$"
+                } else {
+                    "$"
+                }
+            } else {
+                "$`"
+            };
+
+            let end_fence = if start_fence == "$`" {
+                "`$"
+            } else {
+                start_fence
+            };
+
+            self.output(start_fence.as_bytes(), false, Escaping::Literal);
+
+            let all_space = literal
+                .iter()
+                .all(|&c| c == b' ' || c == b'\r' || c == b'\n');
+            let has_edge_space = literal[0] == b' ' || literal[literal.len() - 1] == b' ';
+            let pad = literal.is_empty() || (!all_space && has_edge_space);
+
+            if pad {
+                write!(self, " ").unwrap();
+            }
+
+            self.output(literal, allow_wrap, Escaping::Literal);
+
+            if pad {
+                write!(self, " ").unwrap();
+            }
+
+            self.output(end_fence.as_bytes(), false, Escaping::Literal);
+        }
+    }
+
+    fn format_math_block(&mut self, node: &'a AstNode<'a>, nmb: &NodeMathBlock, entering: bool) {
+        if entering {
+            let literal = nmb.literal.as_bytes();
+            let fence_char = b'$';
+            let fence_length = 2;
+            let first_in_list_item = node.previous_sibling().is_none()
+                && match node.parent() {
+                    Some(parent) => {
+                        matches!(
+                            parent.data.borrow().value,
+                            NodeValue::Item(..) | NodeValue::TaskItem(..)
+                        )
+                    }
+                    _ => false,
+                };
+
+            if !first_in_list_item {
+                self.blankline();
+            }
+
+            for _ in 0..fence_length {
+                write!(self, "{}", fence_char).unwrap();
+            }
+
+            self.cr();
+            self.write_all(literal).unwrap();
+            self.cr();
+
+            for _ in 0..fence_length {
+                write!(self, "{}", fence_char).unwrap();
+            }
+
+            self.blankline();
         }
     }
 }

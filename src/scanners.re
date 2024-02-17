@@ -398,6 +398,28 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
+pub fn open_math_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+/*!re2c
+    [$]{2} / [^$\r\n\x00]*[\r\n] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+pub fn close_math_fence(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+/*!re2c
+    [$]{2} / [ \t]*[\r\n] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 // Returns both the length of the match, and the tasklist character.
 pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
     let mut cursor = 0;

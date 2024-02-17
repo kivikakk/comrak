@@ -219,5 +219,14 @@ fn exercise_full_api() {
             let _: usize = mbc.fence_offset;
         }
         nodes::NodeValue::Escaped => {}
+        nodes::NodeValue::Math(math) => {
+            let _: bool = math.display_math;
+            let _: bool = math.dollar_math;
+            let _: String = math.literal;
+        }
+        nodes::NodeValue::MathBlock(mb) => {
+            let _: usize = mb.fence_offset;
+            let _: String = mb.literal;
+        }
     }
 }
