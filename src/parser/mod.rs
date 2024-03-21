@@ -367,6 +367,48 @@ pub struct ExtensionOptions {
     /// ```
     pub multiline_block_quotes: bool,
 
+    /// Enables math using dollar syntax.
+    ///
+    /// ``` md
+    /// Inline math $1 + 2$ and display math $$x + y$$
+    ///
+    /// $$
+    /// x^2
+    /// $$
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_dollars = true;
+    /// assert_eq!(markdown_to_html("$1 + 2$ and $$x = y$$", &options),
+    ///            "<p><code data-math-style=\"inline\">1 + 2</code> and <code data-math-style=\"display\">x = y</code></p>\n");
+    /// assert_eq!(markdown_to_html("$$\nx^2\n$$\n", &options),
+    ///            "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n");
+    /// ```
+    pub math_dollars: bool,
+
+    /// Enables math using code syntax.
+    ///
+    /// ```` md
+    /// Inline math $`1 + 2`$
+    ///
+    /// ```math
+    /// x^2
+    /// ```
+    /// ````
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_code = true;
+    /// assert_eq!(markdown_to_html("$`1 + 2`$", &options),
+    ///            "<p><code data-math-style=\"inline\">1 + 2</code></p>\n");
+    /// assert_eq!(markdown_to_html("```math\nx^2\n```\n", &options),
+    ///            "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n");
+    /// ```
+    pub math_code: bool,
+
     #[cfg(feature = "shortcodes")]
     #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
     /// Phrases wrapped inside of ':' blocks will be replaced with emojis.
@@ -1140,6 +1182,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
             } else if !indented
+                && self.options.extension.math_dollars
                 && unwrap_into(
                     scanners::open_math_fence(&line[self.first_nonspace..]),
                     &mut matched,

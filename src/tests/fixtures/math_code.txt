@@ -19,78 +19,52 @@ x=y + 2
 </code></pre>
 ````````````````````````````````
 
-In inline math, the opening `$` must not be followed by
-a whitespace, and the closing `$` must not be
-preceeded by whitespace.
+
+In inline math, it behaves just like inline code.
 
 ```````````````````````````````` example
-This is not math: 2000$.
-And neither is this $ 4 $.
-Or this $4
-$.
+This is math:$`2000`$.
 .
-<p>This is not math: 2000$.
-And neither is this $ 4 $.
-Or this $4
-$.</p>
+<p>This is math:<code data-math-style="inline">2000</code>.</p>
 ````````````````````````````````
 
-Display math delimiters can be surrounded by whitespace:
-
-```````````````````````````````` example
-This is display math:
-$$
-e=mc^2
-$$
-.
-<p>This is display math:</p>
-<pre><code class="language-math" data-math-style="display">e=mc^2
-</code></pre>
-````````````````````````````````
 
 Note that math can contain embedded math.  In scanning
-for a closing delimiter, we skip material in balanced
+for a closing delimiter, we do not need to skip material in balanced
 curly braces:
 
-```````````````````````````````` example disabled
+```````````````````````````````` example
 This is display math:
-$$
+
+```math
 \text{Hello $x^2$}
-$$
+```
 And this is inline math:
-$\text{Hello $x$ there!}$
+$`\text{Hello $x$ there!}`$
 .
-<p>This is display math:
-<span class="math display">\[
-\text{Hello $x^2$}
-\]</span>
-And this is inline math:
-<span class="math inline">\(\text{Hello $x$ there!}\)</span></p>
+<p>This is display math:</p>
+<pre><code class="language-math" data-math-style="display">\text{Hello $x^2$}
+</code></pre>
+<p>And this is inline math:
+<code data-math-style="inline">\text{Hello $x$ there!}</code></p>
 ````````````````````````````````
 
 
-To avoid treating currency signs as math delimiters,
-one may occasionally have to backslash-escape them:
+Dollar signs not required to be backslashed. It may be
+required to render the math properly, but it's not required
+for parsing:
 
 ```````````````````````````````` example
-The cost is between \$10 and 30$.
+$`\text{$}`$
 .
-<p>The cost is between $10 and 30$.</p>
-````````````````````````````````
-
-Dollar signs must also be backslash-escaped if they
-occur within math:
-
-```````````````````````````````` example
-$\text{\$}$
-.
-<p><code data-math-style="inline">\text{\$}</code></p>
+<p><code data-math-style="inline">\text{$}</code></p>
 ````````````````````````````````
 
 Everything inside the math construction is treated
 as math, and not given its normal commonmark meaning.
+
 ```````````````````````````````` example
-$b<a>c$
+$`b<a>c`$
 .
 <p><code data-math-style="inline">b&lt;a&gt;c</code></p>
 ````````````````````````````````

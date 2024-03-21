@@ -84,6 +84,8 @@ fn dump(source: &str) -> io::Result<()> {
         .footnotes(true)
         .description_lists(true)
         .multiline_block_quotes(true)
+        .math_dollars(true)
+        .math_code(true)
         .build()
         .unwrap();
 
