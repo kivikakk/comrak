@@ -12,6 +12,7 @@ mod description_lists;
 mod footnotes;
 mod fuzz;
 mod header_ids;
+mod math;
 mod multiline_block_quotes;
 mod options;
 mod pathological;
@@ -119,6 +120,8 @@ macro_rules! html_opts {
                 footnotes: true,
                 description_lists: true,
                 multiline_block_quotes: true,
+                math_dollars: true,
+                math_code: true,
                 front_matter_delimiter: Some("---".to_string()),
                 shortcodes: true,
             },

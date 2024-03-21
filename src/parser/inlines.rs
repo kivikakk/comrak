@@ -216,7 +216,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
-            '$' => Some(self.handle_dollars()),
+            '$' if self.options.extension.math_dollars || self.options.extension.math_code => {
+                Some(self.handle_dollars())
+            }
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -628,6 +630,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         opendollarlength: usize,
         code_math: bool,
     ) -> Option<usize> {
+        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
+            return None;
+        }
+
         if opendollarlength > MAX_MATH_DOLLARS {
             return None;
         }
@@ -660,7 +666,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     self.pos += 1;
                     return Some(self.pos);
                 } else {
-                    // self.pos += 1;
+                    self.pos += 1;
                 }
             } else {
                 // dollar signs must also be backslash-escaped if they occur within math
@@ -690,7 +696,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let mut code_math = false;
 
         // check for code math
-        if opendollars == 1 && self.peek_char().map_or(false, |&c| c == b'`') {
+        if opendollars == 1
+            && self.options.extension.math_code
+            && self.peek_char().map_or(false, |&c| c == b'`')
+        {
             code_math = true;
             self.pos += 1;
         }
