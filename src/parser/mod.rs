@@ -1063,15 +1063,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     }
                 }
                 NodeValue::MathBlock(..) => {
-                    // if !math::parse_math_block_prefix(
-                    //     self,
-                    //     line,
-                    //     container,
-                    //     ast,
-                    //     &mut should_continue,
-                    // ) {
-                    //     return (false, container, should_continue);
-                    // }
                     if !self.parse_math_block_prefix(line, container, ast, &mut should_continue) {
                         return (false, container, should_continue);
                     }

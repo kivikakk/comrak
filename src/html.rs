@@ -1034,21 +1034,7 @@ impl<'o> HtmlFormatter<'o> {
                 ..
             }) => {
                 if entering {
-                    let mut code_attributes: Vec<(String, String)> = Vec::new();
-                    let style_attr = if display_math { "display" } else { "inline" };
-
-                    code_attributes
-                        .push((String::from("data-math-style"), String::from(style_attr)));
-
-                    if self.options.render.sourcepos {
-                        let ast = node.data.borrow();
-                        code_attributes
-                            .push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
-                    }
-
-                    write_opening_tag(self.output, "code", code_attributes)?;
-                    self.escape(literal.as_bytes())?;
-                    self.output.write_all(b"</code>")?;
+                    self.render_math_inline(node, literal, display_math)?;
                 }
             }
             NodeValue::MathBlock(NodeMathBlock { ref literal, .. }) => {
@@ -1096,6 +1082,29 @@ impl<'o> HtmlFormatter<'o> {
             )?;
         }
         Ok(true)
+    }
+
+    fn render_math_inline<'a>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        literal: &String,
+        display_math: bool,
+    ) -> io::Result<()> {
+        let mut code_attributes: Vec<(String, String)> = Vec::new();
+        let style_attr = if display_math { "display" } else { "inline" };
+
+        code_attributes.push((String::from("data-math-style"), String::from(style_attr)));
+
+        if self.options.render.sourcepos {
+            let ast = node.data.borrow();
+            code_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+        }
+
+        write_opening_tag(self.output, "code", code_attributes)?;
+        self.escape(literal.as_bytes())?;
+        self.output.write_all(b"</code>")?;
+
+        Ok(())
     }
 
     fn render_math_block<'a>(&mut self, node: &'a AstNode<'a>, literal: &String) -> io::Result<()> {

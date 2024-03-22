@@ -623,25 +623,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
     }
 
-    pub fn scan_to_closing_dollar(
-        &mut self,
-        opendollarlength: usize,
-        code_math: bool,
-    ) -> Option<usize> {
-        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
-            return None;
-        }
-
-        if opendollarlength > MAX_MATH_DOLLARS {
-            return None;
-        }
-
-        if opendollarlength == 2 && !self.options.extension.math_dollars {
+    pub fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
+        if !(self.options.extension.math_dollars) || opendollarlength > MAX_MATH_DOLLARS {
             return None;
         }
 
         // space not allowed after initial $
-        if opendollarlength == 1 && !code_math && self.peek_char().map_or(false, |&c| isspace(c)) {
+        if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isspace(c)) {
             return None;
         }
 
@@ -655,39 +643,53 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             }
 
             // space not allowed before ending $
-            if opendollarlength == 1 && !code_math {
+            if opendollarlength == 1 {
                 let c = self.input[self.pos - 1];
                 if isspace(c) {
                     return None;
                 }
             }
 
-            if code_math {
-                let c = self.input[self.pos - 1];
-                if c == b'`' {
-                    self.pos += 1;
-                    return Some(self.pos);
-                } else {
-                    self.pos += 1;
-                }
+            // dollar signs must also be backslash-escaped if they occur within math
+            let c = self.input[self.pos - 1];
+            if opendollarlength == 1 && c == (b'\\') {
+                self.pos += 1;
+                continue;
+            }
+
+            let numdollars = self.take_while(b'$');
+
+            // ending $ can't be followed by a digit
+            if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
+                return None;
+            }
+
+            if numdollars == opendollarlength {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    pub fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
+        if !self.options.extension.math_code {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'$') {
+                self.pos += 1;
+            }
+
+            if self.pos >= self.input.len() {
+                return None;
+            }
+
+            let c = self.input[self.pos - 1];
+            if c == b'`' {
+                self.pos += 1;
+                return Some(self.pos);
             } else {
-                // dollar signs must also be backslash-escaped if they occur within math
-                let c = self.input[self.pos - 1];
-                if opendollarlength == 1 && c == (b'\\') {
-                    self.pos += 1;
-                    continue;
-                }
-
-                let numdollars = self.take_while(b'$');
-
-                // ending $ can't be followed by a digit
-                if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
-                    return None;
-                }
-
-                if numdollars == opendollarlength {
-                    return Some(self.pos);
-                }
+                self.pos += 1;
             }
         }
     }
@@ -708,7 +710,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             }
 
             let startpos = self.pos;
-            let endpos = self.scan_to_closing_dollar(opendollars, code_math);
+            let endpos: Option<usize> = if code_math {
+                self.scan_to_closing_code_dollar()
+            } else {
+                self.scan_to_closing_dollar(opendollars)
+            };
 
             match endpos {
                 None => {
@@ -724,8 +730,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         display_math: opendollars == 2,
                         literal: String::from_utf8(buf).unwrap(),
                     };
-                    let node =
-                        self.make_inline(NodeValue::Math(math), startpos, endpos - fence_length - 1);
+                    let node = self.make_inline(
+                        NodeValue::Math(math),
+                        startpos,
+                        endpos - fence_length - 1,
+                    );
                     self.adjust_node_newlines(node, endpos - startpos, fence_length);
                     node
                 }

@@ -824,7 +824,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     fn format_math_block(&mut self, node: &'a AstNode<'a>, nmb: &NodeMathBlock, entering: bool) {
         if entering {
             let literal = nmb.literal.as_bytes();
-            let fence_char = b'$';
+            let fence_char = "$";
             let fence_length = 2;
             let first_in_list_item = node.previous_sibling().is_none()
                 && match node.parent() {

@@ -36,10 +36,10 @@ if [ x"$SPEC" = "xtrue" ]; then
 		|| failed=1
 	python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/multiline_blockquote.txt "$PROGRAM_ARG -e multiline-block-quotes" \
 		|| failed=1
-	python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_dollars.txt "$PROGRAM_ARG -e math-dollars" \
-		|| failed=1
-	python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_code.txt "$PROGRAM_ARG -e math-code" \
-		|| failed=1
+  python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_dollars.txt "$PROGRAM_ARG -e math-dollars" \
+    || failed=1
+  python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_code.txt "$PROGRAM_ARG -e math-code" \
+    || failed=1
 
 	python3 spec_tests.py --no-normalize --spec regression.txt "$PROGRAM_ARG" \
 		|| failed=1
