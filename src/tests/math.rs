@@ -93,34 +93,29 @@ fn math_unrecognized_syntax(markdown: &str, html: &str) {
     );
 }
 
-// #[test]
-// fn sourcepos() {
-//     assert_ast_match!(
-//         [extension.multiline_block_quotes],
-//         "- item one\n"
-//         "\n"
-//         "  >>>\n"
-//         "  Paragraph 1\n"
-//         "  >>>\n"
-//         "- item two\n",
-//         (document (1:1-6:10) [
-//             (list (1:1-6:10) [
-//                 (item (1:1-5:5) [      // (description_item (1:1-3:4) [
-//                     (paragraph (1:3-1:10) [
-//                         (text (1:3-1:10) "item one")
-//                     ])
-//                     (multiline_block_quote (3:3-5:5) [
-//                         (paragraph (4:3-4:13) [
-//                             (text (4:3-4:13) "Paragraph 1")
-//                         ])
-//                     ])
-//                 ])
-//                 (item (6:1-6:10) [      // (description_item (5:1-7:6) [
-//                     (paragraph (6:3-6:10) [
-//                         (text (6:3-6:10) "item two")
-//                     ])
-//                 ])
-//             ])
-//         ])
-//     );
-// }
+#[test]
+fn sourcepos() {
+    assert_ast_match!(
+        [extension.math_dollars, extension.math_code],
+        "$x^2$ and $$y^2$$ and $`z^2`$\n"
+        "\n"
+        "$$\n"
+        "a^2\n"
+        "$$\n"
+        "\n"
+        "```math\n"
+        "b^2\n"
+        "```\n",
+        (document (1:1-9:3) [
+            (paragraph (1:1-1:29) [
+                (math (1:2-1:4))
+                (text (1:6-1:10) " and ")
+                (math (1:13-1:15))
+                (text (1:18-1:22) " and ")
+                (math (1:25-1:27))
+            ])
+            (math_block (3:1-5:2))
+            (code_block (7:1-9:3))
+        ])
+    );
+}

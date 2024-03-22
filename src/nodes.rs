@@ -155,8 +155,8 @@ pub enum NodeValue {
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
 
-    /// **Inline**, A math span. Contains raw text which is not parsed as Markdown.
-    /// Dollar math or GitLab math
+    /// **Inline**. A math span. Contains raw text which is not parsed as Markdown.
+    /// Dollar math or code math
     ///
     /// Inline math $1 + 2$ and $`1 + 2`$
     ///
@@ -164,7 +164,7 @@ pub enum NodeValue {
     Math(NodeMath),
 
     /// **Block**. A math block.  Contains raw text which is not parsed as Markdown.
-    /// Dollar math or GitLab math
+    /// Dollar math or code math
     ///
     /// $$
     /// 1 + 2
