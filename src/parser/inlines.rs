@@ -216,9 +216,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
-            '$' if self.options.extension.math_dollars || self.options.extension.math_code => {
-                Some(self.handle_dollars())
-            }
+            '$' => Some(self.handle_dollars()),
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -638,6 +636,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             return None;
         }
 
+        if opendollarlength == 2 && !self.options.extension.math_dollars {
+            return None;
+        }
+
         // space not allowed after initial $
         if opendollarlength == 1 && !code_math && self.peek_char().map_or(false, |&c| isspace(c)) {
             return None;
@@ -692,40 +694,45 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
     pub fn handle_dollars(&mut self) -> &'a AstNode<'a> {
-        let opendollars = self.take_while(b'$');
-        let mut code_math = false;
+        if self.options.extension.math_dollars || self.options.extension.math_code {
+            let opendollars = self.take_while(b'$');
+            let mut code_math = false;
 
-        // check for code math
-        if opendollars == 1
-            && self.options.extension.math_code
-            && self.peek_char().map_or(false, |&c| c == b'`')
-        {
-            code_math = true;
+            // check for code math
+            if opendollars == 1
+                && self.options.extension.math_code
+                && self.peek_char().map_or(false, |&c| c == b'`')
+            {
+                code_math = true;
+                self.pos += 1;
+            }
+
+            let startpos = self.pos;
+            let endpos = self.scan_to_closing_dollar(opendollars, code_math);
+
+            match endpos {
+                None => {
+                    self.pos = startpos;
+                    self.make_inline(NodeValue::Text("$".repeat(opendollars)), self.pos, self.pos)
+                }
+                Some(endpos) => {
+                    let fence_length = if code_math { 2 } else { opendollars };
+                    let buf = &self.input[startpos..endpos - fence_length];
+                    let buf = strings::normalize_code(buf);
+                    let math = NodeMath {
+                        dollar_math: !code_math,
+                        display_math: opendollars == 2,
+                        literal: String::from_utf8(buf).unwrap(),
+                    };
+                    let node =
+                        self.make_inline(NodeValue::Math(math), startpos, endpos - fence_length - 1);
+                    self.adjust_node_newlines(node, endpos - startpos, fence_length);
+                    node
+                }
+            }
+        } else {
             self.pos += 1;
-        }
-
-        let startpos = self.pos;
-        let endpos = self.scan_to_closing_dollar(opendollars, code_math);
-
-        match endpos {
-            None => {
-                self.pos = startpos;
-                self.make_inline(NodeValue::Text("$".repeat(opendollars)), self.pos, self.pos)
-            }
-            Some(endpos) => {
-                let fence_length = if code_math { 2 } else { opendollars };
-                let buf = &self.input[startpos..endpos - fence_length];
-                let buf = strings::normalize_code(buf);
-                let math = NodeMath {
-                    dollar_math: !code_math,
-                    display_math: opendollars == 2,
-                    literal: String::from_utf8(buf).unwrap(),
-                };
-                let node =
-                    self.make_inline(NodeValue::Math(math), startpos, endpos - fence_length - 1);
-                self.adjust_node_newlines(node, endpos - startpos, fence_length);
-                node
-            }
+            self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
         }
     }
 

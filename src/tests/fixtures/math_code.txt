@@ -68,3 +68,11 @@ $`b<a>c`$
 .
 <p><code data-math-style="inline">b&lt;a&gt;c</code></p>
 ````````````````````````````````
+
+Double dollar signs are not supported
+
+```````````````````````````````` example
+$$`1 + 2`$$
+.
+<p>$$<code>1 + 2</code>$$</p>
+````````````````````````````````
