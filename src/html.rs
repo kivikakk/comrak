@@ -590,7 +590,7 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::CodeBlock(ref ncb) => {
                 if entering {
                     if ncb.info.eq("math") {
-                        self.render_math_block(node, &ncb.literal)?;
+                        self.render_math_code_block(node, &ncb.literal)?;
                     } else {
                         self.cr()?;
 
@@ -1031,15 +1031,16 @@ impl<'o> HtmlFormatter<'o> {
             NodeValue::Math(NodeMath {
                 ref literal,
                 display_math,
+                dollar_math,
                 ..
             }) => {
                 if entering {
-                    self.render_math_inline(node, literal, display_math)?;
+                    self.render_math_inline(node, literal, display_math, dollar_math)?;
                 }
             }
             NodeValue::MathBlock(NodeMathBlock { ref literal, .. }) => {
                 if entering {
-                    self.render_math_block(node, literal)?;
+                    self.render_math_dollar_block(node, literal)?;
                 }
             }
         }
@@ -1084,30 +1085,68 @@ impl<'o> HtmlFormatter<'o> {
         Ok(true)
     }
 
+    // Renders a math dollar inline, `$...$` and `$$...$$` using `<span>` to be similar
+    // to other renderers.
     fn render_math_inline<'a>(
         &mut self,
         node: &'a AstNode<'a>,
         literal: &String,
         display_math: bool,
+        dollar_math: bool,
     ) -> io::Result<()> {
-        let mut code_attributes: Vec<(String, String)> = Vec::new();
+        let mut tag_attributes: Vec<(String, String)> = Vec::new();
         let style_attr = if display_math { "display" } else { "inline" };
+        let tag: &str = if dollar_math { "span" } else { "code" };
 
-        code_attributes.push((String::from("data-math-style"), String::from(style_attr)));
+        tag_attributes.push((String::from("data-math-style"), String::from(style_attr)));
 
         if self.options.render.sourcepos {
             let ast = node.data.borrow();
-            code_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+            tag_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
         }
 
-        write_opening_tag(self.output, "code", code_attributes)?;
+        write_opening_tag(self.output, tag, tag_attributes)?;
         self.escape(literal.as_bytes())?;
-        self.output.write_all(b"</code>")?;
+        write!(self.output, "</{}>", tag)?;
 
         Ok(())
     }
 
-    fn render_math_block<'a>(&mut self, node: &'a AstNode<'a>, literal: &String) -> io::Result<()> {
+    // Renders a math dollar block, `$$\n...\n$$` using `<p><span>` to be similar
+    // to other renderers.
+    fn render_math_dollar_block<'a>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        literal: &String,
+    ) -> io::Result<()> {
+        self.cr()?;
+
+        // use vectors to ensure attributes always written in the same order,
+        // for testing stability
+        let mut p_attributes: Vec<(String, String)> = Vec::new();
+        let span_attributes: Vec<(String, String)> =
+            vec![(String::from("data-math-style"), String::from("display"))];
+
+        if self.options.render.sourcepos {
+            let ast = node.data.borrow();
+            p_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+        }
+
+        write_opening_tag(self.output, "p", p_attributes)?;
+        write_opening_tag(self.output, "span", span_attributes)?;
+
+        self.escape(literal.as_bytes())?;
+        self.output.write_all(b"</span></p>\n")?;
+
+        Ok(())
+    }
+
+    // Renders a math code block, ```` ```math ```` using `<pre><code>`
+    fn render_math_code_block<'a>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        literal: &String,
+    ) -> io::Result<()> {
         self.cr()?;
 
         // use vectors to ensure attributes always written in the same order,
