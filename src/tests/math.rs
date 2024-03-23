@@ -22,8 +22,8 @@ use ntest::test_case;
 )]
 fn math_dollars_inline(markdown: &str, html: &str) {
     let result = html
-        .replace("<math>", "<code data-math-style=\"inline\">")
-        .replace("</math>", "</code>");
+        .replace("<math>", "<span data-math-style=\"inline\">")
+        .replace("</math>", "</span>");
 
     html_opts!([extension.math_dollars], markdown, &result);
 }
@@ -48,8 +48,17 @@ fn math_dollars_inline(markdown: &str, html: &str) {
 )]
 fn math_dollars_inline_display(markdown: &str, html: &str) {
     let result = html
-        .replace("<math>", "<code data-math-style=\"display\">")
-        .replace("</math>", "</code>");
+        .replace("<math>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+}
+
+#[test_case("$$\n2+2\n4+4\n$$", "<p><math>2+2\n4+4\n</math></p>\n")]
+fn math_dollars_block(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
 
     html_opts!([extension.math_dollars], markdown, &result);
 }
@@ -73,18 +82,30 @@ fn math_code_inline(markdown: &str, html: &str) {
     html_opts!([extension.math_code], markdown, &result);
 }
 
+#[test_case("```math\n2+2\n4+4\n```", "<pre><math>2+2\n4+4\n</math></pre>\n")]
+fn math_code_block(markdown: &str, html: &str) {
+    let result = html
+        .replace(
+            "<math>",
+            "<code class=\"language-math\" data-math-style=\"display\">",
+        )
+        .replace("</math>", "</code>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+}
+
 #[test_case("`2+2`", "<p><code>2+2</code></p>\n")]
-// #[test_case("test $`2+2` test", "<p>test $<code>2+2</code> test</p>\n")]
 #[test_case("test `2+2`$ test", "<p>test <code>2+2</code>$ test</p>\n")]
 #[test_case("$20,000 and $30,000", "<p>$20,000 and $30,000</p>\n")]
 #[test_case("$20,000 in $USD", "<p>$20,000 in $USD</p>\n")]
 #[test_case("$ a^2 $", "<p>$ a^2 $</p>\n")]
-// #[test_case("test $$\n2+2\n$$", "<p>test $$\n2+2\n$$</p>\n")]
 #[test_case("$\n$", "<p>$\n$</p>\n")]
 #[test_case("$$$", "<p>$$$</p>\n")]
 #[test_case("`$1+2$`", "<p><code>$1+2$</code></p>\n")]
 #[test_case("`$$1+2$$`", "<p><code>$$1+2$$</code></p>\n")]
 #[test_case("`$\\$1+2$$`", "<p><code>$\\$1+2$$</code></p>\n")]
+// #[test_case("test $`2+2` test", "<p>test $<code>2+2</code> test</p>\n")]
+// #[test_case("test $$\n2+2\n$$", "<p>test $$\n2+2\n$$</p>\n")]
 fn math_unrecognized_syntax(markdown: &str, html: &str) {
     html_opts!(
         [extension.math_dollars, extension.math_code],

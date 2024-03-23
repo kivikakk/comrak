@@ -382,9 +382,9 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.math_dollars = true;
     /// assert_eq!(markdown_to_html("$1 + 2$ and $$x = y$$", &options),
-    ///            "<p><code data-math-style=\"inline\">1 + 2</code> and <code data-math-style=\"display\">x = y</code></p>\n");
+    ///            "<p><span data-math-style=\"inline\">1 + 2</span> and <span data-math-style=\"display\">x = y</span></p>\n");
     /// assert_eq!(markdown_to_html("$$\nx^2\n$$\n", &options),
-    ///            "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n");
+    ///            "<p><span data-math-style=\"display\">x^2\n</span></p>\n");
     /// ```
     pub math_dollars: bool,
 

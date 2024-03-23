@@ -12,13 +12,13 @@ goes between `$$`:
 Let $x$ and $y$ be integers such that
 $$x=y + 2$$
 .
-<p>Let <code data-math-style="inline">x</code> and <code data-math-style="inline">y</code> be integers such that
-<code data-math-style="display">x=y + 2</code></p>
+<p>Let <span data-math-style="inline">x</span> and <span data-math-style="inline">y</span> be integers such that
+<span data-math-style="display">x=y + 2</span></p>
 ````````````````````````````````
 
 In inline math, the opening `$` must not be followed by
 a whitespace, and the closing `$` must not be
-preceeded by whitespace.
+preceded by whitespace.
 
 ```````````````````````````````` example
 This is not math: 2000$.
@@ -41,8 +41,8 @@ e=mc^2
 $$
 .
 <p>This is display math:</p>
-<pre><code class="language-math" data-math-style="display">e=mc^2
-</code></pre>
+<p><span data-math-style="display">e=mc^2
+</span></p>
 ````````````````````````````````
 
 Note that math can contain embedded math.  In scanning
@@ -65,7 +65,6 @@ And this is inline math:
 <span class="math inline">\(\text{Hello $x$ there!}\)</span></p>
 ````````````````````````````````
 
-
 To avoid treating currency signs as math delimiters,
 one may occasionally have to backslash-escape them:
 
@@ -81,13 +80,32 @@ occur within math:
 ```````````````````````````````` example
 $\text{\$}$
 .
-<p><code data-math-style="inline">\text{\$}</code></p>
+<p><span data-math-style="inline">\text{\$}</span></p>
 ````````````````````````````````
 
 Everything inside the math construction is treated
 as math, and not given its normal commonmark meaning.
+
 ```````````````````````````````` example
 $b<a>c$
 .
-<p><code data-math-style="inline">b&lt;a&gt;c</code></p>
+<p><span data-math-style="inline">b&lt;a&gt;c</span></p>
+````````````````````````````````
+
+Block math can directly follow a paragraph.
+
+```````````````````````````````` example
+This is inline display math
+$$1+2$$
+
+This is block math
+$$
+1+2
+$$
+.
+<p>This is inline display math
+<span data-math-style="display">1+2</span></p>
+<p>This is block math</p>
+<p><span data-math-style="display">1+2
+</span></p>
 ````````````````````````````````
