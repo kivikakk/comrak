@@ -137,6 +137,7 @@ macro_rules! html_opts {
                 escape: true,
                 list_style: $crate::ListStyleType::Star,
                 sourcepos: true,
+                escaped_char_spans: true,
             },
         });
     }

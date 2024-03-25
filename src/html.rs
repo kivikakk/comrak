@@ -1004,6 +1004,17 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</blockquote>\n")?;
                 }
             }
+            NodeValue::Escaped => {
+                if self.options.render.escaped_char_spans {
+                    if entering {
+                        self.output.write_all(b"<span data-escaped-char")?;
+                        self.render_sourcepos(node)?;
+                        self.output.write_all(b">")?;
+                    } else {
+                        self.output.write_all(b"</span>")?;
+                    }
+                }
+            }
         }
         Ok(false)
     }

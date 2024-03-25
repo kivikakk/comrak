@@ -252,6 +252,9 @@ impl<'o> XmlFormatter<'o> {
                     self.escape(nsc.shortcode().as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
+                NodeValue::Escaped => {
+                    // noop
+                }
             }
 
             if node.first_child().is_some() {

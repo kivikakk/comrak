@@ -64,6 +64,7 @@ fn exercise_full_api() {
     render.escape(false);
     render.list_style(ListStyleType::Dash);
     render.sourcepos(false);
+    render.escaped_char_spans(false);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
@@ -217,5 +218,6 @@ fn exercise_full_api() {
             let _: usize = mbc.fence_length;
             let _: usize = mbc.fence_offset;
         }
+        nodes::NodeValue::Escaped => {}
     }
 }
