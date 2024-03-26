@@ -100,7 +100,7 @@ Options:
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists, math-code, math-dollars, multiline-block-quotes]
+          footnotes, description-lists, multiline-block-quotes, math-dollars, math-code]
 
   -t, --to <FORMAT>
           Specify output format
