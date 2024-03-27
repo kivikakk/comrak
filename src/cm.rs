@@ -378,6 +378,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 self.format_footnote_reference(nfr.name.as_bytes(), entering)
             }
             NodeValue::MultilineBlockQuote(..) => self.format_block_quote(entering),
+            NodeValue::Escaped => {
+                // noop - automatic escaping is already being done
+            }
         };
         true
     }

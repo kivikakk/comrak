@@ -583,6 +583,23 @@ pub struct RenderOptions {
     /// assert!(xml.contains("<emph sourcepos=\"1:7-1:13\">"));
     /// ```
     pub sourcepos: bool,
+
+    /// Wrap escaped characters in a `<span>` to allow any
+    /// post-processing to recognize them.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "Notify user \\@example";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>Notify user @example</p>\n");
+    ///
+    /// options.render.escaped_char_spans = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>Notify user <span data-escaped-char>@</span>example</p>\n");
+    /// ```
+    pub escaped_char_spans: bool,
 }
 
 #[non_exhaustive]

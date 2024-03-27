@@ -929,13 +929,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn handle_backslash(&mut self) -> &'a AstNode<'a> {
         let startpos = self.pos;
         self.pos += 1;
+
         if self.peek_char().map_or(false, |&c| ispunct(c)) {
+            let inl;
             self.pos += 1;
-            self.make_inline(
+
+            let inline_text = self.make_inline(
                 NodeValue::Text(String::from_utf8(vec![self.input[self.pos - 1]]).unwrap()),
                 self.pos - 2,
                 self.pos - 1,
-            )
+            );
+
+            if self.options.render.escaped_char_spans {
+                inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
+                inl.append(inline_text);
+                inl
+            } else {
+                inline_text
+            }
         } else if !self.eof() && self.skip_line_end() {
             self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1)
         } else {

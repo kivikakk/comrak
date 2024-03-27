@@ -37,6 +37,7 @@ fuzz_target!(|s: &str| {
     render.escape = true;
     render.list_style = ListStyleType::Star;
     render.sourcepos = true;
+    render.escaped_char_spans = true;
 
     markdown_to_html(
         s,

@@ -166,6 +166,9 @@ pub enum NodeValue {
     /// >>>
     /// ```
     MultilineBlockQuote(NodeMultilineBlockQuote),
+
+    /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
+    Escaped,
 }
 
 /// Alignment of a single table cell.
@@ -481,6 +484,7 @@ impl NodeValue {
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(_) => "shortcode",
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
+            NodeValue::Escaped => "escaped",
         }
     }
 }

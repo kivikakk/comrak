@@ -243,6 +243,7 @@ struct FuzzRenderOptions {
     escape: bool,
     list_style: ListStyleType,
     sourcepos: bool,
+    escaped_char_spans: bool,
 }
 
 impl FuzzRenderOptions {
@@ -256,6 +257,7 @@ impl FuzzRenderOptions {
         render.escape = self.escape;
         render.list_style = self.list_style;
         render.sourcepos = self.sourcepos;
+        render.escaped_char_spans = self.escaped_char_spans;
         render
     }
 }
