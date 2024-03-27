@@ -193,6 +193,8 @@ struct FuzzExtensionOptions {
     footnotes: bool,
     description_lists: bool,
     multiline_block_quotes: bool,
+    math_dollars: bool,
+    math_code: bool,
     shortcodes: bool,
 }
 
@@ -208,6 +210,8 @@ impl FuzzExtensionOptions {
         extension.footnotes = self.footnotes;
         extension.description_lists = self.description_lists;
         extension.multiline_block_quotes = self.multiline_block_quotes;
+        extension.math_dollars = self.math_dollars;
+        extension.math_code = self.math_code;
         extension.shortcodes = self.shortcodes;
         extension.front_matter_delimiter = None;
         extension.header_ids = None;
