@@ -9,6 +9,7 @@ mod autolink;
 mod commonmark;
 mod core;
 mod description_lists;
+mod escaped_char_spans;
 mod footnotes;
 mod fuzz;
 mod header_ids;
