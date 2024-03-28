@@ -716,15 +716,43 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.scan_to_closing_dollar(opendollars)
             };
 
+            let fence_length = if code_math { 2 } else { opendollars };
+            let endpos: Option<usize> = match endpos {
+                Some(epos) => {
+                    if epos - startpos + fence_length < fence_length * 2 + 1 {
+                        None
+                    } else {
+                        endpos
+                    }
+                }
+                None => endpos,
+            };
+
             match endpos {
                 None => {
-                    self.pos = startpos;
-                    self.make_inline(NodeValue::Text("$".repeat(opendollars)), self.pos, self.pos)
+                    if code_math {
+                        self.pos = startpos - 1;
+                        self.make_inline(
+                            NodeValue::Text("$".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        )
+                    } else {
+                        self.pos = startpos;
+                        self.make_inline(
+                            NodeValue::Text("$".repeat(opendollars)),
+                            self.pos,
+                            self.pos,
+                        )
+                    }
                 }
                 Some(endpos) => {
-                    let fence_length = if code_math { 2 } else { opendollars };
                     let buf = &self.input[startpos..endpos - fence_length];
-                    let buf = strings::normalize_code(buf);
+                    let buf: Vec<u8> = if code_math || opendollars == 1 {
+                        strings::normalize_code(buf)
+                    } else {
+                        buf.to_vec()
+                    };
                     let math = NodeMath {
                         dollar_math: !code_math,
                         display_math: opendollars == 2,
