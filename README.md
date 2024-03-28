@@ -91,6 +91,9 @@ Options:
       --escape
           Escape raw HTML instead of clobbering it
 
+      --escaped-char-spans
+          Wrap escaped characters in span tags
+
   -e, --extension <EXTENSION>
           Specify extension name(s) to use
           

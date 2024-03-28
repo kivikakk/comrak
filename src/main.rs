@@ -81,6 +81,10 @@ struct Cli {
     #[arg(long)]
     escape: bool,
 
+    /// Wrap escaped characters in span tags
+    #[arg(long)]
+    escaped_char_spans: bool,
+
     /// Specify extension name(s) to use
     ///
     /// Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
@@ -237,6 +241,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .escape(cli.escape)
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
+        .escaped_char_spans(cli.escaped_char_spans)
         .build()?;
 
     let options = Options {
