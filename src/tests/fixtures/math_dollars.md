@@ -1,7 +1,7 @@
 ---
 title: Dollar Math
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md
-...
+---
 
 # TeX Math
 
@@ -40,8 +40,9 @@ $$
 e=mc^2
 $$
 .
-<p>This is display math:</p>
-<p><span data-math-style="display">e=mc^2
+<p>This is display math:
+<span data-math-style="display">
+e=mc^2
 </span></p>
 ````````````````````````````````
 
@@ -105,7 +106,8 @@ $$
 .
 <p>This is inline display math
 <span data-math-style="display">1+2</span></p>
-<p>This is block math</p>
-<p><span data-math-style="display">1+2
+<p>This is block math
+<span data-math-style="display">
+1+2
 </span></p>
 ````````````````````````````````

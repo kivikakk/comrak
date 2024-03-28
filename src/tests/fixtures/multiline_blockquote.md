@@ -3,7 +3,7 @@ title: GitLab Flavored Markdown Spec
 version: 0.1
 date: '2023-12-18'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
-...
+---
 
 ## Multi-line Blockquotes
 

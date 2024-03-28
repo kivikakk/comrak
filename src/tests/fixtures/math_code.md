@@ -4,7 +4,7 @@ version: 0.1
 date: '2024-03-22'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
 based_on: https://docs.gitlab.com/ee/user/markdown.html#math
-...
+---
 
 # TeX Math
 
