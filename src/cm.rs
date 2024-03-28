@@ -800,23 +800,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             };
 
             self.output(start_fence.as_bytes(), false, Escaping::Literal);
-
-            let all_space = literal
-                .iter()
-                .all(|&c| c == b' ' || c == b'\r' || c == b'\n');
-            let has_edge_space = literal[0] == b' ' || literal[literal.len() - 1] == b' ';
-            let pad = literal.is_empty() || (!all_space && has_edge_space);
-
-            if pad {
-                write!(self, " ").unwrap();
-            }
-
             self.output(literal, allow_wrap, Escaping::Literal);
-
-            if pad {
-                write!(self, " ").unwrap();
-            }
-
             self.output(end_fence.as_bytes(), false, Escaping::Literal);
         }
     }
