@@ -28,7 +28,6 @@ use std::str;
 use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
-use crate::parser::math::NodeMathBlock;
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 use self::inlines::RefMap;
@@ -384,7 +383,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("$1 + 2$ and $$x = y$$", &options),
     ///            "<p><span data-math-style=\"inline\">1 + 2</span> and <span data-math-style=\"display\">x = y</span></p>\n");
     /// assert_eq!(markdown_to_html("$$\nx^2\n$$\n", &options),
-    ///            "<p><span data-math-style=\"display\">x^2\n</span></p>\n");
+    ///            "<p><span data-math-style=\"display\">\nx^2\n</span></p>\n");
     /// ```
     pub math_dollars: bool,
 
@@ -1062,11 +1061,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::MathBlock(..) => {
-                    if !self.parse_math_block_prefix(line, container, ast, &mut should_continue) {
-                        return (false, container, should_continue);
-                    }
-                }
                 _ => {}
             }
         }
@@ -1083,7 +1077,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         while !node_matches!(
             container,
-            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MathBlock(..)
+            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
         ) {
             depth += 1;
             self.find_first_nonspace(line);
@@ -1169,25 +1163,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                 *container = self.add_child(
                     container,
                     NodeValue::CodeBlock(ncb),
-                    self.first_nonspace + 1,
-                );
-                self.advance_offset(line, first_nonspace + matched - offset, false);
-            } else if !indented
-                && self.options.extension.math_dollars
-                && unwrap_into(
-                    scanners::open_math_fence(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-            {
-                let first_nonspace = self.first_nonspace;
-                let offset = self.offset;
-                let nmb = NodeMathBlock {
-                    fence_offset: first_nonspace - offset,
-                    literal: String::new(),
-                };
-                *container = self.add_child(
-                    container,
-                    NodeValue::MathBlock(nmb),
                     self.first_nonspace + 1,
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
@@ -1505,41 +1480,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         true
     }
 
-    fn parse_math_block_prefix(
-        &mut self,
-        line: &[u8],
-        container: &'a AstNode<'a>,
-        ast: &mut Ast,
-        should_continue: &mut bool,
-    ) -> bool {
-        let fence_char = b'$';
-        let fence_length = 2;
-        let fence_offset = match ast.value {
-            NodeValue::MathBlock(ref nmb) => nmb.fence_offset,
-            _ => unreachable!(),
-        };
-
-        let matched = if self.indent <= 3 && line[self.first_nonspace] == fence_char {
-            scanners::close_math_fence(&line[self.first_nonspace..]).unwrap_or(0)
-        } else {
-            0
-        };
-
-        if matched >= fence_length {
-            *should_continue = false;
-            self.advance_offset(line, matched, false);
-            self.current = self.finalize_borrowed(container, ast).unwrap();
-            return false;
-        }
-
-        let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(line[self.offset]) {
-            self.advance_offset(line, 1, true);
-            i -= 1;
-        }
-        true
-    }
-
     fn parse_html_block_prefix(&mut self, t: u8) -> bool {
         match t {
             1 | 2 | 3 | 4 | 5 => true,
@@ -1707,7 +1647,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                         || container.data.borrow().sourcepos.start.line != self.line_number
                 }
                 NodeValue::MultilineBlockQuote(..) => false,
-                NodeValue::MathBlock(..) => false,
                 _ => true,
             };
 
@@ -1731,7 +1670,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             let add_text_result = match container.data.borrow().value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
-                NodeValue::MathBlock(..) => AddTextResult::LiteralText,
                 _ => AddTextResult::Otherwise,
             };
 
@@ -1890,7 +1828,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             NodeValue::CodeBlock(ref ncb) => ncb.fenced,
             NodeValue::Heading(ref nh) => nh.setext,
             NodeValue::MultilineBlockQuote(..) => true,
-            NodeValue::MathBlock(..) => true,
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
@@ -1974,26 +1911,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
                     ch = item.next_sibling();
                 }
-            }
-            NodeValue::MathBlock(ref mut nmb) => {
-                let mut pos = 0;
-                while pos < content.len() {
-                    if strings::is_line_end_char(content.as_bytes()[pos]) {
-                        break;
-                    }
-                    pos += 1;
-                }
-                assert!(pos < content.len());
-
-                if content.as_bytes()[pos] == b'\r' {
-                    pos += 1;
-                }
-                if content.as_bytes()[pos] == b'\n' {
-                    pos += 1;
-                }
-
-                content.drain(..pos);
-                mem::swap(&mut nmb.literal, content);
             }
             _ => (),
         }

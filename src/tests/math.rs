@@ -34,6 +34,7 @@ fn math_dollars_inline(markdown: &str, html: &str) {
 #[test_case("$$a!$$", "<p><math>a!</math></p>\n")]
 #[test_case("$$x$$", "<p><math>x</math></p>\n")]
 #[test_case("$$20,000 and $$30,000", "<p><math>20,000 and </math>30,000</p>\n")]
+#[test_case("test $$\n2+2\n$$", "<p>test <math>\n2+2\n</math></p>\n")]
 #[test_case(
     "$$22+1$$ and $$22 + a^2$$",
     "<p><math>22+1</math> and <math>22 + a^2</math></p>\n"
@@ -54,7 +55,7 @@ fn math_dollars_inline_display(markdown: &str, html: &str) {
     html_opts!([extension.math_dollars], markdown, &result);
 }
 
-#[test_case("$$\n2+2\n4+4\n$$", "<p><math>2+2\n4+4\n</math></p>\n")]
+#[test_case("$$\n2+2\n4+4\n$$", "<p><math>\n2+2\n4+4\n</math></p>\n")]
 fn math_dollars_block(markdown: &str, html: &str) {
     let result = html
         .replace("<math>", "<span data-math-style=\"display\">")
@@ -119,7 +120,11 @@ fn math_unrecognized_syntax(markdown: &str, html: &str) {
 #[test_case("$`$", "<p data-sourcepos=\"1:1-1:3\">$`$</p>\n")]
 fn math_unrecognized_syntax_non_roundtrip(markdown: &str, html: &str) {
     html_opts!(
-        [extension.math_dollars, extension.math_code, render.sourcepos],
+        [
+            extension.math_dollars,
+            extension.math_code,
+            render.sourcepos
+        ],
         markdown,
         html
     );
@@ -146,7 +151,9 @@ fn sourcepos() {
                 (text (1:18-1:22) " and ")
                 (math (1:25-1:27))
             ])
-            (math_block (3:1-5:2))
+            (paragraph (3:1-5:2) [
+                (math (3:3-5:0))
+            ])
             (code_block (7:1-9:3))
         ])
     );

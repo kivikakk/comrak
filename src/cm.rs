@@ -2,7 +2,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeMath, NodeMathBlock, NodeTable, NodeValue,
+    NodeMath, NodeTable, NodeValue,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -382,7 +382,6 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 // noop - automatic escaping is already being done
             }
             NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
-            NodeValue::MathBlock(ref nmb) => self.format_math_block(node, nmb, entering),
         };
         true
     }
@@ -410,7 +409,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             && match node.next_sibling() {
                 Some(next_sibling) => matches!(
                     next_sibling.data.borrow().value,
-                    NodeValue::CodeBlock(..) | NodeValue::List(..) | NodeValue::MathBlock(..)
+                    NodeValue::CodeBlock(..) | NodeValue::List(..)
                 ),
                 _ => false,
             }
@@ -802,42 +801,6 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             self.output(start_fence.as_bytes(), false, Escaping::Literal);
             self.output(literal, allow_wrap, Escaping::Literal);
             self.output(end_fence.as_bytes(), false, Escaping::Literal);
-        }
-    }
-
-    fn format_math_block(&mut self, node: &'a AstNode<'a>, nmb: &NodeMathBlock, entering: bool) {
-        if entering {
-            let literal = nmb.literal.as_bytes();
-            let fence_char = "$";
-            let fence_length = 2;
-            let first_in_list_item = node.previous_sibling().is_none()
-                && match node.parent() {
-                    Some(parent) => {
-                        matches!(
-                            parent.data.borrow().value,
-                            NodeValue::Item(..) | NodeValue::TaskItem(..)
-                        )
-                    }
-                    _ => false,
-                };
-
-            if !first_in_list_item {
-                self.blankline();
-            }
-
-            for _ in 0..fence_length {
-                write!(self, "{}", fence_char).unwrap();
-            }
-
-            self.cr();
-            self.write_all(literal).unwrap();
-            self.cr();
-
-            for _ in 0..fence_length {
-                write!(self, "{}", fence_char).unwrap();
-            }
-
-            self.blankline();
         }
     }
 }

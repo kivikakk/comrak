@@ -1,8 +1,8 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 use crate::ctype::isspace;
 use crate::nodes::{
-    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeMathBlock, NodeTable,
-    NodeValue, TableAlignment,
+    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
+    TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::scanners;
@@ -1038,11 +1038,6 @@ impl<'o> HtmlFormatter<'o> {
                     self.render_math_inline(node, literal, display_math, dollar_math)?;
                 }
             }
-            NodeValue::MathBlock(NodeMathBlock { ref literal, .. }) => {
-                if entering {
-                    self.render_math_dollar_block(node, literal)?;
-                }
-            }
         }
         Ok(false)
     }
@@ -1108,35 +1103,6 @@ impl<'o> HtmlFormatter<'o> {
         write_opening_tag(self.output, tag, tag_attributes)?;
         self.escape(literal.as_bytes())?;
         write!(self.output, "</{}>", tag)?;
-
-        Ok(())
-    }
-
-    // Renders a math dollar block, `$$\n...\n$$` using `<p><span>` to be similar
-    // to other renderers.
-    fn render_math_dollar_block<'a>(
-        &mut self,
-        node: &'a AstNode<'a>,
-        literal: &String,
-    ) -> io::Result<()> {
-        self.cr()?;
-
-        // use vectors to ensure attributes always written in the same order,
-        // for testing stability
-        let mut p_attributes: Vec<(String, String)> = Vec::new();
-        let span_attributes: Vec<(String, String)> =
-            vec![(String::from("data-math-style"), String::from("display"))];
-
-        if self.options.render.sourcepos {
-            let ast = node.data.borrow();
-            p_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
-        }
-
-        write_opening_tag(self.output, "p", p_attributes)?;
-        write_opening_tag(self.output, "span", span_attributes)?;
-
-        self.escape(literal.as_bytes())?;
-        self.output.write_all(b"</span></p>\n")?;
 
         Ok(())
     }
