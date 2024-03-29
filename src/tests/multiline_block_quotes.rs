@@ -54,7 +54,7 @@ fn sourcepos() {
         "- item two\n",
         (document (1:1-6:10) [
             (list (1:1-6:10) [
-                (item (1:1-5:5) [      // (description_item (1:1-3:4) [
+                (item (1:1-5:5) [
                     (paragraph (1:3-1:10) [
                         (text (1:3-1:10) "item one")
                     ])
@@ -64,7 +64,7 @@ fn sourcepos() {
                         ])
                     ])
                 ])
-                (item (6:1-6:10) [      // (description_item (5:1-7:6) [
+                (item (6:1-6:10) [
                     (paragraph (6:3-6:10) [
                         (text (6:3-6:10) "item two")
                     ])

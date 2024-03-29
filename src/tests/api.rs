@@ -45,6 +45,8 @@ fn exercise_full_api() {
     extension.footnotes(false);
     extension.description_lists(false);
     extension.multiline_block_quotes(false);
+    extension.math_dollars(false);
+    extension.math_code(false);
     extension.front_matter_delimiter(None);
     #[cfg(feature = "shortcodes")]
     extension.shortcodes(true);
@@ -219,5 +221,10 @@ fn exercise_full_api() {
             let _: usize = mbc.fence_offset;
         }
         nodes::NodeValue::Escaped => {}
+        nodes::NodeValue::Math(math) => {
+            let _: bool = math.display_math;
+            let _: bool = math.dollar_math;
+            let _: String = math.literal;
+        }
     }
 }

@@ -19,6 +19,8 @@ fuzz_target!(|s: &str| {
     extension.footnotes = true;
     extension.description_lists = true;
     extension.multiline_block_quotes = true;
+    extension.math_dollars = true;
+    extension.math_code = true;
     extension.front_matter_delimiter = Some("---".to_string());
     extension.shortcodes = true;
 

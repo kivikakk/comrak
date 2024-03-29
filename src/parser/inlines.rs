@@ -1,7 +1,9 @@
 use crate::arena_tree::Node;
-use crate::ctype::{ispunct, isspace};
+use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
-use crate::nodes::{Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeValue, Sourcepos};
+use crate::nodes::{
+    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, Sourcepos,
+};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
@@ -18,6 +20,7 @@ use unicode_categories::UnicodeCategories;
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
+const MAX_MATH_DOLLARS: usize = 2;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     pub arena: &'a Arena<AstNode<'a>>,
@@ -136,7 +139,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             callback,
         };
         for &c in &[
-            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!',
+            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!', b'$',
         ] {
             s.special_chars[c as usize] = true;
         }
@@ -213,6 +216,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
+            '$' => Some(self.handle_dollars()),
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -616,6 +620,156 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.adjust_node_newlines(node, endpos - startpos, openticks);
                 node
             }
+        }
+    }
+
+    pub fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
+        if !(self.options.extension.math_dollars) || opendollarlength > MAX_MATH_DOLLARS {
+            return None;
+        }
+
+        // space not allowed after initial $
+        if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isspace(c)) {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'$') {
+                self.pos += 1;
+            }
+
+            if self.pos >= self.input.len() {
+                return None;
+            }
+
+            // space not allowed before ending $
+            if opendollarlength == 1 {
+                let c = self.input[self.pos - 1];
+                if isspace(c) {
+                    return None;
+                }
+            }
+
+            // dollar signs must also be backslash-escaped if they occur within math
+            let c = self.input[self.pos - 1];
+            if opendollarlength == 1 && c == (b'\\') {
+                self.pos += 1;
+                continue;
+            }
+
+            let numdollars = self.take_while(b'$');
+
+            // ending $ can't be followed by a digit
+            if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
+                return None;
+            }
+
+            if numdollars == opendollarlength {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    pub fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
+        if !self.options.extension.math_code {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'$') {
+                self.pos += 1;
+            }
+
+            if self.pos >= self.input.len() {
+                return None;
+            }
+
+            let c = self.input[self.pos - 1];
+            if c == b'`' {
+                self.pos += 1;
+                return Some(self.pos);
+            } else {
+                self.pos += 1;
+            }
+        }
+    }
+
+    // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
+    pub fn handle_dollars(&mut self) -> &'a AstNode<'a> {
+        if self.options.extension.math_dollars || self.options.extension.math_code {
+            let opendollars = self.take_while(b'$');
+            let mut code_math = false;
+
+            // check for code math
+            if opendollars == 1
+                && self.options.extension.math_code
+                && self.peek_char().map_or(false, |&c| c == b'`')
+            {
+                code_math = true;
+                self.pos += 1;
+            }
+
+            let startpos = self.pos;
+            let endpos: Option<usize> = if code_math {
+                self.scan_to_closing_code_dollar()
+            } else {
+                self.scan_to_closing_dollar(opendollars)
+            };
+
+            let fence_length = if code_math { 2 } else { opendollars };
+            let endpos: Option<usize> = match endpos {
+                Some(epos) => {
+                    if epos - startpos + fence_length < fence_length * 2 + 1 {
+                        None
+                    } else {
+                        endpos
+                    }
+                }
+                None => endpos,
+            };
+
+            match endpos {
+                None => {
+                    if code_math {
+                        self.pos = startpos - 1;
+                        self.make_inline(
+                            NodeValue::Text("$".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        )
+                    } else {
+                        self.pos = startpos;
+                        self.make_inline(
+                            NodeValue::Text("$".repeat(opendollars)),
+                            self.pos,
+                            self.pos,
+                        )
+                    }
+                }
+                Some(endpos) => {
+                    let buf = &self.input[startpos..endpos - fence_length];
+                    let buf: Vec<u8> = if code_math || opendollars == 1 {
+                        strings::normalize_code(buf)
+                    } else {
+                        buf.to_vec()
+                    };
+                    let math = NodeMath {
+                        dollar_math: !code_math,
+                        display_math: opendollars == 2,
+                        literal: String::from_utf8(buf).unwrap(),
+                    };
+                    let node = self.make_inline(
+                        NodeValue::Math(math),
+                        startpos,
+                        endpos - fence_length - 1,
+                    );
+                    self.adjust_node_newlines(node, endpos - startpos, fence_length);
+                    node
+                }
+            }
+        } else {
+            self.pos += 1;
+            self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
         }
     }
 

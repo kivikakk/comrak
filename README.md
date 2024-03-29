@@ -100,7 +100,7 @@ Options:
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists, multiline-block-quotes]
+          footnotes, description-lists, multiline-block-quotes, math-dollars, math-code]
 
   -t, --to <FORMAT>
           Specify output format
@@ -256,6 +256,8 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Description lists
 - Front matter
 - Shortcodes
+- Math
+- Multiline Blockquotes
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ComrakExtensionOptions` struct](https://docs.rs/comrak/newest/comrak/type.ComrakExtensionOptions.html).

@@ -18,6 +18,8 @@ fn propfuzz_doesnt_crash(md: String) {
             footnotes: true,
             description_lists: true,
             multiline_block_quotes: true,
+            math_dollars: true,
+            math_code: true,
             front_matter_delimiter: None,
             #[cfg(feature = "shortcodes")]
             shortcodes: true,

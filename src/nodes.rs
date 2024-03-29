@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
+pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 /// The core AST node enum.
@@ -126,7 +127,7 @@ pub enum NodeValue {
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
 
-    /// **Inline**.  [Emphasised](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
+    /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
     Emph,
 
@@ -153,6 +154,18 @@ pub enum NodeValue {
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
     ShortCode(NodeShortCode),
+
+    /// **Inline**. A math span. Contains raw text which is not parsed as Markdown.
+    /// Dollar math or code math
+    ///
+    /// Inline math $1 + 2$ and $`1 + 2`$
+    ///
+    /// Display math $$1 + 2$$ and
+    /// $$
+    /// 1 + 2
+    /// $$
+    ///
+    Math(NodeMath),
 
     /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
     /// lines and contains other **blocks**.
@@ -217,7 +230,7 @@ pub struct NodeTable {
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeCode {
-    /// The URL for the link destination or image source.
+    /// The number of backticks
     pub num_backticks: usize,
 
     /// The content of the inline code span.
@@ -485,6 +498,7 @@ impl NodeValue {
             NodeValue::ShortCode(_) => "shortcode",
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
             NodeValue::Escaped => "escaped",
+            NodeValue::Math(..) => "math",
         }
     }
 }
@@ -652,6 +666,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Image(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
+                | NodeValue::Math(..)
         ),
 
         #[cfg(feature = "shortcodes")]
@@ -666,6 +681,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::ShortCode(..)
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
+                | NodeValue::Math(..)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {

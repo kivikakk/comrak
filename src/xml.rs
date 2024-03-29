@@ -1,4 +1,4 @@
-use crate::nodes::{AstNode, ListType, NodeCode, NodeTable, NodeValue};
+use crate::nodes::{AstNode, ListType, NodeCode, NodeMath, NodeTable, NodeValue};
 use crate::parser::{Options, Plugins};
 use once_cell::sync::Lazy;
 use std::cmp;
@@ -101,6 +101,9 @@ impl<'o> XmlFormatter<'o> {
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
                                 self.output.write_all(b" ")?;
                             }
+                            NodeValue::Math(NodeMath { ref literal, .. }) => {
+                                self.escape(literal.as_bytes())?;
+                            }
                             _ => (),
                         }
                         plain
@@ -186,6 +189,10 @@ impl<'o> XmlFormatter<'o> {
                         self.output.write_all(b" info=\"")?;
                         self.output.write_all(ncb.info.as_bytes())?;
                         self.output.write_all(b"\"")?;
+
+                        if ncb.info.eq("math") {
+                            self.output.write_all(b" math_style=\"display\"")?;
+                        }
                     }
                     self.output.write_all(b" xml:space=\"preserve\">")?;
                     self.escape(ncb.literal.as_bytes())?;
@@ -254,6 +261,17 @@ impl<'o> XmlFormatter<'o> {
                 }
                 NodeValue::Escaped => {
                     // noop
+                }
+                NodeValue::Math(ref math, ..) => {
+                    if math.display_math {
+                        self.output.write_all(b" math_style=\"display\"")?;
+                    } else {
+                        self.output.write_all(b" math_style=\"inline\"")?;
+                    }
+                    self.output.write_all(b" xml:space=\"preserve\">")?;
+                    self.escape(math.literal.as_bytes())?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
                 }
             }
 

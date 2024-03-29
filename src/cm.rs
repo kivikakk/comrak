@@ -2,7 +2,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeTable, NodeValue,
+    NodeMath, NodeTable, NodeValue,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -381,6 +381,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Escaped => {
                 // noop - automatic escaping is already being done
             }
+            NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
         };
         true
     }
@@ -775,6 +776,31 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             self.write_all(b"[^").unwrap();
             self.write_all(r).unwrap();
             self.write_all(b"]").unwrap();
+        }
+    }
+
+    fn format_math(&mut self, math: &NodeMath, allow_wrap: bool, entering: bool) {
+        if entering {
+            let literal = math.literal.as_bytes();
+            let start_fence = if math.dollar_math {
+                if math.display_math {
+                    "$$"
+                } else {
+                    "$"
+                }
+            } else {
+                "$`"
+            };
+
+            let end_fence = if start_fence == "$`" {
+                "`$"
+            } else {
+                start_fence
+            };
+
+            self.output(start_fence.as_bytes(), false, Escaping::Literal);
+            self.output(literal, allow_wrap, Escaping::Literal);
+            self.output(end_fence.as_bytes(), false, Escaping::Literal);
         }
     }
 }

@@ -151,6 +151,8 @@ enum Extension {
     Footnotes,
     DescriptionLists,
     MultilineBlockQuotes,
+    MathDollars,
+    MathCode,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -216,6 +218,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .footnotes(exts.contains(&Extension::Footnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
+        .math_dollars(exts.contains(&Extension::MathDollars))
+        .math_code(exts.contains(&Extension::MathCode))
         .front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]

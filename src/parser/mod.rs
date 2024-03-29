@@ -4,6 +4,7 @@ mod inlines;
 pub mod shortcodes;
 mod table;
 
+pub mod math;
 pub mod multiline_block_quote;
 
 use crate::adapters::SyntaxHighlighterAdapter;
@@ -364,6 +365,48 @@ pub struct ExtensionOptions {
     ///            "<blockquote>\n<p>paragraph</p>\n</blockquote>\n");
     /// ```
     pub multiline_block_quotes: bool,
+
+    /// Enables math using dollar syntax.
+    ///
+    /// ``` md
+    /// Inline math $1 + 2$ and display math $$x + y$$
+    ///
+    /// $$
+    /// x^2
+    /// $$
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_dollars = true;
+    /// assert_eq!(markdown_to_html("$1 + 2$ and $$x = y$$", &options),
+    ///            "<p><span data-math-style=\"inline\">1 + 2</span> and <span data-math-style=\"display\">x = y</span></p>\n");
+    /// assert_eq!(markdown_to_html("$$\nx^2\n$$\n", &options),
+    ///            "<p><span data-math-style=\"display\">\nx^2\n</span></p>\n");
+    /// ```
+    pub math_dollars: bool,
+
+    /// Enables math using code syntax.
+    ///
+    /// ```` md
+    /// Inline math $`1 + 2`$
+    ///
+    /// ```math
+    /// x^2
+    /// ```
+    /// ````
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_code = true;
+    /// assert_eq!(markdown_to_html("$`1 + 2`$", &options),
+    ///            "<p><code data-math-style=\"inline\">1 + 2</code></p>\n");
+    /// assert_eq!(markdown_to_html("```math\nx^2\n```\n", &options),
+    ///            "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n");
+    /// ```
+    pub math_code: bool,
 
     #[cfg(feature = "shortcodes")]
     #[cfg_attr(docsrs, doc(cfg(feature = "shortcodes")))]
@@ -1625,13 +1668,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
 
             let add_text_result = match container.data.borrow().value {
-                NodeValue::CodeBlock(..) => AddTextResult::CodeBlock,
+                NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 _ => AddTextResult::Otherwise,
             };
 
             match add_text_result {
-                AddTextResult::CodeBlock => {
+                AddTextResult::LiteralText => {
                     self.add_line(container, line);
                 }
                 AddTextResult::HtmlBlock(block_type) => {
@@ -2218,7 +2261,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 }
 
 enum AddTextResult {
-    CodeBlock,
+    LiteralText,
     HtmlBlock(u8),
     Otherwise,
 }
