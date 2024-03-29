@@ -1,3 +1,12 @@
+### 0.22.0
+
+* Fix broken docs link in README by @ohakutsu in https://github.com/kivikakk/comrak/pull/364
+* Make non public nodes public by @mfontanini in https://github.com/kivikakk/comrak/pull/363
+* cargo update -p rustix --precise 0.36.17 by @kivikakk in https://github.com/kivikakk/comrak/pull/368
+* Add render option to wrap escaped chars in span by @digitalmoksha in https://github.com/kivikakk/comrak/pull/367
+* Add math support by @digitalmoksha in https://github.com/kivikakk/comrak/pull/366
+
+
 ### 0.21.0
 
 * Add a multiline blockquote extension by @digitalmoksha in https://github.com/kivikakk/comrak/pull/359
