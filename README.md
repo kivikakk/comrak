@@ -1,8 +1,7 @@
 # [Comrak](https://github.com/kivikakk/comrak)
 
 [![Build Status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml) ![Spec
-Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg) [![Financial Contributors on Open
-Collective](https://opencollective.com/comrak/all/badge.svg?label=financial+contributors)](https://opencollective.com/comrak)
+Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg)
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
@@ -293,7 +292,7 @@ depending on your use-case. Here are some other projects to consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
-  want). `cargo doc` uses this, as do many other projects in the ecosystem.  It appears semi-maintained as of March 2023.
+  want). `cargo doc` uses this, as do many other projects in the ecosystem.
 - [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
 - Know of another library? Please open a PR to add it\!
 
@@ -307,9 +306,6 @@ Contributions are highly encouraged; where possible I practice [Optimistic Mergi
 described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this
 project.
 
-For now the preferred method is [pull requests on GitHub](https://github.com/kivikakk/comrak), in
-order to maximise the number of eyes, but a mailing list for patches is in the works.
-
 Thank you to Comrak's many contributors for PRs and issues opened\!
 
 ### Code Contributors
@@ -322,27 +318,6 @@ Become a financial contributor and help sustain Comrak's development.  I'm
 self-employed --- open-source software relies on the collective.
 
 - [GitHub Sponsors](https://github.com/sponsors/kivikakk)
-- [Open Collective](https://opencollective.com/comrak/contribute)
-
-#### Individuals
-
-<a href="https://opencollective.com/comrak"><img src="https://opencollective.com/comrak/individuals.svg?width=890"></a>
-
-#### Organizations
-
-Support this project with your organization. Your logo will show up here with a link to your website.
-\[[Contribute](https://opencollective.com/comrak/contribute)\]
-
-<a href="https://opencollective.com/comrak/organization/0/website"><img src="https://opencollective.com/comrak/organization/0/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/1/website"><img src="https://opencollective.com/comrak/organization/1/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/2/website"><img src="https://opencollective.com/comrak/organization/2/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/3/website"><img src="https://opencollective.com/comrak/organization/3/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/4/website"><img src="https://opencollective.com/comrak/organization/4/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/5/website"><img src="https://opencollective.com/comrak/organization/5/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/6/website"><img src="https://opencollective.com/comrak/organization/6/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/7/website"><img src="https://opencollective.com/comrak/organization/7/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/8/website"><img src="https://opencollective.com/comrak/organization/8/avatar.svg"></a>
-<a href="https://opencollective.com/comrak/organization/9/website"><img src="https://opencollective.com/comrak/organization/9/avatar.svg"></a>
 
 ## Contact
 
