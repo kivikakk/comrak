@@ -4,13 +4,7 @@
 - [ ] update changelog
 - [ ] `cargo run --example update-readme`
 - [ ] commit, tag, push commit, but do not push tag yet
-- build binaries:
-  - [ ] `script/release-skye`
-  - [ ] `script/release-skye-debian` in Parallels
-  - [ ] `script\release-raven.ps1` ("Windows PowerShell" works, make sure to run with comrak root as cwd)
-  - [ ] `script/release-sayya` in VMWare
-  - [ ] `script/release-bunjil-wsl`
-- [ ] Check you have 7 binaries: aarch64-apple-darwin, aarch64-unknown-linux-gnu, armv7-unknown-linux-musleabihf, x86\_64-apple-darwin, x86\_64-pc-windows-msvc, x86\_64-unknown-freebsd, x86\_64-unknown-linux-gnu
+- [ ] build some binaries!
 - [ ] `cargo publish`
 - [ ] push tag
 - [ ] edit release to include changelog
