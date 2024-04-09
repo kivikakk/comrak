@@ -128,7 +128,7 @@ checksum = "4f0807fb6f644c83f3e4ec014fec9858c1c8b26a7db8eb5f0bde5817df9c1df7"
 
 [[package]]
 name = "comrak"
-version = "0.20.0"
+version = "0.22.0"
 dependencies = [
  "arbitrary",
  "clap",
