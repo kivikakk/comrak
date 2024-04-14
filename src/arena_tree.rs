@@ -142,15 +142,15 @@ impl<'a, T> Node<'a, T> {
     /// Call `.next().unwrap()` once on the iterator to skip the node itself.
     ///
     /// *Similar Functions:* Use `traverse()` or `reverse_traverse` if you need
-    /// references to the `NodeEdge` structs associated with each `AstNode`
+    /// references to the `NodeEdge` structs associated with each `Node`
     pub fn descendants(&'a self) -> Descendants<'a, T> {
         Descendants(self.traverse())
     }
 
-    /// Return an iterator of references to `NodeEdge` structs for each `Node` and its descendants,
+    /// Return an iterator of references to `NodeEdge` enums for each `Node` and its descendants,
     /// in tree order.
     ///
-    /// `NodeEdge` structs represent the `Start` and `End` of each node.
+    /// `NodeEdge` enums represent the `Start` or `End` of each node.
     ///
     /// *Similar Functions:* Use `descendants()` if you don't need `Start` and `End`.
     pub fn traverse(&'a self) -> Traverse<'a, T> {
@@ -160,10 +160,10 @@ impl<'a, T> Node<'a, T> {
         }
     }
 
-    /// Return an iterator of references to `NodeEdge` structs for each `Node` and its descendants,
+    /// Return an iterator of references to `NodeEdge` enums for each `Node` and its descendants,
     /// in *reverse* order.
     ///
-    /// `NodeEdge` structs represent the `Start` and `End` of each node.
+    /// `NodeEdge` enums represent the `Start` or `End` of each node.
     ///
     /// *Similar Functions:* Use `descendants()` if you don't need `Start` and `End`.
     pub fn reverse_traverse(&'a self) -> ReverseTraverse<'a, T> {
