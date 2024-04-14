@@ -326,6 +326,9 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 )
                 && self.get_in_tight_list_item(node);
         }
+        let next_is_block = node
+            .next_sibling()
+            .map_or(true, |next| next.data.borrow().value.block());
 
         match node.data.borrow().value {
             NodeValue::Document => (),
@@ -345,7 +348,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Text(ref literal) => {
                 self.format_text(literal.as_bytes(), allow_wrap, entering)
             }
-            NodeValue::LineBreak => self.format_line_break(entering),
+            NodeValue::LineBreak => self.format_line_break(entering, next_is_block),
             NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering),
             NodeValue::Code(ref code) => {
                 self.format_code(code.literal.as_bytes(), allow_wrap, entering)
@@ -571,10 +574,16 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         }
     }
 
-    fn format_line_break(&mut self, entering: bool) {
+    fn format_line_break(&mut self, entering: bool, next_is_block: bool) {
         if entering {
             if !self.options.render.hardbreaks {
-                write!(self, "\\").unwrap();
+                if !next_is_block {
+                    // If the next element is a block, a backslash means a
+                    // literal backslash instead of a line break. In this case
+                    // we can just skip the line break since it's meaningless
+                    // before a block.
+                    write!(self, "\\").unwrap();
+                }
             }
             self.cr();
         }
