@@ -45,7 +45,7 @@ slug = "0.1.4"
 emojis = { version = "0.5.2", optional = true }
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 derive_builder = "0.12.0"
-in-place = "0.2.0"
+in-place = { version = "0.2.0", optional = true }
 
 [dev-dependencies]
 ntest = "0.9"
@@ -55,7 +55,7 @@ propfuzz = "0.0.1"
 
 [features]
 default = ["cli", "syntect"]
-cli = ["clap", "shell-words", "xdg"]
+cli = ["clap", "shell-words", "xdg", "in-place"]
 shortcodes = ["emojis"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
