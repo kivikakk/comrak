@@ -1482,7 +1482,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn parse_html_block_prefix(&mut self, t: u8) -> bool {
         match t {
-            1 | 2 | 3 | 4 | 5 => true,
+            1..=5 => true,
             6 | 7 => !self.blank,
             _ => unreachable!(),
         }
