@@ -41,8 +41,10 @@ fn pathological_table_columns_2() {
         "a\n".repeat(n)
     );
 
-    let mut extension = ExtensionOptions::default();
-    extension.table = true;
+    let extension = parser::ExtensionOptions {
+        table: true,
+        ..Default::default()
+    };
 
     // Not interested in the actual html, just that we don't timeout
     markdown_to_html(
