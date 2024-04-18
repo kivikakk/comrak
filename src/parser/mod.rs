@@ -1482,7 +1482,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn parse_html_block_prefix(&mut self, t: u8) -> bool {
         match t {
-            1 | 2 | 3 | 4 | 5 => true,
+            1..=5 => true,
             6 | 7 => !self.blank,
             _ => unreachable!(),
         }
@@ -2415,20 +2415,15 @@ pub enum AutolinkType {
     Email,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for bulleted list redering in markdown. See `link_style` in [RenderOptions] for more details.
 pub enum ListStyleType {
     /// The `-` character
+    #[default]
     Dash = 45,
     /// The `+` character
     Plus = 43,
     /// The `*` character
     Star = 42,
-}
-
-impl Default for ListStyleType {
-    fn default() -> Self {
-        ListStyleType::Dash
-    }
 }

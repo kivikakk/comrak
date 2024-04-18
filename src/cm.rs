@@ -576,14 +576,12 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
     fn format_line_break(&mut self, entering: bool, next_is_block: bool) {
         if entering {
-            if !self.options.render.hardbreaks {
-                if !next_is_block {
-                    // If the next element is a block, a backslash means a
-                    // literal backslash instead of a line break. In this case
-                    // we can just skip the line break since it's meaningless
-                    // before a block.
-                    write!(self, "\\").unwrap();
-                }
+            if !self.options.render.hardbreaks && !next_is_block {
+                // If the next element is a block, a backslash means a
+                // literal backslash instead of a line break. In this case
+                // we can just skip the line break since it's meaningless
+                // before a block.
+                write!(self, "\\").unwrap();
             }
             self.cr();
         }
