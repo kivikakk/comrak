@@ -113,7 +113,7 @@ fn try_opening_header<'a>(
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
         ast.internal_offset = cell.internal_offset;
-        ast.content = cell.content.clone();
+        ast.content.clone_from(&cell.content);
 
         i += 1;
     }
@@ -168,7 +168,7 @@ fn try_opening_row<'a>(
         let cell_ast = &mut cell_node.data.borrow_mut();
         cell_ast.internal_offset = cell.internal_offset;
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
-        cell_ast.content = cell.content.clone();
+        cell_ast.content.clone_from(&cell.content);
 
         last_column = cell_ast.sourcepos.end.column;
 
