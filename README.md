@@ -24,7 +24,7 @@ Specify it as a requirement in `Cargo.toml`:
 comrak = "0.22"
 ```
 
-Comrak supports Rust stable.
+Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
 
 ### Mac & Linux Binaries
 
@@ -55,6 +55,9 @@ Options:
           Path to config file containing command-line arguments, or 'none'
           
           [default: /Users/kivikakk/.config/comrak/config]
+
+  -i, --inplace
+          To perform an in-place formatting
 
       --hardbreaks
           Treat newlines as hard line breaks
