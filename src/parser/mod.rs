@@ -462,7 +462,8 @@ pub struct ParseOptions {
     /// Whether or not a simple `x` or `X` is used for tasklist or any other symbol is allowed.
     pub relaxed_tasklist_matching: bool,
 
-    /// Relax parsing of autolinks, allowing links to be detected inside brackets.
+    /// Relax parsing of autolinks, allow links to be detected inside brackets
+    /// and allow all url schemes
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};

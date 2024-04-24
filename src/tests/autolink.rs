@@ -22,10 +22,10 @@ fn autolink_email() {
 fn autolink_scheme() {
     html_opts!(
         [extension.autolink],
-        concat!("https://google.com/search\n"),
+        concat!("https://google.com/search\n", "rdar://localhost.com/blah"),
         concat!(
-            "<p><a href=\"https://google.com/search\">https://google.\
-             com/search</a></p>\n"
+            "<p><a href=\"https://google.com/search\">https://google.com/search</a>\n",
+            "rdar://localhost.com/blah</p>\n"
         ),
     );
 }
@@ -90,6 +90,36 @@ fn autolink_relaxed_links_in_brackets() {
         [
             "[<https://foo.com>]",
             "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n",
+        ],
+    ];
+
+    for example in examples {
+        html_opts!(
+            [extension.autolink, parse.relaxed_autolinks],
+            example[0],
+            example[1]
+        );
+    }
+}
+
+#[test]
+fn autolink_relaxed_links_schemes() {
+    let examples = [
+        [
+            "https://foo.com",
+            "<p><a href=\"https://foo.com\">https://foo.com</a></p>\n",
+        ],
+        [
+            "smb:///Volumes/shared/foo.pdf",
+            "<p><a href=\"smb:///Volumes/shared/foo.pdf\">smb:///Volumes/shared/foo.pdf</a></p>\n",
+        ],
+        [
+            "irc://irc.freenode.net/git",
+            "<p><a href=\"irc://irc.freenode.net/git\">irc://irc.freenode.net/git</a></p>\n",
+        ],
+        [
+            "rdar://localhost.com/blah",
+            "<p><a href=\"rdar://localhost.com/blah\">rdar://localhost.com/blah</a></p>\n",
         ],
     ];
 
