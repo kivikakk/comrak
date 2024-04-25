@@ -41,7 +41,7 @@ pub(crate) fn process_autolinks<'a>(
 
             match contents[i] {
                 b':' => {
-                    post_org = url_match(arena, contents, i);
+                    post_org = url_match(arena, contents, i, relaxed_autolinks);
                     if post_org.is_some() {
                         break;
                     }
@@ -235,6 +235,7 @@ fn url_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
@@ -249,9 +250,11 @@ fn url_match<'a>(
         rewind += 1;
     }
 
-    let cond = |s: &&[u8]| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s;
-    if !SCHEMES.iter().any(cond) {
-        return None;
+    if !relaxed_autolinks {
+        let cond = |s: &&[u8]| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s;
+        if !SCHEMES.iter().any(cond) {
+            return None;
+        }
     }
 
     let mut link_end = match check_domain(&contents[i + 3..], true) {

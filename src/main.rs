@@ -66,7 +66,8 @@ struct Cli {
     #[arg(long)]
     relaxed_tasklist_character: bool,
 
-    /// Enable relaxing of autolink parsing, allowing links to be recognized when in brackets
+    /// Enable relaxing of autolink parsing, allow links to be recognized when in brackets
+    /// and allow all url schemes
     #[arg(long)]
     relaxed_autolinks: bool,
 

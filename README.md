@@ -79,7 +79,8 @@ Options:
           Enable relaxing which character is allowed in a tasklists
 
       --relaxed-autolinks
-          Enable relaxing of autolink parsing, allowing links to be recognized when in brackets
+          Enable relaxing of autolink parsing, allow links to be recognized when in brackets
+          and allow all url schemes
 
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
