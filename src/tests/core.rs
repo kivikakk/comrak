@@ -65,10 +65,57 @@ fn thematic_breaks() {
 }
 
 #[test]
+fn atx_heading() {
+    html(
+        concat!("# h1\n", "foo\n", "## h2\n"),
+        concat!("<h1>h1</h1>\n", "<p>foo</p>\n", "<h2>h2</h2>\n"),
+    );
+}
+
+#[test]
+fn atx_heading_sourcepos() {
+    assert_ast_match!(
+        [],
+        "# h1\n"
+        "foo\n"
+        "## h2\n",
+        (document (1:1-3:5) [
+            (heading (1:1-1:4) [
+                (text (1:3-1:4) "h1")
+            ])
+            (paragraph (2:1-2:3) [
+                (text (2:1-2:3) "foo")
+            ])
+            (heading (3:1-3:5) [
+                (text (3:4-3:5) "h2")
+            ])
+        ])
+    );
+}
+
+#[test]
 fn setext_heading() {
     html(
         concat!("Hi\n", "==\n", "\n", "Ok\n", "-----\n"),
         concat!("<h1>Hi</h1>\n", "<h2>Ok</h2>\n"),
+    );
+}
+
+#[test]
+fn setext_heading_sourcepos() {
+    assert_ast_match!(
+        [],
+        "Header\n"
+        "---\n"
+        "this",
+        (document (1:1-3:4) [
+            (heading (1:1-2:3) [
+                (text (1:1-1:6) "Header")
+            ])
+            (paragraph (3:1-3:4) [
+                (text (3:1-3:4) "this")
+            ])
+        ])
     );
 }
 
