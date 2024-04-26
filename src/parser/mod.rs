@@ -1827,7 +1827,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         } else if match ast.value {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced,
-            NodeValue::Heading(ref nh) => nh.setext,
             NodeValue::MultilineBlockQuote(..) => true,
             _ => false,
         } {
