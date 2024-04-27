@@ -1,6 +1,7 @@
 extern crate comrak;
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
+use ntest::{assert_false, assert_true};
 
 fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
     // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
@@ -12,7 +13,7 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
     // Iterate over all the descendants of root.
     for node in root.descendants() {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-            // If the node is a text node, append its text to `output_text`.
+            // If the node is a text node, replace `orig_string` with `replacement`.
             *text = text.replace(orig_string, replacement)
         }
     }
@@ -24,10 +25,28 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
 }
 
 fn main() {
-    let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n".to_string();
-    let orig = "my".to_string();
-    let repl = "your".to_string();
+    let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
+    let orig = "my";
+    let repl = "your";
     let html = replace_text(&doc, &orig, &repl);
 
     println!("{}", html);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sample_replace() {
+        let doc = "Replace deeply nested *[foo](https://example.com)* with bar.\n\nReplace shallow foo with bar.";
+        let orig = "foo";
+        let repl = "bar";
+        let html = replace_text(&doc, &orig, &repl);
+        println!("{:?}", html);
+        assert_false!(html.contains("foo"));
+        assert_true!(html.contains("bar"));
+        assert_true!(html.contains("<a"));
+        assert_true!(html.contains("<p"));
+    }
 }
