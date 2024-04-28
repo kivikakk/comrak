@@ -79,16 +79,17 @@ jobs:
       run: cargo +stable build --locked --release --all-features
   clippy_format:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v1
       with:
         submodules: true
-    - uses: actions/checkout@v3
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v4
-    - name: Run the Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@v2
+    - name: Obtain Rust
+      run: rustup override set ${{ matrix.rust }}
     - name: Check clippy
-      run: nix build .#checks.x86_64-linux.comrak-clippy -L
+      run: rustup component add clippy && cargo clippy
     - name: Check formatting
-      run: nix build .#checks.x86_64-linux.comrak-fmt -L
+      run: rustup component add rustfmt && cargo fmt -- --check
