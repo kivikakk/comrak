@@ -47,13 +47,13 @@ pub(crate) fn process_autolinks<'a>(
                     }
                 }
                 b'w' => {
-                    post_org = www_match(arena, contents, i);
+                    post_org = www_match(arena, contents, i, relaxed_autolinks);
                     if post_org.is_some() {
                         break;
                     }
                 }
                 b'@' => {
-                    post_org = email_match(arena, contents, i);
+                    post_org = email_match(arena, contents, i, relaxed_autolinks);
                     if post_org.is_some() {
                         break;
                     }
@@ -85,6 +85,7 @@ fn www_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static WWW_DELIMS: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -111,7 +112,7 @@ fn www_match<'a>(
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end);
+    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
 
     let mut url = "http://".to_string();
     url.push_str(str::from_utf8(&contents[i..link_end + i]).unwrap());
@@ -170,12 +171,10 @@ fn is_valid_hostchar(ch: char) -> bool {
     !ch.is_whitespace() && !ch.is_punctuation()
 }
 
-fn autolink_delim(data: &[u8], mut link_end: usize) -> usize {
+fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> usize {
     static LINK_END_ASSORTMENT: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
-        for c in &[
-            b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"', b'[', b']',
-        ] {
+        for c in &[b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"'] {
             sc[*c as usize] = true;
         }
         sc
@@ -191,7 +190,22 @@ fn autolink_delim(data: &[u8], mut link_end: usize) -> usize {
     while link_end > 0 {
         let cclose = data[link_end - 1];
 
-        let copen = if cclose == b')' { Some(b'(') } else { None };
+        // Allow any number of matching parentheses (as recognised in copen/cclose)
+        // at the end of the URL.  If there is a greater number of closing
+        // parentheses than opening ones, we remove one character from the end of
+        // the link.
+        let mut copen = if cclose == b')' { Some(b'(') } else { None };
+
+        if relaxed_autolinks && copen.is_none() {
+            // allow balancing of `[]` and `{}` just like `()`
+            copen = if cclose == b']' {
+                Some(b'[')
+            } else if cclose == b'}' {
+                Some(b'{')
+            } else {
+                None
+            };
+        }
 
         if LINK_END_ASSORTMENT[cclose as usize] {
             link_end -= 1;
@@ -266,7 +280,7 @@ fn url_match<'a>(
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end);
+    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
 
     let url = str::from_utf8(&contents[i - rewind..i + link_end])
         .unwrap()
@@ -292,6 +306,7 @@ fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,
+    relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     static EMAIL_OK_SET: Lazy<[bool; 256]> = Lazy::new(|| {
         let mut sc = [false; 256];
@@ -365,7 +380,7 @@ fn email_match<'a>(
         return None;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end);
+    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
     if link_end == 0 {
         return None;
     }
