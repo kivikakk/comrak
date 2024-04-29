@@ -53,6 +53,51 @@ fn autolink_no_link_bad() {
 }
 
 #[test]
+fn autolink_parentheses_balanced() {
+    let examples = [
+        [
+            "http://www.pokemon.com/Pikachu_(Electric)",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_(Electric)\">http://www.pokemon.com/Pikachu_(Electric)</a></p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_((Electric)",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_((Electric)\">http://www.pokemon.com/Pikachu_((Electric)</a></p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_(Electric))",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_(Electric)\">http://www.pokemon.com/Pikachu_(Electric)</a>)</p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_((Electric))",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_((Electric))\">http://www.pokemon.com/Pikachu_((Electric))</a></p>\n",
+        ],
+    ];
+
+    for example in examples {
+        html_opts!([extension.autolink], example[0], example[1]);
+    }
+
+    for example in examples {
+        html_opts!(
+            [extension.autolink, parse.relaxed_autolinks],
+            example[0],
+            example[1]
+        );
+    }
+}
+
+#[test]
+fn autolink_brackets_unbalanced() {
+    html_opts!(
+        [extension.autolink],
+        concat!("http://example.com/[abc]]...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%5Babc%5D%5D\">http://example.com/[abc]]</a>...</p>\n"
+        ),
+    );
+}
+
+#[test]
 fn autolink_ignore_links_in_brackets() {
     let examples = [
         ["[https://foo.com]", "<p>[https://foo.com]</p>\n"],
@@ -100,6 +145,28 @@ fn autolink_relaxed_links_in_brackets() {
             example[1]
         );
     }
+}
+
+#[test]
+fn autolink_relaxed_links_brackets_balanced() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        concat!("http://example.com/[abc]]...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%5Babc%5D\">http://example.com/[abc]</a>]...</p>\n"
+        ),
+    );
+}
+
+#[test]
+fn autolink_relaxed_links_curly_braces_balanced() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        concat!("http://example.com/{abc}}...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%7Babc%7D\">http://example.com/{abc}</a>}...</p>\n"
+        ),
+    );
 }
 
 #[test]
