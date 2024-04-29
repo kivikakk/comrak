@@ -21,7 +21,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.22"
+comrak = "0.23"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
@@ -79,8 +79,8 @@ Options:
           Enable relaxing which character is allowed in a tasklists
 
       --relaxed-autolinks
-          Enable relaxing of autolink parsing, allow links to be recognized when in brackets
-          and allow all url schemes
+          Enable relaxing of autolink parsing, allow links to be recognized when in brackets and
+          allow all url schemes
 
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
