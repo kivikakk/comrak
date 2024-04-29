@@ -1,7 +1,6 @@
 extern crate comrak;
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
-use ntest::{assert_false, assert_true};
 
 fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
     // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
@@ -36,6 +35,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ntest::{assert_false, assert_true};
 
     #[test]
     fn sample_replace() {
