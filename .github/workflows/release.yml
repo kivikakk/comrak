@@ -9,8 +9,6 @@ permissions:
 
 jobs:
     release:
-        env:
-            GITHUB_TOKEN: ${{ secrets.github_token }}
         runs-on: ubuntu-latest
 
         outputs:
@@ -79,20 +77,6 @@ jobs:
                   git add -f CHANGELOG.md README.md
                   git commit -m "[auto-docs][skip test]: update changelog" || true
 
-            - name: Push to protected branch
-              uses: CasperWA/push-protected@v2
-              with:
-                  token: ${{ secrets.github_token }}
-                  branch: main
-
-            - name: Login to Crates.io
-              run: cargo login ${CRATES_IO_TOKEN}
-              env:
-                  CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-
-            - name: Publish crate
-              run: cargo publish
-
             - name: Create tag
               run: |
                   git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
@@ -105,25 +89,16 @@ jobs:
     publish:
         needs: release
         runs-on: ubuntu-latest
+        env:
+            CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
         steps:
             - uses: actions/checkout@v4
               with:
                   submodules: recursive
 
-            - name: Set up languages
-              uses: yettoapp/actions/setup-languages@main
-              with:
-                  ruby: true
-                  node: ${{ inputs.requires_node }}
+            - name: Login to Crates.io
+              run: cargo login ${CRATES_IO_TOKEN}
 
-            - name: Publish to RubyGems
-              run: |
-                  mkdir -p $HOME/.gem
-                  touch $HOME/.gem/credentials
-                  chmod 0600 $HOME/.gem/credentials
-                  printf -- "---\n:rubygems_api_key: ${{ secrets.rubygems_api_key }}\n" > $HOME/.gem/credentials
-                  bundle exec rake package
-                  for gem in pkg/${{ inputs.gem_name }}-${{ needs.release.outputs.version }}.gem ; do
-                    gem push "$gem" --host https://rubygems.org
-                  done
+            - name: Publish crate
+              run: cargo publish
