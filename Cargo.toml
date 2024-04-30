@@ -1,11 +1,12 @@
 [package]
 name = "comrak"
-version = "0.22.0"
+version = "0.23.0"
 authors = ["Amelia Cuss <amelia@kivikakk.ee>"]
+rust-version = "1.62.1"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
-homepage = "https://hrzn.ee/kivikakk/comrak"
-repository = "https://hrzn.ee/kivikakk/comrak"
+homepage = "https://github.com/kivikakk/comrak"
+repository = "https://github.com/kivikakk/comrak"
 readme = "README.md"
 keywords = ["markdown", "commonmark"]
 license = "BSD-2-Clause"
@@ -45,16 +46,18 @@ slug = "0.1.4"
 emojis = { version = "0.5.2", optional = true }
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 derive_builder = "0.12.0"
+in-place = { version = "0.2.0", optional = true }
 
 [dev-dependencies]
 ntest = "0.9"
+toml = "0.8"
 
 [target.'cfg(not(target_arch="wasm32"))'.dev-dependencies]
 propfuzz = "0.0.1"
 
 [features]
 default = ["cli", "syntect"]
-cli = ["clap", "shell-words", "xdg"]
+cli = ["clap", "shell-words", "xdg", "in-place"]
 shortcodes = ["emojis"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]

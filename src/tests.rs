@@ -87,9 +87,9 @@ where
 fn html_opts_w(input: &str, expected: &str, options: &Options) {
     let arena = Arena::new();
 
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&arena, input, options);
     let mut output = vec![];
-    html::format_document(root, &options, &mut output).unwrap();
+    html::format_document(root, options, &mut output).unwrap();
     compare_strs(
         &String::from_utf8(output).unwrap(),
         expected,
@@ -102,12 +102,12 @@ fn html_opts_w(input: &str, expected: &str, options: &Options) {
     }
 
     let mut md = vec![];
-    cm::format_document(root, &options, &mut md).unwrap();
+    cm::format_document(root, options, &mut md).unwrap();
 
     let md_string = &String::from_utf8(md).unwrap();
-    let root = parse_document(&arena, md_string, &options);
+    let root = parse_document(&arena, md_string, options);
     let mut output_from_rt = vec![];
-    html::format_document(root, &options, &mut output_from_rt).unwrap();
+    html::format_document(root, options, &mut output_from_rt).unwrap();
     compare_strs(
         &String::from_utf8(output_from_rt).unwrap(),
         expected,

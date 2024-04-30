@@ -14,10 +14,12 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::{Parser, ValueEnum};
+use in_place::InPlace;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
 const EXIT_READ_INPUT: i32 = 3;
+const EXIT_CHECK_FILE_NUM: i32 = 4;
 
 #[derive(Debug, Parser)]
 #[command(about, author, version)]
@@ -34,6 +36,10 @@ struct Cli {
     /// Path to config file containing command-line arguments, or 'none'
     #[arg(short, long, value_name = "PATH", default_value = get_default_config_path())]
     config_file: String,
+
+    /// To perform an in-place formatting
+    #[arg(short, long, conflicts_with_all(["format", "output"]))]
+    inplace: bool,
 
     /// Treat newlines as hard line breaks
     #[arg(long)]
@@ -60,7 +66,8 @@ struct Cli {
     #[arg(long)]
     relaxed_tasklist_character: bool,
 
-    /// Enable relaxing of autolink parsing, allowing links to be recognized when in brackets
+    /// Enable relaxing of autolink parsing, allow links to be recognized when in brackets
+    /// and allow all url schemes
     #[arg(long)]
     relaxed_autolinks: bool,
 
@@ -204,6 +211,18 @@ fn cli_with_config() -> Cli {
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = cli_with_config();
 
+    if cli.inplace {
+        if let Some(ref files) = cli.files {
+            if files.len() != 1 {
+                eprintln!("cannot have more than 1 input file with in-place mode");
+                process::exit(EXIT_CHECK_FILE_NUM);
+            }
+        } else {
+            eprintln!("no input file specified: cannot use standard input with in-place mode");
+            process::exit(EXIT_CHECK_FILE_NUM);
+        }
+    }
+
     let exts = &cli.extensions;
 
     let mut extension = ExtensionOptionsBuilder::default();
@@ -272,8 +291,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => {
             std::io::stdin().read_to_end(&mut s)?;
         }
-        Some(fs) => {
-            for f in &fs {
+        Some(ref fs) => {
+            for f in fs {
                 match fs::File::open(f) {
                     Ok(mut io) => {
                         io.read_to_end(&mut s)?;
@@ -290,19 +309,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     let arena = Arena::new();
     let root = comrak::parse_document(&arena, &String::from_utf8(s)?, &options);
 
-    let formatter = match cli.format {
-        Format::Html => {
-            plugins.render.codefence_syntax_highlighter = syntax_highlighter;
-            comrak::format_html_with_plugins
+    let formatter = if cli.inplace {
+        comrak::format_commonmark_with_plugins
+    } else {
+        match cli.format {
+            Format::Html => {
+                plugins.render.codefence_syntax_highlighter = syntax_highlighter;
+                comrak::format_html_with_plugins
+            }
+            Format::Xml => comrak::format_xml_with_plugins,
+            Format::CommonMark => comrak::format_commonmark_with_plugins,
         }
-        Format::Xml => comrak::format_xml_with_plugins,
-        Format::CommonMark => comrak::format_commonmark_with_plugins,
     };
 
     if let Some(output_filename) = cli.output {
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;
+    } else if cli.inplace {
+        let inp: in_place::InPlaceFile =
+            InPlace::new(unsafe { cli.files.unwrap_unchecked().get_unchecked(0) }).open()?;
+        let mut bw = inp.writer();
+        formatter(root, &options, &mut bw, &plugins)?;
+        inp.save()?;
     } else {
         let stdout = std::io::stdout();
         let mut bw = BufWriter::new(stdout.lock());

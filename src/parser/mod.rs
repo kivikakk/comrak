@@ -462,7 +462,8 @@ pub struct ParseOptions {
     /// Whether or not a simple `x` or `X` is used for tasklist or any other symbol is allowed.
     pub relaxed_tasklist_matching: bool,
 
-    /// Relax parsing of autolinks, allowing links to be detected inside brackets.
+    /// Relax parsing of autolinks, allow links to be detected inside brackets
+    /// and allow all url schemes
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
@@ -1482,7 +1483,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn parse_html_block_prefix(&mut self, t: u8) -> bool {
         match t {
-            1 | 2 | 3 | 4 | 5 => true,
+            1..=5 => true,
             6 | 7 => !self.blank,
             _ => unreachable!(),
         }
@@ -1826,7 +1827,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         } else if match ast.value {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced,
-            NodeValue::Heading(ref nh) => nh.setext,
             NodeValue::MultilineBlockQuote(..) => true,
             _ => false,
         } {
@@ -2415,20 +2415,15 @@ pub enum AutolinkType {
     Email,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for bulleted list redering in markdown. See `link_style` in [RenderOptions] for more details.
 pub enum ListStyleType {
     /// The `-` character
+    #[default]
     Dash = 45,
     /// The `+` character
     Plus = 43,
     /// The `*` character
     Star = 42,
-}
-
-impl Default for ListStyleType {
-    fn default() -> Self {
-        ListStyleType::Dash
-    }
 }

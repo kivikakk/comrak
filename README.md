@@ -21,10 +21,10 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.22"
+comrak = "0.23"
 ```
 
-Comrak supports Rust stable.
+Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
 
 ### Mac & Linux Binaries
 
@@ -56,6 +56,9 @@ Options:
           
           [default: /Users/kivikakk/.config/comrak/config]
 
+  -i, --inplace
+          To perform an in-place formatting
+
       --hardbreaks
           Treat newlines as hard line breaks
 
@@ -76,7 +79,8 @@ Options:
           Enable relaxing which character is allowed in a tasklists
 
       --relaxed-autolinks
-          Enable relaxing of autolink parsing, allowing links to be recognized when in brackets
+          Enable relaxing of autolink parsing, allow links to be recognized when in brackets and
+          allow all url schemes
 
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
@@ -158,45 +162,38 @@ Or you can parse the input into an AST yourself, manipulate it, and then use you
 
 ``` rust
 extern crate comrak;
-use comrak::{parse_document, format_html, Arena, Options};
-use comrak::nodes::{AstNode, NodeValue};
+use comrak::nodes::NodeValue;
+use comrak::{format_html, parse_document, Arena, Options};
 
-// The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-let arena = Arena::new();
+fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
+    // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
+    let arena = Arena::new();
 
-let root = parse_document(
-    &arena,
-    "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
-    &Options::default());
+    // Parse the document into a root `AstNode`
+    let root = parse_document(&arena, document, &Options::default());
 
-fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
-    where F : Fn(&'a AstNode<'a>) {
-    f(node);
-    for c in node.children() {
-        iter_nodes(c, f);
+    // Iterate over all the descendants of root.
+    for node in root.descendants() {
+        if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+            // If the node is a text node, perform the string replacement.
+            *text = text.replace(orig_string, replacement)
+        }
     }
+
+    let mut html = vec![];
+    format_html(root, &Options::default(), &mut html).unwrap();
+
+    String::from_utf8(html).unwrap()
 }
 
-iter_nodes(root, &|node| {
-    match &mut node.data.borrow_mut().value {
-        &mut NodeValue::Text(ref mut text) => {
-            let orig = std::mem::replace(text, vec![]);
-            *text = String::from_utf8(orig).unwrap().replace("my", "your").as_bytes().to_vec();
-        }
-        _ => (),
-    }
-});
+fn main() {
+    let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
+    let orig = "my";
+    let repl = "your";
+    let html = replace_text(&doc, &orig, &repl);
 
-let mut html = vec![];
-format_html(root, &Options::default(), &mut html).unwrap();
-
-assert_eq!(
-    String::from_utf8(html).unwrap(),
-    "<p>This is your input.</p>\n\
-     <ol>\n\
-     <li>Also your input.</li>\n\
-     <li>Certainly your input.</li>\n\
-     </ol>\n");
+    println!("{}", html);
+}
 ```
 
 ## Benchmarking

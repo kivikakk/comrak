@@ -6,7 +6,7 @@ use ntest::timeout;
 #[timeout(4000)]
 fn pathological_emphases() {
     let n = 50_000;
-    let input = format!("{}", "*a_ ".repeat(n));
+    let input = "*a_ ".repeat(n).to_string();
     let mut exp = format!("<p>{}", input);
     // Right-most space is trimmed in output.
     exp.pop();
@@ -41,8 +41,10 @@ fn pathological_table_columns_2() {
         "a\n".repeat(n)
     );
 
-    let mut extension = ExtensionOptions::default();
-    extension.table = true;
+    let extension = parser::ExtensionOptions {
+        table: true,
+        ..Default::default()
+    };
 
     // Not interested in the actual html, just that we don't timeout
     markdown_to_html(

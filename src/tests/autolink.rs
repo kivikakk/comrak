@@ -22,10 +22,10 @@ fn autolink_email() {
 fn autolink_scheme() {
     html_opts!(
         [extension.autolink],
-        concat!("https://google.com/search\n"),
+        concat!("https://google.com/search\n", "rdar://localhost.com/blah"),
         concat!(
-            "<p><a href=\"https://google.com/search\">https://google.\
-             com/search</a></p>\n"
+            "<p><a href=\"https://google.com/search\">https://google.com/search</a>\n",
+            "rdar://localhost.com/blah</p>\n"
         ),
     );
 }
@@ -49,6 +49,51 @@ fn autolink_no_link_bad() {
         [extension.autolink],
         concat!("@a.b.c@. x\n", "\n", "n@. x\n"),
         concat!("<p>@a.b.c@. x</p>\n", "<p>n@. x</p>\n"),
+    );
+}
+
+#[test]
+fn autolink_parentheses_balanced() {
+    let examples = [
+        [
+            "http://www.pokemon.com/Pikachu_(Electric)",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_(Electric)\">http://www.pokemon.com/Pikachu_(Electric)</a></p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_((Electric)",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_((Electric)\">http://www.pokemon.com/Pikachu_((Electric)</a></p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_(Electric))",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_(Electric)\">http://www.pokemon.com/Pikachu_(Electric)</a>)</p>\n",
+        ],
+        [
+            "http://www.pokemon.com/Pikachu_((Electric))",
+            "<p><a href=\"http://www.pokemon.com/Pikachu_((Electric))\">http://www.pokemon.com/Pikachu_((Electric))</a></p>\n",
+        ],
+    ];
+
+    for example in examples {
+        html_opts!([extension.autolink], example[0], example[1]);
+    }
+
+    for example in examples {
+        html_opts!(
+            [extension.autolink, parse.relaxed_autolinks],
+            example[0],
+            example[1]
+        );
+    }
+}
+
+#[test]
+fn autolink_brackets_unbalanced() {
+    html_opts!(
+        [extension.autolink],
+        concat!("http://example.com/[abc]]...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%5Babc%5D%5D\">http://example.com/[abc]]</a>...</p>\n"
+        ),
     );
 }
 
@@ -90,6 +135,58 @@ fn autolink_relaxed_links_in_brackets() {
         [
             "[<https://foo.com>]",
             "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n",
+        ],
+    ];
+
+    for example in examples {
+        html_opts!(
+            [extension.autolink, parse.relaxed_autolinks],
+            example[0],
+            example[1]
+        );
+    }
+}
+
+#[test]
+fn autolink_relaxed_links_brackets_balanced() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        concat!("http://example.com/[abc]]...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%5Babc%5D\">http://example.com/[abc]</a>]...</p>\n"
+        ),
+    );
+}
+
+#[test]
+fn autolink_relaxed_links_curly_braces_balanced() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        concat!("http://example.com/{abc}}...\n"),
+        concat!(
+            "<p><a href=\"http://example.com/%7Babc%7D\">http://example.com/{abc}</a>}...</p>\n"
+        ),
+    );
+}
+
+#[test]
+fn autolink_relaxed_links_schemes() {
+    let examples = [
+        [
+            "https://foo.com",
+            "<p><a href=\"https://foo.com\">https://foo.com</a></p>\n",
+        ],
+        [
+            "smb:///Volumes/shared/foo.pdf",
+            "<p><a href=\"smb:///Volumes/shared/foo.pdf\">smb:///Volumes/shared/foo.pdf</a></p>\n",
+        ],
+        [
+            "irc://irc.freenode.net/git",
+            "<p><a href=\"irc://irc.freenode.net/git\">irc://irc.freenode.net/git</a></p>\n",
+        ],
+        [
+            "rdar://localhost.com/blah",
+            "<p><a href=\"rdar://localhost.com/blah\">rdar://localhost.com/blah</a></p>\n",
         ],
     ];
 
