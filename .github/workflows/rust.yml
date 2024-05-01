@@ -12,7 +12,7 @@ jobs:
           - beta
           - stable
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
@@ -29,7 +29,7 @@ jobs:
           - beta
           - stable
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
@@ -39,7 +39,7 @@ jobs:
   build_wasm:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
@@ -59,7 +59,7 @@ jobs:
           - beta
           - stable
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
@@ -69,7 +69,7 @@ jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
@@ -83,7 +83,7 @@ jobs:
         rust:
           - stable
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
