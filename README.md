@@ -21,7 +21,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.23"
+comrak = "0.23.1-pre"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
@@ -54,7 +54,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /Users/kivikakk/.config/comrak/config]
+          [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
