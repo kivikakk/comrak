@@ -1,3 +1,9 @@
+## [v0.23.1-pre.3] - 01-05-2024
+## What's Changed
+* build(deps): bump actions/checkout from 3 to 4 by @dependabot in https://github.com/kivikakk/comrak/pull/389
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.23.1-pre.2...v0.23.1-pre.3
 ### 0.23.0
 
 * add traverse() demo example by @kaesluder in https://github.com/kivikakk/comrak/pull/370
