@@ -72,6 +72,12 @@ jobs:
                   git add -f changelog.txt README.md
                   git commit -m "[auto-docs][skip test]: update changelog" || true
 
+            - name: Push to protected branch
+              uses: CasperWA/push-protected@v2
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: main
+
             - name: Create tag
               run: |
                   git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
