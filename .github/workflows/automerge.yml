@@ -12,3 +12,5 @@ jobs:
   dependabot:
     uses: yettoapp/actions/.github/workflows/automerge_dependabot.yml@main
     secrets: inherit
+    with:
+      automerge: true
