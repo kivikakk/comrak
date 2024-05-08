@@ -2,14 +2,19 @@ name: Release and publish
 
 on:
     workflow_dispatch:
+    pull_request_target:
+        types:
+            - closed
 
 permissions:
     contents: write
     pull-requests: write
 
 jobs:
-    release:
+    prepare:
         runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
         outputs:
             version: ${{ steps.version-label.outputs.version }}
@@ -18,13 +23,6 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   submodules: true
-
-            - name: Setup Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
 
             - name: Configure Git
               run: |
@@ -58,36 +56,46 @@ jobs:
                   }
                   echo "changelog<<EOF"$'\n'"$(generate)"$'\n'EOF >> $GITHUB_OUTPUT
 
-            - name: Update CHANGELOG.md
+            - name: Update changelog.txt
               run: |
-                  echo "## [v${{ steps.version-label.outputs.version }}] - `date +%d-%m-%Y`" >> CHANGELOG.md.tmp
-                  echo "${{steps.generate-release-notes.outputs.changelog}}" >> CHANGELOG.md.tmp
-                  echo '-n' >> CHANGELOG.md
-                  cat CHANGELOG.md >> CHANGELOG.md.tmp
-                  mv CHANGELOG.md.tmp CHANGELOG.md
+                  echo "# [v${{ steps.version-label.outputs.version }}] - `date +%d-%m-%Y`" >> changelog.txt.tmp
+                  echo "${{steps.generate-release-notes.outputs.changelog}}" >> changelog.txt.tmp
+                  echo '-n' >> changelog.txt
+                  cat changelog.txt >> changelog.txt.tmp
+                  mv changelog.txt.tmp changelog.txt
 
             - name: Update README
               run: |
                   cargo run --example update-readme
 
             - name: Commit Changelog and README
-              run: |
-                  git config --local user.email "actions@github.com"
-                  git config --local user.name "Actions Auto Build"
-                  git add -f CHANGELOG.md README.md
-                  git commit -m "[auto-docs][skip test]: update changelog" || true
+              run: git add -f changelog.txt README.md
 
-            - name: Create tag
-              run: |
-                  git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
-                  git push origin --tags
+            - name: Create Pull Request
+              id: cpr
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  commit-message: "[skip test] update changelog"
+                  title: "[skip test] Release v${{ steps.version-label.outputs.version }}"
+                  body: >
+                      This is an automated PR to build the latest changelog. Upon merging,
+                      a new release will be created and published to crates.io.<br/>
+                      Due to security considerations, PRs created by GitHub Actions cannot
+                      be merged automatically. Please review the changes and merge the PR.<br/>
+                      If you require the test suites to run, you can close the PR and reopen it to trigger
+                      those workflows.
+                  delete-branch: true
+                  labels: release
+                  branch: "release/v${{ steps.version-label.outputs.version }}"
 
-            - name: Publish GitHub release
-              run: |
-                  gh release create v${{ steps.version-label.outputs.version }} --generate-notes
+            - name: Enable Pull Request Automerge
+              uses: peter-evans/enable-pull-request-automerge@v3
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
 
-    publish:
-        needs: release
+    release:
+        if: ${{ (github.event.pull_request.merged == true) && (contains(github.event.pull_request.labels.*.name, 'release')) }}
         runs-on: ubuntu-latest
         env:
             CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
@@ -97,8 +105,23 @@ jobs:
               with:
                   submodules: recursive
 
+            - name: Get current version
+              id: version-label
+              run: |
+                  VERSION=$(grep version Cargo.toml | head -n 1 | cut -d'"' -f2)
+                  echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+            - name: Create tag
+              run: |
+                  git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
+                  git push origin --tags
+
             - name: Login to Crates.io
               run: cargo login ${CRATES_IO_TOKEN}
+
+            - name: Publish GitHub release
+              run: |
+                  gh release create v${{ steps.version-label.outputs.version }} --generate-notes
 
             - name: Publish crate
               run: cargo publish
