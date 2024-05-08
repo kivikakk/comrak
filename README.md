@@ -318,12 +318,12 @@ self-employed --- open-source software relies on the collective.
 
 ## Contact
 
-Amelia Cuss \<amelia kivikakk ee\>
+Asherah Connor \<ashe kivikakk ee\>
 
 ## Legal
 
-Copyright (c) 2017–2024, Amelia Cuss and Comrak contributors. Licensed under the
-[2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
+Copyright (c) 2017–2024, Asherah Connor and Comrak contributors. Licensed under
+the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
 
