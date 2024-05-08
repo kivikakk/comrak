@@ -54,7 +54,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /Users/kivikakk/.config/comrak/config]
+          [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
@@ -140,10 +140,10 @@ Options:
           Include source position attribute in HTML and XML output
 
   -h, --help
-          Print help information (use `-h` for a summary)
+          Print help (see a summary with '-h')
 
   -V, --version
-          Print version information
+          Print version
 
 By default, Comrak will attempt to read command-line options from a config file specified by
 --config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
