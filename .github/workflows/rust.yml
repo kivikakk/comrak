@@ -6,7 +6,7 @@ env:
   MSRV: 1.62.1
 
 jobs:
-  build_test:
+  build_lib_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,11 +21,16 @@ jobs:
         submodules: true
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
-    - name: Build and test
-      run: env SPEC=false script/cibuild
-  build_spec:
+    - name: Build library
+      run: cargo build --verbose --lib
+    - name: Build examples
+      run: cargo build --verbose --lib --examples
+    - name: Run unit tests
+      run: cargo test --verbose
+    - name: "Run README sample (TODO: update me)"
+      run: cargo run --example sample
+  build_bin_spec:
     runs-on: ubuntu-latest
-    needs: build_test
     strategy:
       matrix:
         rust:
@@ -39,16 +44,25 @@ jobs:
         submodules: true
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
-    - name: Build and run spec tests
-      run: env SPEC=true script/cibuild
+    - name: Build binary
+      run: cargo build --verbose --bin --release
+    - name: Run spec tests
+      run: script/cibuild
   build_wasm:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - nightly
+          - beta
+          - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
-      run: rustup override set $MSRV
+      run: rustup override set ${{ matrix.rust }}
     - name: Setup for wasm
       run: rustup target add wasm32-unknown-unknown
     - name: Build
@@ -84,16 +98,12 @@ jobs:
       run: cargo +stable build --locked --release --all-features
   clippy_format:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
-      run: rustup override set ${{ matrix.rust }}
+      run: rustup override set $MSRV
     - name: Check clippy
       run: rustup component add clippy && cargo clippy
     - name: Check formatting

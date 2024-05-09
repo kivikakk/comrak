@@ -14,7 +14,6 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::{Parser, ValueEnum};
-use in_place::InPlace;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
@@ -327,11 +326,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;
     } else if cli.inplace {
-        let inp: in_place::InPlaceFile =
-            InPlace::new(unsafe { cli.files.unwrap_unchecked().get_unchecked(0) }).open()?;
-        let mut bw = inp.writer();
+        let output_filename = cli.files.unwrap().get(0).unwrap().clone();
+        let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         formatter(root, &options, &mut bw, &plugins)?;
-        inp.save()?;
+        bw.flush()?;
     } else {
         let stdout = std::io::stdout();
         let mut bw = BufWriter::new(stdout.lock());

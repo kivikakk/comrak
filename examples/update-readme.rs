@@ -1,6 +1,5 @@
 // Update the "comrak --help" text in Comrak's own README.
 
-use in_place::InPlace;
 use std::error::Error;
 use std::fmt::Write;
 use std::str;
@@ -15,8 +14,7 @@ const HELP: &str = "$ comrak --help\n";
 fn main() -> Result<(), Box<dyn Error>> {
     let arena = Arena::new();
 
-    let inp = InPlace::new("README.md").open()?;
-    let readme = std::io::read_to_string(inp.reader())?;
+    let readme = std::fs::read_to_string("README.md")?;
     let doc = parse_document(&arena, &readme, &Options::default());
 
     let cargo_toml = std::fs::read_to_string("Cargo.toml")?.parse::<Table>()?;
@@ -70,8 +68,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    format_commonmark(doc, &Options::default(), &mut inp.writer())?;
-    inp.save()?;
+    let mut out = vec![];
+    format_commonmark(doc, &Options::default(), &mut out)?;
+    std::fs::write("README.md", &out)?;
 
     Ok(())
 }
