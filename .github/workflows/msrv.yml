@@ -1,0 +1,10 @@
+name: Ensure declared MSRV is tested
+
+on: [push, pull_request]
+
+jobs:
+  ensure_msrv:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: script/check-msrv-matches-workflow
