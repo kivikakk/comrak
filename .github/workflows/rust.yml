@@ -45,7 +45,7 @@ jobs:
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build binary
-      run: cargo build --verbose --bin --release
+      run: cargo build --verbose --bin comrak --release
     - name: Run spec tests
       run: script/cibuild
   build_wasm:
