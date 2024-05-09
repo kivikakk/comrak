@@ -12,6 +12,7 @@ permissions:
 
 jobs:
     prepare:
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         runs-on: ubuntu-latest
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
