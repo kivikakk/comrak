@@ -2,6 +2,9 @@ name: Rust
 
 on: [push, pull_request]
 
+env:
+  MSRV: 1.62.1
+
 jobs:
   build_test:
     runs-on: ubuntu-latest
@@ -11,6 +14,7 @@ jobs:
           - nightly
           - beta
           - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
@@ -28,6 +32,7 @@ jobs:
           - nightly
           - beta
           - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
@@ -43,7 +48,7 @@ jobs:
       with:
         submodules: true
     - name: Obtain Rust
-      run: rustup override set stable
+      run: rustup override set $MSRV
     - name: Setup for wasm
       run: rustup target add wasm32-unknown-unknown
     - name: Build
@@ -58,6 +63,7 @@ jobs:
           - nightly
           - beta
           - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
@@ -73,7 +79,7 @@ jobs:
       with:
         submodules: true
     - name: Obtain Rust
-      run: rustup override set stable
+      run: rustup override set $MSRV
     - name: Build and test with no features
       run: cargo +stable build --locked --release --all-features
   clippy_format:
@@ -81,7 +87,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
