@@ -18,7 +18,6 @@ mod multiline_block_quotes;
 mod options;
 mod pathological;
 mod plugins;
-mod propfuzz;
 mod regressions;
 mod shortcodes;
 mod strikethrough;

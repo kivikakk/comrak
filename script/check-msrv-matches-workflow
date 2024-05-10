@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+CI_FILE=".github/workflows/rust.yml"
+
+MSRV=$(
+  grep -E '^rust-version = "[^"]+"$' Cargo.toml |
+  head -n 1 |
+  cut -d\" -f2
+)
+
+TESTED=$(
+  grep -E '^\s*MSRV: \S+$' $CI_FILE |
+  awk '{ print $2 }'
+)
+
+if test "$MSRV" != "$TESTED"; then
+  echo "MSRV used in $CI_FILE ($TESTED) doesn't match Cargo.toml's rust-version declaration ($MSRV)."
+  exit 1
+fi
+
+echo "MSRV: $MSRV"
