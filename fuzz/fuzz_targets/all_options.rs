@@ -23,7 +23,9 @@ fuzz_target!(|s: &str| {
     extension.math_code = true;
     extension.front_matter_delimiter = Some("---".to_string());
     extension.shortcodes = true;
-
+    extension.wikilinks_title_after_pipe = true;
+    extension.wikilinks_title_before_pipe = true;
+    
     let mut parse = ParseOptions::default();
     parse.smart = true;
     parse.default_info_string = Some("rust".to_string());

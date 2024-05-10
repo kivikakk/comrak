@@ -50,6 +50,8 @@ fn exercise_full_api() {
     extension.front_matter_delimiter(None);
     #[cfg(feature = "shortcodes")]
     extension.shortcodes(true);
+    extension.wikilinks_title_after_pipe(true);
+    extension.wikilinks_title_before_pipe(true);
 
     let mut parse = ParseOptionsBuilder::default();
     parse.smart(false);

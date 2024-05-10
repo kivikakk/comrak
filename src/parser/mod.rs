@@ -423,6 +423,36 @@ pub struct ExtensionOptions {
     ///            "<p>Happy Friday! 😄</p>\n");
     /// ```
     pub shortcodes: bool,
+
+    /// Enables wikilinks using title after pipe syntax
+    ///
+    /// ```` md
+    /// [[url|link text]]
+    /// ````
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.wikilinks_title_after_pipe = true;
+    /// assert_eq!(markdown_to_html("[[url|link text]]", &options),
+    ///            "<p><a href=\"url\">link text</a></p>\n");
+    /// ```
+    pub wikilinks_title_after_pipe: bool,
+
+    /// Enables wikilinks using title before pipe syntax
+    ///
+    /// ```` md
+    /// [[link text|url]]
+    /// ````
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.wikilinks_title_before_pipe = true;
+    /// assert_eq!(markdown_to_html("[[link text|url]]", &options),
+    ///            "<p><a href=\"url\">link text</a></p>\n");
+    /// ```
+    pub wikilinks_title_before_pipe: bool,
 }
 
 #[non_exhaustive]

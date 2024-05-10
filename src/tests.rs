@@ -25,6 +25,7 @@ mod superscript;
 mod table;
 mod tagfilter;
 mod tasklist;
+mod wikilinks;
 mod xml;
 
 #[track_caller]
@@ -141,6 +142,8 @@ macro_rules! html_opts {
                 math_code: true,
                 front_matter_delimiter: Some("---".to_string()),
                 shortcodes: true,
+                wikilinks_title_after_pipe: true,
+                wikilinks_title_before_pipe: true,
             },
             parse: $crate::ParseOptions {
                 smart: true,

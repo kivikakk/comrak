@@ -196,6 +196,8 @@ struct FuzzExtensionOptions {
     math_dollars: bool,
     math_code: bool,
     shortcodes: bool,
+    wikilinks_title_after_pipe: bool,
+    wikilinks_title_before_pipe: bool,
 }
 
 impl FuzzExtensionOptions {
@@ -213,6 +215,8 @@ impl FuzzExtensionOptions {
         extension.math_dollars = self.math_dollars;
         extension.math_code = self.math_code;
         extension.shortcodes = self.shortcodes;
+        extension.wikilinks_title_after_pipe = self.wikilinks_title_after_pipe;
+        extension.wikilinks_title_before_pipe = self.wikilinks_title_before_pipe;
         extension.front_matter_delimiter = None;
         extension.header_ids = None;
         extension
