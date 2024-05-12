@@ -49,6 +49,31 @@ fn wikilinks_sanitizes_the_href_attribute_case_2() {
 }
 
 #[test]
+fn wikilinks_supercedes_relaxed_autolinks() {
+    html_opts!(
+        [
+            extension.wikilinks_title_after_pipe,
+            parse.relaxed_autolinks
+        ],
+        concat!("[[http://example.com]]",),
+        concat!(
+            "<p><a href=\"http://example.com\" data-wikilink=\"true\">http://example.com</a></p>\n"
+        ),
+    );
+
+    html_opts!(
+        [
+            extension.wikilinks_title_before_pipe,
+            parse.relaxed_autolinks
+        ],
+        concat!("[[http://example.com]]",),
+        concat!(
+            "<p><a href=\"http://example.com\" data-wikilink=\"true\">http://example.com</a></p>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.wikilinks_title_after_pipe],
