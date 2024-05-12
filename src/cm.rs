@@ -367,7 +367,13 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::TaskItem(symbol) => self.format_task_item(symbol, node, entering),
             NodeValue::Strikethrough => self.format_strikethrough(),
             NodeValue::Superscript => self.format_superscript(),
-            NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
+            NodeValue::Link(ref nl) => {
+                if nl.wikilink {
+                    return self.format_wikilink(nl, entering);
+                } else {
+                    return self.format_link(node, nl, entering);
+                }
+            }
             NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering),
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering),
@@ -684,6 +690,24 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
+        }
+
+        true
+    }
+
+    fn format_wikilink(&mut self, nl: &NodeLink, entering: bool) -> bool {
+        if entering {
+            write!(self, "[[").unwrap();
+            if self.options.extension.wikilinks_title_after_pipe {
+                self.output(nl.url.as_bytes(), false, Escaping::Url);
+                write!(self, "|").unwrap();
+            }
+        } else {
+            if self.options.extension.wikilinks_title_before_pipe {
+                write!(self, "|").unwrap();
+                self.output(nl.url.as_bytes(), false, Escaping::Url);
+            }
+            write!(self, "]]").unwrap();
         }
 
         true

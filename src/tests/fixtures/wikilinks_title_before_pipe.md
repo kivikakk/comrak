@@ -17,25 +17,25 @@ With this version of wikilinks, the title comes before the pipe.
 ```````````````````````````````` example
 [[https://example.org]]
 .
-<p><a href="https://example.org">https://example.org</a></p>
+<p><a href="https://example.org" data-wikilink="true">https://example.org</a></p>
 ````````````````````````````````
 
 ```````````````````````````````` example
 [[title|https://example.org]]
 .
-<p><a href="https://example.org">title</a></p>
+<p><a href="https://example.org" data-wikilink="true">title</a></p>
 ````````````````````````````````
 
 ```````````````````````````````` example
 [[Name of page]]
 .
-<p><a href="Name%20of%20page">Name of page</a></p>
+<p><a href="Name%20of%20page" data-wikilink="true">Name of page</a></p>
 ````````````````````````````````
 
 ```````````````````````````````` example
 [[Title|Name of page]]
 .
-<p><a href="Name%20of%20page">Title</a></p>
+<p><a href="Name%20of%20page" data-wikilink="true">Title</a></p>
 ````````````````````````````````
 
 Regular links should still work!
@@ -51,5 +51,5 @@ HTML entities are recognized both in the name of page and in the link title.
 ```````````````````````````````` example
 [[&#xDC;ber &amp;nbsp;|Gesch&uuml;tztes Leerzeichen]]
 .
-<p><a href="Gesch%C3%BCtztes%20Leerzeichen">Über &amp;nbsp;</a></p>
+<p><a href="Gesch%C3%BCtztes%20Leerzeichen" data-wikilink="true">Über &amp;nbsp;</a></p>
 ````````````````````````````````

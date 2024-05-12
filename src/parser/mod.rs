@@ -435,7 +435,7 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.wikilinks_title_after_pipe = true;
     /// assert_eq!(markdown_to_html("[[url|link text]]", &options),
-    ///            "<p><a href=\"url\">link text</a></p>\n");
+    ///            "<p><a href=\"url\" data-wikilink=\"true\">link text</a></p>\n");
     /// ```
     pub wikilinks_title_after_pipe: bool,
 
@@ -450,7 +450,7 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.wikilinks_title_before_pipe = true;
     /// assert_eq!(markdown_to_html("[[link text|url]]", &options),
-    ///            "<p><a href=\"url\">link text</a></p>\n");
+    ///            "<p><a href=\"url\" data-wikilink=\"true\">link text</a></p>\n");
     /// ```
     pub wikilinks_title_before_pipe: bool,
 }

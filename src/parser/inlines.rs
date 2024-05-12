@@ -1491,7 +1491,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
         let brackets_len = self.brackets.len();
 
-        let nl = NodeLink { url, title };
+        let nl = NodeLink {
+            url,
+            title,
+            wikilink: false,
+        };
         let inl = self.make_inline(
             if is_image {
                 NodeValue::Image(nl)
@@ -1585,6 +1589,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         let nl = NodeLink {
             url: String::from_utf8(url_clean).unwrap(),
             title: String::new(),
+            wikilink: true,
         };
         let inl = self.make_inline(NodeValue::Link(nl), startpos - 1, self.pos - 1);
         inl.append(self.make_inline(
@@ -1724,6 +1729,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             NodeValue::Link(NodeLink {
                 url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
                 title: String::new(),
+                wikilink: false,
             }),
             start_column + 1,
             end_column + 1,

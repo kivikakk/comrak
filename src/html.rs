@@ -826,6 +826,9 @@ impl<'o> HtmlFormatter<'o> {
                         self.output.write_all(b"\" title=\"")?;
                         self.escape(nl.title.as_bytes())?;
                     }
+                    if nl.wikilink {
+                        self.output.write_all(b"\" data-wikilink=\"true")?;
+                    }
                     self.output.write_all(b"\">")?;
                 } else {
                     self.output.write_all(b"</a>")?;

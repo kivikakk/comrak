@@ -251,6 +251,9 @@ pub struct NodeLink {
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
     pub title: String,
+
+    /// Whether this is a wikilink or not
+    pub wikilink: bool,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
