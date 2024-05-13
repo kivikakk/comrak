@@ -63,7 +63,7 @@ xdg = { version = "^2.5", optional = true }
 syntect = { version = "5.0", optional = true, default-features = false, features = [
     "default-fancy",
 ] }
-clap = { version = "4.0.32", optional = true, features = ["derive", "string"] }
+clap = { version = "4.5.4", optional = true, features = ["derive", "string"] }
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 syntect = { version = "5.0", optional = true, default-features = false, features = [
@@ -74,7 +74,7 @@ syntect = { version = "5.0", optional = true, default-features = false, features
 ] }
 
 # Latest to support 1.62.1.
-clap = { version = "= 4.0.32", optional = true, features = [
+clap = { version = "= 4.5.4", optional = true, features = [
     "derive",
     "string",
     "wrap_help",
