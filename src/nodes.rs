@@ -252,8 +252,8 @@ pub struct NodeLink {
     /// `alt` text is supplied in the image inline text.
     pub title: String,
 
-    /// Whether this is a wikilink or not
-    pub wikilink: bool,
+    /// Whether this is a wikilink or not.
+    pub wikilink: bool = false,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
