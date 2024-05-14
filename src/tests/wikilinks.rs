@@ -74,6 +74,18 @@ fn wikilinks_supercedes_relaxed_autolinks() {
 }
 
 #[test]
+fn wikilinks_exceeds_label_limit() {
+    let long_label = format!("[[{:b<1100}]]", "a");
+    let expected = format!("<p>{}</p>\n", long_label);
+
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        &long_label,
+        &expected,
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.wikilinks_title_after_pipe],
