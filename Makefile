@@ -17,7 +17,7 @@ build-comrak-branch:
 	cp ${ROOT}/target/release/comrak ${ROOT}/benches/comrak-${COMMIT}
 
 build-comrak-master:
-	git clone https://hrzn.ee/kivikakk/comrak.git --depth 1 --single-branch ${ROOT}/vendor/comrak || true
+	git clone https://github.com/kivikakk/comrak.git --depth 1 --single-branch ${ROOT}/vendor/comrak || true
 	cd ${ROOT}/vendor/comrak && \
 	cargo build --release && \
 	cp ./target/release/comrak ${ROOT}/benches/comrak-main
