@@ -253,7 +253,7 @@ pub struct NodeLink {
     pub title: String,
 
     /// Whether this is a wikilink or not.
-    pub wikilink: bool = false,
+    pub wikilink: bool,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.

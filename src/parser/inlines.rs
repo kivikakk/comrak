@@ -105,6 +105,12 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
+#[derive(Clone, Copy)]
+struct WikilinkComponents<'i> {
+    url: &'i [u8],
+    title: Option<&'i [u8]>,
+}
+
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
@@ -1576,14 +1582,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     //   [[url|link text]]
     pub fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
-        let (url, title) = self.wikilink_url_title();
+        let component = self.wikilink_url_title();
 
-        url?;
+        component?;
 
-        let url_clean = strings::clean_url(url.unwrap());
-        let title_clean = match title {
+        let component = component.unwrap();
+        let url_clean = strings::clean_url(component.url);
+        let title_clean = match component.title {
             Some(title) => entity::unescape_html(title),
-            None => entity::unescape_html(url.unwrap()),
+            None => entity::unescape_html(component.url),
         };
 
         let nl = NodeLink {
@@ -1601,28 +1608,31 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         Some(inl)
     }
 
-    pub fn wikilink_url_title(&mut self) -> (Option<&[u8]>, Option<&[u8]>) {
+    fn wikilink_url_title(&mut self) -> Option<WikilinkComponents<'i>> {
         let left_startpos = self.pos;
 
         if self.peek_char() != Some(&(b'[')) {
-            return (None, None);
+            return None;
         }
 
         let found_left = self.wikilink_component();
 
         if !found_left {
             self.pos = left_startpos;
-            return (None, None);
+            return None;
         }
 
         let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]);
 
         if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
             self.pos += 2;
-            return (Some(left), None);
+            return Some(WikilinkComponents {
+                url: left,
+                title: None,
+            });
         } else if self.peek_char() != Some(&(b'|')) {
             self.pos = left_startpos;
-            return (None, None);
+            return None;
         }
 
         let right_startpos = self.pos;
@@ -1630,7 +1640,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         if !found_right {
             self.pos = left_startpos;
-            return (None, None);
+            return None;
         }
 
         let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
@@ -1639,19 +1649,25 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos += 2;
 
             if self.options.extension.wikilinks_title_after_pipe {
-                (Some(left), Some(right))
+                Some(WikilinkComponents {
+                    url: left,
+                    title: Some(right),
+                })
             } else {
-                (Some(right), Some(left))
+                Some(WikilinkComponents {
+                    url: right,
+                    title: Some(left),
+                })
             }
         } else {
             self.pos = left_startpos;
-            (None, None)
+            None
         }
     }
 
     // Locates the edge of a wikilink component (link text or url), and sets the
     // self.pos to it's end if it's found.
-    pub fn wikilink_component(&mut self) -> bool {
+    fn wikilink_component(&mut self) -> bool {
         let startpos = self.pos;
 
         if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
