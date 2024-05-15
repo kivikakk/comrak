@@ -182,6 +182,9 @@ pub enum NodeValue {
 
     /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     Escaped,
+
+    /// **Inline**.  A wikilink to some URL.
+    WikiLink(NodeWikiLink),
 }
 
 /// Alignment of a single table cell.
@@ -251,9 +254,13 @@ pub struct NodeLink {
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
     pub title: String,
+}
 
-    /// Whether this is a wikilink or not.
-    pub wikilink: bool,
+/// The details of a wikilink's destination.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeWikiLink {
+    /// The URL for the link destination.
+    pub url: String,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.
@@ -492,6 +499,7 @@ impl NodeValue {
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
             NodeValue::Escaped => "escaped",
             NodeValue::Math(..) => "math",
+            NodeValue::WikiLink(..) => "wikilink",
         }
     }
 }
@@ -642,7 +650,8 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::Emph
         | NodeValue::Strong
         | NodeValue::Link(..)
-        | NodeValue::Image(..) => !child.block(),
+        | NodeValue::Image(..)
+        | NodeValue::WikiLink(..) => !child.block(),
 
         NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
@@ -660,6 +669,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
                 | NodeValue::Math(..)
+                | NodeValue::WikiLink(..)
         ),
 
         #[cfg(feature = "shortcodes")]
@@ -675,6 +685,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Strikethrough
                 | NodeValue::HtmlInline(..)
                 | NodeValue::Math(..)
+                | NodeValue::WikiLink(..)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {

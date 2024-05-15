@@ -427,30 +427,30 @@ pub struct ExtensionOptions {
     /// Enables wikilinks using title after pipe syntax
     ///
     /// ```` md
-    /// [[url|link text]]
+    /// [[url|link label]]
     /// ````
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.wikilinks_title_after_pipe = true;
-    /// assert_eq!(markdown_to_html("[[url|link text]]", &options),
-    ///            "<p><a href=\"url\" data-wikilink=\"true\">link text</a></p>\n");
+    /// assert_eq!(markdown_to_html("[[url|link label]]", &options),
+    ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
     pub wikilinks_title_after_pipe: bool,
 
     /// Enables wikilinks using title before pipe syntax
     ///
     /// ```` md
-    /// [[link text|url]]
+    /// [[link label|url]]
     /// ````
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.wikilinks_title_before_pipe = true;
-    /// assert_eq!(markdown_to_html("[[link text|url]]", &options),
-    ///            "<p><a href=\"url\" data-wikilink=\"true\">link text</a></p>\n");
+    /// assert_eq!(markdown_to_html("[[link label|url]]", &options),
+    ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
     pub wikilinks_title_before_pipe: bool,
 }

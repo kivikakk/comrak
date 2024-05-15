@@ -4,7 +4,7 @@ use super::*;
 // These cases don't work roundtrip, because converting to commonmark
 // automatically escapes certain characters.
 #[test]
-fn wikilinks_does_not_unescape_html_entities_in_link_text() {
+fn wikilinks_does_not_unescape_html_entities_in_link_label() {
     html_opts!(
         [extension.wikilinks_title_after_pipe, render.sourcepos],
         concat!("This is [[&lt;script&gt;alert(0)&lt;/script&gt;|a &lt;link]]",),
@@ -89,28 +89,28 @@ fn wikilinks_exceeds_label_limit() {
 fn sourcepos() {
     assert_ast_match!(
         [extension.wikilinks_title_after_pipe],
-        "This [[http://example.com|link text]] that\n",
-        (document (1:1-1:42) [
-            (paragraph (1:1-1:42) [
+        "This [[http://example.com|link label]] that\n",
+        (document (1:1-1:43) [
+            (paragraph (1:1-1:43) [
                 (text (1:1-1:5) "This ")
-                (link (1:6-1:37) [
-                    (text (1:6-1:37) "link text")
+                (wikilink (1:6-1:38) [
+                    (text (1:6-1:38) "link label")
                 ])
-                (text (1:38-1:42) " that")
+                (text (1:39-1:43) " that")
             ])
         ])
     );
 
     assert_ast_match!(
         [extension.wikilinks_title_before_pipe],
-        "This [[link text|http://example.com]] that\n",
-        (document (1:1-1:42) [
-            (paragraph (1:1-1:42) [
+        "This [[link label|http://example.com]] that\n",
+        (document (1:1-1:43) [
+            (paragraph (1:1-1:43) [
                 (text (1:1-1:5) "This ")
-                (link (1:6-1:37) [
-                    (text (1:6-1:37) "link text")
+                (wikilink (1:6-1:38) [
+                    (text (1:6-1:38) "link label")
                 ])
-                (text (1:38-1:42) " that")
+                (text (1:39-1:43) " that")
             ])
         ])
     );

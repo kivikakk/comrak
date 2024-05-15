@@ -122,7 +122,6 @@ fn www_match<'a>(
         NodeValue::Link(NodeLink {
             url,
             title: String::new(),
-            wikilink: false,
         }),
         (0, 1, 0, 1).into(),
     );
@@ -291,7 +290,6 @@ fn url_match<'a>(
         NodeValue::Link(NodeLink {
             url: url.clone(),
             title: String::new(),
-            wikilink: false,
         }),
         (0, 1, 0, 1).into(),
     );
@@ -400,7 +398,6 @@ fn email_match<'a>(
         NodeValue::Link(NodeLink {
             url,
             title: String::new(),
-            wikilink: false,
         }),
         (0, 1, 0, 1).into(),
     );

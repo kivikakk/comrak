@@ -826,9 +826,6 @@ impl<'o> HtmlFormatter<'o> {
                         self.output.write_all(b"\" title=\"")?;
                         self.escape(nl.title.as_bytes())?;
                     }
-                    if nl.wikilink {
-                        self.output.write_all(b"\" data-wikilink=\"true")?;
-                    }
                     self.output.write_all(b"\">")?;
                 } else {
                     self.output.write_all(b"</a>")?;
@@ -1039,6 +1036,21 @@ impl<'o> HtmlFormatter<'o> {
             }) => {
                 if entering {
                     self.render_math_inline(node, literal, display_math, dollar_math)?;
+                }
+            }
+            NodeValue::WikiLink(ref nl) => {
+                if entering {
+                    self.output.write_all(b"<a")?;
+                    self.render_sourcepos(node)?;
+                    self.output.write_all(b" href=\"")?;
+                    let url = nl.url.as_bytes();
+                    if self.options.render.unsafe_ || !dangerous_url(url) {
+                        self.escape_href(url)?;
+                    }
+                    self.output.write_all(b"\" data-wikilink=\"true")?;
+                    self.output.write_all(b"\">")?;
+                } else {
+                    self.output.write_all(b"</a>")?;
                 }
             }
         }

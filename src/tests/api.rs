@@ -228,5 +228,8 @@ fn exercise_full_api() {
             let _: bool = math.dollar_math;
             let _: String = math.literal;
         }
+        nodes::NodeValue::WikiLink(nl) => {
+            let _: String = nl.url;
+        }
     }
 }

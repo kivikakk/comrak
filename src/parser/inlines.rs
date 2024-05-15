@@ -2,7 +2,8 @@ use crate::arena_tree::Node;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, Sourcepos,
+    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink,
+    Sourcepos,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -108,7 +109,7 @@ struct Bracket<'a> {
 #[derive(Clone, Copy)]
 struct WikilinkComponents<'i> {
     url: &'i [u8],
-    title: Option<&'i [u8]>,
+    link_label: Option<&'i [u8]>,
 }
 
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
@@ -1497,11 +1498,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
         let brackets_len = self.brackets.len();
 
-        let nl = NodeLink {
-            url,
-            title,
-            wikilink: false,
-        };
+        let nl = NodeLink { url, title };
         let inl = self.make_inline(
             if is_image {
                 NodeValue::Image(nl)
@@ -1582,25 +1579,20 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     //   [[url|link text]]
     pub fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
-        let component = self.wikilink_url_title();
-
-        component?;
-
-        let component = component.unwrap();
+        let component = self.wikilink_url_link_label();
+        let component = component?;
         let url_clean = strings::clean_url(component.url);
-        let title_clean = match component.title {
-            Some(title) => entity::unescape_html(title),
+        let link_label_clean = match component.link_label {
+            Some(link_label) => entity::unescape_html(link_label),
             None => entity::unescape_html(component.url),
         };
 
-        let nl = NodeLink {
+        let nl = NodeWikiLink {
             url: String::from_utf8(url_clean).unwrap(),
-            title: String::new(),
-            wikilink: true,
         };
-        let inl = self.make_inline(NodeValue::Link(nl), startpos - 1, self.pos - 1);
+        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
         inl.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(title_clean).unwrap()),
+            NodeValue::Text(String::from_utf8(link_label_clean).unwrap()),
             startpos - 1,
             self.pos - 1,
         ));
@@ -1608,7 +1600,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         Some(inl)
     }
 
-    fn wikilink_url_title(&mut self) -> Option<WikilinkComponents<'i>> {
+    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents<'i>> {
         let left_startpos = self.pos;
 
         if self.peek_char() != Some(&(b'[')) {
@@ -1628,7 +1620,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos += 2;
             return Some(WikilinkComponents {
                 url: left,
-                title: None,
+                link_label: None,
             });
         } else if self.peek_char() != Some(&(b'|')) {
             self.pos = left_startpos;
@@ -1651,12 +1643,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             if self.options.extension.wikilinks_title_after_pipe {
                 Some(WikilinkComponents {
                     url: left,
-                    title: Some(right),
+                    link_label: Some(right),
                 })
             } else {
                 Some(WikilinkComponents {
                     url: right,
-                    title: Some(left),
+                    link_label: Some(left),
                 })
             }
         } else {
@@ -1665,7 +1657,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
     }
 
-    // Locates the edge of a wikilink component (link text or url), and sets the
+    // Locates the edge of a wikilink component (link label or url), and sets the
     // self.pos to it's end if it's found.
     fn wikilink_component(&mut self) -> bool {
         let startpos = self.pos;
@@ -1745,7 +1737,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             NodeValue::Link(NodeLink {
                 url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
                 title: String::new(),
-                wikilink: false,
             }),
             start_column + 1,
             end_column + 1,
