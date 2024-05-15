@@ -55,3 +55,12 @@ fn math(markdown: &str, cm: &str) {
 
     commonmark(markdown, cm, Some(&options));
 }
+
+#[test_case("This [[url]] that", "This [[url|url]] that\n")]
+#[test_case("This [[url|link label]] that", "This [[url|link%20label]] that\n")]
+fn wikilinks(markdown: &str, cm: &str) {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_before_pipe = true;
+
+    commonmark(markdown, cm, Some(&options));
+}

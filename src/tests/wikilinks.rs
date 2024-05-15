@@ -74,6 +74,88 @@ fn wikilinks_supercedes_relaxed_autolinks() {
 }
 
 #[test]
+fn wikilinks_only_url_in_tables() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe, extension.table],
+        concat!("| header  |\n", "| ------- |\n", "| [[url]] |\n",),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>header</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td><a href=\"url\" data-wikilink=\"true\">url</a></td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+
+    html_opts!(
+        [extension.wikilinks_title_before_pipe, extension.table],
+        concat!("| header  |\n", "| ------- |\n", "| [[url]] |\n",),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>header</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td><a href=\"url\" data-wikilink=\"true\">url</a></td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
+fn wikilinks_full_in_tables_not_supported() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe, extension.table],
+        concat!("| header  |\n", "| ------- |\n", "| [[url|link label]] |\n",),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>header</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>[[url</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+
+    html_opts!(
+        [extension.wikilinks_title_before_pipe, extension.table],
+        concat!("| header  |\n", "| ------- |\n", "| [[link label|url]] |\n",),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>header</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>[[link label</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
 fn wikilinks_exceeds_label_limit() {
     let long_label = format!("[[{:b<1100}]]", "a");
     let expected = format!("<p>{}</p>\n", long_label);
