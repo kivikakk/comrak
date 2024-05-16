@@ -2,7 +2,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeMath, NodeTable, NodeValue,
+    NodeMath, NodeTable, NodeValue, NodeWikiLink,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -385,6 +385,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 // noop - automatic escaping is already being done
             }
             NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
+            NodeValue::WikiLink(ref nl) => return self.format_wikilink(nl, entering),
         };
         true
     }
@@ -684,6 +685,24 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 write!(self, "\"").unwrap();
             }
             write!(self, ")").unwrap();
+        }
+
+        true
+    }
+
+    fn format_wikilink(&mut self, nl: &NodeWikiLink, entering: bool) -> bool {
+        if entering {
+            write!(self, "[[").unwrap();
+            if self.options.extension.wikilinks_title_after_pipe {
+                self.output(nl.url.as_bytes(), false, Escaping::Url);
+                write!(self, "|").unwrap();
+            }
+        } else {
+            if self.options.extension.wikilinks_title_before_pipe {
+                write!(self, "|").unwrap();
+                self.output(nl.url.as_bytes(), false, Escaping::Url);
+            }
+            write!(self, "]]").unwrap();
         }
 
         true

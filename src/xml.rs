@@ -273,6 +273,11 @@ impl<'o> XmlFormatter<'o> {
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
+                NodeValue::WikiLink(ref nl) => {
+                    self.output.write_all(b" destination=\"")?;
+                    self.escape(nl.url.as_bytes())?;
+                    self.output.write_all(b"\"")?;
+                }
             }
 
             if node.first_child().is_some() {

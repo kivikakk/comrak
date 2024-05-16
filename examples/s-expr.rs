@@ -86,6 +86,8 @@ fn dump(source: &str) -> io::Result<()> {
         .multiline_block_quotes(true)
         .math_dollars(true)
         .math_code(true)
+        .wikilinks_title_after_pipe(true)
+        .wikilinks_title_before_pipe(true)
         .build()
         .unwrap();
 

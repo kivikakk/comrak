@@ -159,6 +159,8 @@ enum Extension {
     MultilineBlockQuotes,
     MathDollars,
     MathCode,
+    WikilinksTitleAfterPipe,
+    WikilinksTitleBeforePipe,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -238,6 +240,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
         .math_dollars(exts.contains(&Extension::MathDollars))
         .math_code(exts.contains(&Extension::MathCode))
+        .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
+        .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
         .front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]

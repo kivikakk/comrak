@@ -40,6 +40,10 @@ python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_dol
   || failed=1
 python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_code.md "$PROGRAM_ARG -e math-code" \
   || failed=1
+python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/wikilinks_title_after_pipe.md "$PROGRAM_ARG -e wikilinks-title-after-pipe" \
+  || failed=1
+python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/wikilinks_title_before_pipe.md "$PROGRAM_ARG -e wikilinks-title-before-pipe" \
+  || failed=1
 
 python3 spec_tests.py --no-normalize --spec regression.txt "$PROGRAM_ARG" \
 	|| failed=1

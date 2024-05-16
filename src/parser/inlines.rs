@@ -2,7 +2,8 @@ use crate::arena_tree::Node;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, Sourcepos,
+    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink,
+    Sourcepos,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -105,6 +106,12 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
+#[derive(Clone, Copy)]
+struct WikilinkComponents<'i> {
+    url: &'i [u8],
+    link_label: Option<(&'i [u8], usize, usize)>,
+}
+
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
@@ -183,11 +190,30 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '.' => Some(self.handle_period()),
             '[' => {
                 self.pos += 1;
-                let inl =
-                    self.make_inline(NodeValue::Text("[".to_string()), self.pos - 1, self.pos - 1);
-                self.push_bracket(false, inl);
-                self.within_brackets = true;
-                Some(inl)
+
+                let mut wikilink_inl = None;
+
+                if (self.options.extension.wikilinks_title_after_pipe
+                    || self.options.extension.wikilinks_title_before_pipe)
+                    && !self.within_brackets
+                    && self.peek_char() == Some(&(b'['))
+                {
+                    wikilink_inl = self.handle_wikilink();
+                }
+
+                if wikilink_inl.is_none() {
+                    let inl = self.make_inline(
+                        NodeValue::Text("[".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    );
+                    self.push_bracket(false, inl);
+                    self.within_brackets = true;
+
+                    Some(inl)
+                } else {
+                    wikilink_inl
+                }
             }
             ']' => {
                 self.within_brackets = false;
@@ -1546,6 +1572,127 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos = startpos;
             None
         }
+    }
+
+    // Handles wikilink syntax
+    //   [[link text|url]]
+    //   [[url|link text]]
+    pub fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
+        let startpos = self.pos;
+        let component = self.wikilink_url_link_label()?;
+        let url_clean = strings::clean_url(component.url);
+        let (link_label, link_label_start_column, link_label_end_column) =
+            match component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(label), sc, ec),
+                None => (
+                    entity::unescape_html(component.url),
+                    startpos + 1,
+                    self.pos - 3,
+                ),
+            };
+
+        let nl = NodeWikiLink {
+            url: String::from_utf8(url_clean).unwrap(),
+        };
+        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
+        inl.append(self.make_inline(
+            NodeValue::Text(String::from_utf8(link_label).unwrap()),
+            link_label_start_column,
+            link_label_end_column,
+        ));
+
+        Some(inl)
+    }
+
+    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents<'i>> {
+        let left_startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) {
+            return None;
+        }
+
+        let found_left = self.wikilink_component();
+
+        if !found_left {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]);
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+            return Some(WikilinkComponents {
+                url: left,
+                link_label: None,
+            });
+        } else if self.peek_char() != Some(&(b'|')) {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right_startpos = self.pos;
+        let found_right = self.wikilink_component();
+
+        if !found_right {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+
+            if self.options.extension.wikilinks_title_after_pipe {
+                Some(WikilinkComponents {
+                    url: left,
+                    link_label: Some((right, right_startpos + 1, self.pos - 3)),
+                })
+            } else {
+                Some(WikilinkComponents {
+                    url: right,
+                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
+                })
+            }
+        } else {
+            self.pos = left_startpos;
+            None
+        }
+    }
+
+    // Locates the edge of a wikilink component (link label or url), and sets the
+    // self.pos to it's end if it's found.
+    fn wikilink_component(&mut self) -> bool {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
+            return false;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        let mut c = 0;
+        while unwrap_into_copy(self.peek_char(), &mut c) && c != b'[' && c != b']' && c != b'|' {
+            if c == b'\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, |&c| ispunct(c)) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn spnl(&mut self) {
