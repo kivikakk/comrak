@@ -168,6 +168,25 @@ fn wikilinks_exceeds_label_limit() {
 }
 
 #[test]
+fn wikilinks_autolinker_ignored() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe, extension.autolink],
+        concat!("[[http://example.com]]",),
+        concat!(
+            "<p><a href=\"http://example.com\" data-wikilink=\"true\">http://example.com</a></p>\n"
+        ),
+    );
+
+    html_opts!(
+        [extension.wikilinks_title_before_pipe, extension.autolink],
+        concat!("[[http://example.com]]",),
+        concat!(
+            "<p><a href=\"http://example.com\" data-wikilink=\"true\">http://example.com</a></p>\n"
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.wikilinks_title_after_pipe],
