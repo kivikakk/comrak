@@ -2130,11 +2130,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                                 }
                             }
                         }
-                        NodeValue::Link(..) | NodeValue::Image(..) => {
-                            this_bracket = true;
-                            break;
-                        }
-                        NodeValue::WikiLink(..) => {
+                        NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                             this_bracket = true;
                             break;
                         }
