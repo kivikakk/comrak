@@ -2134,6 +2134,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                             this_bracket = true;
                             break;
                         }
+                        NodeValue::WikiLink(..) => {
+                            this_bracket = true;
+                            break;
+                        }
                         _ => break,
                     }
                 }
