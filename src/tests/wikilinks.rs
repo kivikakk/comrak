@@ -176,7 +176,7 @@ fn sourcepos() {
             (paragraph (1:1-1:43) [
                 (text (1:1-1:5) "This ")
                 (wikilink (1:6-1:38) [
-                    (text (1:6-1:38) "link label")
+                    (text (1:27-1:36) "link label")
                 ])
                 (text (1:39-1:43) " that")
             ])
@@ -190,9 +190,23 @@ fn sourcepos() {
             (paragraph (1:1-1:43) [
                 (text (1:1-1:5) "This ")
                 (wikilink (1:6-1:38) [
-                    (text (1:6-1:38) "link label")
+                    (text (1:8-1:17) "link label")
                 ])
                 (text (1:39-1:43) " that")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_before_pipe],
+        "This [[http://example.com]] that\n",
+        (document (1:1-1:32) [
+            (paragraph (1:1-1:32) [
+                (text (1:1-1:5) "This ")
+                (wikilink (1:6-1:27) [
+                    (text (1:8-1:25) "http://example.com")
+                ])
+                (text (1:28-1:32) " that")
             ])
         ])
     );

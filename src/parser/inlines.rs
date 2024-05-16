@@ -109,7 +109,7 @@ struct Bracket<'a> {
 #[derive(Clone, Copy)]
 struct WikilinkComponents<'i> {
     url: &'i [u8],
-    link_label: Option<&'i [u8]>,
+    link_label: Option<(&'i [u8], usize, usize)>,
 }
 
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
@@ -1579,22 +1579,26 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     //   [[url|link text]]
     pub fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
-        let component = self.wikilink_url_link_label();
-        let component = component?;
+        let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(component.url);
-        let link_label_clean = match component.link_label {
-            Some(link_label) => entity::unescape_html(link_label),
-            None => entity::unescape_html(component.url),
-        };
+        let (link_label, link_label_start_column, link_label_end_column) =
+            match component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(label), sc, ec),
+                None => (
+                    entity::unescape_html(component.url),
+                    startpos + 1,
+                    self.pos - 3,
+                ),
+            };
 
         let nl = NodeWikiLink {
             url: String::from_utf8(url_clean).unwrap(),
         };
         let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
         inl.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(link_label_clean).unwrap()),
-            startpos - 1,
-            self.pos - 1,
+            NodeValue::Text(String::from_utf8(link_label).unwrap()),
+            link_label_start_column,
+            link_label_end_column,
         ));
 
         Some(inl)
@@ -1643,12 +1647,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             if self.options.extension.wikilinks_title_after_pipe {
                 Some(WikilinkComponents {
                     url: left,
-                    link_label: Some(right),
+                    link_label: Some((right, right_startpos + 1, self.pos - 3)),
                 })
             } else {
                 Some(WikilinkComponents {
                     url: right,
-                    link_label: Some(left),
+                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
                 })
             }
         } else {
