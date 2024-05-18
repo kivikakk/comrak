@@ -54,7 +54,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /Users/kivikakk/.config/comrak/config]
+          [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
@@ -103,7 +103,8 @@ Options:
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists, multiline-block-quotes, math-dollars, math-code]
+          footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
+          wikilinks-title-after-pipe, wikilinks-title-before-pipe]
 
   -t, --to <FORMAT>
           Specify output format
