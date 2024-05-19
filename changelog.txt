@@ -1,4 +1,4 @@
-# [v0.24.0] - 18-05-2024
+# [v0.24.0] - 19-05-2024
 ## What's Changed
 * Miscellany. by @kivikakk in https://github.com/kivikakk/comrak/pull/387
 * Add automation to release new crates by @gjtorikian in https://github.com/kivikakk/comrak/pull/374
@@ -20,8 +20,8 @@
 * Autolink should ignore wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/413
 * Bump version to 0.24.0 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/415
 
-
 **Full Changelog**: https://github.com/kivikakk/comrak/compare/0.23.0...v0.24.0
+
 # [0.23.0]
 
 * add traverse() demo example by @kaesluder in https://github.com/kivikakk/comrak/pull/370
