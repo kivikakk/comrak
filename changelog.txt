@@ -19,36 +19,9 @@
 * Add support for wikilinks format by @digitalmoksha in https://github.com/kivikakk/comrak/pull/407
 * Autolink should ignore wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/413
 * Bump version to 0.24.0 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/415
-* Release v0.24.0 by @github-actions in https://github.com/kivikakk/comrak/pull/416
-
-## New Contributors
-* @github-actions made their first contribution in https://github.com/kivikakk/comrak/pull/416
 
 **Full Changelog**: https://github.com/kivikakk/comrak/compare/0.23.0...v0.24.0
-# [v0.24.0] - 18-05-2024
-## What's Changed
-* Miscellany. by @kivikakk in https://github.com/kivikakk/comrak/pull/387
-* Add automation to release new crates by @gjtorikian in https://github.com/kivikakk/comrak/pull/374
-* build(deps): bump emojis from 0.5.2 to 0.6.2 by @dependabot in https://github.com/kivikakk/comrak/pull/393
-* build(deps): bump arbitrary from 1.3.0 to 1.3.2 by @dependabot in https://github.com/kivikakk/comrak/pull/394
-* build(deps): bump actions/checkout from 3 to 4 by @dependabot in https://github.com/kivikakk/comrak/pull/389
-* build(deps): bump once_cell from 1.17.0 to 1.19.0 by @dependabot in https://github.com/kivikakk/comrak/pull/390
-* build(deps): bump xdg from 2.4.1 to 2.5.2 by @dependabot in https://github.com/kivikakk/comrak/pull/391
-* build(deps): bump derive_builder from 0.12.0 to 0.20.0 by @dependabot in https://github.com/kivikakk/comrak/pull/392
-* build(deps): bump memchr from 2.5.0 to 2.7.2 by @dependabot in https://github.com/kivikakk/comrak/pull/396
-* build(deps): bump ntest from 0.9.0 to 0.9.2 by @dependabot in https://github.com/kivikakk/comrak/pull/397
-* build(deps): bump typed-arena from 2.0.1 to 2.0.2 by @dependabot in https://github.com/kivikakk/comrak/pull/398
-* Update automerge.yml by @gjtorikian in https://github.com/kivikakk/comrak/pull/401
-* build(deps): bump clap from 4.0.32 to 4.5.4 by @dependabot in https://github.com/kivikakk/comrak/pull/400
-* build(deps): bump regex from 1.7.0 to 1.10.4 by @dependabot in https://github.com/kivikakk/comrak/pull/402
-* Fix release workflows by @gjtorikian in https://github.com/kivikakk/comrak/pull/395
-* workflows: check MSRV in CI. by @kivikakk in https://github.com/kivikakk/comrak/pull/406
-* Add support for wikilinks format by @digitalmoksha in https://github.com/kivikakk/comrak/pull/407
-* Autolink should ignore wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/413
-* Bump version to 0.24.0 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/415
 
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/0.23.0...v0.24.0
 # [0.23.0]
 
 * add traverse() demo example by @kaesluder in https://github.com/kivikakk/comrak/pull/370
