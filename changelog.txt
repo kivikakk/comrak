@@ -1,3 +1,9 @@
+# [v0.24.1] - 19-05-2024
+## What's Changed
+* Add GH_TOKEN to release workflow by @digitalmoksha in https://github.com/kivikakk/comrak/pull/418
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.24.0...v0.24.1
 # [v0.24.0] - 19-05-2024
 ## What's Changed
 * Miscellany. by @kivikakk in https://github.com/kivikakk/comrak/pull/387
