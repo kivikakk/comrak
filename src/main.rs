@@ -134,6 +134,10 @@ struct Cli {
     /// Include source position attribute in HTML and XML output
     #[arg(long)]
     sourcepos: bool,
+
+    /// Ignore setext headers
+    #[arg(long)]
+    ignore_setext: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -274,6 +278,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
         .escaped_char_spans(cli.escaped_char_spans)
+        .ignore_setext(cli.ignore_setext)
         .build()?;
 
     let options = Options {

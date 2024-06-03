@@ -16,7 +16,7 @@ use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
-use crate::scanners;
+use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use derive_builder::Builder;
 use std::cell::RefCell;
@@ -735,6 +735,22 @@ pub struct RenderOptions {
     ///            "<p>Notify user <span data-escaped-char>@</span>example</p>\n");
     /// ```
     pub escaped_char_spans: bool,
+
+    /// Ignore setext headings in input.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "setext heading\n---";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<h2>setext heading</h2>\n");
+    ///
+    /// options.render.ignore_setext = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>setext heading</p>\n<hr />\n");
+    /// ```
+    pub ignore_setext: bool,
 }
 
 #[non_exhaustive]
@@ -1165,6 +1181,13 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         !self.options.extension.greentext || strings::is_space_or_tab(line[self.first_nonspace + 1])
     }
 
+    fn setext_heading_line(&mut self, s: &[u8]) -> Option<SetextChar> {
+        match self.options.render.ignore_setext {
+            false => scanners::setext_heading_line(s),
+            true => None,
+        }
+    }
+
     fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
@@ -1287,7 +1310,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             } else if !indented
                 && node_matches!(container, NodeValue::Paragraph)
                 && unwrap_into(
-                    scanners::setext_heading_line(&line[self.first_nonspace..]),
+                    self.setext_heading_line(&line[self.first_nonspace..]),
                     &mut sc,
                 )
             {

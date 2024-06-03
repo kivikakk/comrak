@@ -71,6 +71,7 @@ fn exercise_full_api() {
     render.list_style(ListStyleType::Dash);
     render.sourcepos(false);
     render.escaped_char_spans(false);
+    render.ignore_setext(true);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
