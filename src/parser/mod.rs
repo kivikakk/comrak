@@ -485,6 +485,35 @@ pub struct ExtensionOptions {
     ///            "<p>Darth Vader is <span class=\"spoiler\">Luke's father</span></p>\n");
     /// ```
     pub spoiler: bool,
+
+    /// Requires at least one space after a `>` character to generate a blockquote,
+    /// and restarts blockquote nesting across unique lines of input
+    ///
+    /// ```md
+    /// >implying implications
+    ///
+    /// > one
+    /// > > two
+    /// > three
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.greentext = true;
+    ///
+    /// assert_eq!(markdown_to_html(">implying implications", &options),
+    ///            "<p>&gt;implying implications</p>\n");
+    ///
+    /// assert_eq!(markdown_to_html("> one\n> > two\n> three", &options),
+    ///            concat!(
+    ///             "<blockquote>\n",
+    ///             "<p>one</p>\n",
+    ///             "<blockquote>\n<p>two</p>\n</blockquote>\n",
+    ///             "<p>three</p>\n",
+    ///             "</blockquote>\n"));
+    /// ```
+    pub greentext: bool,
 }
 
 #[non_exhaustive]
@@ -1132,6 +1161,10 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         (true, container, should_continue)
     }
 
+    fn is_not_greentext(&mut self, line: &[u8]) -> bool {
+        !self.options.extension.greentext || strings::is_space_or_tab(line[self.first_nonspace + 1])
+    }
+
     fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
@@ -1166,7 +1199,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     self.first_nonspace + 1,
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
-            } else if !indented && line[self.first_nonspace] == b'>' {
+            } else if !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+            {
                 let blockquote_startpos = self.first_nonspace;
 
                 let offset = self.first_nonspace + 1 - self.offset;
@@ -1436,7 +1470,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn parse_block_quote_prefix(&mut self, line: &[u8]) -> bool {
         let indent = self.indent;
-        if indent <= 3 && line[self.first_nonspace] == b'>' {
+        if indent <= 3 && line[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
             self.advance_offset(line, indent + 1, true);
 
             if strings::is_space_or_tab(line[self.offset]) {
@@ -1723,6 +1757,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
             && !self.blank
+            && (!self.options.extension.greentext
+                || !matches!(
+                    container.data.borrow().value,
+                    NodeValue::BlockQuote | NodeValue::Document
+                ))
             && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);

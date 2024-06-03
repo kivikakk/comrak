@@ -163,6 +163,7 @@ enum Extension {
     WikilinksTitleBeforePipe,
     Underline,
     Spoiler,
+    Greentext,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -246,6 +247,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
         .underline(exts.contains(&Extension::Underline))
         .spoiler(exts.contains(&Extension::Spoiler))
+        .greentext(exts.contains(&Extension::Greentext))
         .front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]

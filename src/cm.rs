@@ -598,6 +598,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                 && !self.options.render.hardbreaks
             {
                 self.cr();
+            } else if self.options.render.hardbreaks {
+                self.output(&[b'\n'], allow_wrap, Escaping::Literal);
             } else {
                 self.output(&[b' '], allow_wrap, Escaping::Literal);
             }

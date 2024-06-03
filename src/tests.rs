@@ -12,6 +12,7 @@ mod description_lists;
 mod escaped_char_spans;
 mod footnotes;
 mod fuzz;
+mod greentext;
 mod header_ids;
 mod math;
 mod multiline_block_quotes;
