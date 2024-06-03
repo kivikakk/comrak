@@ -751,6 +751,21 @@ pub struct RenderOptions {
     ///            "<p>setext heading</p>\n<hr />\n");
     /// ```
     pub ignore_setext: bool,
+
+    /// Ignore empty links in input.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "[]()";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><a href=\"\"></a></p>\n");
+    ///
+    /// options.render.ignore_empty_links = true;
+    /// assert_eq!(markdown_to_html(input, &options), "<p>[]()</p>\n");
+    /// ```
+    pub ignore_empty_links: bool,
 }
 
 #[non_exhaustive]

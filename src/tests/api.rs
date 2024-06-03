@@ -72,6 +72,7 @@ fn exercise_full_api() {
     render.sourcepos(false);
     render.escaped_char_spans(false);
     render.ignore_setext(true);
+    render.ignore_empty_links(true);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {

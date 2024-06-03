@@ -9,8 +9,7 @@ use crate::nodes::{
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
 use crate::scanners;
-use crate::strings;
-use crate::strings::Case;
+use crate::strings::{self, is_blank, Case};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -1343,6 +1342,32 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos - 1,
                 self.pos - 1,
             ));
+        }
+
+        // Ensure there was text if this was a link and not an image link
+        if self.options.render.ignore_empty_links && !is_image {
+            let mut non_blank_found = false;
+            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            while let Some(tmp) = tmpch {
+                match tmp.data.borrow().value {
+                    NodeValue::Text(ref s) if is_blank(s.as_bytes()) => (),
+                    _ => {
+                        non_blank_found = true;
+                        break;
+                    }
+                }
+
+                tmpch = tmp.next_sibling();
+            }
+
+            if !non_blank_found {
+                self.brackets.pop();
+                return Some(self.make_inline(
+                    NodeValue::Text("]".to_string()),
+                    self.pos - 1,
+                    self.pos - 1,
+                ));
+            }
         }
 
         let after_link_text_pos = self.pos;

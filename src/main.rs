@@ -138,6 +138,10 @@ struct Cli {
     /// Ignore setext headers
     #[arg(long)]
     ignore_setext: bool,
+
+    /// Ignore empty links
+    #[arg(long)]
+    ignore_empty_links: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -279,6 +283,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .sourcepos(cli.sourcepos)
         .escaped_char_spans(cli.escaped_char_spans)
         .ignore_setext(cli.ignore_setext)
+        .ignore_empty_links(cli.ignore_empty_links)
         .build()?;
 
     let options = Options {
