@@ -185,6 +185,9 @@ pub enum NodeValue {
 
     /// **Inline**.  A wikilink to some URL.
     WikiLink(NodeWikiLink),
+
+    /// **Inline**.  Underline. Enabled with `underline` option.
+    Underline,
 }
 
 /// Alignment of a single table cell.
@@ -500,6 +503,7 @@ impl NodeValue {
             NodeValue::Escaped => "escaped",
             NodeValue::Math(..) => "math",
             NodeValue::WikiLink(..) => "wikilink",
+            NodeValue::Underline => "underline",
         }
     }
 }

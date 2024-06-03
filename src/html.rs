@@ -1053,6 +1053,13 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</a>")?;
                 }
             }
+            NodeValue::Underline => {
+                if entering {
+                    self.output.write_all(b"<u>")?;
+                } else {
+                    self.output.write_all(b"</u>")?;
+                }
+            }
         }
         Ok(false)
     }

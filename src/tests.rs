@@ -25,6 +25,7 @@ mod superscript;
 mod table;
 mod tagfilter;
 mod tasklist;
+mod underline;
 mod wikilinks;
 mod xml;
 

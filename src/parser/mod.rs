@@ -453,6 +453,22 @@ pub struct ExtensionOptions {
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
     pub wikilinks_title_before_pipe: bool,
+
+    /// Enables underlines using double underscores
+    ///
+    /// ```md
+    /// __underlined text__
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.underline = true;
+    ///
+    /// assert_eq!(markdown_to_html("__underlined text__", &options),
+    ///            "<p><u>underlined text</u></p>\n");
+    /// ```
+    pub underline: bool,
 }
 
 #[non_exhaustive]

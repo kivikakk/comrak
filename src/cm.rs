@@ -386,6 +386,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             }
             NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
             NodeValue::WikiLink(ref nl) => return self.format_wikilink(nl, entering),
+            NodeValue::Underline => self.format_underline(),
         };
         true
     }
@@ -666,6 +667,10 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
     fn format_superscript(&mut self) {
         write!(self, "^").unwrap();
+    }
+
+    fn format_underline(&mut self) {
+        write!(self, "__").unwrap();
     }
 
     fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {

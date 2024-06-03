@@ -52,6 +52,7 @@ fn exercise_full_api() {
     extension.shortcodes(true);
     extension.wikilinks_title_after_pipe(true);
     extension.wikilinks_title_before_pipe(true);
+    extension.underline(true);
 
     let mut parse = ParseOptionsBuilder::default();
     parse.smart(false);
@@ -231,5 +232,6 @@ fn exercise_full_api() {
         nodes::NodeValue::WikiLink(nl) => {
             let _: String = nl.url;
         }
+        nodes::NodeValue::Underline => {}
     }
 }

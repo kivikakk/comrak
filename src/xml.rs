@@ -278,6 +278,7 @@ impl<'o> XmlFormatter<'o> {
                     self.escape(nl.url.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
+                NodeValue::Underline => {}
             }
 
             if node.first_child().is_some() {

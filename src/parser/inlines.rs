@@ -161,6 +161,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if options.extension.shortcodes {
             s.special_chars[b':' as usize] = true;
         }
+        if options.extension.underline {
+            s.special_chars[b'_' as usize] = true;
+        }
         for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
         }
@@ -1057,6 +1060,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 NodeValue::Strikethrough
             } else if self.options.extension.superscript && opener_char == b'^' {
                 NodeValue::Superscript
+            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
+                NodeValue::Underline
             } else if use_delims == 1 {
                 NodeValue::Emph
             } else {
