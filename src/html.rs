@@ -1060,6 +1060,16 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</u>")?;
                 }
             }
+            NodeValue::SpoileredText => {
+                if entering {
+                    self.output.write_all(b"<span class=\"spoiler\">")?;
+                } else {
+                    self.output.write_all(b"</span>")?;
+                }
+            }
+            NodeValue::EscapedTag(ref net) => {
+                self.output.write_all(net.as_bytes())?;
+            }
         }
         Ok(false)
     }

@@ -20,6 +20,7 @@ mod pathological;
 mod plugins;
 mod regressions;
 mod shortcodes;
+mod spoiler;
 mod strikethrough;
 mod superscript;
 mod table;

@@ -387,6 +387,8 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering),
             NodeValue::WikiLink(ref nl) => return self.format_wikilink(nl, entering),
             NodeValue::Underline => self.format_underline(),
+            NodeValue::SpoileredText => self.format_spoiler(),
+            NodeValue::EscapedTag(ref net) => self.format_escaped_tag(net),
         };
         true
     }
@@ -671,6 +673,14 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
 
     fn format_underline(&mut self) {
         write!(self, "__").unwrap();
+    }
+
+    fn format_spoiler(&mut self) {
+        write!(self, "||").unwrap();
+    }
+
+    fn format_escaped_tag(&mut self, net: &String) {
+        self.output(net.as_bytes(), false, Escaping::Literal);
     }
 
     fn format_link(&mut self, node: &'a AstNode<'a>, nl: &NodeLink, entering: bool) -> bool {

@@ -188,6 +188,13 @@ pub enum NodeValue {
 
     /// **Inline**.  Underline. Enabled with `underline` option.
     Underline,
+
+    /// **Inline**.  Spoilered text.  Enabled with `spoiler` option.
+    SpoileredText,
+
+    /// **Inline**. Text surrounded by escaped markup. Enabled with `spoiler` option.
+    /// The `String` is the tag to be escaped.
+    EscapedTag(String),
 }
 
 /// Alignment of a single table cell.
@@ -504,6 +511,8 @@ impl NodeValue {
             NodeValue::Math(..) => "math",
             NodeValue::WikiLink(..) => "wikilink",
             NodeValue::Underline => "underline",
+            NodeValue::SpoileredText => "spoiler",
+            NodeValue::EscapedTag(_) => "escaped_tag",
         }
     }
 }

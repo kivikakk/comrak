@@ -469,6 +469,22 @@ pub struct ExtensionOptions {
     ///            "<p><u>underlined text</u></p>\n");
     /// ```
     pub underline: bool,
+
+    /// Enables spoilers using double vertical bars
+    ///
+    /// ```md
+    /// Darth Vader is ||Luke's father||
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.spoiler = true;
+    ///
+    /// assert_eq!(markdown_to_html("Darth Vader is ||Luke's father||", &options),
+    ///            "<p>Darth Vader is <span class=\"spoiler\">Luke's father</span></p>\n");
+    /// ```
+    pub spoiler: bool,
 }
 
 #[non_exhaustive]
@@ -1085,7 +1101,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     }
                 }
                 NodeValue::Table(..) => {
-                    if !table::matches(&line[self.first_nonspace..]) {
+                    if !table::matches(&line[self.first_nonspace..], self.options.extension.spoiler)
+                    {
                         return (false, container, should_continue);
                     }
                     continue;

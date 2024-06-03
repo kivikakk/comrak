@@ -53,6 +53,7 @@ fn exercise_full_api() {
     extension.wikilinks_title_after_pipe(true);
     extension.wikilinks_title_before_pipe(true);
     extension.underline(true);
+    extension.spoiler(true);
 
     let mut parse = ParseOptionsBuilder::default();
     parse.smart(false);
@@ -233,5 +234,9 @@ fn exercise_full_api() {
             let _: String = nl.url;
         }
         nodes::NodeValue::Underline => {}
+        nodes::NodeValue::SpoileredText => {}
+        nodes::NodeValue::EscapedTag(data) => {
+            let _: &String = data;
+        }
     }
 }
