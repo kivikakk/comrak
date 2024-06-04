@@ -25,6 +25,9 @@ fuzz_target!(|s: &str| {
     extension.shortcodes = true;
     extension.wikilinks_title_after_pipe = true;
     extension.wikilinks_title_before_pipe = true;
+    extension.underline = true;
+    extension.spoiler = true;
+    extension.greentext = true;
     
     let mut parse = ParseOptions::default();
     parse.smart = true;
@@ -42,6 +45,8 @@ fuzz_target!(|s: &str| {
     render.list_style = ListStyleType::Star;
     render.sourcepos = true;
     render.escaped_char_spans = true;
+    render.ignore_setext = true;
+    render.ignore_empty_links = true;
 
     markdown_to_html(
         s,
