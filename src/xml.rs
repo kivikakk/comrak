@@ -278,6 +278,11 @@ impl<'o> XmlFormatter<'o> {
                     self.escape(nl.url.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
+                NodeValue::Underline => {}
+                NodeValue::SpoileredText => {}
+                NodeValue::EscapedTag(ref data) => {
+                    self.output.write_all(data.as_bytes())?;
+                }
             }
 
             if node.first_child().is_some() {

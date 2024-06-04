@@ -9,8 +9,7 @@ use crate::nodes::{
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
 use crate::scanners;
-use crate::strings;
-use crate::strings::Case;
+use crate::strings::{self, is_blank, Case};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -161,6 +160,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if options.extension.shortcodes {
             s.special_chars[b':' as usize] = true;
         }
+        if options.extension.underline {
+            s.special_chars[b'_' as usize] = true;
+        }
+        if options.extension.spoiler {
+            s.special_chars[b'|' as usize] = true;
+        }
         for &c in &[b'"', b'\'', b'.', b'-'] {
             s.smart_chars[c as usize] = true;
         }
@@ -243,6 +248,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 Some(self.handle_delim(b'^'))
             }
             '$' => Some(self.handle_dollars()),
+            '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -340,7 +346,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 11] = [stack_bottom; 11];
+        let mut openers_bottom: [usize; 12] = [stack_bottom; 12];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -364,12 +370,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 let mut mod_three_rule_invoked = false;
 
                 let ix = match c.delim_char {
-                    b'~' => 0,
-                    b'^' => 1,
-                    b'"' => 2,
-                    b'\'' => 3,
-                    b'_' => 4,
-                    b'*' => 5 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
+                    b'|' => 0,
+                    b'~' => 1,
+                    b'^' => 2,
+                    b'"' => 3,
+                    b'\'' => 4,
+                    b'_' => 5,
+                    b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
                     _ => unreachable!(),
                 };
 
@@ -418,6 +425,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                     || c.delim_char == b'_'
                     || (self.options.extension.strikethrough && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
+                    || (self.options.extension.spoiler && c.delim_char == b'|')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -1057,6 +1065,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 NodeValue::Strikethrough
             } else if self.options.extension.superscript && opener_char == b'^' {
                 NodeValue::Superscript
+            } else if self.options.extension.spoiler && opener_char == b'|' {
+                if use_delims == 2 {
+                    NodeValue::SpoileredText
+                } else {
+                    NodeValue::EscapedTag("|".to_owned())
+                }
+            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
+                NodeValue::Underline
             } else if use_delims == 1 {
                 NodeValue::Emph
             } else {
@@ -1326,6 +1342,32 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 self.pos - 1,
                 self.pos - 1,
             ));
+        }
+
+        // Ensure there was text if this was a link and not an image link
+        if self.options.render.ignore_empty_links && !is_image {
+            let mut non_blank_found = false;
+            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            while let Some(tmp) = tmpch {
+                match tmp.data.borrow().value {
+                    NodeValue::Text(ref s) if is_blank(s.as_bytes()) => (),
+                    _ => {
+                        non_blank_found = true;
+                        break;
+                    }
+                }
+
+                tmpch = tmp.next_sibling();
+            }
+
+            if !non_blank_found {
+                self.brackets.pop();
+                return Some(self.make_inline(
+                    NodeValue::Text("]".to_string()),
+                    self.pos - 1,
+                    self.pos - 1,
+                ));
+            }
         }
 
         let after_link_text_pos = self.pos;

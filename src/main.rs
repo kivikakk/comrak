@@ -134,6 +134,14 @@ struct Cli {
     /// Include source position attribute in HTML and XML output
     #[arg(long)]
     sourcepos: bool,
+
+    /// Ignore setext headers
+    #[arg(long)]
+    ignore_setext: bool,
+
+    /// Ignore empty links
+    #[arg(long)]
+    ignore_empty_links: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -161,6 +169,9 @@ enum Extension {
     MathCode,
     WikilinksTitleAfterPipe,
     WikilinksTitleBeforePipe,
+    Underline,
+    Spoiler,
+    Greentext,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -242,6 +253,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .math_code(exts.contains(&Extension::MathCode))
         .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
         .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
+        .underline(exts.contains(&Extension::Underline))
+        .spoiler(exts.contains(&Extension::Spoiler))
+        .greentext(exts.contains(&Extension::Greentext))
         .front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]
@@ -268,6 +282,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
         .escaped_char_spans(cli.escaped_char_spans)
+        .ignore_setext(cli.ignore_setext)
+        .ignore_empty_links(cli.ignore_empty_links)
         .build()?;
 
     let options = Options {

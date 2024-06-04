@@ -52,6 +52,8 @@ fn exercise_full_api() {
     extension.shortcodes(true);
     extension.wikilinks_title_after_pipe(true);
     extension.wikilinks_title_before_pipe(true);
+    extension.underline(true);
+    extension.spoiler(true);
 
     let mut parse = ParseOptionsBuilder::default();
     parse.smart(false);
@@ -69,6 +71,8 @@ fn exercise_full_api() {
     render.list_style(ListStyleType::Dash);
     render.sourcepos(false);
     render.escaped_char_spans(false);
+    render.ignore_setext(true);
+    render.ignore_empty_links(true);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
@@ -230,6 +234,11 @@ fn exercise_full_api() {
         }
         nodes::NodeValue::WikiLink(nl) => {
             let _: String = nl.url;
+        }
+        nodes::NodeValue::Underline => {}
+        nodes::NodeValue::SpoileredText => {}
+        nodes::NodeValue::EscapedTag(data) => {
+            let _: &String = data;
         }
     }
 }

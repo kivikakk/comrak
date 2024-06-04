@@ -313,11 +313,13 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
 
 /*!re2c
 
+    table_spoiler = ['|']['|'];
     table_spacechar = [ \t\v\f];
     table_newline = [\r]?[\n];
 
     table_delimiter = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
     table_cell = (escaped_char|[^\x00|\r\n])+;
+    table_cell_spoiler = (escaped_char|table_spoiler|[^\x00|\r\n])+;
 
 */
 
@@ -333,17 +335,25 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn table_cell(s: &[u8]) -> Option<usize> {
+pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
-/*!re2c
+
     // In fact, `table_cell` matches non-empty table cells only. The empty
     // string is also a valid table cell, but is handled by the default rule.
     // This approach prevents re2c's match-empty-string warning.
+    if spoiler {
+/*!re2c
+    table_cell_spoiler { return Some(cursor); }
+    * { return None; }
+*/
+    } else {
+/*!re2c
     table_cell { return Some(cursor); }
     * { return None; }
 */
+    }
 }
 
 pub fn table_cell_end(s: &[u8]) -> Option<usize> {

@@ -16,7 +16,7 @@ use crate::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
     NodeHtmlBlock, NodeList, NodeValue,
 };
-use crate::scanners;
+use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use derive_builder::Builder;
 use std::cell::RefCell;
@@ -453,6 +453,67 @@ pub struct ExtensionOptions {
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
     pub wikilinks_title_before_pipe: bool,
+
+    /// Enables underlines using double underscores
+    ///
+    /// ```md
+    /// __underlined text__
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.underline = true;
+    ///
+    /// assert_eq!(markdown_to_html("__underlined text__", &options),
+    ///            "<p><u>underlined text</u></p>\n");
+    /// ```
+    pub underline: bool,
+
+    /// Enables spoilers using double vertical bars
+    ///
+    /// ```md
+    /// Darth Vader is ||Luke's father||
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.spoiler = true;
+    ///
+    /// assert_eq!(markdown_to_html("Darth Vader is ||Luke's father||", &options),
+    ///            "<p>Darth Vader is <span class=\"spoiler\">Luke's father</span></p>\n");
+    /// ```
+    pub spoiler: bool,
+
+    /// Requires at least one space after a `>` character to generate a blockquote,
+    /// and restarts blockquote nesting across unique lines of input
+    ///
+    /// ```md
+    /// >implying implications
+    ///
+    /// > one
+    /// > > two
+    /// > three
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.greentext = true;
+    ///
+    /// assert_eq!(markdown_to_html(">implying implications", &options),
+    ///            "<p>&gt;implying implications</p>\n");
+    ///
+    /// assert_eq!(markdown_to_html("> one\n> > two\n> three", &options),
+    ///            concat!(
+    ///             "<blockquote>\n",
+    ///             "<p>one</p>\n",
+    ///             "<blockquote>\n<p>two</p>\n</blockquote>\n",
+    ///             "<p>three</p>\n",
+    ///             "</blockquote>\n"));
+    /// ```
+    pub greentext: bool,
 }
 
 #[non_exhaustive]
@@ -674,6 +735,37 @@ pub struct RenderOptions {
     ///            "<p>Notify user <span data-escaped-char>@</span>example</p>\n");
     /// ```
     pub escaped_char_spans: bool,
+
+    /// Ignore setext headings in input.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "setext heading\n---";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<h2>setext heading</h2>\n");
+    ///
+    /// options.render.ignore_setext = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>setext heading</p>\n<hr />\n");
+    /// ```
+    pub ignore_setext: bool,
+
+    /// Ignore empty links in input.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "[]()";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><a href=\"\"></a></p>\n");
+    ///
+    /// options.render.ignore_empty_links = true;
+    /// assert_eq!(markdown_to_html(input, &options), "<p>[]()</p>\n");
+    /// ```
+    pub ignore_empty_links: bool,
 }
 
 #[non_exhaustive]
@@ -1069,7 +1161,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     }
                 }
                 NodeValue::Table(..) => {
-                    if !table::matches(&line[self.first_nonspace..]) {
+                    if !table::matches(&line[self.first_nonspace..], self.options.extension.spoiler)
+                    {
                         return (false, container, should_continue);
                     }
                     continue;
@@ -1097,6 +1190,17 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         }
 
         (true, container, should_continue)
+    }
+
+    fn is_not_greentext(&mut self, line: &[u8]) -> bool {
+        !self.options.extension.greentext || strings::is_space_or_tab(line[self.first_nonspace + 1])
+    }
+
+    fn setext_heading_line(&mut self, s: &[u8]) -> Option<SetextChar> {
+        match self.options.render.ignore_setext {
+            false => scanners::setext_heading_line(s),
+            true => None,
+        }
     }
 
     fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
@@ -1133,7 +1237,8 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
                     self.first_nonspace + 1,
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
-            } else if !indented && line[self.first_nonspace] == b'>' {
+            } else if !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+            {
                 let blockquote_startpos = self.first_nonspace;
 
                 let offset = self.first_nonspace + 1 - self.offset;
@@ -1220,7 +1325,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             } else if !indented
                 && node_matches!(container, NodeValue::Paragraph)
                 && unwrap_into(
-                    scanners::setext_heading_line(&line[self.first_nonspace..]),
+                    self.setext_heading_line(&line[self.first_nonspace..]),
                     &mut sc,
                 )
             {
@@ -1403,7 +1508,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
     fn parse_block_quote_prefix(&mut self, line: &[u8]) -> bool {
         let indent = self.indent;
-        if indent <= 3 && line[self.first_nonspace] == b'>' {
+        if indent <= 3 && line[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
             self.advance_offset(line, indent + 1, true);
 
             if strings::is_space_or_tab(line[self.offset]) {
@@ -1690,6 +1795,11 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         if !self.current.same_node(last_matched_container)
             && container.same_node(last_matched_container)
             && !self.blank
+            && (!self.options.extension.greentext
+                || !matches!(
+                    container.data.borrow().value,
+                    NodeValue::BlockQuote | NodeValue::Document
+                ))
             && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);

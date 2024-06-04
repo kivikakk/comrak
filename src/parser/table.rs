@@ -42,12 +42,14 @@ fn try_opening_header<'a>(
         return Some((container, false, false));
     }
 
-    let delimiter_row = match row(&line[parser.first_nonspace..]) {
+    let spoiler = parser.options.extension.spoiler;
+
+    let delimiter_row = match row(&line[parser.first_nonspace..], spoiler) {
         Some(delimiter_row) => delimiter_row,
         None => return Some((container, false, true)),
     };
 
-    let header_row = match row(container.data.borrow().content.as_bytes()) {
+    let header_row = match row(container.data.borrow().content.as_bytes(), spoiler) {
         Some(header_row) => header_row,
         None => return Some((container, false, true)),
     };
@@ -141,7 +143,8 @@ fn try_opening_row<'a>(
     }
 
     let sourcepos = container.data.borrow().sourcepos;
-    let this_row = match row(&line[parser.first_nonspace..]) {
+    let spoiler = parser.options.extension.spoiler;
+    let this_row = match row(&line[parser.first_nonspace..], spoiler) {
         Some(this_row) => this_row,
         None => return None,
     };
@@ -200,7 +203,7 @@ struct Cell {
     content: String,
 }
 
-fn row(string: &[u8]) -> Option<Row> {
+fn row(string: &[u8], spoiler: bool) -> Option<Row> {
     let len = string.len();
     let mut cells: Vec<Cell> = vec![];
 
@@ -211,7 +214,7 @@ fn row(string: &[u8]) -> Option<Row> {
     let mut max_columns_abort = false;
 
     while offset < len && expect_more_cells {
-        let cell_matched = scanners::table_cell(&string[offset..]).unwrap_or(0);
+        let cell_matched = scanners::table_cell(&string[offset..], spoiler).unwrap_or(0);
         let pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
@@ -365,6 +368,6 @@ fn get_num_autocompleted_cells<'a>(container: &'a AstNode<'a>) -> usize {
     };
 }
 
-pub fn matches(line: &[u8]) -> bool {
-    row(line).is_some()
+pub fn matches(line: &[u8], spoiler: bool) -> bool {
+    row(line, spoiler).is_some()
 }

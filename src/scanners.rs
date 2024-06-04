@@ -21716,508 +21716,1079 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn table_cell(s: &[u8]) -> Option<usize> {
+pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
 
-    {
-        #[allow(unused_assignments)]
-        let mut yych: u8 = 0;
-        let mut yyaccept: usize = 0;
-        let mut yystate: usize = 0;
-        'yyl: loop {
-            match yystate {
-                0 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    cursor += 1;
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        0x5C => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 1;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return None;
-                }
-                3 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        0x5C => {
-                            cursor += 1;
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 4;
-                            continue 'yyl;
+    // In fact, `table_cell` matches non-empty table cells only. The empty
+    // string is also a valid table cell, but is handled by the default rule.
+    // This approach prevents re2c's match-empty-string warning.
+    if spoiler {
+        {
+            #[allow(unused_assignments)]
+            let mut yych: u8 = 0;
+            let mut yyaccept: usize = 0;
+            let mut yystate: usize = 0;
+            'yyl: loop {
+                match yystate {
+                    0 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        cursor += 1;
+                        match yych {
+                            0x01..=0x09
+                            | 0x0B..=0x0C
+                            | 0x0E..=0x26
+                            | 0x28..=0x5B
+                            | 0x5D..=0x7B
+                            | 0x7D..=0x7F => {
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x27 | 0x5C => {
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0x7C => {
+                                yystate = 6;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                yystate = 7;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                yystate = 8;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                yystate = 9;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                yystate = 10;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                yystate = 11;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                yystate = 12;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 1;
+                                continue 'yyl;
+                            }
                         }
                     }
-                }
-                4 => {
-                    return Some(cursor);
-                }
-                5 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7F => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        0x5C => {
-                            cursor += 1;
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                6 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                7 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    cursor = marker;
-                    if yyaccept == 0 {
-                        yystate = 4;
-                        continue 'yyl;
-                    } else {
+                    1 => {
                         yystate = 2;
                         continue 'yyl;
                     }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
+                    2 => {
+                        return None;
+                    }
+                    3 => {
+                        yyaccept = 0;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x01..=0x09
+                            | 0x0B..=0x0C
+                            | 0x0E..=0x26
+                            | 0x28..=0x5B
+                            | 0x5D..=0x7B
+                            | 0x7D..=0x7F => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x27 | 0x5C => {
+                                cursor += 1;
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0x7C => {
+                                cursor += 1;
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                cursor += 1;
+                                yystate = 17;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                cursor += 1;
+                                yystate = 19;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                cursor += 1;
+                                yystate = 20;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                cursor += 1;
+                                yystate = 21;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                cursor += 1;
+                                yystate = 22;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 4;
+                                continue 'yyl;
+                            }
                         }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
+                    }
+                    4 => {
+                        return Some(cursor);
+                    }
+                    5 => {
+                        yyaccept = 0;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x01..=0x09
+                            | 0x0B..=0x0C
+                            | 0x0E..=0x26
+                            | 0x28..=0x5B
+                            | 0x5D..=0x7B
+                            | 0x7D..=0x7F => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x27 | 0x5C | 0x7C => {
+                                cursor += 1;
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                cursor += 1;
+                                yystate = 17;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                cursor += 1;
+                                yystate = 19;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                cursor += 1;
+                                yystate = 20;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                cursor += 1;
+                                yystate = 21;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                cursor += 1;
+                                yystate = 22;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 4;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    6 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x27 | 0x7C => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    7 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    8 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0xA0..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    9 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    10 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x9F => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    11 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x90..=0xBF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    12 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    13 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x8F => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    14 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x27 | 0x7C => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    15 => {
+                        cursor = marker;
+                        if yyaccept == 0 {
+                            yystate = 4;
                             continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
+                        } else {
+                            yystate = 2;
                             continue 'yyl;
                         }
                     }
+                    16 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    17 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0xA0..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    18 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    19 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x9F => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    20 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x90..=0xBF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    21 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    22 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x8F => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("internal lexer error")
+                    }
                 }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
+            }
+        }
+    } else {
+        {
+            #[allow(unused_assignments)]
+            let mut yych: u8 = 0;
+            let mut yyaccept: usize = 0;
+            let mut yystate: usize = 0;
+            'yyl: loop {
+                match yystate {
+                    0 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        cursor += 1;
+                        match yych {
+                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x5C => {
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                yystate = 6;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                yystate = 7;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                yystate = 8;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                yystate = 9;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                yystate = 10;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                yystate = 11;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                yystate = 12;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 1;
+                                continue 'yyl;
+                            }
                         }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
+                    }
+                    1 => {
+                        yystate = 2;
+                        continue 'yyl;
+                    }
+                    2 => {
+                        return None;
+                    }
+                    3 => {
+                        yyaccept = 0;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x5C => {
+                                cursor += 1;
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                cursor += 1;
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                cursor += 1;
+                                yystate = 17;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                cursor += 1;
+                                yystate = 19;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                cursor += 1;
+                                yystate = 20;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 4;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    4 => {
+                        return Some(cursor);
+                    }
+                    5 => {
+                        yyaccept = 0;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7F => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            0x5C => {
+                                cursor += 1;
+                                yystate = 5;
+                                continue 'yyl;
+                            }
+                            0xC2..=0xDF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            0xE0 => {
+                                cursor += 1;
+                                yystate = 15;
+                                continue 'yyl;
+                            }
+                            0xE1..=0xEC | 0xEE..=0xEF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            0xED => {
+                                cursor += 1;
+                                yystate = 17;
+                                continue 'yyl;
+                            }
+                            0xF0 => {
+                                cursor += 1;
+                                yystate = 18;
+                                continue 'yyl;
+                            }
+                            0xF1..=0xF3 => {
+                                cursor += 1;
+                                yystate = 19;
+                                continue 'yyl;
+                            }
+                            0xF4 => {
+                                cursor += 1;
+                                yystate = 20;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 4;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    6 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    7 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0xA0..=0xBF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    8 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    9 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x9F => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    10 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x90..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    11 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    12 => {
+                        yyaccept = 1;
+                        marker = cursor;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x8F => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    13 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 3;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    14 => {
+                        cursor = marker;
+                        if yyaccept == 0 {
+                            yystate = 4;
                             continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
+                        } else {
+                            yystate = 2;
                             continue 'yyl;
                         }
                     }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
+                    15 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0xA0..=0xBF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
                         }
                     }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
+                    16 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
                         }
                     }
-                }
-                _ => {
-                    panic!("internal lexer error")
+                    17 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x9F => {
+                                cursor += 1;
+                                yystate = 13;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    18 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x90..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    19 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0xBF => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    20 => {
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.get_unchecked(cursor)
+                            } else {
+                                0
+                            }
+                        };
+                        match yych {
+                            0x80..=0x8F => {
+                                cursor += 1;
+                                yystate = 16;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 14;
+                                continue 'yyl;
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("internal lexer error")
+                    }
                 }
             }
         }
