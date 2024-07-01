@@ -20,6 +20,14 @@ pub fn format_document<'a>(
     options: &Options,
     output: &mut dyn Write,
 ) -> io::Result<()> {
+    // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
+    // validation in normal workflow. As a middleground, we validate the AST in debug builds. See
+    // https://github.com/kivikakk/comrak/issues/371.
+    #[cfg(debug_assertions)]
+    root.validate().unwrap_or_else(|e| {
+        panic!("The document to format is ill-formed: {:?}", e);
+    });
+
     format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
