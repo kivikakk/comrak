@@ -571,7 +571,7 @@ impl From<(usize, usize, usize, usize)> for Sourcepos {
 }
 
 /// Represents the 1-based line and column positions of a given character.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LineColumn {
     /// The 1-based line number of the character.
     pub line: usize,
@@ -615,9 +615,53 @@ impl Ast {
 
 /// The type of a node within the document.
 ///
-/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are allocated in.
-/// Child `Ast`s are wrapped in `RefCell` for interior mutability.
+/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
+/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
+///
+/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
+///
+/// ```no_run
+/// # use comrak::nodes::{AstNode, NodeValue};
+/// let root = AstNode::from(NodeValue::Document);
+/// ```
+///
+/// Note that no sourcepos information is given to the created node. If you wish
+/// to assign sourcepos information, use the `From` trait to create an `AstNode`
+/// from an `Ast`:
+///
+/// ```no_run
+/// # use comrak::nodes::{Ast, AstNode, NodeValue};
+/// let root = AstNode::from(Ast::new(
+///     NodeValue::Paragraph,
+///     (4, 1).into(), // start_line, start_col
+/// ));
+/// ```
+///
+/// Adjust the `end` position manually.
+///
+/// For practical use, you'll probably need it allocated in an `Arena`, in which
+/// case you can use `.into()` to simplify creation:
+///
+/// ```no_run
+/// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
+/// # let arena = Arena::<AstNode>::new();
+/// let node_in_arena = arena.alloc(NodeValue::Document.into());
+/// ```
 pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+
+impl<'a> From<NodeValue> for AstNode<'a> {
+    /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
+    fn from(value: NodeValue) -> Self {
+        Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+    }
+}
+
+impl<'a> From<Ast> for AstNode<'a> {
+    /// Create a new AST node with the given Ast.
+    fn from(ast: Ast) -> Self {
+        Node::new(RefCell::new(ast))
+    }
+}
 
 pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
     node.last_child().map_or(false, |n| n.data.borrow().open)
