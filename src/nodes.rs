@@ -666,8 +666,6 @@ impl<'a> From<Ast> for AstNode<'a> {
 /// Validation errors produced by [Node::validate].
 #[derive(Debug, Clone)]
 pub enum ValidationError<'a> {
-    /// Children were found for a node that isn't supposed to have chilrden.
-    UnexpectedChildren(&'a AstNode<'a>),
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
@@ -756,7 +754,16 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::Strong
         | NodeValue::Link(..)
         | NodeValue::Image(..)
-        | NodeValue::WikiLink(..) => !child.block(),
+        | NodeValue::WikiLink(..)
+        | NodeValue::Strikethrough
+        | NodeValue::Superscript
+        | NodeValue::SpoileredText
+        | NodeValue::Underline
+        // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
+        // possibly going to fall into the spoiler. This should be fixed in
+        // inlines.
+        | NodeValue::EscapedTag(_)
+        => !child.block(),
 
         NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
@@ -775,22 +782,30 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::HtmlInline(..)
                 | NodeValue::Math(..)
                 | NodeValue::WikiLink(..)
+                | NodeValue::FootnoteReference(..)
+                | NodeValue::Superscript
+                | NodeValue::SpoileredText
+                | NodeValue::Underline
         ),
 
         #[cfg(feature = "shortcodes")]
         NodeValue::TableCell => matches!(
             *child,
             NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::ShortCode(..)
-                | NodeValue::Strikethrough
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
+            | NodeValue::Code(..)
+            | NodeValue::Emph
+            | NodeValue::Strong
+            | NodeValue::Link(..)
+            | NodeValue::Image(..)
+            | NodeValue::Strikethrough
+            | NodeValue::HtmlInline(..)
+            | NodeValue::Math(..)
+            | NodeValue::WikiLink(..)
+            | NodeValue::FootnoteReference(..)
+            | NodeValue::Superscript
+            | NodeValue::SpoileredText
+            | NodeValue::Underline
+            | NodeValue::ShortCode(..)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {

@@ -26,9 +26,8 @@ fn commonmark_avoids_spurious_backslash() {
 
     let p1 = ast(NodeValue::Paragraph);
     p1.append(ast(NodeValue::Text("Line 1".to_owned())));
+    p1.append(ast(NodeValue::LineBreak));
     root.append(p1);
-
-    root.append(ast(NodeValue::LineBreak));
 
     let p2 = ast(NodeValue::Paragraph);
     p2.append(ast(NodeValue::Text("Line 2".to_owned())));
