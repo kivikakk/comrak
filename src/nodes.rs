@@ -108,7 +108,7 @@ pub enum NodeValue {
     /// in a document will be contained in a `Text` node.
     Text(String),
 
-    /// **Inline**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
+    /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
     /// None if the item is unchecked.
     TaskItem(Option<char>),
@@ -663,6 +663,52 @@ impl<'a> From<Ast> for AstNode<'a> {
     }
 }
 
+/// Validation errors produced by [Node::validate].
+#[derive(Debug, Clone)]
+pub enum ValidationError<'a> {
+    /// The type of a child node is not allowed in the parent node. This can happen when an inline
+    /// node is found in a block container, a block is found in an inline node, etc.
+    InvalidChildType {
+        /// The parent node.
+        parent: &'a AstNode<'a>,
+        /// The child node.
+        child: &'a AstNode<'a>,
+    },
+}
+
+impl<'a> Node<'a, RefCell<Ast>> {
+    /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
+    /// invalid trees according to the CommonMark specification. One simple example is that block
+    /// containers, such as lists, should only contain blocks, but it's possible to put naked
+    /// inline text in a list item. Such invalid trees can lead comrak to generate incorrect output
+    /// if rendered.
+    ///
+    /// This method performs additional structural checks to ensure that a markdown AST is valid
+    /// according to the CommonMark specification.
+    ///
+    /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
+    /// comrak, on the other hand, should always produce a valid tree.
+    pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
+        let mut stack = vec![self];
+
+        while let Some(node) = stack.pop() {
+            // Check that this node type is valid wrt to the type of its parent.
+            if let Some(parent) = node.parent() {
+                if !can_contain_type(parent, &node.data.borrow().value) {
+                    return Err(ValidationError::InvalidChildType {
+                        parent,
+                        child: node,
+                    });
+                }
+            }
+
+            stack.extend(node.children());
+        }
+
+        Ok(())
+    }
+}
+
 pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
     node.last_child().map_or(false, |n| n.data.borrow().open)
 }
@@ -708,7 +754,16 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::Strong
         | NodeValue::Link(..)
         | NodeValue::Image(..)
-        | NodeValue::WikiLink(..) => !child.block(),
+        | NodeValue::WikiLink(..)
+        | NodeValue::Strikethrough
+        | NodeValue::Superscript
+        | NodeValue::SpoileredText
+        | NodeValue::Underline
+        // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
+        // possibly going to fall into the spoiler. This should be fixed in
+        // inlines.
+        | NodeValue::EscapedTag(_)
+        => !child.block(),
 
         NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
@@ -727,22 +782,30 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::HtmlInline(..)
                 | NodeValue::Math(..)
                 | NodeValue::WikiLink(..)
+                | NodeValue::FootnoteReference(..)
+                | NodeValue::Superscript
+                | NodeValue::SpoileredText
+                | NodeValue::Underline
         ),
 
         #[cfg(feature = "shortcodes")]
         NodeValue::TableCell => matches!(
             *child,
             NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::ShortCode(..)
-                | NodeValue::Strikethrough
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
+            | NodeValue::Code(..)
+            | NodeValue::Emph
+            | NodeValue::Strong
+            | NodeValue::Link(..)
+            | NodeValue::Image(..)
+            | NodeValue::Strikethrough
+            | NodeValue::HtmlInline(..)
+            | NodeValue::Math(..)
+            | NodeValue::WikiLink(..)
+            | NodeValue::FootnoteReference(..)
+            | NodeValue::Superscript
+            | NodeValue::SpoileredText
+            | NodeValue::Underline
+            | NodeValue::ShortCode(..)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {
