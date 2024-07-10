@@ -10,7 +10,8 @@ use comrak::{format_commonmark, parse_document, Arena, Options};
 
 const DEPENDENCIES: &str = "[dependencies]\ncomrak = ";
 const HELP: &str = "$ comrak --help\n";
-const HELP_START: &str = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter\n";
+const HELP_START: &str =
+    "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter\n";
 
 fn main() -> Result<(), Box<dyn Error>> {
     let arena = Arena::new();

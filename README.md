@@ -11,14 +11,6 @@ Rust port of [github's `cmark-gfm`](https://github.com/github/cmark-gfm).
 Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) in default mode.
 GFM support synced with release `0.29.0.gfm.13`.
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Security](#security)
-- [Extensions](#extensions)
-- [Related projects](#related-projects)
-- [Contributing](#contributing)
-- [Legal](#legal)
-
 ## Installation
 
 Specify it as a requirement in `Cargo.toml`:
@@ -187,7 +179,6 @@ assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
 
 ``` rust
-extern crate comrak;
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
 
@@ -219,6 +210,13 @@ fn main() {
     let html = replace_text(&doc, &orig, &repl);
 
     println!("{}", html);
+    // Output:
+    //
+    // <p>This is your input.</p>
+    // <ol>
+    // <li>Also <a href="#">your</a> input.</li>
+    // <li>Certainly <em>your</em> input.</li>
+    // </ol>
 }
 ```
 
