@@ -140,45 +140,6 @@ macro_rules! html_opts {
             $(opts.$optclass.$optname = true;)*
         });
     };
-    ([all], $lhs:expr, $rhs:expr) => {
-        $crate::tests::html_opts_w($lhs, $rhs, &$crate::Options {
-            extension: $crate::ExtensionOptions {
-                strikethrough: true,
-                tagfilter: true,
-                table: true,
-                autolink: true,
-                tasklist: true,
-                superscript: true,
-                header_ids: Some("user-content-".to_string()),
-                footnotes: true,
-                description_lists: true,
-                multiline_block_quotes: true,
-                math_dollars: true,
-                math_code: true,
-                front_matter_delimiter: Some("---".to_string()),
-                shortcodes: true,
-                wikilinks_title_after_pipe: true,
-                wikilinks_title_before_pipe: true,
-            },
-            parse: $crate::ParseOptions {
-                smart: true,
-                default_info_string: Some("rust".to_string()),
-                relaxed_tasklist_matching: true,
-                relaxed_autolinks: true,
-            },
-            render: $crate::RenderOptions {
-                hardbreaks: true,
-                github_pre_lang: true,
-                full_info_string: true,
-                width: 80,
-                unsafe_: true,
-                escape: true,
-                list_style: $crate::ListStyleType::Star,
-                sourcepos: true,
-                escaped_char_spans: true,
-            },
-        });
-    }
 }
 
 pub(crate) use html_opts;

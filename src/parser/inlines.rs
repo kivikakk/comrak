@@ -1250,9 +1250,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             self.pos,
             self.options.parse.relaxed_autolinks,
         )?;
-        match node.last_child().unwrap().data.borrow_mut().value {
-            NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
-            _ => unreachable!(),
+        if reverse > 0 {
+            match node.last_child().unwrap().data.borrow_mut().value {
+                NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
+                _ => unreachable!(),
+            }
         }
 
         self.pos += skip - reverse;

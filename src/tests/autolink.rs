@@ -337,3 +337,13 @@ fn autolink_failing_spec_underscores() {
         "<p>Underscores not allowed in host name www.xxx.yyy._zzz</p>\n",
     );
 }
+
+#[test]
+fn autolink_fuzz_leading_colon() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "://-",
+        "<p><a href=\"://-\">://-</a></p>\n",
+        no_roundtrip,
+    );
+}
