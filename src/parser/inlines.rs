@@ -192,10 +192,30 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace()),
-            ':' | 'w' if self.options.extension.autolink => Some(self.handle_ext_autolink()),
-            // XXX: ':' fallback to shortcodes if compiled + enabled
-            #[cfg(feature = "shortcodes")]
-            ':' if self.options.extension.shortcodes => Some(self.handle_colons()),
+            ':' => {
+                let mut res = None;
+
+                if self.options.extension.autolink {
+                    res = self.handle_autolink_colon();
+                }
+
+                #[cfg(feature = "shortcodes")]
+                if res.is_none() && self.options.extension.shortcodes {
+                    res = self.handle_shortcodes_colon();
+                }
+
+                if res.is_none() {
+                    self.pos += 1;
+                    res = Some(self.make_inline(
+                        NodeValue::Text(":".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    ));
+                }
+
+                res
+            }
+            'w' if self.options.extension.autolink => Some(self.handle_autolink_w()),
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
             '-' => Some(self.handle_hyphen()),
             '.' => Some(self.handle_period()),
@@ -1188,32 +1208,34 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     #[cfg(feature = "shortcodes")]
-    pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
-        self.pos += 1;
-
-        if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
-            let shortcode =
-                unsafe { str::from_utf8_unchecked(&self.input[self.pos..self.pos + matchlen - 1]) };
+    pub fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
+        if let Some(matchlen) = scanners::shortcode(&self.input[self.pos + 1..]) {
+            let shortcode = unsafe {
+                str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
+            };
 
             if let Ok(nsc) = NodeShortCode::try_from(shortcode) {
-                self.pos += matchlen;
+                self.pos += 1 + matchlen;
                 let inl = self.make_inline(
                     NodeValue::ShortCode(nsc),
                     self.pos - 1 - matchlen,
                     self.pos - 1,
                 );
-                return inl;
+                return Some(inl);
             }
         }
 
-        self.make_inline(NodeValue::Text(":".to_string()), self.pos - 1, self.pos - 1)
+        None
     }
 
-    pub fn handle_ext_autolink(&mut self) -> &'a AstNode<'a> {
+    pub fn handle_autolink_colon(&mut self) -> Option<&'a AstNode<'a>> {
+        return None;
+    }
+
+    pub fn handle_autolink_w(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
-        self.make_inline(NodeValue::Text((self.input[self.pos - 1] as char).to_string()), self.pos - 1, self.pos - 1)
+        self.make_inline(NodeValue::Text("w".to_string()), self.pos - 1, self.pos - 1)
     }
-
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 
