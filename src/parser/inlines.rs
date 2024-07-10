@@ -1230,11 +1230,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-        // XXX: relaxed_autolinks
-        if self.within_brackets {
+        if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
-        let (post, reverse, skip) = autolink::url_match(self.arena, self.input, self.pos, false)?;
+        let (post, reverse, skip) = autolink::url_match(self.arena, self.input, self.pos, self.options.parse.relaxed_autolinks)?;
         match node.last_child().unwrap().data.borrow_mut().value {
             NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
             _ => unreachable!(),
