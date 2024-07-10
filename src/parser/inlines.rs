@@ -149,6 +149,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         ] {
             s.special_chars[c as usize] = true;
         }
+        if options.extension.autolink {
+            s.special_chars[b':' as usize] = true;
+            s.special_chars[b'w' as usize] = true;
+        }
         if options.extension.strikethrough {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
@@ -188,6 +192,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace()),
+            ':' | 'w' if self.options.extension.autolink => Some(self.handle_ext_autolink()),
+            // XXX: ':' fallback to shortcodes if compiled + enabled
             #[cfg(feature = "shortcodes")]
             ':' if self.options.extension.shortcodes => Some(self.handle_colons()),
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
@@ -1201,6 +1207,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         self.make_inline(NodeValue::Text(":".to_string()), self.pos - 1, self.pos - 1)
+    }
+
+    pub fn handle_ext_autolink(&mut self) -> &'a AstNode<'a> {
+        self.pos += 1;
+        self.make_inline(NodeValue::Text((self.input[self.pos - 1] as char).to_string()), self.pos - 1, self.pos - 1)
     }
 
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
