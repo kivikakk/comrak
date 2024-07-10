@@ -10,46 +10,47 @@ fn small() {
 }
 
 fn large() {
-    use comrak::nodes::{AstNode, NodeValue};
+    use comrak::nodes::NodeValue;
     use comrak::{format_html, parse_document, Arena, Options};
 
-    // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-    let arena = Arena::new();
+    fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
+        // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
+        let arena = Arena::new();
 
-    let root = parse_document(
-        &arena,
-        "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
-        &Options::default(),
-    );
+        // Parse the document into a root `AstNode`
+        let root = parse_document(&arena, document, &Options::default());
 
-    fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
-    where
-        F: Fn(&'a AstNode<'a>),
-    {
-        f(node);
-        for c in node.children() {
-            iter_nodes(c, f);
+        // Iterate over all the descendants of root.
+        for node in root.descendants() {
+            if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+                // If the node is a text node, perform the string replacement.
+                *text = text.replace(orig_string, replacement)
+            }
         }
+
+        let mut html = vec![];
+        format_html(root, &Options::default(), &mut html).unwrap();
+
+        String::from_utf8(html).unwrap()
     }
 
-    iter_nodes(root, &|node| {
-        if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-            let orig = std::mem::take(text);
-            *text = orig.replace("my", "your");
-        }
-    });
+    fn main() {
+        let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
+        let orig = "my";
+        let repl = "your";
+        let html = replace_text(&doc, &orig, &repl);
 
-    let mut html = vec![];
-    format_html(root, &Options::default(), &mut html).unwrap();
+        println!("{}", html);
+        // Output:
+        //
+        // <p>This is your input.</p>
+        // <ol>
+        // <li>Also <a href="#">your</a> input.</li>
+        // <li>Certainly <em>your</em> input.</li>
+        // </ol>
+    }
 
-    assert_eq!(
-        String::from_utf8(html).unwrap(),
-        "<p>This is your input.</p>\n\
-         <ol>\n\
-         <li>Also your input.</li>\n\
-         <li>Certainly your input.</li>\n\
-         </ol>\n"
-    );
+    main()
 }
 
 fn main() {

@@ -1,19 +1,15 @@
 # [Comrak](https://github.com/kivikakk/comrak)
 
-[![Build Status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml) ![Spec
-Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg)
+[![Build status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml)
+[![CommonMark: 652/652](https://img.shields.io/badge/commonmark-652%2F652-brightgreen.svg)](https://github.com/commonmark/commonmark-spec/blob/9103e341a973013013bb1a80e13567007c5cef6f/spec.txt)
+[![GFM: 670/670](https://img.shields.io/badge/gfm-670%2F670-brightgreen.svg)](https://github.com/kivikakk/cmark-gfm/blob/2f13eeedfe9906c72a1843b03552550af7bee29a/test/spec.txt)
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-Rust port of [github's `cmark-gfm`](https://github.com/github/cmark). *Currently synced with release `0.29.0.gfm.13`*.
+Rust port of [github's `cmark-gfm`](https://github.com/github/cmark-gfm).
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Security](#security)
-- [Extensions](#extensions)
-- [Related projects](#related-projects)
-- [Contributing](#contributing)
-- [Legal](#legal)
+Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) in default mode.
+GFM support synced with release `0.29.0.gfm.13`.
 
 ## Installation
 
@@ -26,22 +22,31 @@ comrak = "0.24"
 
 Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
 
-### Mac & Linux Binaries
+### CLI
 
-``` bash
-curl https://webinstall.dev/comrak | bash
-```
+- Anywhere with a Rust toolchain:
+  - `cargo install comrak`
+- Many Unix distributions:
+  - `pacman -S comrak`
+  - `brew install comrak`
+  - `dnf install comrak`
+  - `nix run nixpkgs#comrak`
 
-### Windows 10 Binaries
-
-``` powershell
-curl.exe -A "MS" https://webinstall.dev/comrak | powershell
-```
+You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them\! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS.
 
 ## Usage
 
+<details>
+
+<summary>Click to expand the CLI <code>--help</code> output.
+
 ``` console
 $ comrak --help
+```
+
+</summary>
+
+```
 A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter
 
 Usage: comrak [OPTIONS] [FILE]...
@@ -54,7 +59,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /home/runner/.config/comrak/config]
+          [default: /Users/kivikakk/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
@@ -73,7 +78,11 @@ Options:
 
       --gfm
           Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
-          tasklist. Also enables --github-pre-lang
+          tasklist. Also enables --github-pre-lang and --gfm-quirks
+
+      --gfm-quirks
+          Enables GFM-style quirks in output HTML, such as not nesting <strong> tags, which
+          otherwise breaks CommonMark compatibility
 
       --relaxed-tasklist-character
           Enable relaxing which character is allowed in a tasklists
@@ -104,7 +113,7 @@ Options:
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
-          wikilinks-title-after-pipe, wikilinks-title-before-pipe]
+          wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, spoiler, greentext]
 
   -t, --to <FORMAT>
           Specify output format
@@ -140,6 +149,12 @@ Options:
       --sourcepos
           Include source position attribute in HTML and XML output
 
+      --ignore-setext
+          Ignore setext headers
+
+      --ignore-empty-links
+          Ignore empty links
+
   -h, --help
           Print help information (use `-h` for a summary)
 
@@ -150,6 +165,8 @@ By default, Comrak will attempt to read command-line options from a config file 
 --config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
 the file does not exist.
 ```
+
+</details>
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
@@ -162,7 +179,6 @@ assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
 
 ``` rust
-extern crate comrak;
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
 
@@ -194,42 +210,24 @@ fn main() {
     let html = replace_text(&doc, &orig, &repl);
 
     println!("{}", html);
+    // Output:
+    //
+    // <p>This is your input.</p>
+    // <ol>
+    // <li>Also <a href="#">your</a> input.</li>
+    // <li>Certainly <em>your</em> input.</li>
+    // </ol>
 }
 ```
 
-## Benchmarking
-
-For running benchmarks, you will need to [install hyperfine](https://github.com/sharkdp/hyperfine#installation) and optionally cmake.
-
-If you want to just run the benchmark for `comrak`, with the current state of the repo, you can simply run
-
-``` bash
-make bench-comrak
-```
-
-This will build comrak in release mode, and run benchmark on it. You will see the time measurements as reported by hyperfine in the console.
-
-Makefile also provides a way to run benchmarks for `comrak` current state (with your changes), `comrak` main branch, [`cmark-gfm`](https://github.com/github/cmark-gfm), [`pulldown-cmark`](https://github.com/raphlinus/pulldown-cmark) and [`markdown-it.rs`](https://github.com/rlidwka/markdown-it.rs). For this you will need to install `cmake`. After that make sure that you have set-up the git submodules. In case you have not installed submodules when cloning, you can do it by running
-
-``` bash
-git submodule update --init
-```
-
-After this is done, you can run
-
-``` bash
-make bench-all
-```
-
-which will run benchmarks across all, and report the time take by each as well as relative time.
-
-Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will add a comment with the results on the pull request in a tabular format comparing the 5 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note benchmarks won't be automatically run on each push.
+For a slightly more real-world example, see how I [generate my GitHub user README](https://github.com/kivikakk/kivikakk) from a base document with embedded YAML, which itself has embedded Markdown, or
+[check out some of Comrak's dependents on crates.io](https://crates.io/crates/comrak/reverse_dependencies) or [on GitHub](https://github.com/kivikakk/comrak/network/dependents).
 
 ## Security
 
 As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https://github.com/github/cmark-gfm#security),
 Comrak will scrub raw HTML and potentially dangerous links. This change was introduced in Comrak 0.4.0 in support of a
-safe-by-default posture.
+safe-by-default posture, and later adopted by our contemporaries. :)
 
 To allow these, use the `unsafe_` option (or `--unsafe` with the command line program). If doing so, we recommend the
 use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
@@ -252,29 +250,33 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Footnotes
 - Description lists
 - Front matter
-- Shortcodes
+- Multi-line blockquotes
 - Math
-- Multiline Blockquotes
+- Emoji shortcodes
+- Wikilinks
+- Underline
+- Spoiler text
+- "Greentext"
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
-[`ComrakExtensionOptions` struct](https://docs.rs/comrak/newest/comrak/type.ComrakExtensionOptions.html).
+[`ExtensionOptions` struct](https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html).
 
 ## Plugins
 
-### Codefence syntax highlighter
+### Fenced code block syntax highlighting
 
-At the moment syntax highlighting of codefence blocks is the only feature that can be enhanced with plugins.
+You can provide your own syntax highlighting engine.
 
 Create an implementation of the `SyntaxHighlighterAdapter` trait, and then provide an instance of such adapter to
-`Plugins.render.codefence_syntax_highlighter`. For formatting a markdown document with plugins, use the
-`markdown_to_html_with_plugins` function, which accepts your plugin as a parameter.
+`Plugins.render.codefence_syntax_highlighter`. For formatting a Markdown document with plugins, use the
+`markdown_to_html_with_plugins` function, which accepts your plugins object as a parameter.
 
 See the `syntax_highlighter.rs` and `syntect.rs` examples for more details.
 
 #### Syntect
 
 [`syntect`](https://github.com/trishume/syntect) is a syntax highlighting library for Rust. By default, `comrak` offers
-a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it as your
+a plugin for it. In order to utilize it, create an instance of `plugins::syntect::SyntectAdapter` and use it in your
 `Plugins` option.
 
 ## Related projects
@@ -284,8 +286,8 @@ in terms of code structure. The upside of this is that a change in `cmark-gfm` h
 Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con,
 depending on your use case.
 
-The downside, of course, is that the code is not what I'd call idiomatic Rust (*so many `RefCell`s*), and while
-contributors and I have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
+The downside, of course, is that the code often diverges from idiomatic Rust, especially in the AST's extensive use of `RefCell`, and while
+contributors have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
 depending on your use-case. Here are some other projects to consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
@@ -295,20 +297,43 @@ depending on your use-case. Here are some other projects to consider:
 - Know of another library? Please open a PR to add it\!
 
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
-extensions](https://github.github.com/gfm) to the spec, but this tends to only be important if you want to reproduce
-GitHub's Markdown rendering exactly, e.g. in a GitHub client app.
+extensions](https://github.github.com/gfm) rigorously.
+
+## Benchmarking
+
+You'll need to [install hyperfine](https://github.com/sharkdp/hyperfine#installation), and CMake if you want to compare against `cmark-gfm`.
+
+If you want to just run the benchmark for the `comrak` binary itself, run:
+
+``` bash
+make bench-comrak
+```
+
+This will build Comrak in release mode, and run benchmark on it. You will see the time measurements as reported by hyperfine in the console.
+
+The `Makefile` also provides a way to run benchmarks for `comrak` current state (with your changes), `comrak` main branch, [`cmark-gfm`](https://github.com/github/cmark-gfm), [`pulldown-cmark`](https://github.com/raphlinus/pulldown-cmark) and [`markdown-it.rs`](https://github.com/rlidwka/markdown-it.rs). You'll need CMake, and ensure [submodules are prepared](https://stackoverflow.com/a/10168693/499609).
+
+``` bash
+make bench-all
+```
+
+This will build and run benchmarks across all, and report the time taken by each as well as relative time.
+
+<!-- XXX: The following isn't really true at the moment, due to https://github.com/kivikakk/comrak/issues/339 -->
+
+<!-- Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will add a comment with the results on the pull request in a tabular format comparing the 5 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note benchmarks won't be automatically run on each push. -->
 
 ## Contributing
 
-Contributions are highly encouraged; where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as
-described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this
-project.
+Contributions are **highly encouraged**; if you'd like to assist, consider checking out the [`good first issue` label](https://github.com/kivikakk/comrak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)\! I'm happy to help provide direction and guidance throughout, even if (especially if\!) you're new to Rust or open source.
+
+Where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind too.
 
 Thank you to Comrak's many contributors for PRs and issues opened\!
 
 ### Code Contributors
 
-<a href="https://github.com/kivikakk/comrak/graphs/contributors"><img src="https://opencollective.com/comrak/contributors.svg?width=890&button=false" /></a>
+[![Small chart showing Comrak contributors.](https://opencollective.com/comrak/contributors.svg?width=890&button=false)](https://github.com/kivikakk/comrak/graphs/contributors)
 
 ### Financial Contributors
 

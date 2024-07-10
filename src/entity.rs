@@ -36,7 +36,11 @@ pub fn unescape(text: &[u8]) -> Option<(Vec<u8>, usize)> {
             0
         };
 
-        if (1..=8).contains(&num_digits) && i < text.len() && text[i] == b';' {
+        if i < text.len()
+            && text[i] == b';'
+            && (((text[1] == b'x' || text[1] == b'X') && (1..=6).contains(&num_digits))
+                || (1..=7).contains(&num_digits))
+        {
             if codepoint == 0 || (0xD800..=0xE000).contains(&codepoint) || codepoint >= 0x110000 {
                 codepoint = 0xFFFD;
             }

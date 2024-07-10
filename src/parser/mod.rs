@@ -766,6 +766,43 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options), "<p>[]()</p>\n");
     /// ```
     pub ignore_empty_links: bool,
+
+    /// Enables GFM quirks in HTML output which break CommonMark compatibility.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "****abcd**** *_foo_*";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><strong><strong>abcd</strong></strong> <em><em>foo</em></em></p>\n");
+    ///
+    /// options.render.gfm_quirks = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><strong>abcd</strong> <em><em>foo</em></em></p>\n");
+    /// ```
+    pub gfm_quirks: bool,
+
+    /// Prefer fenced code blocks when outputting CommonMark.
+    ///
+    /// ```rust
+    /// # use std::str;
+    /// # use comrak::{Arena, Options, format_commonmark, parse_document};
+    /// let arena = Arena::new();
+    /// let mut options = Options::default();
+    /// let input = "```\nhello\n```\n";
+    /// let root = parse_document(&arena, input, &options);
+    ///
+    /// let mut buf = Vec::new();
+    /// format_commonmark(&root, &options, &mut buf);
+    /// assert_eq!(str::from_utf8(&buf).unwrap(), "    hello\n");
+    ///
+    /// buf.clear();
+    /// options.render.prefer_fenced = true;
+    /// format_commonmark(&root, &options, &mut buf);
+    /// assert_eq!(str::from_utf8(&buf).unwrap(), "```\nhello\n```\n");
+    /// ```
+    pub prefer_fenced: bool,
 }
 
 #[non_exhaustive]
@@ -2131,7 +2168,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref nfd) => {
                 map.insert(
-                    strings::normalize_label(&nfd.name, Case::DontPreserve),
+                    strings::normalize_label(&nfd.name, Case::Fold),
                     FootnoteDefinition {
                         ix: None,
                         node,
@@ -2157,7 +2194,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
-                let normalized = strings::normalize_label(&nfr.name, Case::DontPreserve);
+                let normalized = strings::normalize_label(&nfr.name, Case::Fold);
                 if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
@@ -2389,7 +2426,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        lab = strings::normalize_label(&lab, Case::DontPreserve);
+        lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
             subj.refmap.map.entry(lab).or_insert(Reference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),

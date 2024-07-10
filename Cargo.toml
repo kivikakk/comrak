@@ -46,6 +46,7 @@ slug = "0.1.4"
 emojis = { version = "0.6.2", optional = true }
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 derive_builder = "0.20.0"
+caseless = "0.2.1"
 
 [dev-dependencies]
 ntest = "0.9"

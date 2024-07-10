@@ -424,6 +424,14 @@ fn reference_links() {
 }
 
 #[test]
+fn reference_links_casefold() {
+    html(
+        concat!("[ẞ]\n", "\n", "[SS]: /url	\n",),
+        "<p><a href=\"/url\">ẞ</a></p>\n",
+    );
+}
+
+#[test]
 fn safety() {
     html(
         concat!(

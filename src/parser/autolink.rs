@@ -161,7 +161,7 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
 }
 
 fn is_valid_hostchar(ch: char) -> bool {
-    !ch.is_whitespace() && !ch.is_punctuation()
+    !ch.is_whitespace() && !(ch.is_punctuation() || ch.is_symbol())
 }
 
 fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> usize {
