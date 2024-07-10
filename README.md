@@ -1,11 +1,15 @@
 # [Comrak](https://github.com/kivikakk/comrak)
 
-[![Build Status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml) ![Spec
-Status: 671/671](https://img.shields.io/badge/specs-671%2F671-brightgreen.svg)
+[![Build status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml)
+[![CommonMark: 652/652](https://img.shields.io/badge/commonmark-652%2F652-brightgreen.svg)](https://github.com/commonmark/commonmark-spec/blob/9103e341a973013013bb1a80e13567007c5cef6f/spec.txt)
+[![GFM: 670/670](https://img.shields.io/badge/gfm-670%2F670-brightgreen.svg)](https://github.com/kivikakk/cmark-gfm/blob/2f13eeedfe9906c72a1843b03552550af7bee29a/test/spec.txt)
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-Rust port of [github's `cmark-gfm`](https://github.com/github/cmark). *Currently synced with release `0.29.0.gfm.13`*.
+Rust port of [github's `cmark-gfm`](https://github.com/github/cmark-gfm).
+
+Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) in default mode.
+GFM support synced with release `0.29.0.gfm.13`.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -54,7 +58,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /home/runner/.config/comrak/config]
+          [default: /Users/kivikakk/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
@@ -73,7 +77,11 @@ Options:
 
       --gfm
           Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
-          tasklist. Also enables --github-pre-lang
+          tasklist. Also enables --github-pre-lang and --gfm-quirks
+
+      --gfm-quirks
+          Enables GFM-style quirks in output HTML, such as not nesting <strong> tags, which
+          otherwise breaks CommonMark compatibility
 
       --relaxed-tasklist-character
           Enable relaxing which character is allowed in a tasklists
@@ -104,7 +112,7 @@ Options:
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
-          wikilinks-title-after-pipe, wikilinks-title-before-pipe]
+          wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, spoiler, greentext]
 
   -t, --to <FORMAT>
           Specify output format
@@ -139,6 +147,12 @@ Options:
 
       --sourcepos
           Include source position attribute in HTML and XML output
+
+      --ignore-setext
+          Ignore setext headers
+
+      --ignore-empty-links
+          Ignore empty links
 
   -h, --help
           Print help information (use `-h` for a summary)
