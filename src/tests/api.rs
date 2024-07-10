@@ -215,8 +215,9 @@ fn exercise_full_api() {
             let _: String = nl.title;
         }
         #[cfg(feature = "shortcodes")]
-        nodes::NodeValue::ShortCode(ne) => {
-            let _: &str = ne.shortcode();
+        nodes::NodeValue::ShortCode(nsc) => {
+            let _: String = nsc.code;
+            let _: String = nsc.emoji;
         }
         nodes::NodeValue::FootnoteReference(nfr) => {
             let _: String = nfr.name;

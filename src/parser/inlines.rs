@@ -1227,7 +1227,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
         };
 
-        let nsc = NodeShortCode::try_from(shortcode).ok()?;
+        let nsc = NodeShortCode::resolve(shortcode)?;
         self.pos += 1 + matchlen;
 
         Some(self.make_inline(

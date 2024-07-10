@@ -853,7 +853,7 @@ impl<'o> HtmlFormatter<'o> {
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref nsc) => {
                 if entering {
-                    self.output.write_all(nsc.emoji().as_bytes())?;
+                    self.output.write_all(nsc.emoji.as_bytes())?;
                 }
             }
             NodeValue::Table(..) => {
