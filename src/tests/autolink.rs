@@ -321,10 +321,19 @@ fn autolink_cmark_edge_58() {
 }
 
 #[test]
-fn autolink_failing_spec() {
+fn autolink_failing_spec_image() {
     html_opts!(
         [extension.autolink],
         "![http://inline.com/image](http://inline.com/image)",
         "<p><img src=\"http://inline.com/image\" alt=\"http://inline.com/image\" /></p>\n",
+    );
+}
+
+#[test]
+fn autolink_failing_spec_underscores() {
+    html_opts!(
+        [extension.autolink],
+        "Underscores not allowed in host name www.xxx.yyy._zzz",
+        "<p>Underscores not allowed in host name www.xxx.yyy._zzz</p>\n",
     );
 }

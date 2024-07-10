@@ -134,7 +134,10 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
     let mut uscore2 = 0;
 
     for (i, c) in unsafe { str::from_utf8_unchecked(data) }.char_indices() {
-        if c == '_' {
+        if c == '\\' && i < data.len() - 1 {
+            // Ignore escaped characters per https://github.com/github/cmark-gfm/pull/292.
+            // Not sure I love this, but it tracks upstream ..
+        } else if c == '_' {
             uscore2 += 1;
         } else if c == '.' {
             uscore1 = uscore2;
