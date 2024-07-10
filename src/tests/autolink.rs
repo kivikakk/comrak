@@ -266,7 +266,7 @@ fn sourcepos_correctly_restores_context() {
 }
 
 #[test]
-fn autolink_cmark_edge() {
+fn autolink_cmark_edge_382() {
     html_opts!(
         [extension.autolink],
         "See &lt;&lt;&lt;http://example.com/&gt;&gt;&gt;",
@@ -275,10 +275,33 @@ fn autolink_cmark_edge() {
 }
 
 #[test]
-fn autolink_cmark_edge_2() {
+fn autolink_cmark_edge_388() {
     html_opts!(
         [extension.autolink],
         "http://example.com/src/_mocks_/vscode.js",
         "<p><a href=\"http://example.com/src/_mocks_/vscode.js\">http://example.com/src/_mocks_/vscode.js</a></p>\n",
+    );
+}
+
+#[test]
+fn autolink_cmark_edge_423() {
+    html_opts!(
+        [extension.autolink],
+        concat!(
+            "Here's an autolink: ",
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            " and another one ",
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            ".",
+        ),
+        concat!(
+            "<p>Here's an autolink: ",
+            r#"<a href="https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022">"#,
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            "</a> and another one ",
+            r#"<a href="https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022">"#,
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            "</a>.</p>\n",
+        ),
     );
 }
