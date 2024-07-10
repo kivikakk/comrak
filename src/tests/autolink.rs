@@ -325,6 +325,6 @@ fn autolink_failing_spec() {
     html_opts!(
         [extension.autolink],
         "![http://inline.com/image](http://inline.com/image)",
-        "<p><img src=\"http://inline.com/image\" alt=\"http://inline.com/image\" /></p>",
+        "<p><img src=\"http://inline.com/image\" alt=\"http://inline.com/image\" /></p>\n",
     );
 }
