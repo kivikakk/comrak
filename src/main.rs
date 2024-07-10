@@ -56,8 +56,10 @@ struct Cli {
     #[arg(long)]
     full_info_string: bool,
 
-    /// Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and tasklist.
-    /// Also enables --github-pre-lang.
+    /// Enable GitHub-flavored markdown extensions: strikethrough, tagfilter,
+    /// table, autolink, and tasklist. Also enables --github-pre-lang, and
+    /// enables GFM-style quirks in output HTML, such as not nesting <strong>
+    /// tags, which otherwise breaks CommonMark compatibility.
     #[arg(long)]
     gfm: bool,
 
@@ -284,6 +286,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .escaped_char_spans(cli.escaped_char_spans)
         .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
+        .gfm_quirks(cli.gfm)
         .build()?;
 
     let options = Options {

@@ -766,6 +766,22 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options), "<p>[]()</p>\n");
     /// ```
     pub ignore_empty_links: bool,
+
+    /// Enables GFM quirks in HTML output which break CommonMark compatibility.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "****abcd**** *_foo_*";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><strong><strong>abcd</strong></strong> <em><em>foo</em></em></p>\n");
+    ///
+    /// options.render.gfm_quirks = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><strong>abcd</strong> <em><em>foo</em></em></p>\n");
+    /// ```
+    pub gfm_quirks: bool,
 }
 
 #[non_exhaustive]

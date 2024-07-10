@@ -774,8 +774,9 @@ impl<'o> HtmlFormatter<'o> {
             }
             NodeValue::Strong => {
                 let parent_node = node.parent();
-                if parent_node.is_none()
-                    || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong)
+                if !self.options.render.gfm_quirks
+                    || (parent_node.is_none()
+                        || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
                 {
                     if entering {
                         self.output.write_all(b"<strong")?;
