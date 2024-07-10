@@ -5,6 +5,7 @@ use crate::nodes::{
     Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink,
     Sourcepos,
 };
+use crate::parser::autolink;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
@@ -196,7 +197,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                 let mut res = None;
 
                 if self.options.extension.autolink {
-                    res = self.handle_autolink_colon();
+                    res = self.handle_autolink_colon(node);
                 }
 
                 #[cfg(feature = "shortcodes")]
@@ -1228,14 +1229,26 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         None
     }
 
-    pub fn handle_autolink_colon(&mut self) -> Option<&'a AstNode<'a>> {
-        return None;
+    pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+        // XXX: relaxed_autolinks
+        if self.within_brackets {
+            return None;
+        }
+        let (post, reverse, skip) = autolink::url_match(self.arena, self.input, self.pos, false)?;
+        match node.last_child().unwrap().data.borrow_mut().value {
+            NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
+            _ => unreachable!(),
+        }
+
+        self.pos += skip - reverse;
+        return Some(post);
     }
 
     pub fn handle_autolink_w(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
         self.make_inline(NodeValue::Text("w".to_string()), self.pos - 1, self.pos - 1)
     }
+
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 

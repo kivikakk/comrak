@@ -40,12 +40,6 @@ pub(crate) fn process_autolinks<'a>(
             }
 
             match contents[i] {
-                b':' => {
-                    post_org = url_match(arena, contents, i, relaxed_autolinks);
-                    if post_org.is_some() {
-                        break;
-                    }
-                }
                 b'w' => {
                     post_org = www_match(arena, contents, i, relaxed_autolinks);
                     if post_org.is_some() {
@@ -245,7 +239,7 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
     link_end
 }
 
-fn url_match<'a>(
+pub fn url_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,

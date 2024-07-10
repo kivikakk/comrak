@@ -113,7 +113,7 @@ fn autolink_ignore_links_in_brackets() {
     ];
 
     for example in examples {
-        html_opts!([extension.autolink], example[0], example[1]);
+        html_opts!([extension.autolink], example[0], example[1], no_roundtrip);
     }
 }
 

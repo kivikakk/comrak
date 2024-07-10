@@ -73,22 +73,22 @@ fn commonmark(input: &str, expected: &str, opts: Option<&Options>) {
 
 #[track_caller]
 pub fn html(input: &str, expected: &str) {
-    html_opts_i(input, expected, |_| ());
+    html_opts_i(input, expected, true, |_| ());
 }
 
 #[track_caller]
-fn html_opts_i<F>(input: &str, expected: &str, opts: F)
+fn html_opts_i<F>(input: &str, expected: &str, roundtrip: bool, opts: F)
 where
     F: Fn(&mut Options),
 {
     let mut options = Options::default();
     opts(&mut options);
 
-    html_opts_w(input, expected, &options);
+    html_opts_w(input, expected, roundtrip, &options);
 }
 
 #[track_caller]
-fn html_opts_w(input: &str, expected: &str, options: &Options) {
+fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) {
     let arena = Arena::new();
 
     let root = parse_document(&arena, input, options);
@@ -101,7 +101,7 @@ fn html_opts_w(input: &str, expected: &str, options: &Options) {
         input,
     );
 
-    if options.render.sourcepos {
+    if options.render.sourcepos || !roundtrip {
         return;
     }
 
@@ -121,11 +121,22 @@ fn html_opts_w(input: &str, expected: &str, options: &Options) {
 }
 
 macro_rules! html_opts {
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr,) => {
-        html_opts!([$($optclass.$optname),*], $lhs, $rhs)
-    };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr) => {
-        $crate::tests::html_opts_i($lhs, $rhs, |opts| {
+        html_opts!([$($optclass.$optname),*], $lhs, $rhs,)
+    };
+    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr,) => {
+        html_opts!([$($optclass.$optname),*], $lhs, $rhs, roundtrip)
+    };
+    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, $rt:ident) => {
+        html_opts!([$($optclass.$optname),*], $lhs, $rhs, $rt,)
+    };
+    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, roundtrip,) => {
+        $crate::tests::html_opts_i($lhs, $rhs, true, |opts| {
+            $(opts.$optclass.$optname = true;)*
+        });
+    };
+    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, no_roundtrip,) => {
+        $crate::tests::html_opts_i($lhs, $rhs, false, |opts| {
             $(opts.$optclass.$optname = true;)*
         });
     };

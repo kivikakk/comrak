@@ -21,6 +21,7 @@ fn header_ids() {
             "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n",
             "<h1><a href=\"#isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
         ),
+        true,
         |opts| opts.extension.header_ids = Some("user-content-".to_owned()),
     );
 }
