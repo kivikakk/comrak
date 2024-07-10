@@ -264,3 +264,12 @@ fn sourcepos_correctly_restores_context() {
         ])
     );
 }
+
+#[test]
+fn autolink_cmark_edge() {
+    html_opts!(
+        [extension.autolink],
+        "See &lt;&lt;&lt;http://example.com/&gt;&gt;&gt;",
+        "<p>See &lt;&lt;&lt;<a href=\"http://example.com/\">http://example.com/</a>&gt;&gt;&gt;</p>\n",
+    );
+}
