@@ -216,7 +216,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
                 res
             }
-            'w' if self.options.extension.autolink => Some(self.handle_autolink_w()),
+            'w' if self.options.extension.autolink => match self.handle_autolink_w(node) {
+                Some(inl) => Some(inl),
+                None => {
+                    self.pos += 1;
+                    Some(self.make_inline(
+                        NodeValue::Text("w".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    ))
+                }
+            },
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
             '-' => Some(self.handle_hyphen()),
             '.' => Some(self.handle_period()),
@@ -1233,7 +1243,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
-        let (post, reverse, skip) = autolink::url_match(self.arena, self.input, self.pos, self.options.parse.relaxed_autolinks)?;
+        let (post, reverse, skip) = autolink::url_match(
+            self.arena,
+            self.input,
+            self.pos,
+            self.options.parse.relaxed_autolinks,
+        )?;
         match node.last_child().unwrap().data.borrow_mut().value {
             NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
             _ => unreachable!(),
@@ -1243,9 +1258,25 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         return Some(post);
     }
 
-    pub fn handle_autolink_w(&mut self) -> &'a AstNode<'a> {
-        self.pos += 1;
-        self.make_inline(NodeValue::Text("w".to_string()), self.pos - 1, self.pos - 1)
+    pub fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+        if !self.options.parse.relaxed_autolinks && self.within_brackets {
+            return None;
+        }
+        let (post, reverse, skip) = autolink::www_match(
+            self.arena,
+            self.input,
+            self.pos,
+            self.options.parse.relaxed_autolinks,
+        )?;
+        if reverse > 0 {
+            match node.last_child().unwrap().data.borrow_mut().value {
+                NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
+                _ => unreachable!(),
+            }
+        }
+
+        self.pos += skip - reverse;
+        return Some(post);
     }
 
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {

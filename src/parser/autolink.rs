@@ -6,6 +6,8 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
+// TODO: this can probably be cleaned up a lot. It used to handle all three of
+// {url,www,email}_match, but now just the last of those.
 pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
@@ -40,12 +42,6 @@ pub(crate) fn process_autolinks<'a>(
             }
 
             match contents[i] {
-                b'w' => {
-                    post_org = www_match(arena, contents, i, relaxed_autolinks);
-                    if post_org.is_some() {
-                        break;
-                    }
-                }
                 b'@' => {
                     post_org = email_match(arena, contents, i, relaxed_autolinks);
                     if post_org.is_some() {
@@ -75,7 +71,7 @@ pub(crate) fn process_autolinks<'a>(
     }
 }
 
-fn www_match<'a>(
+pub fn www_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
     i: usize,

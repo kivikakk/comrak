@@ -306,7 +306,6 @@ fn autolink_cmark_edge_423() {
     );
 }
 
-
 #[test]
 fn autolink_cmark_edge_58() {
     html_opts!(
