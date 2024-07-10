@@ -286,7 +286,7 @@ fn autolink_cmark_edge_388() {
 #[test]
 fn autolink_cmark_edge_423() {
     html_opts!(
-        [extension.autolink],
+        [extension.autolink, extension.strikethrough],
         concat!(
             "Here's an autolink: ",
             "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
@@ -302,6 +302,21 @@ fn autolink_cmark_edge_423() {
             r#"<a href="https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022">"#,
             "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
             "</a>.</p>\n",
+        ),
+    );
+}
+
+
+#[test]
+fn autolink_cmark_edge_58() {
+    html_opts!(
+        [extension.autolink, extension.superscript],
+        "https://www.wolframalpha.com/input/?i=x^2+(y-(x^2)^(1/3))^2=1",
+        concat!(
+            "<p>",
+            r#"<a href="https://www.wolframalpha.com/input/?i=x%5E2+(y-(x%5E2)%5E(1/3))%5E2=1">"#,
+            "https://www.wolframalpha.com/input/?i=x^2+(y-(x^2)^(1/3))^2=1",
+            "</a></p>\n",
         ),
     );
 }
