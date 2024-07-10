@@ -154,13 +154,13 @@ pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
 }
 
 /// Render Markdown to CommonMark XML.
-/// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
+/// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
 pub fn markdown_to_commonmark_xml(md: &str, options: &Options) -> String {
     markdown_to_commonmark_xml_with_plugins(md, options, &Plugins::default())
 }
 
 /// Render Markdown to CommonMark XML using plugins.
-/// See https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd.
+/// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
 pub fn markdown_to_commonmark_xml_with_plugins(
     md: &str,
     options: &Options,

@@ -289,7 +289,7 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 /// The inclusion of characters like "%" in those which are not escaped is
 /// explained somewhat here:
 ///
-/// https://github.com/github/cmark-gfm/blob/c32ef78bae851cb83b7ad52d0fbff880acdcd44a/src/houdini_href_e.c#L7-L31
+/// <https://github.com/github/cmark-gfm/blob/c32ef78bae851cb83b7ad52d0fbff880acdcd44a/src/houdini_href_e.c#L7-L31>
 ///
 /// In other words, if a CommonMark user enters:
 ///
