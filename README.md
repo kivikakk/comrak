@@ -325,9 +325,9 @@ This will build and run benchmarks across all, and report the time taken by each
 
 ## Contributing
 
-Contributions are highly encouraged; where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as
-described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind when interacting with this
-project.
+Contributions are **highly encouraged**; if you'd like to assist, consider checking out the [`good first issue` label](https://github.com/kivikakk/comrak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)\! I'm happy to help provide direction and guidance throughout, even if (especially if\!) you're new to Rust or open source.
+
+Where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind too.
 
 Thank you to Comrak's many contributors for PRs and issues opened\!
 
