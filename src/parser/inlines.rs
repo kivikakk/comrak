@@ -5,6 +5,7 @@ use crate::nodes::{
     Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink,
     Sourcepos,
 };
+use crate::parser::autolink;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
@@ -149,6 +150,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         ] {
             s.special_chars[c as usize] = true;
         }
+        if options.extension.autolink {
+            s.special_chars[b':' as usize] = true;
+            s.special_chars[b'w' as usize] = true;
+        }
         if options.extension.strikethrough {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
@@ -188,8 +193,40 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace()),
-            #[cfg(feature = "shortcodes")]
-            ':' if self.options.extension.shortcodes => Some(self.handle_colons()),
+            ':' => {
+                let mut res = None;
+
+                if self.options.extension.autolink {
+                    res = self.handle_autolink_colon(node);
+                }
+
+                #[cfg(feature = "shortcodes")]
+                if res.is_none() && self.options.extension.shortcodes {
+                    res = self.handle_shortcodes_colon();
+                }
+
+                if res.is_none() {
+                    self.pos += 1;
+                    res = Some(self.make_inline(
+                        NodeValue::Text(":".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    ));
+                }
+
+                res
+            }
+            'w' if self.options.extension.autolink => match self.handle_autolink_w(node) {
+                Some(inl) => Some(inl),
+                None => {
+                    self.pos += 1;
+                    Some(self.make_inline(
+                        NodeValue::Text("w".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    ))
+                }
+            },
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
             '-' => Some(self.handle_hyphen()),
             '.' => Some(self.handle_period()),
@@ -234,6 +271,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         self.pos - 1,
                     );
                     self.push_bracket(true, inl);
+                    self.within_brackets = true;
                     Some(inl)
                 } else {
                     Some(self.make_inline(
@@ -1182,25 +1220,82 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
     }
 
     #[cfg(feature = "shortcodes")]
-    pub fn handle_colons(&mut self) -> &'a AstNode<'a> {
-        self.pos += 1;
+    pub fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
+        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
-        if let Some(matchlen) = scanners::shortcode(&self.input[self.pos..]) {
-            let shortcode =
-                unsafe { str::from_utf8_unchecked(&self.input[self.pos..self.pos + matchlen - 1]) };
+        let shortcode = unsafe {
+            str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
+        };
 
-            if let Ok(nsc) = NodeShortCode::try_from(shortcode) {
-                self.pos += matchlen;
-                let inl = self.make_inline(
-                    NodeValue::ShortCode(nsc),
-                    self.pos - 1 - matchlen,
-                    self.pos - 1,
-                );
-                return inl;
+        let nsc = NodeShortCode::try_from(shortcode).ok()?;
+        self.pos += 1 + matchlen;
+
+        Some(self.make_inline(
+            NodeValue::ShortCode(nsc),
+            self.pos - 1 - matchlen,
+            self.pos - 1,
+        ))
+    }
+
+    pub fn handle_autolink_with<F>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        f: F,
+    ) -> Option<&'a AstNode<'a>>
+    where
+        F: Fn(
+            &'a Arena<AstNode<'a>>,
+            &[u8],
+            usize,
+            bool,
+        ) -> Option<(&'a AstNode<'a>, usize, usize)>,
+    {
+        if !self.options.parse.relaxed_autolinks && self.within_brackets {
+            return None;
+        }
+        let (post, mut reverse, skip) = f(
+            self.arena,
+            self.input,
+            self.pos,
+            self.options.parse.relaxed_autolinks,
+        )?;
+
+        self.pos += skip - reverse;
+
+        // We need to "rewind" by `reverse` chars, which should be in one or
+        // more Text nodes beforehand. Typically the chars will *all* be in a
+        // single Text node, containing whatever text came before the ":" that
+        // triggered this method, eg. "See our website at http" ("://blah.com").
+        //
+        // relaxed_autolinks allows some slightly pathological cases. First,
+        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
+        // a scheme including the letter "w", which will split Text inlines due
+        // to them being their own trigger (for handle_autolink_w), meaning
+        // "wa://…" will need to traverse two Texts to complete the rewind.
+        while reverse > 0 {
+            match node.last_child().unwrap().data.borrow_mut().value {
+                NodeValue::Text(ref mut prev) => {
+                    if reverse < prev.len() {
+                        prev.truncate(prev.len() - reverse);
+                        reverse = 0;
+                    } else {
+                        reverse -= prev.len();
+                        node.last_child().unwrap().detach();
+                    }
+                }
+                _ => panic!("expected text node before autolink colon"),
             }
         }
 
-        self.make_inline(NodeValue::Text(":".to_string()), self.pos - 1, self.pos - 1)
+        Some(post)
+    }
+
+    pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+        self.handle_autolink_with(node, autolink::url_match)
+    }
+
+    pub fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+        self.handle_autolink_with(node, autolink::www_match)
     }
 
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {

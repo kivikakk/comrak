@@ -113,7 +113,7 @@ fn autolink_ignore_links_in_brackets() {
     ];
 
     for example in examples {
-        html_opts!([extension.autolink], example[0], example[1]);
+        html_opts!([extension.autolink], example[0], example[1], no_roundtrip);
     }
 }
 
@@ -262,5 +262,98 @@ fn sourcepos_correctly_restores_context() {
                 (text (1:25-1:26) " n")
             ])
         ])
+    );
+}
+
+#[test]
+fn autolink_cmark_edge_382() {
+    html_opts!(
+        [extension.autolink],
+        "See &lt;&lt;&lt;http://example.com/&gt;&gt;&gt;",
+        "<p>See &lt;&lt;&lt;<a href=\"http://example.com/\">http://example.com/</a>&gt;&gt;&gt;</p>\n",
+    );
+}
+
+#[test]
+fn autolink_cmark_edge_388() {
+    html_opts!(
+        [extension.autolink],
+        "http://example.com/src/_mocks_/vscode.js",
+        "<p><a href=\"http://example.com/src/_mocks_/vscode.js\">http://example.com/src/_mocks_/vscode.js</a></p>\n",
+    );
+}
+
+#[test]
+fn autolink_cmark_edge_423() {
+    html_opts!(
+        [extension.autolink, extension.strikethrough],
+        concat!(
+            "Here's an autolink: ",
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            " and another one ",
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            ".",
+        ),
+        concat!(
+            "<p>Here's an autolink: ",
+            r#"<a href="https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022">"#,
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            "</a> and another one ",
+            r#"<a href="https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022">"#,
+            "https://www.unicode.org/review/pri453/feedback.html#:~:text=Fri%20Jun%2024%2009:56:01%20CDT%202022",
+            "</a>.</p>\n",
+        ),
+    );
+}
+
+#[test]
+fn autolink_cmark_edge_58() {
+    html_opts!(
+        [extension.autolink, extension.superscript],
+        "https://www.wolframalpha.com/input/?i=x^2+(y-(x^2)^(1/3))^2=1",
+        concat!(
+            "<p>",
+            r#"<a href="https://www.wolframalpha.com/input/?i=x%5E2+(y-(x%5E2)%5E(1/3))%5E2=1">"#,
+            "https://www.wolframalpha.com/input/?i=x^2+(y-(x^2)^(1/3))^2=1",
+            "</a></p>\n",
+        ),
+    );
+}
+
+#[test]
+fn autolink_failing_spec_image() {
+    html_opts!(
+        [extension.autolink],
+        "![http://inline.com/image](http://inline.com/image)",
+        "<p><img src=\"http://inline.com/image\" alt=\"http://inline.com/image\" /></p>\n",
+    );
+}
+
+#[test]
+fn autolink_failing_spec_underscores() {
+    html_opts!(
+        [extension.autolink],
+        "Underscores not allowed in host name www.xxx.yyy._zzz",
+        "<p>Underscores not allowed in host name www.xxx.yyy._zzz</p>\n",
+    );
+}
+
+#[test]
+fn autolink_fuzz_leading_colon() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "://-",
+        "<p><a href=\"://-\">://-</a></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn autolink_fuzz_we() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "we://w",
+        "<p><a href=\"we://w\">we://w</a></p>\n",
+        no_roundtrip,
     );
 }
