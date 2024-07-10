@@ -347,3 +347,13 @@ fn autolink_fuzz_leading_colon() {
         no_roundtrip,
     );
 }
+
+#[test]
+fn autolink_fuzz_we() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "we://w",
+        "<p><a href=\"we://w\">we://w</a></p>\n",
+        no_roundtrip,
+    );
+}

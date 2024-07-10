@@ -1240,46 +1240,65 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         None
     }
 
-    pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    pub fn handle_autolink_with<F>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        f: F,
+    ) -> Option<&'a AstNode<'a>>
+    where
+        F: Fn(
+            &'a Arena<AstNode<'a>>,
+            &[u8],
+            usize,
+            bool,
+        ) -> Option<(&'a AstNode<'a>, usize, usize)>,
+    {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
-        let (post, reverse, skip) = autolink::url_match(
+        let (post, mut reverse, skip) = f(
             self.arena,
             self.input,
             self.pos,
             self.options.parse.relaxed_autolinks,
         )?;
-        if reverse > 0 {
+
+        self.pos += skip - reverse;
+
+        // We need to "rewind" by `reverse` chars, which should be in one or
+        // more Text nodes beforehand. Typically the chars will *all* be in a
+        // single Text node, containing whatever text came before the ":" that
+        // triggered this method, eg. "See our website at http" ("://blah.com").
+        //
+        // relaxed_autolinks allows some slightly pathological cases. First,
+        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
+        // a scheme including the letter "w", which will split Text inlines due
+        // to them being their own trigger (for handle_autolink_w), meaning
+        // "wa://…" will need to traverse two Texts to complete the rewind.
+        while reverse > 0 {
             match node.last_child().unwrap().data.borrow_mut().value {
-                NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
-                _ => unreachable!(),
+                NodeValue::Text(ref mut prev) => {
+                    if reverse < prev.len() {
+                        prev.truncate(prev.len() - reverse);
+                        reverse = 0;
+                    } else {
+                        reverse -= prev.len();
+                        node.last_child().unwrap().detach();
+                    }
+                }
+                _ => panic!("expected text node before autolink colon"),
             }
         }
 
-        self.pos += skip - reverse;
-        return Some(post);
+        Some(post)
+    }
+
+    pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+        self.handle_autolink_with(node, autolink::url_match)
     }
 
     pub fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-        if !self.options.parse.relaxed_autolinks && self.within_brackets {
-            return None;
-        }
-        let (post, reverse, skip) = autolink::www_match(
-            self.arena,
-            self.input,
-            self.pos,
-            self.options.parse.relaxed_autolinks,
-        )?;
-        if reverse > 0 {
-            match node.last_child().unwrap().data.borrow_mut().value {
-                NodeValue::Text(ref mut prev) => prev.truncate(prev.len() - reverse),
-                _ => unreachable!(),
-            }
-        }
-
-        self.pos += skip - reverse;
-        return Some(post);
+        self.handle_autolink_with(node, autolink::www_match)
     }
 
     pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
