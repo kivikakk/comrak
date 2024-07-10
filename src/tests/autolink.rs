@@ -273,3 +273,12 @@ fn autolink_cmark_edge() {
         "<p>See &lt;&lt;&lt;<a href=\"http://example.com/\">http://example.com/</a>&gt;&gt;&gt;</p>\n",
     );
 }
+
+#[test]
+fn autolink_cmark_edge_2() {
+    html_opts!(
+        [extension.autolink],
+        "http://example.com/src/_mocks_/vscode.js",
+        "<p><a href=\"http://example.com/src/_mocks_/vscode.js\">http://example.com/src/_mocks_/vscode.js</a></p>\n",
+    );
+}
