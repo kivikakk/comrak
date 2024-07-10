@@ -2147,7 +2147,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         match node.data.borrow().value {
             NodeValue::FootnoteDefinition(ref nfd) => {
                 map.insert(
-                    strings::normalize_label(&nfd.name, Case::DontPreserve),
+                    strings::normalize_label(&nfd.name, Case::Fold),
                     FootnoteDefinition {
                         ix: None,
                         node,
@@ -2173,7 +2173,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
         let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
-                let normalized = strings::normalize_label(&nfr.name, Case::DontPreserve);
+                let normalized = strings::normalize_label(&nfr.name, Case::Fold);
                 if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
                         Some(ix) => ix,
@@ -2405,7 +2405,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             }
         }
 
-        lab = strings::normalize_label(&lab, Case::DontPreserve);
+        lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
             subj.refmap.map.entry(lab).or_insert(Reference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),

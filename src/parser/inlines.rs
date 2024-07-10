@@ -1530,7 +1530,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         // Need to normalize both to lookup in refmap and to call callback
-        let lab = strings::normalize_label(&lab, Case::DontPreserve);
+        let lab = strings::normalize_label(&lab, Case::Fold);
         let mut reff = if found_label {
             self.refmap.lookup(&lab)
         } else {

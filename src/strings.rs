@@ -7,7 +7,7 @@ use std::str;
 #[derive(PartialEq, Eq)]
 pub enum Case {
     Preserve,
-    DontPreserve,
+    Fold,
 }
 
 pub fn unescape(v: &mut Vec<u8>) {
@@ -262,13 +262,23 @@ pub fn normalize_label(i: &str, casing: Case) -> String {
             }
         } else {
             last_was_whitespace = false;
-            match casing {
-                Case::Preserve => v.push(c),
-                Case::DontPreserve => v.push_str(&c.to_lowercase().to_string()),
-            }
+            v.push(c);
         }
     }
-    v
+
+    if casing == Case::Fold {
+        caseless::default_case_fold_str(&v)
+    } else {
+        v
+    }
+}
+
+#[test]
+fn normalize_label_fold_test() {
+    assert_eq!(normalize_label("Abc   \t\ndef", Case::Preserve), "Abc def");
+    assert_eq!(normalize_label("Abc   \t\ndef", Case::Fold), "abc def");
+    assert_eq!(normalize_label("Straẞe", Case::Preserve), "Straẞe");
+    assert_eq!(normalize_label("Straẞe", Case::Fold), "strasse");
 }
 
 pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'s str, &'s str)> {
@@ -356,14 +366,8 @@ pub mod tests {
 
     #[test]
     fn normalize_label_lowercase() {
-        assert_eq!(
-            normalize_label("  Foo\u{A0}BAR  ", Case::DontPreserve),
-            "foo bar"
-        );
-        assert_eq!(
-            normalize_label("  FooİBAR  ", Case::DontPreserve),
-            "fooi\u{307}bar"
-        );
+        assert_eq!(normalize_label("  Foo\u{A0}BAR  ", Case::Fold), "foo bar");
+        assert_eq!(normalize_label("  FooİBAR  ", Case::Fold), "fooi\u{307}bar");
     }
 
     #[test]
