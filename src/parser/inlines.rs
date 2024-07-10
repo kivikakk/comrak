@@ -1221,23 +1221,20 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
     #[cfg(feature = "shortcodes")]
     pub fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
-        if let Some(matchlen) = scanners::shortcode(&self.input[self.pos + 1..]) {
-            let shortcode = unsafe {
-                str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
-            };
+        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
-            if let Ok(nsc) = NodeShortCode::try_from(shortcode) {
-                self.pos += 1 + matchlen;
-                let inl = self.make_inline(
-                    NodeValue::ShortCode(nsc),
-                    self.pos - 1 - matchlen,
-                    self.pos - 1,
-                );
-                return Some(inl);
-            }
-        }
+        let shortcode = unsafe {
+            str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
+        };
 
-        None
+        let nsc = NodeShortCode::try_from(shortcode).ok()?;
+        self.pos += 1 + matchlen;
+
+        Some(self.make_inline(
+            NodeValue::ShortCode(nsc),
+            self.pos - 1 - matchlen,
+            self.pos - 1,
+        ))
     }
 
     pub fn handle_autolink_with<F>(
