@@ -256,7 +256,7 @@ impl<'o> XmlFormatter<'o> {
                 #[cfg(feature = "shortcodes")]
                 NodeValue::ShortCode(ref nsc) => {
                     self.output.write_all(b" id=\"")?;
-                    self.escape(nsc.shortcode().as_bytes())?;
+                    self.escape(nsc.code.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
                 NodeValue::Escaped => {
