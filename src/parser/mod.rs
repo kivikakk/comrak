@@ -782,6 +782,27 @@ pub struct RenderOptions {
     ///            "<p><strong>abcd</strong> <em><em>foo</em></em></p>\n");
     /// ```
     pub gfm_quirks: bool,
+
+    /// Prefer fenced code blocks when outputting CommonMark.
+    ///
+    /// ```rust
+    /// # use std::str;
+    /// # use comrak::{Arena, Options, format_commonmark, parse_document};
+    /// let arena = Arena::new();
+    /// let mut options = Options::default();
+    /// let input = "```\nhello\n```\n";
+    /// let root = parse_document(&arena, input, &options);
+    ///
+    /// let mut buf = Vec::new();
+    /// format_commonmark(&root, &options, &mut buf);
+    /// assert_eq!(str::from_utf8(&buf).unwrap(), "    hello\n");
+    ///
+    /// buf.clear();
+    /// options.render.prefer_fenced = true;
+    /// format_commonmark(&root, &options, &mut buf);
+    /// assert_eq!(str::from_utf8(&buf).unwrap(), "```\nhello\n```\n");
+    /// ```
+    pub prefer_fenced: bool,
 }
 
 #[non_exhaustive]

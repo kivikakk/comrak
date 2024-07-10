@@ -531,6 +531,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
                     && !(isspace(literal[literal.len() - 1])
                         && isspace(literal[literal.len() - 2])))
                 && !first_in_list_item
+                && !self.options.render.prefer_fenced
             {
                 write!(self, "    ").unwrap();
                 write!(self.prefix, "    ").unwrap();
