@@ -998,20 +998,20 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
-            && !(after_char.is_punctuation()
+            && !((after_char.is_punctuation() || after_char.is_symbol())
                 && !before_char.is_whitespace()
-                && !before_char.is_punctuation());
+                && !(before_char.is_punctuation() || before_char.is_symbol()));
         let right_flanking = numdelims > 0
             && !before_char.is_whitespace()
-            && !(before_char.is_punctuation()
+            && !((before_char.is_punctuation() || before_char.is_symbol())
                 && !after_char.is_whitespace()
-                && !after_char.is_punctuation());
+                && !(after_char.is_punctuation() || after_char.is_symbol()));
 
         if c == b'_' {
             (
                 numdelims,
-                left_flanking && (!right_flanking || before_char.is_punctuation()),
-                right_flanking && (!left_flanking || after_char.is_punctuation()),
+                left_flanking && (!right_flanking || before_char.is_punctuation() || before_char.is_symbol()),
+                right_flanking && (!left_flanking || after_char.is_punctuation() || after_char.is_symbol()),
             )
         } else if c == b'\'' || c == b'"' {
             (
