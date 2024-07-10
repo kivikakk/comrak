@@ -16,7 +16,11 @@ PROGRAM_ARG="--program=../../../target/release/comrak --syntax-highlighting none
 
 set +e
 
-python3 spec_tests.py --no-normalize --spec spec.txt "$PROGRAM_ARG" \
+# Upstream CommonMark specs.
+python3 spec_tests.py --no-normalize --spec ../../commonmark-spec/spec.txt "$PROGRAM_ARG" \
+	|| failed=1
+
+python3 spec_tests.py --no-normalize --spec spec.txt "$PROGRAM_ARG --gfm" \
 	|| failed=1
 python3 pathological_tests.py "$PROGRAM_ARG" \
 	|| failed=1

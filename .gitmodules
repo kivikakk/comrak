@@ -7,3 +7,6 @@
 [submodule "vendor/markdown-it"]
 	path = vendor/markdown-it
 	url = https://github.com/rlidwka/markdown-it.rs.git
+[submodule "vendor/commonmark-spec"]
+	path = vendor/commonmark-spec
+	url = https://github.com/commonmark/commonmark-spec
