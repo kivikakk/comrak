@@ -381,7 +381,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [A-Za-z_-]+ [:] { return Some(cursor); }
+    [A-Za-z0-9+_-]+ [:] { return Some(cursor); }
     * { return None; }
 */
 }
