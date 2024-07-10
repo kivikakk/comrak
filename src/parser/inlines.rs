@@ -271,6 +271,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
                         self.pos - 1,
                     );
                     self.push_bracket(true, inl);
+                    self.within_brackets = true;
                     Some(inl)
                 } else {
                     Some(self.make_inline(
