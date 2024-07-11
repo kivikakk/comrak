@@ -19,10 +19,10 @@ fuzz_target!(|s: &str| {
     extension.header_ids = Some("user-content-".to_string());
     extension.footnotes = true;
     extension.description_lists = true;
+    extension.front_matter_delimiter = Some("---".to_string());
     extension.multiline_block_quotes = true;
     extension.math_dollars = true;
     extension.math_code = true;
-    extension.front_matter_delimiter = Some("---".to_string());
     extension.shortcodes = true;
     extension.wikilinks_title_after_pipe = true;
     extension.wikilinks_title_before_pipe = true;
@@ -55,6 +55,8 @@ fuzz_target!(|s: &str| {
     render.escaped_char_spans = true;
     render.ignore_setext = true;
     render.ignore_empty_links = true;
+    render.gfm_quirks = true;
+    render.prefer_fenced = true;
 
     markdown_to_html(
         s,
