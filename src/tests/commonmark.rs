@@ -7,12 +7,9 @@ use ntest::test_case;
 
 #[test]
 fn commonmark_removes_redundant_strong() {
-    let options = Options::default();
-
     let input = "This is **something **even** better**";
     let output = "This is **something even better**\n";
-
-    commonmark(input, output, Some(&options));
+    commonmark(input, output, None);
 }
 
 #[test]
@@ -52,7 +49,7 @@ fn math(markdown: &str, cm: &str) {
     options.extension.math_dollars = true;
     options.extension.math_code = true;
 
-    commonmark(markdown, cm, Some(&options));
+    commonmark(markdown, cm, None);
 }
 
 #[test_case("This [[url]] that", "This [[url|url]] that\n")]
@@ -62,4 +59,23 @@ fn wikilinks(markdown: &str, cm: &str) {
     options.extension.wikilinks_title_before_pipe = true;
 
     commonmark(markdown, cm, Some(&options));
+}
+#[test]
+fn commonmark_relist() {
+    commonmark(
+        concat!("3. one\n", "5. two\n",),
+        // Note that right now we always include enough room for up to two
+        // digits. TODO: Ideally we determine the maximum digit length before
+        // getting this far.
+        concat!("3.  one\n", "4.  two\n",),
+        None,
+    );
+
+    let mut options = Options::default();
+    options.extension.tasklist = true;
+    commonmark(
+        concat!("3. [ ] one\n", "5. [ ] two\n",),
+        concat!("3.  [ ] one\n", "4.  [ ] two\n",),
+        Some(&options),
+    );
 }

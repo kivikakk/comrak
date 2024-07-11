@@ -1,9 +1,9 @@
 use crate::ctype::{isalpha, isdigit, ispunct, isspace};
-use crate::nodes::TableAlignment;
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
     NodeMath, NodeTable, NodeValue, NodeWikiLink,
 };
+use crate::nodes::{NodeList, TableAlignment};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::Options;
@@ -61,6 +61,7 @@ struct CommonMarkFormatter<'a, 'o> {
     in_tight_list_item: bool,
     custom_escape: Option<fn(&'a AstNode<'a>, u8) -> bool>,
     footnote_ix: u32,
+    ol_stack: Vec<usize>,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -98,6 +99,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
             in_tight_list_item: false,
             custom_escape: None,
             footnote_ix: 0,
+            ol_stack: vec![],
         }
     }
 
@@ -420,18 +422,35 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn format_list(&mut self, node: &'a AstNode<'a>, entering: bool) {
-        if !entering
-            && match node.next_sibling() {
+        let ol_start = match node.data.borrow().value {
+            NodeValue::List(NodeList {
+                list_type: ListType::Ordered,
+                start,
+                ..
+            }) => Some(start),
+            _ => None,
+        };
+
+        if entering {
+            if let Some(start) = ol_start {
+                self.ol_stack.push(start);
+            }
+        } else {
+            if ol_start.is_some() {
+                self.ol_stack.pop();
+            }
+
+            if match node.next_sibling() {
                 Some(next_sibling) => matches!(
                     next_sibling.data.borrow().value,
                     NodeValue::CodeBlock(..) | NodeValue::List(..)
                 ),
                 _ => false,
+            } {
+                self.cr();
+                write!(self, "<!-- end list -->").unwrap();
+                self.blankline();
             }
-        {
-            self.cr();
-            write!(self, "<!-- end list -->").unwrap();
-            self.blankline();
         }
     }
 
@@ -446,11 +465,11 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let marker_width = if parent.list_type == ListType::Bullet {
             2
         } else {
-            let list_number = match node.data.borrow().value {
-                NodeValue::Item(ref ni) => ni.start,
-                NodeValue::TaskItem(_) => parent.start,
-                _ => unreachable!(),
-            };
+            let last_stack = self.ol_stack.last_mut().unwrap();
+            let list_number = *last_stack;
+            if entering {
+                *last_stack += 1;
+            }
             let list_delim = parent.delimiter;
             write!(
                 listmarker,
