@@ -15,8 +15,6 @@ make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
 */
 
-#![allow(dead_code)]
-
 use std::cell::Cell;
 use std::fmt;
 
