@@ -63,25 +63,24 @@ impl<'w> Write for WriteWithLast<'w> {
     }
 }
 
-/// Converts header Strings to canonical, unique, but still human-readable, anchors.
+/// Converts header strings to canonical, unique, but still human-readable,
+/// anchors.
 ///
-/// To guarantee uniqueness, an anchorizer keeps track of the anchors
-/// it has returned.  So, for example, to parse several MarkDown
-/// files, use a new anchorizer per file.
+/// To guarantee uniqueness, an anchorizer keeps track of the anchors it has
+/// returned; use one per output file.
 ///
 /// ## Example
 ///
 /// ```
-/// use comrak::Anchorizer;
-///
+/// # use comrak::Anchorizer;
 /// let mut anchorizer = Anchorizer::new();
-///
 /// // First "stuff" is unsuffixed.
 /// assert_eq!("stuff".to_string(), anchorizer.anchorize("Stuff".to_string()));
 /// // Second "stuff" has "-1" appended to make it unique.
 /// assert_eq!("stuff-1".to_string(), anchorizer.anchorize("Stuff".to_string()));
 /// ```
 #[derive(Debug, Default)]
+#[doc(hidden)]
 pub struct Anchorizer(HashSet<String>);
 
 impl Anchorizer {
@@ -96,12 +95,9 @@ impl Anchorizer {
     /// resultant anchor unique.
     ///
     /// ```
-    /// use comrak::Anchorizer;
-    ///
+    /// # use comrak::Anchorizer;
     /// let mut anchorizer = Anchorizer::new();
-    ///
     /// let source = "Ticks aren't in";
-    ///
     /// assert_eq!("ticks-arent-in".to_string(), anchorizer.anchorize(source.to_string()));
     /// ```
     pub fn anchorize(&mut self, header: String) -> String {
@@ -130,9 +126,9 @@ impl Anchorizer {
     }
 }
 
-struct HtmlFormatter<'o> {
+struct HtmlFormatter<'o, 'c> {
     output: &'o mut WriteWithLast<'o>,
-    options: &'o Options,
+    options: &'o Options<'c>,
     anchorizer: Anchorizer,
     footnote_ix: u32,
     written_footnote_ix: u32,
@@ -365,8 +361,12 @@ where
     Ok(())
 }
 
-impl<'o> HtmlFormatter<'o> {
-    fn new(options: &'o Options, output: &'o mut WriteWithLast<'o>, plugins: &'o Plugins) -> Self {
+impl<'o, 'c> HtmlFormatter<'o, 'c> {
+    fn new(
+        options: &'o Options<'c>,
+        output: &'o mut WriteWithLast<'o>,
+        plugins: &'o Plugins,
+    ) -> Self {
         HtmlFormatter {
             options,
             output,

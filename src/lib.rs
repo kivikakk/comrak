@@ -1,8 +1,7 @@
 //! A 100% [CommonMark](http://commonmark.org/) and [GFM](https://github.github.com/gfm/)
-//! compatible Markdown parser.  Source repository is at <https://github.com/kivikakk/comrak>.
+//! compatible Markdown parser.
 //!
-//! The design is based on [cmark-gfm](https://github.com/github/cmark-gfm), so
-//! familiarity with that will help.
+//! Source repository and detailed `README` is at <https://github.com/kivikakk/comrak>.
 //!
 //! You can use `comrak::markdown_to_html` directly:
 //!
@@ -20,31 +19,18 @@
 //! use comrak::nodes::{AstNode, NodeValue};
 //!
 //! # fn main() {
-//! // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
 //! let arena = Arena::new();
 //!
 //! let root = parse_document(
 //!     &arena,
-//!     "This is my input.\n\n1. Also my input.\n2. Certainly my input.\n",
+//!     "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n",
 //!     &Options::default());
 //!
-//! fn iter_nodes<'a, F>(node: &'a AstNode<'a>, f: &F)
-//!     where F : Fn(&'a AstNode<'a>) {
-//!     f(node);
-//!     for c in node.children() {
-//!         iter_nodes(c, f);
+//! for node in root.descendants() {
+//!     if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+//!         *text = text.replace("my", "your");
 //!     }
 //! }
-//!
-//! iter_nodes(root, &|node| {
-//!     match &mut node.data.borrow_mut().value {
-//!         &mut NodeValue::Text(ref mut text) => {
-//!             let orig = std::mem::replace(text, String::new());
-//!             *text = orig.replace("my", "your");
-//!         }
-//!         _ => (),
-//!     }
-//! });
 //!
 //! let mut html = vec![];
 //! format_html(root, &Options::default(), &mut html).unwrap();
@@ -53,8 +39,8 @@
 //!     String::from_utf8(html).unwrap(),
 //!     "<p>This is your input.</p>\n\
 //!      <ol>\n\
-//!      <li>Also your input.</li>\n\
-//!      <li>Certainly your input.</li>\n\
+//!      <li>Also <a href=\"#\">your</a> input.</li>\n\
+//!      <li>Certainly <em>your</em> input.</li>\n\
 //!      </ol>\n");
 //! # }
 //! ```
@@ -98,12 +84,15 @@ pub use cm::format_document as format_commonmark;
 pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
 pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
+#[doc(inline)]
 pub use html::Anchorizer;
+#[allow(deprecated)]
+pub use parser::parse_document_with_broken_link_callback;
 pub use parser::{
-    parse_document, parse_document_with_broken_link_callback, BrokenLinkReference,
-    ExtensionOptions, ExtensionOptionsBuilder, ListStyleType, Options, ParseOptions,
-    ParseOptionsBuilder, Plugins, PluginsBuilder, RenderOptions, RenderOptionsBuilder,
-    RenderPlugins, RenderPluginsBuilder,
+    parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions,
+    ExtensionOptionsBuilder, ListStyleType, Options, ParseOptions, ParseOptionsBuilder, Plugins,
+    PluginsBuilder, RenderOptions, RenderOptionsBuilder, RenderPlugins, RenderPluginsBuilder,
+    ResolvedReference,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
@@ -112,9 +101,9 @@ pub use xml::format_document_with_plugins as format_xml_with_plugins;
 /// Legacy naming of [`ExtensionOptions`]
 pub type ComrakExtensionOptions = ExtensionOptions;
 /// Legacy naming of [`Options`]
-pub type ComrakOptions = Options;
+pub type ComrakOptions<'c> = Options<'c>;
 /// Legacy naming of [`ParseOptions`]
-pub type ComrakParseOptions = ParseOptions;
+pub type ComrakParseOptions<'c> = ParseOptions<'c>;
 /// Legacy naming of [`Plugins`]
 pub type ComrakPlugins<'a> = Plugins<'a>;
 /// Legacy naming of [`RenderOptions`]

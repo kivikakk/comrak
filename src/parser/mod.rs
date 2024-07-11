@@ -22,9 +22,10 @@ use derive_builder::Builder;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::mem;
 use std::str;
+use std::sync::{Arc, Mutex};
 use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
@@ -58,55 +59,6 @@ pub fn parse_document<'a>(
     buffer: &str,
     options: &Options,
 ) -> &'a AstNode<'a> {
-    parse_document_with_broken_link_callback(arena, buffer, options, None)
-}
-
-/// Parse a Markdown document to an AST.
-///
-/// In case the parser encounters any potential links that have a broken reference (e.g `[foo]`
-/// when there is no `[foo]: url` entry at the bottom) the provided callback will be called with
-/// the reference name, and the returned pair will be used as the link destination and title if not
-/// None.
-///
-/// **Note:** The label provided to the callback is the normalized representation of the label as
-/// described in the [GFM spec](https://github.github.com/gfm/#matches).
-///
-/// ```
-/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, Options, BrokenLinkReference};
-/// use comrak::nodes::{AstNode, NodeValue};
-///
-/// # fn main() -> std::io::Result<()> {
-/// // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-/// let arena = Arena::new();
-///
-/// let root = parse_document_with_broken_link_callback(
-///     &arena,
-///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
-///     &Options::default(),
-///     Some(&mut |link_ref: BrokenLinkReference| match link_ref.normalized {
-///         "foo" => Some((
-///             "https://www.rust-lang.org/".to_string(),
-///             "The Rust Language".to_string(),
-///         )),
-///         _ => None,
-///     }),
-/// );
-///
-/// let mut output = Vec::new();
-/// format_html(root, &Options::default(), &mut output)?;
-/// let output_str = std::str::from_utf8(&output).expect("invalid UTF-8");
-/// assert_eq!(output_str, "<h1>Cool input!</h1>\n<p>Wow look at this cool \
-///                 <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
-///                 A [broken link] renders as text.</p>\n");
-/// # Ok(())
-/// # }
-/// ```
-pub fn parse_document_with_broken_link_callback<'a, 'c>(
-    arena: &'a Arena<AstNode<'a>>,
-    buffer: &str,
-    options: &Options,
-    callback: Option<Callback<'c>>,
-) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
         value: NodeValue::Document,
         content: String::new(),
@@ -116,13 +68,38 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
         last_line_blank: false,
         table_visited: false,
     })));
-    let mut parser = Parser::new(arena, root, options, callback);
+    let mut parser = Parser::new(arena, root, options);
     let mut linebuf = Vec::with_capacity(buffer.len());
     parser.feed(&mut linebuf, buffer, true);
     parser.finish(linebuf)
 }
 
-type Callback<'c> = &'c mut dyn FnMut(BrokenLinkReference) -> Option<(String, String)>;
+/// Parse a Markdown document to an AST, specifying
+/// [`ParseOptions::broken_link_callback`].
+#[deprecated(
+    since = "0.25.0",
+    note = "The broken link callback has been moved into ParseOptions<'c>."
+)]
+pub fn parse_document_with_broken_link_callback<'a, 'c>(
+    arena: &'a Arena<AstNode<'a>>,
+    buffer: &str,
+    options: &Options<'c>,
+    callback: Option<BrokenLinkCallback<'c>>,
+) -> &'a AstNode<'a> {
+    let mut options_with_callback = options.clone();
+    options_with_callback.parse.broken_link_callback = callback.map(|cb| Arc::new(Mutex::new(cb)));
+    parse_document(arena, buffer, &options_with_callback)
+}
+
+/// The type of the callback used when a reference link is encountered with no
+/// matching reference.
+///
+/// The details of the broken reference are passed in the
+/// [`BrokenLinkReference`] argument. If a [`ResolvedReference`] is returned, it
+/// is used as the link; otherwise, no link is made and the reference text is
+/// preserved in its entirety.
+pub type BrokenLinkCallback<'c> =
+    &'c mut dyn FnMut(BrokenLinkReference) -> Option<ResolvedReference>;
 
 /// Struct to the broken link callback, containing details on the link reference
 /// which failed to find a match.
@@ -156,19 +133,19 @@ pub struct Parser<'a, 'o, 'c> {
     last_line_length: usize,
     last_buffer_ended_with_cr: bool,
     total_size: usize,
-    options: &'o Options,
-    callback: Option<Callback<'c>>,
+    options: &'o Options<'c>,
 }
 
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Umbrella options struct.
-pub struct Options {
+/// Umbrella options struct. `'c` represents the lifetime of any callback
+/// closure options may take.
+pub struct Options<'c> {
     /// Enable CommonMark extensions.
     pub extension: ExtensionOptions,
 
     /// Configure parse-time options.
-    pub parse: ParseOptions,
+    pub parse: ParseOptions<'c>,
 
     /// Configure render-time options.
     pub render: RenderOptions,
@@ -530,11 +507,11 @@ pub struct ExtensionOptions {
 }
 
 #[non_exhaustive]
-#[derive(Default, Debug, Clone, Builder)]
+#[derive(Default, Clone, Builder)]
 #[builder(default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
-pub struct ParseOptions {
+pub struct ParseOptions<'c> {
     /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
     ///
     /// ```
@@ -581,6 +558,58 @@ pub struct ParseOptions {
     ///            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n");
     /// ```
     pub relaxed_autolinks: bool,
+
+    /// In case the parser encounters any potential links that have a broken
+    /// reference (e.g `[foo]` when there is no `[foo]: url` entry at the
+    /// bottom) the provided callback will be called with the reference name,
+    /// both in normalized form and unmodified, and the returned pair will be
+    /// used as the link destination and title if not [`None`].
+    ///
+    /// ```
+    /// # use std::str;
+    /// # use comrak::{Arena, Reference, parse_document_with_broken_link_callback, format_html, Options, BrokenLinkReference};
+    /// # use comrak::nodes::{AstNode, NodeValue};
+    /// #
+    /// # fn main() -> std::io::Result<()> {
+    /// let arena = Arena::new();
+    /// let root = parse_document_with_broken_link_callback(
+    ///     &arena,
+    ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
+    ///     &Options::default(),
+    ///     Some(&mut |link_ref: BrokenLinkReference| match link_ref.normalized {
+    ///         "foo" => Some(Reference {
+    ///             url: "https://www.rust-lang.org/".to_string(),
+    ///             title: "The Rust Language".to_string(),
+    ///         }),
+    ///         _ => None,
+    ///     }),
+    /// );
+    ///
+    /// let mut output = Vec::new();
+    /// format_html(root, &Options::default(), &mut output)?;
+    /// assert_eq!(str::from_utf8(&output).unwrap(),
+    ///            "<h1>Cool input!</h1>\n<p>Wow look at this cool \
+    ///            <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
+    ///            A [broken link] renders as text.</p>\n");
+    /// # Ok(())
+    /// # }
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
+    pub broken_link_callback: Option<Arc<Mutex<BrokenLinkCallback<'c>>>>,
+}
+
+impl<'c> fmt::Debug for ParseOptions<'c> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let mut struct_fmt = f.debug_struct("ParseOptions");
+        struct_fmt.field("smart", &self.smart);
+        struct_fmt.field("default_info_string", &self.default_info_string);
+        struct_fmt.field("relaxed_tasklist_matching", &self.relaxed_tasklist_matching);
+        struct_fmt.field("relaxed_autolinks", &self.relaxed_autolinks);
+        struct_fmt.field(
+            "broken_link_callback.is_some()",
+            &self.broken_link_callback.is_some(),
+        );
+        struct_fmt.finish()
+    }
 }
 
 #[non_exhaustive]
@@ -697,9 +726,9 @@ pub struct RenderOptions {
 
     /// Set the type of [bullet list marker](https://spec.commonmark.org/0.30/#bullet-list-marker) to use. Options are:
     ///
-    /// * `ListStyleType::Dash` to use `-` (default)
-    /// * `ListStyleType::Plus` to use `+`
-    /// * `ListStyleType::Star` to use `*`
+    /// * [`ListStyleType::Dash`] to use `-` (default)
+    /// * [`ListStyleType::Plus`] to use `+`
+    /// * [`ListStyleType::Star`] to use `*`
     ///
     /// ```rust
     /// # use comrak::{markdown_to_commonmark, Options, ListStyleType};
@@ -884,9 +913,13 @@ impl Debug for RenderPlugins<'_> {
     }
 }
 
-#[derive(Clone)]
-pub struct Reference {
+/// A reference link's resolved details.
+#[derive(Clone, Debug)]
+pub struct ResolvedReference {
+    /// The destination URL of the reference link.
     pub url: String,
+
+    /// The text of the link.
     pub title: String,
 }
 
@@ -898,12 +931,7 @@ struct FootnoteDefinition<'a> {
 }
 
 impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
-    fn new(
-        arena: &'a Arena<AstNode<'a>>,
-        root: &'a AstNode<'a>,
-        options: &'o Options,
-        callback: Option<Callback<'c>>,
-    ) -> Self {
+    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -924,7 +952,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             last_buffer_ended_with_cr: false,
             total_size: 0,
             options,
-            callback,
         }
     }
 
@@ -2132,7 +2159,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             node_data.sourcepos.start.column - 1 + node_data.internal_offset,
             &mut self.refmap,
             &delimiter_arena,
-            self.callback.as_mut(),
         );
 
         while subj.parse_inline(node) {}
@@ -2387,7 +2413,6 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
             0,
             &mut self.refmap,
             &delimiter_arena,
-            self.callback.as_mut(),
         );
 
         let mut lab: String = match subj.link_label() {
@@ -2441,7 +2466,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
 
         lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab).or_insert(Reference {
+            subj.refmap.map.entry(lab).or_insert(ResolvedReference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),
                 title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });
@@ -2607,7 +2632,7 @@ pub enum AutolinkType {
 
 #[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Options for bulleted list redering in markdown. See `link_style` in [RenderOptions] for more details.
+/// Options for bulleted list redering in markdown. See `link_style` in [`RenderOptions`] for more details.
 pub enum ListStyleType {
     /// The `-` character
     #[default]

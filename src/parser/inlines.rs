@@ -9,8 +9,7 @@ use crate::parser::autolink;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
-    unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Callback, Options,
-    Reference,
+    unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Options, ResolvedReference,
 };
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
@@ -26,9 +25,9 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
+pub struct Subject<'a: 'd, 'r, 'o, 'c, 'd, 'i> {
     pub arena: &'a Arena<AstNode<'a>>,
-    options: &'o Options,
+    options: &'o Options<'c>,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -46,10 +45,6 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c: 'subj, 'subj> {
     special_chars: [bool; 256],
     skip_chars: [bool; 256],
     smart_chars: [bool; 256],
-    // Need to borrow the callback from the parser only for the lifetime of the Subject, 'subj, and
-    // then give it back when the Subject goes out of scope. Needs to be a mutable reference so we
-    // can call the FnMut and let it mutate its captured variables.
-    callback: Option<&'subj mut Callback<'c>>,
 }
 
 #[derive(Default)]
@@ -61,7 +56,7 @@ struct Flags {
 }
 
 pub struct RefMap {
-    pub map: HashMap<String, Reference>,
+    pub map: HashMap<String, ResolvedReference>,
     pub(crate) max_ref_size: usize,
     ref_size: usize,
 }
@@ -75,7 +70,7 @@ impl RefMap {
         }
     }
 
-    fn lookup(&mut self, lab: &str) -> Option<Reference> {
+    fn lookup(&mut self, lab: &str) -> Option<ResolvedReference> {
         match self.map.get(lab) {
             Some(entry) => {
                 let size = entry.url.len() + entry.title.len();
@@ -115,16 +110,15 @@ struct WikilinkComponents<'i> {
     link_label: Option<(&'i [u8], usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
+impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
-        options: &'o Options,
+        options: &'o Options<'c>,
         input: &'i [u8],
         line: usize,
         block_offset: usize,
         refmap: &'r mut RefMap,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
-        callback: Option<&'subj mut Callback<'c>>,
     ) -> Self {
         let mut s = Subject {
             arena,
@@ -146,7 +140,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
             special_chars: [false; 256],
             skip_chars: [false; 256],
             smart_chars: [false; 256],
-            callback,
         };
         for &c in &[
             b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!', b'$',
@@ -1543,12 +1536,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
 
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
-            if let Some(ref mut callback) = self.callback {
-                reff = callback(BrokenLinkReference {
+            if let Some(callback) = &self.options.parse.broken_link_callback {
+                reff = callback.lock().unwrap()(BrokenLinkReference {
                     normalized: &lab,
                     original: &unfolded_lab,
-                })
-                .map(|(url, title)| Reference { url, title });
+                });
             }
         }
 
