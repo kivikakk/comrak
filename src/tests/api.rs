@@ -1,3 +1,5 @@
+use parser::BrokenLinkReference;
+
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
     nodes::Sourcepos,
@@ -31,7 +33,9 @@ fn exercise_full_api() {
         &arena,
         "document",
         &default_options,
-        Some(&mut |_: &str| Some(("abc".to_string(), "xyz".to_string()))),
+        Some(&mut |blr: BrokenLinkReference| {
+            Some((blr.normalized.to_owned(), blr.original.to_owned()))
+        }),
     );
 
     let mut extension = ExtensionOptionsBuilder::default();

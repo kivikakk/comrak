@@ -8,7 +8,10 @@ use crate::nodes::{
 use crate::parser::autolink;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{unwrap_into_2, unwrap_into_copy, AutolinkType, Callback, Options, Reference};
+use crate::parser::{
+    unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Callback, Options,
+    Reference,
+};
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
 use std::cell::{Cell, RefCell};
@@ -1530,6 +1533,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         }
 
         // Need to normalize both to lookup in refmap and to call callback
+        let unfolded_lab = lab.to_owned();
         let lab = strings::normalize_label(&lab, Case::Fold);
         let mut reff = if found_label {
             self.refmap.lookup(&lab)
@@ -1540,7 +1544,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'subj> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'subj> {
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
             if let Some(ref mut callback) = self.callback {
-                reff = callback(&lab).map(|(url, title)| Reference { url, title });
+                reff = callback(BrokenLinkReference {
+                    normalized: &lab,
+                    original: &unfolded_lab,
+                })
+                .map(|(url, title)| Reference { url, title });
             }
         }
 

@@ -72,7 +72,7 @@ pub fn parse_document<'a>(
 /// described in the [GFM spec](https://github.github.com/gfm/#matches).
 ///
 /// ```
-/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, Options};
+/// use comrak::{Arena, parse_document_with_broken_link_callback, format_html, Options, BrokenLinkReference};
 /// use comrak::nodes::{AstNode, NodeValue};
 ///
 /// # fn main() -> std::io::Result<()> {
@@ -83,7 +83,7 @@ pub fn parse_document<'a>(
 ///     &arena,
 ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
 ///     &Options::default(),
-///     Some(&mut |link_ref: &str| match link_ref {
+///     Some(&mut |link_ref: BrokenLinkReference| match link_ref.normalized {
 ///         "foo" => Some((
 ///             "https://www.rust-lang.org/".to_string(),
 ///             "The Rust Language".to_string(),
@@ -122,7 +122,20 @@ pub fn parse_document_with_broken_link_callback<'a, 'c>(
     parser.finish(linebuf)
 }
 
-type Callback<'c> = &'c mut dyn FnMut(&str) -> Option<(String, String)>;
+type Callback<'c> = &'c mut dyn FnMut(BrokenLinkReference) -> Option<(String, String)>;
+
+/// Struct to the broken link callback, containing details on the link reference
+/// which failed to find a match.
+#[derive(Debug)]
+pub struct BrokenLinkReference<'l> {
+    /// The normalized reference link label. Unicode case folding is applied;
+    /// see <https://github.com/commonmark/commonmark-spec/issues/695> for a
+    /// discussion on the details of what this exactly means.
+    pub normalized: &'l str,
+
+    /// The original text in the link label.
+    pub original: &'l str,
+}
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
