@@ -1,3 +1,7 @@
+use std::sync::{Arc, Mutex};
+
+use parser::BrokenLinkReference;
+
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
     nodes::Sourcepos,
@@ -27,11 +31,22 @@ fn exercise_full_api() {
 
     let _: &AstNode = parse_document(&arena, "document", &default_options);
 
+    // Ensure the closure can modify its context.
+    let mut blr_ctx_0 = 0;
+    #[allow(deprecated)]
     let _: &AstNode = parse_document_with_broken_link_callback(
         &arena,
         "document",
-        &default_options,
-        Some(&mut |_: &str| Some(("abc".to_string(), "xyz".to_string()))),
+        &Options::default(),
+        Some(&mut |blr: BrokenLinkReference| {
+            blr_ctx_0 += 1;
+            let _: &str = blr.normalized;
+            let _: &str = blr.original;
+            Some(ResolvedReference {
+                url: String::new(),
+                title: String::new(),
+            })
+        }),
     );
 
     let mut extension = ExtensionOptionsBuilder::default();
@@ -60,6 +75,18 @@ fn exercise_full_api() {
     parse.default_info_string(Some("abc".to_string()));
     parse.relaxed_tasklist_matching(false);
     parse.relaxed_autolinks(false);
+    let mut blr_ctx_1 = 0;
+    parse.broken_link_callback(Some(Arc::new(Mutex::new(
+        &mut |blr: BrokenLinkReference| {
+            blr_ctx_1 += 1;
+            let _: &str = blr.normalized;
+            let _: &str = blr.original;
+            Some(ResolvedReference {
+                url: String::new(),
+                title: String::new(),
+            })
+        },
+    ))));
 
     let mut render = RenderOptionsBuilder::default();
     render.hardbreaks(false);

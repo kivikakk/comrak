@@ -193,7 +193,7 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
     for node in root.descendants() {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
             // If the node is a text node, perform the string replacement.
-            *text = text.replace(orig_string, replacement)
+            *text = text.replace(orig_string, replacement);
         }
     }
 

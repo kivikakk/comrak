@@ -2,9 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use comrak::{
-    markdown_to_html_with_plugins, plugins::syntect::SyntectAdapter, Plugins,
-};
+use comrak::{markdown_to_html_with_plugins, plugins::syntect::SyntectAdapter, Plugins};
 
 // Note that we end up fuzzing Syntect here.
 

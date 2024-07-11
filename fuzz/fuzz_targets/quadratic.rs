@@ -2,9 +2,8 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    markdown_to_html, markdown_to_commonmark, markdown_to_commonmark_xml,
-    ExtensionOptions, Options, ParseOptions,
-    RenderOptions, ListStyleType,
+    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, ExtensionOptions,
+    ListStyleType, Options, ParseOptions, RenderOptions,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
 use libfuzzer_sys::fuzz_target;
@@ -297,18 +296,10 @@ fn fuzz_one_input(input: &Input, num_bytes: usize) -> (usize, Duration, f64) {
     let duration_per_byte = duration.as_secs_f64() / (byte_length as f64);
 
     if DEBUG {
-        println!(
-            "do_one: {} bytes, duration = {:?}",
-            byte_length,
-            duration
-        );
+        println!("do_one: {} bytes, duration = {:?}", byte_length, duration);
     }
 
-    (
-        byte_length,
-        duration,
-        duration_per_byte
-    )
+    (byte_length, duration, duration_per_byte)
 }
 
 /// The maximum number of steps to run in the main fuzzing loop below.

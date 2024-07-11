@@ -3,9 +3,10 @@
 use libfuzzer_sys::fuzz_target;
 
 use comrak::{
-    markdown_to_html, ExtensionOptions, Options, ParseOptions,
-    RenderOptions, ListStyleType,
+    markdown_to_html, BrokenLinkReference, ExtensionOptions, ListStyleType, Options, ParseOptions,
+    RenderOptions, ResolvedReference,
 };
+use std::sync::{Arc, Mutex};
 
 fuzz_target!(|s: &str| {
     let mut extension = ExtensionOptions::default();
@@ -18,22 +19,29 @@ fuzz_target!(|s: &str| {
     extension.header_ids = Some("user-content-".to_string());
     extension.footnotes = true;
     extension.description_lists = true;
+    extension.front_matter_delimiter = Some("---".to_string());
     extension.multiline_block_quotes = true;
     extension.math_dollars = true;
     extension.math_code = true;
-    extension.front_matter_delimiter = Some("---".to_string());
     extension.shortcodes = true;
     extension.wikilinks_title_after_pipe = true;
     extension.wikilinks_title_before_pipe = true;
     extension.underline = true;
     extension.spoiler = true;
     extension.greentext = true;
-    
+
     let mut parse = ParseOptions::default();
     parse.smart = true;
     parse.default_info_string = Some("rust".to_string());
     parse.relaxed_tasklist_matching = true;
     parse.relaxed_autolinks = true;
+    let mut cb = |link_ref: BrokenLinkReference| {
+        Some(ResolvedReference {
+            url: link_ref.normalized.to_string(),
+            title: link_ref.original.to_string(),
+        })
+    };
+    parse.broken_link_callback = Some(Arc::new(Mutex::new(&mut cb)));
 
     let mut render = RenderOptions::default();
     render.hardbreaks = true;
@@ -47,9 +55,15 @@ fuzz_target!(|s: &str| {
     render.escaped_char_spans = true;
     render.ignore_setext = true;
     render.ignore_empty_links = true;
+    render.gfm_quirks = true;
+    render.prefer_fenced = true;
 
     markdown_to_html(
         s,
-        &Options { extension, parse, render },
+        &Options {
+            extension,
+            parse,
+            render,
+        },
     );
 });
