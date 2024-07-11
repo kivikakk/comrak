@@ -361,7 +361,7 @@ where
     Ok(())
 }
 
-impl<'o, 'c> HtmlFormatter<'o, 'c> {
+impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
     fn new(
         options: &'o Options<'c>,
         output: &'o mut WriteWithLast<'o>,
