@@ -15,8 +15,6 @@ make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
 */
 
-#![allow(dead_code)]
-
 use std::cell::Cell;
 use std::fmt;
 
@@ -368,12 +366,7 @@ macro_rules! traverse_iterator {
                                         Some(sibling) => Some(NodeEdge::Start(sibling)),
                                         None => match node.parent.get() {
                                             Some(parent) => Some(NodeEdge::End(parent)),
-
-                                            // `node.parent()` here can only be `None`
-                                            // if the tree has been modified during iteration,
-                                            // but silently stoping iteration
-                                            // seems a more sensible behavior than panicking.
-                                            None => None,
+                                            None => panic!("tree modified during iteration"),
                                         },
                                     }
                                 }
