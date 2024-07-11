@@ -566,23 +566,31 @@ pub struct ParseOptions<'c> {
     /// used as the link destination and title if not [`None`].
     ///
     /// ```
-    /// # use std::str;
-    /// # use comrak::{Arena, Reference, parse_document_with_broken_link_callback, format_html, Options, BrokenLinkReference};
+    /// # use std::{str, sync::{Arc, Mutex}};
+    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptionsBuilder};
     /// # use comrak::nodes::{AstNode, NodeValue};
     /// #
     /// # fn main() -> std::io::Result<()> {
     /// let arena = Arena::new();
-    /// let root = parse_document_with_broken_link_callback(
+    /// let mut cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
+    ///     "foo" => Some(ResolvedReference {
+    ///         url: "https://www.rust-lang.org/".to_string(),
+    ///         title: "The Rust Language".to_string(),
+    ///     }),
+    ///     _ => None,
+    /// };
+    /// let options = Options {
+    ///     parse: ParseOptionsBuilder::default()
+    ///         .broken_link_callback(Some(Arc::new(Mutex::new(&mut cb))))
+    ///         .build()
+    ///         .unwrap(),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let root = parse_document(
     ///     &arena,
     ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
-    ///     &Options::default(),
-    ///     Some(&mut |link_ref: BrokenLinkReference| match link_ref.normalized {
-    ///         "foo" => Some(Reference {
-    ///             url: "https://www.rust-lang.org/".to_string(),
-    ///             title: "The Rust Language".to_string(),
-    ///         }),
-    ///         _ => None,
-    ///     }),
+    ///     &options,
     /// );
     ///
     /// let mut output = Vec::new();
