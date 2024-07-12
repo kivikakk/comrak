@@ -500,7 +500,7 @@ fn case_insensitive_safety() {
 fn link_sourcepos_baseline() {
     assert_ast_match!(
         [],
-        "[ABCD](/)",
+        "[ABCD](/)\n",
         (document (1:1-1:9) [
             (paragraph (1:1-1:9) [
                 (link (1:1-1:9) [
@@ -511,17 +511,41 @@ fn link_sourcepos_baseline() {
     );
 }
 
+// https://github.com/kivikakk/comrak/issues/301
 #[test]
 fn link_sourcepos_newline() {
     assert_ast_match!(
         [],
-        "[AB\nCD](/)",
+        "[AB\nCD](/)\n",
         (document (1:1-2:6) [
             (paragraph (1:1-2:6) [
                 (link (1:1-2:6) [
                     (text (1:2-1:3) "AB")
                     (softbreak (1:4-1:4))
                     (text (2:1-2:2) "CD")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_truffle() {
+    assert_ast_match!(
+        [],
+        "- A\n[![B](/B.png)](/B)\n",
+        (document (1:1-2:18) [
+            (list (1:1-2:18) [
+                (item (1:1-2:18) [
+                    (paragraph (1:3-2:18) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:1-2:18) [
+                            (image (2:2-2:13) [
+                                (text (2:4-2:4) "B")
+                            ])
+                        ])
+                    ])
                 ])
             ])
         ])
