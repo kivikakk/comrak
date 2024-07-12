@@ -9,7 +9,7 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.25.0...v0.26.0
 
 # [v0.25.0] - 12-07-2024
 
-* Discord-flavored Markdown by @liamwhite in https://github.com/kivikakk/comrak/pull/421
+* Discord-flavored Markdown by @Meow and @liamwhite in https://github.com/kivikakk/comrak/pull/421
   * Three new extensions and two render options are added:
     * `extension.underline` adds support for `__underlined__` text.
     * `extension.spoiler` adds support for `||spoiler||` text.
