@@ -1,19 +1,20 @@
 use super::*;
 
+// html_opts! does a roundtrip check unless sourcepos is set.
+// These cases don't work roundtrip, because converting to commonmark
+// automatically escapes certain characters.
 #[test]
 fn wikilinks_does_not_unescape_html_entities_in_link_label() {
     html_opts!(
-        [extension.wikilinks_title_after_pipe],
+        [extension.wikilinks_title_after_pipe, render.sourcepos],
         concat!("This is [[&lt;script&gt;alert(0)&lt;/script&gt;|a &lt;link]]",),
-        concat!("<p>This is <a href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n"),
-        no_roundtrip,
+        concat!("<p data-sourcepos=\"1:1-1:60\">This is <a data-sourcepos=\"1:9-1:60\" href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n"),
     );
 
     html_opts!(
-        [extension.wikilinks_title_before_pipe],
+        [extension.wikilinks_title_before_pipe, render.sourcepos],
         concat!("This is [[a &lt;link|&lt;script&gt;alert(0)&lt;/script&gt;]]",),
-        concat!("<p>This is <a href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n"),
-        no_roundtrip,
+        concat!("<p data-sourcepos=\"1:1-1:60\">This is <a data-sourcepos=\"1:9-1:60\" href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n"),
     );
 }
 
