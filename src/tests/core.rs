@@ -495,3 +495,109 @@ fn case_insensitive_safety() {
         "<p><a href=\"\">a</a> <a href=\"\">b</a> <a href=\"\">c</a> <a href=\"\">d</a> <a href=\"\">e</a> <a href=\"\">f</a> <a href=\"\">g</a></p>\n",
     );
 }
+
+#[test]
+fn link_sourcepos_baseline() {
+    assert_ast_match!(
+        [],
+        "[ABCD](/)\n",
+        (document (1:1-1:9) [
+            (paragraph (1:1-1:9) [
+                (link (1:1-1:9) [
+                    (text (1:2-1:5) "ABCD")
+                ])
+            ])
+        ])
+    );
+}
+
+// https://github.com/kivikakk/comrak/issues/301
+#[test]
+fn link_sourcepos_newline() {
+    assert_ast_match!(
+        [],
+        "[AB\nCD](/)\n",
+        (document (1:1-2:6) [
+            (paragraph (1:1-2:6) [
+                (link (1:1-2:6) [
+                    (text (1:2-1:3) "AB")
+                    (softbreak (1:4-1:4))
+                    (text (2:1-2:2) "CD")
+                ])
+            ])
+        ])
+    );
+}
+
+// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
+#[ignore]
+#[test]
+fn link_sourcepos_truffle() {
+    assert_ast_match!(
+        [],
+        "- A\n[![B](/B.png)](/B)\n",
+        (document (1:1-2:18) [
+            (list (1:1-2:18) [
+                (item (1:1-2:18) [
+                    (paragraph (1:3-2:18) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:1-2:18) [
+                            (image (2:2-2:13) [
+                                (text (2:4-2:4) "B")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_truffle_twist() {
+    assert_ast_match!(
+        [],
+        "- A\n  [![B](/B.png)](/B)\n",
+        (document (1:1-2:20) [
+            (list (1:1-2:20) [
+                (item (1:1-2:20) [
+                    (paragraph (1:3-2:20) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:3-2:20) [
+                            (image (2:4-2:15) [
+                                (text (2:6-2:6) "B")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
+#[ignore]
+#[test]
+fn link_sourcepos_truffle_bergamot() {
+    assert_ast_match!(
+        [],
+        "- A\n   [![B](/B.png)](/B)\n",
+        (document (1:1-2:21) [
+            (list (1:1-2:21) [
+                (item (1:1-2:21) [
+                    (paragraph (1:3-2:21) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:4-2:21) [
+                            (image (2:5-2:16) [
+                                (text (2:7-2:7) "B")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
