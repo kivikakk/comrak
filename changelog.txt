@@ -1,3 +1,21 @@
+# [v0.25.0] - 12-07-2024
+## What's Changed
+* Discord-flavored Markdown by @liamwhite in https://github.com/kivikakk/comrak/pull/421
+* nodes: add From impls for AstNode. by @kivikakk in https://github.com/kivikakk/comrak/pull/424
+* AST validation by @yannham in https://github.com/kivikakk/comrak/pull/425
+* Address autolink edge cases. by @kivikakk in https://github.com/kivikakk/comrak/pull/426
+* shortcodes: capture all known aliases. by @kivikakk in https://github.com/kivikakk/comrak/pull/427
+* Support both upstream CommonMark and GFM's differences in the base spec. by @kivikakk in https://github.com/kivikakk/comrak/pull/428
+* cm: count ol items from start of each list. by @kivikakk in https://github.com/kivikakk/comrak/pull/429
+* arena_tree: panic if iterator invalidation causes trouble. by @kivikakk in https://github.com/kivikakk/comrak/pull/437
+* broken reflink callback updates & big cleanup. by @kivikakk in https://github.com/kivikakk/comrak/pull/438
+* Inline sourcepos fixes. by @kivikakk in https://github.com/kivikakk/comrak/pull/439
+
+## New Contributors
+* @liamwhite made their first contribution in https://github.com/kivikakk/comrak/pull/421
+* @yannham made their first contribution in https://github.com/kivikakk/comrak/pull/425
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.24.1...v0.25.0
 # [v0.24.1] - 19-05-2024
 ## What's Changed
 * Add GH_TOKEN to release workflow by @digitalmoksha in https://github.com/kivikakk/comrak/pull/418
