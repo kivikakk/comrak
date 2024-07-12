@@ -1648,13 +1648,12 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             self.pos,
             self.pos,
         );
-        inl.data.borrow_mut().sourcepos.start.column = self.brackets[brackets_len - 1]
+        inl.data.borrow_mut().sourcepos.start = self.brackets[brackets_len - 1]
             .inl_text
             .data
             .borrow()
             .sourcepos
-            .start
-            .column;
+            .start;
         inl.data.borrow_mut().sourcepos.end.column =
             usize::try_from(self.pos as isize + self.column_offset + self.block_offset as isize)
                 .unwrap();
