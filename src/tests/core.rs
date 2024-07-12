@@ -495,3 +495,35 @@ fn case_insensitive_safety() {
         "<p><a href=\"\">a</a> <a href=\"\">b</a> <a href=\"\">c</a> <a href=\"\">d</a> <a href=\"\">e</a> <a href=\"\">f</a> <a href=\"\">g</a></p>\n",
     );
 }
+
+#[test]
+fn link_sourcepos_baseline() {
+    assert_ast_match!(
+        [],
+        "[ABCD](/)",
+        (document (1:1-1:9) [
+            (paragraph (1:1-1:9) [
+                (link (1:1-1:9) [
+                    (text (1:2-1:5) "ABCD")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_newline() {
+    assert_ast_match!(
+        [],
+        "[AB\nCD](/)",
+        (document (1:1-2:6) [
+            (paragraph (1:1-2:6) [
+                (link (1:1-2:6) [
+                    (text (1:2-1:3) "AB")
+                    (softbreak (1:4-1:4))
+                    (text (2:1-2:2) "CD")
+                ])
+            ])
+        ])
+    );
+}
