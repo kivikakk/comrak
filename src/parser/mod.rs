@@ -755,9 +755,14 @@ pub struct RenderOptions {
     /// ```
     pub list_style: ListStyleType,
 
-    /// Include source position attributes in XML output.
+    /// Include source position attributes in HTML and XML output.
     ///
-    /// Not yet compatible with extension.description_lists.
+    /// Sourcepos information is reliable for all core block items, and most
+    /// extensions. The description lists extension still has issues; see
+    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
+    ///
+    /// Sourcepos information is **not** reliable for inlines. See
+    /// <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     ///
     /// ```rust
     /// # use comrak::{markdown_to_commonmark_xml, Options};
