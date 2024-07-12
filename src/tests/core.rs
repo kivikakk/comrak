@@ -529,6 +529,8 @@ fn link_sourcepos_newline() {
     );
 }
 
+// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
+#[ignore]
 #[test]
 fn link_sourcepos_truffle() {
     assert_ast_match!(
@@ -575,6 +577,8 @@ fn link_sourcepos_truffle_twist() {
     );
 }
 
+// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
+#[ignore]
 #[test]
 fn link_sourcepos_truffle_bergamot() {
     assert_ast_match!(
