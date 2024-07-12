@@ -574,3 +574,26 @@ fn link_sourcepos_truffle_twist() {
         ])
     );
 }
+
+#[test]
+fn link_sourcepos_truffle_bergamot() {
+    assert_ast_match!(
+        [],
+        "- A\n   [![B](/B.png)](/B)\n",
+        (document (1:1-2:21) [
+            (list (1:1-2:21) [
+                (item (1:1-2:21) [
+                    (paragraph (1:3-2:21) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:4-2:21) [
+                            (image (2:5-2:16) [
+                                (text (2:7-2:7) "B")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
