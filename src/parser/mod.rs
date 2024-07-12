@@ -761,18 +761,34 @@ pub struct RenderOptions {
     /// extensions. The description lists extension still has issues; see
     /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
     ///
-    /// Sourcepos information is **not** reliable for inlines. See
-    /// <https://github.com/kivikakk/comrak/pull/439> for a discussion.
+    /// Sourcepos information is **not** reliable for inlines, and is not
+    /// included in HTML without also setting [`experimental_inline_sourcepos`].
+    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     ///
     /// ```rust
     /// # use comrak::{markdown_to_commonmark_xml, Options};
     /// let mut options = Options::default();
     /// options.render.sourcepos = true;
-    /// let input = "Hello *world*!";
+    /// let input = "## Hello world!";
     /// let xml = markdown_to_commonmark_xml(input, &options);
-    /// assert!(xml.contains("<emph sourcepos=\"1:7-1:13\">"));
+    /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
     /// ```
     pub sourcepos: bool,
+
+    /// Include inline sourcepos in HTML output, which is known to have issues.
+    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.render.sourcepos = true;
+    /// let input = "Hello *world*!";
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em>world</em>!</p>\n");
+    /// options.render.experimental_inline_sourcepos = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em data-sourcepos=\"1:7-1:13\">world</em>!</p>\n");
+    /// ```
+    pub experimental_inline_sourcepos: bool,
 
     /// Wrap escaped characters in a `<span>` to allow any
     /// post-processing to recognize them.
