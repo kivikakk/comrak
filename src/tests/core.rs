@@ -551,3 +551,26 @@ fn link_sourcepos_truffle() {
         ])
     );
 }
+
+#[test]
+fn link_sourcepos_truffle_twist() {
+    assert_ast_match!(
+        [],
+        "- A\n  [![B](/B.png)](/B)\n",
+        (document (1:1-2:20) [
+            (list (1:1-2:20) [
+                (item (1:1-2:20) [
+                    (paragraph (1:3-2:20) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (link (2:3-2:20) [
+                            (image (2:4-2:15) [
+                                (text (2:6-2:6) "B")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
