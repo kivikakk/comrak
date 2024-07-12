@@ -47,7 +47,7 @@ fn footnote_def() {
             render.hardbreaks
         ],
         "\u{15}\u{b}\r[^ ]:",
-        "<p data-sourcepos=\"1:1-2:5\">\u{15}\u{b}<br data-sourcepos=\"1:3-1:3\" />\n[^ ]:</p>\n",
+        "<p data-sourcepos=\"1:1-2:5\">\u{15}\u{b}<br />\n[^ ]:</p>\n",
     );
 }
 

@@ -725,33 +725,31 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::Text(ref literal) => {
+                // No sourcepos.
                 if entering {
                     self.escape(literal.as_bytes())?;
                 }
             }
             NodeValue::LineBreak => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<br")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" />\n")?;
+                    self.output.write_all(b"<br />\n")?;
                 }
             }
             NodeValue::SoftBreak => {
+                // No sourcepos.
                 if entering {
                     if self.options.render.hardbreaks {
-                        self.output.write_all(b"<br")?;
-                        self.render_sourcepos(node)?;
-                        self.output.write_all(b" />\n")?;
+                        self.output.write_all(b"<br />\n")?;
                     } else {
                         self.output.write_all(b"\n")?;
                     }
                 }
             }
             NodeValue::Code(NodeCode { ref literal, .. }) => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<code")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b"<code>")?;
                     self.escape(literal.as_bytes())?;
                     self.output.write_all(b"</code>")?;
                 }
@@ -773,52 +771,47 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::Strong => {
+                // No sourcepos.
                 let parent_node = node.parent();
                 if !self.options.render.gfm_quirks
                     || (parent_node.is_none()
                         || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
                 {
                     if entering {
-                        self.output.write_all(b"<strong")?;
-                        self.render_sourcepos(node)?;
-                        self.output.write_all(b">")?;
+                        self.output.write_all(b"<strong>")?;
                     } else {
                         self.output.write_all(b"</strong>")?;
                     }
                 }
             }
             NodeValue::Emph => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<em")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b"<em>")?;
                 } else {
                     self.output.write_all(b"</em>")?;
                 }
             }
             NodeValue::Strikethrough => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<del")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b"<del>")?;
                 } else {
                     self.output.write_all(b"</del>")?;
                 }
             }
             NodeValue::Superscript => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<sup")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b"<sup>")?;
                 } else {
                     self.output.write_all(b"</sup>")?;
                 }
             }
             NodeValue::Link(ref nl) => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<a")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" href=\"")?;
+                    self.output.write_all(b"<a href=\"")?;
                     let url = nl.url.as_bytes();
                     if self.options.render.unsafe_ || !dangerous_url(url) {
                         self.escape_href(url)?;
@@ -833,10 +826,9 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::Image(ref nl) => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<img")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" src=\"")?;
+                    self.output.write_all(b"<img src=\"")?;
                     let url = nl.url.as_bytes();
                     if self.options.render.unsafe_ || !dangerous_url(url) {
                         self.escape_href(url)?;
@@ -949,17 +941,14 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::FootnoteDefinition(ref nfd) => {
+                // No sourcepos.
                 if entering {
                     if self.footnote_ix == 0 {
-                        self.output.write_all(b"<section")?;
-                        self.render_sourcepos(node)?;
                         self.output
-                            .write_all(b" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
+                            .write_all(b"<section class=\"footnotes\" data-footnotes>\n<ol>\n")?;
                     }
                     self.footnote_ix += 1;
-                    self.output.write_all(b"<li")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" id=\"fn-")?;
+                    self.output.write_all(b"<li id=\"fn-")?;
                     self.escape_href(nfd.name.as_bytes())?;
                     self.output.write_all(b"\">")?;
                 } else {
@@ -970,18 +959,14 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::FootnoteReference(ref nfr) => {
+                // No sourcepos.
                 if entering {
                     let mut ref_id = format!("fnref-{}", nfr.name);
-
-                    self.output.write_all(b"<sup")?;
-                    self.render_sourcepos(node)?;
-
                     if nfr.ref_num > 1 {
                         ref_id = format!("{}-{}", ref_id, nfr.ref_num);
                     }
-
                     self.output
-                        .write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
+                        .write_all(b"<sup class=\"footnote-ref\"><a href=\"#fn-")?;
                     self.escape_href(nfr.name.as_bytes())?;
                     self.output.write_all(b"\" id=\"")?;
                     self.escape_href(ref_id.as_bytes())?;
@@ -1019,11 +1004,10 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::Escaped => {
+                // No sourcepos.
                 if self.options.render.escaped_char_spans {
                     if entering {
-                        self.output.write_all(b"<span data-escaped-char")?;
-                        self.render_sourcepos(node)?;
-                        self.output.write_all(b">")?;
+                        self.output.write_all(b"<span data-escaped-char>")?;
                     } else {
                         self.output.write_all(b"</span>")?;
                     }
@@ -1040,10 +1024,9 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::WikiLink(ref nl) => {
+                // No sourcepos.
                 if entering {
-                    self.output.write_all(b"<a")?;
-                    self.render_sourcepos(node)?;
-                    self.output.write_all(b" href=\"")?;
+                    self.output.write_all(b"<a href=\"")?;
                     let url = nl.url.as_bytes();
                     if self.options.render.unsafe_ || !dangerous_url(url) {
                         self.escape_href(url)?;
@@ -1055,6 +1038,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::Underline => {
+                // No sourcepos.
                 if entering {
                     self.output.write_all(b"<u>")?;
                 } else {
@@ -1062,6 +1046,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::SpoileredText => {
+                // No sourcepos.
                 if entering {
                     self.output.write_all(b"<span class=\"spoiler\">")?;
                 } else {
@@ -1069,6 +1054,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                 }
             }
             NodeValue::EscapedTag(ref net) => {
+                // No sourcepos.
                 self.output.write_all(net.as_bytes())?;
             }
         }
