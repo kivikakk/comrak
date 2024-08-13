@@ -529,8 +529,6 @@ fn link_sourcepos_newline() {
     );
 }
 
-// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
-#[ignore]
 #[test]
 fn link_sourcepos_truffle() {
     assert_ast_match!(
@@ -577,8 +575,6 @@ fn link_sourcepos_truffle_twist() {
     );
 }
 
-// Ignored per https://github.com/kivikakk/comrak/pull/439#issuecomment-2225129960.
-#[ignore]
 #[test]
 fn link_sourcepos_truffle_bergamot() {
     assert_ast_match!(
@@ -595,6 +591,106 @@ fn link_sourcepos_truffle_bergamot() {
                                 (text (2:7-2:7) "B")
                             ])
                         ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_inline_paragraph_multiline() {
+    assert_ast_match!(
+        [],
+        "  A\n"
+        "   B\n",
+        (document (1:1-2:4) [
+            (paragraph (1:3-2:4) [
+                (text (1:3-1:3) "A")
+                (softbreak (1:4-1:4))
+                (text (2:4-2:4) "B")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_inline_listitem_multiline() {
+    assert_ast_match!(
+        [],
+        "- A\n"
+        "B\n",
+        (document (1:1-2:1) [
+            (list (1:1-2:1) [
+                (item (1:1-2:1) [
+                    (paragraph (1:3-2:1) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (text (2:1-2:1) "B")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_inline_listitem_multiline_2() {
+    assert_ast_match!(
+        [],
+        "- A\n"
+        "   B\n"
+        "-  C\n"
+        " D",
+        (document (1:1-4:2) [
+            (list (1:1-4:2) [
+                (item (1:1-2:4) [
+                    (paragraph (1:3-2:4) [
+                        (text (1:3-1:3) "A")
+                        (softbreak (1:4-1:4))
+                        (text (2:4-2:4) "B")
+                    ])
+                ])
+                (item (3:1-4:2) [
+                    (paragraph (3:4-4:2) [
+                        (text (3:4-3:4) "C")
+                        (softbreak (3:5-3:5))
+                        (text (4:2-4:2) "D")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_inline_double_emphasis_1() {
+    assert_ast_match!(
+        [],
+        "_**this**_\n",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (emph (1:1-1:10) [
+                    (strong (1:2-1:9) [
+                        (text (1:4-1:7) "this")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[ignore]
+#[test]
+fn link_sourcepos_inline_double_emphasis_2() {
+    assert_ast_match!(
+        [],
+        "___this___\n",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (emph (1:1-1:10) [
+                    (strong (1:2-1:9) [
+                        (text (1:4-1:7) "this")
                     ])
                 ])
             ])

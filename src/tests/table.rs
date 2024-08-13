@@ -192,14 +192,10 @@ fn sourcepos_with_preceding_para_offset() {
         " | c | d |\n"
         ,
         (document (1:1-5:10) [
-
-            // XXX This should be 1:2-2:5; see
-            // crate::parser::table::try_inserting_table_header_paragraph.
-            (paragraph (1:2-2:4) [
-
+            (paragraph (1:2-2:5) [
                 (text (1:2-1:4) "123")
                 (softbreak (1:5-1:5))
-                (text (2:2-2:4) "456")
+                (text (2:3-2:5) "456")
             ])
             (table (3:2-5:10) [
                 (table_row (3:2-3:10) [
