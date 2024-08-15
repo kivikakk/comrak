@@ -599,7 +599,7 @@ fn link_sourcepos_truffle_bergamot() {
 }
 
 #[test]
-fn link_sourcepos_inline_paragraph_multiline() {
+fn paragraph_sourcepos_multiline() {
     assert_ast_match!(
         [],
         "  A\n"
@@ -615,7 +615,7 @@ fn link_sourcepos_inline_paragraph_multiline() {
 }
 
 #[test]
-fn link_sourcepos_inline_listitem_multiline() {
+fn listitem_sourcepos_multiline() {
     assert_ast_match!(
         [],
         "- A\n"
@@ -635,7 +635,7 @@ fn link_sourcepos_inline_listitem_multiline() {
 }
 
 #[test]
-fn link_sourcepos_inline_listitem_multiline_2() {
+fn listitem_sourcepos_multiline_2() {
     assert_ast_match!(
         [],
         "- A\n"
@@ -664,7 +664,7 @@ fn link_sourcepos_inline_listitem_multiline_2() {
 }
 
 #[test]
-fn link_sourcepos_inline_double_emphasis_1() {
+fn emphasis_sourcepos_double_1() {
     assert_ast_match!(
         [],
         "_**this**_\n",
@@ -680,12 +680,45 @@ fn link_sourcepos_inline_double_emphasis_1() {
     );
 }
 
-#[ignore]
 #[test]
-fn link_sourcepos_inline_double_emphasis_2() {
+fn emphasis_sourcepos_double_2() {
+    assert_ast_match!(
+        [],
+        "**_this_**\n",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (strong (1:1-1:10) [
+                    (emph (1:3-1:8) [
+                        (text (1:4-1:7) "this")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn emphasis_sourcepos_double_3() {
     assert_ast_match!(
         [],
         "___this___\n",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (emph (1:1-1:10) [
+                    (strong (1:2-1:9) [
+                        (text (1:4-1:7) "this")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn emphasis_sourcepos_double_4() {
+    assert_ast_match!(
+        [],
+        "***this***\n",
         (document (1:1-1:10) [
             (paragraph (1:1-1:10) [
                 (emph (1:1-1:10) [

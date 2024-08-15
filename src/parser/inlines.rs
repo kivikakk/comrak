@@ -1123,11 +1123,18 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             self.pos,
         );
         {
+            // if we have `___` or `***` then we need to adjust the sourcepos colums by 1
+            let triple_adjustment = if opener_num_chars > 0 && use_delims == 2 {
+                1
+            } else {
+                0
+            };
+
             emph.data.borrow_mut().sourcepos = (
                 opener.inl.data.borrow().sourcepos.start.line,
-                opener.inl.data.borrow().sourcepos.start.column,
+                opener.inl.data.borrow().sourcepos.start.column + triple_adjustment,
                 closer.inl.data.borrow().sourcepos.end.line,
-                closer.inl.data.borrow().sourcepos.end.column,
+                closer.inl.data.borrow().sourcepos.end.column - triple_adjustment,
             )
                 .into();
         }
