@@ -544,13 +544,13 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             let info = ncb.info.as_bytes();
             let literal = ncb.literal.as_bytes();
 
-            if info.is_empty()
-                && (literal.len() > 2
-                    && !isspace(literal[0])
-                    && !(isspace(literal[literal.len() - 1])
-                        && isspace(literal[literal.len() - 2])))
-                && !first_in_list_item
-                && !self.options.render.prefer_fenced
+            #[allow(clippy::len_zero)]
+            if !(info.len() > 0
+                || literal.len() <= 2
+                || isspace(literal[0])
+                || first_in_list_item
+                || self.options.render.prefer_fenced
+                || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
             {
                 write!(self, "    ").unwrap();
                 write!(self.prefix, "    ").unwrap();
