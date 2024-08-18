@@ -67,6 +67,7 @@ pub fn parse_document<'a>(
         open: true,
         last_line_blank: false,
         table_visited: false,
+        line_offsets: Vec::with_capacity(0),
     })));
     let mut parser = Parser::new(arena, root, options);
     let mut linebuf = Vec::with_capacity(buffer.len());
@@ -1998,6 +1999,11 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             }
         }
         if self.offset < line.len() {
+            // since whitespace is stripped off the beginning of lines, we need to keep
+            // track of how much was stripped off. This allows us to properly calculate
+            // inline sourcepos during inline processing.
+            ast.line_offsets.push(self.offset);
+
             ast.content
                 .push_str(str::from_utf8(&line[self.offset..]).unwrap());
         }
@@ -2185,7 +2191,6 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             self.options,
             content,
             node_data.sourcepos.start.line,
-            node_data.sourcepos.start.column - 1 + node_data.internal_offset,
             &mut self.refmap,
             &delimiter_arena,
         );
@@ -2439,7 +2444,6 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
-            0,
             &mut self.refmap,
             &delimiter_arena,
         );

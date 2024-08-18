@@ -534,6 +534,7 @@ pub struct Ast {
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
     pub(crate) table_visited: bool,
+    pub(crate) line_offsets: Vec<usize>,
 }
 
 /// Represents the position in the source Markdown this node was rendered from.
@@ -609,6 +610,7 @@ impl Ast {
             open: true,
             last_line_blank: false,
             table_visited: false,
+            line_offsets: Vec::with_capacity(0),
         }
     }
 }

@@ -116,6 +116,10 @@ fn try_opening_header<'a>(
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
         ast.internal_offset = cell.internal_offset;
         ast.content.clone_from(&cell.content);
+        ast.line_offsets.push(
+            start.column + cell.start_offset - 1 + cell.internal_offset
+                - header_row.paragraph_offset,
+        );
 
         i += 1;
     }
@@ -172,6 +176,9 @@ fn try_opening_row<'a>(
         cell_ast.internal_offset = cell.internal_offset;
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
         cell_ast.content.clone_from(&cell.content);
+        cell_ast
+            .line_offsets
+            .push(sourcepos.start.column + cell.start_offset - 1 + cell.internal_offset);
 
         last_column = cell_ast.sourcepos.end.column;
 
@@ -295,16 +302,13 @@ fn try_inserting_table_header_paragraph<'a>(
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
     paragraph.sourcepos.end.line = start.line + newlines - 1;
 
-    // XXX We don't have the last_line_length to go on by this point,
-    // so we have no idea what the end column should be.
-    // We can't track it in row() like we do paragraph_offset, because
-    // we've already discarded the leading whitespace for that line.
-    // This is hard to avoid with this backtracking approach to
-    // creating the pre-table paragraph — we're doing the work of
-    // finalize() here, but without the parser state at that time.
-    // Approximate by just counting the line length as it is and adding
-    // to the start column.
-    paragraph.sourcepos.end.column = start.column - 1
+    // copy over the line offsets related to the paragraph
+    for n in 0..newlines {
+        paragraph.line_offsets.push(container_ast.line_offsets[n]);
+    }
+
+    let last_line_offset = *paragraph.line_offsets.last().unwrap_or(&0);
+    paragraph.sourcepos.end.column = last_line_offset
         + preface
             .iter()
             .rev()

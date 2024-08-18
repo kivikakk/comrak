@@ -31,8 +31,8 @@ pub struct Subject<'a: 'd, 'r, 'o, 'c, 'd, 'i> {
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
-    block_offset: usize,
     column_offset: isize,
+    line_offset: usize,
     flags: Flags,
     pub refmap: &'r mut RefMap,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
@@ -116,7 +116,6 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
         options: &'o Options<'c>,
         input: &'i [u8],
         line: usize,
-        block_offset: usize,
         refmap: &'r mut RefMap,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
@@ -126,8 +125,8 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             input,
             line,
             pos: 0,
-            block_offset,
             column_offset: 0,
+            line_offset: 0,
             flags: Flags::default(),
             refmap,
             delimiter_arena,
@@ -182,6 +181,11 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             None => return false,
             Some(ch) => *ch as char,
         };
+
+        let node_ast = node.data.borrow();
+        let adjusted_line = self.line - node_ast.sourcepos.start.line;
+        self.line_offset = node_ast.line_offsets[adjusted_line];
+
         let new_inl: Option<&'a AstNode<'a>> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
@@ -1119,11 +1123,18 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             self.pos,
         );
         {
+            // if we have `___` or `***` then we need to adjust the sourcepos colums by 1
+            let triple_adjustment = if opener_num_chars > 0 && use_delims == 2 {
+                1
+            } else {
+                0
+            };
+
             emph.data.borrow_mut().sourcepos = (
                 opener.inl.data.borrow().sourcepos.start.line,
-                opener.inl.data.borrow().sourcepos.start.column,
+                opener.inl.data.borrow().sourcepos.start.column + triple_adjustment,
                 closer.inl.data.borrow().sourcepos.end.line,
-                closer.inl.data.borrow().sourcepos.end.column,
+                closer.inl.data.borrow().sourcepos.end.column - triple_adjustment,
             )
                 .into();
         }
@@ -1604,7 +1615,7 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
                 inl.data.borrow_mut().sourcepos.start.column =
                     bracket_inl_text.data.borrow().sourcepos.start.column;
                 inl.data.borrow_mut().sourcepos.end.column = usize::try_from(
-                    self.pos as isize + self.column_offset + self.block_offset as isize,
+                    self.pos as isize + self.column_offset + self.line_offset as isize,
                 )
                 .unwrap();
                 bracket_inl_text.insert_before(inl);
@@ -1655,7 +1666,7 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             .sourcepos
             .start;
         inl.data.borrow_mut().sourcepos.end.column =
-            usize::try_from(self.pos as isize + self.column_offset + self.block_offset as isize)
+            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
                 .unwrap();
 
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
@@ -1847,8 +1858,8 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
         end_column: usize,
     ) -> &'a AstNode<'a> {
         let start_column =
-            start_column as isize + 1 + self.column_offset + self.block_offset as isize;
-        let end_column = end_column as isize + 1 + self.column_offset + self.block_offset as isize;
+            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
+        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
 
         let ast = Ast {
             value,
@@ -1864,6 +1875,7 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             open: false,
             last_line_blank: false,
             table_visited: false,
+            line_offsets: Vec::with_capacity(0),
         };
         self.arena.alloc(Node::new(RefCell::new(ast)))
     }
@@ -1972,6 +1984,7 @@ pub fn make_inline<'a>(
         open: false,
         last_line_blank: false,
         table_visited: false,
+        line_offsets: Vec::with_capacity(0),
     };
     arena.alloc(Node::new(RefCell::new(ast)))
 }
