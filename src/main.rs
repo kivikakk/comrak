@@ -141,6 +141,10 @@ struct Cli {
     #[arg(long)]
     sourcepos: bool,
 
+    /// Include inline sourcepos in HTML output, which is known to have issues.
+    #[arg(long)]
+    experimental_inline_sourcepos: bool,
+
     /// Ignore setext headers
     #[arg(long)]
     ignore_setext: bool,
@@ -287,6 +291,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .escape(cli.escape)
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
+        .experimental_inline_sourcepos(cli.experimental_inline_sourcepos)
         .escaped_char_spans(cli.escaped_char_spans)
         .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
