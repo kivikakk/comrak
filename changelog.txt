@@ -1,3 +1,11 @@
+# [v0.27.0] - 19-08-2024
+## What's Changed
+* Add @Meow as contributor for Discord-Flavored Markdown by @liamwhite in https://github.com/kivikakk/comrak/pull/446
+* Track line offsets for better accuracy of inline sourcepos by @digitalmoksha in https://github.com/kivikakk/comrak/pull/453
+* Add experimental-inline-sourcepos to cli options by @digitalmoksha in https://github.com/kivikakk/comrak/pull/455
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.26.0...v0.27.0
 # [v0.26.0] - 12-07-2024
 
 * Restore inline sourcepos as experimental. by @kivikakk in https://github.com/kivikakk/comrak/pull/444
