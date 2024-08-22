@@ -129,6 +129,15 @@ fn ignore_setext_heading() {
 }
 
 #[test]
+fn figure_with_caption() {
+    html_opts!(
+        [render.figure_with_caption],
+        concat!("![image](https://example.com/image.png \"this is an image\")\n"),
+        concat!("<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n"),
+    );
+}
+
+#[test]
 fn html_block_1() {
     html_opts!(
         [render.unsafe_],
