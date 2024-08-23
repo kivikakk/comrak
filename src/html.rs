@@ -860,6 +860,9 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             NodeValue::Image(ref nl) => {
                 // Unreliable sourcepos.
                 if entering {
+                    if self.options.render.figure_with_caption {
+                        self.output.write_all(b"<figure>")?;
+                    }
                     self.output.write_all(b"<img")?;
                     if self.options.render.experimental_inline_sourcepos {
                         self.render_sourcepos(node)?;
@@ -877,6 +880,14 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                         self.escape(nl.title.as_bytes())?;
                     }
                     self.output.write_all(b"\" />")?;
+                    if self.options.render.figure_with_caption {
+                        if !nl.title.is_empty() {
+                            self.output.write_all(b"<figcaption>")?;
+                            self.escape(nl.title.as_bytes())?;
+                            self.output.write_all(b"</figcaption>")?;
+                        }
+                        self.output.write_all(b"</figure>")?;
+                    }
                 }
             }
             #[cfg(feature = "shortcodes")]

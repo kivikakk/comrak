@@ -875,6 +875,22 @@ pub struct RenderOptions {
     /// assert_eq!(str::from_utf8(&buf).unwrap(), "```\nhello\n```\n");
     /// ```
     pub prefer_fenced: bool,
+
+    /// Render the image as a figure element with the title as its caption.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "![image](https://example.com/image.png \"this is an image\")";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /></p>\n");
+    ///
+    /// options.render.figure_with_caption = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n");
+    /// ```
+    pub figure_with_caption: bool,
 }
 
 #[non_exhaustive]
