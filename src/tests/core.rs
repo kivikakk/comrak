@@ -129,11 +129,22 @@ fn ignore_setext_heading() {
 }
 
 #[test]
-fn figure_with_caption() {
+fn figure_with_caption_with_title() {
     html_opts!(
         [render.figure_with_caption],
         concat!("![image](https://example.com/image.png \"this is an image\")\n"),
         concat!("<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n"),
+    );
+}
+
+#[test]
+fn figure_with_caption_without_title() {
+    html_opts!(
+        [render.figure_with_caption],
+        concat!("![image](https://example.com/image.png)\n"),
+        concat!(
+            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" /></figure></p>\n"
+        ),
     );
 }
 

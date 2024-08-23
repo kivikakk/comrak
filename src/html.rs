@@ -881,9 +881,12 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     }
                     self.output.write_all(b"\" />")?;
                     if self.options.render.figure_with_caption {
-                        self.output.write_all(b"<figcaption>")?;
-                        self.escape(nl.title.as_bytes())?;
-                        self.output.write_all(b"</figcaption></figure>")?;
+                        if !nl.title.is_empty() {
+                            self.output.write_all(b"<figcaption>")?;
+                            self.escape(nl.title.as_bytes())?;
+                            self.output.write_all(b"</figcaption>")?;
+                        }
+                        self.output.write_all(b"</figure>")?;
                     }
                 }
             }
