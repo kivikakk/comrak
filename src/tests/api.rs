@@ -59,16 +59,19 @@ fn exercise_full_api() {
     extension.header_ids(Some("abc".to_string()));
     extension.footnotes(false);
     extension.description_lists(false);
-    extension.multiline_block_quotes(false);
     extension.math_dollars(false);
     extension.math_code(false);
     extension.front_matter_delimiter(None);
+    extension.multiline_block_quotes(false);
+    extension.math_dollars(false);
+    extension.math_code(false);
     #[cfg(feature = "shortcodes")]
     extension.shortcodes(true);
     extension.wikilinks_title_after_pipe(true);
     extension.wikilinks_title_before_pipe(true);
     extension.underline(true);
     extension.spoiler(true);
+    extension.greentext(true);
 
     let mut parse = ParseOptionsBuilder::default();
     parse.smart(false);
@@ -97,9 +100,13 @@ fn exercise_full_api() {
     render.escape(false);
     render.list_style(ListStyleType::Dash);
     render.sourcepos(false);
+    render.experimental_inline_sourcepos(false);
     render.escaped_char_spans(false);
     render.ignore_setext(true);
     render.ignore_empty_links(true);
+    render.gfm_quirks(true);
+    render.prefer_fenced(true);
+    render.figure_with_caption(true);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
