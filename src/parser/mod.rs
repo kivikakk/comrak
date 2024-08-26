@@ -545,7 +545,8 @@ pub struct ParseOptions<'c> {
     pub relaxed_tasklist_matching: bool,
 
     /// Relax parsing of autolinks, allow links to be detected inside brackets
-    /// and allow all url schemes
+    /// and allow all url schemes. It is intended to allow a very specific type of autolink
+    /// detection, such as `[this http://and.com that]` or `{http://foo.com}`, on a best can basis.
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
