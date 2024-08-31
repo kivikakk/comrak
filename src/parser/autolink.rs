@@ -273,7 +273,10 @@ pub fn url_match<'a>(
 
     while link_end < size - i && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
-        if relaxed_autolinks && link_end > 0 && contents[i + link_end - 1] == b']' && contents[i + link_end] == b'('
+        if relaxed_autolinks
+            && link_end > 0
+            && contents[i + link_end - 1] == b']'
+            && contents[i + link_end] == b'('
         {
             return None;
         }
