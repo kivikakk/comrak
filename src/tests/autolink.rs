@@ -136,6 +136,35 @@ fn autolink_relaxed_links_in_brackets() {
             "[<https://foo.com>]",
             "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n",
         ],
+        [
+            "[http://foo.com/](url)",
+            "<p><a href=\"url\">http://foo.com/</a></p>\n",
+        ],
+        ["[http://foo.com/](url", "<p>[http://foo.com/](url</p>\n"],
+        [
+            "[www.foo.com/](url)",
+            "<p><a href=\"url\">www.foo.com/</a></p>\n",
+        ],
+        [
+            "{https://foo.com}",
+            "<p>{<a href=\"https://foo.com\">https://foo.com</a>}</p>\n",
+        ],
+        [
+            "[this http://and.com that](url)",
+            "<p><a href=\"url\">this http://and.com that</a></p>\n",
+        ],
+        [
+            "[this <http://and.com> that](url)",
+            "<p><a href=\"url\">this http://and.com that</a></p>\n",
+        ],
+        [
+            "{this http://and.com that}(url)",
+            "<p>{this <a href=\"http://and.com\">http://and.com</a> that}(url)</p>\n",
+        ],
+        [
+            "[http://foo.com](url)\n[http://bar.com]\n\n[http://bar.com]: http://bar.com/extra",
+            "<p><a href=\"url\">http://foo.com</a>\n<a href=\"http://bar.com/extra\">http://bar.com</a></p>\n",
+        ],
     ];
 
     for example in examples {
@@ -166,6 +195,15 @@ fn autolink_relaxed_links_curly_braces_balanced() {
         concat!(
             "<p><a href=\"http://example.com/%7Babc%7D\">http://example.com/{abc}</a>}...</p>\n"
         ),
+    );
+}
+
+#[test]
+fn autolink_relaxed_links_curly_parentheses_balanced() {
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        concat!("http://example.com/(abc))...\n"),
+        concat!("<p><a href=\"http://example.com/(abc)\">http://example.com/(abc)</a>)...</p>\n"),
     );
 }
 

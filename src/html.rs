@@ -838,23 +838,33 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             }
             NodeValue::Link(ref nl) => {
                 // Unreliable sourcepos.
-                if entering {
-                    self.output.write_all(b"<a")?;
-                    if self.options.render.experimental_inline_sourcepos {
-                        self.render_sourcepos(node)?;
+                let parent_node = node.parent();
+
+                if !self.options.parse.relaxed_autolinks
+                    || (parent_node.is_none()
+                        || !matches!(
+                            parent_node.unwrap().data.borrow().value,
+                            NodeValue::Link(..)
+                        ))
+                {
+                    if entering {
+                        self.output.write_all(b"<a")?;
+                        if self.options.render.experimental_inline_sourcepos {
+                            self.render_sourcepos(node)?;
+                        }
+                        self.output.write_all(b" href=\"")?;
+                        let url = nl.url.as_bytes();
+                        if self.options.render.unsafe_ || !dangerous_url(url) {
+                            self.escape_href(url)?;
+                        }
+                        if !nl.title.is_empty() {
+                            self.output.write_all(b"\" title=\"")?;
+                            self.escape(nl.title.as_bytes())?;
+                        }
+                        self.output.write_all(b"\">")?;
+                    } else {
+                        self.output.write_all(b"</a>")?;
                     }
-                    self.output.write_all(b" href=\"")?;
-                    let url = nl.url.as_bytes();
-                    if self.options.render.unsafe_ || !dangerous_url(url) {
-                        self.escape_href(url)?;
-                    }
-                    if !nl.title.is_empty() {
-                        self.output.write_all(b"\" title=\"")?;
-                        self.escape(nl.title.as_bytes())?;
-                    }
-                    self.output.write_all(b"\">")?;
-                } else {
-                    self.output.write_all(b"</a>")?;
                 }
             }
             NodeValue::Image(ref nl) => {
