@@ -1816,6 +1816,27 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             *container = details;
 
             true
+        } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
+            let parent = last_child.parent().unwrap();
+            reopen_ast_nodes(parent);
+
+            let metadata = NodeDescriptionItem {
+                marker_offset: self.indent,
+                padding: 2,
+            };
+
+            let item = self.add_child(
+                parent,
+                NodeValue::DescriptionItem(metadata),
+                self.first_nonspace + 1,
+            );
+
+            let details =
+                self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
+
+            *container = details;
+
+            true
         } else {
             false
         }

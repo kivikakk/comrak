@@ -512,7 +512,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     self.cr()?;
                     self.output.write_all(b"<dl")?;
                     self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b">\n")?;
                 } else {
                     self.output.write_all(b"</dl>\n")?;
                 }
