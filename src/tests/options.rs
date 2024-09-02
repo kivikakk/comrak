@@ -77,10 +77,9 @@ fn broken_link_callback() {
         _ => None,
     };
     let options = Options {
-        parse: ParseOptionsBuilder::default()
-            .broken_link_callback(Some(Arc::new(Mutex::new(&mut cb))))
-            .build()
-            .unwrap(),
+        parse: ParseOptions::builder()
+            .broken_link_callback(Arc::new(Mutex::new(&mut cb)))
+            .build(),
         ..Default::default()
     };
 
