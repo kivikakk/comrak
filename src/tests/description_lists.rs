@@ -14,7 +14,7 @@ fn description_lists() {
             ": Definition 2\n"
         ),
         concat!(
-            "<dl>",
+            "<dl>\n",
             "<dt>Term 1</dt>\n",
             "<dd>\n",
             "<p>Definition 1</p>\n",
@@ -41,7 +41,7 @@ fn description_lists() {
             "<ul>\n",
             "<li>\n",
             "<p>Nested</p>\n",
-            "<dl>",
+            "<dl>\n",
             "<dt>Term 1</dt>\n",
             "<dd>\n",
             "<p>Definition 1</p>\n",
