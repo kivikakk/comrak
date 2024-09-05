@@ -1,3 +1,11 @@
+# [v0.28.0] - 05-09-2024
+
+* Add a render option to render the image as <figure> by @JmPotato in https://github.com/kivikakk/comrak/pull/458
+* Fix edge cases for relaxed-autolink option by @digitalmoksha in https://github.com/kivikakk/comrak/pull/461
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.27.0...v0.28.0
+
+
 # [v0.27.0] - 19-08-2024
 
 * Track line offsets for better accuracy of inline sourcepos by @digitalmoksha in https://github.com/kivikakk/comrak/pull/453
