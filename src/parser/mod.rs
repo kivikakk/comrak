@@ -18,6 +18,7 @@ use crate::nodes::{
 };
 use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
+use bon::Builder;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -152,8 +153,7 @@ pub struct Options<'c> {
 }
 
 #[non_exhaustive]
-#[bon::builder]
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
 pub struct ExtensionOptions {
@@ -524,8 +524,7 @@ pub struct ExtensionOptions {
 }
 
 #[non_exhaustive]
-#[bon::builder]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
 pub struct ParseOptions<'c> {
@@ -642,8 +641,7 @@ impl<'c> fmt::Debug for ParseOptions<'c> {
 }
 
 #[non_exhaustive]
-#[bon::builder]
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
 pub struct RenderOptions {
@@ -965,8 +963,7 @@ pub struct RenderOptions {
 }
 
 #[non_exhaustive]
-#[bon::builder]
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Builder)]
 /// Umbrella plugins struct.
 pub struct Plugins<'p> {
     /// Configure render-time plugins.
@@ -975,8 +972,7 @@ pub struct Plugins<'p> {
 }
 
 #[non_exhaustive]
-#[bon::builder]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Builder)]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {
     /// Provide a syntax highlighter adapter implementation for syntax

@@ -70,18 +70,19 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bon"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dadc8d9c6898eaab366cb3702cfd885d3cb166825ac86aead171acd92a719065"
+checksum = "811d7882589e047896e5974d039dd8823a67973a63d559e6ad1e87ff5c42ed4f"
 dependencies = [
  "bon-macros",
+ "rustversion",
 ]
 
 [[package]]
 name = "bon-macros"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ea161ce9835915784e809698d06c31632c47641ff0bca9fe94d7fdf653a7f86"
+checksum = "d8e745a763e579a5ce70130e66f9dd35abf77cfeb9f418f305aeab8d1ae54c43"
 dependencies = [
  "darling",
  "ident_case",
@@ -613,6 +614,12 @@ dependencies = [
  "linux-raw-sys 0.3.8",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
 
 [[package]]
 name = "ryu"
