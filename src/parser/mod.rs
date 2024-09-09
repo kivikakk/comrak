@@ -587,7 +587,7 @@ pub struct ParseOptions<'c> {
     ///
     /// ```
     /// # use std::{str, sync::{Arc, Mutex}};
-    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptionsBuilder};
+    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptions};
     /// # use comrak::nodes::{AstNode, NodeValue};
     /// #
     /// # fn main() -> std::io::Result<()> {
@@ -600,10 +600,9 @@ pub struct ParseOptions<'c> {
     ///     _ => None,
     /// };
     /// let options = Options {
-    ///     parse: ParseOptionsBuilder::default()
-    ///         .broken_link_callback(Some(Arc::new(Mutex::new(&mut cb))))
-    ///         .build()
-    ///         .unwrap(),
+    ///     parse: ParseOptions::builder()
+    ///         .broken_link_callback(Arc::new(Mutex::new(&mut cb)))
+    ///         .build(),
     ///     ..Default::default()
     /// };
     ///
