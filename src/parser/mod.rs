@@ -223,8 +223,8 @@ pub struct ExtensionOptions {
     /// options.extension.tasklist = true;
     /// options.render.unsafe_ = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
-    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
-    ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
+    ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
+    ///            <li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
     pub tasklist: bool,
 
@@ -2436,7 +2436,13 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             return;
         }
 
-        if !node_matches!(parent.parent().unwrap(), NodeValue::Item(..)) {
+        let grandparent = parent.parent().unwrap();
+        if !node_matches!(grandparent, NodeValue::Item(..)) {
+            return;
+        }
+
+        let great_grandparent = grandparent.parent().unwrap();
+        if !node_matches!(great_grandparent, NodeValue::List(..)) {
             return;
         }
 
@@ -2448,8 +2454,12 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
         sourcepos.start.column += end;
         parent.data.borrow_mut().sourcepos.start.column += end;
 
-        parent.parent().unwrap().data.borrow_mut().value =
+        grandparent.data.borrow_mut().value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
+
+        if let NodeValue::List(ref mut list) = &mut great_grandparent.data.borrow_mut().value {
+            list.is_task_list = true;
+        }
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
@@ -2565,6 +2575,7 @@ fn parse_list_marker(
                 delimiter: ListDelimType::Period,
                 bullet_char: c,
                 tight: false,
+                is_task_list: false,
             },
         ));
     } else if isdigit(c) {
@@ -2620,6 +2631,7 @@ fn parse_list_marker(
                 },
                 bullet_char: 0,
                 tight: false,
+                is_task_list: false,
             },
         ));
     }
