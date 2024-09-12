@@ -161,15 +161,21 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     was_literal = true;
                 }
                 NodeValue::List(ref nl) => {
-                    if nl.list_type == ListType::Bullet {
-                        self.output.write_all(b" type=\"bullet\"")?;
-                    } else {
-                        write!(
-                            self.output,
-                            " type=\"ordered\" start=\"{}\" delim=\"{}\"",
-                            nl.start,
-                            nl.delimiter.xml_name()
-                        )?;
+                    match nl.list_type {
+                        ListType::Bullet => {
+                            self.output.write_all(b" type=\"bullet\"")?;
+                        }
+                        ListType::Ordered => {
+                            write!(
+                                self.output,
+                                " type=\"ordered\" start=\"{}\" delim=\"{}\"",
+                                nl.start,
+                                nl.delimiter.xml_name()
+                            )?;
+                        }
+                    }
+                    if nl.is_task_list {
+                        self.output.write_all(b" tasklist=\"true\"")?;
                     }
                     write!(self.output, " tight=\"{}\"", nl.tight)?;
                 }
