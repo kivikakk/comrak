@@ -48,6 +48,16 @@ fn wikilinks_sanitizes_the_href_attribute_case_2() {
 }
 
 #[test]
+fn wikilinks_title_escape_chars() {
+    html_opts!(
+        [extension.wikilinks_title_before_pipe, render.escaped_char_spans],
+        concat!("[[Name \\[of\\] page|http://example.com]]",),
+        concat!("<p><a href=\"http://example.com\" data-wikilink=\"true\">Name <span data-escaped-char>[</span>of<span data-escaped-char>]</span> page</a></p>\n"),
+        no_roundtrip,
+    );
+}
+
+#[test]
 fn wikilinks_supercedes_relaxed_autolinks() {
     html_opts!(
         [
@@ -225,6 +235,22 @@ fn sourcepos() {
                     (text (1:8-1:25) "http://example.com")
                 ])
                 (text (1:28-1:32) " that")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_before_pipe],
+        "This [[link\\[label|http://example.com]] that\n",
+        (document (1:1-1:44) [
+            (paragraph (1:1-1:44) [
+                (text (1:1-1:5) "This ")
+                (wikilink (1:6-1:39) [
+                    (text (1:8-1:11) "link")
+                    (text (1:12-1:13) "[")
+                    (text (1:14-1:18) "label")
+                ])
+                (text (1:40-1:44) " that")
             ])
         ])
     );

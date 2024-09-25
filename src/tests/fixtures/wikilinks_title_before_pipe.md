@@ -53,3 +53,25 @@ HTML entities are recognized both in the name of page and in the link title.
 .
 <p><a href="Gesch%C3%BCtztes%20Leerzeichen" data-wikilink="true">Über &amp;nbsp;</a></p>
 ````````````````````````````````
+
+Escaping characters is supported
+
+```````````````````````````````` example
+[[foo\[\]bar|https://example.org]]
+.
+<p><a href="https://example.org" data-wikilink="true">foo[]bar</a></p>
+````````````````````````````````
+
+```````````````````````````````` example
+[[Name \[of\] page]]
+.
+<p><a href="Name%20%5Bof%5D%20page" data-wikilink="true">Name [of] page</a></p>
+````````````````````````````````
+
+Emphasis or other inline markdown is not supported
+
+```````````````````````````````` example
+[[Name _of_ page]]
+.
+<p><a href="Name%20_of_%20page" data-wikilink="true">Name _of_ page</a></p>
+````````````````````````````````
