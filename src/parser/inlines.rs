@@ -1851,46 +1851,41 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
     ) {
         let mut startpos = 0;
         let mut offset = 0;
+        let len = label.len();
 
-        while offset < label.len() {
+        while offset < len {
             let c = label[offset];
 
-            if c == b'\\' {
-                if ispunct(label[offset + 1]) {
-                    let preceding_text = self.make_inline(
-                        NodeValue::Text(
-                            String::from_utf8(label[startpos..offset].to_owned()).unwrap(),
-                        ),
-                        start_column + startpos,
-                        start_column + offset - 1,
-                    );
+            if c == b'\\' && (offset + 1) < len && ispunct(label[offset + 1]) {
+                let preceding_text = self.make_inline(
+                    NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                    start_column + startpos,
+                    start_column + offset - 1,
+                );
 
-                    container.append(preceding_text);
+                container.append(preceding_text);
 
-                    let inline_text = self.make_inline(
-                        NodeValue::Text(String::from_utf8(vec![label[offset + 1]]).unwrap()),
+                let inline_text = self.make_inline(
+                    NodeValue::Text(String::from_utf8(vec![label[offset + 1]]).unwrap()),
+                    start_column + offset,
+                    start_column + offset + 1,
+                );
+
+                if self.options.render.escaped_char_spans {
+                    let span = self.make_inline(
+                        NodeValue::Escaped,
                         start_column + offset,
                         start_column + offset + 1,
                     );
 
-                    if self.options.render.escaped_char_spans {
-                        let span = self.make_inline(
-                            NodeValue::Escaped,
-                            start_column + offset,
-                            start_column + offset + 1,
-                        );
-
-                        span.append(inline_text);
-                        container.append(span);
-                    } else {
-                        container.append(inline_text);
-                    }
-
-                    offset += 2;
-                    startpos = offset;
+                    span.append(inline_text);
+                    container.append(span);
                 } else {
-                    offset += 1;
+                    container.append(inline_text);
                 }
+
+                offset += 2;
+                startpos = offset;
             } else {
                 offset += 1;
             }
