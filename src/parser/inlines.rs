@@ -1891,11 +1891,13 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             }
         }
 
-        container.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
-            start_column + startpos,
-            start_column + offset - 1,
-        ));
+        if startpos != offset {
+            container.append(self.make_inline(
+                NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                start_column + startpos,
+                start_column + offset - 1,
+            ));
+        }
     }
 
     pub fn spnl(&mut self) {
