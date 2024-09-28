@@ -663,6 +663,7 @@ impl<'o> HtmlFormatter<'o> {
                     .map(|n| n.data.borrow().value.clone())
                 {
                     Some(NodeValue::List(nl)) => nl.tight,
+                    Some(NodeValue::DescriptionItem(nd)) => nd.tight,
                     _ => false,
                 };
 

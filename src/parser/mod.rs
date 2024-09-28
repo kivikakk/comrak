@@ -1640,7 +1640,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     scanners::description_item_start(&line[self.first_nonspace..]),
                     &mut matched,
                 )
-                && self.parse_desc_list_details(container)
+                && self.parse_desc_list_details(container, matched)
             {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
@@ -1884,15 +1884,26 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn parse_desc_list_details(&mut self, node: &mut &'a AstNode<'a>) -> bool {
-        let container = node;
-
+    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>, matched: usize) -> bool {
+        let mut tight = false;
         let last_child = match container.last_child() {
             Some(lc) => lc,
             None => {
                 // Happens when the detail line is directly after the term,
                 // without a blank line between.
-                *container = container.parent().unwrap();
+                if !node_matches!(container, NodeValue::Paragraph) {
+                    // If the container is not a paragraph, then this can't
+                    // be a description list item.
+                    return false;
+                }
+
+                let parent = container.parent();
+                if parent.is_none() {
+                    return false;
+                }
+
+                tight = true;
+                *container = parent.unwrap();
                 container.last_child().unwrap()
             }
         };
@@ -1918,7 +1929,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             //   All are incorrect; they all give the start line/col of
             //   the DescriptionDetails, and the end line/col is completely off.
             //
-            // descriptionDetails:
+            // DescriptionDetails:
             //   Same as the DescriptionItem.  All but last, the end line/col
             //   is (l+1):0.
             //
@@ -1941,7 +1952,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
-                padding: 2,
+                padding: matched,
+                tight,
             };
 
             let item = self.add_child(
@@ -1961,11 +1973,15 @@ impl<'a, 'o> Parser<'a, 'o> {
             true
         } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
             let parent = last_child.parent().unwrap();
-            reopen_ast_nodes(parent);
+            let tight = match last_child.data.borrow().value {
+                NodeValue::DescriptionItem(ref ndi) => ndi.tight,
+                _ => false,
+            };
 
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
-                padding: 2,
+                padding: matched,
+                tight,
             };
 
             let item = self.add_child(

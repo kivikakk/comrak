@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn description_lists() {
+fn description_lists_loose() {
     html_opts!(
         [extension.description_lists],
         concat!(
@@ -57,6 +57,89 @@ fn description_lists() {
     );
 }
 
+#[test]
+fn description_lists_tight() {
+    html_opts!(
+        [extension.description_lists],
+        concat!(
+            "Term 1\n",
+            ": Definition 1\n",
+            "\n",
+            "Term 2 with *inline markup*\n",
+            ": Definition 2\n"
+        ),
+        concat!(
+            "<dl>\n",
+            "<dt>Term 1</dt>\n",
+            "<dd>Definition 1</dd>\n",
+            "<dt>Term 2 with <em>inline markup</em></dt>\n",
+            "<dd>Definition 2</dd>\n",
+            "</dl>\n",
+        ),
+        no_roundtrip,
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        concat!(
+            "* Nested\n",
+            "\n",
+            "    Term 1\n",
+            "    :   Definition 1\n\n",
+            "    Term 2 with *inline markup*\n",
+            "    :   Definition 2\n\n"
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<p>Nested</p>\n",
+            "<dl>\n",
+            "<dt>Term 1</dt>\n",
+            "<dd>Definition 1</dd>\n",
+            "<dt>Term 2 with <em>inline markup</em></dt>\n",
+            "<dd>Definition 2</dd>\n",
+            "</dl>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+        no_roundtrip,
+    );
+}
+#[test]
+fn description_lists_edge_cases() {
+    html_opts!(
+        [extension.description_lists],
+        concat!(":"),
+        concat!("<p>:</p>\n"),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        concat!(": foo"),
+        concat!("<p>: foo</p>\n"),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        concat!("a\n:"),
+        concat!("<p>a\n:</p>\n"),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        concat!("- foo\n", "- : bar\n", "  - baz\n",),
+        concat!(
+            "<ul>\n",
+            "<li>foo</li>\n",
+            "<li>: bar\n",
+            "<ul>\n",
+            "<li>baz</li>\n",
+            "</ul>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+    );
+}
 #[test]
 fn sourcepos() {
     // TODO There's plenty of work to do here still.  The test currently represents
