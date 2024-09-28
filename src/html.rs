@@ -696,14 +696,15 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     .map(|n| n.data.borrow().value.clone())
                 {
                     Some(NodeValue::List(nl)) => nl.tight,
+                    Some(NodeValue::DescriptionItem(nd)) => nd.tight,
                     _ => false,
                 };
 
-                let tight = tight
-                    || matches!(
-                        node.parent().map(|n| n.data.borrow().value.clone()),
-                        Some(NodeValue::DescriptionTerm)
-                    );
+                // let tight = tight
+                //     || matches!(
+                //         node.parent().map(|n| n.data.borrow().value.clone()),
+                //         Some(NodeValue::DescriptionTerm)
+                //     );
 
                 if !tight {
                     if entering {
