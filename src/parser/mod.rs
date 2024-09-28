@@ -288,7 +288,7 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
-    ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    ///            "<dl>\n<dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     pub description_lists: bool,
 
@@ -1503,10 +1503,13 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
                 container.data.borrow_mut().internal_offset = matched;
             } else if !indented
                 && self.options.extension.description_lists
-                && line[self.first_nonspace] == b':'
+                && unwrap_into(
+                    scanners::description_item_start(&line[self.first_nonspace..]),
+                    &mut matched,
+                )
                 && self.parse_desc_list_details(container)
             {
-                let offset = self.first_nonspace + 1 - self.offset;
+                let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
@@ -1748,10 +1751,17 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>) -> bool {
+    fn parse_desc_list_details(&mut self, node: &mut &'a AstNode<'a>) -> bool {
+        let container = node;
+
         let last_child = match container.last_child() {
             Some(lc) => lc,
-            None => return false,
+            None => {
+                // Happens when the detail line is directly after the term,
+                // without a blank line between.
+                *container = container.parent().unwrap();
+                container.last_child().unwrap()
+            }
         };
 
         if node_matches!(last_child, NodeValue::Paragraph) {
