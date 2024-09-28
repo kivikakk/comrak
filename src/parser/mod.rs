@@ -288,7 +288,7 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
-    ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    ///            "<dl>\n<dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     pub description_lists: bool,
 
@@ -1503,10 +1503,13 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
                 container.data.borrow_mut().internal_offset = matched;
             } else if !indented
                 && self.options.extension.description_lists
-                && line[self.first_nonspace] == b':'
+                && unwrap_into(
+                    scanners::description_item_start(&line[self.first_nonspace..]),
+                    &mut matched,
+                )
                 && self.parse_desc_list_details(container)
             {
-                let offset = self.first_nonspace + 1 - self.offset;
+                let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
@@ -1748,10 +1751,19 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
         }
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>) -> bool {
+    fn parse_desc_list_details(&mut self, node: &mut &'a AstNode<'a>) -> bool {
+        let container = node;
+        let mut tight = false;
+        
         let last_child = match container.last_child() {
             Some(lc) => lc,
-            None => return false,
+            None => {
+                // Happens when the detail line is directly after the term,
+                // without a blank line between.
+                tight = true;
+                *container = container.parent().unwrap();
+                container.last_child().unwrap()
+            }
         };
 
         if node_matches!(last_child, NodeValue::Paragraph) {
@@ -1799,6 +1811,7 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
                 padding: 2,
+                tight,
             };
 
             let item = self.add_child(
@@ -1816,6 +1829,50 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             *container = details;
 
             true
+        } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
+            // ORIGINAL CODE
+            let parent = last_child.parent().unwrap();
+            reopen_ast_nodes(parent);
+
+            let metadata = NodeDescriptionItem {
+                marker_offset: self.indent,
+                padding: 2,
+                tight,
+            };
+
+            let item = self.add_child(
+                parent,
+                NodeValue::DescriptionItem(metadata),
+                self.first_nonspace + 1,
+            );
+
+            let details =
+                self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
+
+            *container = details;
+
+            true
+
+            // ATTEMPT 1
+            // reopen_ast_nodes(last_child);
+            // 
+            // let details =
+            //     self.add_child(last_child, NodeValue::DescriptionDetails, self.first_nonspace + 1);
+            // *container = details;
+            // 
+            // true
+            
+            // ATTEMPT 2
+            // let parent = last_child.parent().unwrap();
+            // let item = parent.last_child().unwrap();
+            // 
+            // reopen_ast_nodes(item);
+            // 
+            // let details =
+            //     self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
+            // *container = details;
+            // 
+            // true
         } else {
             false
         }
