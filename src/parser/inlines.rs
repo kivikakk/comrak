@@ -1730,7 +1730,7 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(component.url);
-        let (link_label, link_label_start_column, link_label_end_column) =
+        let (link_label, link_label_start_column, _link_label_end_column) =
             match component.link_label {
                 Some((label, sc, ec)) => (entity::unescape_html(label), sc, ec),
                 None => (
@@ -1744,11 +1744,8 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
             url: String::from_utf8(url_clean).unwrap(),
         };
         let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
-        inl.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(link_label).unwrap()),
-            link_label_start_column,
-            link_label_end_column,
-        ));
+
+        self.label_backslash_escapes(inl, link_label, link_label_start_column);
 
         Some(inl)
     }
@@ -1842,6 +1839,65 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
         }
 
         true
+    }
+
+    // Given a label, handles backslash escaped characters. Appends the resulting
+    // nodes to the container
+    fn label_backslash_escapes(
+        &mut self,
+        container: &'a AstNode<'a>,
+        label: Vec<u8>,
+        start_column: usize,
+    ) {
+        let mut startpos = 0;
+        let mut offset = 0;
+        let len = label.len();
+
+        while offset < len {
+            let c = label[offset];
+
+            if c == b'\\' && (offset + 1) < len && ispunct(label[offset + 1]) {
+                let preceding_text = self.make_inline(
+                    NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                    start_column + startpos,
+                    start_column + offset - 1,
+                );
+
+                container.append(preceding_text);
+
+                let inline_text = self.make_inline(
+                    NodeValue::Text(String::from_utf8(vec![label[offset + 1]]).unwrap()),
+                    start_column + offset,
+                    start_column + offset + 1,
+                );
+
+                if self.options.render.escaped_char_spans {
+                    let span = self.make_inline(
+                        NodeValue::Escaped,
+                        start_column + offset,
+                        start_column + offset + 1,
+                    );
+
+                    span.append(inline_text);
+                    container.append(span);
+                } else {
+                    container.append(inline_text);
+                }
+
+                offset += 2;
+                startpos = offset;
+            } else {
+                offset += 1;
+            }
+        }
+
+        if startpos != offset {
+            container.append(self.make_inline(
+                NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                start_column + startpos,
+                start_column + offset - 1,
+            ));
+        }
     }
 
     pub fn spnl(&mut self) {
