@@ -11,8 +11,9 @@ with `:` (after 0-2 spaces); subsequent lines must
 be indented unless they are lazy paragraph
 continuations.
 
-The list is tight if there is no blank line between
-the term and the first definition, otherwise loose.
+There is no distinction between a "tight" list or a
+"loose" list. Definitions are always wrapped in `<p>`
+tags.
 
 ```````````````````````````````` example
 apple
@@ -23,10 +24,12 @@ orange
 .
 <dl>
 <dt>apple</dt>
-<dd>red fruit
+<dd>
+<p>red fruit</p>
 </dd>
 <dt>orange</dt>
-<dd>orange fruit
+<dd>
+<p>orange fruit</p>
 </dd>
 </dl>
 ````````````````````````````````
@@ -65,10 +68,12 @@ orange
 .
 <dl>
 <dt>apple</dt>
-<dd>red fruit
+<dd>
+<p>red fruit</p>
 </dd>
 <dt>orange</dt>
-<dd>orange fruit
+<dd>
+<p>orange fruit</p>
 </dd>
 </dl>
 ````````````````````````````````
@@ -95,6 +100,8 @@ orange
 ````````````````````````````````
 
 Multiple blocks in a definition:
+
+Note that the column 
 
 ```````````````````````````````` example
 *apple*
@@ -144,14 +151,17 @@ term
 <dt>term</dt>
 <dd>
 <ol>
-<li><p>Para one</p>
-<p>Para two</p></li>
+<li>
+<p>Para one</p>
+<p>Para two</p>
+</li>
 </ol>
 </dd>
 </dl>
 ````````````````````````````````
 
 Multiple definitions, tight:
+(always rendered as loose)
 
 ```````````````````````````````` example
 apple
@@ -164,14 +174,18 @@ orange
 .
 <dl>
 <dt>apple</dt>
-<dd>red fruit
+<dd>
+<p>red fruit</p>
 </dd>
-<dd>computer company
+<dd>
+<p>computer company</p>
 </dd>
 <dt>orange</dt>
-<dd>orange fruit
+<dd>
+<p>orange fruit</p>
 </dd>
-<dd>telecom company
+<dd>
+<p>telecom company</p>
 </dd>
 </dl>
 ````````````````````````````````
@@ -257,10 +271,12 @@ orange
 .
 <dl>
 <dt>apple</dt>
-<dd>red fruit
+<dd>
+<p>red fruit</p>
 </dd>
 <dt>orange</dt>
-<dd>orange fruit
+<dd>
+<p>orange fruit</p>
 </dd>
 </dl>
 ````````````````````````````````
@@ -299,10 +315,12 @@ bim
 <p>Foo</p>
 <dl>
 <dt>bar</dt>
-<dd>baz
+<dd>
+<p>baz</p>
 </dd>
 <dt>bim</dt>
-<dd>bor
+<dd>
+<p>bor</p>
 </dd>
 </dl>
 ````````````````````````````````
