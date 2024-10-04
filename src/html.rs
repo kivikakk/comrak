@@ -478,18 +478,28 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             NodeValue::List(ref nl) => {
                 if entering {
                     self.cr()?;
-                    if nl.list_type == ListType::Bullet {
-                        self.output.write_all(b"<ul")?;
-                        self.render_sourcepos(node)?;
-                        self.output.write_all(b">\n")?;
-                    } else if nl.start == 1 {
-                        self.output.write_all(b"<ol")?;
-                        self.render_sourcepos(node)?;
-                        self.output.write_all(b">\n")?;
-                    } else {
-                        self.output.write_all(b"<ol")?;
-                        self.render_sourcepos(node)?;
-                        writeln!(self.output, " start=\"{}\">", nl.start)?;
+
+                    match nl.list_type {
+                        ListType::Bullet => {
+                            self.output.write_all(b"<ul")?;
+                            if nl.is_task_list {
+                                self.output.write_all(b" class=\"contains-task-list\"")?;
+                            }
+                            self.render_sourcepos(node)?;
+                            self.output.write_all(b">\n")?;
+                        }
+                        ListType::Ordered => {
+                            self.output.write_all(b"<ol")?;
+                            if nl.is_task_list {
+                                self.output.write_all(b" class=\"contains-task-list\"")?;
+                            }
+                            self.render_sourcepos(node)?;
+                            if nl.start == 1 {
+                                self.output.write_all(b">\n")?;
+                            } else {
+                                writeln!(self.output, " start=\"{}\">", nl.start)?;
+                            }
+                        }
                     }
                 } else if nl.list_type == ListType::Bullet {
                     self.output.write_all(b"</ul>\n")?;
@@ -1042,12 +1052,12 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             NodeValue::TaskItem(symbol) => {
                 if entering {
                     self.cr()?;
-                    self.output.write_all(b"<li")?;
+                    self.output.write_all(b"<li class=\"task-list-item\"")?;
                     self.render_sourcepos(node)?;
                     self.output.write_all(b">")?;
                     write!(
                         self.output,
-                        "<input type=\"checkbox\" {}disabled=\"\" /> ",
+                        "<input type=\"checkbox\" class=\"task-list-item-checkbox\" {}disabled=\"\" /> ",
                         if symbol.is_some() {
                             "checked=\"\" "
                         } else {
