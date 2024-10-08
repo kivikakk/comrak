@@ -892,6 +892,23 @@ pub struct RenderOptions {
     ///            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n");
     /// ```
     pub figure_with_caption: bool,
+
+    /// Render ordered list with a minimum marker width.
+    /// Having a width lower than 3 doesn't do anything.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_commonmark, Options};
+    /// let mut options = Options::default();
+    /// let input = "1. Something";
+    ///
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "1. Something\n");
+    ///
+    /// options.render.ol_width = 5;
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "1.   Something\n");
+    /// ```
+    pub ol_width: usize,
 }
 
 #[non_exhaustive]

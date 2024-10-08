@@ -473,16 +473,22 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             let list_delim = parent.delimiter;
             write!(
                 listmarker,
-                "{}{}{}",
+                "{}{} ",
                 list_number,
                 if list_delim == ListDelimType::Paren {
                     ")"
                 } else {
                     "."
-                },
-                if list_number < 10 { "  " } else { " " }
+                }
             )
             .unwrap();
+            let mut current_len = listmarker.len();
+
+            while current_len < self.options.render.ol_width {
+                write!(listmarker, " ").unwrap();
+                current_len += 1;
+            }
+
             listmarker.len()
         };
 
@@ -498,7 +504,11 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 write!(self.prefix, " ").unwrap();
             }
         } else {
-            let new_len = self.prefix.len() - marker_width;
+            let new_len = if self.prefix.len() > marker_width {
+                self.prefix.len() - marker_width
+            } else {
+                0
+            };
             self.prefix.truncate(new_len);
             self.cr();
         }
