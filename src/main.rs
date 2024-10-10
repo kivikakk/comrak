@@ -1,9 +1,8 @@
 //! The `comrak` binary.
 
 use comrak::{
-    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena,
-    ExtensionOptionsBuilder, ListStyleType, Options, ParseOptionsBuilder, Plugins,
-    RenderOptionsBuilder,
+    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena, ListStyleType,
+    Options, Plugins,
 };
 use std::boxed::Box;
 use std::env;
@@ -14,6 +13,7 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::{Parser, ValueEnum};
+use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
@@ -247,15 +247,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
-    let mut extension = ExtensionOptionsBuilder::default();
-    extension
+    let extension = ExtensionOptions::builder()
         .strikethrough(exts.contains(&Extension::Strikethrough) || cli.gfm)
         .tagfilter(exts.contains(&Extension::Tagfilter) || cli.gfm)
         .table(exts.contains(&Extension::Table) || cli.gfm)
         .autolink(exts.contains(&Extension::Autolink) || cli.gfm)
         .tasklist(exts.contains(&Extension::Tasklist) || cli.gfm)
         .superscript(exts.contains(&Extension::Superscript))
-        .header_ids(cli.header_ids)
+        .maybe_header_ids(cli.header_ids)
         .footnotes(exts.contains(&Extension::Footnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
@@ -266,23 +265,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         .underline(exts.contains(&Extension::Underline))
         .spoiler(exts.contains(&Extension::Spoiler))
         .greentext(exts.contains(&Extension::Greentext))
-        .front_matter_delimiter(cli.front_matter_delimiter);
+        .maybe_front_matter_delimiter(cli.front_matter_delimiter);
 
     #[cfg(feature = "shortcodes")]
-    {
-        extension.shortcodes(cli.gemojis);
-    }
+    let extension = extension.shortcodes(cli.gemojis);
 
-    let extension = extension.build()?;
+    let extension = extension.build();
 
-    let parse = ParseOptionsBuilder::default()
+    let parse = ParseOptions::builder()
         .smart(cli.smart)
-        .default_info_string(cli.default_info_string)
+        .maybe_default_info_string(cli.default_info_string)
         .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
         .relaxed_autolinks(cli.relaxed_autolinks)
-        .build()?;
+        .build();
 
-    let render = RenderOptionsBuilder::default()
+    let render = RenderOptions::builder()
         .hardbreaks(cli.hardbreaks)
         .github_pre_lang(cli.github_pre_lang || cli.gfm)
         .full_info_string(cli.full_info_string)
@@ -296,7 +293,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
         .gfm_quirks(cli.gfm_quirks || cli.gfm)
-        .build()?;
+        .build();
 
     let options = Options {
         extension,

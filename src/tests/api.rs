@@ -49,38 +49,40 @@ fn exercise_full_api() {
         }),
     );
 
-    let mut extension = ExtensionOptionsBuilder::default();
-    extension.strikethrough(false);
-    extension.tagfilter(false);
-    extension.table(false);
-    extension.autolink(false);
-    extension.tasklist(false);
-    extension.superscript(false);
-    extension.header_ids(Some("abc".to_string()));
-    extension.footnotes(false);
-    extension.description_lists(false);
-    extension.math_dollars(false);
-    extension.math_code(false);
-    extension.front_matter_delimiter(None);
-    extension.multiline_block_quotes(false);
-    extension.math_dollars(false);
-    extension.math_code(false);
-    #[cfg(feature = "shortcodes")]
-    extension.shortcodes(true);
-    extension.wikilinks_title_after_pipe(true);
-    extension.wikilinks_title_before_pipe(true);
-    extension.underline(true);
-    extension.spoiler(true);
-    extension.greentext(true);
+    let extension = ExtensionOptions::builder()
+        .strikethrough(false)
+        .tagfilter(false)
+        .table(false)
+        .autolink(false)
+        .tasklist(false)
+        .superscript(false)
+        .header_ids("abc".to_string())
+        .footnotes(false)
+        .description_lists(false)
+        .math_dollars(false)
+        .math_code(false)
+        .maybe_front_matter_delimiter(None)
+        .multiline_block_quotes(false);
 
-    let mut parse = ParseOptionsBuilder::default();
-    parse.smart(false);
-    parse.default_info_string(Some("abc".to_string()));
-    parse.relaxed_tasklist_matching(false);
-    parse.relaxed_autolinks(false);
+    #[cfg(feature = "shortcodes")]
+    let extension = extension.shortcodes(true);
+
+    let _extension = extension
+        .wikilinks_title_after_pipe(true)
+        .wikilinks_title_before_pipe(true)
+        .underline(true)
+        .spoiler(true)
+        .greentext(true);
+
+    let parse = ParseOptions::builder()
+        .smart(false)
+        .default_info_string("abc".to_string())
+        .relaxed_tasklist_matching(false)
+        .relaxed_autolinks(false);
+
     let mut blr_ctx_1 = 0;
-    parse.broken_link_callback(Some(Arc::new(Mutex::new(
-        &mut |blr: BrokenLinkReference| {
+    let _parse =
+        parse.broken_link_callback(Arc::new(Mutex::new(&mut |blr: BrokenLinkReference| {
             blr_ctx_1 += 1;
             let _: &str = blr.normalized;
             let _: &str = blr.original;
@@ -88,25 +90,24 @@ fn exercise_full_api() {
                 url: String::new(),
                 title: String::new(),
             })
-        },
-    ))));
+        })));
 
-    let mut render = RenderOptionsBuilder::default();
-    render.hardbreaks(false);
-    render.github_pre_lang(false);
-    render.full_info_string(false);
-    render.width(123456);
-    render.unsafe_(false);
-    render.escape(false);
-    render.list_style(ListStyleType::Dash);
-    render.sourcepos(false);
-    render.experimental_inline_sourcepos(false);
-    render.escaped_char_spans(false);
-    render.ignore_setext(true);
-    render.ignore_empty_links(true);
-    render.gfm_quirks(true);
-    render.prefer_fenced(true);
-    render.figure_with_caption(true);
+    let _render = RenderOptions::builder()
+        .hardbreaks(false)
+        .github_pre_lang(false)
+        .full_info_string(false)
+        .width(123456)
+        .unsafe_(false)
+        .escape(false)
+        .list_style(ListStyleType::Dash)
+        .sourcepos(false)
+        .experimental_inline_sourcepos(false)
+        .escaped_char_spans(false)
+        .ignore_setext(true)
+        .ignore_empty_links(true)
+        .gfm_quirks(true)
+        .prefer_fenced(true)
+        .figure_with_caption(true);
 
     pub struct MockAdapter {}
     impl SyntaxHighlighterAdapter for MockAdapter {
@@ -153,12 +154,11 @@ fn exercise_full_api() {
 
     let mock_adapter = MockAdapter {};
 
-    let mut render_plugins = RenderPluginsBuilder::default();
-    render_plugins.codefence_syntax_highlighter(Some(&mock_adapter));
-    render_plugins.heading_adapter(Some(&mock_adapter));
+    let render_plugins = RenderPlugins::builder()
+        .codefence_syntax_highlighter(&mock_adapter)
+        .heading_adapter(&mock_adapter);
 
-    let mut plugins = PluginsBuilder::default();
-    plugins.render(render_plugins.build().unwrap());
+    let _plugins = Plugins::builder().render(render_plugins.build());
 
     let _: String = markdown_to_html("# Yes", &default_options);
 
