@@ -1,6 +1,6 @@
 [package]
 name = "comrak"
-version = "0.28.0"
+version = "0.29.0"
 authors = ["Asherah Connor <ashe@kivikakk.ee>"]
 rust-version = "1.62.1"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
