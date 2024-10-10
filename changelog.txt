@@ -1,11 +1,10 @@
 # [v0.29.0] - 10-10-2024
-## What's Changed
-* build(deps): bump peter-evans/create-pull-request from 6 to 7 by @dependabot in https://github.com/kivikakk/comrak/pull/467
+
 * Add support for backslash escape in wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/471
-* Cargo.toml: v0.29.0 by @digitalmoksha in https://github.com/kivikakk/comrak/pull/475
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.28.0...v0.29.0
 
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.28.0...v0.29.0
 # [v0.28.0] - 05-09-2024
 
 * Add a render option to render the image as <figure> by @JmPotato in https://github.com/kivikakk/comrak/pull/458
@@ -75,7 +74,7 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.25.0...v0.26.0
   * Inline sourcepos is no longer reported in HTML output. It remains in the AST
     and in XML output, but it is not reliable. See the PR for details.
   * Link sourcepos is slightly better than it was when it spans multiple lines.
-   
+
 ## New Contributors
 
 * @liamwhite made their first contribution in https://github.com/kivikakk/comrak/pull/421
