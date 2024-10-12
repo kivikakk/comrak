@@ -223,8 +223,8 @@ pub struct ExtensionOptions {
     /// options.extension.tasklist = true;
     /// options.render.unsafe_ = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
-    ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
-    ///            <li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
+    ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
+    ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
     pub tasklist: bool,
 
@@ -892,6 +892,23 @@ pub struct RenderOptions {
     ///            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n");
     /// ```
     pub figure_with_caption: bool,
+
+    /// Add classes to the output of the tasklist extension. This allows tasklists to be styled.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.tasklist = true;
+    /// let input = "- [ ] Foo";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
+    ///
+    /// options.render.tasklist_classes = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
+    /// ```
+    pub tasklist_classes: bool,
 }
 
 #[non_exhaustive]

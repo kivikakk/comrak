@@ -478,11 +478,10 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             NodeValue::List(ref nl) => {
                 if entering {
                     self.cr()?;
-
                     match nl.list_type {
                         ListType::Bullet => {
                             self.output.write_all(b"<ul")?;
-                            if nl.is_task_list {
+                            if nl.is_task_list && self.options.render.tasklist_classes {
                                 self.output.write_all(b" class=\"contains-task-list\"")?;
                             }
                             self.render_sourcepos(node)?;
@@ -490,7 +489,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                         }
                         ListType::Ordered => {
                             self.output.write_all(b"<ol")?;
-                            if nl.is_task_list {
+                            if nl.is_task_list && self.options.render.tasklist_classes {
                                 self.output.write_all(b" class=\"contains-task-list\"")?;
                             }
                             self.render_sourcepos(node)?;
@@ -1052,18 +1051,21 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
             NodeValue::TaskItem(symbol) => {
                 if entering {
                     self.cr()?;
-                    self.output.write_all(b"<li class=\"task-list-item\"")?;
+                    self.output.write_all(b"<li")?;
+                    if self.options.render.tasklist_classes {
+                        self.output.write_all(b" class=\"task-list-item\"")?;
+                    }
                     self.render_sourcepos(node)?;
                     self.output.write_all(b">")?;
-                    write!(
-                        self.output,
-                        "<input type=\"checkbox\" class=\"task-list-item-checkbox\" {}disabled=\"\" /> ",
-                        if symbol.is_some() {
-                            "checked=\"\" "
-                        } else {
-                            ""
-                        }
-                    )?;
+                    self.output.write_all(b"<input type=\"checkbox\"")?;
+                    if self.options.render.tasklist_classes {
+                        self.output
+                            .write_all(b" class=\"task-list-item-checkbox\"")?;
+                    }
+                    if symbol.is_some() {
+                        self.output.write_all(b" checked=\"\"")?;
+                    }
+                    self.output.write_all(b" disabled=\"\" /> ")?;
                 } else {
                     self.output.write_all(b"</li>\n")?;
                 }
