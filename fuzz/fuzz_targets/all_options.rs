@@ -57,6 +57,7 @@ fuzz_target!(|s: &str| {
     render.ignore_empty_links = true;
     render.gfm_quirks = true;
     render.prefer_fenced = true;
+    render.tasklist_classes = true;
 
     markdown_to_html(
         s,

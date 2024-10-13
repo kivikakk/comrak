@@ -76,6 +76,10 @@ struct Cli {
     #[arg(long)]
     relaxed_autolinks: bool,
 
+    /// Output classes on tasklist elements so that they can be styled with CSS
+    #[arg(long)]
+    tasklist_classes: bool,
+
     /// Default value for fenced code block's info strings if none is given
     #[arg(long, value_name = "INFO")]
     default_info_string: Option<String>,
@@ -296,6 +300,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
         .gfm_quirks(cli.gfm_quirks || cli.gfm)
+        .tasklist_classes(cli.tasklist_classes)
         .build()?;
 
     let options = Options {
