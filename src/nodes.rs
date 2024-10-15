@@ -297,6 +297,9 @@ pub struct NodeList {
     /// Whether the list is [tight](https://github.github.com/gfm/#tight), i.e. whether the
     /// paragraphs are wrapped in `<p>` tags when formatted as HTML.
     pub tight: bool,
+
+    /// Whether the list contains tasks (checkbox items)
+    pub is_task_list: bool,
 }
 
 /// The metadata of a description list

@@ -15,6 +15,15 @@ fn tasklist() {
 }
 
 #[test]
+fn tasklist_with_classes() {
+    html_opts!(
+        [extension.tasklist, render.tasklist_classes, parse.relaxed_tasklist_matching],
+        "* [*]",
+        "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> </li>\n</ul>\n",
+    );
+}
+
+#[test]
 fn table_nul() {
     html_opts!(
         [extension.table],

@@ -52,6 +52,58 @@ fn tasklist() {
 }
 
 #[test]
+fn tasklist_with_classes() {
+    html_opts!(
+        [
+            render.unsafe_,
+            extension.tasklist,
+            render.tasklist_classes,
+            parse.relaxed_tasklist_matching
+        ],
+        concat!(
+            "* [ ] Red\n",
+            "* [x] Green\n",
+            "* [ ] Blue\n",
+            "* [!] Papayawhip\n",
+            "<!-- end list -->\n",
+            "1. [ ] Bird\n",
+            "2. [ ] McHale\n",
+            "3. [x] Parish\n",
+            "<!-- end list -->\n",
+            "* [ ] Red\n",
+            "  * [x] Green\n",
+            "    * [ ] Blue\n"
+        ),
+        concat!(
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Red</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Green</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Blue</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Papayawhip</li>\n",
+            "</ul>\n",
+            "<!-- end list -->\n",
+            "<ol class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Bird</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> McHale</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Parish</li>\n",
+            "</ol>\n",
+            "<!-- end list -->\n",
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Red\n",
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Green\n",
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Blue</li>\n",
+            "</ul>\n",
+            "</li>\n",
+            "</ul>\n",
+            "</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
 fn tasklist_relaxed_regression() {
     html_opts!(
         [extension.tasklist, parse.relaxed_tasklist_matching],
@@ -81,6 +133,35 @@ fn tasklist_relaxed_regression() {
 }
 
 #[test]
+fn tasklist_with_classes_relaxed_regression() {
+    html_opts!(
+        [extension.tasklist, render.tasklist_classes, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Red</li>\n",
+            "</ul>\n"
+        ),
+    );
+
+    html_opts!(
+        [extension.tasklist, render.tasklist_classes],
+        "* [!] Red\n",
+        concat!("<ul>\n", "<li>[!] Red</li>\n", "</ul>\n"),
+    );
+
+    html_opts!(
+        [extension.tasklist, render.tasklist_classes, parse.relaxed_tasklist_matching],
+        "* [!] Red\n",
+        concat!(
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> Red</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
 fn tasklist_32() {
     html_opts!(
         [render.unsafe_, extension.tasklist],
@@ -94,6 +175,25 @@ fn tasklist_32() {
             "<li><input type=\"checkbox\" disabled=\"\" /> List item 1</li>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> This list item is <strong>bold</strong></li>\n",
             "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> There is some <code>code</code> here</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
+fn tasklist_32_with_classes() {
+    html_opts!(
+        [render.unsafe_, extension.tasklist, render.tasklist_classes],
+        concat!(
+            "- [ ] List item 1\n",
+            "- [ ] This list item is **bold**\n",
+            "- [x] There is some `code` here\n"
+        ),
+        concat!(
+            "<ul class=\"contains-task-list\">\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> List item 1</li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> This list item is <strong>bold</strong></li>\n",
+            "<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked=\"\" disabled=\"\" /> There is some <code>code</code> here</li>\n",
             "</ul>\n"
         ),
     );

@@ -892,6 +892,23 @@ pub struct RenderOptions {
     ///            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n");
     /// ```
     pub figure_with_caption: bool,
+
+    /// Add classes to the output of the tasklist extension. This allows tasklists to be styled.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.tasklist = true;
+    /// let input = "- [ ] Foo";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<ul>\n<li><input type=\"checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
+    ///
+    /// options.render.tasklist_classes = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
+    /// ```
+    pub tasklist_classes: bool,
 }
 
 #[non_exhaustive]
@@ -2436,7 +2453,13 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
             return;
         }
 
-        if !node_matches!(parent.parent().unwrap(), NodeValue::Item(..)) {
+        let grandparent = parent.parent().unwrap();
+        if !node_matches!(grandparent, NodeValue::Item(..)) {
+            return;
+        }
+
+        let great_grandparent = grandparent.parent().unwrap();
+        if !node_matches!(great_grandparent, NodeValue::List(..)) {
             return;
         }
 
@@ -2448,8 +2471,12 @@ impl<'a, 'o, 'c: 'o> Parser<'a, 'o, 'c> {
         sourcepos.start.column += end;
         parent.data.borrow_mut().sourcepos.start.column += end;
 
-        parent.parent().unwrap().data.borrow_mut().value =
+        grandparent.data.borrow_mut().value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
+
+        if let NodeValue::List(ref mut list) = &mut great_grandparent.data.borrow_mut().value {
+            list.is_task_list = true;
+        }
     }
 
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
@@ -2565,6 +2592,7 @@ fn parse_list_marker(
                 delimiter: ListDelimType::Period,
                 bullet_char: c,
                 tight: false,
+                is_task_list: false,
             },
         ));
     } else if isdigit(c) {
@@ -2620,6 +2648,7 @@ fn parse_list_marker(
                 },
                 bullet_char: 0,
                 tight: false,
+                is_task_list: false,
             },
         ));
     }
