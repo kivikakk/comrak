@@ -909,6 +909,22 @@ pub struct RenderOptions {
     ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
     /// ```
     pub tasklist_classes: bool,
+    /// Render ordered list with a minimum marker width.
+    /// Having a width lower than 3 doesn't do anything.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_commonmark, Options};
+    /// let mut options = Options::default();
+    /// let input = "1. Something";
+    ///
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "1. Something\n");
+    ///
+    /// options.render.ol_width = 5;
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "1.   Something\n");
+    /// ```
+    pub ol_width: usize,
 }
 
 #[non_exhaustive]

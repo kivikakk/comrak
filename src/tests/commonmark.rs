@@ -64,10 +64,10 @@ fn wikilinks(markdown: &str, cm: &str) {
 fn commonmark_relist() {
     commonmark(
         concat!("3. one\n", "5. two\n",),
-        // Note that right now we always include enough room for up to two
-        // digits. TODO: Ideally we determine the maximum digit length before
-        // getting this far.
-        concat!("3.  one\n", "4.  two\n",),
+        // Note that right now we always include enough room for up to an user
+        // defined number of digits. TODO: Ideally we determine the maximum
+        // digit length before getting this far.
+        concat!("3. one\n", "4. two\n",),
         None,
     );
 
@@ -75,7 +75,7 @@ fn commonmark_relist() {
     options.extension.tasklist = true;
     commonmark(
         concat!("3. [ ] one\n", "5. [ ] two\n",),
-        concat!("3.  [ ] one\n", "4.  [ ] two\n",),
+        concat!("3. [ ] one\n", "4. [ ] two\n",),
         Some(&options),
     );
 }
