@@ -18,7 +18,7 @@ use crate::nodes::{
 };
 use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
-use derive_builder::Builder;
+use bon::Builder;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -154,7 +154,6 @@ pub struct Options<'c> {
 
 #[non_exhaustive]
 #[derive(Default, Debug, Clone, Builder)]
-#[builder(default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
 pub struct ExtensionOptions {
@@ -169,6 +168,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Hello ~world~ there.\n", &options),
     ///            "<p>Hello <del>world</del> there.</p>\n");
     /// ```
+    #[builder(default)]
     pub strikethrough: bool,
 
     /// Enables the
@@ -183,6 +183,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
+    #[builder(default)]
     pub tagfilter: bool,
 
     /// Enables the [table extension](https://github.github.com/gfm/#tables-extension-)
@@ -196,6 +197,7 @@ pub struct ExtensionOptions {
     ///            "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
     ///             <tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n");
     /// ```
+    #[builder(default)]
     pub table: bool,
 
     /// Enables the [autolink extension](https://github.github.com/gfm/#autolinks-extension-)
@@ -208,6 +210,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Hello www.github.com.\n", &options),
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
+    #[builder(default)]
     pub autolink: bool,
 
     /// Enables the
@@ -226,6 +229,7 @@ pub struct ExtensionOptions {
     ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
     /// ```
+    #[builder(default)]
     pub tasklist: bool,
 
     /// Enables the superscript Comrak extension.
@@ -237,6 +241,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("e = mc^2^.\n", &options),
     ///            "<p>e = mc<sup>2</sup>.</p>\n");
     /// ```
+    #[builder(default)]
     pub superscript: bool,
 
     /// Enables the header IDs Comrak extension.
@@ -262,6 +267,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Hi[^x].\n\n[^x]: A greeting.\n", &options),
     ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-x\" id=\"fnref-x\" data-footnote-ref>1</a></sup>.</p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-x\">\n<p>A greeting. <a href=\"#fnref-x\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n");
     /// ```
+    #[builder(default)]
     pub footnotes: bool,
 
     /// Enables the description lists extension.
@@ -290,6 +296,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
+    #[builder(default)]
     pub description_lists: bool,
 
     /// Enables the front matter extension.
@@ -355,6 +362,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html(">>>\nparagraph\n>>>", &options),
     ///            "<blockquote>\n<p>paragraph</p>\n</blockquote>\n");
     /// ```
+    #[builder(default)]
     pub multiline_block_quotes: bool,
 
     /// Enables math using dollar syntax.
@@ -376,6 +384,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("$$\nx^2\n$$\n", &options),
     ///            "<p><span data-math-style=\"display\">\nx^2\n</span></p>\n");
     /// ```
+    #[builder(default)]
     pub math_dollars: bool,
 
     /// Enables math using code syntax.
@@ -397,6 +406,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("```math\nx^2\n```\n", &options),
     ///            "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n");
     /// ```
+    #[builder(default)]
     pub math_code: bool,
 
     #[cfg(feature = "shortcodes")]
@@ -413,6 +423,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Happy Friday! :smile:", &options),
     ///            "<p>Happy Friday! 😄</p>\n");
     /// ```
+    #[builder(default)]
     pub shortcodes: bool,
 
     /// Enables wikilinks using title after pipe syntax
@@ -428,6 +439,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("[[url|link label]]", &options),
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
+    #[builder(default)]
     pub wikilinks_title_after_pipe: bool,
 
     /// Enables wikilinks using title before pipe syntax
@@ -443,6 +455,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("[[link label|url]]", &options),
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
+    #[builder(default)]
     pub wikilinks_title_before_pipe: bool,
 
     /// Enables underlines using double underscores
@@ -459,6 +472,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("__underlined text__", &options),
     ///            "<p><u>underlined text</u></p>\n");
     /// ```
+    #[builder(default)]
     pub underline: bool,
 
     /// Enables spoilers using double vertical bars
@@ -475,6 +489,7 @@ pub struct ExtensionOptions {
     /// assert_eq!(markdown_to_html("Darth Vader is ||Luke's father||", &options),
     ///            "<p>Darth Vader is <span class=\"spoiler\">Luke's father</span></p>\n");
     /// ```
+    #[builder(default)]
     pub spoiler: bool,
 
     /// Requires at least one space after a `>` character to generate a blockquote,
@@ -504,12 +519,12 @@ pub struct ExtensionOptions {
     ///             "<p>three</p>\n",
     ///             "</blockquote>\n"));
     /// ```
+    #[builder(default)]
     pub greentext: bool,
 }
 
 #[non_exhaustive]
 #[derive(Default, Clone, Builder)]
-#[builder(default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
 pub struct ParseOptions<'c> {
@@ -525,6 +540,7 @@ pub struct ParseOptions<'c> {
     /// assert_eq!(markdown_to_html("'Hello,' \"world\" ...", &options),
     ///            "<p>‘Hello,’ “world” …</p>\n");
     /// ```
+    #[builder(default)]
     pub smart: bool,
 
     /// The default info string for fenced code blocks.
@@ -542,6 +558,7 @@ pub struct ParseOptions<'c> {
     pub default_info_string: Option<String>,
 
     /// Whether or not a simple `x` or `X` is used for tasklist or any other symbol is allowed.
+    #[builder(default)]
     pub relaxed_tasklist_matching: bool,
 
     /// Relax parsing of autolinks, allow links to be detected inside brackets
@@ -559,6 +576,7 @@ pub struct ParseOptions<'c> {
     /// assert_eq!(markdown_to_html("[https://foo.com]", &options),
     ///            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n");
     /// ```
+    #[builder(default)]
     pub relaxed_autolinks: bool,
 
     /// In case the parser encounters any potential links that have a broken
@@ -569,7 +587,7 @@ pub struct ParseOptions<'c> {
     ///
     /// ```
     /// # use std::{str, sync::{Arc, Mutex}};
-    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptionsBuilder};
+    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptions};
     /// # use comrak::nodes::{AstNode, NodeValue};
     /// #
     /// # fn main() -> std::io::Result<()> {
@@ -582,10 +600,9 @@ pub struct ParseOptions<'c> {
     ///     _ => None,
     /// };
     /// let options = Options {
-    ///     parse: ParseOptionsBuilder::default()
-    ///         .broken_link_callback(Some(Arc::new(Mutex::new(&mut cb))))
-    ///         .build()
-    ///         .unwrap(),
+    ///     parse: ParseOptions::builder()
+    ///         .broken_link_callback(Arc::new(Mutex::new(&mut cb)))
+    ///         .build(),
     ///     ..Default::default()
     /// };
     ///
@@ -624,7 +641,6 @@ impl<'c> fmt::Debug for ParseOptions<'c> {
 
 #[non_exhaustive]
 #[derive(Default, Debug, Clone, Copy, Builder)]
-#[builder(default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
 pub struct RenderOptions {
@@ -641,6 +657,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html("Hello.\nWorld.\n", &options),
     ///            "<p>Hello.<br />\nWorld.</p>\n");
     /// ```
+    #[builder(default)]
     pub hardbreaks: bool,
 
     /// GitHub-style `<pre lang="xyz">` is used for fenced code blocks with info tags.
@@ -655,6 +672,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
     ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
     /// ```
+    #[builder(default)]
     pub github_pre_lang: bool,
 
     /// Enable full info strings for code blocks
@@ -670,6 +688,7 @@ pub struct RenderOptions {
     /// let re = regex::Regex::new(r#"data-meta="extra info""#).unwrap();
     /// assert!(re.is_match(&html));
     /// ```
+    #[builder(default)]
     pub full_info_string: bool,
 
     /// The wrap column when outputting CommonMark.
@@ -692,6 +711,7 @@ pub struct RenderOptions {
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
     /// ```
+    #[builder(default)]
     pub width: usize,
 
     /// Allow rendering of raw HTML and potentially dangerous links.
@@ -717,6 +737,7 @@ pub struct RenderOptions {
     ///             <p><a href=\"javascript:alert(document.cookie)\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
+    #[builder(default)]
     pub unsafe_: bool,
 
     /// Escape raw HTML instead of clobbering it.
@@ -732,6 +753,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>&lt;i&gt;italic text&lt;/i&gt;</p>\n");
     /// ```
+    #[builder(default)]
     pub escape: bool,
 
     /// Set the type of [bullet list marker](https://spec.commonmark.org/0.30/#bullet-list-marker) to use. Options are:
@@ -755,6 +777,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_commonmark(input, &options),
     ///            "* one\n* two\n* three\n");
     /// ```
+    #[builder(default)]
     pub list_style: ListStyleType,
 
     /// Include source position attributes in HTML and XML output.
@@ -775,6 +798,7 @@ pub struct RenderOptions {
     /// let xml = markdown_to_commonmark_xml(input, &options);
     /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
     /// ```
+    #[builder(default)]
     pub sourcepos: bool,
 
     /// Include inline sourcepos in HTML output, which is known to have issues.
@@ -790,6 +814,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em data-sourcepos=\"1:7-1:13\">world</em>!</p>\n");
     /// ```
+    #[builder(default)]
     pub experimental_inline_sourcepos: bool,
 
     /// Wrap escaped characters in a `<span>` to allow any
@@ -807,6 +832,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>Notify user <span data-escaped-char>@</span>example</p>\n");
     /// ```
+    #[builder(default)]
     pub escaped_char_spans: bool,
 
     /// Ignore setext headings in input.
@@ -823,6 +849,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>setext heading</p>\n<hr />\n");
     /// ```
+    #[builder(default)]
     pub ignore_setext: bool,
 
     /// Ignore empty links in input.
@@ -838,6 +865,7 @@ pub struct RenderOptions {
     /// options.render.ignore_empty_links = true;
     /// assert_eq!(markdown_to_html(input, &options), "<p>[]()</p>\n");
     /// ```
+    #[builder(default)]
     pub ignore_empty_links: bool,
 
     /// Enables GFM quirks in HTML output which break CommonMark compatibility.
@@ -854,6 +882,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p><strong>abcd</strong> <em><em>foo</em></em></p>\n");
     /// ```
+    #[builder(default)]
     pub gfm_quirks: bool,
 
     /// Prefer fenced code blocks when outputting CommonMark.
@@ -875,6 +904,7 @@ pub struct RenderOptions {
     /// format_commonmark(&root, &options, &mut buf);
     /// assert_eq!(str::from_utf8(&buf).unwrap(), "```\nhello\n```\n");
     /// ```
+    #[builder(default)]
     pub prefer_fenced: bool,
 
     /// Render the image as a figure element with the title as its caption.
@@ -891,6 +921,7 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n");
     /// ```
+    #[builder(default)]
     pub figure_with_caption: bool,
 
     /// Add classes to the output of the tasklist extension. This allows tasklists to be styled.
@@ -908,7 +939,9 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled=\"\" /> Foo</li>\n</ul>\n");
     /// ```
+    #[builder(default)]
     pub tasklist_classes: bool,
+
     /// Render ordered list with a minimum marker width.
     /// Having a width lower than 3 doesn't do anything.
     ///
@@ -924,21 +957,21 @@ pub struct RenderOptions {
     /// assert_eq!(markdown_to_commonmark(input, &options),
     ///            "1.   Something\n");
     /// ```
+    #[builder(default)]
     pub ol_width: usize,
 }
 
 #[non_exhaustive]
 #[derive(Default, Debug, Clone, Builder)]
-#[builder(default)]
 /// Umbrella plugins struct.
 pub struct Plugins<'p> {
     /// Configure render-time plugins.
+    #[builder(default)]
     pub render: RenderPlugins<'p>,
 }
 
 #[non_exhaustive]
 #[derive(Default, Clone, Builder)]
-#[builder(default)]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {
     /// Provide a syntax highlighter adapter implementation for syntax
