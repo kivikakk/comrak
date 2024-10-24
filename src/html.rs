@@ -521,7 +521,7 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     self.cr()?;
                     self.output.write_all(b"<dl")?;
                     self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b">\n")?;
                 } else {
                     self.output.write_all(b"</dl>\n")?;
                 }
@@ -705,14 +705,15 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     .map(|n| n.data.borrow().value.clone())
                 {
                     Some(NodeValue::List(nl)) => nl.tight,
+                    Some(NodeValue::DescriptionItem(nd)) => nd.tight,
                     _ => false,
                 };
 
-                let tight = tight
-                    || matches!(
-                        node.parent().map(|n| n.data.borrow().value.clone()),
-                        Some(NodeValue::DescriptionTerm)
-                    );
+                // let tight = tight
+                //     || matches!(
+                //         node.parent().map(|n| n.data.borrow().value.clone()),
+                //         Some(NodeValue::DescriptionTerm)
+                //     );
 
                 if !tight {
                     if entering {
