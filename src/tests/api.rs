@@ -70,6 +70,7 @@ fn exercise_full_api() {
     let _extension = extension
         .wikilinks_title_after_pipe(true)
         .wikilinks_title_before_pipe(true)
+        .subscript(true)
         .underline(true)
         .spoiler(true)
         .greentext(true);
@@ -270,6 +271,7 @@ fn exercise_full_api() {
         nodes::NodeValue::WikiLink(nl) => {
             let _: String = nl.url;
         }
+        nodes::NodeValue::Subscript => {}
         nodes::NodeValue::Underline => {}
         nodes::NodeValue::SpoileredText => {}
         nodes::NodeValue::EscapedTag(data) => {

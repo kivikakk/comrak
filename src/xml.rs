@@ -284,6 +284,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     self.escape(nl.url.as_bytes())?;
                     self.output.write_all(b"\"")?;
                 }
+                NodeValue::Subscript => {}
                 NodeValue::Underline => {}
                 NodeValue::SpoileredText => {}
                 NodeValue::EscapedTag(ref data) => {

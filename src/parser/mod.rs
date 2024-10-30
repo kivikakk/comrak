@@ -458,6 +458,23 @@ pub struct ExtensionOptions {
     #[builder(default)]
     pub wikilinks_title_before_pipe: bool,
 
+    /// Enables subscripts using percent signs
+    ///
+    /// ```md
+    /// H%2%O
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.subscript = true;
+    ///
+    /// assert_eq!(markdown_to_html("H%2%O", &options),
+    ///            "<p>H<sub>2</sub>O</p>\n");
+    /// ```
+    #[builder(default)]
+    pub subscript: bool,
+
     /// Enables underlines using double underscores
     ///
     /// ```md

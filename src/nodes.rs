@@ -186,6 +186,9 @@ pub enum NodeValue {
     /// **Inline**.  A wikilink to some URL.
     WikiLink(NodeWikiLink),
 
+    /// **Inline**.  Subscript. Enabled with `subscript` option.
+    Subscript,
+
     /// **Inline**.  Underline. Enabled with `underline` option.
     Underline,
 
@@ -513,6 +516,7 @@ impl NodeValue {
             NodeValue::Escaped => "escaped",
             NodeValue::Math(..) => "math",
             NodeValue::WikiLink(..) => "wikilink",
+            NodeValue::Subscript => "subscript",
             NodeValue::Underline => "underline",
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
@@ -762,6 +766,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::WikiLink(..)
         | NodeValue::Strikethrough
         | NodeValue::Superscript
+        | NodeValue::Subscript
         | NodeValue::SpoileredText
         | NodeValue::Underline
         // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
@@ -789,6 +794,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::WikiLink(..)
                 | NodeValue::FootnoteReference(..)
                 | NodeValue::Superscript
+                | NodeValue::Subscript
                 | NodeValue::SpoileredText
                 | NodeValue::Underline
         ),
@@ -808,6 +814,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             | NodeValue::WikiLink(..)
             | NodeValue::FootnoteReference(..)
             | NodeValue::Superscript
+            | NodeValue::Subscript
             | NodeValue::SpoileredText
             | NodeValue::Underline
             | NodeValue::ShortCode(..)
