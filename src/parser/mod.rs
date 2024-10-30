@@ -24,6 +24,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
+use std::panic::RefUnwindSafe;
 use std::str;
 use std::sync::{Arc, Mutex};
 use typed_arena::Arena;
@@ -150,6 +151,28 @@ pub struct Options<'c> {
 
     /// Configure render-time options.
     pub render: RenderOptions,
+}
+
+/// Trait for link and image URL rewrite extensions.
+pub trait URLRewriter: RefUnwindSafe + Send + Sync {
+    /// Converts the given URL from Markdown to its representation when output as HTML.
+    fn to_html(&self, url: &str) -> String;
+}
+
+impl Debug for dyn URLRewriter {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        formatter.write_str("<dyn URLRewriter>")
+    }
+}
+
+impl<F> URLRewriter for F
+where
+    F: for<'a> Fn(&'a str) -> String,
+    F: RefUnwindSafe + Send + Sync,
+{
+    fn to_html(&self, url: &str) -> String {
+        self(url)
+    }
 }
 
 #[non_exhaustive]
@@ -521,6 +544,40 @@ pub struct ExtensionOptions {
     /// ```
     #[builder(default)]
     pub greentext: bool,
+
+    /// Wraps embedded image URLs using a function or custom trait object.
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    ///
+    /// options.extension.image_url_rewriter = Some(Arc::new(
+    ///     |url: &str| format!("https://safe.example.com?url={}", url)
+    /// ));
+    ///
+    /// assert_eq!(markdown_to_html("![](http://unsafe.example.com/bad.png)", &options),
+    ///            "<p><img src=\"https://safe.example.com?url=http://unsafe.example.com/bad.png\" alt=\"\" /></p>\n");
+    /// ```
+    #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
+    pub image_url_rewriter: Option<Arc<dyn URLRewriter>>,
+
+    /// Wraps link URLs using a function or custom trait object.
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use comrak::{markdown_to_html, ComrakOptions};
+    /// let mut options = ComrakOptions::default();
+    ///
+    /// options.extension.link_url_rewriter = Some(Arc::new(
+    ///     |url: &str| format!("https://safe.example.com/norefer?url={}", url)
+    /// ));
+    ///
+    /// assert_eq!(markdown_to_html("[my link](http://unsafe.example.com/bad)", &options),
+    ///            "<p><a href=\"https://safe.example.com/norefer?url=http://unsafe.example.com/bad\">my link</a></p>\n");
+    /// ```
+    #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
+    pub link_url_rewriter: Option<Arc<dyn URLRewriter>>,
 }
 
 #[non_exhaustive]

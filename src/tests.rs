@@ -21,6 +21,7 @@ mod options;
 mod pathological;
 mod plugins;
 mod regressions;
+mod rewriter;
 mod shortcodes;
 mod spoiler;
 mod strikethrough;
