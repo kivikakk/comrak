@@ -644,11 +644,7 @@ pub struct ParseOptions<'c> {
     ///
     /// ```
     /// # use std::{str, sync::{Arc, Mutex}};
-    /// # use comrak::{Arena, ResolvedReference, parse_document, format_html, Options, BrokenLinkReference, ParseOptions};
-    /// # use comrak::nodes::{AstNode, NodeValue};
-    /// #
-    /// # fn main() -> std::io::Result<()> {
-    /// let arena = Arena::new();
+    /// # use comrak::{markdown_to_html, BrokenLinkReference, Options, ResolvedReference};
     /// let mut cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
     ///     "foo" => Some(ResolvedReference {
     ///         url: "https://www.rust-lang.org/".to_string(),
@@ -656,27 +652,19 @@ pub struct ParseOptions<'c> {
     ///     }),
     ///     _ => None,
     /// };
-    /// let options = Options {
-    ///     parse: ParseOptions::builder()
-    ///         .broken_link_callback(Arc::new(Mutex::new(&mut cb)))
-    ///         .build(),
-    ///     ..Default::default()
-    /// };
+    /// 
+    /// let mut options = Options::default();
+    /// options.parse.broken_link_callback = Some(Arc::new(Mutex::new(&mut cb)));
     ///
-    /// let root = parse_document(
-    ///     &arena,
+    /// let output = markdown_to_html(
     ///     "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
     ///     &options,
     /// );
     ///
-    /// let mut output = Vec::new();
-    /// format_html(root, &Options::default(), &mut output)?;
-    /// assert_eq!(str::from_utf8(&output).unwrap(),
+    /// assert_eq!(output,
     ///            "<h1>Cool input!</h1>\n<p>Wow look at this cool \
     ///            <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
     ///            A [broken link] renders as text.</p>\n");
-    /// # Ok(())
-    /// # }
     #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub broken_link_callback: Option<Arc<Mutex<BrokenLinkCallback<'c>>>>,
 }
