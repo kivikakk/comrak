@@ -35,13 +35,13 @@ fuzz_target!(|s: &str| {
     parse.default_info_string = Some("rust".to_string());
     parse.relaxed_tasklist_matching = true;
     parse.relaxed_autolinks = true;
-    let mut cb = |link_ref: BrokenLinkReference| {
+    let cb = |link_ref: BrokenLinkReference| {
         Some(ResolvedReference {
             url: link_ref.normalized.to_string(),
             title: link_ref.original.to_string(),
         })
     };
-    parse.broken_link_callback = Some(Arc::new(Mutex::new(&mut cb)));
+    parse.broken_link_callback = Some(Arc::new(cb));
 
     let mut render = RenderOptions::default();
     render.hardbreaks = true;

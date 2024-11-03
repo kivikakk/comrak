@@ -25,9 +25,9 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'c, 'd, 'i> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
     pub arena: &'a Arena<AstNode<'a>>,
-    options: &'o Options<'c>,
+    options: &'o Options,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -110,10 +110,10 @@ struct WikilinkComponents<'i> {
     link_label: Option<(&'i [u8], usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
+impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
-        options: &'o Options<'c>,
+        options: &'o Options,
         input: &'i [u8],
         line: usize,
         refmap: &'r mut RefMap,
@@ -1548,7 +1548,7 @@ impl<'a, 'r, 'o, 'c, 'd, 'i> Subject<'a, 'r, 'o, 'c, 'd, 'i> {
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
             if let Some(callback) = &self.options.parse.broken_link_callback {
-                reff = callback.lock().unwrap()(BrokenLinkReference {
+                reff = callback.resolve(BrokenLinkReference {
                     normalized: &lab,
                     original: &unfolded_lab,
                 });

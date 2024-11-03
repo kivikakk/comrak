@@ -101,9 +101,9 @@ pub use xml::format_document_with_plugins as format_xml_with_plugins;
 /// Legacy naming of [`ExtensionOptions`]
 pub type ComrakExtensionOptions = ExtensionOptions;
 /// Legacy naming of [`Options`]
-pub type ComrakOptions<'c> = Options<'c>;
+pub type ComrakOptions = Options;
 /// Legacy naming of [`ParseOptions`]
-pub type ComrakParseOptions<'c> = ParseOptions<'c>;
+pub type ComrakParseOptions = ParseOptions;
 /// Legacy naming of [`Plugins`]
 pub type ComrakPlugins<'a> = Plugins<'a>;
 /// Legacy naming of [`RenderOptions`]
