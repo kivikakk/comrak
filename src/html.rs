@@ -1127,6 +1127,18 @@ impl<'o> HtmlFormatter<'o> {
                     self.output.write_all(b"</a>")?;
                 }
             }
+            NodeValue::Subscript => {
+                // Unreliable sourcepos.
+                if entering {
+                    self.output.write_all(b"<sub")?;
+                    if self.options.render.experimental_inline_sourcepos {
+                        self.render_sourcepos(node)?;
+                    }
+                    self.output.write_all(b">")?;
+                } else {
+                    self.output.write_all(b"</sub>")?;
+                }
+            }
             NodeValue::Underline => {
                 // Unreliable sourcepos.
                 if entering {

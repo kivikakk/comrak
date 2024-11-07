@@ -183,6 +183,7 @@ enum Extension {
     MathCode,
     WikilinksTitleAfterPipe,
     WikilinksTitleBeforePipe,
+    Subscript,
     Underline,
     Spoiler,
     Greentext,
@@ -266,6 +267,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .math_code(exts.contains(&Extension::MathCode))
         .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
         .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
+        .subscript(exts.contains(&Extension::Subscript))
         .underline(exts.contains(&Extension::Underline))
         .spoiler(exts.contains(&Extension::Spoiler))
         .greentext(exts.contains(&Extension::Greentext))
