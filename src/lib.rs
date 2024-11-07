@@ -92,7 +92,7 @@ pub use parser::{
     parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions,
     ExtensionOptionsBuilder, ListStyleType, Options, ParseOptions, ParseOptionsBuilder, Plugins,
     PluginsBuilder, RenderOptions, RenderOptionsBuilder, RenderPlugins, RenderPluginsBuilder,
-    ResolvedReference,
+    ResolvedReference, URLRewriter,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;

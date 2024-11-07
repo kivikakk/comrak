@@ -864,7 +864,11 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                         self.output.write_all(b" href=\"")?;
                         let url = nl.url.as_bytes();
                         if self.options.render.unsafe_ || !dangerous_url(url) {
-                            self.escape_href(url)?;
+                            if let Some(rewriter) = &self.options.extension.link_url_rewriter {
+                                self.escape_href(rewriter.to_html(&nl.url).as_bytes())?;
+                            } else {
+                                self.escape_href(url)?;
+                            }
                         }
                         if !nl.title.is_empty() {
                             self.output.write_all(b"\" title=\"")?;
@@ -889,7 +893,11 @@ impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
                     self.output.write_all(b" src=\"")?;
                     let url = nl.url.as_bytes();
                     if self.options.render.unsafe_ || !dangerous_url(url) {
-                        self.escape_href(url)?;
+                        if let Some(rewriter) = &self.options.extension.image_url_rewriter {
+                            self.escape_href(rewriter.to_html(&nl.url).as_bytes())?;
+                        } else {
+                            self.escape_href(url)?;
+                        }
                     }
                     self.output.write_all(b"\" alt=\"")?;
                     return Ok(true);
