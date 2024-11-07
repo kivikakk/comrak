@@ -126,9 +126,9 @@ impl Anchorizer {
     }
 }
 
-struct HtmlFormatter<'o, 'c> {
+struct HtmlFormatter<'o> {
     output: &'o mut WriteWithLast<'o>,
-    options: &'o Options<'c>,
+    options: &'o Options,
     anchorizer: Anchorizer,
     footnote_ix: u32,
     written_footnote_ix: u32,
@@ -361,12 +361,8 @@ where
     Ok(())
 }
 
-impl<'o, 'c: 'o> HtmlFormatter<'o, 'c> {
-    fn new(
-        options: &'o Options<'c>,
-        output: &'o mut WriteWithLast<'o>,
-        plugins: &'o Plugins,
-    ) -> Self {
+impl<'o> HtmlFormatter<'o> {
+    fn new(options: &'o Options, output: &'o mut WriteWithLast<'o>, plugins: &'o Plugins) -> Self {
         HtmlFormatter {
             options,
             output,

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use super::*;
 
@@ -67,32 +67,22 @@ fn smart_chars() {
 
 #[test]
 fn broken_link_callback() {
-    let arena = Arena::new();
-
-    let mut cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
+    let cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
         "foo" => Some(ResolvedReference {
             url: "https://www.rust-lang.org/".to_string(),
             title: "The Rust Language".to_string(),
         }),
         _ => None,
     };
-    let options = Options {
-        parse: ParseOptions::builder()
-            .broken_link_callback(Arc::new(Mutex::new(&mut cb)))
-            .build(),
-        ..Default::default()
-    };
+    let mut options = Options::default();
+    options.parse.broken_link_callback = Some(Arc::new(cb));
 
-    let root = parse_document(
-        &arena,
+    let output = markdown_to_html(
         "# Cool input!\nWow look at this cool [link][foo]. A [broken link] renders as text.",
         &options,
     );
-    let mut output = Vec::new();
-    format_html(root, &Options::default(), &mut output).unwrap();
-    let output_str = std::str::from_utf8(&output).unwrap();
     assert_eq!(
-        output_str,
+        output,
         "<h1>Cool input!</h1>\n<p>Wow look at this cool \
         <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
         A [broken link] renders as text.</p>\n"

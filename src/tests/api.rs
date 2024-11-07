@@ -32,14 +32,15 @@ fn exercise_full_api() {
     let _: &AstNode = parse_document(&arena, "document", &default_options);
 
     // Ensure the closure can modify its context.
-    let mut blr_ctx_0 = 0;
+    let blr_ctx_0 = Arc::new(Mutex::new(0));
+    let blr_ctx_1 = blr_ctx_0.clone();
     #[allow(deprecated)]
     let _: &AstNode = parse_document_with_broken_link_callback(
         &arena,
         "document",
         &Options::default(),
-        Some(&mut |blr: BrokenLinkReference| {
-            blr_ctx_0 += 1;
+        Arc::new(move |blr: BrokenLinkReference| {
+            *blr_ctx_1.lock().unwrap() += 1;
             let _: &str = blr.normalized;
             let _: &str = blr.original;
             Some(ResolvedReference {
@@ -80,17 +81,16 @@ fn exercise_full_api() {
         .relaxed_tasklist_matching(false)
         .relaxed_autolinks(false);
 
-    let mut blr_ctx_1 = 0;
-    let _parse =
-        parse.broken_link_callback(Arc::new(Mutex::new(&mut |blr: BrokenLinkReference| {
-            blr_ctx_1 += 1;
-            let _: &str = blr.normalized;
-            let _: &str = blr.original;
-            Some(ResolvedReference {
-                url: String::new(),
-                title: String::new(),
-            })
-        })));
+    let blr_ctx_1 = blr_ctx_0.clone();
+    let _parse = parse.broken_link_callback(Arc::new(move |blr: BrokenLinkReference| {
+        *blr_ctx_1.lock().unwrap() += 1;
+        let _: &str = blr.normalized;
+        let _: &str = blr.original;
+        Some(ResolvedReference {
+            url: String::new(),
+            title: String::new(),
+        })
+    }));
 
     let _render = RenderOptions::builder()
         .hardbreaks(false)
