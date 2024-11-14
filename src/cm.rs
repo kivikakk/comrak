@@ -465,11 +465,19 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
         let marker_width = if parent.list_type == ListType::Bullet {
             2
         } else {
-            let last_stack = self.ol_stack.last_mut().unwrap();
-            let list_number = *last_stack;
-            if entering {
-                *last_stack += 1;
-            }
+            let list_number = if let Some(last_stack) = self.ol_stack.last_mut() {
+                let list_number = *last_stack;
+                if entering {
+                    *last_stack += 1;
+                };
+                list_number
+            } else {
+                match node.data.borrow().value {
+                    NodeValue::Item(ref ni) => ni.start,
+                    NodeValue::TaskItem(_) => parent.start,
+                    _ => unreachable!(),
+                }
+            };
             let list_delim = parent.delimiter;
             write!(
                 listmarker,

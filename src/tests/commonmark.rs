@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use self::nodes::{Ast, LineColumn};
+use self::nodes::{Ast, LineColumn, ListType, NodeList};
 
 use super::*;
 use ntest::test_case;
@@ -36,6 +36,33 @@ fn commonmark_avoids_spurious_backslash() {
     compare_strs(
         &String::from_utf8(output).unwrap(),
         "Line 1\n\nLine 2\n",
+        "rendered",
+        "<synthetic>",
+    );
+}
+
+#[test]
+fn commonmark_renders_single_list_item() {
+    let arena = Arena::new();
+    let options = Options::default();
+    let empty = LineColumn { line: 0, column: 0 };
+    let ast = |val: NodeValue| arena.alloc(AstNode::new(RefCell::new(Ast::new(val, empty))));
+    let list_options = NodeList {
+        list_type: ListType::Ordered,
+        start: 1,
+        ..Default::default()
+    };
+    let list = ast(NodeValue::List(list_options));
+    let item = ast(NodeValue::Item(list_options));
+    let p = ast(NodeValue::Paragraph);
+    p.append(ast(NodeValue::Text("Item 1".to_owned())));
+    item.append(p);
+    list.append(item);
+    let mut output = vec![];
+    cm::format_document(item, &options, &mut output).unwrap();
+    compare_strs(
+        &String::from_utf8(output).unwrap(),
+        "1. Item 1\n",
         "rendered",
         "<synthetic>",
     );
