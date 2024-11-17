@@ -72,6 +72,7 @@ fn exercise_full_api() {
         .wikilinks_title_after_pipe(true)
         .wikilinks_title_before_pipe(true)
         .underline(true)
+        .subscript(true)
         .spoiler(true)
         .greentext(true);
 
@@ -271,6 +272,7 @@ fn exercise_full_api() {
             let _: String = nl.url;
         }
         nodes::NodeValue::Underline => {}
+        nodes::NodeValue::Subscript => {}
         nodes::NodeValue::SpoileredText => {}
         nodes::NodeValue::EscapedTag(data) => {
             let _: &String = data;

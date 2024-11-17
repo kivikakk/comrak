@@ -285,6 +285,7 @@ impl<'o> XmlFormatter<'o> {
                     self.output.write_all(b"\"")?;
                 }
                 NodeValue::Underline => {}
+                NodeValue::Subscript => {}
                 NodeValue::SpoileredText => {}
                 NodeValue::EscapedTag(ref data) => {
                     self.output.write_all(data.as_bytes())?;
