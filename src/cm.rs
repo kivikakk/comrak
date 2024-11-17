@@ -712,7 +712,7 @@ impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
     }
 
     fn format_strikethrough(&mut self) {
-        write!(self, "~").unwrap();
+        write!(self, "~~").unwrap();
     }
 
     fn format_superscript(&mut self) {
