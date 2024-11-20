@@ -184,6 +184,7 @@ enum Extension {
     WikilinksTitleAfterPipe,
     WikilinksTitleBeforePipe,
     Underline,
+    Subscript,
     Spoiler,
     Greentext,
 }
@@ -267,6 +268,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
         .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
         .underline(exts.contains(&Extension::Underline))
+        .subscript(exts.contains(&Extension::Subscript))
         .spoiler(exts.contains(&Extension::Spoiler))
         .greentext(exts.contains(&Extension::Greentext))
         .maybe_front_matter_delimiter(cli.front_matter_delimiter);

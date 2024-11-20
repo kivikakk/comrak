@@ -25,6 +25,7 @@ mod rewriter;
 mod shortcodes;
 mod spoiler;
 mod strikethrough;
+mod subscript;
 mod superscript;
 mod table;
 mod tagfilter;

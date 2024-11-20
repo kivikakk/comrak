@@ -189,6 +189,9 @@ pub enum NodeValue {
     /// **Inline**.  Underline. Enabled with `underline` option.
     Underline,
 
+    /// **Inline**.  Subscript. Enabled with `subscript` options.
+    Subscript,
+
     /// **Inline**.  Spoilered text.  Enabled with `spoiler` option.
     SpoileredText,
 
@@ -514,6 +517,7 @@ impl NodeValue {
             NodeValue::Math(..) => "math",
             NodeValue::WikiLink(..) => "wikilink",
             NodeValue::Underline => "underline",
+            NodeValue::Subscript => "subscript",
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
         }
@@ -764,6 +768,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         | NodeValue::Superscript
         | NodeValue::SpoileredText
         | NodeValue::Underline
+        | NodeValue::Subscript
         // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
         // possibly going to fall into the spoiler. This should be fixed in
         // inlines.
@@ -791,6 +796,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::Superscript
                 | NodeValue::SpoileredText
                 | NodeValue::Underline
+                | NodeValue::Subscript
         ),
 
         #[cfg(feature = "shortcodes")]
@@ -810,6 +816,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             | NodeValue::Superscript
             | NodeValue::SpoileredText
             | NodeValue::Underline
+            | NodeValue::Subscript
             | NodeValue::ShortCode(..)
         ),
 

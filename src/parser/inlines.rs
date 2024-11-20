@@ -149,7 +149,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
             s.special_chars[b':' as usize] = true;
             s.special_chars[b'w' as usize] = true;
         }
-        if options.extension.strikethrough {
+        if options.extension.strikethrough || options.extension.subscript {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
         }
@@ -281,7 +281,9 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                     ))
                 }
             }
-            '~' if self.options.extension.strikethrough => Some(self.handle_delim(b'~')),
+            '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
+                Some(self.handle_delim(b'~'))
+            }
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
@@ -333,7 +335,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
 
     // After parsing a block (and sometimes during), this function traverses the
     // stack of `Delimiters`, tokens ("*", "_", etc.) that may delimit regions
-    // of text for special rendering: emphasis, strong, superscript,
+    // of text for special rendering: emphasis, strong, superscript, subscript,
     // spoilertext; looking for pairs of opening and closing delimiters,
     // with the goal of placing the intervening nodes into new emphasis,
     // etc AST nodes.
@@ -461,7 +463,8 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
                 // both get passed.
                 if c.delim_char == b'*'
                     || c.delim_char == b'_'
-                    || (self.options.extension.strikethrough && c.delim_char == b'~')
+                    || ((self.options.extension.strikethrough || self.options.extension.subscript)
+                        && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
                     || (self.options.extension.spoiler && c.delim_char == b'|')
                 {
@@ -1068,7 +1071,7 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         opener_num_chars -= use_delims;
         closer_num_chars -= use_delims;
 
-        if self.options.extension.strikethrough
+        if (self.options.extension.strikethrough || self.options.extension.subscript)
             && opener_char == b'~'
             && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
         {
@@ -1101,8 +1104,19 @@ impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
         }
 
         let emph = self.make_inline(
-            if self.options.extension.strikethrough && opener_char == b'~' {
-                NodeValue::Strikethrough
+            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
+                NodeValue::Subscript
+            } else if opener_char == b'~' {
+                // Not emphasis
+                // Unlike for |, these cases have to be handled because they will match
+                // in the event subscript but not strikethrough is enabled
+                if self.options.extension.strikethrough {
+                    NodeValue::Strikethrough
+                } else if use_delims == 1 {
+                    NodeValue::EscapedTag("~".to_owned())
+                } else {
+                    NodeValue::EscapedTag("~~".to_owned())
+                }
             } else if self.options.extension.superscript && opener_char == b'^' {
                 NodeValue::Superscript
             } else if self.options.extension.spoiler && opener_char == b'|' {
