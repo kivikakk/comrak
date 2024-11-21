@@ -67,6 +67,7 @@ use std::io::BufWriter;
 
 pub mod adapters;
 pub mod arena_tree;
+mod character_set;
 mod cm;
 mod ctype;
 mod entity;

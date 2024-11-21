@@ -1,4 +1,5 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
+use crate::character_set::character_set;
 use crate::ctype::isspace;
 use crate::nodes::{
     AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
@@ -297,16 +298,11 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 /// the string "a b", rather than "?q=a%2520b", a search for the literal
 /// string "a%20b".
 pub fn escape_href(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
-    static HREF_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
-        let mut a = [false; 256];
-        for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
-            a[c as usize] = true;
-        }
-        for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
-            a[c as usize] = true;
-        }
-        a
-    });
+    const HREF_SAFE: [bool; 256] = character_set!(
+        b"-_.+!*(),%#@?=;:/,+$~",
+        b"abcdefghijklmnopqrstuvwxyz",
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    );
 
     let size = buffer.len();
     let mut i = 0;
