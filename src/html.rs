@@ -136,42 +136,6 @@ struct HtmlFormatter<'o> {
     plugins: &'o Plugins<'o>,
 }
 
-#[rustfmt::skip]
-const NEEDS_ESCAPED : [bool; 256] = [
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, true,  false, false, false, true,  false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, true, false, true, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-];
-
 fn tagfilter(literal: &[u8]) -> bool {
     static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
@@ -255,9 +219,11 @@ fn dangerous_url(input: &[u8]) -> bool {
 /// Note that this is appropriate and sufficient for free text, but not for
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+    const HTML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
+
     let mut offset = 0;
     for (i, &byte) in buffer.iter().enumerate() {
-        if NEEDS_ESCAPED[byte as usize] {
+        if HTML_UNSAFE[byte as usize] {
             let esc: &[u8] = match byte {
                 b'"' => b"&quot;",
                 b'&' => b"&amp;",
