@@ -1,6 +1,6 @@
+use crate::character_set::character_set;
 use crate::nodes::{AstNode, ListType, NodeCode, NodeMath, NodeTable, NodeValue};
 use crate::parser::{Options, Plugins};
-use once_cell::sync::Lazy;
 use std::cmp;
 use std::io::{self, Write};
 
@@ -48,17 +48,11 @@ impl<'o> XmlFormatter<'o> {
     }
 
     fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        static XML_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
-            let mut a = [true; 256];
-            for &c in b"&<>\"".iter() {
-                a[c as usize] = false;
-            }
-            a
-        });
+        const XML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
 
         let mut offset = 0;
         for (i, &byte) in buffer.iter().enumerate() {
-            if !XML_SAFE[byte as usize] {
+            if XML_UNSAFE[byte as usize] {
                 let esc: &[u8] = match byte {
                     b'"' => b"&quot;",
                     b'&' => b"&amp;",

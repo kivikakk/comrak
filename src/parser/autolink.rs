@@ -1,7 +1,7 @@
+use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{AstNode, NodeLink, NodeValue};
 use crate::parser::inlines::make_inline;
-use once_cell::sync::Lazy;
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
@@ -74,13 +74,7 @@ pub fn www_match<'a>(
     i: usize,
     relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    static WWW_DELIMS: Lazy<[bool; 256]> = Lazy::new(|| {
-        let mut sc = [false; 256];
-        for c in &[b'*', b'_', b'~', b'(', b'['] {
-            sc[*c as usize] = true;
-        }
-        sc
-    });
+    const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
 
     if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
         return None;
@@ -167,13 +161,7 @@ fn is_valid_hostchar(ch: char) -> bool {
 }
 
 fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> usize {
-    static LINK_END_ASSORTMENT: Lazy<[bool; 256]> = Lazy::new(|| {
-        let mut sc = [false; 256];
-        for c in &[b'?', b'!', b'.', b',', b':', b'*', b'_', b'~', b'\'', b'"'] {
-            sc[*c as usize] = true;
-        }
-        sc
-    });
+    const LINK_END_ASSORTMENT: [bool; 256] = character_set!(b"?!.,:*_~'\"");
 
     for (i, &b) in data.iter().enumerate().take(link_end) {
         if b == b'<' {
@@ -311,13 +299,7 @@ fn email_match<'a>(
     i: usize,
     relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    static EMAIL_OK_SET: Lazy<[bool; 256]> = Lazy::new(|| {
-        let mut sc = [false; 256];
-        for c in &[b'.', b'+', b'-', b'_'] {
-            sc[*c as usize] = true;
-        }
-        sc
-    });
+    const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
 

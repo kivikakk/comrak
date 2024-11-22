@@ -1,4 +1,5 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
+use crate::character_set::character_set;
 use crate::ctype::isspace;
 use crate::nodes::{
     AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
@@ -135,42 +136,6 @@ struct HtmlFormatter<'o> {
     plugins: &'o Plugins<'o>,
 }
 
-#[rustfmt::skip]
-const NEEDS_ESCAPED : [bool; 256] = [
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, true,  false, false, false, true,  false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, true, false, true, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-    false, false, false, false, false, false, false, false,
-];
-
 fn tagfilter(literal: &[u8]) -> bool {
     static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
@@ -254,9 +219,11 @@ fn dangerous_url(input: &[u8]) -> bool {
 /// Note that this is appropriate and sufficient for free text, but not for
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+    const HTML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
+
     let mut offset = 0;
     for (i, &byte) in buffer.iter().enumerate() {
-        if NEEDS_ESCAPED[byte as usize] {
+        if HTML_UNSAFE[byte as usize] {
             let esc: &[u8] = match byte {
                 b'"' => b"&quot;",
                 b'&' => b"&amp;",
@@ -297,16 +264,11 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 /// the string "a b", rather than "?q=a%2520b", a search for the literal
 /// string "a%20b".
 pub fn escape_href(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
-    static HREF_SAFE: Lazy<[bool; 256]> = Lazy::new(|| {
-        let mut a = [false; 256];
-        for &c in b"-_.+!*(),%#@?=;:/,+$~abcdefghijklmnopqrstuvwxyz".iter() {
-            a[c as usize] = true;
-        }
-        for &c in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".iter() {
-            a[c as usize] = true;
-        }
-        a
-    });
+    const HREF_SAFE: [bool; 256] = character_set!(
+        b"-_.+!*(),%#@?=;:/,+$~",
+        b"abcdefghijklmnopqrstuvwxyz",
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    );
 
     let size = buffer.len();
     let mut i = 0;
