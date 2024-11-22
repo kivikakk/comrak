@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.29"
+comrak = "0.30"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
@@ -91,6 +91,9 @@ Options:
           Enable relaxing of autolink parsing, allow links to be recognized when in brackets and
           allow all url schemes
 
+      --tasklist-classes
+          Output classes on tasklist elements so that they can be styled with CSS
+
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
 
@@ -113,7 +116,8 @@ Options:
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
-          wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, spoiler, greentext]
+          wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript, spoiler,
+          greentext]
 
   -t, --to <FORMAT>
           Specify output format
