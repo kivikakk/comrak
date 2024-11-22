@@ -1,21 +1,24 @@
 # [v0.30.0] - 22-11-2024
-## What's Changed
-* Add  class to task list items by @nicoburns in https://github.com/kivikakk/comrak/pull/468
+
+* Add `task-list-item` class to task list items by @nicoburns in https://github.com/kivikakk/comrak/pull/468
 * Add option for specifying a minimum width of ordered lists by @edwar4rd in https://github.com/kivikakk/comrak/pull/465
-* Use  for an infallible and compile-time-checked builder by @Veetaha in https://github.com/kivikakk/comrak/pull/466
+* Use `bon` for an infallible and compile-time-checked builder by @Veetaha in https://github.com/kivikakk/comrak/pull/466
 * Add support for image and link URL rewriting by @liamwhite in https://github.com/kivikakk/comrak/pull/481
 * Unwrap Mutex from broken_link_callback by @liamwhite in https://github.com/kivikakk/comrak/pull/484
 * Prevent panic in format_item by @silverpill in https://github.com/kivikakk/comrak/pull/486
-* Bump  version to 3.0 by @Veetaha in https://github.com/kivikakk/comrak/pull/487
+* Bump `bon` version to 3.0 by @Veetaha in https://github.com/kivikakk/comrak/pull/487
 * Add support for subscript extension by @liamwhite in https://github.com/kivikakk/comrak/pull/488
 * Add macro for character tables by @liamwhite in https://github.com/kivikakk/comrak/pull/490
 
 ## New Contributors
+
 * @nicoburns made their first contribution in https://github.com/kivikakk/comrak/pull/468
 * @edwar4rd made their first contribution in https://github.com/kivikakk/comrak/pull/465
 * @Veetaha made their first contribution in https://github.com/kivikakk/comrak/pull/466
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.29.0...v0.30.0
+Diff: https://github.com/kivikakk/comrak/compare/v0.29.0...v0.30.0
+
+
 # [v0.29.0] - 10-10-2024
 
 * Add support for backslash escape in wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/471
