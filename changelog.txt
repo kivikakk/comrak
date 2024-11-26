@@ -1,3 +1,10 @@
+# [v0.31.0] - 26-11-2024
+
+* Enhance description lists by @digitalmoksha in https://github.com/kivikakk/comrak/pull/462
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.30.0...v0.31.0
+
+
 # [v0.30.0] - 22-11-2024
 
 * Add `task-list-item` class to task list items by @nicoburns in https://github.com/kivikakk/comrak/pull/468
