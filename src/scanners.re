@@ -431,4 +431,13 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
 */
 }
 
+pub fn description_item_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let len = s.len();
+/*!re2c
+    [:~] ([ \t]+) { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 // vim: set ft=rust:

@@ -334,7 +334,7 @@ pub struct ExtensionOptions {
     /// let mut options = Options::default();
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
-    ///            "<dl><dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    ///            "<dl>\n<dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
     /// ```
     #[builder(default)]
     pub description_lists: bool,
@@ -1636,10 +1636,13 @@ impl<'a, 'o> Parser<'a, 'o> {
                 container.data.borrow_mut().internal_offset = matched;
             } else if !indented
                 && self.options.extension.description_lists
-                && line[self.first_nonspace] == b':'
-                && self.parse_desc_list_details(container)
+                && unwrap_into(
+                    scanners::description_item_start(&line[self.first_nonspace..]),
+                    &mut matched,
+                )
+                && self.parse_desc_list_details(container, matched)
             {
-                let offset = self.first_nonspace + 1 - self.offset;
+                let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
@@ -1881,10 +1884,28 @@ impl<'a, 'o> Parser<'a, 'o> {
         }
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>) -> bool {
+    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>, matched: usize) -> bool {
+        let mut tight = false;
         let last_child = match container.last_child() {
             Some(lc) => lc,
-            None => return false,
+            None => {
+                // Happens when the detail line is directly after the term,
+                // without a blank line between.
+                if !node_matches!(container, NodeValue::Paragraph) {
+                    // If the container is not a paragraph, then this can't
+                    // be a description list item.
+                    return false;
+                }
+
+                let parent = container.parent();
+                if parent.is_none() {
+                    return false;
+                }
+
+                tight = true;
+                *container = parent.unwrap();
+                container.last_child().unwrap()
+            }
         };
 
         if node_matches!(last_child, NodeValue::Paragraph) {
@@ -1908,7 +1929,7 @@ impl<'a, 'o> Parser<'a, 'o> {
             //   All are incorrect; they all give the start line/col of
             //   the DescriptionDetails, and the end line/col is completely off.
             //
-            // descriptionDetails:
+            // DescriptionDetails:
             //   Same as the DescriptionItem.  All but last, the end line/col
             //   is (l+1):0.
             //
@@ -1931,7 +1952,8 @@ impl<'a, 'o> Parser<'a, 'o> {
 
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
-                padding: 2,
+                padding: matched,
+                tight,
             };
 
             let item = self.add_child(
@@ -1945,6 +1967,31 @@ impl<'a, 'o> Parser<'a, 'o> {
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
             term.append(last_child);
+
+            *container = details;
+
+            true
+        } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
+            let parent = last_child.parent().unwrap();
+            let tight = match last_child.data.borrow().value {
+                NodeValue::DescriptionItem(ref ndi) => ndi.tight,
+                _ => false,
+            };
+
+            let metadata = NodeDescriptionItem {
+                marker_offset: self.indent,
+                padding: matched,
+                tight,
+            };
+
+            let item = self.add_child(
+                parent,
+                NodeValue::DescriptionItem(metadata),
+                self.first_nonspace + 1,
+            );
+
+            let details =
+                self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
             *container = details;
 

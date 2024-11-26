@@ -479,7 +479,7 @@ impl<'o> HtmlFormatter<'o> {
                     self.cr()?;
                     self.output.write_all(b"<dl")?;
                     self.render_sourcepos(node)?;
-                    self.output.write_all(b">")?;
+                    self.output.write_all(b">\n")?;
                 } else {
                     self.output.write_all(b"</dl>\n")?;
                 }
@@ -663,6 +663,7 @@ impl<'o> HtmlFormatter<'o> {
                     .map(|n| n.data.borrow().value.clone())
                 {
                     Some(NodeValue::List(nl)) => nl.tight,
+                    Some(NodeValue::DescriptionItem(nd)) => nd.tight,
                     _ => false,
                 };
 

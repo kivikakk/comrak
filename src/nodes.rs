@@ -313,6 +313,10 @@ pub struct NodeDescriptionItem {
 
     /// Number of characters between the start of the list marker and the item text (including the list marker(s)).
     pub padding: usize,
+
+    /// Whether the list is [tight](https://github.github.com/gfm/#tight), i.e. whether the
+    /// paragraphs are wrapped in `<p>` tags when formatted as HTML.
+    pub tight: bool,
 }
 
 /// The type of list.
