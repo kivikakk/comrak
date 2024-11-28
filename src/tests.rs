@@ -12,6 +12,7 @@ mod description_lists;
 mod empty;
 mod escaped_char_spans;
 mod footnotes;
+mod front_matter;
 mod fuzz;
 mod greentext;
 mod header_ids;

@@ -1141,6 +1141,20 @@ impl<'a, 'o> Parser<'a, 'o> {
             &self.options.extension.front_matter_delimiter,
         ) {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
+                let lines = front_matter
+                    .as_bytes()
+                    .iter()
+                    .filter(|b| **b == b'\n')
+                    .count();
+
+                let mut stripped_front_matter = front_matter.to_string();
+                strings::remove_trailing_blank_lines(&mut stripped_front_matter);
+                let stripped_lines = stripped_front_matter
+                    .as_bytes()
+                    .iter()
+                    .filter(|b| **b == b'\n')
+                    .count();
+
                 let node = self.add_child(
                     self.root,
                     NodeValue::FrontMatter(front_matter.to_string()),
@@ -1148,6 +1162,15 @@ impl<'a, 'o> Parser<'a, 'o> {
                 );
                 s = rest;
                 self.finalize(node).unwrap();
+
+                node.data.borrow_mut().sourcepos = Sourcepos {
+                    start: nodes::LineColumn { line: 1, column: 1 },
+                    end: nodes::LineColumn {
+                        line: 1 + stripped_lines,
+                        column: delimiter.chars().count(),
+                    },
+                };
+                self.line_number += lines;
             }
         }
 
