@@ -33,7 +33,7 @@ fn ast_wide_delimiter() {
     assert_ast_match_i(
         input,
         ast!((document (1:1-4:4) [
-            (frontmatter (1:1-3:1) [])
+            (frontmatter (1:1-3:2) [])
             (paragraph (4:1-4:4) [
                 (text (4:1-4:4) [])
             ])

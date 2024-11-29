@@ -1167,7 +1167,7 @@ impl<'a, 'o> Parser<'a, 'o> {
                     start: nodes::LineColumn { line: 1, column: 1 },
                     end: nodes::LineColumn {
                         line: 1 + stripped_lines,
-                        column: delimiter.chars().count(),
+                        column: delimiter.len(),
                     },
                 };
                 self.line_number += lines;
