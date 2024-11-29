@@ -12,6 +12,7 @@ mod description_lists;
 mod empty;
 mod escaped_char_spans;
 mod footnotes;
+mod front_matter;
 mod fuzz;
 mod greentext;
 mod header_ids;
@@ -237,10 +238,19 @@ fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &Nod
 
 macro_rules! sourcepos {
     (($spsl:literal:$spsc:literal-$spel:literal:$spec:literal)) => {
-        ($spsl, $spsc, $spel, $spec).into()
+        $crate::nodes::Sourcepos {
+            start: $crate::nodes::LineColumn {
+                line: $spsl,
+                column: $spsc,
+            },
+            end: $crate::nodes::LineColumn {
+                line: $spel,
+                column: $spec,
+            },
+        }
     };
     ((XXX)) => {
-        (0, 1, 0, 1).into()
+        $crate::tests::sourcepos!((0:1-0:1))
     };
 }
 
