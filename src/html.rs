@@ -574,6 +574,23 @@ where
                 if entering {
                     if ncb.info.eq("math") {
                         self.render_math_code_block(node, &ncb.literal)?;
+                    } else if let Some(adapter) = self
+                        .plugins
+                        .render
+                        .codefence_renderers
+                        .get(&ncb.info)
+                    {
+                        self.cr()?;
+
+                        adapter.write(
+                            self.output,
+                            &ncb.literal,
+                            if self.options.render.sourcepos {
+                                Some(node.data.borrow().sourcepos)
+                            } else {
+                                None
+                            },
+                        )?;
                     } else {
                         self.cr()?;
 

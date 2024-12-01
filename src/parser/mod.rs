@@ -8,7 +8,7 @@ pub mod alert;
 pub mod math;
 pub mod multiline_block_quote;
 
-use crate::adapters::SyntaxHighlighterAdapter;
+use crate::adapters::{CodefenceRendererAdapter, SyntaxHighlighterAdapter};
 use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
@@ -1098,6 +1098,10 @@ pub struct Plugins<'p> {
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {
+    /// Provide language-specific renderers for codefence blocks.
+    #[builder(default)]
+    pub codefence_renderers: HashMap<String, &'p dyn CodefenceRendererAdapter>,
+
     /// Provide a syntax highlighter adapter implementation for syntax
     /// highlighting of codefence blocks.
     /// ```
