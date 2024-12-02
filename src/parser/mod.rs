@@ -865,6 +865,8 @@ pub struct RenderOptions {
     /// let xml = markdown_to_commonmark_xml(input, &options);
     /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
     /// ```
+    ///
+    /// [`experimental_inline_sourcepos`]: crate::RenderOptionsBuilder::experimental_inline_sourcepos
     #[builder(default)]
     pub sourcepos: bool,
 
