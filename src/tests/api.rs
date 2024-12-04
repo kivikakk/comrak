@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use parser::BrokenLinkReference;
+use parser::{BrokenLinkReference, WikiLinksMode};
 
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
@@ -69,8 +69,7 @@ fn exercise_full_api() {
     let extension = extension.shortcodes(true);
 
     let _extension = extension
-        .wikilinks_title_after_pipe(true)
-        .wikilinks_title_before_pipe(true)
+        .wikilinks(WikiLinksMode::UrlFirst)
         .underline(true)
         .subscript(true)
         .spoiler(true)

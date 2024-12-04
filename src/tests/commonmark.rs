@@ -4,6 +4,7 @@ use self::nodes::{Ast, LineColumn, ListType, NodeList};
 
 use super::*;
 use ntest::test_case;
+use parser::WikiLinksMode;
 
 #[test]
 fn commonmark_removes_redundant_strong() {
@@ -83,7 +84,7 @@ fn math(markdown: &str, cm: &str) {
 #[test_case("This [[url|link label]] that", "This [[url|link%20label]] that\n")]
 fn wikilinks(markdown: &str, cm: &str) {
     let mut options = Options::default();
-    options.extension.wikilinks_title_before_pipe = true;
+    options.extension.wikilinks = Some(WikiLinksMode::TitleFirst);
 
     commonmark(markdown, cm, Some(&options));
 }

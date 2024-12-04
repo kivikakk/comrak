@@ -193,6 +193,21 @@ where
 }
 
 #[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// Selects between wikilinks with the title first or the URL first.
+///
+/// See [`ExtensionOptions::wikilinks`].
+pub enum WikiLinksMode {
+    /// Indicates that the URL precedes the title. For example: `[[http://example.com|link
+    /// title]]`.
+    UrlFirst,
+
+    /// Indicates that the title precedes the URL. For example: `[[link title|http://example.com]]`.
+    TitleFirst,
+}
+
+#[non_exhaustive]
 #[derive(Default, Debug, Clone, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
@@ -466,37 +481,28 @@ pub struct ExtensionOptions {
     #[builder(default)]
     pub shortcodes: bool,
 
-    /// Enables wikilinks using title after pipe syntax
+    /// Enables wikilinks
+    ///
+    /// With [`WikiLinksMode::TitleFirst`]:
+    ///
+    /// ```` md
+    /// [[link label|url]]
+    /// ````
+    ///
+    /// With [`WikiLinksMode::UrlFirst`]:
     ///
     /// ```` md
     /// [[url|link label]]
     /// ````
     ///
     /// ```
-    /// # use comrak::{markdown_to_html, Options};
+    /// # use comrak::{markdown_to_html, Options, WikiLinksMode};
     /// let mut options = Options::default();
-    /// options.extension.wikilinks_title_after_pipe = true;
-    /// assert_eq!(markdown_to_html("[[url|link label]]", &options),
-    ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
-    /// ```
-    #[builder(default)]
-    pub wikilinks_title_after_pipe: bool,
-
-    /// Enables wikilinks using title before pipe syntax
-    ///
-    /// ```` md
-    /// [[link label|url]]
-    /// ````
-    ///
-    /// ```
-    /// # use comrak::{markdown_to_html, Options};
-    /// let mut options = Options::default();
-    /// options.extension.wikilinks_title_before_pipe = true;
+    /// options.extension.wikilinks = Some(WikiLinksMode::TitleFirst);
     /// assert_eq!(markdown_to_html("[[link label|url]]", &options),
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     /// ```
-    #[builder(default)]
-    pub wikilinks_title_before_pipe: bool,
+    pub wikilinks: Option<WikiLinksMode>,
 
     /// Enables underlines using double underscores
     ///
