@@ -6,7 +6,7 @@ use crate::nodes::{
 use crate::nodes::{NodeList, TableAlignment};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::Options;
+use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
 use crate::{nodes, Plugins};
@@ -761,12 +761,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     fn format_wikilink(&mut self, nl: &NodeWikiLink, entering: bool) -> bool {
         if entering {
             write!(self, "[[").unwrap();
-            if self.options.extension.wikilinks_title_after_pipe {
+            if self.options.extension.wikilinks() == Some(WikiLinksMode::UrlFirst) {
                 self.output(nl.url.as_bytes(), false, Escaping::Url);
                 write!(self, "|").unwrap();
             }
         } else {
-            if self.options.extension.wikilinks_title_before_pipe {
+            if self.options.extension.wikilinks() == Some(WikiLinksMode::TitleFirst) {
                 write!(self, "|").unwrap();
                 self.output(nl.url.as_bytes(), false, Escaping::Url);
             }
