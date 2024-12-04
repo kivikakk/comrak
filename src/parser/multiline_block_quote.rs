@@ -1,5 +1,5 @@
 /// The metadata of a multiline blockquote.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NodeMultilineBlockQuote {
     /// The length of the fence.
     pub fence_length: usize,
