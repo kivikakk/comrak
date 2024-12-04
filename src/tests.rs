@@ -26,6 +26,8 @@ mod raw;
 mod regressions;
 mod rewriter;
 mod shortcodes;
+#[path = "tests/sourcepos.rs"]
+mod sourcepos_;
 mod spoiler;
 mod strikethrough;
 mod subscript;

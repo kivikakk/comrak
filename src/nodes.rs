@@ -13,6 +13,11 @@ pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(strum::EnumDiscriminants))]
+#[cfg_attr(
+    test,
+    strum_discriminants(vis(pub(crate)), derive(strum::VariantArray, Hash))
+)]
 pub enum NodeValue {
     /// The root of every CommonMark document.  Contains **blocks**.
     Document,
@@ -255,7 +260,7 @@ pub struct NodeTable {
 }
 
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeCode {
     /// The number of backticks
     pub num_backticks: usize,
@@ -268,7 +273,7 @@ pub struct NodeCode {
 }
 
 /// The details of a link's destination, or an image's source.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeLink {
     /// The URL for the link destination or image source.
     pub url: String,
@@ -281,7 +286,7 @@ pub struct NodeLink {
 }
 
 /// The details of a wikilink's destination.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeWikiLink {
     /// The URL for the link destination.
     pub url: String,
