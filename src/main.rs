@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::{Parser, ValueEnum};
-use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
+use comrak::{ExtensionOptions, ParseOptions, RenderOptions, WikiLinksMode};
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
@@ -252,6 +252,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
+    let wikilinks_title_after_pipe = exts.contains(&Extension::WikilinksTitleAfterPipe);
+    let wikilinks_title_before_pipe = exts.contains(&Extension::WikilinksTitleBeforePipe);
+    let wikilinks_mode = match (wikilinks_title_after_pipe, wikilinks_title_before_pipe) {
+        (false, false) => None,
+        (true, false) => Some(WikiLinksMode::UrlFirst),
+        (false, true) => Some(WikiLinksMode::TitleFirst),
+        (true, true) => {
+            eprintln!(concat!(
+                "cannot enable both wikilinks-title-after-pipe ",
+                "and wikilinks-title-before-pipe at the same time"
+            ));
+            process::exit(EXIT_PARSE_CONFIG);
+        }
+    };
+
     let extension = ExtensionOptions::builder()
         .strikethrough(exts.contains(&Extension::Strikethrough) || cli.gfm)
         .tagfilter(exts.contains(&Extension::Tagfilter) || cli.gfm)
@@ -265,8 +280,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
         .math_dollars(exts.contains(&Extension::MathDollars))
         .math_code(exts.contains(&Extension::MathCode))
-        .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
-        .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))
+        .maybe_wikilinks(wikilinks_mode)
         .underline(exts.contains(&Extension::Underline))
         .subscript(exts.contains(&Extension::Subscript))
         .spoiler(exts.contains(&Extension::Spoiler))
