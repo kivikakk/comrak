@@ -127,20 +127,35 @@ macro_rules! html_opts {
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr) => {
         html_opts!([$($optclass.$optname),*], $lhs, $rhs,)
     };
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr) => {
+        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs,)
+    };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr,) => {
         html_opts!([$($optclass.$optname),*], $lhs, $rhs, roundtrip)
+    };
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr,) => {
+        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs, roundtrip)
     };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, $rt:ident) => {
         html_opts!([$($optclass.$optname),*], $lhs, $rhs, $rt,)
     };
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, $rt:ident) => {
+        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs, $rt,)
+    };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, roundtrip,) => {
+        html_opts!([$($optclass.$optname = true),*], $lhs, $rhs, roundtrip,)
+    };
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, roundtrip,) => {
         $crate::tests::html_opts_i($lhs, $rhs, true, |opts| {
-            $(opts.$optclass.$optname = true;)*
+            $(opts.$optclass.$optname = $val;)*
         });
     };
     ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, no_roundtrip,) => {
+        html_opts!([$($optclass.$optname = true),*], $lhs, $rhs, no_roundtrip,)
+    };
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, no_roundtrip,) => {
         $crate::tests::html_opts_i($lhs, $rhs, false, |opts| {
-            $(opts.$optclass.$optname = true;)*
+            $(opts.$optclass.$optname = $val;)*
         });
     };
 }
@@ -312,12 +327,19 @@ macro_rules! assert_ast_match {
             $amt
         )
     };
-    ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt) => {
+    ([ $( $optclass:ident.$optname:ident = $val:expr ),* ], $( $md:literal )+, $amt:tt) => {
         crate::tests::assert_ast_match_i(
             concat!( $( $md ),+ ),
             ast!($amt),
-            |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = true;)*},
+            |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = $val;)*},
         );
+    };
+    ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt) => {
+        assert_ast_match!(
+            [ $( $optclass.$optname  = true),* ],
+            $( $md )+,
+            $amt
+        )
     };
 }
 
