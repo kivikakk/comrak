@@ -30,15 +30,15 @@ pub fn format_document_with_plugins<'a>(
     XmlFormatter::new(options, output, plugins).format(root, false)
 }
 
-struct XmlFormatter<'o> {
+struct XmlFormatter<'o, 'c> {
     output: &'o mut dyn Write,
-    options: &'o Options,
+    options: &'o Options<'c>,
     _plugins: &'o Plugins<'o>,
     indent: u32,
 }
 
-impl<'o> XmlFormatter<'o> {
-    fn new(options: &'o Options, output: &'o mut dyn Write, plugins: &'o Plugins) -> Self {
+impl<'o, 'c> XmlFormatter<'o, 'c> {
+    fn new(options: &'o Options<'c>, output: &'o mut dyn Write, plugins: &'o Plugins) -> Self {
         XmlFormatter {
             options,
             output,

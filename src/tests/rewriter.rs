@@ -25,3 +25,15 @@ fn link_url_rewriter() {
         ))
     );
 }
+
+#[test]
+fn can_borrow_from_context() {
+    let rewrite_to = "http://example.org";
+
+    html_opts_i(
+        "[my link](http://example.com/)",
+        "<p><a href=\"http://example.org\">my link</a></p>\n",
+        true,
+        |opts| opts.extension.link_url_rewriter = Some(Arc::new(|_: &str| rewrite_to.to_owned())),
+    );
+}

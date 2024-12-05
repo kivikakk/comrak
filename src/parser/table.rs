@@ -13,7 +13,7 @@ use super::inlines::count_newlines;
 const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
 pub fn try_opening_block<'a>(
-    parser: &mut Parser<'a, '_>,
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
@@ -30,7 +30,7 @@ pub fn try_opening_block<'a>(
 }
 
 fn try_opening_header<'a>(
-    parser: &mut Parser<'a, '_>,
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     line: &[u8],
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
@@ -133,7 +133,7 @@ fn try_opening_header<'a>(
 }
 
 fn try_opening_row<'a>(
-    parser: &mut Parser<'a, '_>,
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
     line: &[u8],
@@ -280,7 +280,7 @@ fn row(string: &[u8], spoiler: bool) -> Option<Row> {
 }
 
 fn try_inserting_table_header_paragraph<'a>(
-    parser: &mut Parser<'a, '_>,
+    parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     paragraph_offset: usize,
 ) {

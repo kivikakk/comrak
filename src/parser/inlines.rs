@@ -25,9 +25,9 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c> {
     pub arena: &'a Arena<AstNode<'a>>,
-    options: &'o Options,
+    options: &'o Options<'c>,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -110,10 +110,10 @@ struct WikilinkComponents<'i> {
     link_label: Option<(&'i [u8], usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'd, 'i> Subject<'a, 'r, 'o, 'd, 'i> {
+impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
-        options: &'o Options,
+        options: &'o Options<'c>,
         input: &'i [u8],
         line: usize,
         refmap: &'r mut RefMap,
