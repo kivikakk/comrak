@@ -1110,7 +1110,10 @@ struct FootnoteDefinition<'a> {
     total_references: u32,
 }
 
-impl<'a, 'o, 'c> Parser<'a, 'o, 'c> {
+impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
+where
+    'c: 'o,
+{
     fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
