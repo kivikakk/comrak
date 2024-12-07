@@ -78,3 +78,7 @@ clap = { version = "4.0", optional = true, features = [
     "string",
     "wrap_help",
 ] }
+
+[[example]]
+name = "syntect"
+required-features = [ "syntect" ]
