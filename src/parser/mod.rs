@@ -82,11 +82,11 @@ pub fn parse_document<'a>(
     since = "0.25.0",
     note = "The broken link callback has been moved into ParseOptions."
 )]
-pub fn parse_document_with_broken_link_callback<'a>(
+pub fn parse_document_with_broken_link_callback<'a, 'c>(
     arena: &'a Arena<AstNode<'a>>,
     buffer: &str,
     options: &Options,
-    callback: Arc<dyn BrokenLinkCallback>,
+    callback: Arc<dyn BrokenLinkCallback + 'c>,
 ) -> &'a AstNode<'a> {
     let mut options_with_callback = options.clone();
     options_with_callback.parse.broken_link_callback = Some(callback);
@@ -105,7 +105,7 @@ pub trait BrokenLinkCallback: RefUnwindSafe + Send + Sync {
     fn resolve(&self, broken_link_reference: BrokenLinkReference) -> Option<ResolvedReference>;
 }
 
-impl Debug for dyn BrokenLinkCallback {
+impl<'c> Debug for dyn BrokenLinkCallback + 'c {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         formatter.write_str("<dyn BrokenLinkCallback>")
     }
@@ -134,7 +134,7 @@ pub struct BrokenLinkReference<'l> {
     pub original: &'l str,
 }
 
-pub struct Parser<'a, 'o> {
+pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: RefMap,
     root: &'a AstNode<'a>,
@@ -153,18 +153,18 @@ pub struct Parser<'a, 'o> {
     last_line_length: usize,
     last_buffer_ended_with_cr: bool,
     total_size: usize,
-    options: &'o Options,
+    options: &'o Options<'c>,
 }
 
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Umbrella options struct.
-pub struct Options {
+pub struct Options<'c> {
     /// Enable CommonMark extensions.
-    pub extension: ExtensionOptions,
+    pub extension: ExtensionOptions<'c>,
 
     /// Configure parse-time options.
-    pub parse: ParseOptions,
+    pub parse: ParseOptions<'c>,
 
     /// Configure render-time options.
     pub render: RenderOptions,
@@ -176,7 +176,7 @@ pub trait URLRewriter: RefUnwindSafe + Send + Sync {
     fn to_html(&self, url: &str) -> String;
 }
 
-impl Debug for dyn URLRewriter {
+impl<'c> Debug for dyn URLRewriter + 'c {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         formatter.write_str("<dyn URLRewriter>")
     }
@@ -196,7 +196,7 @@ where
 #[derive(Default, Debug, Clone, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
-pub struct ExtensionOptions {
+pub struct ExtensionOptions<'c> {
     /// Enables the
     /// [strikethrough extension](https://github.github.com/gfm/#strikethrough-extension-)
     /// from the GFM spec.
@@ -597,7 +597,7 @@ pub struct ExtensionOptions {
     ///            "<p><img src=\"https://safe.example.com?url=http://unsafe.example.com/bad.png\" alt=\"\" /></p>\n");
     /// ```
     #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
-    pub image_url_rewriter: Option<Arc<dyn URLRewriter>>,
+    pub image_url_rewriter: Option<Arc<dyn URLRewriter + 'c>>,
 
     /// Wraps link URLs using a function or custom trait object.
     ///
@@ -614,14 +614,14 @@ pub struct ExtensionOptions {
     ///            "<p><a href=\"https://safe.example.com/norefer?url=http://unsafe.example.com/bad\">my link</a></p>\n");
     /// ```
     #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
-    pub link_url_rewriter: Option<Arc<dyn URLRewriter>>,
+    pub link_url_rewriter: Option<Arc<dyn URLRewriter + 'c>>,
 }
 
 #[non_exhaustive]
 #[derive(Default, Clone, Debug, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for parser functions.
-pub struct ParseOptions {
+pub struct ParseOptions<'c> {
     /// Punctuation (quotes, full-stops and hyphens) are converted into 'smart' punctuation.
     ///
     /// ```
@@ -703,7 +703,7 @@ pub struct ParseOptions {
     ///            <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
     ///            A [broken link] renders as text.</p>\n");
     #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub broken_link_callback: Option<Arc<dyn BrokenLinkCallback>>,
+    pub broken_link_callback: Option<Arc<dyn BrokenLinkCallback + 'c>>,
 }
 
 #[non_exhaustive]
@@ -1110,8 +1110,11 @@ struct FootnoteDefinition<'a> {
     total_references: u32,
 }
 
-impl<'a, 'o> Parser<'a, 'o> {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options) -> Self {
+impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
+where
+    'c: 'o,
+{
+    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),

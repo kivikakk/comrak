@@ -100,11 +100,11 @@ pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
 /// Legacy naming of [`ExtensionOptions`]
-pub type ComrakExtensionOptions = ExtensionOptions;
+pub type ComrakExtensionOptions<'c> = ExtensionOptions<'c>;
 /// Legacy naming of [`Options`]
-pub type ComrakOptions = Options;
+pub type ComrakOptions<'c> = Options<'c>;
 /// Legacy naming of [`ParseOptions`]
-pub type ComrakParseOptions = ParseOptions;
+pub type ComrakParseOptions<'c> = ParseOptions<'c>;
 /// Legacy naming of [`Plugins`]
 pub type ComrakPlugins<'a> = Plugins<'a>;
 /// Legacy naming of [`RenderOptions`]

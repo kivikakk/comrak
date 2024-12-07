@@ -80,9 +80,9 @@ pub fn html(input: &str, expected: &str) {
 }
 
 #[track_caller]
-fn html_opts_i<F>(input: &str, expected: &str, roundtrip: bool, opts: F)
+fn html_opts_i<'c, F>(input: &str, expected: &str, roundtrip: bool, opts: F)
 where
-    F: Fn(&mut Options),
+    F: FnOnce(&mut Options<'c>),
 {
     let mut options = Options::default();
     opts(&mut options);

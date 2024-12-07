@@ -47,9 +47,9 @@ pub fn format_document_with_plugins<'a>(
     Ok(())
 }
 
-struct CommonMarkFormatter<'a, 'o> {
+struct CommonMarkFormatter<'a, 'o, 'c> {
     node: &'a AstNode<'a>,
-    options: &'o Options,
+    options: &'o Options<'c>,
     v: Vec<u8>,
     prefix: Vec<u8>,
     column: usize,
@@ -72,7 +72,7 @@ enum Escaping {
     Title,
 }
 
-impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
+impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
         Ok(buf.len())
@@ -83,8 +83,8 @@ impl<'a, 'o> Write for CommonMarkFormatter<'a, 'o> {
     }
 }
 
-impl<'a, 'o> CommonMarkFormatter<'a, 'o> {
-    fn new(node: &'a AstNode<'a>, options: &'o Options) -> Self {
+impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
+    fn new(node: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
         CommonMarkFormatter {
             node,
             options,
