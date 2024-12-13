@@ -1486,6 +1486,142 @@ where
         }
     }
 
+    fn detect_multiline_blockquote(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+    ) -> bool {
+        !indented
+            && self.options.extension.multiline_block_quotes
+            && unwrap_into(
+                scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..]),
+                matched,
+            )
+    }
+
+    fn detect_blockquote(&mut self, line: &[u8], indented: bool) -> bool {
+        !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+    }
+
+    fn detect_atx_heading(&mut self, line: &[u8], indented: bool, matched: &mut usize) -> bool {
+        !indented
+            && unwrap_into(
+                scanners::atx_heading_start(&line[self.first_nonspace..]),
+                matched,
+            )
+    }
+
+    fn detect_code_fence(&mut self, line: &[u8], indented: bool, matched: &mut usize) -> bool {
+        !indented
+            && unwrap_into(
+                scanners::open_code_fence(&line[self.first_nonspace..]),
+                matched,
+            )
+    }
+
+    fn detect_html_block(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+        container: &AstNode,
+    ) -> bool {
+        !indented
+            && (unwrap_into(
+                scanners::html_block_start(&line[self.first_nonspace..]),
+                matched,
+            ) || (!node_matches!(container, NodeValue::Paragraph)
+                && unwrap_into(
+                    scanners::html_block_start_7(&line[self.first_nonspace..]),
+                    matched,
+                )))
+    }
+
+    fn detect_setext_heading(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        sc: &mut scanners::SetextChar,
+        container: &AstNode,
+    ) -> bool {
+        !indented
+            && node_matches!(container, NodeValue::Paragraph)
+            && unwrap_into(self.setext_heading_line(&line[self.first_nonspace..]), sc)
+    }
+
+    fn detect_thematic_break(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+        container: &AstNode,
+        all_matched: bool,
+    ) -> bool {
+        !indented
+            && !matches!(
+                (&container.data.borrow().value, all_matched),
+                (&NodeValue::Paragraph, false)
+            )
+            && self.thematic_break_kill_pos <= self.first_nonspace
+            && unwrap_into(self.scan_thematic_break(line), matched)
+    }
+
+    fn detect_footnote(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+        depth: usize,
+    ) -> bool {
+        !indented
+            && self.options.extension.footnotes
+            && depth < MAX_LIST_DEPTH
+            && unwrap_into(
+                scanners::footnote_definition(&line[self.first_nonspace..]),
+                matched,
+            )
+    }
+
+    fn detect_description_list(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+        container: &mut &'a Node<'a, RefCell<Ast>>,
+    ) -> bool {
+        !indented
+            && self.options.extension.description_lists
+            && unwrap_into(
+                scanners::description_item_start(&line[self.first_nonspace..]),
+                matched,
+            )
+            && self.parse_desc_list_details(container, *matched)
+    }
+
+    fn detect_list(
+        &mut self,
+        line: &[u8],
+        indented: bool,
+        matched: &mut usize,
+        container: &AstNode,
+        depth: usize,
+        nl: &mut NodeList,
+    ) -> bool {
+        (!indented || node_matches!(container, NodeValue::List(..)))
+            && self.indent < 4
+            && depth < MAX_LIST_DEPTH
+            && unwrap_into_2(
+                parse_list_marker(
+                    line,
+                    self.first_nonspace,
+                    node_matches!(container, NodeValue::Paragraph),
+                ),
+                matched,
+                nl,
+            )
+    }
+
     fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
@@ -1501,13 +1637,7 @@ where
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if !indented
-                && self.options.extension.multiline_block_quotes
-                && unwrap_into(
-                    scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-            {
+            if self.detect_multiline_blockquote(line, indented, &mut matched) {
                 let first_nonspace = self.first_nonspace;
                 let offset = self.offset;
                 let nmbc = NodeMultilineBlockQuote {
@@ -1520,8 +1650,7 @@ where
                     self.first_nonspace + 1,
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
-            } else if !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
-            {
+            } else if self.detect_blockquote(line, indented) {
                 let blockquote_startpos = self.first_nonspace;
 
                 let offset = self.first_nonspace + 1 - self.offset;
@@ -1531,12 +1660,7 @@ where
                 }
                 *container =
                     self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
-            } else if !indented
-                && unwrap_into(
-                    scanners::atx_heading_start(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-            {
+            } else if self.detect_atx_heading(line, indented, &mut matched) {
                 let heading_startpos = self.first_nonspace;
                 let offset = self.offset;
                 self.advance_offset(line, heading_startpos + matched - offset, false);
@@ -1563,12 +1687,7 @@ where
                     setext: false,
                 });
                 container_ast.internal_offset = matched;
-            } else if !indented
-                && unwrap_into(
-                    scanners::open_code_fence(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-            {
+            } else if self.detect_code_fence(line, indented, &mut matched) {
                 let first_nonspace = self.first_nonspace;
                 let offset = self.offset;
                 let ncb = NodeCodeBlock {
@@ -1585,16 +1704,7 @@ where
                     self.first_nonspace + 1,
                 );
                 self.advance_offset(line, first_nonspace + matched - offset, false);
-            } else if !indented
-                && (unwrap_into(
-                    scanners::html_block_start(&line[self.first_nonspace..]),
-                    &mut matched,
-                ) || (!node_matches!(container, NodeValue::Paragraph)
-                    && unwrap_into(
-                        scanners::html_block_start_7(&line[self.first_nonspace..]),
-                        &mut matched,
-                    )))
-            {
+            } else if self.detect_html_block(line, indented, &mut matched, container) {
                 let nhb = NodeHtmlBlock {
                     block_type: matched as u8,
                     literal: String::new(),
@@ -1605,13 +1715,7 @@ where
                     NodeValue::HtmlBlock(nhb),
                     self.first_nonspace + 1,
                 );
-            } else if !indented
-                && node_matches!(container, NodeValue::Paragraph)
-                && unwrap_into(
-                    self.setext_heading_line(&line[self.first_nonspace..]),
-                    &mut sc,
-                )
-            {
+            } else if self.detect_setext_heading(line, indented, &mut sc, container) {
                 let has_content = {
                     let mut ast = container.data.borrow_mut();
                     self.resolve_reference_link_definitions(&mut ast.content)
@@ -1627,26 +1731,18 @@ where
                     let adv = line.len() - 1 - self.offset;
                     self.advance_offset(line, adv, false);
                 }
-            } else if !indented
-                && !matches!(
-                    (&container.data.borrow().value, all_matched),
-                    (&NodeValue::Paragraph, false)
-                )
-                && self.thematic_break_kill_pos <= self.first_nonspace
-                && unwrap_into(self.scan_thematic_break(line), &mut matched)
-            {
+            } else if self.detect_thematic_break(
+                line,
+                indented,
+                &mut matched,
+                container,
+                all_matched,
+            ) {
                 *container =
                     self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
                 let adv = line.len() - 1 - self.offset;
                 self.advance_offset(line, adv, false);
-            } else if !indented
-                && self.options.extension.footnotes
-                && depth < MAX_LIST_DEPTH
-                && unwrap_into(
-                    scanners::footnote_definition(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-            {
+            } else if self.detect_footnote(line, indented, &mut matched, depth) {
                 let mut c = &line[self.first_nonspace + 2..self.first_nonspace + matched];
                 c = c.split(|&e| e == b']').next().unwrap();
                 let offset = self.first_nonspace + matched - self.offset;
@@ -1660,32 +1756,13 @@ where
                     self.first_nonspace + 1,
                 );
                 container.data.borrow_mut().internal_offset = matched;
-            } else if !indented
-                && self.options.extension.description_lists
-                && unwrap_into(
-                    scanners::description_item_start(&line[self.first_nonspace..]),
-                    &mut matched,
-                )
-                && self.parse_desc_list_details(container, matched)
-            {
+            } else if self.detect_description_list(line, indented, &mut matched, container) {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 if strings::is_space_or_tab(line[self.offset]) {
                     self.advance_offset(line, 1, true);
                 }
-            } else if (!indented || node_matches!(container, NodeValue::List(..)))
-                && self.indent < 4
-                && depth < MAX_LIST_DEPTH
-                && unwrap_into_2(
-                    parse_list_marker(
-                        line,
-                        self.first_nonspace,
-                        node_matches!(container, NodeValue::Paragraph),
-                    ),
-                    &mut matched,
-                    &mut nl,
-                )
-            {
+            } else if self.detect_list(line, indented, &mut matched, container, depth, &mut nl) {
                 let offset = self.first_nonspace + matched - self.offset;
                 self.advance_offset(line, offset, false);
                 let (save_partially_consumed_tab, save_offset, save_column) =
