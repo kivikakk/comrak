@@ -21,6 +21,8 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
+use super::WikiLinksMode;
+
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
@@ -235,8 +237,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
 
                 let mut wikilink_inl = None;
 
-                if (self.options.extension.wikilinks_title_after_pipe
-                    || self.options.extension.wikilinks_title_before_pipe)
+                if self.options.extension.wikilinks().is_some()
                     && !self.within_brackets
                     && self.peek_char() == Some(&(b'['))
                 {
@@ -1804,16 +1805,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
             self.pos += 2;
 
-            if self.options.extension.wikilinks_title_after_pipe {
-                Some(WikilinkComponents {
+            match self.options.extension.wikilinks() {
+                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
                     url: left,
                     link_label: Some((right, right_startpos + 1, self.pos - 3)),
-                })
-            } else {
-                Some(WikilinkComponents {
+                }),
+                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
                     url: right,
                     link_label: Some((left, left_startpos + 1, right_startpos - 1)),
-                })
+                }),
+                None => unreachable!(),
             }
         } else {
             self.pos = left_startpos;

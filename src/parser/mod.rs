@@ -193,6 +193,19 @@ where
 }
 
 #[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// Selects between wikilinks with the title first or the URL first.
+pub(crate) enum WikiLinksMode {
+    /// Indicates that the URL precedes the title. For example: `[[http://example.com|link
+    /// title]]`.
+    UrlFirst,
+
+    /// Indicates that the title precedes the URL. For example: `[[link title|http://example.com]]`.
+    TitleFirst,
+}
+
+#[non_exhaustive]
 #[derive(Default, Debug, Clone, Builder)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options to select extensions.
@@ -472,6 +485,11 @@ pub struct ExtensionOptions<'c> {
     /// [[url|link label]]
     /// ````
     ///
+    /// When both this option and [`wikilinks_title_before_pipe`][0] are enabled, this option takes
+    /// precedence.
+    ///
+    /// [0]: Self::wikilinks_title_before_pipe
+    ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
@@ -487,6 +505,10 @@ pub struct ExtensionOptions<'c> {
     /// ```` md
     /// [[link label|url]]
     /// ````
+    /// When both this option and [`wikilinks_title_after_pipe`][0] are enabled,
+    /// [`wikilinks_title_after_pipe`][0] takes precedence.
+    ///
+    /// [0]: Self::wikilinks_title_after_pipe
     ///
     /// ```
     /// # use comrak::{markdown_to_html, Options};
@@ -615,6 +637,19 @@ pub struct ExtensionOptions<'c> {
     /// ```
     #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
     pub link_url_rewriter: Option<Arc<dyn URLRewriter + 'c>>,
+}
+
+impl<'c> ExtensionOptions<'c> {
+    pub(crate) fn wikilinks(&self) -> Option<WikiLinksMode> {
+        match (
+            self.wikilinks_title_before_pipe,
+            self.wikilinks_title_after_pipe,
+        ) {
+            (false, false) => None,
+            (true, false) => Some(WikiLinksMode::TitleFirst),
+            (_, _) => Some(WikiLinksMode::UrlFirst),
+        }
+    }
 }
 
 #[non_exhaustive]
@@ -865,6 +900,8 @@ pub struct RenderOptions {
     /// let xml = markdown_to_commonmark_xml(input, &options);
     /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
     /// ```
+    ///
+    /// [`experimental_inline_sourcepos`]: crate::RenderOptionsBuilder::experimental_inline_sourcepos
     #[builder(default)]
     pub sourcepos: bool,
 
