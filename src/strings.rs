@@ -299,10 +299,15 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
     start += match s[start..]
         .find(&("\n".to_string() + delimiter + "\r\n"))
         .or_else(|| s[start..].find(&("\n".to_string() + delimiter + "\n")))
+        .or_else(|| s[start..].find(&("\n".to_string() + delimiter))) // delimiter followed by EOF
     {
         Some(n) => n + 1 + delimiter.len(),
         None => return None,
     };
+
+    if start == s.len() {
+        return Some((s, ""));
+    }
 
     start += if s[start..].starts_with('\n') {
         1
