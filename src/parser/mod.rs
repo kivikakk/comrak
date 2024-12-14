@@ -639,7 +639,7 @@ pub struct ExtensionOptions<'c> {
     pub link_url_rewriter: Option<Arc<dyn URLRewriter + 'c>>,
 }
 
-impl ExtensionOptions {
+impl<'c> ExtensionOptions<'c> {
     pub(crate) fn wikilinks(&self) -> Option<WikiLinksMode> {
         match (
             self.wikilinks_title_before_pipe,
