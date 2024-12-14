@@ -179,3 +179,37 @@ fn second_line() {
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
+
+#[test]
+fn fm_only_with_trailing_newline() {
+    let input = "---\nfoo: bar\n---\n";
+
+    let mut options = Options::default();
+    options.extension.front_matter_delimiter = Some("---".to_owned());
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, &options);
+
+    let found = root
+        .descendants()
+        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
+        .next();
+
+    assert!(found.is_some(), "front matter expected");
+}
+
+#[test]
+fn fm_only_without_trailing_newline() {
+    let input = "---\nfoo: bar\n---";
+
+    let mut options = Options::default();
+    options.extension.front_matter_delimiter = Some("---".to_owned());
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, &options);
+
+    let found = root
+        .descendants()
+        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
+        .next();
+
+    assert!(found.is_some(), "front matter expected");
+}
