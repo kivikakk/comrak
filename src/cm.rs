@@ -167,7 +167,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                     self.begin_content = self.begin_content && isdigit(buf[i]);
                 }
             } else {
-                self.outc(buf[i], escaping, nextc);
+                self.outc(buf, i, escaping, nextc);
                 self.begin_line = false;
                 self.begin_content = self.begin_content && isdigit(buf[i]);
             }
@@ -192,7 +192,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         }
     }
 
-    fn outc(&mut self, c: u8, escaping: Escaping, nextc: Option<&u8>) {
+    fn outc(&mut self, buf: &[u8], idx: usize, escaping: Escaping, nextc: Option<&u8>) {
+        let c = buf[idx];
         let follows_digit = !self.v.is_empty() && isdigit(self.v[self.v.len() - 1]);
 
         let nextc = nextc.map_or(0, |&c| c);
@@ -205,7 +206,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                     || c == b'_'
                     || c == b'['
                     || c == b']'
-                    || c == b'#'
+                    || (c == b'#' && buf.get(idx + 1).map(|ch| *ch == b' ').unwrap_or_default())
                     || c == b'<'
                     || c == b'>'
                     || c == b'\\'
