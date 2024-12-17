@@ -6,7 +6,7 @@ use comrak::{
     markdown_to_html, BrokenLinkReference, ExtensionOptions, ListStyleType, Options, ParseOptions,
     RenderOptions, ResolvedReference,
 };
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 fuzz_target!(|s: &str| {
     let mut extension = ExtensionOptions::default();
