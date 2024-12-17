@@ -21,6 +21,7 @@ mod multiline_block_quotes;
 mod options;
 mod pathological;
 mod plugins;
+mod raw;
 mod regressions;
 mod rewriter;
 mod shortcodes;

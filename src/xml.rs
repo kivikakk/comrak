@@ -89,7 +89,8 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
-                            | NodeValue::HtmlInline(ref literal) => {
+                            | NodeValue::HtmlInline(ref literal)
+                            | NodeValue::Raw(ref literal) => {
                                 self.escape(literal.as_bytes())?;
                             }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
@@ -148,7 +149,8 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Text(ref literal)
                 | NodeValue::Code(NodeCode { ref literal, .. })
                 | NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. })
-                | NodeValue::HtmlInline(ref literal) => {
+                | NodeValue::HtmlInline(ref literal)
+                | NodeValue::Raw(ref literal) => {
                     self.output.write_all(b" xml:space=\"preserve\">")?;
                     self.escape(literal.as_bytes())?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;

@@ -127,6 +127,9 @@ pub enum NodeValue {
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
 
+    /// **Inline**.  A Raw text.
+    Raw(String),
+
     /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
     Emph,
@@ -511,6 +514,7 @@ impl NodeValue {
             NodeValue::Strong => "strong",
             NodeValue::Code(..) => "code",
             NodeValue::HtmlInline(..) => "html_inline",
+            NodeValue::Raw(..) => "raw",
             NodeValue::Strikethrough => "strikethrough",
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",
