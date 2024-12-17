@@ -380,9 +380,6 @@ where
                             | NodeValue::HtmlInline(ref literal) => {
                                 self.escape(literal.as_bytes())?;
                             }
-                            NodeValue::Raw(ref literal) => {
-                                self.output.write_all(literal.as_bytes())?;
-                            }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
                                 self.output.write_all(b" ")?;
                             }
