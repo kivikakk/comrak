@@ -757,6 +757,12 @@ where
                     }
                 }
             }
+            NodeValue::Raw(ref literal) => {
+                // No sourcepos.
+                if entering {
+                    self.output.write_all(literal.as_bytes())?;
+                }
+            }
             NodeValue::Strong => {
                 // Unreliable sourcepos.
                 let parent_node = node.parent();

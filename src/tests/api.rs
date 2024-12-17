@@ -239,6 +239,9 @@ fn exercise_full_api() {
         nodes::NodeValue::HtmlInline(html) => {
             let _: &String = html;
         }
+        nodes::NodeValue::Raw(text) => {
+            let _: &String = text;
+        }
         nodes::NodeValue::Emph => {}
         nodes::NodeValue::Strong => {}
         nodes::NodeValue::Strikethrough => {}

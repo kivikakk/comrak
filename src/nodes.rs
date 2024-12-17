@@ -127,6 +127,10 @@ pub enum NodeValue {
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
 
+    /// **Block/Inline**.  A Raw output node. This will be inserted verbatim into CommonMark and
+    /// HTML output. It can only be created programmatically, and is never parsed from input.
+    Raw(String),
+
     /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
     Emph,
@@ -511,6 +515,7 @@ impl NodeValue {
             NodeValue::Strong => "strong",
             NodeValue::Code(..) => "code",
             NodeValue::HtmlInline(..) => "html_inline",
+            NodeValue::Raw(..) => "raw",
             NodeValue::Strikethrough => "strikethrough",
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",

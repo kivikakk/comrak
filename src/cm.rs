@@ -366,6 +366,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::HtmlInline(ref literal) => {
                 self.format_html_inline(literal.as_bytes(), entering)
             }
+            NodeValue::Raw(ref literal) => self.format_raw(literal.as_bytes(), entering),
             NodeValue::Strong => {
                 if parent_node.is_none()
                     || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong)
@@ -681,6 +682,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     }
 
     fn format_html_inline(&mut self, literal: &[u8], entering: bool) {
+        if entering {
+            self.write_all(literal).unwrap();
+        }
+    }
+
+    fn format_raw(&mut self, literal: &[u8], entering: bool) {
         if entering {
             self.write_all(literal).unwrap();
         }
