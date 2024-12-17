@@ -1,5 +1,5 @@
 # [v0.32.0] - 17-12-2024
-## What's Changed
+
 * rust-toolchain: remove by @charlottia in https://github.com/kivikakk/comrak/pull/493
 * Account for front matter when calculating  by @SamWilsn in https://github.com/kivikakk/comrak/pull/494
 * callbacks: constrain to input lifetime by @liamwhite in https://github.com/kivikakk/comrak/pull/499
@@ -10,11 +10,14 @@
 * Add Raw Node by @wakairo in https://github.com/kivikakk/comrak/pull/511
 
 ## New Contributors
+
 * @charlottia made their first contribution in https://github.com/kivikakk/comrak/pull/493
 * @SamWilsn made their first contribution in https://github.com/kivikakk/comrak/pull/494
 * @wakairo made their first contribution in https://github.com/kivikakk/comrak/pull/511
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.31.0...v0.32.0
+Diff: https://github.com/kivikakk/comrak/compare/v0.31.0...v0.32.0
+
+
 # [v0.31.0] - 26-11-2024
 
 * Enhance description lists by @digitalmoksha in https://github.com/kivikakk/comrak/pull/462
