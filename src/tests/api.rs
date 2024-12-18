@@ -1,3 +1,5 @@
+#![cfg(feature = "bon")]
+
 use std::sync::{Arc, Mutex};
 
 use parser::BrokenLinkReference;

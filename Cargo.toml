@@ -81,3 +81,7 @@ clap = { version = "4.0", optional = true, features = [
 [[example]]
 name = "syntect"
 required-features = [ "syntect" ]
+
+[[example]]
+name = "s-expr"
+required-features = [ "bon" ]
