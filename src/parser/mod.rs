@@ -787,8 +787,7 @@ pub struct RenderOptions {
     ///
     /// options.render.full_info_string = true;
     /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
-    /// let re = regex::Regex::new(r#"data-meta="extra info""#).unwrap();
-    /// assert!(re.is_match(&html));
+    /// assert!(html.contains(r#"data-meta="extra info""#));
     /// ```
     #[builder(default)]
     pub full_info_string: bool,

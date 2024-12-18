@@ -165,8 +165,6 @@ dependencies = [
  "entities",
  "memchr",
  "ntest",
- "once_cell",
- "regex",
  "shell-words",
  "slug",
  "syntect",
