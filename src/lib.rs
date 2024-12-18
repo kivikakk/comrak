@@ -90,14 +90,18 @@ pub use html::Anchorizer;
 #[allow(deprecated)]
 pub use parser::parse_document_with_broken_link_callback;
 pub use parser::{
-    parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions,
-    ExtensionOptionsBuilder, ListStyleType, Options, ParseOptions, ParseOptionsBuilder, Plugins,
-    PluginsBuilder, RenderOptions, RenderOptionsBuilder, RenderPlugins, RenderPluginsBuilder,
-    ResolvedReference, URLRewriter,
+    parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions, ListStyleType,
+    Options, ParseOptions, Plugins, RenderOptions, RenderPlugins, ResolvedReference, URLRewriter,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
+
+#[cfg(feature = "bon")]
+pub use parser::{
+    ExtensionOptionsBuilder, ParseOptionsBuilder, PluginsBuilder, RenderOptionsBuilder,
+    RenderPluginsBuilder,
+};
 
 /// Legacy naming of [`ExtensionOptions`]
 pub type ComrakExtensionOptions<'c> = ExtensionOptions<'c>;
