@@ -7,13 +7,12 @@ use crate::nodes::{
 };
 use crate::parser::{Options, Plugins};
 use crate::scanners;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
 use std::str;
+use unicode_categories::UnicodeCategories;
 
 use crate::adapters::HeadingMeta;
 
@@ -102,11 +101,21 @@ impl Anchorizer {
     /// assert_eq!("ticks-arent-in".to_string(), anchorizer.anchorize(source.to_string()));
     /// ```
     pub fn anchorize(&mut self, header: String) -> String {
-        static REJECTED_CHARS: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"[^\p{L}\p{M}\p{N}\p{Pc} -]").unwrap());
+        fn is_permitted_char(&c: &char) -> bool {
+            c == ' '
+                || c == '-'
+                || c.is_letter()
+                || c.is_mark()
+                || c.is_number()
+                || c.is_punctuation_connector()
+        }
 
         let mut id = header.to_lowercase();
-        id = REJECTED_CHARS.replace_all(&id, "").replace(' ', "-");
+        id = id
+            .chars()
+            .filter(is_permitted_char)
+            .map(|c| if c == ' ' { '-' } else { c })
+            .collect();
 
         let mut uniq = 0;
         id = loop {
