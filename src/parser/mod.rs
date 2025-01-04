@@ -207,7 +207,6 @@ pub(crate) enum WikiLinksMode {
     TitleFirst,
 }
 
-#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -655,7 +654,6 @@ impl<'c> ExtensionOptions<'c> {
     }
 }
 
-#[non_exhaustive]
 #[derive(Default, Clone, Debug)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -745,7 +743,6 @@ pub struct ParseOptions<'c> {
     pub broken_link_callback: Option<Arc<dyn BrokenLinkCallback + 'c>>,
 }
 
-#[non_exhaustive]
 #[derive(Default, Debug, Clone, Copy)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -1069,7 +1066,6 @@ pub struct RenderOptions {
     pub ol_width: usize,
 }
 
-#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Umbrella plugins struct.
@@ -1079,7 +1075,6 @@ pub struct Plugins<'p> {
     pub render: RenderPlugins<'p>,
 }
 
-#[non_exhaustive]
 #[derive(Default, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.
