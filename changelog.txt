@@ -1,3 +1,11 @@
+# [v0.33.0] - 04-01-2025
+## What's Changed
+* Eliminate  and  dependencies. by @nicoburns in https://github.com/kivikakk/comrak/pull/514
+* Make bon builders optional by @nicoburns in https://github.com/kivikakk/comrak/pull/515
+* Make options structs exhaustive by @nicoburns in https://github.com/kivikakk/comrak/pull/516
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.32.0...v0.33.0
 # [v0.32.0] - 17-12-2024
 
 * rust-toolchain: remove by @charlottia in https://github.com/kivikakk/comrak/pull/493
