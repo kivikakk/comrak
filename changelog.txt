@@ -1,11 +1,23 @@
+# [v0.33.0] - 04-01-2025
+
+Happy new year! Thanks to @nicoburns for these changes, enabling much faster
+compiles if you don't need the builders!
+
+* Eliminate `regex` and `once_cell` dependencies. by @nicoburns in https://github.com/kivikakk/comrak/pull/514
+* Make bon builders optional by @nicoburns in https://github.com/kivikakk/comrak/pull/515
+* Make options structs exhaustive by @nicoburns in https://github.com/kivikakk/comrak/pull/516
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.32.0...v0.33.0
+
+
 # [v0.32.0] - 17-12-2024
 
 * rust-toolchain: remove by @charlottia in https://github.com/kivikakk/comrak/pull/493
-* Account for front matter when calculating  by @SamWilsn in https://github.com/kivikakk/comrak/pull/494
+* Account for front matter when calculating `sourcepos` by @SamWilsn in https://github.com/kivikakk/comrak/pull/494
 * callbacks: constrain to input lifetime by @liamwhite in https://github.com/kivikakk/comrak/pull/499
 * Refactor open_new_blocks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/505
 * Refactors open_new_blocks by lifting out handlers by @digitalmoksha in https://github.com/kivikakk/comrak/pull/506
-* Make  override  by @SamWilsn in https://github.com/kivikakk/comrak/pull/500
+* Make `wikilinks_title_after_pipe` override `wikilinks_title_before_pipe` by @SamWilsn in https://github.com/kivikakk/comrak/pull/500
 * Detect ending front matter delimiter at EOF by @kivikakk in https://github.com/kivikakk/comrak/pull/508
 * Add Raw Node by @wakairo in https://github.com/kivikakk/comrak/pull/511
 
