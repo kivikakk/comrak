@@ -60,6 +60,8 @@
     scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
 */
 
+use crate::parser::alert::AlertType;
+
 pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -117,6 +119,20 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
 /*!re2c
     [^\n\x00]* ']]>' { return true; }
     * { return false; }
+*/
+}
+
+pub fn alert_start(s: &[u8]) -> Option<AlertType> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    '> [!note]' { return Some(AlertType::Note); }
+    '> [!tip]' { return Some(AlertType::Tip); }
+    '> [!important]' { return Some(AlertType::Important); }
+    '> [!warning]' { return Some(AlertType::Warning); }
+    '> [!caution]' { return Some(AlertType::Caution); }
+    * { return None; }
 */
 }
 

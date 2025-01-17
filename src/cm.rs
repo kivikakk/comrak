@@ -1,7 +1,7 @@
 use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::{
-    AstNode, ListDelimType, ListType, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeMath, NodeTable, NodeValue, NodeWikiLink,
+    AstNode, ListDelimType, ListType, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
+    NodeLink, NodeMath, NodeTable, NodeValue, NodeWikiLink,
 };
 use crate::nodes::{NodeList, TableAlignment};
 #[cfg(feature = "shortcodes")]
@@ -401,6 +401,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::Subscript => self.format_subscript(),
             NodeValue::SpoileredText => self.format_spoiler(),
             NodeValue::EscapedTag(ref net) => self.format_escaped_tag(net),
+            NodeValue::Alert(ref alert) => self.format_alert(alert, entering),
         };
         true
     }
@@ -902,6 +903,29 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             self.output(start_fence.as_bytes(), false, Escaping::Literal);
             self.output(literal, allow_wrap, Escaping::Literal);
             self.output(end_fence.as_bytes(), false, Escaping::Literal);
+        }
+    }
+
+    fn format_alert(&mut self, alert: &NodeAlert, entering: bool) {
+        if entering {
+            write!(
+                self,
+                "> [!{}]",
+                alert.alert_type.default_title().to_uppercase()
+            )
+            .unwrap();
+            if alert.title.is_some() {
+                let title = alert.title.as_ref().unwrap();
+                write!(self, " {}", title).unwrap();
+            }
+            writeln!(self).unwrap();
+            write!(self, "> ").unwrap();
+            self.begin_content = true;
+            write!(self.prefix, "> ").unwrap();
+        } else {
+            let new_len = self.prefix.len() - 2;
+            self.prefix.truncate(new_len);
+            self.blankline();
         }
     }
 }

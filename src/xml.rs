@@ -286,6 +286,23 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::EscapedTag(ref data) => {
                     self.output.write_all(data.as_bytes())?;
                 }
+                NodeValue::Alert(ref alert) => {
+                    self.output.write_all(b" type=\"")?;
+                    self.output
+                        .write_all(alert.alert_type.default_title().to_lowercase().as_bytes())?;
+                    self.output.write_all(b"\"")?;
+                    if alert.title.is_some() {
+                        let title = alert.title.as_ref().unwrap();
+
+                        self.output.write_all(b" title=\"")?;
+                        self.escape(title.as_bytes())?;
+                        self.output.write_all(b"\"")?;
+                    }
+
+                    if alert.multiline {
+                        self.output.write_all(b" multiline=true")?;
+                    }
+                }
             }
 
             if node.first_child().is_some() {
