@@ -197,6 +197,10 @@ struct FuzzExtensionOptions {
     shortcodes: bool,
     wikilinks_title_after_pipe: bool,
     wikilinks_title_before_pipe: bool,
+    underline: bool,
+    spoiler: bool,
+    greentext: bool,
+    alerts: bool,
 }
 
 impl FuzzExtensionOptions {
@@ -216,6 +220,10 @@ impl FuzzExtensionOptions {
         extension.shortcodes = self.shortcodes;
         extension.wikilinks_title_after_pipe = self.wikilinks_title_after_pipe;
         extension.wikilinks_title_before_pipe = self.wikilinks_title_before_pipe;
+        extension.underline = self.underline;
+        extension.spoiler = self.spoiler;
+        extension.greentext = self.greentext;
+        extension.alerts = self.alerts;
         extension.front_matter_delimiter = None;
         extension.header_ids = None;
         extension

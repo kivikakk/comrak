@@ -75,7 +75,8 @@ fn exercise_full_api() {
         .underline(true)
         .subscript(true)
         .spoiler(true)
-        .greentext(true);
+        .greentext(true)
+        .alerts(true);
 
     let parse = ParseOptions::builder()
         .smart(false)

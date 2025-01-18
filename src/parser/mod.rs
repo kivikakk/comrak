@@ -422,8 +422,23 @@ pub struct ExtensionOptions<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub multiline_block_quotes: bool,
 
-    // #[cfg_attr(feature = "bon", builder(default))]
-    // pub alerts: bool,
+    /// Enables GitHub style alerts
+    ///
+    /// ```md
+    /// > [!note]
+    /// > Something of note
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.alerts = true;
+    /// assert_eq!(markdown_to_html("> [!note]\n> Something of note", &options),
+    ///            "<div class=\"alert alert-note\">\n<p class=\"alert-title\">Note</p>\n<p>Something of note</p>\n</div>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub alerts: bool,
+
     /// Enables math using dollar syntax.
     ///
     /// ``` md
@@ -1996,6 +2011,7 @@ where
 
     fn detect_alert(&mut self, line: &[u8], indented: bool, alert_type: &mut AlertType) -> bool {
         !indented
+            && self.options.extension.alerts
             && line[self.first_nonspace] == b'>'
             && unwrap_into(
                 scanners::alert_start(&line[self.first_nonspace..]),

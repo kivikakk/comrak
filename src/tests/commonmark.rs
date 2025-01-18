@@ -111,7 +111,7 @@ fn commonmark_relist() {
 #[test_case("> [!note] Title\n> A note", "> [!NOTE] Title\n> A note\n")]
 fn commonmark_alerts(markdown: &str, cm: &str) {
     let mut options = Options::default();
-    options.extension.wikilinks_title_before_pipe = true;
+    options.extension.alerts = true;
 
     commonmark(markdown, cm, Some(&options));
 }
