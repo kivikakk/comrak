@@ -300,7 +300,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     }
 
                     if alert.multiline {
-                        self.output.write_all(b" multiline=true")?;
+                        self.output.write_all(b" multiline=\"true\"")?;
                     }
                 }
             }
