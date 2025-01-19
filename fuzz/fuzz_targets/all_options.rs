@@ -29,6 +29,7 @@ fuzz_target!(|s: &str| {
     extension.underline = true;
     extension.spoiler = true;
     extension.greentext = true;
+    extension.alerts = true;
 
     let mut parse = ParseOptions::default();
     parse.smart = true;

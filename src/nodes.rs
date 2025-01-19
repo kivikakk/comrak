@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
+pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
@@ -204,6 +205,10 @@ pub enum NodeValue {
     /// **Inline**. Text surrounded by escaped markup. Enabled with `spoiler` option.
     /// The `String` is the tag to be escaped.
     EscapedTag(String),
+
+    /// **Block**. GitHub style alert boxes which uses a modified blockquote syntax.
+    /// Enabled with the `alerts` option.
+    Alert(NodeAlert),
 }
 
 /// Alignment of a single table cell.
@@ -449,6 +454,7 @@ impl NodeValue {
                 | NodeValue::TableCell
                 | NodeValue::TaskItem(..)
                 | NodeValue::MultilineBlockQuote(_)
+                | NodeValue::Alert(_)
         )
     }
 
@@ -531,6 +537,7 @@ impl NodeValue {
             NodeValue::Subscript => "subscript",
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
+            NodeValue::Alert(_) => "alert",
         }
     }
 }
@@ -835,6 +842,9 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
         }
 
+        NodeValue::Alert(_) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+        }
         _ => false,
     }
 }

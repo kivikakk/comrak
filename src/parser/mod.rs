@@ -4,6 +4,7 @@ mod inlines;
 pub mod shortcodes;
 mod table;
 
+pub mod alert;
 pub mod math;
 pub mod multiline_block_quote;
 
@@ -29,6 +30,7 @@ use std::sync::Arc;
 use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
+use crate::parser::alert::{AlertType, NodeAlert};
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 
 #[cfg(feature = "bon")]
@@ -419,6 +421,23 @@ pub struct ExtensionOptions<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub multiline_block_quotes: bool,
+
+    /// Enables GitHub style alerts
+    ///
+    /// ```md
+    /// > [!note]
+    /// > Something of note
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.alerts = true;
+    /// assert_eq!(markdown_to_html("> [!note]\n> Something of note", &options),
+    ///            "<div class=\"alert alert-note\">\n<p class=\"alert-title\">Note</p>\n<p>Something of note</p>\n</div>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub alerts: bool,
 
     /// Enables math using dollar syntax.
     ///
@@ -1506,6 +1525,11 @@ where
                         return (false, container, should_continue);
                     }
                 }
+                NodeValue::Alert(..) => {
+                    if !self.parse_block_quote_prefix(line) {
+                        return (false, container, should_continue);
+                    }
+                }
                 _ => {}
             }
         }
@@ -1985,6 +2009,59 @@ where
         true
     }
 
+    fn detect_alert(&mut self, line: &[u8], indented: bool, alert_type: &mut AlertType) -> bool {
+        !indented
+            && self.options.extension.alerts
+            && line[self.first_nonspace] == b'>'
+            && unwrap_into(
+                scanners::alert_start(&line[self.first_nonspace..]),
+                alert_type,
+            )
+    }
+
+    fn handle_alert(
+        &mut self,
+        container: &mut &'a Node<'a, RefCell<Ast>>,
+        line: &[u8],
+        indented: bool,
+    ) -> bool {
+        let mut alert_type: AlertType = Default::default();
+
+        if !self.detect_alert(line, indented, &mut alert_type) {
+            return false;
+        }
+
+        let alert_startpos = self.first_nonspace;
+        let mut title_startpos = self.first_nonspace;
+
+        while line[title_startpos] != b']' {
+            title_startpos += 1;
+        }
+        title_startpos += 1;
+
+        // anything remaining on this line is considered an alert title
+        let mut tmp = entity::unescape_html(&line[title_startpos..]);
+        strings::trim(&mut tmp);
+        strings::unescape(&mut tmp);
+
+        let na = NodeAlert {
+            alert_type,
+            multiline: false,
+            title: if tmp.is_empty() {
+                None
+            } else {
+                Some(String::from_utf8(tmp).unwrap())
+            },
+        };
+
+        let offset = self.curline_len - self.offset - 1;
+        self.advance_offset(line, offset, false);
+
+        *container = self.add_child(container, NodeValue::Alert(na), alert_startpos + 1);
+
+        true
+    }
+
     fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
@@ -2001,6 +2078,7 @@ where
             let indented = self.indent >= CODE_INDENT;
 
             if self.handle_multiline_blockquote(container, line, indented, &mut matched)
+                || self.handle_alert(container, line, indented)
                 || self.handle_blockquote(container, line, indented)
                 || self.handle_atx_heading(container, line, indented, &mut matched)
                 || self.handle_code_fence(container, line, indented, &mut matched)
@@ -2394,6 +2472,7 @@ where
                         || container.data.borrow().sourcepos.start.line != self.line_number
                 }
                 NodeValue::MultilineBlockQuote(..) => false,
+                NodeValue::Alert(..) => false,
                 _ => true,
             };
 

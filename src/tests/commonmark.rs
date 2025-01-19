@@ -71,7 +71,7 @@ fn commonmark_renders_single_list_item() {
 #[test_case("$$x^2$$ and $1 + 2$ and $`y^2`$", "$$x^2$$ and $1 + 2$ and $`y^2`$\n")]
 #[test_case("$$\nx^2\n$$", "$$\nx^2\n$$\n")]
 #[test_case("```math\nx^2\n```", "``` math\nx^2\n```\n")]
-fn math(markdown: &str, cm: &str) {
+fn commonmark_math(markdown: &str, cm: &str) {
     let mut options = Options::default();
     options.extension.math_dollars = true;
     options.extension.math_code = true;
@@ -81,7 +81,7 @@ fn math(markdown: &str, cm: &str) {
 
 #[test_case("This [[url]] that", "This [[url|url]] that\n")]
 #[test_case("This [[url|link label]] that", "This [[url|link%20label]] that\n")]
-fn wikilinks(markdown: &str, cm: &str) {
+fn commonmark_wikilinks(markdown: &str, cm: &str) {
     let mut options = Options::default();
     options.extension.wikilinks_title_before_pipe = true;
 
@@ -105,4 +105,13 @@ fn commonmark_relist() {
         concat!("3. [ ] one\n", "4. [ ] two\n",),
         Some(&options),
     );
+}
+
+#[test_case("> [!note]\n> A note", "> [!NOTE]\n> A note\n")]
+#[test_case("> [!note] Title\n> A note", "> [!NOTE] Title\n> A note\n")]
+fn commonmark_alerts(markdown: &str, cm: &str) {
+    let mut options = Options::default();
+    options.extension.alerts = true;
+
+    commonmark(markdown, cm, Some(&options));
 }

@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::panic;
 
+mod alerts;
 mod api;
 mod autolink;
 mod commonmark;

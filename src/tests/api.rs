@@ -4,12 +4,12 @@ use std::sync::{Arc, Mutex};
 
 use parser::BrokenLinkReference;
 
+use super::*;
+use crate::nodes::AlertType;
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
     nodes::Sourcepos,
 };
-
-use super::*;
 
 #[test]
 fn exercise_full_api() {
@@ -75,7 +75,8 @@ fn exercise_full_api() {
         .underline(true)
         .subscript(true)
         .spoiler(true)
-        .greentext(true);
+        .greentext(true)
+        .alerts(true);
 
     let parse = ParseOptions::builder()
         .smart(false)
@@ -279,6 +280,11 @@ fn exercise_full_api() {
         nodes::NodeValue::SpoileredText => {}
         nodes::NodeValue::EscapedTag(data) => {
             let _: &String = data;
+        }
+        nodes::NodeValue::Alert(alert) => {
+            let _: AlertType = alert.alert_type;
+            let _: Option<String> = alert.title;
+            let _: bool = alert.multiline;
         }
     }
 }
