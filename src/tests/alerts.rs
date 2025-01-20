@@ -15,6 +15,20 @@ fn alerts() {
 }
 
 #[test]
+fn multiline_alerts() {
+    html_opts!(
+        [extension.alerts, extension.multiline_block_quotes],
+        concat!(">>> [!note]\n", "Pay attention\n", ">>>",),
+        concat!(
+            "<div class=\"alert alert-note\">\n",
+            "<p class=\"alert-title\">Note</p>\n",
+            "<p>Pay attention</p>\n",
+            "</div>\n",
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.alerts],
@@ -49,6 +63,23 @@ fn sourcepos_in_list() {
                             (text (4:5-4:17) "Pay attention")
                         ])
                     ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_multiline() {
+    assert_ast_match!(
+        [extension.alerts, extension.multiline_block_quotes],
+        ">>> [!note]\n"
+        "Pay attention\n"
+        ">>>\n",
+        (document (1:1-3:3) [
+            (alert (1:1-2:13) [
+                (paragraph (2:1-2:13) [
+                    (text (2:1-2:13) "Pay attention")
                 ])
             ])
         ])

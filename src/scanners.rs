@@ -4633,6 +4633,11 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                             yystate = 4;
                             continue 'yyl;
                         }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
                         _ => {
                             yystate = 2;
                             continue 'yyl;
@@ -4650,7 +4655,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     match yych {
                         0x5B => {
                             cursor += 1;
-                            yystate = 6;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -4673,9 +4678,14 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x21 => {
+                        0x20 => {
                             cursor += 1;
-                            yystate = 7;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -4693,29 +4703,9 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
+                        0x21 => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0x4E | 0x6E => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0x57 | 0x77 => {
-                            cursor += 1;
-                            yystate = 12;
                             continue 'yyl;
                         }
                         _ => {
@@ -4733,7 +4723,27 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        0x49 | 0x69 => {
+                            cursor += 1;
+                            yystate = 10;
+                            continue 'yyl;
+                        }
+                        0x4E | 0x6E => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x57 | 0x77 => {
                             cursor += 1;
                             yystate = 13;
                             continue 'yyl;
@@ -4753,7 +4763,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4D | 0x6D => {
+                        0x41 | 0x61 => {
                             cursor += 1;
                             yystate = 14;
                             continue 'yyl;
@@ -4773,7 +4783,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x4D | 0x6D => {
                             cursor += 1;
                             yystate = 15;
                             continue 'yyl;
@@ -4793,7 +4803,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 16;
                             continue 'yyl;
@@ -4813,7 +4823,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 17;
                             continue 'yyl;
@@ -4833,7 +4843,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x55 | 0x75 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
                             yystate = 18;
                             continue 'yyl;
@@ -4853,7 +4863,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x50 | 0x70 => {
+                        0x55 | 0x75 => {
                             cursor += 1;
                             yystate = 19;
                             continue 'yyl;
@@ -4873,7 +4883,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x50 | 0x70 => {
                             cursor += 1;
                             yystate = 20;
                             continue 'yyl;
@@ -4893,7 +4903,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x50 | 0x70 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 21;
                             continue 'yyl;
@@ -4913,7 +4923,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x50 | 0x70 => {
                             cursor += 1;
                             yystate = 22;
                             continue 'yyl;
@@ -4933,7 +4943,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
                             yystate = 23;
                             continue 'yyl;
@@ -4953,7 +4963,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 24;
                             continue 'yyl;
@@ -4973,7 +4983,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 25;
                             continue 'yyl;
@@ -4993,7 +5003,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x5D => {
+                        0x45 | 0x65 => {
                             cursor += 1;
                             yystate = 26;
                             continue 'yyl;
@@ -5013,7 +5023,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 27;
                             continue 'yyl;
@@ -5033,7 +5043,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x4E | 0x6E => {
                             cursor += 1;
                             yystate = 28;
                             continue 'yyl;
@@ -5053,7 +5063,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 29;
                             continue 'yyl;
@@ -5073,7 +5083,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x5D => {
+                        0x52 | 0x72 => {
                             cursor += 1;
                             yystate = 30;
                             continue 'yyl;
@@ -5085,9 +5095,6 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     }
                 }
                 26 => {
-                    return Some(AlertType::Tip);
-                }
-                27 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -5096,7 +5103,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 31;
                             continue 'yyl;
@@ -5107,6 +5114,9 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     }
                 }
+                27 => {
+                    return Some(AlertType::Tip);
+                }
                 28 => {
                     yych = unsafe {
                         if cursor < len {
@@ -5116,7 +5126,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 32;
                             continue 'yyl;
@@ -5136,7 +5146,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 33;
                             continue 'yyl;
@@ -5148,9 +5158,6 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     }
                 }
                 30 => {
-                    return Some(AlertType::Note);
-                }
-                31 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -5159,7 +5166,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 34;
                             continue 'yyl;
@@ -5169,6 +5176,9 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                             continue 'yyl;
                         }
                     }
+                }
+                31 => {
+                    return Some(AlertType::Note);
                 }
                 32 => {
                     yych = unsafe {
@@ -5199,7 +5209,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x4E | 0x6E => {
                             cursor += 1;
                             yystate = 36;
                             continue 'yyl;
@@ -5219,7 +5229,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x47 | 0x67 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
                             yystate = 37;
                             continue 'yyl;
@@ -5239,7 +5249,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x5D => {
+                        0x47 | 0x67 => {
                             cursor += 1;
                             yystate = 38;
                             continue 'yyl;
@@ -5259,7 +5269,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 39;
                             continue 'yyl;
@@ -5279,7 +5289,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     };
                     match yych {
-                        0x5D => {
+                        0x4E | 0x6E => {
                             cursor += 1;
                             yystate = 40;
                             continue 'yyl;
@@ -5291,32 +5301,6 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     }
                 }
                 38 => {
-                    return Some(AlertType::Caution);
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    return Some(AlertType::Warning);
-                }
-                41 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.get_unchecked(cursor)
@@ -5327,6 +5311,29 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     match yych {
                         0x5D => {
                             cursor += 1;
+                            yystate = 41;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                39 => {
+                    return Some(AlertType::Caution);
+                }
+                40 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x54 | 0x74 => {
+                            cursor += 1;
                             yystate = 42;
                             continue 'yyl;
                         }
@@ -5336,7 +5343,30 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                         }
                     }
                 }
+                41 => {
+                    return Some(AlertType::Warning);
+                }
                 42 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x5D => {
+                            cursor += 1;
+                            yystate = 43;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                43 => {
                     return Some(AlertType::Important);
                 }
                 _ => panic!("internal lexer error"),
