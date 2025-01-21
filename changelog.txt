@@ -1,3 +1,13 @@
+# [v0.34.0] - 21-01-2025
+
+Admonition special!
+
+* Add GitHub style alerts / admonitions by @digitalmoksha in https://github.com/kivikakk/comrak/pull/519
+* Enable GitLab multiline alerts by @digitalmoksha in https://github.com/kivikakk/comrak/pull/521
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.33.0...v0.34.0
+
+
 # [v0.33.0] - 04-01-2025
 
 Happy new year! Thanks to @nicoburns for these changes, enabling much faster
