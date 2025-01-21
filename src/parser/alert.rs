@@ -9,6 +9,12 @@ pub struct NodeAlert {
 
     /// Originated from a multiline blockquote.
     pub multiline: bool,
+
+    /// The length of the fence (multiline only).
+    pub fence_length: usize,
+
+    /// The indentation level of the fence marker (multiline only)
+    pub fence_offset: usize,
 }
 
 /// The type of alert.

@@ -126,12 +126,13 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
+
 /*!re2c
-    '> [!note]' { return Some(AlertType::Note); }
-    '> [!tip]' { return Some(AlertType::Tip); }
-    '> [!important]' { return Some(AlertType::Important); }
-    '> [!warning]' { return Some(AlertType::Warning); }
-    '> [!caution]' { return Some(AlertType::Caution); }
+    [>]{1,} ' [!note]' { return Some(AlertType::Note); }
+    [>]{1,} ' [!tip]' { return Some(AlertType::Tip); }
+    [>]{1,} ' [!important]' { return Some(AlertType::Important); }
+    [>]{1,} ' [!warning]' { return Some(AlertType::Warning); }
+    [>]{1,} ' [!caution]' { return Some(AlertType::Caution); }
     * { return None; }
 */
 }

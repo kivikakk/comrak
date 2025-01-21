@@ -1525,8 +1525,17 @@ where
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::Alert(..) => {
-                    if !self.parse_block_quote_prefix(line) {
+                NodeValue::Alert(ref alert) => {
+                    if alert.multiline {
+                        if !self.parse_multiline_block_quote_prefix(
+                            line,
+                            container,
+                            ast,
+                            &mut should_continue,
+                        ) {
+                            return (false, container, should_continue);
+                        }
+                    } else if !self.parse_block_quote_prefix(line) {
                         return (false, container, should_continue);
                     }
                 }
@@ -2033,11 +2042,21 @@ where
 
         let alert_startpos = self.first_nonspace;
         let mut title_startpos = self.first_nonspace;
+        let mut fence_length = 0;
 
         while line[title_startpos] != b']' {
+            if line[title_startpos] == b'>' {
+                fence_length += 1
+            }
             title_startpos += 1;
         }
         title_startpos += 1;
+
+        if fence_length == 2
+            || (fence_length >= 3 && !self.options.extension.multiline_block_quotes)
+        {
+            return false;
+        }
 
         // anything remaining on this line is considered an alert title
         let mut tmp = entity::unescape_html(&line[title_startpos..]);
@@ -2046,7 +2065,9 @@ where
 
         let na = NodeAlert {
             alert_type,
-            multiline: false,
+            multiline: fence_length >= 3,
+            fence_length,
+            fence_offset: self.first_nonspace - self.offset,
             title: if tmp.is_empty() {
                 None
             } else {
@@ -2077,8 +2098,8 @@ where
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if self.handle_multiline_blockquote(container, line, indented, &mut matched)
-                || self.handle_alert(container, line, indented)
+            if self.handle_alert(container, line, indented)
+                || self.handle_multiline_blockquote(container, line, indented, &mut matched)
                 || self.handle_blockquote(container, line, indented)
                 || self.handle_atx_heading(container, line, indented, &mut matched)
                 || self.handle_code_fence(container, line, indented, &mut matched)
@@ -2397,6 +2418,7 @@ where
             NodeValue::MultilineBlockQuote(ref node_value) => {
                 (node_value.fence_length, node_value.fence_offset)
             }
+            NodeValue::Alert(ref node_value) => (node_value.fence_length, node_value.fence_offset),
             _ => unreachable!(),
         };
 
