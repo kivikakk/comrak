@@ -1083,6 +1083,26 @@ pub struct RenderOptions {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub ol_width: usize,
+
+    /// Minimise escapes used in CommonMark output (`-t commonmark`) by removing
+    /// each individually and seeing if the resulting document roundtrips.
+    /// Brute-force and expensive, but produces nicer output.  Note that the
+    /// result may not in fact be minimal.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_commonmark, Options};
+    /// let mut options = Options::default();
+    /// let input = "__hi";
+    ///
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "\\_\\_hi\n");
+    ///
+    /// options.render.experimental_minimize_commonmark = true;
+    /// assert_eq!(markdown_to_commonmark(input, &options),
+    ///            "__hi\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub experimental_minimize_commonmark: bool,
 }
 
 #[derive(Default, Debug, Clone)]
