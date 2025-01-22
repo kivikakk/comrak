@@ -1155,13 +1155,14 @@ where
             NodeValue::Alert(ref alert) => {
                 if entering {
                     self.cr()?;
-                    self.output.write_all(b"<div class=\"alert ")?;
+                    self.output.write_all(b"<div class=\"markdown-alert ")?;
                     self.output
                         .write_all(alert.alert_type.css_class().as_bytes())?;
                     self.output.write_all(b"\"")?;
                     self.render_sourcepos(node)?;
                     self.output.write_all(b">\n")?;
-                    self.output.write_all(b"<p class=\"alert-title\">")?;
+                    self.output
+                        .write_all(b"<p class=\"markdown-alert-title\">")?;
                     match alert.title {
                         Some(ref title) => self.escape(title.as_bytes())?,
                         None => {
