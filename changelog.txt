@@ -1,3 +1,10 @@
+# [v0.35.0] - 23-01-2025
+
+* Use CSS class  instead of  by @digitalmoksha in https://github.com/kivikakk/comrak/pull/524
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.34.0...v0.35.0
+
+
 # [v0.34.0] - 21-01-2025
 
 Admonition special!
