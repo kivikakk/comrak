@@ -6,8 +6,8 @@ fn alerts() {
         [extension.alerts],
         concat!("> [!note]\n", "> Pay attention\n",),
         concat!(
-            "<div class=\"alert alert-note\">\n",
-            "<p class=\"alert-title\">Note</p>\n",
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">Note</p>\n",
             "<p>Pay attention</p>\n",
             "</div>\n",
         ),
@@ -20,8 +20,8 @@ fn multiline_alerts() {
         [extension.alerts, extension.multiline_block_quotes],
         concat!(">>> [!note]\n", "Pay attention\n", ">>>",),
         concat!(
-            "<div class=\"alert alert-note\">\n",
-            "<p class=\"alert-title\">Note</p>\n",
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">Note</p>\n",
             "<p>Pay attention</p>\n",
             "</div>\n",
         ),

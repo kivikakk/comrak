@@ -434,7 +434,7 @@ pub struct ExtensionOptions<'c> {
     /// let mut options = Options::default();
     /// options.extension.alerts = true;
     /// assert_eq!(markdown_to_html("> [!note]\n> Something of note", &options),
-    ///            "<div class=\"alert alert-note\">\n<p class=\"alert-title\">Note</p>\n<p>Something of note</p>\n</div>\n");
+    ///            "<div class=\"markdown-alert markdown-alert-note\">\n<p class=\"markdown-alert-title\">Note</p>\n<p>Something of note</p>\n</div>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub alerts: bool,

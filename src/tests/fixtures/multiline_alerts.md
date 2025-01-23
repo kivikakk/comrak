@@ -14,8 +14,8 @@ Simple container
 *content*
 >>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p><em>content</em></p>
 </div>
 ````````````````````````````````
@@ -27,8 +27,8 @@ Other kinds of alerts:
 Optional information to help a user be more successful.
 >>>
 .
-<div class="alert alert-tip">
-<p class="alert-title">Tip</p>
+<div class="markdown-alert markdown-alert-tip">
+<p class="markdown-alert-title">Tip</p>
 <p>Optional information to help a user be more successful.</p>
 </div>
 ````````````````````````````````
@@ -38,8 +38,8 @@ Optional information to help a user be more successful.
 Crucial information necessary for users to succeed.
 >>>
 .
-<div class="alert alert-important">
-<p class="alert-title">Important</p>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
 <p>Crucial information necessary for users to succeed.</p>
 </div>
 ````````````````````````````````
@@ -49,8 +49,8 @@ Crucial information necessary for users to succeed.
 Critical content demanding immediate user attention due to potential risks.
 >>>
 .
-<div class="alert alert-warning">
-<p class="alert-title">Warning</p>
+<div class="markdown-alert markdown-alert-warning">
+<p class="markdown-alert-title">Warning</p>
 <p>Critical content demanding immediate user attention due to potential risks.</p>
 </div>
 ````````````````````````````````
@@ -60,8 +60,8 @@ Critical content demanding immediate user attention due to potential risks.
 Negative potential consequences of an action.
 >>>
 .
-<div class="alert alert-caution">
-<p class="alert-title">Caution</p>
+<div class="markdown-alert markdown-alert-caution">
+<p class="markdown-alert-title">Caution</p>
 <p>Negative potential consequences of an action.</p>
 </div>
 ````````````````````````````````
@@ -73,8 +73,8 @@ A title can be specified to override the default title:
 Highlights information that users should take into account, even when skimming.
 >>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Pay attention</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Pay attention</p>
 <p>Highlights information that users should take into account, even when skimming.</p>
 </div>
 ````````````````````````````````
@@ -88,8 +88,8 @@ Can contain block elements
 -----------
 >>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <h3>heading</h3>
 <hr />
 </div>
@@ -104,8 +104,8 @@ Ending marker can be longer
 >>>>>>>>>>>
 normal
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>hello world</p>
 </div>
 <p>normal</p>
@@ -121,10 +121,10 @@ foo
 >>>>
 >>>>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
-<div class="alert alert-caution">
-<p class="alert-title">Caution</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
+<div class="markdown-alert markdown-alert-caution">
+<p class="markdown-alert-title">Caution</p>
 <p>foo</p>
 </div>
 </div>
@@ -142,8 +142,8 @@ auto-closed blocks
 >>>>>
 >>>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>this block is closed with 5 markers below</p>
 </div>
 <p>auto-closed blocks</p>
@@ -165,11 +165,11 @@ Marker can be indented up to 3 spaces
    >>>>
    regular paragraph
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>first-level blockquote</p>
-<div class="alert alert-caution">
-<p class="alert-title">Caution</p>
+<div class="markdown-alert markdown-alert-caution">
+<p class="markdown-alert-title">Caution</p>
 <p>second-level blockquote</p>
 </div>
 </div>
@@ -200,8 +200,8 @@ the line.
       code block
   >>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <pre><code>code block
 </code></pre>
 </div>
@@ -215,11 +215,11 @@ the line.
     >>>
    >>>>
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>content</p>
-<div class="alert alert-caution">
-<p class="alert-title">Caution</p>
+<div class="markdown-alert markdown-alert-caution">
+<p class="markdown-alert-title">Caution</p>
 <pre><code>code block
 </code></pre>
 </div>
@@ -233,8 +233,8 @@ Closing marker can't have text on the same line
 foo
 >>> arg=123
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>foo</p>
 <blockquote>
 <blockquote>
@@ -253,8 +253,8 @@ Alerts self-close at the end of the document
 >>> [!NOTE]
 foo
 .
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>foo</p>
 </div>
 ````````````````````````````````
@@ -269,8 +269,8 @@ content
 >>>
 .
 <p>blah blah</p>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>content</p>
 </div>
 ````````````````````````````````
@@ -285,8 +285,8 @@ They can be nested in lists
 .
 <ul>
 <li>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <ul>
 <li>foo</li>
 </ul>
@@ -306,8 +306,8 @@ Or in blockquotes
 > >>>
 .
 <blockquote>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>foo</p>
 <blockquote>
 <p>bar
@@ -333,15 +333,15 @@ List indentation
 .
 <ul>
 <li>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>foo
 bar</p>
 </div>
 </li>
 <li>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>foo
 bar</p>
 </div>
@@ -380,8 +380,8 @@ A quote
 Some other text
 .
 <p>Some text</p>
-<div class="alert alert-note">
-<p class="alert-title">Note</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
 <p>A quote</p>
 </div>
 <p>Some other text</p>

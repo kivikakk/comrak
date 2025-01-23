@@ -52,11 +52,11 @@ impl AlertType {
     /// Returns the CSS class to use for an alert type
     pub(crate) fn css_class(&self) -> String {
         match *self {
-            AlertType::Note => String::from("alert-note"),
-            AlertType::Tip => String::from("alert-tip"),
-            AlertType::Important => String::from("alert-important"),
-            AlertType::Warning => String::from("alert-warning"),
-            AlertType::Caution => String::from("alert-caution"),
+            AlertType::Note => String::from("markdown-alert-note"),
+            AlertType::Tip => String::from("markdown-alert-tip"),
+            AlertType::Important => String::from("markdown-alert-important"),
+            AlertType::Warning => String::from("markdown-alert-warning"),
+            AlertType::Caution => String::from("markdown-alert-caution"),
         }
     }
 }
