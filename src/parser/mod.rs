@@ -699,11 +699,11 @@ pub struct ParseOptions<'c> {
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
-    ///            "<pre><code>fn hello();\n</code></pre>\n");
+    ///            "<pre><code>fn hello();</code></pre>\n");
     ///
     /// options.parse.default_info_string = Some("rust".into());
     /// assert_eq!(markdown_to_html("```\nfn hello();\n```\n", &options),
-    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    ///            "<pre><code class=\"language-rust\">fn hello();</code></pre>\n");
     /// ```
     pub default_info_string: Option<String>,
 
@@ -789,11 +789,11 @@ pub struct RenderOptions {
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
-    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    ///            "<pre><code class=\"language-rust\">fn hello();</code></pre>\n");
     ///
     /// options.render.github_pre_lang = true;
     /// assert_eq!(markdown_to_html("``` rust\nfn hello();\n```\n", &options),
-    ///            "<pre lang=\"rust\"><code>fn hello();\n</code></pre>\n");
+    ///            "<pre lang=\"rust\"><code>fn hello();</code></pre>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub github_pre_lang: bool,
@@ -804,7 +804,7 @@ pub struct RenderOptions {
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// assert_eq!(markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options),
-    ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
+    ///            "<pre><code class=\"language-rust\">fn hello();</code></pre>\n");
     ///
     /// options.render.full_info_string = true;
     /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
@@ -1110,7 +1110,7 @@ pub struct RenderPlugins<'p> {
     /// let input = "```rust\nfn main<'a>();\n```";
     ///
     /// assert_eq!(markdown_to_html_with_plugins(input, &options, &plugins),
-    ///            "<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n</code></pre>\n");
+    ///            "<pre><code class=\"language-rust\">fn main&lt;'a&gt;();</code></pre>\n");
     ///
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {

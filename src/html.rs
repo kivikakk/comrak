@@ -582,7 +582,10 @@ where
                         let mut code_attributes: HashMap<String, String> = HashMap::new();
                         let code_attr: String;
 
-                        let literal = &ncb.literal.as_bytes();
+                        let literal = &ncb
+                            .literal
+                            .trim_end_matches(|c| c == '\r' || c == '\n')
+                            .as_bytes();
                         let info = &ncb.info.as_bytes();
 
                         if !info.is_empty() {

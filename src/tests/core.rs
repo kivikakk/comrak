@@ -32,10 +32,7 @@ fn basic() {
 fn codefence() {
     html(
         concat!("``` rust yum\n", "fn main<'a>();\n", "```\n"),
-        concat!(
-            "<pre><code class=\"language-rust\">fn main&lt;'a&gt;();\n",
-            "</code></pre>\n"
-        ),
+        concat!("<pre><code class=\"language-rust\">fn main&lt;'a&gt;();</code></pre>\n"),
     );
 }
 

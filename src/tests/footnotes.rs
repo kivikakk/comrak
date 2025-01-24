@@ -40,8 +40,7 @@ fn footnotes() {
             "<li id=\"fn-longnote\">\n",
             "<p>Here's one with multiple blocks.</p>\n",
             "<p>Subsequent paragraphs are indented.</p>\n",
-            "<pre><code>code\n",
-            "</code></pre>\n",
+            "<pre><code>code</code></pre>\n",
             "<a href=\"#fnref-longnote\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a> \
              <a href=\"#fnref-longnote-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2-2\" aria-label=\"Back to reference 2-2\">↩<sup class=\"footnote-ref\">2</sup></a>\n",
             "</li>\n",
