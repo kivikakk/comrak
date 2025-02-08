@@ -39,7 +39,7 @@ pub enum AlertType {
 
 impl AlertType {
     /// Returns the default title for an alert type
-    pub(crate) fn default_title(&self) -> String {
+    pub fn default_title(&self) -> String {
         match *self {
             AlertType::Note => String::from("Note"),
             AlertType::Tip => String::from("Tip"),
@@ -50,7 +50,7 @@ impl AlertType {
     }
 
     /// Returns the CSS class to use for an alert type
-    pub(crate) fn css_class(&self) -> String {
+    pub fn css_class(&self) -> String {
         match *self {
             AlertType::Note => String::from("markdown-alert-note"),
             AlertType::Tip => String::from("markdown-alert-tip"),
