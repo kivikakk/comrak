@@ -647,6 +647,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.pos - start_pos
     }
 
+    pub fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
+        let start_pos = self.pos;
+        let mut count = 0;
+        while count < limit && self.peek_char() == Some(&c) {
+            self.pos += 1;
+            count += 1;
+        }
+        self.pos - start_pos
+    }
+
     pub fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
         if openticklength > MAXBACKTICKS {
             return None;
@@ -733,7 +743,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 continue;
             }
 
-            let numdollars = self.take_while(b'$');
+            let numdollars = self.take_while_with_limit(b'$', opendollarlength);
 
             // ending $ can't be followed by a digit
             if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
