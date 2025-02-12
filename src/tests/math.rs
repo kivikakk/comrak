@@ -2,6 +2,11 @@ use super::*;
 use ntest::test_case;
 
 #[test_case("$2+2$", "<p><math>2+2</math></p>\n")]
+#[test_case(
+    "$\\alpha$$\\beta$",
+    "<p><math>\\alpha</math><math>\\beta</math></p>\n"
+)]
+#[test_case("$2+2$$2+2$", "<p><math>2+2</math><math>2+2</math></p>\n")]
 #[test_case("$22 and $2+2$", "<p>$22 and <math>2+2</math></p>\n")]
 #[test_case("$a!$", "<p><math>a!</math></p>\n")]
 #[test_case("$x$", "<p><math>x</math></p>\n")]
