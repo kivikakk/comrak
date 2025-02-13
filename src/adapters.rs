@@ -7,6 +7,17 @@ use std::io::{self, Write};
 
 use crate::nodes::Sourcepos;
 
+/// Implement this adapter for custom rendering of codefence blocks.
+pub trait CodefenceRendererAdapter: Send + Sync {
+    /// Render the codefence block.
+    fn write(
+        &self,
+        output: &mut dyn Write,
+        literal: &String,
+        sourcepos: Option<Sourcepos>,
+    ) -> io::Result<()>;
+}
+
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// Generates a syntax highlighted HTML output.
