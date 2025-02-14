@@ -27,7 +27,7 @@ fn main() {
     let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
     let orig = "my";
     let repl = "your";
-    let html = replace_text(&doc, &orig, &repl);
+    let html = replace_text(doc, orig, repl);
 
     println!("{}", html);
 }
