@@ -20,7 +20,7 @@ Specify it as a requirement in `Cargo.toml`:
 comrak = "0.35"
 ```
 
-Comrak's library supports Rust <span class="msrv">1.62.1</span>+.
+Comrak's library supports Rust <span class="msrv">1.65</span>+.
 
 ### CLI
 
