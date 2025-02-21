@@ -303,6 +303,11 @@ depending on your use-case. Here are some other projects to consider:
 - [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
 - Know of another library? Please open a PR to add it\!
 
+### Python bindings
+
+- [comrak (Python package)](https://github.com/lmmx/comrak) — Python bindings for this library built with PyO3.
+  Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
+
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
 extensions](https://github.github.com/gfm) rigorously.
 
