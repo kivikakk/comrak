@@ -105,7 +105,8 @@ fn trailing_space_open() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -120,7 +121,8 @@ fn leading_space_open() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -135,7 +137,8 @@ fn leading_space_close() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -150,7 +153,8 @@ fn trailing_space_close() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -165,7 +169,8 @@ fn second_line() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -180,7 +185,8 @@ fn fm_only_with_trailing_newline() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }
@@ -195,7 +201,8 @@ fn fm_only_without_trailing_newline() {
     let root = parse_document(&arena, input, &options);
 
     let found = root
-        .descendants().find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants()
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }
