@@ -10,9 +10,12 @@ use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
 use crate::{nodes, Plugins};
+pub use typed_arena::Arena;
 
 use std::cmp::max;
+use std::io::BufWriter;
 use std::io::{self, Write};
+use std::str;
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
@@ -40,10 +43,14 @@ pub fn format_document_with_plugins<'a>(
 ) -> io::Result<()> {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
-    if !f.v.is_empty() && f.v[f.v.len() - 1] != b'\n' {
-        f.v.push(b'\n');
+    let mut result = f.v;
+    if !result.is_empty() && result[result.len() - 1] != b'\n' {
+        result.push(b'\n');
     }
-    output.write_all(&f.v)?;
+    if options.render.experimental_minimize_commonmark {
+        minimize_commonmark(&mut result, options);
+    }
+    output.write_all(&result)?;
     Ok(())
 }
 
@@ -999,5 +1006,35 @@ fn table_escape<'a>(node: &'a AstNode<'a>, c: u8) -> bool {
     match node.data.borrow().value {
         NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
         _ => c == b'|',
+    }
+}
+
+fn minimize_commonmark(text: &mut Vec<u8>, original_options: &Options) {
+    let mut options_without = original_options.clone();
+    options_without.render.experimental_minimize_commonmark = false;
+
+    let ixs: Vec<usize> = text
+        .iter()
+        .enumerate()
+        .filter_map(|(ix, &c)| if c == b'\\' { Some(ix) } else { None })
+        .collect();
+    let original = text.clone();
+
+    let mut adjust = 0;
+    for ix in ixs {
+        text.remove(ix - adjust);
+
+        let arena = Arena::new();
+        let root = crate::parse_document(&arena, str::from_utf8(text).unwrap(), &options_without);
+
+        let mut bw = BufWriter::new(Vec::new());
+        format_document(root, &options_without, &mut bw).unwrap();
+        let result = bw.into_inner().unwrap();
+
+        if original == result {
+            adjust += 1;
+        } else {
+            text.insert(ix - adjust, b'\\');
+        }
     }
 }

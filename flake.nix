@@ -121,6 +121,7 @@
             "cargo"
             "rustc"
             "rust-analyzer"
+            "clippy"
           ])
           pkgs.cargo-fuzz
           pkgs.python3

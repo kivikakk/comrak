@@ -10,7 +10,7 @@ fn round_trip_one_field() {
     let input = "---\nlayout: post\n---\nText\n";
     let root = parse_document(&arena, input, &options);
     let mut buf = Vec::new();
-    format_commonmark(&root, &options, &mut buf).unwrap();
+    format_commonmark(root, &options, &mut buf).unwrap();
     assert_eq!(&String::from_utf8(buf).unwrap(), input);
 }
 
@@ -22,7 +22,7 @@ fn round_trip_wide_delimiter() {
     let input = "\u{04fc}\nlayout: post\n\u{04fc}\nText\n";
     let root = parse_document(&arena, input, &options);
     let mut buf = Vec::new();
-    format_commonmark(&root, &options, &mut buf).unwrap();
+    format_commonmark(root, &options, &mut buf).unwrap();
     assert_eq!(&String::from_utf8(buf).unwrap(), input);
 }
 
@@ -106,8 +106,7 @@ fn trailing_space_open() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -123,8 +122,7 @@ fn leading_space_open() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -140,8 +138,7 @@ fn leading_space_close() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -157,8 +154,7 @@ fn trailing_space_close() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -174,8 +170,7 @@ fn second_line() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -191,8 +186,7 @@ fn fm_only_with_trailing_newline() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }
@@ -208,8 +202,7 @@ fn fm_only_without_trailing_newline() {
 
     let found = root
         .descendants()
-        .filter(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)))
-        .next();
+        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }

@@ -156,6 +156,10 @@ struct Cli {
     /// Ignore empty links
     #[arg(long)]
     ignore_empty_links: bool,
+
+    // Minimize escapes in CommonMark output using a trial-and-error algorithm.
+    #[arg(long)]
+    experimental_minimize_commonmark: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -297,6 +301,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
         .experimental_inline_sourcepos(cli.experimental_inline_sourcepos)
+        .experimental_minimize_commonmark(cli.experimental_minimize_commonmark)
         .escaped_char_spans(cli.escaped_char_spans)
         .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
@@ -364,7 +369,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;
     } else if cli.inplace {
-        let output_filename = cli.files.unwrap().get(0).unwrap().clone();
+        let output_filename = cli.files.unwrap().first().unwrap().clone();
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         formatter(root, &options, &mut bw, &plugins)?;
         bw.flush()?;

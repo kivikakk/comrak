@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 if next_block_is_help_body {
                     next_block_is_help_body = false;
-                    assert!(ncb.info == "" && ncb.literal.starts_with(HELP_START));
+                    assert!(ncb.info.is_empty() && ncb.literal.starts_with(HELP_START));
                     let mut content = String::new();
                     let mut cmd = std::process::Command::new("cargo");
                     content.push_str(
