@@ -56,15 +56,15 @@ pub enum RenderMode {
 macro_rules! create_formatter {
     // No overrides (i.e. as used to create comrak::html::HtmlFormatter).
     ($name:ident) => {
-        create_formatter!($name, {});
+        $crate::create_formatter!($name, {});
     };
 
     // Permit lack of trailing comma by adding one.
-    ($name:ident, { $( $pat:pat => |$output:ident, $entering:ident| $case:tt ),* }) => {
-        create_formatter!($name, { $( $pat => |$output, $entering| $case ),*, });
+    ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* }) => {
+        $crate::create_formatter!($name, { $( $pat => | $( $capture ),* | $case ),*, });
     };
 
-    ($name:ident, { $( $pat:pat => |$output:ident, $entering:ident| $case:tt ),*, }) => {
+    ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
         // I considered making this a `mod` instead, but then name resolution
         // inside your pattern cases gets weird and overriding *that* to be less
         // weird (with idk, `use super::*;`?) feels worse.
@@ -99,22 +99,51 @@ macro_rules! create_formatter {
                 context: &mut $crate::html::Context,
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
-            ) -> ::std::io::Result<$crate::html::RenderMode> {
+            ) -> ::std::io::Result<::std::option::Option<$crate::html::RenderMode>> {
                 match node.data.borrow().value {
                     $(
                         $pat => {
-                            let $output: &mut dyn ::std::io::Write = context;
-                            let $entering = entering;
-
+                            let mut suppress_children = false;
+                            $crate::formatter_captures!((context, node, entering, suppress_children), ($( $capture ),*));
                             $case
-
-                            Ok($crate::html::RenderMode::HTML)
+                            if suppress_children {
+                                Ok(::std::option::Option::None)
+                            } else {
+                                Ok(::std::option::Option::Some($crate::html::RenderMode::HTML))
+                            }
                         }
                     ),*
-                    _ => $crate::html::format_node_default(context, node, entering),
+                    _ => $crate::html::format_node_default(context, node, entering).map(::std::option::Option::Some),
                 }
             }
         }
+    };
+}
+
+/// TODO
+#[macro_export]
+macro_rules! formatter_captures {
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), context, $bind:ident) => {
+        let $bind = $context;
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), output, $bind:ident) => {
+        let $bind: &mut dyn ::std::io::Write = $context;
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), entering, $bind:ident) => {
+        let $bind = $entering;
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), node, $bind:ident) => {
+        let $bind = $node;
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), suppress_children, $bind:ident) => {
+        let mut $bind = &mut $suppress_children;
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident)) => {
+        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
+    };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident, $( $rest:ident ),*)) => {
+        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
+        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), ($( $rest ),*));
     };
 }
 
@@ -124,7 +153,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
     options: &'o Options<'c>,
     output: &'o mut dyn Write,
     plugins: &'o Plugins<'o>,
-    formatter: fn(&mut Context, &'a AstNode<'a>, bool) -> io::Result<RenderMode>,
+    formatter: fn(&mut Context, &'a AstNode<'a>, bool) -> io::Result<Option<RenderMode>>,
 ) -> ::std::io::Result<()> {
     // Traverse the AST iteratively using a work stack, with pre- and
     // post-child-traversal phases. During pre-order traversal render the
@@ -159,7 +188,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
                             }
                             _ => (),
                         }
-                        render_mode
+                        Some(render_mode)
                     }
                     RenderMode::HTML => {
                         stack.push((node, RenderMode::HTML, Phase::Post));
@@ -167,8 +196,10 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
                     }
                 };
 
-                for ch in node.reverse_children() {
-                    stack.push((ch, new_rm, Phase::Pre));
+                if let Some(rm) = new_rm {
+                    for ch in node.reverse_children() {
+                        stack.push((ch, rm, Phase::Pre));
+                    }
                 }
             }
             Phase::Post => {
