@@ -92,6 +92,7 @@ pub use parser::parse_document_with_broken_link_callback;
 pub use parser::{
     parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions, ListStyleType,
     Options, ParseOptions, Plugins, RenderOptions, RenderPlugins, ResolvedReference, URLRewriter,
+    WikiLinksMode,
 };
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;

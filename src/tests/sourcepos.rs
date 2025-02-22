@@ -386,6 +386,15 @@ const ESCAPED_TAG: TestCase = (
 after"#,
 );
 
+const ALERT: TestCase = (
+    &[sourcepos!((2:1-3:9))],
+    r#"before
+> [!note]
+> it's on
+
+after"#,
+);
+
 fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     use NodeValueDiscriminants::*;
 
@@ -407,6 +416,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                     | ThematicBreak // end is 4:0
                     | Link // inconsistent between link types
                     | Math // is 3:2-3:6 but should be 3:1-3:7
+                    | Raw // unparseable
             )
         })
         .filter_map(|v| {
@@ -450,6 +460,8 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Underline => UNDERLINE,
                 SpoileredText => SPOILERED_TEXT,
                 EscapedTag => ESCAPED_TAG,
+                Alert => ALERT,
+                Raw => unreachable!(),
             };
             Some((*v, text))
         })
@@ -463,25 +475,23 @@ fn sourcepos() {
     let node_values = node_values();
 
     let mut options = Options::default();
-    options.render = RenderOptions::builder().escaped_char_spans(true).build();
-
-    options.extension = ExtensionOptions::builder()
-        .front_matter_delimiter("---".to_string())
-        .description_lists(true)
-        .footnotes(true)
-        .table(true)
-        .tasklist(true)
-        .strikethrough(true)
-        .superscript(true)
-        .subscript(true)
-        .autolink(true)
-        .math_code(true)
-        .math_dollars(true)
-        .multiline_block_quotes(true)
-        .wikilinks(WikiLinksMode::UrlFirst)
-        .underline(true)
-        .spoiler(true)
-        .build();
+    options.render.escaped_char_spans = true;
+    options.extension.front_matter_delimiter = Some("---".to_string());
+    options.extension.description_lists = true;
+    options.extension.footnotes = true;
+    options.extension.table = true;
+    options.extension.tasklist = true;
+    options.extension.strikethrough = true;
+    options.extension.superscript = true;
+    options.extension.subscript = true;
+    options.extension.autolink = true;
+    options.extension.math_code = true;
+    options.extension.math_dollars = true;
+    options.extension.multiline_block_quotes = true;
+    options.extension.wikilinks_title_after_pipe = true;
+    options.extension.underline = true;
+    options.extension.spoiler = true;
+    options.extension.alerts = true;
 
     for (kind, (expecteds, text)) in node_values {
         let arena = Arena::new();
