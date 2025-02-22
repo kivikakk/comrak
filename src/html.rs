@@ -1,4 +1,9 @@
-//! The HTML renderer for the CommonMark AST, as well as helper functions.
+//! HTML renderering infrastructure for the CommonMark AST, as well as helper
+//! functions. [`format_document`] and [`format_document_with_plugins`] use the
+//! standard formatter, respecting [`Options`] given. Alternatively, you can
+//! use the [`create_formatter!`][super::create_formatter] macro to specialise
+//! formatting for specific node types.
+
 mod anchorizer;
 mod context;
 
@@ -63,9 +68,9 @@ macro_rules! create_formatter {
         // I considered making this a `mod` instead, but then name resolution
         // inside your pattern cases gets weird and overriding *that* to be less
         // weird (with idk, `use super::*;`?) feels worse.
-        /// TODO
         #[derive(::std::fmt::Debug)]
         #[allow(missing_copy_implementations)]
+        /// Created by [`comrak::create_formatter!`][crate::create_formatter].
         pub struct $name;
 
         impl $name {
@@ -241,7 +246,11 @@ pub fn format_node_default<'a>(
 
 // Commonmark
 
-/// TODO
+/// Renders sourcepos data for the given node to the supplied [`Context`].
+///
+/// This function renders anything iff `context.options.render.sourcepos` is
+/// true, and includes a leading space if so, so you can use it  unconditionally
+/// immediately before writing a closing `>` in your opening HTML tag.
 pub fn render_sourcepos<'a>(context: &mut Context, node: &'a AstNode<'a>) -> io::Result<()> {
     if context.options.render.sourcepos {
         let ast = node.data.borrow();

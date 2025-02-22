@@ -1,20 +1,19 @@
-use crate::html;
-use crate::html::Anchorizer;
-use crate::Options;
-use crate::Plugins;
+use crate::html::{self, Anchorizer};
+use crate::{Options, Plugins};
 
 use std::cell::Cell;
-use std::io;
-use std::io::Write;
+use std::io::{self, Write};
 
-/// TODO
+/// Context struct given to formatter functions as taken by
+/// [`html::format_document_with_formatter`].  Output can be appended to through
+/// this struct's [`Write`] interface.
 pub struct Context<'o, 'c> {
     output: &'o mut dyn Write,
     last_was_lf: Cell<bool>,
 
-    /// TODO
+    /// [`Options`] in use in this render.
     pub options: &'o Options<'c>,
-    /// TODO
+    /// [`Plugins`] in use in this render.
     pub plugins: &'o Plugins<'o>,
 
     pub(super) anchorizer: Anchorizer,
@@ -23,8 +22,7 @@ pub struct Context<'o, 'c> {
 }
 
 impl<'o, 'c> Context<'o, 'c> {
-    /// TODO
-    pub fn new(
+    pub(super) fn new(
         output: &'o mut dyn Write,
         options: &'o Options<'c>,
         plugins: &'o Plugins<'o>,
@@ -47,7 +45,10 @@ impl<'o, 'c> Context<'o, 'c> {
         Ok(())
     }
 
-    /// TODO
+    /// If the last byte written to ts [`Write`] interface was **not** a U+000A
+    /// LINE FEED, writes one. Otherwise, does nothing.
+    ///
+    /// (In other words, ensures the output is at a new line.)
     pub fn cr(&mut self) -> io::Result<()> {
         if !self.last_was_lf.get() {
             self.write_all(b"\n")?;
@@ -55,12 +56,12 @@ impl<'o, 'c> Context<'o, 'c> {
         Ok(())
     }
 
-    /// TODO
+    /// Convenience wrapper for [`html::escape`].
     pub fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
         html::escape(self, buffer)
     }
 
-    /// TODO
+    /// Convenience wrapper for [`html::escape_href`].
     pub fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
         html::escape_href(self, buffer)
     }
