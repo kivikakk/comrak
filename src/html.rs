@@ -138,6 +138,9 @@ macro_rules! formatter_captures {
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), suppress_children, $bind:ident) => {
         let mut $bind = &mut $suppress_children;
     };
+    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), $unknown:ident, $bind:ident) => {
+        compile_error!(concat!("unknown capture '", stringify!($unknown), "'; available are 'context', 'output', 'entering', 'node', 'suppress_children'"));
+    };
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident)) => {
         $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
     };
