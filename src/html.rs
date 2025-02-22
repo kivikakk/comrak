@@ -64,12 +64,13 @@ macro_rules! create_formatter {
         // inside your pattern cases gets weird and overriding *that* to be less
         // weird (with idk, `use super::*;`?) feels worse.
         /// TODO
-        #[derive(Debug)]
+        #[derive(::std::fmt::Debug)]
         #[allow(missing_copy_implementations)]
         pub struct $name;
 
         impl $name {
             /// Formats an AST as HTML, modified by the given options.
+            #[inline]
             pub fn format_document<'a>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &$crate::Options,
@@ -79,67 +80,17 @@ macro_rules! create_formatter {
             }
 
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
+            #[inline]
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::io::Write,
                 plugins: &'o $crate::Plugins<'o>,
             ) -> ::std::io::Result<()> {
-                // Traverse the AST iteratively using a work stack, with pre- and
-                // post-child-traversal phases. During pre-order traversal render the
-                // opening tags, then push the node back onto the stack for the
-                // post-order traversal phase, then push the children in reverse order
-                // onto the stack and begin rendering first child.
-
-                let mut context = $crate::html::Context::new(output, options, plugins);
-
-                enum Phase { Pre, Post }
-                let mut stack = vec![(root, $crate::html::RenderMode::HTML, Phase::Pre)];
-
-                while let Some((node, render_mode, phase)) = stack.pop() {
-                    match phase {
-                        Phase::Pre => {
-                            let new_rm = match render_mode {
-                                $crate::html::RenderMode::Plain => {
-                                    match node.data.borrow().value {
-                                        $crate::nodes::NodeValue::Text(ref literal)
-                                        | $crate::nodes::NodeValue::Code($crate::nodes::NodeCode { ref literal, .. })
-                                        | $crate::nodes::NodeValue::HtmlInline(ref literal) => {
-                                            context.escape(literal.as_bytes())?;
-                                        }
-                                        $crate::nodes::NodeValue::LineBreak | $crate::nodes::NodeValue::SoftBreak => {
-                                            ::std::io::Write::write_all(&mut context, b" ")?;
-                                        }
-                                        $crate::nodes::NodeValue::Math($crate::nodes::NodeMath { ref literal, .. }) => {
-                                            context.escape(literal.as_bytes())?;
-                                        }
-                                        _ => (),
-                                    }
-                                    render_mode
-                                },
-                                $crate::html::RenderMode::HTML => {
-                                    stack.push((node, $crate::html::RenderMode::HTML, Phase::Post));
-                                    Self::format_node(&mut context, node, true)?
-                                }
-                            };
-
-                            for ch in node.reverse_children() {
-                                stack.push((ch, new_rm, Phase::Pre));
-                            }
-                        }
-                        Phase::Post => {
-                            debug_assert!(matches!(render_mode, $crate::html::RenderMode::HTML));
-                            Self::format_node(&mut context, node, false)?;
-                        }
-                    }
-                }
-
-                context.finish()?;
-
-                Ok(())
+                $crate::html::format_document_with_formatter(root, options, output, plugins, Self::formatter)
             }
 
-            fn format_node<'a>(
+            fn formatter<'a>(
                 context: &mut $crate::html::Context,
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
@@ -160,6 +111,71 @@ macro_rules! create_formatter {
             }
         }
     };
+}
+
+/// TODO
+pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
+    root: &'a AstNode<'a>,
+    options: &'o Options<'c>,
+    output: &'o mut dyn Write,
+    plugins: &'o Plugins<'o>,
+    formatter: fn(&mut Context, &'a AstNode<'a>, bool) -> io::Result<RenderMode>,
+) -> ::std::io::Result<()> {
+    // Traverse the AST iteratively using a work stack, with pre- and
+    // post-child-traversal phases. During pre-order traversal render the
+    // opening tags, then push the node back onto the stack for the
+    // post-order traversal phase, then push the children in reverse order
+    // onto the stack and begin rendering first child.
+
+    let mut context = Context::new(output, options, plugins);
+
+    enum Phase {
+        Pre,
+        Post,
+    }
+    let mut stack = vec![(root, RenderMode::HTML, Phase::Pre)];
+
+    while let Some((node, render_mode, phase)) = stack.pop() {
+        match phase {
+            Phase::Pre => {
+                let new_rm = match render_mode {
+                    RenderMode::Plain => {
+                        match node.data.borrow().value {
+                            NodeValue::Text(ref literal)
+                            | NodeValue::Code(NodeCode { ref literal, .. })
+                            | NodeValue::HtmlInline(ref literal) => {
+                                context.escape(literal.as_bytes())?;
+                            }
+                            NodeValue::LineBreak | NodeValue::SoftBreak => {
+                                ::std::io::Write::write_all(&mut context, b" ")?;
+                            }
+                            NodeValue::Math(NodeMath { ref literal, .. }) => {
+                                context.escape(literal.as_bytes())?;
+                            }
+                            _ => (),
+                        }
+                        render_mode
+                    }
+                    RenderMode::HTML => {
+                        stack.push((node, RenderMode::HTML, Phase::Post));
+                        formatter(&mut context, node, true)?
+                    }
+                };
+
+                for ch in node.reverse_children() {
+                    stack.push((ch, new_rm, Phase::Pre));
+                }
+            }
+            Phase::Post => {
+                debug_assert!(matches!(render_mode, RenderMode::HTML));
+                formatter(&mut context, node, false)?;
+            }
+        }
+    }
+
+    context.finish()?;
+
+    Ok(())
 }
 
 create_formatter!(HtmlFormatter);

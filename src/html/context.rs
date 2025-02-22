@@ -40,8 +40,7 @@ impl<'o, 'c> Context<'o, 'c> {
         }
     }
 
-    /// TODO
-    pub fn finish(&mut self) -> io::Result<()> {
+    pub(super) fn finish(&mut self) -> io::Result<()> {
         if self.footnote_ix > 0 {
             self.write_all(b"</ol>\n</section>\n")?;
         }
