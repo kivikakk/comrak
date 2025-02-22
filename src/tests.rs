@@ -9,7 +9,6 @@ mod api;
 mod autolink;
 mod commonmark;
 mod core;
-mod custom_html;
 mod description_lists;
 mod empty;
 mod escaped_char_spans;

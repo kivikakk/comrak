@@ -1,5 +1,4 @@
-use comrak::{create_formatter, nodes::NodeValue, parse_document, Arena, Options};
-use std::io::Write;
+use comrak::{create_formatter, nodes::NodeValue};
 
 create_formatter!(CustomFormatter, |output, entering| {
     NodeValue::Emph => {
@@ -19,6 +18,8 @@ create_formatter!(CustomFormatter, |output, entering| {
 });
 
 fn main() {
+    use comrak::{parse_document, Arena, Options};
+
     let options = Options::default();
     let arena = Arena::new();
     let doc = parse_document(&arena, "_Hello_, **world**.", &options);

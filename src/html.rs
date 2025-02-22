@@ -37,34 +37,6 @@ pub fn format_document_with_plugins<'a>(
 }
 
 /// TODO
-pub struct WriteWithLast<'w> {
-    /// TODO
-    pub output: &'w mut dyn Write,
-    /// TODO
-    pub last_was_lf: Cell<bool>,
-}
-
-impl<'w> std::fmt::Debug for WriteWithLast<'w> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        formatter.write_str("<WriteWithLast>")
-    }
-}
-
-impl<'w> Write for WriteWithLast<'w> {
-    fn flush(&mut self) -> io::Result<()> {
-        self.output.flush()
-    }
-
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let l = buf.len();
-        if l > 0 {
-            self.last_was_lf.set(buf[l - 1] == 10);
-        }
-        self.output.write(buf)
-    }
-}
-
-/// TODO
 fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
     match node.data.borrow().value {
         NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
@@ -83,39 +55,76 @@ fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
 }
 
 /// TODO
-#[derive(Debug)]
 pub struct Context<'o, 'c> {
-    /// TODO
-    pub output: &'o mut WriteWithLast<'o>,
+    _output: &'o mut dyn Write,
+    _last_was_lf: Cell<bool>,
+
     /// TODO
     pub options: &'o Options<'c>,
+    /// TODO
+    pub plugins: &'o Plugins<'o>,
     /// TODO
     pub anchorizer: Anchorizer,
     /// TODO
     pub footnote_ix: u32,
     /// TODO
     pub written_footnote_ix: u32,
-    /// TODO
-    pub plugins: &'o Plugins<'o>,
 }
 
 impl<'o, 'c> Context<'o, 'c> {
     /// TODO
+    pub fn new(
+        output: &'o mut dyn Write,
+        options: &'o Options<'c>,
+        plugins: &'o Plugins<'o>,
+    ) -> Self {
+        Context {
+            _output: output,
+            _last_was_lf: Cell::new(true),
+            options,
+            plugins,
+            anchorizer: Anchorizer::new(),
+            footnote_ix: 0,
+            written_footnote_ix: 0,
+        }
+    }
+
+    /// TODO
     pub fn cr(&mut self) -> io::Result<()> {
-        if !self.output.last_was_lf.get() {
-            self.output.write_all(b"\n")?;
+        if !self._last_was_lf.get() {
+            self.write_all(b"\n")?;
         }
         Ok(())
     }
 
     /// TODO
     pub fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        escape(&mut self.output, buffer)
+        escape(self, buffer)
     }
 
     /// TODO
     pub fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
-        escape_href(&mut self.output, buffer)
+        escape_href(self, buffer)
+    }
+}
+
+impl<'o, 'c> Write for Context<'o, 'c> {
+    fn flush(&mut self) -> io::Result<()> {
+        self._output.flush()
+    }
+
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let l = buf.len();
+        if l > 0 {
+            self._last_was_lf.set(buf[l - 1] == 10);
+        }
+        self._output.write(buf)
+    }
+}
+
+impl<'o, 'c> std::fmt::Debug for Context<'o, 'c> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        formatter.write_str("<comrak::html::Context>")
     }
 }
 
@@ -136,7 +145,7 @@ macro_rules! create_formatter {
             pub fn format_document<'a>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &$crate::Options,
-                output: &mut dyn Write,
+                output: &mut dyn ::std::io::Write,
             ) -> ::std::io::Result<()> {
                 Self::format_document_with_plugins(root, options, output, &$crate::Plugins::default())
             }
@@ -153,19 +162,12 @@ macro_rules! create_formatter {
                 // opening tags, then push the node back onto the stack for the
                 // post-order traversal phase, then push the children in reverse order
                 // onto the stack and begin rendering first child.
-                let mut writer = $crate::html::WriteWithLast {
-                    output,
-                    last_was_lf: ::std::cell::Cell::new(true),
-                };
 
-                let mut context = $crate::html::Context {
+                let mut context = $crate::html::Context::new(
+                    output,
                     options,
-                    output: &mut writer,
-                    anchorizer: $crate::html::Anchorizer::new(),
-                    footnote_ix: 0,
-                    written_footnote_ix: 0,
                     plugins,
-                };
+                );
 
                 enum Phase { Pre, Post }
                 let mut stack = vec![(root, false, Phase::Pre)];
@@ -181,7 +183,7 @@ macro_rules! create_formatter {
                                         context.escape(literal.as_bytes())?;
                                     }
                                     $crate::nodes::NodeValue::LineBreak | $crate::nodes::NodeValue::SoftBreak => {
-                                        ::std::io::Write::write_all(context.output, b" ")?;
+                                        ::std::io::Write::write_all(&mut context, b" ")?;
                                     }
                                     $crate::nodes::NodeValue::Math($crate::nodes::NodeMath { ref literal, .. }) => {
                                         context.escape(literal.as_bytes())?;
@@ -206,7 +208,7 @@ macro_rules! create_formatter {
                 }
 
                 if context.footnote_ix > 0 {
-                    context.output.write_all(b"</ol>\n</section>\n")?;
+                    ::std::io::Write::write_all(&mut context, b"</ol>\n</section>\n")?;
                 }
 
                 Ok(())
@@ -216,7 +218,7 @@ macro_rules! create_formatter {
                 match node.data.borrow().value {
                     $(
                         $pat => {
-                            let $output = &mut context.output;
+                            let $output: &mut dyn ::std::io::Write = context;
                             $case
                             Ok(true)
                         }
@@ -300,7 +302,7 @@ pub fn render_sourcepos<'o, 'c, 'a>(
     if context.options.render.sourcepos {
         let ast = node.data.borrow();
         if ast.sourcepos.start.line > 0 {
-            write!(context.output, " data-sourcepos=\"{}\"", ast.sourcepos)?;
+            write!(context, " data-sourcepos=\"{}\"", ast.sourcepos)?;
         }
     }
     Ok(())
@@ -314,12 +316,12 @@ pub fn render_block_quote<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<blockquote")?;
+        context.write_all(b"<blockquote")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">\n")?;
+        context.write_all(b">\n")?;
     } else {
         context.cr()?;
-        context.output.write_all(b"</blockquote>\n")?;
+        context.write_all(b"</blockquote>\n")?;
     }
     Ok(true)
 }
@@ -336,13 +338,13 @@ pub fn render_code<'o, 'c, 'a>(
 
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<code")?;
+        context.write_all(b"<code")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
         context.escape(literal.as_bytes())?;
-        context.output.write_all(b"</code>")?;
+        context.write_all(b"</code>")?;
     }
 
     Ok(true)
@@ -404,19 +406,19 @@ pub fn render_code_block<'o, 'c, 'a>(
 
             match context.plugins.render.codefence_syntax_highlighter {
                 None => {
-                    write_opening_tag(context.output, "pre", pre_attributes)?;
-                    write_opening_tag(context.output, "code", code_attributes)?;
+                    write_opening_tag(context, "pre", pre_attributes)?;
+                    write_opening_tag(context, "code", code_attributes)?;
 
                     context.escape(literal)?;
 
-                    context.output.write_all(b"</code></pre>\n")?
+                    context.write_all(b"</code></pre>\n")?
                 }
                 Some(highlighter) => {
-                    highlighter.write_pre_tag(context.output, pre_attributes)?;
-                    highlighter.write_code_tag(context.output, code_attributes)?;
+                    highlighter.write_pre_tag(context, pre_attributes)?;
+                    highlighter.write_code_tag(context, code_attributes)?;
 
                     highlighter.write_highlighted(
-                        context.output,
+                        context,
                         match std::str::from_utf8(&info[..first_tag]) {
                             Ok(lang) => Some(lang),
                             Err(_) => None,
@@ -424,7 +426,7 @@ pub fn render_code_block<'o, 'c, 'a>(
                         &ncb.literal,
                     )?;
 
-                    context.output.write_all(b"</code></pre>\n")?
+                    context.write_all(b"</code></pre>\n")?
                 }
             }
         }
@@ -450,13 +452,13 @@ pub fn render_emph<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<em")?;
+        context.write_all(b"<em")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</em>")?;
+        context.write_all(b"</em>")?;
     }
 
     Ok(true)
@@ -476,9 +478,9 @@ pub fn render_heading<'o, 'c, 'a>(
         None => {
             if entering {
                 context.cr()?;
-                write!(context.output, "<h{}", nch.level)?;
+                write!(context, "<h{}", nch.level)?;
                 render_sourcepos(context, node)?;
-                context.output.write_all(b">")?;
+                context.write_all(b">")?;
 
                 if let Some(ref prefix) = context.options.extension.header_ids {
                     let mut text_content = Vec::with_capacity(20);
@@ -487,13 +489,13 @@ pub fn render_heading<'o, 'c, 'a>(
                     let mut id = String::from_utf8(text_content).unwrap();
                     id = context.anchorizer.anchorize(id);
                     write!(
-                        context.output,
+                        context,
                         "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
                         id, prefix, id
                     )?;
                 }
             } else {
-                writeln!(context.output, "</h{}>", nch.level)?;
+                writeln!(context, "</h{}>", nch.level)?;
             }
         }
         Some(adapter) => {
@@ -507,17 +509,14 @@ pub fn render_heading<'o, 'c, 'a>(
 
             if entering {
                 context.cr()?;
-                adapter.enter(
-                    context.output,
-                    &heading,
-                    if context.options.render.sourcepos {
-                        Some(node.data.borrow().sourcepos)
-                    } else {
-                        None
-                    },
-                )?;
+                let sp = if context.options.render.sourcepos {
+                    Some(node.data.borrow().sourcepos)
+                } else {
+                    None
+                };
+                adapter.enter(context, &heading, sp)?;
             } else {
-                adapter.exit(context.output, &heading)?;
+                adapter.exit(context, &heading)?;
             }
         }
     }
@@ -542,11 +541,11 @@ pub fn render_html_block<'o, 'c, 'a>(
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.unsafe_ {
-            context.output.write_all(b"<!-- raw HTML omitted -->")?;
+            context.write_all(b"<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter {
-            tagfilter_block(literal, &mut context.output)?;
+            tagfilter_block(literal, context)?;
         } else {
-            context.output.write_all(literal)?;
+            context.write_all(literal)?;
         }
         context.cr()?;
     }
@@ -570,12 +569,12 @@ pub fn render_html_inline<'o, 'c, 'a>(
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.unsafe_ {
-            context.output.write_all(b"<!-- raw HTML omitted -->")?;
+            context.write_all(b"<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter && tagfilter(literal) {
-            context.output.write_all(b"&lt;")?;
-            context.output.write_all(&literal[1..])?;
+            context.write_all(b"&lt;")?;
+            context.write_all(&literal[1..])?;
         } else {
-            context.output.write_all(literal)?;
+            context.write_all(literal)?;
         }
     }
 
@@ -595,13 +594,13 @@ pub fn render_image<'o, 'c, 'a>(
     // Unreliable sourcepos.
     if entering {
         if context.options.render.figure_with_caption {
-            context.output.write_all(b"<figure>")?;
+            context.write_all(b"<figure>")?;
         }
-        context.output.write_all(b"<img")?;
+        context.write_all(b"<img")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b" src=\"")?;
+        context.write_all(b" src=\"")?;
         let url = nl.url.as_bytes();
         if context.options.render.unsafe_ || !dangerous_url(url) {
             if let Some(rewriter) = &context.options.extension.image_url_rewriter {
@@ -610,21 +609,21 @@ pub fn render_image<'o, 'c, 'a>(
                 context.escape_href(url)?;
             }
         }
-        context.output.write_all(b"\" alt=\"")?;
+        context.write_all(b"\" alt=\"")?;
         return Ok(false);
     } else {
         if !nl.title.is_empty() {
-            context.output.write_all(b"\" title=\"")?;
+            context.write_all(b"\" title=\"")?;
             context.escape(nl.title.as_bytes())?;
         }
-        context.output.write_all(b"\" />")?;
+        context.write_all(b"\" />")?;
         if context.options.render.figure_with_caption {
             if !nl.title.is_empty() {
-                context.output.write_all(b"<figcaption>")?;
+                context.write_all(b"<figcaption>")?;
                 context.escape(nl.title.as_bytes())?;
-                context.output.write_all(b"</figcaption>")?;
+                context.write_all(b"</figcaption>")?;
             }
-            context.output.write_all(b"</figure>")?;
+            context.write_all(b"</figure>")?;
         };
     }
 
@@ -639,11 +638,11 @@ pub fn render_item<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<li")?;
+        context.write_all(b"<li")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</li>\n")?;
+        context.write_all(b"</li>\n")?;
     }
 
     Ok(true)
@@ -657,11 +656,11 @@ pub fn render_line_break<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<br")?;
+        context.write_all(b"<br")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b" />\n")?;
+        context.write_all(b" />\n")?;
     }
 
     Ok(true)
@@ -688,11 +687,11 @@ pub fn render_link<'o, 'c, 'a>(
             ))
     {
         if entering {
-            context.output.write_all(b"<a")?;
+            context.write_all(b"<a")?;
             if context.options.render.experimental_inline_sourcepos {
                 render_sourcepos(context, node)?;
             }
-            context.output.write_all(b" href=\"")?;
+            context.write_all(b" href=\"")?;
             let url = nl.url.as_bytes();
             if context.options.render.unsafe_ || !dangerous_url(url) {
                 if let Some(rewriter) = &context.options.extension.link_url_rewriter {
@@ -702,12 +701,12 @@ pub fn render_link<'o, 'c, 'a>(
                 }
             }
             if !nl.title.is_empty() {
-                context.output.write_all(b"\" title=\"")?;
+                context.write_all(b"\" title=\"")?;
                 context.escape(nl.title.as_bytes())?;
             }
-            context.output.write_all(b"\">")?;
+            context.write_all(b"\">")?;
         } else {
-            context.output.write_all(b"</a>")?;
+            context.write_all(b"</a>")?;
         }
     }
 
@@ -728,30 +727,30 @@ pub fn render_list<'o, 'c, 'a>(
         context.cr()?;
         match nl.list_type {
             ListType::Bullet => {
-                context.output.write_all(b"<ul")?;
+                context.write_all(b"<ul")?;
                 if nl.is_task_list && context.options.render.tasklist_classes {
-                    context.output.write_all(b" class=\"contains-task-list\"")?;
+                    context.write_all(b" class=\"contains-task-list\"")?;
                 }
                 render_sourcepos(context, node)?;
-                context.output.write_all(b">\n")?;
+                context.write_all(b">\n")?;
             }
             ListType::Ordered => {
-                context.output.write_all(b"<ol")?;
+                context.write_all(b"<ol")?;
                 if nl.is_task_list && context.options.render.tasklist_classes {
-                    context.output.write_all(b" class=\"contains-task-list\"")?;
+                    context.write_all(b" class=\"contains-task-list\"")?;
                 }
                 render_sourcepos(context, node)?;
                 if nl.start == 1 {
-                    context.output.write_all(b">\n")?;
+                    context.write_all(b">\n")?;
                 } else {
-                    writeln!(context.output, " start=\"{}\">", nl.start)?;
+                    writeln!(context, " start=\"{}\">", nl.start)?;
                 }
             }
         }
     } else if nl.list_type == ListType::Bullet {
-        context.output.write_all(b"</ul>\n")?;
+        context.write_all(b"</ul>\n")?;
     } else {
-        context.output.write_all(b"</ol>\n")?;
+        context.write_all(b"</ol>\n")?;
     }
 
     Ok(true)
@@ -782,18 +781,18 @@ pub fn render_paragraph<'o, 'c, 'a>(
     if !tight {
         if entering {
             context.cr()?;
-            context.output.write_all(b"<p")?;
+            context.write_all(b"<p")?;
             render_sourcepos(context, node)?;
-            context.output.write_all(b">")?;
+            context.write_all(b">")?;
         } else {
             if let NodeValue::FootnoteDefinition(nfd) = &node.parent().unwrap().data.borrow().value
             {
                 if node.next_sibling().is_none() {
-                    context.output.write_all(b" ")?;
+                    context.write_all(b" ")?;
                     put_footnote_backref(context, nfd)?;
                 }
             }
-            context.output.write_all(b"</p>\n")?;
+            context.write_all(b"</p>\n")?;
         }
     }
 
@@ -809,13 +808,13 @@ pub fn render_soft_break<'o, 'c, 'a>(
     // Unreliable sourcepos.
     if entering {
         if context.options.render.hardbreaks {
-            context.output.write_all(b"<br")?;
+            context.write_all(b"<br")?;
             if context.options.render.experimental_inline_sourcepos {
                 render_sourcepos(context, node)?;
             }
-            context.output.write_all(b" />\n")?;
+            context.write_all(b" />\n")?;
         } else {
-            context.output.write_all(b"\n")?;
+            context.write_all(b"\n")?;
         }
     }
 
@@ -835,13 +834,13 @@ pub fn render_strong<'o, 'c, 'a>(
             || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
     {
         if entering {
-            context.output.write_all(b"<strong")?;
+            context.write_all(b"<strong")?;
             if context.options.render.experimental_inline_sourcepos {
                 render_sourcepos(context, node)?;
             }
-            context.output.write_all(b">")?;
+            context.write_all(b">")?;
         } else {
-            context.output.write_all(b"</strong>")?;
+            context.write_all(b"</strong>")?;
         }
     }
 
@@ -874,9 +873,9 @@ pub fn render_thematic_break<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<hr")?;
+        context.write_all(b"<hr")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b" />\n")?;
+        context.write_all(b" />\n")?;
     }
 
     Ok(true)
@@ -896,23 +895,21 @@ pub fn render_footnote_definition<'o, 'c, 'a>(
 
     if entering {
         if context.footnote_ix == 0 {
-            context.output.write_all(b"<section")?;
+            context.write_all(b"<section")?;
             render_sourcepos(context, node)?;
-            context
-                .output
-                .write_all(b" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
+            context.write_all(b" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
         }
         context.footnote_ix += 1;
-        context.output.write_all(b"<li")?;
+        context.write_all(b"<li")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b" id=\"fn-")?;
+        context.write_all(b" id=\"fn-")?;
         context.escape_href(nfd.name.as_bytes())?;
-        context.output.write_all(b"\">")?;
+        context.write_all(b"\">")?;
     } else {
         if put_footnote_backref(context, nfd)? {
-            context.output.write_all(b"\n")?;
+            context.write_all(b"\n")?;
         }
-        context.output.write_all(b"</li>\n")?;
+        context.write_all(b"</li>\n")?;
     }
 
     Ok(true)
@@ -935,17 +932,15 @@ pub fn render_footnote_reference<'o, 'c, 'a>(
             ref_id = format!("{}-{}", ref_id, nfr.ref_num);
         }
 
-        context.output.write_all(b"<sup")?;
+        context.write_all(b"<sup")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context
-            .output
-            .write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
+        context.write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
         context.escape_href(nfr.name.as_bytes())?;
-        context.output.write_all(b"\" id=\"")?;
+        context.write_all(b"\" id=\"")?;
         context.escape_href(ref_id.as_bytes())?;
-        write!(context.output, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
+        write!(context, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
     }
 
     Ok(true)
@@ -959,13 +954,13 @@ pub fn render_strikethrough<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<del")?;
+        context.write_all(b"<del")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</del>")?;
+        context.write_all(b"</del>")?;
     }
 
     Ok(true)
@@ -979,9 +974,9 @@ pub fn render_table<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<table")?;
+        context.write_all(b"<table")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">\n")?;
+        context.write_all(b">\n")?;
     } else {
         if !node
             .last_child()
@@ -989,10 +984,10 @@ pub fn render_table<'o, 'c, 'a>(
             .same_node(node.first_child().unwrap())
         {
             context.cr()?;
-            context.output.write_all(b"</tbody>\n")?;
+            context.write_all(b"</tbody>\n")?;
         }
         context.cr()?;
-        context.output.write_all(b"</table>\n")?;
+        context.write_all(b"</table>\n")?;
     }
 
     Ok(true)
@@ -1019,10 +1014,10 @@ pub fn render_table_cell<'o, 'c, 'a>(
     if entering {
         context.cr()?;
         if in_header {
-            context.output.write_all(b"<th")?;
+            context.write_all(b"<th")?;
             render_sourcepos(context, node)?;
         } else {
-            context.output.write_all(b"<td")?;
+            context.write_all(b"<td")?;
             render_sourcepos(context, node)?;
         }
 
@@ -1035,22 +1030,22 @@ pub fn render_table_cell<'o, 'c, 'a>(
 
         match alignments[i] {
             TableAlignment::Left => {
-                context.output.write_all(b" align=\"left\"")?;
+                context.write_all(b" align=\"left\"")?;
             }
             TableAlignment::Right => {
-                context.output.write_all(b" align=\"right\"")?;
+                context.write_all(b" align=\"right\"")?;
             }
             TableAlignment::Center => {
-                context.output.write_all(b" align=\"center\"")?;
+                context.write_all(b" align=\"center\"")?;
             }
             TableAlignment::None => (),
         }
 
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else if in_header {
-        context.output.write_all(b"</th>")?;
+        context.write_all(b"</th>")?;
     } else {
-        context.output.write_all(b"</td>")?;
+        context.write_all(b"</td>")?;
     }
 
     Ok(true)
@@ -1069,21 +1064,21 @@ pub fn render_table_row<'o, 'c, 'a>(
     if entering {
         context.cr()?;
         if header {
-            context.output.write_all(b"<thead>\n")?;
+            context.write_all(b"<thead>\n")?;
         } else if let Some(n) = node.previous_sibling() {
             if let NodeValue::TableRow(true) = n.data.borrow().value {
-                context.output.write_all(b"<tbody>\n")?;
+                context.write_all(b"<tbody>\n")?;
             }
         }
-        context.output.write_all(b"<tr")?;
+        context.write_all(b"<tr")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
         context.cr()?;
-        context.output.write_all(b"</tr>")?;
+        context.write_all(b"</tr>")?;
         if header {
             context.cr()?;
-            context.output.write_all(b"</thead>")?;
+            context.write_all(b"</thead>")?;
         }
     }
 
@@ -1102,24 +1097,22 @@ pub fn render_task_item<'o, 'c, 'a>(
 
     if entering {
         context.cr()?;
-        context.output.write_all(b"<li")?;
+        context.write_all(b"<li")?;
         if context.options.render.tasklist_classes {
-            context.output.write_all(b" class=\"task-list-item\"")?;
+            context.write_all(b" class=\"task-list-item\"")?;
         }
         render_sourcepos(context, node)?;
-        context.output.write_all(b">")?;
-        context.output.write_all(b"<input type=\"checkbox\"")?;
+        context.write_all(b">")?;
+        context.write_all(b"<input type=\"checkbox\"")?;
         if context.options.render.tasklist_classes {
-            context
-                .output
-                .write_all(b" class=\"task-list-item-checkbox\"")?;
+            context.write_all(b" class=\"task-list-item-checkbox\"")?;
         }
         if symbol.is_some() {
-            context.output.write_all(b" checked=\"\"")?;
+            context.write_all(b" checked=\"\"")?;
         }
-        context.output.write_all(b" disabled=\"\" /> ")?;
+        context.write_all(b" disabled=\"\" /> ")?;
     } else {
-        context.output.write_all(b"</li>\n")?;
+        context.write_all(b"</li>\n")?;
     }
 
     Ok(true)
@@ -1139,28 +1132,22 @@ pub fn render_alert<'o, 'c, 'a>(
 
     if entering {
         context.cr()?;
-        context.output.write_all(b"<div class=\"markdown-alert ")?;
-        context
-            .output
-            .write_all(alert.alert_type.css_class().as_bytes())?;
-        context.output.write_all(b"\"")?;
+        context.write_all(b"<div class=\"markdown-alert ")?;
+        context.write_all(alert.alert_type.css_class().as_bytes())?;
+        context.write_all(b"\"")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">\n")?;
-        context
-            .output
-            .write_all(b"<p class=\"markdown-alert-title\">")?;
+        context.write_all(b">\n")?;
+        context.write_all(b"<p class=\"markdown-alert-title\">")?;
         match alert.title {
             Some(ref title) => context.escape(title.as_bytes())?,
             None => {
-                context
-                    .output
-                    .write_all(alert.alert_type.default_title().as_bytes())?;
+                context.write_all(alert.alert_type.default_title().as_bytes())?;
             }
         }
-        context.output.write_all(b"</p>\n")?;
+        context.write_all(b"</p>\n")?;
     } else {
         context.cr()?;
-        context.output.write_all(b"</div>\n")?;
+        context.write_all(b"</div>\n")?;
     }
 
     Ok(true)
@@ -1173,11 +1160,11 @@ pub fn render_description_details<'o, 'c, 'a>(
     entering: bool,
 ) -> io::Result<bool> {
     if entering {
-        context.output.write_all(b"<dd")?;
+        context.write_all(b"<dd")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</dd>\n")?;
+        context.write_all(b"</dd>\n")?;
     }
 
     Ok(true)
@@ -1200,11 +1187,11 @@ pub fn render_description_list<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<dl")?;
+        context.write_all(b"<dl")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">\n")?;
+        context.write_all(b">\n")?;
     } else {
-        context.output.write_all(b"</dl>\n")?;
+        context.write_all(b"</dl>\n")?;
     }
 
     Ok(true)
@@ -1217,11 +1204,11 @@ pub fn render_description_term<'o, 'c, 'a>(
     entering: bool,
 ) -> io::Result<bool> {
     if entering {
-        context.output.write_all(b"<dt")?;
+        context.write_all(b"<dt")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</dt>\n")?;
+        context.write_all(b"</dt>\n")?;
     }
 
     Ok(true)
@@ -1236,13 +1223,13 @@ pub fn render_escaped<'o, 'c, 'a>(
     // Unreliable sourcepos.
     if context.options.render.escaped_char_spans {
         if entering {
-            context.output.write_all(b"<span data-escaped-char")?;
+            context.write_all(b"<span data-escaped-char")?;
             if context.options.render.experimental_inline_sourcepos {
                 render_sourcepos(context, node)?;
             }
-            context.output.write_all(b">")?;
+            context.write_all(b">")?;
         } else {
-            context.output.write_all(b"</span>")?;
+            context.write_all(b"</span>")?;
         }
     }
 
@@ -1260,7 +1247,7 @@ pub fn render_escaped_tag<'o, 'c, 'a>(
     };
 
     // Nowhere to put sourcepos.
-    context.output.write_all(net.as_bytes())?;
+    context.write_all(net.as_bytes())?;
 
     Ok(true)
 }
@@ -1305,9 +1292,9 @@ pub fn render_math<'o, 'c, 'a>(
             tag_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
         }
 
-        write_opening_tag(context.output, tag, tag_attributes)?;
+        write_opening_tag(context, tag, tag_attributes)?;
         context.escape(literal.as_bytes())?;
-        write!(context.output, "</{}>", tag)?;
+        write!(context, "</{}>", tag)?;
     }
 
     Ok(true)
@@ -1341,11 +1328,11 @@ pub fn render_math_code_block<'o, 'c, 'a>(
         pre_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
     }
 
-    write_opening_tag(context.output, "pre", pre_attributes)?;
-    write_opening_tag(context.output, "code", code_attributes)?;
+    write_opening_tag(context, "pre", pre_attributes)?;
+    write_opening_tag(context, "code", code_attributes)?;
 
     context.escape(literal.as_bytes())?;
-    context.output.write_all(b"</code></pre>\n")?;
+    context.write_all(b"</code></pre>\n")?;
 
     Ok(true)
 }
@@ -1358,12 +1345,12 @@ pub fn render_multiline_block_quote<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     if entering {
         context.cr()?;
-        context.output.write_all(b"<blockquote")?;
+        context.write_all(b"<blockquote")?;
         render_sourcepos(context, node)?;
-        context.output.write_all(b">\n")?;
+        context.write_all(b">\n")?;
     } else {
         context.cr()?;
-        context.output.write_all(b"</blockquote>\n")?;
+        context.write_all(b"</blockquote>\n")?;
     }
 
     Ok(true)
@@ -1381,7 +1368,7 @@ pub fn render_raw<'o, 'c, 'a>(
 
     // No sourcepos.
     if entering {
-        context.output.write_all(literal.as_bytes())?;
+        context.write_all(literal.as_bytes())?;
     }
 
     Ok(true)
@@ -1400,7 +1387,7 @@ pub fn render_short_code<'o, 'c, 'a>(
 
     // Nowhere to put sourcepos.
     if entering {
-        context.output.write_all(nsc.emoji.as_bytes())?;
+        context.write_all(nsc.emoji.as_bytes())?;
     }
 
     Ok(true)
@@ -1414,13 +1401,13 @@ pub fn render_spoiler_text<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<span")?;
+        context.write_all(b"<span")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b" class=\"spoiler\">")?;
+        context.write_all(b" class=\"spoiler\">")?;
     } else {
-        context.output.write_all(b"</span>")?;
+        context.write_all(b"</span>")?;
     }
 
     Ok(true)
@@ -1434,13 +1421,13 @@ pub fn render_subscript<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<sub")?;
+        context.write_all(b"<sub")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</sub>")?;
+        context.write_all(b"</sub>")?;
     }
 
     Ok(true)
@@ -1454,13 +1441,13 @@ pub fn render_superscript<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<sup")?;
+        context.write_all(b"<sup")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</sup>")?;
+        context.write_all(b"</sup>")?;
     }
 
     Ok(true)
@@ -1474,13 +1461,13 @@ pub fn render_underline<'o, 'c, 'a>(
 ) -> io::Result<bool> {
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<u")?;
+        context.write_all(b"<u")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b">")?;
+        context.write_all(b">")?;
     } else {
-        context.output.write_all(b"</u>")?;
+        context.write_all(b"</u>")?;
     }
 
     Ok(true)
@@ -1498,19 +1485,19 @@ pub fn render_wiki_link<'o, 'c, 'a>(
 
     // Unreliable sourcepos.
     if entering {
-        context.output.write_all(b"<a")?;
+        context.write_all(b"<a")?;
         if context.options.render.experimental_inline_sourcepos {
             render_sourcepos(context, node)?;
         }
-        context.output.write_all(b" href=\"")?;
+        context.write_all(b" href=\"")?;
         let url = nl.url.as_bytes();
         if context.options.render.unsafe_ || !dangerous_url(url) {
             context.escape_href(url)?;
         }
-        context.output.write_all(b"\" data-wikilink=\"true")?;
-        context.output.write_all(b"\">")?;
+        context.write_all(b"\" data-wikilink=\"true")?;
+        context.write_all(b"\">")?;
     } else {
-        context.output.write_all(b"</a>")?;
+        context.write_all(b"</a>")?;
     }
 
     Ok(true)
@@ -1534,15 +1521,16 @@ pub fn put_footnote_backref<'o, 'c>(
         if ref_num > 1 {
             ref_suffix = format!("-{}", ref_num);
             superscript = format!("<sup class=\"footnote-ref\">{}</sup>", ref_num);
-            write!(context.output, " ")?;
+            write!(context, " ")?;
         }
 
-        context.output.write_all(b"<a href=\"#fnref-")?;
+        context.write_all(b"<a href=\"#fnref-")?;
         context.escape_href(nfd.name.as_bytes())?;
+        let fnix = context.footnote_ix;
         write!(
-            context.output,
+            context,
             "{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}{}\" aria-label=\"Back to reference {}{}\">↩{}</a>",
-            ref_suffix, context.footnote_ix, ref_suffix, context.footnote_ix, ref_suffix, superscript
+            ref_suffix, fnix, ref_suffix, fnix, ref_suffix, superscript
         )?;
     }
     Ok(true)
