@@ -1,8 +1,8 @@
 //! HTML renderering infrastructure for the CommonMark AST, as well as helper
-//! functions. [`format_document`] and [`format_document_with_plugins`] use the
-//! standard formatter, respecting [`Options`] given. Alternatively, you can
-//! use the [`create_formatter!`][super::create_formatter] macro to specialise
-//! formatting for specific node types.
+//! functions. [`format_document`] and [`format_document_with_plugins`]
+//! use the standard formatter. The
+//! [`create_formatter!`][super::create_formatter] macro allows specialisation
+//! of formatting for specific node types.
 
 mod anchorizer;
 mod context;
@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str;
 
+#[doc(hidden)]
 pub use anchorizer::Anchorizer;
 pub use context::Context;
 
@@ -29,7 +30,13 @@ pub fn format_document<'a>(
     options: &Options,
     output: &mut dyn Write,
 ) -> io::Result<()> {
-    HtmlFormatter::format_document(root, options, output)
+    format_document_with_formatter(
+        root,
+        options,
+        output,
+        &Plugins::default(),
+        format_node_default,
+    )
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
@@ -39,26 +46,84 @@ pub fn format_document_with_plugins<'a>(
     output: &mut dyn Write,
     plugins: &Plugins,
 ) -> io::Result<()> {
-    HtmlFormatter::format_document_with_plugins(root, options, output, plugins)
+    format_document_with_formatter(root, options, output, plugins, format_node_default)
 }
 
-/// TODO
+/// Returned by the [`format_document_with_formatter`] callback to indicate
+/// whether children of a node should be rendered with full HTML as usual, or in
+/// "plain" mode, such as for the `title` attribute of an image (which is a full
+/// subtree in CommonMark).  There are probably few other use cases for "plain"
+/// mode.
 #[derive(Debug, Clone, Copy)]
 pub enum RenderMode {
-    /// TODO
+    /// Indicates children should be rendered in full HTML as usual.
     HTML,
-    /// TODO
+    /// Indicates children should be rendered in "plain" mode; see the source of
+    /// [`format_document_with_formatter`] for details.
     Plain,
 }
 
-/// TODO
+/// Create a formatter with specialised rules for certain node types.
+///
+/// Give the name of the newly created struct, and then a list of [`NodeValue`]
+/// match cases within curly braces. The left-hand side are regular patterns and
+/// can include captures. The right-hand side starts with a mandatory list of
+/// contextual captures, similar to lambdas. The following contextual captures
+/// are available:
+///
+/// * `context`: the <code>[&mut] [Context]</code>, giving access to rendering
+///   options, plugins, and output appending.
+/// * `output`: `context` cast to <code>[&mut] dyn [Write]</code> when you don't
+///   need the whole thing.
+/// * `node`: the <code>[&][&][AstNode]</code> being formatted, when the
+///   [`NodeValue`]'s contents aren't enough.
+/// * `entering`: [`true`] when the node is being first descended into,
+///   [`false`] when being exited.
+/// * `suppress_children`: a <code>[&mut] [bool]</code>; set to [`true`] when
+///   `entering` to cause this node's children not to be recursed into by the
+///   formatter.
+///
+/// ```
+/// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue};
+/// create_formatter!(CustomFormatter, {
+///     NodeValue::Emph => |output, entering| {
+///         if entering {
+///             output.write_all(b"<i>")?;
+///         } else {
+///             output.write_all(b"</i>")?;
+///         }
+///     },
+///     NodeValue::Strong => |context, entering| {
+///         use std::io::Write;
+///         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
+///     },
+///     NodeValue::Image(ref nl) => |output, node, entering, suppress_children| {
+///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
+///         if entering {
+///             output.write_all(nl.url.to_uppercase().as_bytes())?;
+///             *suppress_children = true;
+///         }
+///     },
+/// });
+///
+/// let options = Options::default();
+/// let arena = Arena::new();
+/// let doc = parse_document(
+///     &arena,
+///     "_Hello_, **world**.\n\n![title](/img.png)",
+///     &options,
+/// );
+///
+/// let mut buf: Vec<u8> = vec![];
+/// CustomFormatter::format_document(doc, &options, &mut buf).unwrap();
+///
+/// assert_eq!(
+///     std::str::from_utf8(&buf).unwrap(),
+///     "<p><i>Hello</i>, <b>world</b>.</p>\n<p>/IMG.PNG</p>\n"
+/// );
+/// ```
 #[macro_export]
 macro_rules! create_formatter {
-    // No overrides (i.e. as used to create comrak::html::HtmlFormatter).
-    ($name:ident) => {
-        $crate::create_formatter!($name, {});
-    };
-
     // Permit lack of trailing comma by adding one.
     ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* }) => {
         $crate::create_formatter!($name, { $( $pat => | $( $capture ),* | $case ),*, });
@@ -81,7 +146,13 @@ macro_rules! create_formatter {
                 options: &$crate::Options,
                 output: &mut dyn ::std::io::Write,
             ) -> ::std::io::Result<()> {
-                Self::format_document_with_plugins(root, options, output, &$crate::Plugins::default())
+                $crate::html::format_document_with_formatter(
+                    root,
+                    options,
+                    output,
+                    &$crate::Plugins::default(),
+                    Self::formatter,
+                )
             }
 
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
@@ -92,7 +163,13 @@ macro_rules! create_formatter {
                 output: &'o mut dyn ::std::io::Write,
                 plugins: &'o $crate::Plugins<'o>,
             ) -> ::std::io::Result<()> {
-                $crate::html::format_document_with_formatter(root, options, output, plugins, Self::formatter)
+                $crate::html::format_document_with_formatter(
+                    root,
+                    options,
+                    output,
+                    plugins,
+                    Self::formatter,
+                )
             }
 
             fn formatter<'a>(
@@ -113,14 +190,16 @@ macro_rules! create_formatter {
                             }
                         }
                     ),*
-                    _ => $crate::html::format_node_default(context, node, entering).map(::std::option::Option::Some),
+                    _ => $crate::html::format_node_default(context, node, entering),
                 }
             }
         }
     };
 }
 
-/// TODO
+/// This must be exported so its uses in [`create_formatter!`] can be expanded,
+/// but it's not intended for direct use.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! formatter_captures {
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), context, $bind:ident) => {
@@ -150,13 +229,23 @@ macro_rules! formatter_captures {
     };
 }
 
-/// TODO
+/// Formats the given AST with all options and formatter function specified.
+///
+/// The default formatter as used by [`format_document`] is
+/// [`format_node_default`]. It is given the [`Context`], [`AstNode`], and a
+/// boolean indicating whether the node is being entered into or exited.  It
+/// should return <code>[Some]\([RenderMode::HTML])</code>, or [`None`] if the
+/// node's children should not be recursed into automatically.
 pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
     root: &'a AstNode<'a>,
     options: &'o Options<'c>,
     output: &'o mut dyn Write,
     plugins: &'o Plugins<'o>,
-    formatter: fn(&mut Context, &'a AstNode<'a>, bool) -> io::Result<Option<RenderMode>>,
+    formatter: fn(
+        context: &mut Context,
+        node: &'a AstNode<'a>,
+        entering: bool,
+    ) -> io::Result<Option<RenderMode>>,
 ) -> ::std::io::Result<()> {
     // Traverse the AST iteratively using a work stack, with pre- and
     // post-child-traversal phases. During pre-order traversal render the
@@ -217,15 +306,15 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
     Ok(())
 }
 
-create_formatter!(HtmlFormatter);
-
-/// TODO
+/// Default node formatting function, used by [`format_document`],
+/// [`format_document_with_plugins`] and as the fallback for any node types not
+/// handled in custom formatters created by [`create_formatter!`].
 #[inline]
 pub fn format_node_default<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<Option<RenderMode>> {
     match node.data.borrow().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
@@ -276,6 +365,7 @@ pub fn format_node_default<'a>(
         NodeValue::Underline => render_underline(context, node, entering),
         NodeValue::WikiLink(_) => render_wiki_link(context, node, entering),
     }
+    .map(Some)
 }
 
 // Commonmark
