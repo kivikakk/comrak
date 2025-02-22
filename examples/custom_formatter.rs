@@ -1,19 +1,15 @@
 use comrak::{create_formatter, nodes::NodeValue};
 
-create_formatter!(CustomFormatter, |output, entering| {
-    NodeValue::Emph => {
+create_formatter!(CustomFormatter, {
+    NodeValue::Emph => |output, entering| {
         if entering {
             output.write_all(b"<i>")?;
         } else {
             output.write_all(b"</i>")?;
         }
     },
-    NodeValue::Strong => {
-        if entering {
-            output.write_all(b"<b>")?;
-        } else {
-            output.write_all(b"</b>")?;
-        }
+    NodeValue::Strong => |o, e| {
+        o.write_all(if e { b"<b>" } else { b"</b>" })?;
     },
 });
 

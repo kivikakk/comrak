@@ -1,5 +1,6 @@
 //! The HTML renderer for the CommonMark AST, as well as helper functions.
 mod anchorizer;
+mod context;
 
 use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
@@ -10,12 +11,12 @@ use crate::nodes::{
 };
 use crate::parser::{Options, Plugins};
 use crate::scanners;
-use std::cell::Cell;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str;
 
 pub use anchorizer::Anchorizer;
+pub use context::Context;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
@@ -37,104 +38,31 @@ pub fn format_document_with_plugins<'a>(
 }
 
 /// TODO
-fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
-    match node.data.borrow().value {
-        NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-            output.extend_from_slice(literal.as_bytes())
-        }
-        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
-        NodeValue::Math(NodeMath { ref literal, .. }) => {
-            output.extend_from_slice(literal.as_bytes())
-        }
-        _ => {
-            for n in node.children() {
-                collect_text(n, output);
-            }
-        }
-    }
-}
-
-/// TODO
-pub struct Context<'o, 'c> {
-    _output: &'o mut dyn Write,
-    _last_was_lf: Cell<bool>,
-
+#[derive(Debug, Clone, Copy)]
+pub enum RenderMode {
     /// TODO
-    pub options: &'o Options<'c>,
+    HTML,
     /// TODO
-    pub plugins: &'o Plugins<'o>,
-    /// TODO
-    pub anchorizer: Anchorizer,
-    /// TODO
-    pub footnote_ix: u32,
-    /// TODO
-    pub written_footnote_ix: u32,
-}
-
-impl<'o, 'c> Context<'o, 'c> {
-    /// TODO
-    pub fn new(
-        output: &'o mut dyn Write,
-        options: &'o Options<'c>,
-        plugins: &'o Plugins<'o>,
-    ) -> Self {
-        Context {
-            _output: output,
-            _last_was_lf: Cell::new(true),
-            options,
-            plugins,
-            anchorizer: Anchorizer::new(),
-            footnote_ix: 0,
-            written_footnote_ix: 0,
-        }
-    }
-
-    /// TODO
-    pub fn cr(&mut self) -> io::Result<()> {
-        if !self._last_was_lf.get() {
-            self.write_all(b"\n")?;
-        }
-        Ok(())
-    }
-
-    /// TODO
-    pub fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
-        escape(self, buffer)
-    }
-
-    /// TODO
-    pub fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
-        escape_href(self, buffer)
-    }
-}
-
-impl<'o, 'c> Write for Context<'o, 'c> {
-    fn flush(&mut self) -> io::Result<()> {
-        self._output.flush()
-    }
-
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let l = buf.len();
-        if l > 0 {
-            self._last_was_lf.set(buf[l - 1] == 10);
-        }
-        self._output.write(buf)
-    }
-}
-
-impl<'o, 'c> std::fmt::Debug for Context<'o, 'c> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        formatter.write_str("<comrak::html::Context>")
-    }
+    Plain,
 }
 
 /// TODO
 #[macro_export]
 macro_rules! create_formatter {
+    // No overrides (i.e. as used to create comrak::html::HtmlFormatter).
     ($name:ident) => {
-        create_formatter!($name, |_x, _y| {,});
+        create_formatter!($name, {});
     };
-    ($name:ident, |$output:ident, $entering:ident| { $( $pat:pat => $case:tt ),*, }) => {
+
+    // Permit lack of trailing comma by adding one.
+    ($name:ident, { $( $pat:pat => |$output:ident, $entering:ident| $case:tt ),* }) => {
+        create_formatter!($name, { $( $pat => |$output, $entering| $case ),*, });
+    };
+
+    ($name:ident, { $( $pat:pat => |$output:ident, $entering:ident| $case:tt ),*, }) => {
+        // I considered making this a `mod` instead, but then name resolution
+        // inside your pattern cases gets weird and overriding *that* to be less
+        // weird (with idk, `use super::*;`?) feels worse.
         /// TODO
         #[derive(Debug)]
         #[allow(missing_copy_implementations)]
@@ -163,67 +91,71 @@ macro_rules! create_formatter {
                 // post-order traversal phase, then push the children in reverse order
                 // onto the stack and begin rendering first child.
 
-                let mut context = $crate::html::Context::new(
-                    output,
-                    options,
-                    plugins,
-                );
+                let mut context = $crate::html::Context::new(output, options, plugins);
 
                 enum Phase { Pre, Post }
-                let mut stack = vec![(root, false, Phase::Pre)];
+                let mut stack = vec![(root, $crate::html::RenderMode::HTML, Phase::Pre)];
 
-                while let Some((node, plain, phase)) = stack.pop() {
+                while let Some((node, render_mode, phase)) = stack.pop() {
                     match phase {
                         Phase::Pre => {
-                            let new_plain = if plain {
-                                match node.data.borrow().value {
-                                    $crate::nodes::NodeValue::Text(ref literal)
-                                    | $crate::nodes::NodeValue::Code($crate::nodes::NodeCode { ref literal, .. })
-                                    | $crate::nodes::NodeValue::HtmlInline(ref literal) => {
-                                        context.escape(literal.as_bytes())?;
+                            let new_rm = match render_mode {
+                                $crate::html::RenderMode::Plain => {
+                                    match node.data.borrow().value {
+                                        $crate::nodes::NodeValue::Text(ref literal)
+                                        | $crate::nodes::NodeValue::Code($crate::nodes::NodeCode { ref literal, .. })
+                                        | $crate::nodes::NodeValue::HtmlInline(ref literal) => {
+                                            context.escape(literal.as_bytes())?;
+                                        }
+                                        $crate::nodes::NodeValue::LineBreak | $crate::nodes::NodeValue::SoftBreak => {
+                                            ::std::io::Write::write_all(&mut context, b" ")?;
+                                        }
+                                        $crate::nodes::NodeValue::Math($crate::nodes::NodeMath { ref literal, .. }) => {
+                                            context.escape(literal.as_bytes())?;
+                                        }
+                                        _ => (),
                                     }
-                                    $crate::nodes::NodeValue::LineBreak | $crate::nodes::NodeValue::SoftBreak => {
-                                        ::std::io::Write::write_all(&mut context, b" ")?;
-                                    }
-                                    $crate::nodes::NodeValue::Math($crate::nodes::NodeMath { ref literal, .. }) => {
-                                        context.escape(literal.as_bytes())?;
-                                    }
-                                    _ => (),
+                                    render_mode
+                                },
+                                $crate::html::RenderMode::HTML => {
+                                    stack.push((node, $crate::html::RenderMode::HTML, Phase::Post));
+                                    Self::format_node(&mut context, node, true)?
                                 }
-                                plain
-                            } else {
-                                stack.push((node, false, Phase::Post));
-                                !Self::format_node(&mut context, node, true)?
                             };
 
                             for ch in node.reverse_children() {
-                                stack.push((ch, new_plain, Phase::Pre));
+                                stack.push((ch, new_rm, Phase::Pre));
                             }
                         }
                         Phase::Post => {
-                            debug_assert!(!plain);
+                            debug_assert!(matches!(render_mode, $crate::html::RenderMode::HTML));
                             Self::format_node(&mut context, node, false)?;
                         }
                     }
                 }
 
-                if context.footnote_ix > 0 {
-                    ::std::io::Write::write_all(&mut context, b"</ol>\n</section>\n")?;
-                }
+                context.finish()?;
 
                 Ok(())
             }
 
-            fn format_node<'a>(context: &mut $crate::html::Context, node: &'a $crate::nodes::AstNode<'a>, $entering: bool) -> ::std::io::Result<bool> {
+            fn format_node<'a>(
+                context: &mut $crate::html::Context,
+                node: &'a $crate::nodes::AstNode<'a>,
+                entering: bool,
+            ) -> ::std::io::Result<$crate::html::RenderMode> {
                 match node.data.borrow().value {
                     $(
                         $pat => {
                             let $output: &mut dyn ::std::io::Write = context;
+                            let $entering = entering;
+
                             $case
-                            Ok(true)
+
+                            Ok($crate::html::RenderMode::HTML)
                         }
                     ),*
-                    _ => $crate::html::format_node_default(context, node, $entering),
+                    _ => $crate::html::format_node_default(context, node, entering),
                 }
             }
         }
@@ -233,72 +165,68 @@ macro_rules! create_formatter {
 create_formatter!(HtmlFormatter);
 
 /// TODO
-pub fn format_node_default<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+#[inline]
+pub fn format_node_default<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
-    let processing_complete: bool = match node.data.borrow().value {
+) -> io::Result<RenderMode> {
+    match node.data.borrow().value {
         // Commonmark
-        NodeValue::BlockQuote => render_block_quote(context, node, entering)?,
-        NodeValue::Code(_) => render_code(context, node, entering)?,
-        NodeValue::CodeBlock(_) => render_code_block(context, node, entering)?,
-        NodeValue::Document => render_document(context, node, entering)?,
-        NodeValue::Emph => render_emph(context, node, entering)?,
-        NodeValue::Heading(_) => render_heading(context, node, entering)?,
-        NodeValue::HtmlBlock(_) => render_html_block(context, node, entering)?,
-        NodeValue::HtmlInline(_) => render_html_inline(context, node, entering)?,
-        NodeValue::Image(_) => render_image(context, node, entering)?,
-        NodeValue::Item(_) => render_item(context, node, entering)?,
-        NodeValue::LineBreak => render_line_break(context, node, entering)?,
-        NodeValue::Link(_) => render_link(context, node, entering)?,
-        NodeValue::List(_) => render_list(context, node, entering)?,
-        NodeValue::Paragraph => render_paragraph(context, node, entering)?,
-        NodeValue::SoftBreak => render_soft_break(context, node, entering)?,
-        NodeValue::Strong => render_strong(context, node, entering)?,
-        NodeValue::Text(_) => render_text(context, node, entering)?,
-        NodeValue::ThematicBreak => render_thematic_break(context, node, entering)?,
+        NodeValue::BlockQuote => render_block_quote(context, node, entering),
+        NodeValue::Code(_) => render_code(context, node, entering),
+        NodeValue::CodeBlock(_) => render_code_block(context, node, entering),
+        NodeValue::Document => render_document(context, node, entering),
+        NodeValue::Emph => render_emph(context, node, entering),
+        NodeValue::Heading(_) => render_heading(context, node, entering),
+        NodeValue::HtmlBlock(_) => render_html_block(context, node, entering),
+        NodeValue::HtmlInline(_) => render_html_inline(context, node, entering),
+        NodeValue::Image(_) => render_image(context, node, entering),
+        NodeValue::Item(_) => render_item(context, node, entering),
+        NodeValue::LineBreak => render_line_break(context, node, entering),
+        NodeValue::Link(_) => render_link(context, node, entering),
+        NodeValue::List(_) => render_list(context, node, entering),
+        NodeValue::Paragraph => render_paragraph(context, node, entering),
+        NodeValue::SoftBreak => render_soft_break(context, node, entering),
+        NodeValue::Strong => render_strong(context, node, entering),
+        NodeValue::Text(_) => render_text(context, node, entering),
+        NodeValue::ThematicBreak => render_thematic_break(context, node, entering),
 
         // GFM
-        NodeValue::FootnoteDefinition(_) => render_footnote_definition(context, node, entering)?,
-        NodeValue::FootnoteReference(_) => render_footnote_reference(context, node, entering)?,
-        NodeValue::Strikethrough => render_strikethrough(context, node, entering)?,
-        NodeValue::Table(_) => render_table(context, node, entering)?,
-        NodeValue::TableCell => render_table_cell(context, node, entering)?,
-        NodeValue::TableRow(_) => render_table_row(context, node, entering)?,
-        NodeValue::TaskItem(_) => render_task_item(context, node, entering)?,
+        NodeValue::FootnoteDefinition(_) => render_footnote_definition(context, node, entering),
+        NodeValue::FootnoteReference(_) => render_footnote_reference(context, node, entering),
+        NodeValue::Strikethrough => render_strikethrough(context, node, entering),
+        NodeValue::Table(_) => render_table(context, node, entering),
+        NodeValue::TableCell => render_table_cell(context, node, entering),
+        NodeValue::TableRow(_) => render_table_row(context, node, entering),
+        NodeValue::TaskItem(_) => render_task_item(context, node, entering),
 
         // Extensions
-        NodeValue::Alert(_) => render_alert(context, node, entering)?,
-        NodeValue::DescriptionDetails => render_description_details(context, node, entering)?,
-        NodeValue::DescriptionItem(_) => render_description_item(context, node, entering)?,
-        NodeValue::DescriptionList => render_description_list(context, node, entering)?,
-        NodeValue::DescriptionTerm => render_description_term(context, node, entering)?,
-        NodeValue::Escaped => render_escaped(context, node, entering)?,
-        NodeValue::EscapedTag(_) => render_escaped_tag(context, node, entering)?,
-        NodeValue::FrontMatter(_) => render_frontmatter(context, node, entering)?,
-        NodeValue::Math(_) => render_math(context, node, entering)?,
-        NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering)?,
-        NodeValue::Raw(_) => render_raw(context, node, entering)?,
+        NodeValue::Alert(_) => render_alert(context, node, entering),
+        NodeValue::DescriptionDetails => render_description_details(context, node, entering),
+        NodeValue::DescriptionItem(_) => render_description_item(context, node, entering),
+        NodeValue::DescriptionList => render_description_list(context, node, entering),
+        NodeValue::DescriptionTerm => render_description_term(context, node, entering),
+        NodeValue::Escaped => render_escaped(context, node, entering),
+        NodeValue::EscapedTag(_) => render_escaped_tag(context, node, entering),
+        NodeValue::FrontMatter(_) => render_frontmatter(context, node, entering),
+        NodeValue::Math(_) => render_math(context, node, entering),
+        NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering),
+        NodeValue::Raw(_) => render_raw(context, node, entering),
         #[cfg(feature = "shortcodes")]
-        NodeValue::ShortCode(_) => render_short_code(context, node, entering)?,
-        NodeValue::SpoileredText => render_spoiler_text(context, node, entering)?,
-        NodeValue::Subscript => render_subscript(context, node, entering)?,
-        NodeValue::Superscript => render_superscript(context, node, entering)?,
-        NodeValue::Underline => render_underline(context, node, entering)?,
-        NodeValue::WikiLink(_) => render_wiki_link(context, node, entering)?,
-    };
-
-    Ok(processing_complete)
+        NodeValue::ShortCode(_) => render_short_code(context, node, entering),
+        NodeValue::SpoileredText => render_spoiler_text(context, node, entering),
+        NodeValue::Subscript => render_subscript(context, node, entering),
+        NodeValue::Superscript => render_superscript(context, node, entering),
+        NodeValue::Underline => render_underline(context, node, entering),
+        NodeValue::WikiLink(_) => render_wiki_link(context, node, entering),
+    }
 }
 
 // Commonmark
 
 /// TODO
-pub fn render_sourcepos<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
-    node: &'a AstNode<'a>,
-) -> io::Result<()> {
+pub fn render_sourcepos<'a>(context: &mut Context, node: &'a AstNode<'a>) -> io::Result<()> {
     if context.options.render.sourcepos {
         let ast = node.data.borrow();
         if ast.sourcepos.start.line > 0 {
@@ -308,12 +236,11 @@ pub fn render_sourcepos<'o, 'c, 'a>(
     Ok(())
 }
 
-/// TODO
-pub fn render_block_quote<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_block_quote<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<blockquote")?;
@@ -323,15 +250,14 @@ pub fn render_block_quote<'o, 'c, 'a>(
         context.cr()?;
         context.write_all(b"</blockquote>\n")?;
     }
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_code<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_code<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
         panic!()
     };
@@ -347,15 +273,14 @@ pub fn render_code<'o, 'c, 'a>(
         context.write_all(b"</code>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_code_block<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_code_block<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
         panic!()
     };
@@ -432,24 +357,22 @@ pub fn render_code_block<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_document<'o, 'c, 'a>(
-    _context: &mut Context<'o, 'c>,
+fn render_document<'a>(
+    _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<bool> {
-    Ok(true)
+) -> io::Result<RenderMode> {
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_emph<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_emph<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<em")?;
@@ -461,15 +384,14 @@ pub fn render_emph<'o, 'c, 'a>(
         context.write_all(b"</em>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_heading<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_heading<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Heading(ref nch) = node.data.borrow().value else {
         panic!()
     };
@@ -521,15 +443,14 @@ pub fn render_heading<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_html_block<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_html_block<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
         panic!()
     };
@@ -550,15 +471,14 @@ pub fn render_html_block<'o, 'c, 'a>(
         context.cr()?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_html_inline<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_html_inline<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -578,15 +498,14 @@ pub fn render_html_inline<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_image<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_image<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Image(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -610,7 +529,7 @@ pub fn render_image<'o, 'c, 'a>(
             }
         }
         context.write_all(b"\" alt=\"")?;
-        return Ok(false);
+        return Ok(RenderMode::Plain);
     } else {
         if !nl.title.is_empty() {
             context.write_all(b"\" title=\"")?;
@@ -627,15 +546,14 @@ pub fn render_image<'o, 'c, 'a>(
         };
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_item<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_item<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<li")?;
@@ -645,15 +563,14 @@ pub fn render_item<'o, 'c, 'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_line_break<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_line_break<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<br")?;
@@ -663,15 +580,14 @@ pub fn render_line_break<'o, 'c, 'a>(
         context.write_all(b" />\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_link<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_link<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Link(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -710,15 +626,14 @@ pub fn render_link<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_list<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_list<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::List(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -753,15 +668,14 @@ pub fn render_list<'o, 'c, 'a>(
         context.write_all(b"</ol>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_paragraph<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_paragraph<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let tight = match node
         .parent()
         .and_then(|n| n.parent())
@@ -796,15 +710,14 @@ pub fn render_paragraph<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_soft_break<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_soft_break<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         if context.options.render.hardbreaks {
@@ -818,15 +731,14 @@ pub fn render_soft_break<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_strong<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_strong<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
@@ -844,15 +756,14 @@ pub fn render_strong<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_text<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_text<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Text(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -862,15 +773,14 @@ pub fn render_text<'o, 'c, 'a>(
         context.escape(literal.as_bytes())?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_thematic_break<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_thematic_break<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<hr")?;
@@ -878,17 +788,16 @@ pub fn render_thematic_break<'o, 'c, 'a>(
         context.write_all(b" />\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
 // GFM
 
-/// TODO
-pub fn render_footnote_definition<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_footnote_definition<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
         panic!()
     };
@@ -912,15 +821,14 @@ pub fn render_footnote_definition<'o, 'c, 'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_footnote_reference<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_footnote_reference<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
         panic!()
     };
@@ -943,15 +851,14 @@ pub fn render_footnote_reference<'o, 'c, 'a>(
         write!(context, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_strikethrough<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_strikethrough<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<del")?;
@@ -963,15 +870,14 @@ pub fn render_strikethrough<'o, 'c, 'a>(
         context.write_all(b"</del>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_table<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_table<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<table")?;
@@ -990,15 +896,14 @@ pub fn render_table<'o, 'c, 'a>(
         context.write_all(b"</table>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_table_cell<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_table_cell<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let row = &node.parent().unwrap().data.borrow().value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
@@ -1048,15 +953,14 @@ pub fn render_table_cell<'o, 'c, 'a>(
         context.write_all(b"</td>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_table_row<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_table_row<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::TableRow(header) = node.data.borrow().value else {
         panic!()
     };
@@ -1082,15 +986,14 @@ pub fn render_table_row<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_task_item<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_task_item<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
         panic!()
     };
@@ -1115,17 +1018,16 @@ pub fn render_task_item<'o, 'c, 'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
 // Extensions
 
-/// TODO
-pub fn render_alert<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_alert<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Alert(ref alert) = node.data.borrow().value else {
         panic!()
     };
@@ -1150,15 +1052,14 @@ pub fn render_alert<'o, 'c, 'a>(
         context.write_all(b"</div>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_description_details<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_description_details<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.write_all(b"<dd")?;
         render_sourcepos(context, node)?;
@@ -1167,24 +1068,22 @@ pub fn render_description_details<'o, 'c, 'a>(
         context.write_all(b"</dd>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_description_item<'o, 'c, 'a>(
-    _context: &mut Context<'o, 'c>,
+fn render_description_item<'a>(
+    _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<bool> {
-    Ok(true)
+) -> io::Result<RenderMode> {
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_description_list<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_description_list<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<dl")?;
@@ -1194,15 +1093,14 @@ pub fn render_description_list<'o, 'c, 'a>(
         context.write_all(b"</dl>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_description_term<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_description_term<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.write_all(b"<dt")?;
         render_sourcepos(context, node)?;
@@ -1211,15 +1109,14 @@ pub fn render_description_term<'o, 'c, 'a>(
         context.write_all(b"</dt>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_escaped<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_escaped<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if context.options.render.escaped_char_spans {
         if entering {
@@ -1233,15 +1130,14 @@ pub fn render_escaped<'o, 'c, 'a>(
         }
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_escaped_tag<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_escaped_tag<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
         panic!()
     };
@@ -1249,25 +1145,24 @@ pub fn render_escaped_tag<'o, 'c, 'a>(
     // Nowhere to put sourcepos.
     context.write_all(net.as_bytes())?;
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_frontmatter<'o, 'c, 'a>(
-    _context: &mut Context<'o, 'c>,
+fn render_frontmatter<'a>(
+    _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<bool> {
-    Ok(true)
+) -> io::Result<RenderMode> {
+    Ok(RenderMode::HTML)
 }
 
 /// Renders a math dollar inline, `$...$` and `$$...$$` using `<span>` to be
 /// similar to other renderers.
-pub fn render_math<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+pub fn render_math<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Math(NodeMath {
         ref literal,
         display_math,
@@ -1297,15 +1192,15 @@ pub fn render_math<'o, 'c, 'a>(
         write!(context, "</{}>", tag)?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
 /// Renders a math code block, ```` ```math ```` using `<pre><code>`.
-pub fn render_math_code_block<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+pub fn render_math_code_block<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     literal: &String,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     context.cr()?;
 
     // use vectors to ensure attributes always written in the same order,
@@ -1334,15 +1229,14 @@ pub fn render_math_code_block<'o, 'c, 'a>(
     context.escape(literal.as_bytes())?;
     context.write_all(b"</code></pre>\n")?;
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_multiline_block_quote<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_multiline_block_quote<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     if entering {
         context.cr()?;
         context.write_all(b"<blockquote")?;
@@ -1353,15 +1247,14 @@ pub fn render_multiline_block_quote<'o, 'c, 'a>(
         context.write_all(b"</blockquote>\n")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_raw<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_raw<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::Raw(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -1371,16 +1264,15 @@ pub fn render_raw<'o, 'c, 'a>(
         context.write_all(literal.as_bytes())?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
 #[cfg(feature = "shortcodes")]
-pub fn render_short_code<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_short_code<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
         panic!()
     };
@@ -1390,15 +1282,14 @@ pub fn render_short_code<'o, 'c, 'a>(
         context.write_all(nsc.emoji.as_bytes())?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_spoiler_text<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_spoiler_text<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<span")?;
@@ -1410,15 +1301,14 @@ pub fn render_spoiler_text<'o, 'c, 'a>(
         context.write_all(b"</span>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_subscript<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_subscript<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sub")?;
@@ -1430,15 +1320,14 @@ pub fn render_subscript<'o, 'c, 'a>(
         context.write_all(b"</sub>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_superscript<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_superscript<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sup")?;
@@ -1450,15 +1339,14 @@ pub fn render_superscript<'o, 'c, 'a>(
         context.write_all(b"</sup>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_underline<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_underline<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<u")?;
@@ -1470,15 +1358,14 @@ pub fn render_underline<'o, 'c, 'a>(
         context.write_all(b"</u>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn render_wiki_link<'o, 'c, 'a>(
-    context: &mut Context<'o, 'c>,
+fn render_wiki_link<'a>(
+    context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<bool> {
+) -> io::Result<RenderMode> {
     let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -1500,14 +1387,29 @@ pub fn render_wiki_link<'o, 'c, 'a>(
         context.write_all(b"</a>")?;
     }
 
-    Ok(true)
+    Ok(RenderMode::HTML)
 }
 
-/// TODO
-pub fn put_footnote_backref<'o, 'c>(
-    context: &mut Context<'o, 'c>,
-    nfd: &NodeFootnoteDefinition,
-) -> io::Result<bool> {
+// Helpers
+
+fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+    match node.data.borrow().value {
+        NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
+            output.extend_from_slice(literal.as_bytes())
+        }
+        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(b' '),
+        NodeValue::Math(NodeMath { ref literal, .. }) => {
+            output.extend_from_slice(literal.as_bytes())
+        }
+        _ => {
+            for n in node.children() {
+                collect_text(n, output);
+            }
+        }
+    }
+}
+
+fn put_footnote_backref(context: &mut Context, nfd: &NodeFootnoteDefinition) -> io::Result<bool> {
     if context.written_footnote_ix >= context.footnote_ix {
         return Ok(false);
     }
@@ -1536,8 +1438,7 @@ pub fn put_footnote_backref<'o, 'c>(
     Ok(true)
 }
 
-/// TODO
-pub fn tagfilter(literal: &[u8]) -> bool {
+fn tagfilter(literal: &[u8]) -> bool {
     static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
         "textarea",
@@ -1572,8 +1473,7 @@ pub fn tagfilter(literal: &[u8]) -> bool {
     false
 }
 
-/// TODO
-pub fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
+fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
     let size = input.len();
     let mut i = 0;
 
@@ -1603,8 +1503,7 @@ pub fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
     Ok(())
 }
 
-/// TODO
-pub fn dangerous_url(input: &[u8]) -> bool {
+fn dangerous_url(input: &[u8]) -> bool {
     scanners::dangerous_url(input).is_some()
 }
 
