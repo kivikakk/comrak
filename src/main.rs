@@ -157,7 +157,7 @@ struct Cli {
     #[arg(long)]
     ignore_empty_links: bool,
 
-    // Minimize escapes in CommonMark output using a trial-and-error algorithm.
+    /// Minimize escapes in CommonMark output using a trial-and-error algorithm.
     #[arg(long)]
     experimental_minimize_commonmark: bool,
 }
