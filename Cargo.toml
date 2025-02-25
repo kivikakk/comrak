@@ -48,6 +48,7 @@ caseless = "0.2.1"
 
 [dev-dependencies]
 ntest = "0.9"
+strum = { version = "0.26.3", features = ["derive"] }
 toml = "0.7.3"
 
 [features]
