@@ -138,8 +138,8 @@ macro_rules! create_formatter {
         // I considered making this a `mod` instead, but then name resolution
         // inside your pattern cases gets weird and overriding *that* to be less
         // weird (with idk, `use super::*;`?) feels worse.
-        #[derive(::std::fmt::Debug)]
         #[allow(missing_copy_implementations)]
+        #[allow(missing_debug_implementations)]
         /// Created by [`comrak::create_formatter!`][crate::create_formatter].
         pub struct $name;
 
@@ -187,8 +187,9 @@ macro_rules! create_formatter {
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
                             $case
+                            // Don't warn on unconditional return in user code.
                             #[allow(unreachable_code)]
-                            Ok($crate::html::ChildRendering::HTML)
+                            ::std::result::Result::Ok($crate::html::ChildRendering::HTML)
                         }
                     ),*
                     _ => $crate::html::format_node_default(context, node, entering),
@@ -228,9 +229,9 @@ macro_rules! formatter_captures {
 ///
 /// The default formatter as used by [`format_document`] is
 /// [`format_node_default`]. It is given the [`Context`], [`AstNode`], and a
-/// boolean indicating whether the node is being entered into or exited.  It
-/// should return <code>[Some]\([ChildRendering::HTML])</code>, or [`None`] if
-/// the node's children should not be recursed into automatically.
+/// boolean indicating whether the node is being entered into or exited.  The
+/// returned [`ChildRendering`] is used to inform whether and how the node's
+/// children are recursed into automatically.
 pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
     root: &'a AstNode<'a>,
     options: &'o Options<'c>,
@@ -275,13 +276,16 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
                             }
                             _ => (),
                         }
-                        child_rendering
+                        ChildRendering::Plain
                     }
                     ChildRendering::HTML => {
                         stack.push((node, ChildRendering::HTML, Phase::Post));
                         formatter(&mut context, node, true)?
                     }
-                    ChildRendering::Skip => unreachable!(),
+                    ChildRendering::Skip => {
+                        // We never push a node with ChildRendering::Skip.
+                        unreachable!()
+                    }
                 };
 
                 if !matches!(new_cr, ChildRendering::Skip) {
