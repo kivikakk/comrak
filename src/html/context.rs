@@ -15,8 +15,9 @@ pub struct Context<'o, 'c> {
     pub options: &'o Options<'c>,
     /// [`Plugins`] in use in this render.
     pub plugins: &'o Plugins<'o>,
+    /// [`Anchorizer`] instance used in this render.
+    pub anchorizer: Anchorizer,
 
-    pub(super) anchorizer: Anchorizer,
     pub(super) footnote_ix: u32,
     pub(super) written_footnote_ix: u32,
 }

@@ -72,9 +72,8 @@ pub enum RenderMode {
 /// are available:
 ///
 /// * `context`: the <code>[&mut] [Context]</code>, giving access to rendering
-///   options, plugins, and output appending.
-/// * `output`: `context` cast to <code>[&mut] dyn [Write]</code> when you don't
-///   need the whole thing.
+///   options, plugins, and output appending via its <code>[Write]</code>
+///   implementation.
 /// * `node`: the <code>[&][&][AstNode]</code> being formatted, when the
 ///   [`NodeValue`]'s contents aren't enough.
 /// * `entering`: [`true`] when the node is being first descended into,
@@ -85,22 +84,23 @@ pub enum RenderMode {
 ///
 /// ```
 /// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue};
+/// # use std::io::Write;
 /// create_formatter!(CustomFormatter, {
-///     NodeValue::Emph => |output, entering| {
+///     NodeValue::Emph => |context, entering| {
 ///         if entering {
-///             output.write_all(b"<i>")?;
+///             context.write_all(b"<i>")?;
 ///         } else {
-///             output.write_all(b"</i>")?;
+///             context.write_all(b"</i>")?;
 ///         }
 ///     },
 ///     NodeValue::Strong => |context, entering| {
 ///         use std::io::Write;
 ///         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
 ///     },
-///     NodeValue::Image(ref nl) => |output, node, entering, suppress_children| {
+///     NodeValue::Image(ref nl) => |context, node, entering, suppress_children| {
 ///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
-///             output.write_all(nl.url.to_uppercase().as_bytes())?;
+///             context.write_all(nl.url.to_uppercase().as_bytes())?;
 ///             *suppress_children = true;
 ///         }
 ///     },
@@ -205,9 +205,6 @@ macro_rules! formatter_captures {
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), context, $bind:ident) => {
         let $bind = $context;
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), output, $bind:ident) => {
-        let $bind: &mut dyn ::std::io::Write = $context;
-    };
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), entering, $bind:ident) => {
         let $bind = $entering;
     };
@@ -218,7 +215,7 @@ macro_rules! formatter_captures {
         let mut $bind = &mut $suppress_children;
     };
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), $unknown:ident, $bind:ident) => {
-        compile_error!(concat!("unknown capture '", stringify!($unknown), "'; available are 'context', 'output', 'entering', 'node', 'suppress_children'"));
+        compile_error!(concat!("unknown capture '", stringify!($unknown), "'; available are 'context', 'entering', 'node', 'suppress_children'"));
     };
     (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident)) => {
         $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
@@ -1541,7 +1538,11 @@ fn render_wiki_link<'a>(
 
 // Helpers
 
-fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
+/// Recurses through a node and all of its children in depth-first (document)
+/// order, appending the literal contents of text, code and math blocks to
+/// an output buffer. Line breaks and soft breaks are represented as a single
+/// whitespace character.
+pub fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut Vec<u8>) {
     match node.data.borrow().value {
         NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
             output.extend_from_slice(literal.as_bytes())

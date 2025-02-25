@@ -1,21 +1,22 @@
 use comrak::{create_formatter, nodes::NodeValue};
+use std::io::Write;
 
 create_formatter!(CustomFormatter, {
-    NodeValue::Emph => |output, entering| {
+    NodeValue::Emph => |context, entering| {
         if entering {
-            output.write_all(b"<i>")?;
+            context.write_all(b"<i>")?;
         } else {
-            output.write_all(b"</i>")?;
+            context.write_all(b"</i>")?;
         }
     },
     NodeValue::Strong => |context, entering| {
         use std::io::Write;
         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
     },
-    NodeValue::Image(ref nl) => |output, node, entering, suppress_children| {
+    NodeValue::Image(ref nl) => |context, node, entering, suppress_children| {
         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
         if entering {
-            output.write_all(nl.url.to_uppercase().as_bytes())?;
+            context.write_all(nl.url.to_uppercase().as_bytes())?;
             *suppress_children = true;
         }
     },
