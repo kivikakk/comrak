@@ -50,17 +50,19 @@ pub fn format_document_with_plugins<'a>(
 }
 
 /// Returned by the [`format_document_with_formatter`] callback to indicate
-/// whether children of a node should be rendered with full HTML as usual, or in
+/// whether children of a node should be rendered with full HTML as usual, in
 /// "plain" mode, such as for the `title` attribute of an image (which is a full
-/// subtree in CommonMark).  There are probably few other use cases for "plain"
-/// mode.
+/// subtree in CommonMark — there are probably few other use cases for "plain"
+/// mode), or whether they should be skipped.
 #[derive(Debug, Clone, Copy)]
-pub enum RenderMode {
+pub enum ChildRendering {
     /// Indicates children should be rendered in full HTML as usual.
     HTML,
     /// Indicates children should be rendered in "plain" mode; see the source of
     /// [`format_document_with_formatter`] for details.
     Plain,
+    /// Indicates children should be skipped.
+    Skip,
 }
 
 /// Create a formatter with specialised rules for certain node types.
@@ -78,12 +80,15 @@ pub enum RenderMode {
 ///   [`NodeValue`]'s contents aren't enough.
 /// * `entering`: [`true`] when the node is being first descended into,
 ///   [`false`] when being exited.
-/// * `suppress_children`: a <code>[&mut] [bool]</code>; set to [`true`] when
-///   `entering` to cause this node's children not to be recursed into by the
-///   formatter.
+///
+/// By default, an overridden formatter will return [`ChildRendering::HTML`],
+/// causing children of the node to be rendered as HTML as usual.  You can
+/// return one of these enum values (wrapped in [`Ok`]) from within your
+/// override to change this behaviour, in some or all cases.  These values are
+/// only noted when `entering` a node.
 ///
 /// ```
-/// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue};
+/// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue, html::ChildRendering};
 /// # use std::io::Write;
 /// create_formatter!(CustomFormatter, {
 ///     NodeValue::Emph => |context, entering| {
@@ -97,11 +102,11 @@ pub enum RenderMode {
 ///         use std::io::Write;
 ///         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
 ///     },
-///     NodeValue::Image(ref nl) => |context, node, entering, suppress_children| {
+///     NodeValue::Image(ref nl) => |context, node, entering| {
 ///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
 ///             context.write_all(nl.url.to_uppercase().as_bytes())?;
-///             *suppress_children = true;
+///             return Ok(ChildRendering::Skip);
 ///         }
 ///     },
 /// });
@@ -176,18 +181,14 @@ macro_rules! create_formatter {
                 context: &mut $crate::html::Context,
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
-            ) -> ::std::io::Result<::std::option::Option<$crate::html::RenderMode>> {
+            ) -> ::std::io::Result<$crate::html::ChildRendering> {
                 match node.data.borrow().value {
                     $(
                         $pat => {
-                            let mut suppress_children = false;
-                            $crate::formatter_captures!((context, node, entering, suppress_children), ($( $capture ),*));
+                            $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
                             $case
-                            if suppress_children {
-                                Ok(::std::option::Option::None)
-                            } else {
-                                Ok(::std::option::Option::Some($crate::html::RenderMode::HTML))
-                            }
+                            #[allow(unreachable_code)]
+                            Ok($crate::html::ChildRendering::HTML)
                         }
                     ),*
                     _ => $crate::html::format_node_default(context, node, entering),
@@ -202,27 +203,24 @@ macro_rules! create_formatter {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! formatter_captures {
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), context, $bind:ident) => {
+    (($context:ident, $node:ident, $entering:ident), context, $bind:ident) => {
         let $bind = $context;
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), entering, $bind:ident) => {
-        let $bind = $entering;
-    };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), node, $bind:ident) => {
+    (($context:ident, $node:ident, $entering:ident), node, $bind:ident) => {
         let $bind = $node;
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), suppress_children, $bind:ident) => {
-        let mut $bind = &mut $suppress_children;
+    (($context:ident, $node:ident, $entering:ident), entering, $bind:ident) => {
+        let $bind = $entering;
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), $unknown:ident, $bind:ident) => {
-        compile_error!(concat!("unknown capture '", stringify!($unknown), "'; available are 'context', 'entering', 'node', 'suppress_children'"));
+    (($context:ident, $node:ident, $entering:ident), $unknown:ident, $bind:ident) => {
+        compile_error!(concat!("unknown capture '", stringify!($unknown), "'; available are 'context', 'node', 'entering'"));
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident)) => {
-        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
+    (($context:ident, $node:ident, $entering:ident), ($capture:ident)) => {
+        $crate::formatter_captures!(($context, $node, $entering), $capture, $capture);
     };
-    (($context:ident, $node:ident, $entering:ident, $suppress_children:ident), ($capture:ident, $( $rest:ident ),*)) => {
-        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), $capture, $capture);
-        $crate::formatter_captures!(($context, $node, $entering, $suppress_children), ($( $rest ),*));
+    (($context:ident, $node:ident, $entering:ident), ($capture:ident, $( $rest:ident ),*)) => {
+        $crate::formatter_captures!(($context, $node, $entering), $capture, $capture);
+        $crate::formatter_captures!(($context, $node, $entering), ($( $rest ),*));
     };
 }
 
@@ -231,8 +229,8 @@ macro_rules! formatter_captures {
 /// The default formatter as used by [`format_document`] is
 /// [`format_node_default`]. It is given the [`Context`], [`AstNode`], and a
 /// boolean indicating whether the node is being entered into or exited.  It
-/// should return <code>[Some]\([RenderMode::HTML])</code>, or [`None`] if the
-/// node's children should not be recursed into automatically.
+/// should return <code>[Some]\([ChildRendering::HTML])</code>, or [`None`] if
+/// the node's children should not be recursed into automatically.
 pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
     root: &'a AstNode<'a>,
     options: &'o Options<'c>,
@@ -242,7 +240,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
         context: &mut Context,
         node: &'a AstNode<'a>,
         entering: bool,
-    ) -> io::Result<Option<RenderMode>>,
+    ) -> io::Result<ChildRendering>,
 ) -> ::std::io::Result<()> {
     // Traverse the AST iteratively using a work stack, with pre- and
     // post-child-traversal phases. During pre-order traversal render the
@@ -256,13 +254,13 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
         Pre,
         Post,
     }
-    let mut stack = vec![(root, RenderMode::HTML, Phase::Pre)];
+    let mut stack = vec![(root, ChildRendering::HTML, Phase::Pre)];
 
-    while let Some((node, render_mode, phase)) = stack.pop() {
+    while let Some((node, child_rendering, phase)) = stack.pop() {
         match phase {
             Phase::Pre => {
-                let new_rm = match render_mode {
-                    RenderMode::Plain => {
+                let new_cr = match child_rendering {
+                    ChildRendering::Plain => {
                         match node.data.borrow().value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
@@ -277,22 +275,23 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o>(
                             }
                             _ => (),
                         }
-                        Some(render_mode)
+                        child_rendering
                     }
-                    RenderMode::HTML => {
-                        stack.push((node, RenderMode::HTML, Phase::Post));
+                    ChildRendering::HTML => {
+                        stack.push((node, ChildRendering::HTML, Phase::Post));
                         formatter(&mut context, node, true)?
                     }
+                    ChildRendering::Skip => unreachable!(),
                 };
 
-                if let Some(rm) = new_rm {
+                if !matches!(new_cr, ChildRendering::Skip) {
                     for ch in node.reverse_children() {
-                        stack.push((ch, rm, Phase::Pre));
+                        stack.push((ch, new_cr, Phase::Pre));
                     }
                 }
             }
             Phase::Post => {
-                debug_assert!(matches!(render_mode, RenderMode::HTML));
+                debug_assert!(matches!(child_rendering, ChildRendering::HTML));
                 formatter(&mut context, node, false)?;
             }
         }
@@ -311,7 +310,7 @@ pub fn format_node_default<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<Option<RenderMode>> {
+) -> io::Result<ChildRendering> {
     match node.data.borrow().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
@@ -362,7 +361,6 @@ pub fn format_node_default<'a>(
         NodeValue::Underline => render_underline(context, node, entering),
         NodeValue::WikiLink(_) => render_wiki_link(context, node, entering),
     }
-    .map(Some)
 }
 
 // Commonmark
@@ -386,7 +384,7 @@ fn render_block_quote<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<blockquote")?;
@@ -396,14 +394,14 @@ fn render_block_quote<'a>(
         context.cr()?;
         context.write_all(b"</blockquote>\n")?;
     }
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_code<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
         panic!()
     };
@@ -419,14 +417,14 @@ fn render_code<'a>(
         context.write_all(b"</code>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_code_block<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
         panic!()
     };
@@ -503,22 +501,22 @@ fn render_code_block<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_document<'a>(
     _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<RenderMode> {
-    Ok(RenderMode::HTML)
+) -> io::Result<ChildRendering> {
+    Ok(ChildRendering::HTML)
 }
 
 fn render_emph<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<em")?;
@@ -530,14 +528,14 @@ fn render_emph<'a>(
         context.write_all(b"</em>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_heading<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Heading(ref nch) = node.data.borrow().value else {
         panic!()
     };
@@ -589,14 +587,14 @@ fn render_heading<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_html_block<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
         panic!()
     };
@@ -617,14 +615,14 @@ fn render_html_block<'a>(
         context.cr()?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_html_inline<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -644,14 +642,14 @@ fn render_html_inline<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_image<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Image(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -675,7 +673,7 @@ fn render_image<'a>(
             }
         }
         context.write_all(b"\" alt=\"")?;
-        return Ok(RenderMode::Plain);
+        return Ok(ChildRendering::Plain);
     } else {
         if !nl.title.is_empty() {
             context.write_all(b"\" title=\"")?;
@@ -692,14 +690,14 @@ fn render_image<'a>(
         };
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_item<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<li")?;
@@ -709,14 +707,14 @@ fn render_item<'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_line_break<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<br")?;
@@ -726,14 +724,14 @@ fn render_line_break<'a>(
         context.write_all(b" />\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_link<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Link(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -772,14 +770,14 @@ fn render_link<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_list<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::List(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -814,14 +812,14 @@ fn render_list<'a>(
         context.write_all(b"</ol>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_paragraph<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let tight = match node
         .parent()
         .and_then(|n| n.parent())
@@ -856,14 +854,14 @@ fn render_paragraph<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_soft_break<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         if context.options.render.hardbreaks {
@@ -877,14 +875,14 @@ fn render_soft_break<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_strong<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
@@ -902,14 +900,14 @@ fn render_strong<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_text<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Text(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -919,14 +917,14 @@ fn render_text<'a>(
         context.escape(literal.as_bytes())?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_thematic_break<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<hr")?;
@@ -934,7 +932,7 @@ fn render_thematic_break<'a>(
         context.write_all(b" />\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 // GFM
@@ -943,7 +941,7 @@ fn render_footnote_definition<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
         panic!()
     };
@@ -967,14 +965,14 @@ fn render_footnote_definition<'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_footnote_reference<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
         panic!()
     };
@@ -997,14 +995,14 @@ fn render_footnote_reference<'a>(
         write!(context, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_strikethrough<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<del")?;
@@ -1016,14 +1014,14 @@ fn render_strikethrough<'a>(
         context.write_all(b"</del>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_table<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<table")?;
@@ -1042,14 +1040,14 @@ fn render_table<'a>(
         context.write_all(b"</table>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_table_cell<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let row = &node.parent().unwrap().data.borrow().value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
@@ -1099,14 +1097,14 @@ fn render_table_cell<'a>(
         context.write_all(b"</td>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_table_row<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::TableRow(header) = node.data.borrow().value else {
         panic!()
     };
@@ -1132,14 +1130,14 @@ fn render_table_row<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_task_item<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
         panic!()
     };
@@ -1164,7 +1162,7 @@ fn render_task_item<'a>(
         context.write_all(b"</li>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 // Extensions
@@ -1173,7 +1171,7 @@ fn render_alert<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Alert(ref alert) = node.data.borrow().value else {
         panic!()
     };
@@ -1198,14 +1196,14 @@ fn render_alert<'a>(
         context.write_all(b"</div>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_description_details<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.write_all(b"<dd")?;
         render_sourcepos(context, node)?;
@@ -1214,22 +1212,22 @@ fn render_description_details<'a>(
         context.write_all(b"</dd>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_description_item<'a>(
     _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<RenderMode> {
-    Ok(RenderMode::HTML)
+) -> io::Result<ChildRendering> {
+    Ok(ChildRendering::HTML)
 }
 
 fn render_description_list<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<dl")?;
@@ -1239,14 +1237,14 @@ fn render_description_list<'a>(
         context.write_all(b"</dl>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_description_term<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.write_all(b"<dt")?;
         render_sourcepos(context, node)?;
@@ -1255,14 +1253,14 @@ fn render_description_term<'a>(
         context.write_all(b"</dt>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_escaped<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if context.options.render.escaped_char_spans {
         if entering {
@@ -1276,14 +1274,14 @@ fn render_escaped<'a>(
         }
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_escaped_tag<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
         panic!()
     };
@@ -1291,15 +1289,15 @@ fn render_escaped_tag<'a>(
     // Nowhere to put sourcepos.
     context.write_all(net.as_bytes())?;
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_frontmatter<'a>(
     _context: &mut Context,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<RenderMode> {
-    Ok(RenderMode::HTML)
+) -> io::Result<ChildRendering> {
+    Ok(ChildRendering::HTML)
 }
 
 /// Renders a math dollar inline, `$...$` and `$$...$$` using `<span>` to be
@@ -1308,7 +1306,7 @@ pub fn render_math<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Math(NodeMath {
         ref literal,
         display_math,
@@ -1338,7 +1336,7 @@ pub fn render_math<'a>(
         write!(context, "</{}>", tag)?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 /// Renders a math code block, ```` ```math ```` using `<pre><code>`.
@@ -1346,7 +1344,7 @@ pub fn render_math_code_block<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     literal: &String,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     context.cr()?;
 
     // use vectors to ensure attributes always written in the same order,
@@ -1375,14 +1373,14 @@ pub fn render_math_code_block<'a>(
     context.escape(literal.as_bytes())?;
     context.write_all(b"</code></pre>\n")?;
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_multiline_block_quote<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     if entering {
         context.cr()?;
         context.write_all(b"<blockquote")?;
@@ -1393,14 +1391,14 @@ fn render_multiline_block_quote<'a>(
         context.write_all(b"</blockquote>\n")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_raw<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::Raw(ref literal) = node.data.borrow().value else {
         panic!()
     };
@@ -1410,7 +1408,7 @@ fn render_raw<'a>(
         context.write_all(literal.as_bytes())?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 #[cfg(feature = "shortcodes")]
@@ -1418,7 +1416,7 @@ fn render_short_code<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
         panic!()
     };
@@ -1428,14 +1426,14 @@ fn render_short_code<'a>(
         context.write_all(nsc.emoji.as_bytes())?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_spoiler_text<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<span")?;
@@ -1447,14 +1445,14 @@ fn render_spoiler_text<'a>(
         context.write_all(b"</span>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_subscript<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sub")?;
@@ -1466,14 +1464,14 @@ fn render_subscript<'a>(
         context.write_all(b"</sub>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_superscript<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sup")?;
@@ -1485,14 +1483,14 @@ fn render_superscript<'a>(
         context.write_all(b"</sup>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_underline<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     // Unreliable sourcepos.
     if entering {
         context.write_all(b"<u")?;
@@ -1504,14 +1502,14 @@ fn render_underline<'a>(
         context.write_all(b"</u>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 fn render_wiki_link<'a>(
     context: &mut Context,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<RenderMode> {
+) -> io::Result<ChildRendering> {
     let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
         panic!()
     };
@@ -1533,7 +1531,7 @@ fn render_wiki_link<'a>(
         context.write_all(b"</a>")?;
     }
 
-    Ok(RenderMode::HTML)
+    Ok(ChildRendering::HTML)
 }
 
 // Helpers

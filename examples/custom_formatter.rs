@@ -1,3 +1,4 @@
+use comrak::html::ChildRendering;
 use comrak::{create_formatter, nodes::NodeValue};
 use std::io::Write;
 
@@ -10,15 +11,14 @@ create_formatter!(CustomFormatter, {
         }
     },
     NodeValue::Strong => |context, entering| {
-        use std::io::Write;
         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
     },
-    NodeValue::Image(ref nl) => |context, node, entering, suppress_children| {
+    NodeValue::Image(ref nl) => |context, node, entering| {
         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
         if entering {
             context.write_all(nl.url.to_uppercase().as_bytes())?;
-            *suppress_children = true;
         }
+        return Ok(ChildRendering::Skip);
     },
 });
 
