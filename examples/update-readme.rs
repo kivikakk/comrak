@@ -83,6 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut options = Options::default();
     options.render.prefer_fenced = true;
+    options.render.experimental_minimize_commonmark = true;
 
     let mut out = vec![];
     format_commonmark(doc, &options, &mut out)?;

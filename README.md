@@ -32,7 +32,7 @@ Comrak's library supports Rust <span class="msrv">1.65</span>+.
   - `dnf install comrak`
   - `nix run nixpkgs#comrak`
 
-You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them\! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS.
+You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS.
 
 ## Usage
 
@@ -59,7 +59,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /home/runner/.config/comrak/config]
+          [default: /Users/kivikakk/.config/comrak/config]
 
   -i, --inplace
           To perform an in-place formatting
@@ -162,6 +162,9 @@ Options:
       --ignore-empty-links
           Ignore empty links
 
+      --experimental-minimize-commonmark
+          Minimize escapes in CommonMark output using a trial-and-error algorithm
+
   -h, --help
           Print help information (use `-h` for a summary)
 
@@ -250,7 +253,7 @@ Spec](https://github.github.com/gfm/):
 - [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
 - [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
 
-Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome\!):
+Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
 
 - Superscript
 - Header IDs
@@ -301,7 +304,7 @@ depending on your use-case. Here are some other projects to consider:
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
   want). `cargo doc` uses this, as do many other projects in the ecosystem.
 - [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
-- Know of another library? Please open a PR to add it\!
+- Know of another library? Please open a PR to add it!
 
 ### Python bindings
 
@@ -337,11 +340,11 @@ This will build and run benchmarks across all, and report the time taken by each
 
 ## Contributing
 
-Contributions are **highly encouraged**; if you'd like to assist, consider checking out the [`good first issue` label](https://github.com/kivikakk/comrak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)\! I'm happy to help provide direction and guidance throughout, even if (especially if\!) you're new to Rust or open source.
+Contributions are **highly encouraged**; if you'd like to assist, consider checking out the [`good first issue` label](https://github.com/kivikakk/comrak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)! I'm happy to help provide direction and guidance throughout, even if (especially if!) you're new to Rust or open source.
 
 Where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind too.
 
-Thank you to Comrak's many contributors for PRs and issues opened\!
+Thank you to Comrak's many contributors for PRs and issues opened!
 
 ### Code Contributors
 
@@ -350,17 +353,17 @@ Thank you to Comrak's many contributors for PRs and issues opened\!
 ### Financial Contributors
 
 Become a financial contributor and help sustain Comrak's development.  I'm
-self-employed --- open-source software relies on the collective.
+self-employed — open-source software relies on the collective.
 
 - [GitHub Sponsors](https://github.com/sponsors/kivikakk)
 
 ## Contact
 
-Asherah Connor \<ashe kivikakk ee\>
+Asherah Connor <ashe kivikakk ee\>
 
 ## Legal
 
-Copyright (c) 2017–2024, Asherah Connor and Comrak contributors. Licensed under
+Copyright (c) 2017–2025, Comrak contributors. Licensed under
 the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
