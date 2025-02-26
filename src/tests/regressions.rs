@@ -146,3 +146,34 @@ fn sourcepos_lone_backtick() {
         ])
     );
 }
+
+#[ignore] // This one will require a bit of thinking.
+#[test]
+fn sourcepos_link_items() {
+    assert_ast_match!(
+        [],
+        "- ab\n"
+        "- cdef\n"
+        "\n"
+        "\n"
+        "g\n"
+        ,
+        (document (1:1-5:1) [
+            (list (1:1-2:6) [
+                (item (1:1-1:4) [
+                    (paragraph (1:3-1:4) [
+                        (text (1:3-1:4) "ab")
+                    ])
+                ])
+                (item (2:1-2:6) [
+                    (paragraph (2:3-2:6) [
+                        (text (2:3-2:6) "cdef")
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "g")
+            ])
+        ])
+    );
+}
