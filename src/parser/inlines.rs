@@ -1990,8 +1990,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
                 title: String::new(),
             }),
-            start_column + 1,
-            end_column + 1,
+            start_column,
+            end_column,
         );
         inl.append(self.make_inline(
             NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
