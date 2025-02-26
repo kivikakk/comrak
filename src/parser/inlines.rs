@@ -633,7 +633,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             self.pos += 1;
         }
         let inl = if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
-            self.make_inline(NodeValue::LineBreak, nlpos, self.pos - 1)
+            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
         } else {
             self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
         };
