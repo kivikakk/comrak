@@ -1,6 +1,6 @@
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, NodeLink, NodeValue};
+use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::make_inline;
 use std::str;
 use typed_arena::Arena;
@@ -14,6 +14,7 @@ pub(crate) fn process_autolinks<'a>(
     node: &'a AstNode<'a>,
     contents_str: &mut String,
     relaxed_autolinks: bool,
+    sourcepos: &mut Sourcepos,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -60,13 +61,152 @@ pub(crate) fn process_autolinks<'a>(
                 post.insert_after(make_inline(
                     arena,
                     NodeValue::Text(remain.to_string()),
-                    (0, 1, 0, 1).into(),
+                    (
+                        sourcepos.end.line,
+                        sourcepos.end.column + 1 - (len - i - skip),
+                        sourcepos.end.line,
+                        sourcepos.end.column,
+                    )
+                        .into(),
                 ));
             }
+
+            // Enormous HACK. This compensates for our lack of accounting for
+            // smart puncutation in sourcepos in exactly one extant regression
+            // test (tests::fuzz::trailing_hyphen_matches), but it is no
+            // substitute, probably fails miserably in other contexts, and we
+            // really instead just need an actual solution to that issue.
+            sourcepos.end.column -= str::from_utf8(&contents[i..]).unwrap().chars().count();
+
             contents_str.truncate(i);
+            let nsp: Sourcepos = (
+                sourcepos.end.line,
+                sourcepos.end.column + 1,
+                sourcepos.end.line,
+                sourcepos.end.column + skip,
+            )
+                .into();
+            post.data.borrow_mut().sourcepos = nsp;
+            // Inner text gets same sourcepos as link, since there's nothing but
+            // the text.
+            post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
             return;
         }
     }
+}
+
+fn email_match<'a>(
+    arena: &'a Arena<AstNode<'a>>,
+    contents: &[u8],
+    i: usize,
+    relaxed_autolinks: bool,
+) -> Option<(&'a AstNode<'a>, usize, usize)> {
+    const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
+
+    let size = contents.len();
+
+    let mut auto_mailto = true;
+    let mut is_xmpp = false;
+    let mut rewind = 0;
+
+    while rewind < i {
+        let c = contents[i - rewind - 1];
+
+        if isalnum(c) || EMAIL_OK_SET[c as usize] {
+            rewind += 1;
+            continue;
+        }
+
+        if c == b':' {
+            if validate_protocol("mailto", contents, i - rewind - 1) {
+                auto_mailto = false;
+                rewind += 1;
+                continue;
+            }
+
+            if validate_protocol("xmpp", contents, i - rewind - 1) {
+                is_xmpp = true;
+                auto_mailto = false;
+                rewind += 1;
+                continue;
+            }
+        }
+
+        break;
+    }
+
+    if rewind == 0 {
+        return None;
+    }
+
+    let mut link_end = 1;
+    let mut np = 0;
+
+    while link_end < size - i {
+        let c = contents[i + link_end];
+
+        if isalnum(c) {
+            // empty
+        } else if c == b'@' {
+            return None;
+        } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
+            np += 1;
+        } else if c == b'/' && is_xmpp {
+            // xmpp allows a `/` in the url
+        } else if c != b'-' && c != b'_' {
+            break;
+        }
+
+        link_end += 1;
+    }
+
+    if link_end < 2
+        || np == 0
+        || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
+    {
+        return None;
+    }
+
+    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
+    if link_end == 0 {
+        return None;
+    }
+
+    let mut url = if auto_mailto {
+        "mailto:".to_string()
+    } else {
+        "".to_string()
+    };
+    let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
+    url.push_str(text);
+
+    let inl = make_inline(
+        arena,
+        NodeValue::Link(NodeLink {
+            url,
+            title: String::new(),
+        }),
+        (0, 1, 0, 1).into(),
+    );
+
+    inl.append(make_inline(
+        arena,
+        NodeValue::Text(text.to_string()),
+        (0, 1, 0, 1).into(),
+    ));
+    Some((inl, rewind, rewind + link_end))
+}
+
+fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
+    let size = contents.len();
+    let mut rewind = 0;
+
+    while rewind < cursor && isalpha(contents[cursor - rewind - 1]) {
+        rewind += 1;
+    }
+
+    size - cursor + rewind >= protocol.len()
+        && &contents[cursor - rewind..cursor] == protocol.as_bytes()
 }
 
 pub fn www_match<'a>(
@@ -292,118 +432,4 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
-}
-
-fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    contents: &[u8],
-    i: usize,
-    relaxed_autolinks: bool,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
-
-    let size = contents.len();
-
-    let mut auto_mailto = true;
-    let mut is_xmpp = false;
-    let mut rewind = 0;
-
-    while rewind < i {
-        let c = contents[i - rewind - 1];
-
-        if isalnum(c) || EMAIL_OK_SET[c as usize] {
-            rewind += 1;
-            continue;
-        }
-
-        if c == b':' {
-            if validate_protocol("mailto", contents, i - rewind - 1) {
-                auto_mailto = false;
-                rewind += 1;
-                continue;
-            }
-
-            if validate_protocol("xmpp", contents, i - rewind - 1) {
-                is_xmpp = true;
-                auto_mailto = false;
-                rewind += 1;
-                continue;
-            }
-        }
-
-        break;
-    }
-
-    if rewind == 0 {
-        return None;
-    }
-
-    let mut link_end = 1;
-    let mut np = 0;
-
-    while link_end < size - i {
-        let c = contents[i + link_end];
-
-        if isalnum(c) {
-            // empty
-        } else if c == b'@' {
-            return None;
-        } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
-            np += 1;
-        } else if c == b'/' && is_xmpp {
-            // xmpp allows a `/` in the url
-        } else if c != b'-' && c != b'_' {
-            break;
-        }
-
-        link_end += 1;
-    }
-
-    if link_end < 2
-        || np == 0
-        || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
-    {
-        return None;
-    }
-
-    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
-    if link_end == 0 {
-        return None;
-    }
-
-    let mut url = if auto_mailto {
-        "mailto:".to_string()
-    } else {
-        "".to_string()
-    };
-    let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
-    url.push_str(text);
-
-    let inl = make_inline(
-        arena,
-        NodeValue::Link(NodeLink {
-            url,
-            title: String::new(),
-        }),
-        (0, 1, 0, 1).into(),
-    );
-
-    inl.append(make_inline(
-        arena,
-        NodeValue::Text(text.to_string()),
-        (0, 1, 0, 1).into(),
-    ));
-    Some((inl, rewind, rewind + link_end))
-}
-
-fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
-    let size = contents.len();
-    let mut rewind = 0;
-
-    while rewind < cursor && isalpha(contents[cursor - rewind - 1]) {
-        rewind += 1;
-    }
-
-    size - cursor + rewind >= protocol.len()
-        && &contents[cursor - rewind..cursor] == protocol.as_bytes()
 }
