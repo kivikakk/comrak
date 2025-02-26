@@ -1851,6 +1851,7 @@ where
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
         let adv = line.len() - 1 - self.offset;
+        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -2708,6 +2709,11 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+        } else if match ast.value {
+            NodeValue::ThematicBreak => true,
+            _ => false,
+        } {
+            // sourcepos.end set during opening.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
