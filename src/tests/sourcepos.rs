@@ -266,7 +266,10 @@ hello world
 );
 
 const SOFT_BREAK: TestCase = (&[sourcepos!((1:13-1:13))], "stuff before\nstuff after");
-const LINE_BREAK: TestCase = (&[sourcepos!((1:13-1:15))], "stuff before  \nstuff after");
+const LINE_BREAK: TestCase = (
+    &[sourcepos!((1:13-1:15)), sourcepos!((4:13-4:14))],
+    "stuff before  \nstuff after\n\nstuff before\\\nstuff after\n",
+);
 
 const CODE: TestCase = (&[sourcepos!((1:7-1:13))], "hello `world`");
 
