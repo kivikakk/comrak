@@ -1304,18 +1304,19 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
-        let (post, mut reverse, skip) = f(
+        let startpos = self.pos;
+        let (post, need_reverse, skip) = f(
             self.arena,
             self.input,
             self.pos,
             self.options.parse.relaxed_autolinks,
         )?;
 
-        self.pos += skip - reverse;
+        self.pos += skip - need_reverse;
 
-        // We need to "rewind" by `reverse` chars, which should be in one or
-        // more Text nodes beforehand. Typically the chars will *all* be in a
-        // single Text node, containing whatever text came before the ":" that
+        // We need to "rewind" by `need_reverse` chars, which should be in one
+        // or more Text nodes beforehand. Typically the chars will *all* be in
+        // a single Text node, containing whatever text came before the ":" that
         // triggered this method, eg. "See our website at http" ("://blah.com").
         //
         // relaxed_autolinks allows some slightly pathological cases. First,
@@ -1323,6 +1324,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         // a scheme including the letter "w", which will split Text inlines due
         // to them being their own trigger (for handle_autolink_w), meaning
         // "wa://…" will need to traverse two Texts to complete the rewind.
+        let mut reverse = need_reverse;
         while reverse > 0 {
             match node.last_child().unwrap().data.borrow_mut().value {
                 NodeValue::Text(ref mut prev) => {
@@ -1336,6 +1338,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 }
                 _ => panic!("expected text node before autolink colon"),
             }
+        }
+
+        {
+            let sp = &mut post.data.borrow_mut().sourcepos;
+            // See [`make_inline`].
+            sp.start = (
+                self.line,
+                (startpos as isize - need_reverse as isize
+                    + 1
+                    + self.column_offset
+                    + self.line_offset as isize) as usize,
+            )
+                .into();
+            sp.end = (
+                self.line,
+                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
+            )
+                .into();
         }
 
         Some(post)

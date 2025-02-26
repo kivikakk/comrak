@@ -305,12 +305,16 @@ const LINK: TestCase = (
         sourcepos!((3:7-3:11)),
         sourcepos!((4:7-4:16)),
         sourcepos!((5:7-5:29)),
+        sourcepos!((6:7-6:21)),
+        sourcepos!((7:7-7:21)),
     ],
     r#"hello <https://example.com/fooo> world
 hello [foo](https://example.com) world
 hello [foo] world
 hello [bar][bar] world
 hello https://example.com/foo world
+hello www.example.com world
+hello foo@example.com world
 
 [foo]: https://example.com
 [bar]: https://example.com"#,
