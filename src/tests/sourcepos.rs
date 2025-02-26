@@ -418,7 +418,6 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                     | DescriptionItem // end is 4:0
                     | DescriptionTerm // end is 3:0
                     | DescriptionDetails // end is 4:0
-                    | HtmlInline // end is 1:31 but should be 3:14
                     | LineBreak // start is 1:15 but should be 1:13
                     | Code // is 1:8-1:12 but should be 1:7-1:13
                     | ThematicBreak // end is 4:0

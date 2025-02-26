@@ -191,10 +191,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         let new_inl: Option<&'a AstNode<'a>> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
-            '`' => Some(self.handle_backticks()),
+            '`' => Some(self.handle_backticks(&node_ast.line_offsets)),
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
-            '<' => Some(self.handle_pointy_brace()),
+            '<' => Some(self.handle_pointy_brace(&node_ast.line_offsets)),
             ':' => {
                 let mut res = None;
 
@@ -288,7 +288,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
-            '$' => Some(self.handle_dollars()),
+            '$' => Some(self.handle_dollars(&node_ast.line_offsets)),
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let endpos = self.find_special_char();
@@ -603,11 +603,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.input.len()
     }
 
-    fn adjust_node_newlines(&mut self, node: &'a AstNode<'a>, matchlen: usize, extra: usize) {
-        if !self.options.render.sourcepos {
-            return;
-        }
-
+    fn adjust_node_newlines(
+        &mut self,
+        node: &'a AstNode<'a>,
+        matchlen: usize,
+        extra: usize,
+        parent_line_offsets: &[usize],
+    ) {
         let (newlines, since_newline) =
             count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
 
@@ -615,7 +617,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             self.line += newlines;
             let node_ast = &mut node.data.borrow_mut();
             node_ast.sourcepos.end.line += newlines;
-            node_ast.sourcepos.end.column = since_newline;
+            let adjusted_line = self.line - node_ast.sourcepos.start.line;
+            node_ast.sourcepos.end.column =
+                parent_line_offsets[adjusted_line] + since_newline + extra;
             self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
         }
     }
@@ -684,7 +688,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn handle_backticks(&mut self) -> &'a AstNode<'a> {
+    pub fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         let openticks = self.take_while(b'`');
         let startpos = self.pos;
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -703,7 +707,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 };
                 let node =
                     self.make_inline(NodeValue::Code(code), startpos, endpos - openticks - 1);
-                self.adjust_node_newlines(node, endpos - startpos, openticks);
+                self.adjust_node_newlines(node, endpos - startpos, openticks, parent_line_offsets);
                 node
             }
         }
@@ -781,7 +785,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    pub fn handle_dollars(&mut self) -> &'a AstNode<'a> {
+    pub fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         if self.options.extension.math_dollars || self.options.extension.math_code {
             let opendollars = self.take_while(b'$');
             let mut code_math = false;
@@ -849,7 +853,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                         startpos,
                         endpos - fence_length - 1,
                     );
-                    self.adjust_node_newlines(node, endpos - startpos, fence_length);
+                    self.adjust_node_newlines(
+                        node,
+                        endpos - startpos,
+                        fence_length,
+                        parent_line_offsets,
+                    );
                     node
                 }
             }
@@ -1332,7 +1341,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    pub fn handle_pointy_brace(&mut self) -> &'a AstNode<'a> {
+    pub fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -1426,7 +1435,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 self.pos - matchlen - 1,
                 self.pos - 1,
             );
-            self.adjust_node_newlines(inl, matchlen, 1);
+            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
             return inl;
         }
 
