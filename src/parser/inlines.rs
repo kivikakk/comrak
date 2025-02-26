@@ -689,25 +689,33 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     }
 
     pub fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
-        let openticks = self.take_while(b'`');
         let startpos = self.pos;
+        let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
 
         match endpos {
             None => {
-                self.pos = startpos;
-                self.make_inline(NodeValue::Text("`".repeat(openticks)), self.pos, self.pos)
+                self.pos = startpos + openticks;
+                self.make_inline(
+                    NodeValue::Text("`".repeat(openticks)),
+                    startpos,
+                    self.pos - 1,
+                )
             }
             Some(endpos) => {
-                let buf = &self.input[startpos..endpos - openticks];
+                let buf = &self.input[startpos + openticks..endpos - openticks];
                 let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
                     literal: String::from_utf8(buf).unwrap(),
                 };
-                let node =
-                    self.make_inline(NodeValue::Code(code), startpos, endpos - openticks - 1);
-                self.adjust_node_newlines(node, endpos - startpos, openticks, parent_line_offsets);
+                let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
+                self.adjust_node_newlines(
+                    node,
+                    endpos - startpos - openticks,
+                    openticks,
+                    parent_line_offsets,
+                );
                 node
             }
         }

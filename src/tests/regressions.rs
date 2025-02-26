@@ -133,3 +133,16 @@ fn sourcepos_para() {
 fn gemoji() {
     html_opts!([extension.shortcodes], ":x:", "<p>❌</p>\n");
 }
+
+#[test]
+fn sourcepos_lone_backtick() {
+    assert_ast_match!(
+        [],
+        "``\n",
+        (document (1:1-1:2) [
+            (paragraph (1:1-1:2) [
+                (text (1:1-1:2) "``")
+            ])
+        ])
+    );
+}

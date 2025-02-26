@@ -419,7 +419,6 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                     | DescriptionTerm // end is 3:0
                     | DescriptionDetails // end is 4:0
                     | LineBreak // start is 1:15 but should be 1:13
-                    | Code // is 1:8-1:12 but should be 1:7-1:13
                     | ThematicBreak // end is 4:0
                     | Link // inconsistent between link types
                     | Math // is 3:2-3:6 but should be 3:1-3:7
