@@ -7,7 +7,8 @@ use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
 // TODO: this can probably be cleaned up a lot. It used to handle all three of
-// {url,www,email}_match, but now just the last of those.
+// {url,www,email}_match, but now just the last of those. (This is still per
+// upstream cmark-gfm, so it's not easily changed without breaking compat.)
 pub(crate) fn process_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,

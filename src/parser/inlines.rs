@@ -1326,10 +1326,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         // "wa://…" will need to traverse two Texts to complete the rewind.
         let mut reverse = need_reverse;
         while reverse > 0 {
-            match node.last_child().unwrap().data.borrow_mut().value {
+            let mut last_child = node.last_child().unwrap().data.borrow_mut();
+            match last_child.value {
                 NodeValue::Text(ref mut prev) => {
                     if reverse < prev.len() {
                         prev.truncate(prev.len() - reverse);
+                        last_child.sourcepos.end.column -= reverse;
                         reverse = 0;
                     } else {
                         reverse -= prev.len();
@@ -1356,6 +1358,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
             )
                 .into();
+
+            // Inner text node gets the same sp, since there are no surrounding
+            // characters for autolinks of these kind.
+            post.first_child().unwrap().data.borrow_mut().sourcepos = *sp;
         }
 
         Some(post)

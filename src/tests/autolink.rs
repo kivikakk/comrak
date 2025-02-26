@@ -395,3 +395,28 @@ fn autolink_fuzz_we() {
         no_roundtrip,
     );
 }
+
+#[test]
+fn autolink_sourcepos() {
+    assert_ast_match!(
+        [extension.autolink],
+        "a  www.com\n"
+        "\n"
+        "b  https://www.com\n"
+        ,
+        (document (1:1-3:18) [
+            (paragraph (1:1-1:10) [
+                (text (1:1-1:3) "a  ")
+                (link (1:4-1:10) [
+                    (text (1:4-1:10) "www.com")
+                ])
+            ])
+            (paragraph (3:1-3:18) [
+                (text (3:1-3:3) "b  ")
+                (link (3:4-3:18) [
+                    (text (3:4-3:18) "https://www.com")
+                ])
+            ])
+        ])
+    );
+}
