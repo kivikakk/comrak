@@ -254,3 +254,16 @@ fn echaw3() {
         ])
     );
 }
+
+#[test]
+fn echaw4() {
+    assert_ast_match!(
+        [extension.autolink, parse.smart],
+        "-@&UnderBar;.e--",
+        (document (1:1-1:16) [
+            (paragraph (1:1-1:16) [
+                (text (1:1-1:16) "-@_.e–")  // underbar & en-dash
+            ])
+        ])
+    );
+}
