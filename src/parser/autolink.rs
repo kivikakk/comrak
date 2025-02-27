@@ -64,61 +64,7 @@ pub(crate) fn process_email_autolinks<'a>(
             };
             let initial_end_col = sourcepos.end.column;
 
-            // Sourcepos end column `e` of the original node (set by writing
-            // to `*sourcepos`) determined by advancing through `spx` until `i`
-            // bytes of input are seen.
-            //
-            // For each element `(sp, x)` in `spx`:
-            // - if remaining `i` is greater than the byte count `x`,
-            //     set `i -= x` and continue.
-            // - if remaining `i` is equal to the byte count `x`,
-            //     set `e = sp.end.column` and finish.
-            // - if remaining `i` is less than the byte count `x`,
-            //     assert `sp.end.column - sp.start.column + 1 == x` (1),
-            //     set `e = sp.start.column + i - 1` (2) and finish.
-            //
-            // (1) If `x` doesn't equal the range covered between the start
-            //     and end column, there's no way to determine sourcepos within
-            //     the range. This is a bug if it happens; it suggests we've
-            //     matched an email autolink with some smart punctuation in it,
-            //     or worse.
-            //
-            // (2) A little iffy on the way I've added `- 1` --- what we
-            //     calculate here technically is the start column of the linked
-            //     portion, then adjusted. I think this should be robust, but
-            //     needs checking at edges.
-
-            if i > 0 {
-                let mut rem_i = i;
-                while let Some((sp, x)) = spx.pop_front() {
-                    if rem_i > x {
-                        rem_i -= x;
-                    } else if rem_i == x {
-                        sourcepos.end.column = sp.end.column;
-                        rem_i = 0;
-                        break;
-                    } else {
-                        // rem_i < x
-                        assert_eq!(sp.end.column - sp.start.column + 1, x);
-                        sourcepos.end.column = sp.start.column + rem_i - 1;
-                        spx.push_front((
-                            (
-                                sp.start.line,
-                                sp.start.column + rem_i,
-                                sp.end.line,
-                                sp.end.column,
-                            )
-                                .into(),
-                            x - rem_i,
-                        ));
-                        rem_i = 0;
-                        break;
-                    }
-                }
-                assert!(rem_i == 0);
-            } else {
-                sourcepos.end.column = 0;
-            }
+            sourcepos.end.column = if i > 0 { consume_spx(&mut spx, i) } else { 0 };
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
@@ -134,6 +80,8 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
+                consume_spx(&mut spx, skip);
+
                 let mut asp: Sourcepos = (
                     sourcepos.end.line,
                     nsp.end.column + 1,
@@ -141,34 +89,6 @@ pub(crate) fn process_email_autolinks<'a>(
                     initial_end_col,
                 )
                     .into();
-
-                // Consume `skip` from spx.
-                let mut rem_skip = skip;
-                while let Some((sp, x)) = spx.pop_front() {
-                    if rem_skip > x {
-                        rem_skip -= x;
-                    } else if rem_skip == x {
-                        rem_skip = 0;
-                        break;
-                    } else {
-                        // rem_skip < x
-                        assert_eq!(sp.end.column - sp.start.column + 1, x);
-                        spx.push_front((
-                            (
-                                sp.start.line,
-                                sp.start.column + rem_skip,
-                                sp.end.line,
-                                sp.end.column,
-                            )
-                                .into(),
-                            x - rem_skip,
-                        ));
-                        rem_skip = 0;
-                        break;
-                    }
-                }
-                assert!(rem_skip == 0);
-
                 let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
                 post.insert_after(after);
 
@@ -190,6 +110,52 @@ pub(crate) fn process_email_autolinks<'a>(
             return;
         }
     }
+}
+
+// Sourcepos end column `e` of the original node (set by writing to
+// `*sourcepos`) determined by advancing through `spx` until `i` bytes of input
+// are seen.
+//
+// For each element `(sp, x)` in `spx`:
+// - if remaining `i` is greater than the byte count `x`,
+//     set `i -= x` and continue.
+// - if remaining `i` is equal to the byte count `x`,
+//     set `e = sp.end.column` and finish.
+// - if remaining `i` is less than the byte count `x`,
+//     assert `sp.end.column - sp.start.column + 1 == x` (1),
+//     set `e = sp.start.column + i - 1` (2) and finish.
+//
+// (1) If `x` doesn't equal the range covered between the start and end column,
+//     there's no way to determine sourcepos within the range. This is a bug if
+//     it happens; it suggests we've matched an email autolink with some smart
+//     punctuation in it, or worse.
+//
+// (2) A little iffy on the way I've added `- 1` --- what we calculate here
+//     technically is the start column of the linked portion, then adjusted. I
+//     think this should be robust, but needs checking at edges.
+fn consume_spx(spx: &mut VecDeque<(Sourcepos, usize)>, mut rem: usize) -> usize {
+    while let Some((sp, x)) = spx.pop_front() {
+        if rem > x {
+            rem -= x;
+        } else if rem == x {
+            return sp.end.column;
+        } else {
+            // rem < x
+            assert_eq!(sp.end.column - sp.start.column + 1, x);
+            spx.push_front((
+                (
+                    sp.start.line,
+                    sp.start.column + rem,
+                    sp.end.line,
+                    sp.end.column,
+                )
+                    .into(),
+                x - rem,
+            ));
+            return sp.start.column + rem - 1;
+        }
+    }
+    unreachable!();
 }
 
 fn email_match<'a>(
