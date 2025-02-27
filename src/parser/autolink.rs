@@ -64,11 +64,7 @@ pub(crate) fn process_email_autolinks<'a>(
             };
             let initial_end_col = sourcepos.end.column;
 
-            sourcepos.end.column = if i > 0 {
-                consume_spx(&mut spx, i)
-            } else {
-                sourcepos.start.column - 1
-            };
+            sourcepos.end.column = consume_spx(&mut spx, i);
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
@@ -84,6 +80,8 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
+                // TODO: why we don't need the return value here? What's the
+                // relationship between it, nsp.end.column, and initial_end_col?
                 consume_spx(&mut spx, skip);
 
                 let mut asp: Sourcepos = (
@@ -127,16 +125,12 @@ pub(crate) fn process_email_autolinks<'a>(
 //     set `e = sp.end.column` and finish.
 // - if remaining `i` is less than the byte count `x`,
 //     assert `sp.end.column - sp.start.column + 1 == x` (1),
-//     set `e = sp.start.column + i - 1` (2) and finish.
+//     set `e = sp.start.column + i - 1` and finish.
 //
 // (1) If `x` doesn't equal the range covered between the start and end column,
 //     there's no way to determine sourcepos within the range. This is a bug if
 //     it happens; it suggests we've matched an email autolink with some smart
 //     punctuation in it, or worse.
-//
-// (2) A little iffy on the way I've added `- 1` --- what we calculate here
-//     technically is the start column of the linked portion, then adjusted. I
-//     think this should be robust, but needs checking at edges.
 fn consume_spx(spx: &mut VecDeque<(Sourcepos, usize)>, mut rem: usize) -> usize {
     while let Some((sp, x)) = spx.pop_front() {
         if rem > x {
