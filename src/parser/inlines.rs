@@ -566,7 +566,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     }
 
     #[inline]
-    pub fn eof(&self) -> bool {
+    fn eof(&self) -> bool {
         self.pos >= self.input.len()
     }
 
@@ -586,7 +586,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn find_special_char(&self) -> usize {
+    fn find_special_char(&self) -> usize {
         for n in self.pos..self.input.len() {
             if self.special_chars[self.input[n] as usize] {
                 if self.input[n] == b'^' && self.within_brackets {
@@ -624,7 +624,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn handle_newline(&mut self) -> &'a AstNode<'a> {
+    fn handle_newline(&mut self) -> &'a AstNode<'a> {
         let nlpos = self.pos;
         if self.input[self.pos] == b'\r' {
             self.pos += 1;
@@ -643,7 +643,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         inl
     }
 
-    pub fn take_while(&mut self, c: u8) -> usize {
+    fn take_while(&mut self, c: u8) -> usize {
         let start_pos = self.pos;
         while self.peek_char() == Some(&c) {
             self.pos += 1;
@@ -651,7 +651,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.pos - start_pos
     }
 
-    pub fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
+    fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
         let start_pos = self.pos;
         let mut count = 0;
         while count < limit && self.peek_char() == Some(&c) {
@@ -661,7 +661,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.pos - start_pos
     }
 
-    pub fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
+    fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
         if openticklength > MAXBACKTICKS {
             return None;
         }
@@ -688,7 +688,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         let startpos = self.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -813,8 +813,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
         .filter(|epos| epos - startpos >= fence_length * 2 + 1);
 
-        eprintln!("** startpos is {:?}, endpos is {:?}", startpos, endpos);
-
         match endpos {
             None => {
                 if code_math {
@@ -862,7 +860,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         skipped
     }
 
-    pub fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
+    fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = if c == b'\'' && self.options.parse.smart {
@@ -891,7 +889,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         inl
     }
 
-    pub fn handle_hyphen(&mut self) -> &'a AstNode<'a> {
+    fn handle_hyphen(&mut self) -> &'a AstNode<'a> {
         let start = self.pos;
         self.pos += 1;
 
@@ -924,7 +922,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.make_inline(NodeValue::Text(buf), start, self.pos - 1)
     }
 
-    pub fn handle_period(&mut self) -> &'a AstNode<'a> {
+    fn handle_period(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
         if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
@@ -943,7 +941,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
+    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
         let before_char = if self.pos == 0 {
             '\n'
         } else {
@@ -1037,7 +1035,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: &'a AstNode<'a>) {
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: &'a AstNode<'a>) {
         let d = self.delimiter_arena.alloc(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
@@ -1059,7 +1057,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     //
     // As a side-effect, handle long "***" and "___" nodes by truncating them in
     // place to be re-matched by `process_emphasis`.
-    pub fn insert_emph(
+    fn insert_emph(
         &mut self,
         opener: &'d Delimiter<'a, 'd>,
         closer: &'d Delimiter<'a, 'd>,
@@ -1188,7 +1186,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn handle_backslash(&mut self) -> &'a AstNode<'a> {
+    fn handle_backslash(&mut self) -> &'a AstNode<'a> {
         let startpos = self.pos;
         self.pos += 1;
 
@@ -1231,7 +1229,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.pos > old_pos || self.eof()
     }
 
-    pub fn handle_entity(&mut self) -> &'a AstNode<'a> {
+    fn handle_entity(&mut self) -> &'a AstNode<'a> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
@@ -1248,7 +1246,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     }
 
     #[cfg(feature = "shortcodes")]
-    pub fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
         let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
         let shortcode = unsafe {
@@ -1265,11 +1263,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         ))
     }
 
-    pub fn handle_autolink_with<F>(
-        &mut self,
-        node: &'a AstNode<'a>,
-        f: F,
-    ) -> Option<&'a AstNode<'a>>
+    fn handle_autolink_with<F>(&mut self, node: &'a AstNode<'a>, f: F) -> Option<&'a AstNode<'a>>
     where
         F: Fn(
             &'a Arena<AstNode<'a>>,
@@ -1344,15 +1338,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         Some(post)
     }
 
-    pub fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
         self.handle_autolink_with(node, autolink::url_match)
     }
 
-    pub fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    pub fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -1453,7 +1447,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         self.make_inline(NodeValue::Text("<".to_string()), self.pos - 1, self.pos - 1)
     }
 
-    pub fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
+    fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
         let len = self.brackets.len();
         if len > 0 {
             self.brackets[len - 1].bracket_after = true;
@@ -1469,7 +1463,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -1690,7 +1684,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         Some(self.make_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1))
     }
 
-    pub fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
+    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
         let brackets_len = self.brackets.len();
 
         let nl = NodeLink { url, title };
@@ -1771,7 +1765,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    pub fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(component.url);
