@@ -186,3 +186,23 @@ fn linebreak_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn echaw() {
+    assert_ast_match!(
+        [extension.autolink],
+        "<U@.J<AA@.J",
+        (document (1:1-1:11) [
+            (paragraph (1:1-1:11) [
+                (text (1:1-1:1) "<")
+                (link (1:2-1:5) "mailto:U@.J" [
+                    (text (1:2-1:5) "U@.J")
+                ])
+                (text (1:6-1:6) "<")
+                (link (1:7-1:11) "mailto:AA@.J" [
+                    (text (1:7-1:11) "AA@.J")
+                ])
+            ])
+        ])
+    );
+}

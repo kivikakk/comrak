@@ -811,43 +811,38 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         } else {
             self.scan_to_closing_dollar(opendollars)
         }
-        .filter(|epos| epos - startpos >= fence_length * 2 + 1);
+        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
 
-        match endpos {
-            None => {
-                if code_math {
-                    self.pos = startpos + 1;
-                    self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
-                } else {
-                    self.pos = startpos + fence_length;
-                    self.make_inline(
-                        NodeValue::Text("$".repeat(opendollars)),
-                        self.pos - fence_length,
-                        self.pos - 1,
-                    )
-                }
-            }
-            Some(endpos) => {
-                let buf = &self.input[startpos + fence_length..endpos - fence_length];
-                let buf: Vec<u8> = if code_math || opendollars == 1 {
-                    strings::normalize_code(buf)
-                } else {
-                    buf.to_vec()
-                };
-                let math = NodeMath {
-                    dollar_math: !code_math,
-                    display_math: opendollars == 2,
-                    literal: String::from_utf8(buf).unwrap(),
-                };
-                let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
-                self.adjust_node_newlines(
-                    node,
-                    endpos - startpos - fence_length,
-                    fence_length,
-                    parent_line_offsets,
-                );
-                node
-            }
+        if let Some(endpos) = endpos {
+            let buf = &self.input[startpos + fence_length..endpos - fence_length];
+            let buf: Vec<u8> = if code_math || opendollars == 1 {
+                strings::normalize_code(buf)
+            } else {
+                buf.to_vec()
+            };
+            let math = NodeMath {
+                dollar_math: !code_math,
+                display_math: opendollars == 2,
+                literal: String::from_utf8(buf).unwrap(),
+            };
+            let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
+            self.adjust_node_newlines(
+                node,
+                endpos - startpos - fence_length,
+                fence_length,
+                parent_line_offsets,
+            );
+            node
+        } else if code_math {
+            self.pos = startpos + 1;
+            self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
+        } else {
+            self.pos = startpos + fence_length;
+            self.make_inline(
+                NodeValue::Text("$".repeat(opendollars)),
+                self.pos - fence_length,
+                self.pos - 1,
+            )
         }
     }
 

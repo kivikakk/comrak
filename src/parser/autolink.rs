@@ -74,10 +74,10 @@ pub(crate) fn process_email_autolinks<'a>(
             // - if remaining `i` is greater than the byte count `x`,
             //     set `i -= x` and continue.
             // - if remaining `i` is equal to the byte count `x`,
-            //     set `e = sp.end.column - 1` and finish.
+            //     set `e = sp.end.column` and finish.
             // - if remaining `i` is less than the byte count `x`,
             //     assert `sp.end.column - sp.start.column + 1 == x` (1),
-            //     set `e = sp.start.column + i - 1` and finish.
+            //     set `e = sp.start.column + i - 1` (2) and finish.
             //
             // (1) If `x` doesn't equal the range covered between the start
             //     and end column, there's no way to determine sourcepos within
@@ -85,17 +85,17 @@ pub(crate) fn process_email_autolinks<'a>(
             //     matched an email autolink with some smart punctuation in it,
             //     or worse.
             //
-            // NOTE: a little iffy on the way I've added `- 1` --- what we
-            // calculate here technically is the start column of the linked
-            // portion, then adjusted. I think this should be robust, but needs
-            // checking at edges.
+            // (2) A little iffy on the way I've added `- 1` --- what we
+            //     calculate here technically is the start column of the linked
+            //     portion, then adjusted. I think this should be robust, but
+            //     needs checking at edges.
 
             let mut rem_i = i;
             for &(sp, x) in spx {
                 if rem_i > x {
                     rem_i -= x;
                 } else if rem_i == x {
-                    sourcepos.end.column = sp.end.column - 1;
+                    sourcepos.end.column = sp.end.column;
                     rem_i = 0;
                     break;
                 } else {
@@ -122,17 +122,14 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
-                post.insert_after(make_inline(
-                    arena,
-                    NodeValue::Text(remain.to_string()),
-                    (
-                        sourcepos.end.line,
-                        nsp.end.column + 1,
-                        sourcepos.end.line,
-                        initial_end_col,
-                    )
-                        .into(),
-                ));
+                let asp: Sourcepos = (
+                    sourcepos.end.line,
+                    nsp.end.column + 1,
+                    sourcepos.end.line,
+                    initial_end_col,
+                )
+                    .into();
+                post.insert_after(make_inline(arena, NodeValue::Text(remain.to_string()), asp));
             }
 
             return;
