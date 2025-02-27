@@ -290,7 +290,7 @@ fn sourcepos_correctly_restores_context() {
                     (text (1:5-1:7) "cde")
                 ])
                 (text (1:9-1:9) " ")
-                (link (1:10-1:15) [
+                (link (1:10-1:15) "mailto:f@g.ee" [
                     (text (1:10-1:15) "f@g.ee")
                 ])
                 (text (1:16-1:17) " h")
@@ -409,21 +409,21 @@ fn autolink_sourcepos() {
         (document (1:1-5:17) [
             (paragraph (1:1-1:13) [
                 (text (1:1-1:3) "a  ")
-                (link (1:4-1:10) [
+                (link (1:4-1:10) "http://www.com" [
                     (text (1:4-1:10) "www.com")
                 ])
                 (text (1:11-1:13) "  x")
             ])
             (paragraph (3:1-3:21) [
                 (text (3:1-3:3) "b  ")
-                (link (3:4-3:18) [
+                (link (3:4-3:18) "https://www.com" [
                     (text (3:4-3:18) "https://www.com")
                 ])
                 (text (3:19-3:21) "  y")
             ])
             (paragraph (5:1-5:17) [
                 (text (5:1-5:3) "c  ")
-                (link (5:4-5:14) [
+                (link (5:4-5:14) "mailto:foo@www.com" [
                     (text (5:4-5:14) "foo@www.com")
                 ])
                 (text (5:15-5:17) "  z")

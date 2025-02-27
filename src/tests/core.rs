@@ -523,7 +523,7 @@ fn link_sourcepos_baseline() {
         "[ABCD](/)\n",
         (document (1:1-1:9) [
             (paragraph (1:1-1:9) [
-                (link (1:1-1:9) [
+                (link (1:1-1:9) "/" [
                     (text (1:2-1:5) "ABCD")
                 ])
             ])
@@ -539,7 +539,7 @@ fn link_sourcepos_newline() {
         "[AB\nCD](/)\n",
         (document (1:1-2:6) [
             (paragraph (1:1-2:6) [
-                (link (1:1-2:6) [
+                (link (1:1-2:6) "/" [
                     (text (1:2-1:3) "AB")
                     (softbreak (1:4-1:4))
                     (text (2:1-2:2) "CD")
@@ -560,8 +560,8 @@ fn link_sourcepos_truffle() {
                     (paragraph (1:3-2:18) [
                         (text (1:3-1:3) "A")
                         (softbreak (1:4-1:4))
-                        (link (2:1-2:18) [
-                            (image (2:2-2:13) [
+                        (link (2:1-2:18) "/B" [
+                            (image (2:2-2:13) "/B.png" [
                                 (text (2:4-2:4) "B")
                             ])
                         ])
@@ -583,8 +583,8 @@ fn link_sourcepos_truffle_twist() {
                     (paragraph (1:3-2:20) [
                         (text (1:3-1:3) "A")
                         (softbreak (1:4-1:4))
-                        (link (2:3-2:20) [
-                            (image (2:4-2:15) [
+                        (link (2:3-2:20) "/B" [
+                            (image (2:4-2:15) "/B.png" [
                                 (text (2:6-2:6) "B")
                             ])
                         ])
@@ -606,8 +606,8 @@ fn link_sourcepos_truffle_bergamot() {
                     (paragraph (1:3-2:21) [
                         (text (1:3-1:3) "A")
                         (softbreak (1:4-1:4))
-                        (link (2:4-2:21) [
-                            (image (2:5-2:16) [
+                        (link (2:4-2:21) "/B" [
+                            (image (2:5-2:16) "/B.png" [
                                 (text (2:7-2:7) "B")
                             ])
                         ])

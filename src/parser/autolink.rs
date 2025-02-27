@@ -55,7 +55,23 @@ pub(crate) fn process_autolinks<'a>(
         if let Some((post, reverse, skip)) = post_org {
             i -= reverse;
             node.insert_after(post);
-            if i + skip < len {
+
+            // Enormous HACK. This compensates for our lack of accounting for
+            // smart puncutation in sourcepos in exactly one extant regression
+            // test (tests::fuzz::trailing_hyphen_matches) and one fuzzer
+            // crash observed so far, but it is no substitute, probably fails
+            // miserably in other contexts, and we really instead just need an
+            // actual solution to that issue.
+            //
+            // Problems as follows:
+            // * We almost certainly need to measure `skip` the same way.
+            // * We're counting extremely arbitrary Unicode characters, which
+            //   don't _necessarily_ map 1:1 with the transformation done by
+            //   smart punctuation.
+            // * I've briefly forgotten _how_ this actually fixes anything.
+            let len_less_i = str::from_utf8(&contents[i..]).unwrap().chars().count();
+
+            if skip < len_less_i {
                 let remain = str::from_utf8(&contents[i + skip..]).unwrap();
                 assert!(!remain.is_empty());
                 post.insert_after(make_inline(
@@ -63,7 +79,7 @@ pub(crate) fn process_autolinks<'a>(
                     NodeValue::Text(remain.to_string()),
                     (
                         sourcepos.end.line,
-                        sourcepos.end.column + 1 - (len - i - skip),
+                        sourcepos.end.column + 1 - (len_less_i - skip),
                         sourcepos.end.line,
                         sourcepos.end.column,
                     )
@@ -71,12 +87,7 @@ pub(crate) fn process_autolinks<'a>(
                 ));
             }
 
-            // Enormous HACK. This compensates for our lack of accounting for
-            // smart puncutation in sourcepos in exactly one extant regression
-            // test (tests::fuzz::trailing_hyphen_matches), but it is no
-            // substitute, probably fails miserably in other contexts, and we
-            // really instead just need an actual solution to that issue.
-            sourcepos.end.column -= str::from_utf8(&contents[i..]).unwrap().chars().count();
+            sourcepos.end.column -= len_less_i;
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
