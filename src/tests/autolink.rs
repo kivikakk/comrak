@@ -239,29 +239,6 @@ fn autolink_relaxed_links_schemes() {
 
 #[test]
 fn sourcepos_correctly_restores_context() {
-    // There's unsoundness in trying to maintain and adjust sourcepos
-    // when doing autolinks in the light of:
-    //
-    // a) Some source elements introducing a different number of characters
-    //    to the content text than they take in source, i.e. smart
-    //    punctuation.
-    //
-    // b) Text node consolidation happening before autolinking.
-    //
-    // (b) is obviously non-optional, but it means we end up with Text
-    // nodes with different byte counts than their sourcepos span lengths.
-    //
-    // One possible solution would be to actually accumulate multiple
-    // sourcepos spans per Text node, each also tracking the number of
-    // bytes of content text it's responsible for.  This would work well
-    // enough as long as we never had to adjust a sourcepos into a spot
-    // within a sourcepos span that had a target text width where it
-    // wasn't equal.  That probably wouldn't happen, though -- i.e. we're
-    // never autolinking into the middle of a rendered smart punctuation.
-    //
-    // The below documents test cases that used to break; I suspect smart
-    // punctuation is still a breaking case however!
-
     assert_ast_match!(
         [],
         "ab _cde_ f@g.ee h*ijklm* n",

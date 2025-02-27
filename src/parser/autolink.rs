@@ -9,12 +9,13 @@ use unicode_categories::UnicodeCategories;
 // TODO: this can probably be cleaned up a lot. It used to handle all three of
 // {url,www,email}_match, but now just the last of those. (This is still per
 // upstream cmark-gfm, so it's not easily changed without breaking compat.)
-pub(crate) fn process_autolinks<'a>(
+pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
+    spx: &[(Sourcepos, usize)],
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -56,38 +57,56 @@ pub(crate) fn process_autolinks<'a>(
             i -= reverse;
             node.insert_after(post);
 
-            // Enormous HACK. This compensates for our lack of accounting for
-            // smart puncutation in sourcepos in exactly one extant regression
-            // test (tests::fuzz::trailing_hyphen_matches) and one fuzzer
-            // crash observed so far, but it is no substitute, probably fails
-            // miserably in other contexts, and we really instead just need an
-            // actual solution to that issue.
-            //
-            // Problems as follows:
-            // * We almost certainly need to measure `skip` the same way.
-            // * We're counting extremely arbitrary Unicode characters, which
-            //   don't _necessarily_ map 1:1 with the transformation done by
-            //   smart punctuation.
-            // * I've briefly forgotten _how_ this actually fixes anything.
-            let len_less_i = str::from_utf8(&contents[i..]).unwrap().chars().count();
-
-            if skip < len_less_i {
+            let remain = if i + skip < len {
                 let remain = str::from_utf8(&contents[i + skip..]).unwrap();
                 assert!(!remain.is_empty());
-                post.insert_after(make_inline(
-                    arena,
-                    NodeValue::Text(remain.to_string()),
-                    (
-                        sourcepos.end.line,
-                        sourcepos.end.column + 1 - (len_less_i - skip),
-                        sourcepos.end.line,
-                        sourcepos.end.column,
-                    )
-                        .into(),
-                ));
-            }
+                Some(remain.to_string())
+            } else {
+                None
+            };
+            let initial_end_col = sourcepos.end.column;
 
-            sourcepos.end.column -= len_less_i;
+            // Sourcepos end column `e` of the original node (set by writing
+            // to `*sourcepos`) determined by advancing through `spx` until `i`
+            // bytes of input are seen.
+            //
+            // For each element `(sp, x)` in `spx`:
+            // - if remaining `i` is greater than the byte count `x`,
+            //     set `i -= x` and continue.
+            // - if remaining `i` is equal to the byte count `x`,
+            //     set `e = sp.end.column - 1` and finish.
+            // - if remaining `i` is less than the byte count `x`,
+            //     assert `sp.end.column - sp.start.column + 1 == x` (1),
+            //     set `e = sp.start.column + i - 1` and finish.
+            //
+            // (1) If `x` doesn't equal the range covered between the start
+            //     and end column, there's no way to determine sourcepos within
+            //     the range. This is a bug if it happens; it suggests we've
+            //     matched an email autolink with some smart punctuation in it,
+            //     or worse.
+            //
+            // NOTE: a little iffy on the way I've added `- 1` --- what we
+            // calculate here technically is the start column of the linked
+            // portion, then adjusted. I think this should be robust, but needs
+            // checking at edges.
+
+            let mut rem_i = i;
+            for &(sp, x) in spx {
+                if rem_i > x {
+                    rem_i -= x;
+                } else if rem_i == x {
+                    sourcepos.end.column = sp.end.column - 1;
+                    rem_i = 0;
+                    break;
+                } else {
+                    // rem_i < x
+                    assert_eq!(sp.end.column - sp.start.column + 1, x);
+                    sourcepos.end.column = sp.start.column + rem_i - 1;
+                    rem_i = 0;
+                    break;
+                }
+            }
+            assert!(rem_i == 0);
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
@@ -101,6 +120,21 @@ pub(crate) fn process_autolinks<'a>(
             // Inner text gets same sourcepos as link, since there's nothing but
             // the text.
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
+
+            if let Some(remain) = remain {
+                post.insert_after(make_inline(
+                    arena,
+                    NodeValue::Text(remain.to_string()),
+                    (
+                        sourcepos.end.line,
+                        nsp.end.column + 1,
+                        sourcepos.end.line,
+                        initial_end_col,
+                    )
+                        .into(),
+                ));
+            }
+
             return;
         }
     }

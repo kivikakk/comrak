@@ -83,19 +83,57 @@ fn trailing_hyphen() {
     );
 }
 
-#[ignore]
 #[test]
 fn trailing_hyphen_matches() {
+    // TODO: repeat below without smart, direct entry
+    // TODO: "\ at EOL" style break breaks sourcepos
+    // TODO: check no empty text node before autolink at start
     assert_ast_match!(
         [extension.autolink, parse.smart],
-        "3@.l--",
-         (document (1:1-1:6) [
-             (paragraph (1:1-1:6) [
-                 (link (1:1-1:4) [
-                     (text (1:1-1:4) "3@.l")
-                 ])
-                 (text (1:5-1:6) "–")
-             ])
-         ])
+        "--\n"
+        "--(3@.l--\n",
+        (document (1:1-2:9) [
+            (paragraph (1:1-2:9) [
+                (text (1:1-1:2) "–")  // en-dash
+                (softbreak (1:3-1:3))
+                (text (2:1-2:3) "–(")  // en-dash
+                (link (2:4-2:7) "mailto:3@.l" [
+                    (text (2:4-2:7) "3@.l")
+                ])
+                (text (2:8-2:9) "–")  // en-dash
+            ])
+        ])
+    );
+}
+
+#[test]
+fn smart_sourcepos() {
+    assert_ast_match!(
+        [parse.smart],
+        ": _--_ **---**\n\n"
+        // As above, but entered directly.
+        ": _–_ **—**\n",
+        (document (1:1-3:15) [
+            (paragraph (1:1-1:14) [
+                (text (1:1-1:2) ": ")
+                (emph (1:3-1:6) [
+                    (text (1:4-1:5) "–")  // en-dash
+                ])
+                (text (1:7-1:7) " ")
+                (strong (1:8-1:14) [
+                    (text (1:10-1:12) "—")  // em-dash
+                ])
+            ])
+            (paragraph (3:1-3:15) [
+                (text (3:1-3:2) ": ")
+                (emph (3:3-3:7) [
+                    (text (3:4-3:6) "–")  // en-dash; 3 bytes in input
+                ])
+                (text (3:8-3:8) " ")
+                (strong (3:9-3:15) [
+                    (text (3:11-3:13) "—")  // em-dash; (still) 3 bytes
+                ])
+            ])
+        ])
     );
 }
