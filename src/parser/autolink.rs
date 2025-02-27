@@ -66,12 +66,15 @@ pub(crate) fn process_email_autolinks<'a>(
 
             sourcepos.end.column = consume_spx(&mut spx, i);
 
+            let nsp_end_col = consume_spx(&mut spx, skip);
+
             contents_str.truncate(i);
+
             let nsp: Sourcepos = (
                 sourcepos.end.line,
                 sourcepos.end.column + 1,
                 sourcepos.end.line,
-                sourcepos.end.column + skip,
+                nsp_end_col,
             )
                 .into();
             post.data.borrow_mut().sourcepos = nsp;
@@ -80,9 +83,6 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
-                let rs = consume_spx(&mut spx, skip);
-                assert_eq!(rs, nsp.end.column);
-
                 let mut asp: Sourcepos = (
                     sourcepos.end.line,
                     nsp.end.column + 1,
