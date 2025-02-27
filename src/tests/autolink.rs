@@ -408,3 +408,22 @@ fn autolink_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn autolink_consecutive_email() {
+    assert_ast_match!(
+        [extension.autolink],
+        "scyther@pokemon.com/beedrill@pokemon.com",
+        (document (1:1-1:40) [
+            (paragraph (1:1-1:40) [
+                (link (1:1-1:19) "mailto:scyther@pokemon.com" [
+                    (text (1:1-1:19) "scyther@pokemon.com")
+                ])
+                (text (1:20-1:20) "/")
+                (link (1:21-1:40) "mailto:beedrill@pokemon.com" [
+                    (text (1:21-1:40) "beedrill@pokemon.com")
+                ])
+            ])
+        ])
+    );
+}

@@ -84,10 +84,8 @@ fn trailing_hyphen() {
 }
 
 #[test]
-fn trailing_hyphen_matches() {
-    // TODO: repeat below without smart, direct entry
+fn trailing_smart_endash_matches() {
     // TODO: "\ at EOL" style break breaks sourcepos
-    // TODO: check no empty text node before autolink at start
     assert_ast_match!(
         [extension.autolink, parse.smart],
         "--\n"
@@ -101,6 +99,41 @@ fn trailing_hyphen_matches() {
                     (text (2:4-2:7) "3@.l")
                 ])
                 (text (2:8-2:9) "–")  // en-dash
+            ])
+        ])
+    );
+}
+
+#[test]
+fn trailing_endash_matches() {
+    assert_ast_match!(
+        [extension.autolink],
+        "–\n"
+        "–(3@.l–\n",
+        (document (1:1-2:11) [
+            (paragraph (1:1-2:11) [
+                (text (1:1-1:3) "–")  // en-dash
+                (softbreak (1:4-1:4))
+                (text (2:1-2:4) "–(")  // en-dash
+                (link (2:5-2:8) "mailto:3@.l" [
+                    (text (2:5-2:8) "3@.l")
+                ])
+                (text (2:9-2:11) "–")  // en-dash
+            ])
+        ])
+    );
+}
+
+#[test]
+fn no_empty_text_before_email() {
+    assert_ast_match!(
+        [extension.autolink],
+        "a@b.c\n",
+        (document (1:1-1:5) [
+            (paragraph (1:1-1:5) [
+                (link (1:1-1:5) "mailto:a@b.c" [
+                    (text (1:1-1:5) "a@b.c")
+                ])
             ])
         ])
     );

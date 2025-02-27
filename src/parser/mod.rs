@@ -2952,6 +2952,7 @@ where
 
             while let Some(n) = nch {
                 let mut this_bracket = false;
+                let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
                 let mut sourcepos = n_ast.sourcepos;
 
@@ -2975,6 +2976,7 @@ where
                         }
 
                         self.postprocess_text_node(n, root, &mut sourcepos, &spx);
+                        emptied = root.len() == 0;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Don't recurse into links (no links-within-links) or
@@ -2986,11 +2988,15 @@ where
 
                 n_ast.sourcepos = sourcepos;
 
-                if !this_bracket {
+                if !this_bracket && !emptied {
                     children.push(n);
                 }
 
                 nch = n.next_sibling();
+
+                if emptied {
+                    n.detach();
+                }
             }
 
             // Push children onto work stack in reverse order so they are
