@@ -21,7 +21,7 @@ use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
 use std::panic::RefUnwindSafe;
@@ -2961,13 +2961,14 @@ where
                         // Join adjacent text nodes together, then post-process.
                         // Record the original list of sourcepos and bytecounts
                         // for the post-processing step.
-                        let mut spx = vec![(sourcepos, root.len())];
+                        let mut spx = VecDeque::new();
+                        spx.push_back((sourcepos, root.len()));
                         while let Some(ns) = n.next_sibling() {
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
                                     let sp = ns.data.borrow().sourcepos;
-                                    spx.push((sp, adj.len()));
+                                    spx.push_back((sp, adj.len()));
                                     sourcepos.end.column = sp.end.column;
                                     ns.detach();
                                 }
@@ -2975,7 +2976,7 @@ where
                             }
                         }
 
-                        self.postprocess_text_node(n, root, &mut sourcepos, &spx);
+                        self.postprocess_text_node(n, root, &mut sourcepos, spx);
                         emptied = root.len() == 0;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
@@ -3010,7 +3011,7 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
-        spx: &[(Sourcepos, usize)],
+        spx: VecDeque<(Sourcepos, usize)>,
     ) {
         if self.options.extension.tasklist {
             self.process_tasklist(node, text, sourcepos);

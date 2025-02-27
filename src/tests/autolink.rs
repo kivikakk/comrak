@@ -427,3 +427,22 @@ fn autolink_consecutive_email() {
         ])
     );
 }
+
+#[test]
+fn autolink_consecutive_email_smart() {
+    assert_ast_match!(
+        [extension.autolink, parse.smart],
+        "scyther@pokemon.com--beedrill@pokemon.com",
+        (document (1:1-1:41) [
+            (paragraph (1:1-1:41) [
+                (link (1:1-1:19) "mailto:scyther@pokemon.com" [
+                    (text (1:1-1:19) "scyther@pokemon.com")
+                ])
+                (text (1:20-1:21) "–") // en-dash
+                (link (1:22-1:41) "mailto:beedrill@pokemon.com" [
+                    (text (1:22-1:41) "beedrill@pokemon.com")
+                ])
+            ])
+        ])
+    );
+}

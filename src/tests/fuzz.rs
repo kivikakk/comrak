@@ -206,3 +206,23 @@ fn echaw() {
         ])
     );
 }
+
+#[test]
+fn echaw2() {
+    assert_ast_match!(
+        [extension.autolink, parse.smart],
+        ":C@.t'C@.t",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (text (1:1-1:1) ":")
+                (link (1:2-1:5) "mailto:C@.t" [
+                    (text (1:2-1:5) "C@.t")
+                ])
+                (text (1:6-1:6) "’")
+                (link (1:7-1:10) "mailto:C@.t" [
+                    (text (1:7-1:10) "C@.t")
+                ])
+            ])
+        ])
+    );
+}

@@ -2,20 +2,18 @@ use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::make_inline;
+use std::collections::VecDeque;
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-// TODO: this can probably be cleaned up a lot. It used to handle all three of
-// {url,www,email}_match, but now just the last of those. (This is still per
-// upstream cmark-gfm, so it's not easily changed without breaking compat.)
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
     contents_str: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
-    spx: &[(Sourcepos, usize)],
+    mut spx: VecDeque<(Sourcepos, usize)>,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -90,23 +88,37 @@ pub(crate) fn process_email_autolinks<'a>(
             //     portion, then adjusted. I think this should be robust, but
             //     needs checking at edges.
 
-            let mut rem_i = i;
-            for &(sp, x) in spx {
-                if rem_i > x {
-                    rem_i -= x;
-                } else if rem_i == x {
-                    sourcepos.end.column = sp.end.column;
-                    rem_i = 0;
-                    break;
-                } else {
-                    // rem_i < x
-                    assert_eq!(sp.end.column - sp.start.column + 1, x);
-                    sourcepos.end.column = sp.start.column + rem_i - 1;
-                    rem_i = 0;
-                    break;
+            if i > 0 {
+                let mut rem_i = i;
+                while let Some((sp, x)) = spx.pop_front() {
+                    if rem_i > x {
+                        rem_i -= x;
+                    } else if rem_i == x {
+                        sourcepos.end.column = sp.end.column;
+                        rem_i = 0;
+                        break;
+                    } else {
+                        // rem_i < x
+                        assert_eq!(sp.end.column - sp.start.column + 1, x);
+                        sourcepos.end.column = sp.start.column + rem_i - 1;
+                        spx.push_front((
+                            (
+                                sp.start.line,
+                                sp.start.column + rem_i,
+                                sp.end.line,
+                                sp.end.column,
+                            )
+                                .into(),
+                            x - rem_i,
+                        ));
+                        rem_i = 0;
+                        break;
+                    }
                 }
+                assert!(rem_i == 0);
+            } else {
+                sourcepos.end.column = 0;
             }
-            assert!(rem_i == 0);
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
@@ -122,14 +134,57 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
-                let asp: Sourcepos = (
+                let mut asp: Sourcepos = (
                     sourcepos.end.line,
                     nsp.end.column + 1,
                     sourcepos.end.line,
                     initial_end_col,
                 )
                     .into();
-                post.insert_after(make_inline(arena, NodeValue::Text(remain.to_string()), asp));
+
+                // Consume `skip` from spx.
+                let mut rem_skip = skip;
+                while let Some((sp, x)) = spx.pop_front() {
+                    if rem_skip > x {
+                        rem_skip -= x;
+                    } else if rem_skip == x {
+                        rem_skip = 0;
+                        break;
+                    } else {
+                        // rem_skip < x
+                        assert_eq!(sp.end.column - sp.start.column + 1, x);
+                        spx.push_front((
+                            (
+                                sp.start.line,
+                                sp.start.column + rem_skip,
+                                sp.end.line,
+                                sp.end.column,
+                            )
+                                .into(),
+                            x - rem_skip,
+                        ));
+                        rem_skip = 0;
+                        break;
+                    }
+                }
+                assert!(rem_skip == 0);
+
+                let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
+                post.insert_after(after);
+
+                let after_ast = &mut after.data.borrow_mut();
+                process_email_autolinks(
+                    arena,
+                    after,
+                    match after_ast.value {
+                        NodeValue::Text(ref mut t) => t,
+                        _ => unreachable!(),
+                    },
+                    relaxed_autolinks,
+                    &mut asp,
+                    spx,
+                );
+                after_ast.sourcepos = asp;
             }
 
             return;
