@@ -170,3 +170,19 @@ fn smart_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn linebreak_sourcepos() {
+    assert_ast_match!(
+        [],
+        "a\\\n"
+        "b\n",
+        (document (1:1-2:1) [
+            (paragraph (1:1-2:1) [
+                (text (1:1-1:1) "a")
+                (linebreak (1:2-1:3))
+                (text (2:1-2:1) "b")
+            ])
+        ])
+    );
+}

@@ -1208,7 +1208,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 inline_text
             }
         } else if !self.eof() && self.skip_line_end() {
-            self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1)
+            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1);
+            self.line += 1;
+            self.column_offset = -(self.pos as isize);
+            self.skip_spaces();
+            inl
         } else {
             self.make_inline(
                 NodeValue::Text("\\".to_string()),
