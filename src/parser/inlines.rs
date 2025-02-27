@@ -291,16 +291,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             '$' => Some(self.handle_dollars(&node_ast.line_offsets)),
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
-                let endpos = self.find_special_char();
+                let mut endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
-                let startpos = self.pos;
+                let mut startpos = self.pos;
                 self.pos = endpos;
 
                 if self
                     .peek_char()
                     .map_or(false, |&c| strings::is_line_end_char(c))
                 {
-                    strings::rtrim(&mut contents);
+                    endpos -= strings::rtrim(&mut contents);
                 }
 
                 // if we've just produced a LineBreak, then we should consume any leading
@@ -308,7 +308,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 if node.last_child().map_or(false, |n| {
                     matches!(n.data.borrow().value, NodeValue::LineBreak)
                 }) {
-                    strings::ltrim(&mut contents);
+                    // TODO: test this more explicitly.
+                    let n = strings::ltrim(&mut contents);
+                    startpos += n;
                 }
 
                 Some(self.make_inline(

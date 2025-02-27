@@ -64,7 +64,11 @@ pub(crate) fn process_email_autolinks<'a>(
             };
             let initial_end_col = sourcepos.end.column;
 
-            sourcepos.end.column = if i > 0 { consume_spx(&mut spx, i) } else { 0 };
+            sourcepos.end.column = if i > 0 {
+                consume_spx(&mut spx, i)
+            } else {
+                sourcepos.start.column - 1
+            };
 
             contents_str.truncate(i);
             let nsp: Sourcepos = (
