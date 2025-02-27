@@ -80,9 +80,8 @@ pub(crate) fn process_email_autolinks<'a>(
             post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
-                // TODO: why we don't need the return value here? What's the
-                // relationship between it, nsp.end.column, and initial_end_col?
-                consume_spx(&mut spx, skip);
+                let rs = consume_spx(&mut spx, skip);
+                assert_eq!(rs, nsp.end.column);
 
                 let mut asp: Sourcepos = (
                     sourcepos.end.line,

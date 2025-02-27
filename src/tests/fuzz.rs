@@ -85,7 +85,6 @@ fn trailing_hyphen() {
 
 #[test]
 fn trailing_smart_endash_matches() {
-    // TODO: "\ at EOL" style break breaks sourcepos
     assert_ast_match!(
         [extension.autolink, parse.smart],
         "--\n"
