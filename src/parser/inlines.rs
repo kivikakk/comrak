@@ -721,8 +721,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
-        if !(self.options.extension.math_dollars) || opendollarlength > MAX_MATH_DOLLARS {
+    fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
+        if !self.options.extension.math_dollars || opendollarlength > MAX_MATH_DOLLARS {
             return None;
         }
 
@@ -740,17 +740,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 return None;
             }
 
+            let c = self.input[self.pos - 1];
+
             // space not allowed before ending $
-            if opendollarlength == 1 {
-                let c = self.input[self.pos - 1];
-                if isspace(c) {
-                    return None;
-                }
+            if opendollarlength == 1 && isspace(c) {
+                return None;
             }
 
             // dollar signs must also be backslash-escaped if they occur within math
-            let c = self.input[self.pos - 1];
-            if opendollarlength == 1 && c == (b'\\') {
+            if opendollarlength == 1 && c == b'\\' {
                 self.pos += 1;
                 continue;
             }
@@ -768,10 +766,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    pub fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
-        if !self.options.extension.math_code {
-            return None;
-        }
+    fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
+        assert!(self.options.extension.math_code);
 
         loop {
             while self.peek_char().map_or(false, |&c| c != b'$') {
@@ -783,96 +779,77 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             }
 
             let c = self.input[self.pos - 1];
+            self.pos += 1;
             if c == b'`' {
-                self.pos += 1;
                 return Some(self.pos);
-            } else {
-                self.pos += 1;
             }
         }
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    pub fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
-        if self.options.extension.math_dollars || self.options.extension.math_code {
-            let opendollars = self.take_while(b'$');
-            let mut code_math = false;
-
-            // check for code math
-            if opendollars == 1
-                && self.options.extension.math_code
-                && self.peek_char().map_or(false, |&c| c == b'`')
-            {
-                code_math = true;
-                self.pos += 1;
-            }
-
-            let startpos = self.pos;
-            let endpos: Option<usize> = if code_math {
-                self.scan_to_closing_code_dollar()
-            } else {
-                self.scan_to_closing_dollar(opendollars)
-            };
-
-            let fence_length = if code_math { 2 } else { opendollars };
-            let endpos: Option<usize> = match endpos {
-                Some(epos) => {
-                    if epos - startpos + fence_length < fence_length * 2 + 1 {
-                        None
-                    } else {
-                        endpos
-                    }
-                }
-                None => endpos,
-            };
-
-            match endpos {
-                None => {
-                    if code_math {
-                        self.pos = startpos - 1;
-                        self.make_inline(
-                            NodeValue::Text("$".to_string()),
-                            self.pos - 1,
-                            self.pos - 1,
-                        )
-                    } else {
-                        self.pos = startpos;
-                        self.make_inline(
-                            NodeValue::Text("$".repeat(opendollars)),
-                            self.pos,
-                            self.pos,
-                        )
-                    }
-                }
-                Some(endpos) => {
-                    let buf = &self.input[startpos..endpos - fence_length];
-                    let buf: Vec<u8> = if code_math || opendollars == 1 {
-                        strings::normalize_code(buf)
-                    } else {
-                        buf.to_vec()
-                    };
-                    let math = NodeMath {
-                        dollar_math: !code_math,
-                        display_math: opendollars == 2,
-                        literal: String::from_utf8(buf).unwrap(),
-                    };
-                    let node = self.make_inline(
-                        NodeValue::Math(math),
-                        startpos,
-                        endpos - fence_length - 1,
-                    );
-                    self.adjust_node_newlines(
-                        node,
-                        endpos - startpos,
-                        fence_length,
-                        parent_line_offsets,
-                    );
-                    node
-                }
-            }
-        } else {
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
-            self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
+            return self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1);
+        }
+        let startpos = self.pos;
+        let opendollars = self.take_while(b'$');
+        let mut code_math = false;
+
+        // check for code math
+        if opendollars == 1
+            && self.options.extension.math_code
+            && self.peek_char().map_or(false, |&c| c == b'`')
+        {
+            code_math = true;
+            self.pos += 1;
+        }
+        let fence_length = if code_math { 2 } else { opendollars };
+
+        let endpos: Option<usize> = if code_math {
+            self.scan_to_closing_code_dollar()
+        } else {
+            self.scan_to_closing_dollar(opendollars)
+        }
+        .filter(|epos| epos - startpos >= fence_length * 2 + 1);
+
+        eprintln!("** startpos is {:?}, endpos is {:?}", startpos, endpos);
+
+        match endpos {
+            None => {
+                if code_math {
+                    self.pos = startpos + 1;
+                    self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
+                } else {
+                    self.pos = startpos + fence_length;
+                    self.make_inline(
+                        NodeValue::Text("$".repeat(opendollars)),
+                        self.pos - fence_length,
+                        self.pos - 1,
+                    )
+                }
+            }
+            Some(endpos) => {
+                let buf = &self.input[startpos + fence_length..endpos - fence_length];
+                let buf: Vec<u8> = if code_math || opendollars == 1 {
+                    strings::normalize_code(buf)
+                } else {
+                    buf.to_vec()
+                };
+                let math = NodeMath {
+                    dollar_math: !code_math,
+                    display_math: opendollars == 2,
+                    literal: String::from_utf8(buf).unwrap(),
+                };
+                let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
+                self.adjust_node_newlines(
+                    node,
+                    endpos - startpos - fence_length,
+                    fence_length,
+                    parent_line_offsets,
+                );
+                node
+            }
         }
     }
 

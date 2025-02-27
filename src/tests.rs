@@ -387,11 +387,19 @@ impl AstMatchTree {
                     node.children().count(),
                     "text node should have no children"
                 );
-                assert_eq!(
-                    text,
-                    ast.value.text().unwrap(),
-                    "text node content should match"
-                );
+                match ast.value {
+                    NodeValue::Math(ref nm) => {
+                        assert_eq!(text, &nm.literal, "math node content should match");
+                    }
+                    NodeValue::CodeBlock(ref ncb) => {
+                        assert_eq!(text, &ncb.literal, "code block node content should match")
+                    }
+                    _ => assert_eq!(
+                        text,
+                        ast.value.text().unwrap(),
+                        "text node content should match"
+                    ),
+                }
             }
             AstMatchContent::Children(children) => {
                 assert_eq!(
