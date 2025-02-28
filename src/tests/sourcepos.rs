@@ -185,6 +185,14 @@ const FOOTNOTE_REFERENCE: TestCase = (
 "#,
 );
 
+#[cfg(feature = "shortcodes")]
+const SHORTCODE: TestCase = (
+    &[sourcepos!((2:2-2:7))],
+    r#"nya~
+!:fire:!
+"#,
+);
+
 const TABLE: TestCase = (
     &[sourcepos!((3:1-5:17))],
     r#"stuff before
@@ -440,6 +448,8 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 ThematicBreak => THEMATIC_BREAK,
                 FootnoteDefinition => FOOTNOTE_DEFINITION,
                 FootnoteReference => FOOTNOTE_REFERENCE,
+                #[cfg(feature = "shortcodes")]
+                ShortCode => SHORTCODE,
                 Table => TABLE,
                 TableRow => TABLE_ROW,
                 TableCell => TABLE_CELL,
@@ -485,6 +495,10 @@ fn sourcepos() {
     options.extension.superscript = true;
     options.extension.subscript = true;
     options.extension.autolink = true;
+    #[cfg(feature = "shortcodes")]
+    {
+        options.extension.shortcodes = true;
+    }
     options.extension.math_code = true;
     options.extension.math_dollars = true;
     options.extension.multiline_block_quotes = true;
