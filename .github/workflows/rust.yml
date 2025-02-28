@@ -22,13 +22,13 @@ jobs:
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build library
-      run: cargo build --verbose --lib
+      run: cargo build --locked --verbose --lib
     - name: Build examples
-      run: cargo build --verbose --lib --examples
+      run: cargo build --locked --verbose --lib --examples
     - name: Run unit tests
-      run: cargo test --verbose
-    - name: "Run README sample (TODO: update me)"
-      run: cargo run --example sample
+      run: cargo test --locked --verbose
+    - name: "Run README sample"
+      run: cargo run --locked --example sample
   build_bin_spec:
     runs-on: ubuntu-latest
     strategy:
@@ -45,7 +45,7 @@ jobs:
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build binary
-      run: cargo build --verbose --bin comrak --release
+      run: cargo build --locked --verbose --bin comrak --release
     - name: Run spec tests
       run: script/cibuild
   build_wasm:
@@ -66,9 +66,9 @@ jobs:
     - name: Setup for wasm
       run: rustup target add wasm32-unknown-unknown
     - name: Build
-      run: cargo build --verbose --target wasm32-unknown-unknown
+      run: cargo build --locked --verbose --target wasm32-unknown-unknown
     - name: Build examples
-      run: cargo build --verbose --target wasm32-unknown-unknown --examples
+      run: cargo build --locked --verbose --target wasm32-unknown-unknown --examples
   no_features_build_test:
     runs-on: ubuntu-latest
     strategy:
@@ -85,17 +85,24 @@ jobs:
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test with no features
-      run: cargo test --no-default-features --tests
-  lockfile:
+      run: cargo test --locked --no-default-features
+  all_features_build_test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - nightly
+          - beta
+          - stable
+          - $MSRV
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Obtain Rust
-      run: rustup override set $MSRV
+      run: rustup override set ${{ matrix.rust }}
     - name: Build and test with no features
-      run: cargo +stable build --locked --release --all-features
+      run: cargo test --locked --all-features
   clippy_format:
     runs-on: ubuntu-latest
     steps:
