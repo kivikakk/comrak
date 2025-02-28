@@ -239,29 +239,6 @@ fn autolink_relaxed_links_schemes() {
 
 #[test]
 fn sourcepos_correctly_restores_context() {
-    // There's unsoundness in trying to maintain and adjust sourcepos
-    // when doing autolinks in the light of:
-    //
-    // a) Some source elements introducing a different number of characters
-    //    to the content text than they take in source, i.e. smart
-    //    punctuation.
-    //
-    // b) Text node consolidation happening before autolinking.
-    //
-    // (b) is obviously non-optional, but it means we end up with Text
-    // nodes with different byte counts than their sourcepos span lengths.
-    //
-    // One possible solution would be to actually accumulate multiple
-    // sourcepos spans per Text node, each also tracking the number of
-    // bytes of content text it's responsible for.  This would work well
-    // enough as long as we never had to adjust a sourcepos into a spot
-    // within a sourcepos span that had a target text width where it
-    // wasn't equal.  That probably wouldn't happen, though -- i.e. we're
-    // never autolinking into the middle of a rendered smart punctuation.
-    //
-    // For now the desired sourcepos is documented in comment.  What we
-    // have currently (after backing out the adjustments, having hit the
-    // above case) matches cmark-gfm.
     assert_ast_match!(
         [],
         "ab _cde_ f@g.ee h*ijklm* n",
@@ -289,11 +266,11 @@ fn sourcepos_correctly_restores_context() {
                 (emph (1:4-1:8) [
                     (text (1:5-1:7) "cde")
                 ])
-                (text (1:9-1:17) " ")             // (text (1:9-1:9) " ")
-                (link (XXX) [                     // (link (1:10-1:15) [
-                    (text (XXX) "f@g.ee")             // (text (1:10-1:15) "f@g.ee")
+                (text (1:9-1:9) " ")
+                (link (1:10-1:15) "mailto:f@g.ee" [
+                    (text (1:10-1:15) "f@g.ee")
                 ])
-                (text (XXX) " h")                 // (text (1:16-1:17) " h")
+                (text (1:16-1:17) " h")
                 (emph (1:18-1:24) [
                     (text (1:19-1:23) "ijklm")
                 ])
@@ -393,5 +370,79 @@ fn autolink_fuzz_we() {
         "we://w",
         "<p><a href=\"we://w\">we://w</a></p>\n",
         no_roundtrip,
+    );
+}
+
+#[test]
+fn autolink_sourcepos() {
+    assert_ast_match!(
+        [extension.autolink],
+        "a  www.com  x\n"
+        "\n"
+        "b  https://www.com  y\n"
+        "\n"
+        "c  foo@www.com  z\n"
+        ,
+        (document (1:1-5:17) [
+            (paragraph (1:1-1:13) [
+                (text (1:1-1:3) "a  ")
+                (link (1:4-1:10) "http://www.com" [
+                    (text (1:4-1:10) "www.com")
+                ])
+                (text (1:11-1:13) "  x")
+            ])
+            (paragraph (3:1-3:21) [
+                (text (3:1-3:3) "b  ")
+                (link (3:4-3:18) "https://www.com" [
+                    (text (3:4-3:18) "https://www.com")
+                ])
+                (text (3:19-3:21) "  y")
+            ])
+            (paragraph (5:1-5:17) [
+                (text (5:1-5:3) "c  ")
+                (link (5:4-5:14) "mailto:foo@www.com" [
+                    (text (5:4-5:14) "foo@www.com")
+                ])
+                (text (5:15-5:17) "  z")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn autolink_consecutive_email() {
+    assert_ast_match!(
+        [extension.autolink],
+        "scyther@pokemon.com/beedrill@pokemon.com",
+        (document (1:1-1:40) [
+            (paragraph (1:1-1:40) [
+                (link (1:1-1:19) "mailto:scyther@pokemon.com" [
+                    (text (1:1-1:19) "scyther@pokemon.com")
+                ])
+                (text (1:20-1:20) "/")
+                (link (1:21-1:40) "mailto:beedrill@pokemon.com" [
+                    (text (1:21-1:40) "beedrill@pokemon.com")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn autolink_consecutive_email_smart() {
+    assert_ast_match!(
+        [extension.autolink, parse.smart],
+        "scyther@pokemon.com--beedrill@pokemon.com",
+        (document (1:1-1:41) [
+            (paragraph (1:1-1:41) [
+                (link (1:1-1:19) "mailto:scyther@pokemon.com" [
+                    (text (1:1-1:19) "scyther@pokemon.com")
+                ])
+                (text (1:20-1:21) "–") // en-dash
+                (link (1:22-1:41) "mailto:beedrill@pokemon.com" [
+                    (text (1:22-1:41) "beedrill@pokemon.com")
+                ])
+            ])
+        ])
     );
 }

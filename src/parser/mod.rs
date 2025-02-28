@@ -21,7 +21,7 @@ use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
 use std::panic::RefUnwindSafe;
@@ -1851,6 +1851,7 @@ where
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
         let adv = line.len() - 1 - self.offset;
+        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -2708,6 +2709,11 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+        } else if match ast.value {
+            NodeValue::ThematicBreak => true,
+            _ => false,
+        } {
+            // sourcepos.end set during opening.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
@@ -2946,50 +2952,52 @@ where
 
             while let Some(n) = nch {
                 let mut this_bracket = false;
+                let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
                 let mut sourcepos = n_ast.sourcepos;
 
-                loop {
-                    match n_ast.value {
-                        // Join adjacent text nodes together
-                        NodeValue::Text(ref mut root) => {
-                            let ns = match n.next_sibling() {
-                                Some(ns) => ns,
-                                _ => {
-                                    // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, &mut sourcepos);
-                                    break;
-                                }
-                            };
-
+                match n_ast.value {
+                    NodeValue::Text(ref mut root) => {
+                        // Join adjacent text nodes together, then post-process.
+                        // Record the original list of sourcepos and bytecounts
+                        // for the post-processing step.
+                        let mut spx = VecDeque::new();
+                        spx.push_back((sourcepos, root.len()));
+                        while let Some(ns) = n.next_sibling() {
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
-                                    sourcepos.end.column = ns.data.borrow().sourcepos.end.column;
+                                    let sp = ns.data.borrow().sourcepos;
+                                    spx.push_back((sp, adj.len()));
+                                    sourcepos.end.column = sp.end.column;
                                     ns.detach();
                                 }
-                                _ => {
-                                    // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, &mut sourcepos);
-                                    break;
-                                }
+                                _ => break,
                             }
                         }
-                        NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
-                            this_bracket = true;
-                            break;
-                        }
-                        _ => break,
+
+                        self.postprocess_text_node(n, root, &mut sourcepos, spx);
+                        emptied = root.len() == 0;
                     }
+                    NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
+                        // Don't recurse into links (no links-within-links) or
+                        // images (title part).
+                        this_bracket = true;
+                    }
+                    _ => {}
                 }
 
                 n_ast.sourcepos = sourcepos;
 
-                if !this_bracket {
+                if !this_bracket && !emptied {
                     children.push(n);
                 }
 
                 nch = n.next_sibling();
+
+                if emptied {
+                    n.detach();
+                }
             }
 
             // Push children onto work stack in reverse order so they are
@@ -3003,17 +3011,20 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
+        spx: VecDeque<(Sourcepos, usize)>,
     ) {
         if self.options.extension.tasklist {
             self.process_tasklist(node, text, sourcepos);
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(
+            autolink::process_email_autolinks(
                 self.arena,
                 node,
                 text,
                 self.options.parse.relaxed_autolinks,
+                sourcepos,
+                spx,
             );
         }
     }

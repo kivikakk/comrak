@@ -114,6 +114,8 @@
       formatter = pkgs.alejandra;
 
       devShells.default = pkgs.mkShell {
+        name = "comrak";
+
         inputsFrom = builtins.attrValues self.checks.${system};
 
         nativeBuildInputs = [

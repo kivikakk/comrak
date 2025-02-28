@@ -144,17 +144,19 @@ pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {
     }
 }
 
-pub fn rtrim(line: &mut Vec<u8>) {
+pub fn rtrim(line: &mut Vec<u8>) -> usize {
     let spaces = line.iter().rev().take_while(|&&b| isspace(b)).count();
     let new_len = line.len() - spaces;
     line.truncate(new_len);
+    spaces
 }
 
-pub fn ltrim(line: &mut Vec<u8>) {
+pub fn ltrim(line: &mut Vec<u8>) -> usize {
     let spaces = line.iter().take_while(|&&b| isspace(b)).count();
     shift_buf_left(line, spaces);
     let new_len = line.len() - spaces;
     line.truncate(new_len);
+    spaces
 }
 
 pub fn trim(line: &mut Vec<u8>) {
@@ -191,6 +193,9 @@ pub fn trim_slice(mut i: &[u8]) -> &[u8] {
 }
 
 fn shift_buf_left(buf: &mut [u8], n: usize) {
+    if n == 0 {
+        return;
+    }
     assert!(n <= buf.len());
     let keep = buf.len() - n;
     unsafe {
