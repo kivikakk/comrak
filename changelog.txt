@@ -1,19 +1,33 @@
 # [v0.36.0] - 28-02-2025
-## What's Changed
-* make  methods public by @fiji-flo in https://github.com/kivikakk/comrak/pull/532
+
+Bug fixes:
+
 * Stop at first suitable $ at inline math by @Bubbis in https://github.com/kivikakk/comrak/pull/533
-* Refactor html output functions by @digitalmoksha in https://github.com/kivikakk/comrak/pull/529
-* docs: add Python bindings repo and PyPI links to Related Projects by @lmmx in https://github.com/kivikakk/comrak/pull/539
-* commonmark: experimental minimize by @charlottia in https://github.com/kivikakk/comrak/pull/523
-* Write a sourcepos test for each  variant by @SamWilsn in https://github.com/kivikakk/comrak/pull/498
+
+New features/APIs:
+
 * Create custom HTML formatters. by @kivikakk in https://github.com/kivikakk/comrak/pull/540
+* make `AlertType` methods public by @fiji-flo in https://github.com/kivikakk/comrak/pull/532
+* commonmark: experimental minimize by @charlottia in https://github.com/kivikakk/comrak/pull/523
+
+Behind the scenes:
+
 * tests: don't let sourcepos stand in the way of roundtrip tests. by @kivikakk in https://github.com/kivikakk/comrak/pull/543
+* Refactor html output functions by @digitalmoksha in https://github.com/kivikakk/comrak/pull/529
+* Write a sourcepos test for each `NodeValue` variant by @SamWilsn in https://github.com/kivikakk/comrak/pull/498
+
+Documentation:
+
+* docs: add Python bindings repo and PyPI links to Related Projects by @lmmx in https://github.com/kivikakk/comrak/pull/539
 
 ## New Contributors
+
 * @Bubbis made their first contribution in https://github.com/kivikakk/comrak/pull/533
 * @lmmx made their first contribution in https://github.com/kivikakk/comrak/pull/539
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.35.0...v0.36.0
+Diff: https://github.com/kivikakk/comrak/compare/v0.35.0...v0.36.0
+
+
 # [v0.35.0] - 23-01-2025
 
 * Use CSS class `markdown-alert` instead of `alert` by @digitalmoksha in https://github.com/kivikakk/comrak/pull/524
