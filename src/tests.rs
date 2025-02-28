@@ -108,7 +108,7 @@ fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) 
         input,
     );
 
-    if options.render.sourcepos || !roundtrip {
+    if !roundtrip {
         return;
     }
 
@@ -119,12 +119,29 @@ fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) 
     let root = parse_document(&arena, md_string, options);
     let mut output_from_rt = vec![];
     html::format_document(root, options, &mut output_from_rt).unwrap();
+
+    let expected_no_sourcepos = remove_sourcepos(expected);
+    let actual_no_sourcepos = remove_sourcepos(std::str::from_utf8(&output_from_rt).unwrap());
+
     compare_strs(
-        &String::from_utf8(output_from_rt).unwrap(),
-        expected,
+        &actual_no_sourcepos,
+        &expected_no_sourcepos,
         "roundtrip",
         md_string,
     );
+}
+
+fn remove_sourcepos(i: &str) -> String {
+    const S: &'static str = " data-sourcepos=\"";
+
+    let mut r = i.to_string();
+    while let Some(start_ix) = r.find(S) {
+        let end_offset = start_ix + S.len();
+        let end_ix = r.get(start_ix + S.len()..).unwrap().find('"').unwrap();
+        r.replace_range(start_ix..end_offset + end_ix + 1, "");
+    }
+
+    r
 }
 
 macro_rules! html_opts {
@@ -180,10 +197,6 @@ fn html_plugins(input: &str, expected: &str, plugins: &Plugins) {
         "regular",
         input,
     );
-
-    if options.render.sourcepos {
-        return;
-    }
 
     let mut md = vec![];
     cm::format_document(root, &options, &mut md).unwrap();
