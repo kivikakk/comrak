@@ -119,9 +119,6 @@ fn math_unrecognized_syntax(markdown: &str, html: &str) {
     );
 }
 
-// html_opts! does a roundtrip check unless sourcepos is set.
-// These cases don't work roundtrip, because converting to commonmark
-// automatically escapes certain characters.
 #[test_case("$`$", "<p data-sourcepos=\"1:1-1:3\">$`$</p>\n")]
 fn math_unrecognized_syntax_non_roundtrip(markdown: &str, html: &str) {
     html_opts!(
@@ -131,7 +128,8 @@ fn math_unrecognized_syntax_non_roundtrip(markdown: &str, html: &str) {
             render.sourcepos
         ],
         markdown,
-        html
+        html,
+        no_roundtrip
     );
 }
 

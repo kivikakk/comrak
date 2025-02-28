@@ -84,6 +84,9 @@ fn trailing_hyphen_matches() {
     html_opts!(
         [extension.autolink, parse.smart, render.sourcepos],
         "3@.l--",
-        "<p data-sourcepos=\"1:1-1:6\"><a href=\"mailto:3@.l\">3@.l</a>–</p>\n"
+        "<p data-sourcepos=\"1:1-1:6\"><a href=\"mailto:3@.l\">3@.l</a>–</p>\n",
+        no_roundtrip // We serialise the link back to <3@.l>, which doesn't
+                     // parse as a classic autolink, but the email inside the
+                     // <...> does, meaning the </> get rendered!
     );
 }
