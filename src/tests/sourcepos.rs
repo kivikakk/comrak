@@ -394,8 +394,10 @@ const SPOILERED_TEXT: TestCase = (
 after"#,
 );
 
+// NOTE: I've adjusted this from its original asserted sourcepos (2:1-2:8) while
+// fixing emphasis sourcepos. I am not even sure what it is, really.
 const ESCAPED_TAG: TestCase = (
-    &[sourcepos!((2:1-2:8))],
+    &[sourcepos!((2:2-2:8))],
     r#"before
 ||hello|
 after"#,

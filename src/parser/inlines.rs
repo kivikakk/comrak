@@ -99,6 +99,21 @@ pub struct Delimiter<'a: 'd, 'd> {
     next: Cell<Option<&'d Delimiter<'a, 'd>>>,
 }
 
+impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
+            self.position,
+            self.length,
+            self.delim_char,
+            self.can_open,
+            self.can_close,
+            self.inl.data.borrow().sourcepos
+        )
+    }
+}
+
 struct Bracket<'a> {
     inl_text: &'a AstNode<'a>,
     position: usize,
@@ -1136,22 +1151,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             self.pos,
             self.pos,
         );
-        {
-            // if we have `___` or `***` then we need to adjust the sourcepos colums by 1
-            let triple_adjustment = if opener_num_chars > 0 && use_delims == 2 {
-                1
-            } else {
-                0
-            };
 
-            emph.data.borrow_mut().sourcepos = (
-                opener.inl.data.borrow().sourcepos.start.line,
-                opener.inl.data.borrow().sourcepos.start.column + triple_adjustment,
-                closer.inl.data.borrow().sourcepos.end.line,
-                closer.inl.data.borrow().sourcepos.end.column - triple_adjustment,
-            )
-                .into();
-        }
+        emph.data.borrow_mut().sourcepos = (
+            opener.inl.data.borrow().sourcepos.start.line,
+            opener.inl.data.borrow().sourcepos.start.column + opener_num_chars,
+            closer.inl.data.borrow().sourcepos.end.line,
+            closer.inl.data.borrow().sourcepos.end.column - closer_num_chars,
+        )
+            .into();
 
         // Drop all the interior AST nodes into the emphasis node
         // and then insert the emphasis node
@@ -1167,11 +1174,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
         opener.inl.insert_after(emph);
 
-        // Drop the delimiters and return the next closer to process
-
+        // Drop completely "used up" delimiters, adjust sourcepos of those not,
+        // and return the next closest one for processing.
         if opener_num_chars == 0 {
             opener.inl.detach();
             self.remove_delimiter(opener);
+        } else {
+            opener.inl.data.borrow_mut().sourcepos.end.column -= use_delims;
         }
 
         if closer_num_chars == 0 {
@@ -1179,6 +1188,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             self.remove_delimiter(closer);
             closer.next.get()
         } else {
+            closer.inl.data.borrow_mut().sourcepos.start.column += use_delims;
             Some(closer)
         }
     }
