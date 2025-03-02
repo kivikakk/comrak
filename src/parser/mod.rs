@@ -2961,14 +2961,14 @@ where
                         // Join adjacent text nodes together, then post-process.
                         // Record the original list of sourcepos and bytecounts
                         // for the post-processing step.
-                        let mut spx = VecDeque::new();
-                        spx.push_back((sourcepos, root.len()));
+                        let mut spxv = VecDeque::new();
+                        spxv.push_back((sourcepos, root.len()));
                         while let Some(ns) = n.next_sibling() {
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
                                     let sp = ns.data.borrow().sourcepos;
-                                    spx.push_back((sp, adj.len()));
+                                    spxv.push_back((sp, adj.len()));
                                     sourcepos.end.column = sp.end.column;
                                     ns.detach();
                                 }
@@ -2976,7 +2976,7 @@ where
                             }
                         }
 
-                        self.postprocess_text_node(n, root, &mut sourcepos, spx);
+                        self.postprocess_text_node(n, root, &mut sourcepos, spxv);
                         emptied = root.len() == 0;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
@@ -3011,10 +3011,11 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
-        spx: VecDeque<(Sourcepos, usize)>,
+        spxv: VecDeque<(Sourcepos, usize)>,
     ) {
+        let mut spx = Spx(spxv);
         if self.options.extension.tasklist {
-            self.process_tasklist(node, text, sourcepos);
+            self.process_tasklist(node, text, sourcepos, &mut spx);
         }
 
         if self.options.extension.autolink {
@@ -3024,7 +3025,7 @@ where
                 text,
                 self.options.parse.relaxed_autolinks,
                 sourcepos,
-                spx,
+                &mut spx,
             );
         }
     }
@@ -3034,6 +3035,7 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
+        spx: &mut Spx,
     ) {
         let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
             Some(p) => p,
@@ -3071,6 +3073,8 @@ where
         // the count thereof (i.e. "end") will precisely map to characters in
         // the source document.
         sourcepos.start.column += end;
+        let reference = spx.consume(end) + 1;
+        assert_eq!(reference, sourcepos.start.column);
         parent.data.borrow_mut().sourcepos.start.column += end;
 
         grandparent.data.borrow_mut().value =
@@ -3322,4 +3326,53 @@ pub enum ListStyleType {
     Plus = 43,
     /// The `*` character
     Star = 42,
+}
+
+pub(crate) struct Spx(VecDeque<(Sourcepos, usize)>);
+
+impl Spx {
+    // Sourcepos end column `e` of a node determined by advancing through `spx`
+    // until `i` bytes of input are seen.
+    //
+    // For each element `(sp, x)` in `spx`:
+    // - if remaining `i` is greater than the byte count `x`,
+    //     set `i -= x` and continue.
+    // - if remaining `i` is equal to the byte count `x`,
+    //     set `e = sp.end.column` and finish.
+    // - if remaining `i` is less than the byte count `x`,
+    //     assert `sp.end.column - sp.start.column + 1 == x || i == 0` (1),
+    //     set `e = sp.start.column + i - 1` and finish.
+    //
+    // (1) If `x` doesn't equal the range covered between the start and end column,
+    //     there's no way to determine sourcepos within the range. This is a bug if
+    //     it happens; it suggests we've matched an email autolink with some smart
+    //     punctuation in it, or worse.
+    //
+    //     The one exception is if `i == 0`. Given nothing to consume, we can
+    //     happily restore what we popped, returning `sp.start.column - 1` for the
+    //     end column of the original node.
+    pub(crate) fn consume(&mut self, mut rem: usize) -> usize {
+        while let Some((sp, x)) = self.0.pop_front() {
+            if rem > x {
+                rem -= x;
+            } else if rem == x {
+                return sp.end.column;
+            } else {
+                // rem < x
+                assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
+                self.0.push_front((
+                    (
+                        sp.start.line,
+                        sp.start.column + rem,
+                        sp.end.line,
+                        sp.end.column,
+                    )
+                        .into(),
+                    x - rem,
+                ));
+                return sp.start.column + rem - 1;
+            }
+        }
+        unreachable!();
+    }
 }

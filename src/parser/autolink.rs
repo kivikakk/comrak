@@ -1,8 +1,7 @@
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::make_inline;
-use std::collections::VecDeque;
+use crate::parser::{inlines::make_inline, Spx};
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
@@ -13,7 +12,7 @@ pub(crate) fn process_email_autolinks<'a>(
     contents_str: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
-    mut spx: VecDeque<(Sourcepos, usize)>,
+    spx: &mut Spx,
 ) {
     let contents = contents_str.as_bytes();
     let len = contents.len();
@@ -64,9 +63,9 @@ pub(crate) fn process_email_autolinks<'a>(
             };
             let initial_end_col = sourcepos.end.column;
 
-            sourcepos.end.column = consume_spx(&mut spx, i);
+            sourcepos.end.column = spx.consume(i);
 
-            let nsp_end_col = consume_spx(&mut spx, skip);
+            let nsp_end_col = spx.consume(skip);
 
             contents_str.truncate(i);
 
@@ -112,53 +111,6 @@ pub(crate) fn process_email_autolinks<'a>(
         }
     }
 }
-
-// Sourcepos end column `e` of the original node (set by writing to
-// `*sourcepos`) determined by advancing through `spx` until `i` bytes of input
-// are seen.
-//
-// For each element `(sp, x)` in `spx`:
-// - if remaining `i` is greater than the byte count `x`,
-//     set `i -= x` and continue.
-// - if remaining `i` is equal to the byte count `x`,
-//     set `e = sp.end.column` and finish.
-// - if remaining `i` is less than the byte count `x`,
-//     assert `sp.end.column - sp.start.column + 1 == x || rem == 0` (1),
-//     set `e = sp.start.column + i - 1` and finish.
-//
-// (1) If `x` doesn't equal the range covered between the start and end column,
-//     there's no way to determine sourcepos within the range. This is a bug if
-//     it happens; it suggests we've matched an email autolink with some smart
-//     punctuation in it, or worse.
-//
-//     The one exception is if `rem == 0`. Given nothing to consume, we can
-//     happily restore what we popped, returning `sp.start.column - 1` for the
-//     end column of the original node.
-fn consume_spx(spx: &mut VecDeque<(Sourcepos, usize)>, mut rem: usize) -> usize {
-    while let Some((sp, x)) = spx.pop_front() {
-        if rem > x {
-            rem -= x;
-        } else if rem == x {
-            return sp.end.column;
-        } else {
-            // rem < x
-            assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
-            spx.push_front((
-                (
-                    sp.start.line,
-                    sp.start.column + rem,
-                    sp.end.line,
-                    sp.end.column,
-                )
-                    .into(),
-                x - rem,
-            ));
-            return sp.start.column + rem - 1;
-        }
-    }
-    unreachable!();
-}
-
 fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
     contents: &[u8],
