@@ -320,3 +320,21 @@ fn echaw7() {
         ])
     );
 }
+
+#[test]
+fn echaw8() {
+    // fuzz/artifacts/all_options/minimized-from-57c3eaf5e03b3fd7fa971b0db6143ee3c21a7452
+    assert_ast_match!(
+        [extension.autolink, extension.tasklist],
+        "- [x] &Xfr;-<A@.N",
+        (document (1:1-1:17) [
+            (list (1:1-1:17) [
+                (item (1:1-1:17) [
+                    (paragraph (1:3-1:17) [
+                        (text (1:3-1:17) "[x] V𝔛-<A@N")
+                    ])
+                ])
+            ])
+        ]),
+    );
+}
