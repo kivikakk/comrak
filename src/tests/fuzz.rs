@@ -341,3 +341,24 @@ fn echaw8() {
         ]),
     );
 }
+
+#[test]
+fn echaw9() {
+    // fuzz/artifacts/all_options/minimized-from-8a07a44ba1f971ec39d0c14d377c78c2535c6fd5
+    assert_ast_match!(
+        [extension.autolink, extension.tasklist],
+        "-\t[ ]&NewLine;",
+        (document (1:1-1:15) [
+            (list (1:1-1:15) [
+                (taskitem (1:1-1:15) [
+                    (paragraph (1:7-1:17) [
+                        (text (1:7-1:13) "𝔛-<")
+                        (link (1:14-1:17) "mailto:A@.N" [
+                            (text (1:14-1:17) "A@.N")
+                        ])
+                    ])
+                ])
+            ])
+        ]),
+    );
+}
