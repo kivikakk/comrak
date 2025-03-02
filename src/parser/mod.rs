@@ -3067,15 +3067,22 @@ where
             return;
         }
 
-        text.drain(..end);
-
         // These are sound only because the exact text that we've matched and
         // the count thereof (i.e. "end") will precisely map to characters in
         // the source document.
-        sourcepos.start.column += end;
-        let reference = spx.consume(end) + 1;
-        assert_eq!(reference, sourcepos.start.column);
-        parent.data.borrow_mut().sourcepos.start.column += end;
+        text.drain(..end);
+
+        let adjust = spx.consume(end) + 1;
+        // Do we need to account separately for the parent? I _think_ it always
+        // has the same start col to begin with as `sourcepos` itself.
+        assert_eq!(
+            sourcepos.start.column,
+            parent.data.borrow().sourcepos.start.column
+        );
+
+        // HACK: See tests::fuzz::echaw9. The paragraph doesn't exist in the source!
+        sourcepos.start.column = usize::min(sourcepos.end.column, adjust);
+        parent.data.borrow_mut().sourcepos.start.column = sourcepos.start.column;
 
         grandparent.data.borrow_mut().value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
