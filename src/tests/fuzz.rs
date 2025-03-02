@@ -276,16 +276,12 @@ fn echaw4() {
 fn echaw5() {
     assert_ast_match!(
         [],
-        // [extension.autolink],
         "_#___@e.u",
         (document (1:1-1:9) [
             (paragraph (1:1-1:9) [
                 (emph (1:1-1:3) [
                     (text (1:2-1:2) "#")
                 ])
-                // (link (1:1-1:14) "mailto:-@_.e" [
-                //     (text (1:1-1:14) "-@_.e")
-                // ])
                 (text (1:4-1:9) "__@e.u")
             ])
         ])
@@ -304,6 +300,21 @@ fn echaw6() {
                 ])
                 (link (1:4-1:9) "mailto:__@e.u" [
                     (text (1:4-1:9) "__@e.u")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn echaw7() {
+    assert_ast_match!(
+        [extension.autolink],
+        "&#65;i@i.a",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (link (1:1-1:10) "mailto:Ai@i.a" [
+                    (text (1:1-1:10) "Ai@i.a")
                 ])
             ])
         ])

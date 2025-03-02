@@ -123,13 +123,17 @@ pub(crate) fn process_email_autolinks<'a>(
 // - if remaining `i` is equal to the byte count `x`,
 //     set `e = sp.end.column` and finish.
 // - if remaining `i` is less than the byte count `x`,
-//     assert `sp.end.column - sp.start.column + 1 == x` (1),
+//     assert `sp.end.column - sp.start.column + 1 == x || rem == 0` (1),
 //     set `e = sp.start.column + i - 1` and finish.
 //
 // (1) If `x` doesn't equal the range covered between the start and end column,
 //     there's no way to determine sourcepos within the range. This is a bug if
 //     it happens; it suggests we've matched an email autolink with some smart
 //     punctuation in it, or worse.
+//
+//     The one exception is if `rem == 0`. Given nothing to consume, we can
+//     happily restore what we popped, returning `sp.start.column - 1` for the
+//     end column of the original node.
 fn consume_spx(spx: &mut VecDeque<(Sourcepos, usize)>, mut rem: usize) -> usize {
     while let Some((sp, x)) = spx.pop_front() {
         if rem > x {
@@ -138,7 +142,7 @@ fn consume_spx(spx: &mut VecDeque<(Sourcepos, usize)>, mut rem: usize) -> usize 
             return sp.end.column;
         } else {
             // rem < x
-            assert_eq!(sp.end.column - sp.start.column + 1, x);
+            assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
             spx.push_front((
                 (
                     sp.start.line,
