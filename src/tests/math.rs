@@ -148,16 +148,16 @@ fn sourcepos() {
         "```\n",
         (document (1:1-9:3) [
             (paragraph (1:1-1:29) [
-                (math (1:2-1:4))
+                (math (1:1-1:5) "x^2")
                 (text (1:6-1:10) " and ")
-                (math (1:13-1:15))
+                (math (1:11-1:17) "y^2")
                 (text (1:18-1:22) " and ")
-                (math (1:25-1:27))
+                (math (1:23-1:29) "z^2")
             ])
             (paragraph (3:1-5:2) [
-                (math (3:3-5:0))
+                (math (3:1-5:2) "\na^2\n")
             ])
-            (code_block (7:1-9:3))
+            (code_block (7:1-9:3) "b^2\n")
         ])
     );
 }

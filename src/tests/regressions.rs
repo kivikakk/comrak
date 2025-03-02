@@ -133,3 +133,109 @@ fn sourcepos_para() {
 fn gemoji() {
     html_opts!([extension.shortcodes], ":x:", "<p>❌</p>\n");
 }
+
+#[test]
+fn sourcepos_lone_backtick() {
+    assert_ast_match!(
+        [],
+        "``\n",
+        (document (1:1-1:2) [
+            (paragraph (1:1-1:2) [
+                (text (1:1-1:2) "``")
+            ])
+        ])
+    );
+}
+
+#[ignore] // This one will require a bit of thinking.
+#[test]
+fn sourcepos_link_items() {
+    assert_ast_match!(
+        [],
+        "- ab\n"
+        "- cdef\n"
+        "\n"
+        "\n"
+        "g\n"
+        ,
+        (document (1:1-5:1) [
+            (list (1:1-2:6) [
+                (item (1:1-1:4) [
+                    (paragraph (1:3-1:4) [
+                        (text (1:3-1:4) "ab")
+                    ])
+                ])
+                (item (2:1-2:6) [
+                    (paragraph (2:3-2:6) [
+                        (text (2:3-2:6) "cdef")
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "g")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn assorted_links() {
+    assert_ast_match!(
+        [extension.autolink],
+        r#"hello <https://example.com/fooo> world
+hello [foo](https://example.com) world
+hello [foo] world
+hello [bar][bar] world
+hello https://example.com/foo world
+hello www.example.com world
+hello foo@example.com world
+
+[foo]: https://example.com
+[bar]: https://example.com"#,
+        (document (1:1-10:26) [
+            (paragraph (1:1-7:27) [
+                (text (1:1-1:6) "hello ")
+                (link (1:7-1:32) "https://example.com/fooo" [
+                    (text (1:8-1:31) "https://example.com/fooo")
+                ])
+                (text (1:33-1:38) " world")
+                (softbreak (1:39-1:39))
+                (text (2:1-2:6) "hello ")
+                (link (2:7-2:32) "https://example.com" [
+                    (text (2:8-2:10) "foo")
+                ])
+                (text (2:33-2:38) " world")
+                (softbreak (2:39-2:39))
+                (text (3:1-3:6) "hello ")
+                (link (3:7-3:11) "https://example.com" [
+                    (text (3:8-3:10) "foo")
+                ])
+                (text (3:12-3:17) " world")
+                (softbreak (3:18-3:18))
+                (text (4:1-4:6) "hello ")
+                (link (4:7-4:16) "https://example.com" [
+                    (text (4:8-4:10) "bar")
+                ])
+                (text (4:17-4:22) " world")
+                (softbreak (4:23-4:23))
+                (text (5:1-5:6) "hello ")
+                (link (5:7-5:29) "https://example.com/foo" [
+                    (text (5:7-5:29) "https://example.com/foo")
+                ])
+                (text (5:30-5:35) " world")
+                (softbreak (5:36-5:36))
+                (text (6:1-6:6) "hello ")
+                (link (6:7-6:21) "http://www.example.com" [
+                    (text (6:7-6:21) "www.example.com")
+                ])
+                (text (6:22-6:27) " world")
+                (softbreak (6:28-6:28))
+                (text (7:1-7:6) "hello ")
+                (link (7:7-7:21) "mailto:foo@example.com" [
+                    (text (7:7-7:21) "foo@example.com")
+                ])
+                (text (7:22-7:27) " world")
+            ])
+        ])
+    );
+}
