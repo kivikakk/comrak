@@ -350,9 +350,7 @@ fn echaw9() {
         "-\t[ ]&NewLine;",
         (document (1:1-1:14) [
             (list (1:1-1:14) [
-                (taskitem (1:1-1:14) [
-                    (paragraph (1:14-1:14)) // Unsatisfying. See parser::process_tasklist.
-                ])
+                (taskitem (1:1-1:14))
             ])
         ]),
     );
