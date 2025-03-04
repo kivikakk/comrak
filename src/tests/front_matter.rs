@@ -27,71 +27,63 @@ fn round_trip_wide_delimiter() {
 }
 
 #[test]
-fn ast_wide_delimiter() {
-    let input = "\u{04fc}\nlayout: post\n\u{04fc}\nText\n";
-
-    assert_ast_match_i(
-        input,
-        ast!((document (1:1-4:4) [
-            (frontmatter (1:1-3:2) [])
-            (paragraph (4:1-4:4) [
-                (text (4:1-4:4) [])
-            ])
-        ])),
-        |opts| opts.extension.front_matter_delimiter = Some("\u{04fc}".to_owned()),
-    );
-}
-
-#[test]
 fn ast() {
-    let input = "q\nlayout: post\nq\nText\n";
-
-    assert_ast_match_i(
-        input,
-        ast!((document (1:1-4:4) [
-            (frontmatter (1:1-3:1) [])
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("q".to_owned())],
+        "q\nlayout: post\nq\nText\n",
+        (document (1:1-4:4) [
+            (frontmatter (1:1-3:1) "q\nlayout: post\nq\n")
             (paragraph (4:1-4:4) [
-                (text (4:1-4:4) [])
+                (text (4:1-4:4) "Text")
             ])
-        ])),
-        |opts| opts.extension.front_matter_delimiter = Some("q".to_owned()),
+        ])
     );
 }
 
 #[test]
 fn ast_blank_line() {
-    let input = r#"---
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        r#"---
 a: b
 ---
 
 hello world
-"#;
-
-    assert_ast_match_i(
-        input,
-        ast!((document (1:1-5:11) [
-            (frontmatter (1:1-3:3) [])
+"#,
+        (document (1:1-5:11) [
+            (frontmatter (1:1-3:3) "---\na: b\n---\n\n")
             (paragraph (5:1-5:11) [
-                (text (5:1-5:11) [])
+                (text (5:1-5:11) "hello world")
             ])
-        ])),
-        |opts| opts.extension.front_matter_delimiter = Some("---".to_owned()),
+        ])
     );
 }
 
 #[test]
 fn ast_carriage_return() {
-    let input = "q\r\nlayout: post\r\nq\r\nText\r\n";
-
-    assert_ast_match_i(
-        input,
-        ast!((document (1:1-4:4) [
-            (frontmatter (1:1-3:1) [])
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("q".to_owned())],
+        "q\r\nlayout: post\r\nq\r\nText\r\n",
+        (document (1:1-4:4) [
+            (frontmatter (1:1-3:1) "q\r\nlayout: post\r\nq\r\n")
             (paragraph (4:1-4:4) [
-                (text (4:1-4:4) [])
+                (text (4:1-4:4) "Text")
             ])
-        ])),
-        |opts| opts.extension.front_matter_delimiter = Some("q".to_owned()),
+        ])
+    );
+}
+
+#[test]
+fn ast_wide_delimiter() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("\u{04fc}".to_owned())],
+        "\u{04fc}\nlayout: post\n\u{04fc}\nText\n",
+        (document (1:1-4:4) [
+            (frontmatter (1:1-3:2) "\u{04fc}\nlayout: post\n\u{04fc}\n")
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "Text")
+            ])
+        ])
     );
 }
 

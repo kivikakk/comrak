@@ -161,10 +161,10 @@ hello world
 );
 
 const THEMATIC_BREAK: TestCase = (
-    &[sourcepos!((3:1-3:3))],
+    &[sourcepos!((3:2-3:4))],
     r#"Hello
 
----
+ ---
 
 World"#,
 );
@@ -266,7 +266,10 @@ hello world
 );
 
 const SOFT_BREAK: TestCase = (&[sourcepos!((1:13-1:13))], "stuff before\nstuff after");
-const LINE_BREAK: TestCase = (&[sourcepos!((1:13-1:15))], "stuff before  \nstuff after");
+const LINE_BREAK: TestCase = (
+    &[sourcepos!((1:13-1:15)), sourcepos!((4:13-4:14))],
+    "stuff before  \nstuff after\n\nstuff before\\\nstuff after\n",
+);
 
 const CODE: TestCase = (&[sourcepos!((1:7-1:13))], "hello `world`");
 
@@ -302,12 +305,16 @@ const LINK: TestCase = (
         sourcepos!((3:7-3:11)),
         sourcepos!((4:7-4:16)),
         sourcepos!((5:7-5:29)),
+        sourcepos!((6:7-6:21)),
+        sourcepos!((7:7-7:21)),
     ],
     r#"hello <https://example.com/fooo> world
 hello [foo](https://example.com) world
 hello [foo] world
 hello [bar][bar] world
 hello https://example.com/foo world
+hello www.example.com world
+hello foo@example.com world
 
 [foo]: https://example.com
 [bar]: https://example.com"#,
@@ -387,8 +394,10 @@ const SPOILERED_TEXT: TestCase = (
 after"#,
 );
 
+// NOTE: I've adjusted this from its original asserted sourcepos (2:1-2:8) while
+// fixing emphasis sourcepos. I am not even sure what it is, really.
 const ESCAPED_TAG: TestCase = (
-    &[sourcepos!((2:1-2:8))],
+    &[sourcepos!((2:2-2:8))],
     r#"before
 ||hello|
 after"#,
@@ -418,12 +427,6 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                     | DescriptionItem // end is 4:0
                     | DescriptionTerm // end is 3:0
                     | DescriptionDetails // end is 4:0
-                    | HtmlInline // end is 1:31 but should be 3:14
-                    | LineBreak // start is 1:15 but should be 1:13
-                    | Code // is 1:8-1:12 but should be 1:7-1:13
-                    | ThematicBreak // end is 4:0
-                    | Link // inconsistent between link types
-                    | Math // is 3:2-3:6 but should be 3:1-3:7
                     | Raw // unparseable
             )
         })

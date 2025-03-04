@@ -21,7 +21,7 @@ use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
 use std::panic::RefUnwindSafe;
@@ -1851,6 +1851,7 @@ where
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
         let adv = line.len() - 1 - self.offset;
+        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -2708,6 +2709,11 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+        } else if match ast.value {
+            NodeValue::ThematicBreak => true,
+            _ => false,
+        } {
+            // sourcepos.end set during opening.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
@@ -2946,50 +2952,52 @@ where
 
             while let Some(n) = nch {
                 let mut this_bracket = false;
+                let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
                 let mut sourcepos = n_ast.sourcepos;
 
-                loop {
-                    match n_ast.value {
-                        // Join adjacent text nodes together
-                        NodeValue::Text(ref mut root) => {
-                            let ns = match n.next_sibling() {
-                                Some(ns) => ns,
-                                _ => {
-                                    // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, &mut sourcepos);
-                                    break;
-                                }
-                            };
-
+                match n_ast.value {
+                    NodeValue::Text(ref mut root) => {
+                        // Join adjacent text nodes together, then post-process.
+                        // Record the original list of sourcepos and bytecounts
+                        // for the post-processing step.
+                        let mut spxv = VecDeque::new();
+                        spxv.push_back((sourcepos, root.len()));
+                        while let Some(ns) = n.next_sibling() {
                             match ns.data.borrow().value {
                                 NodeValue::Text(ref adj) => {
                                     root.push_str(adj);
-                                    sourcepos.end.column = ns.data.borrow().sourcepos.end.column;
+                                    let sp = ns.data.borrow().sourcepos;
+                                    spxv.push_back((sp, adj.len()));
+                                    sourcepos.end.column = sp.end.column;
                                     ns.detach();
                                 }
-                                _ => {
-                                    // Post-process once we are finished joining text nodes
-                                    self.postprocess_text_node(n, root, &mut sourcepos);
-                                    break;
-                                }
+                                _ => break,
                             }
                         }
-                        NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
-                            this_bracket = true;
-                            break;
-                        }
-                        _ => break,
+
+                        self.postprocess_text_node(n, root, &mut sourcepos, spxv);
+                        emptied = root.len() == 0;
                     }
+                    NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
+                        // Don't recurse into links (no links-within-links) or
+                        // images (title part).
+                        this_bracket = true;
+                    }
+                    _ => {}
                 }
 
                 n_ast.sourcepos = sourcepos;
 
-                if !this_bracket {
+                if !this_bracket && !emptied {
                     children.push(n);
                 }
 
                 nch = n.next_sibling();
+
+                if emptied {
+                    n.detach();
+                }
             }
 
             // Push children onto work stack in reverse order so they are
@@ -3003,17 +3011,21 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
+        spxv: VecDeque<(Sourcepos, usize)>,
     ) {
+        let mut spx = Spx(spxv);
         if self.options.extension.tasklist {
-            self.process_tasklist(node, text, sourcepos);
+            self.process_tasklist(node, text, sourcepos, &mut spx);
         }
 
         if self.options.extension.autolink {
-            autolink::process_autolinks(
+            autolink::process_email_autolinks(
                 self.arena,
                 node,
                 text,
                 self.options.parse.relaxed_autolinks,
+                sourcepos,
+                &mut spx,
             );
         }
     }
@@ -3023,6 +3035,7 @@ where
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
+        spx: &mut Spx,
     ) {
         let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
             Some(p) => p,
@@ -3054,13 +3067,25 @@ where
             return;
         }
 
-        text.drain(..end);
-
         // These are sound only because the exact text that we've matched and
         // the count thereof (i.e. "end") will precisely map to characters in
         // the source document.
-        sourcepos.start.column += end;
-        parent.data.borrow_mut().sourcepos.start.column += end;
+        text.drain(..end);
+
+        let adjust = spx.consume(end) + 1;
+        assert_eq!(
+            sourcepos.start.column,
+            parent.data.borrow().sourcepos.start.column
+        );
+
+        // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
+        // so we remove it.
+        if sourcepos.end.column < adjust {
+            parent.detach();
+        } else {
+            sourcepos.start.column = adjust;
+            parent.data.borrow_mut().sourcepos.start.column = adjust;
+        }
 
         grandparent.data.borrow_mut().value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
@@ -3311,4 +3336,53 @@ pub enum ListStyleType {
     Plus = 43,
     /// The `*` character
     Star = 42,
+}
+
+pub(crate) struct Spx(VecDeque<(Sourcepos, usize)>);
+
+impl Spx {
+    // Sourcepos end column `e` of a node determined by advancing through `spx`
+    // until `i` bytes of input are seen.
+    //
+    // For each element `(sp, x)` in `spx`:
+    // - if remaining `i` is greater than the byte count `x`,
+    //     set `i -= x` and continue.
+    // - if remaining `i` is equal to the byte count `x`,
+    //     set `e = sp.end.column` and finish.
+    // - if remaining `i` is less than the byte count `x`,
+    //     assert `sp.end.column - sp.start.column + 1 == x || i == 0` (1),
+    //     set `e = sp.start.column + i - 1` and finish.
+    //
+    // (1) If `x` doesn't equal the range covered between the start and end column,
+    //     there's no way to determine sourcepos within the range. This is a bug if
+    //     it happens; it suggests we've matched an email autolink with some smart
+    //     punctuation in it, or worse.
+    //
+    //     The one exception is if `i == 0`. Given nothing to consume, we can
+    //     happily restore what we popped, returning `sp.start.column - 1` for the
+    //     end column of the original node.
+    pub(crate) fn consume(&mut self, mut rem: usize) -> usize {
+        while let Some((sp, x)) = self.0.pop_front() {
+            if rem > x {
+                rem -= x;
+            } else if rem == x {
+                return sp.end.column;
+            } else {
+                // rem < x
+                assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
+                self.0.push_front((
+                    (
+                        sp.start.line,
+                        sp.start.column + rem,
+                        sp.end.line,
+                        sp.end.column,
+                    )
+                        .into(),
+                    x - rem,
+                ));
+                return sp.start.column + rem - 1;
+            }
+        }
+        unreachable!();
+    }
 }

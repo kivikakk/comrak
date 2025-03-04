@@ -289,17 +289,16 @@ macro_rules! sourcepos {
 pub(crate) use sourcepos;
 
 macro_rules! ast {
-    (($name:tt $sp:tt)) => {
-        ast!(($name $sp []))
-    };
-    (($name:tt $sp:tt $content:tt)) => {
+    (($name:tt $sp:tt $( $content:tt )*)) => {
         AstMatchTree {
             name: stringify!($name).to_string(),
             sourcepos: sourcepos!($sp),
-            content: ast!($content),
+            matches: vec![ $( ast_content!($content), )* ],
         }
     };
+}
 
+macro_rules! ast_content {
     ($text:literal) => {AstMatchContent::Text($text.to_string())};
     ([ $( $children:tt )* ]) => {
         AstMatchContent::Children(vec![ $( ast!($children), )* ])
@@ -307,6 +306,7 @@ macro_rules! ast {
 }
 
 pub(crate) use ast;
+pub(crate) use ast_content;
 
 #[track_caller]
 fn assert_ast_match_i<F>(md: &str, amt: AstMatchTree, opts: F)
@@ -365,7 +365,7 @@ pub(crate) use assert_ast_match;
 struct AstMatchTree {
     name: String,
     sourcepos: Sourcepos,
-    content: AstMatchContent,
+    matches: Vec<AstMatchContent>,
 }
 
 enum AstMatchContent {
@@ -380,29 +380,71 @@ impl AstMatchTree {
         assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");
         assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");
 
-        match &self.content {
-            AstMatchContent::Text(text) => {
-                assert_eq!(
-                    0,
-                    node.children().count(),
-                    "text node should have no children"
-                );
-                assert_eq!(
-                    text,
-                    ast.value.text().unwrap(),
-                    "text node content should match"
-                );
-            }
-            AstMatchContent::Children(children) => {
-                assert_eq!(
-                    children.len(),
-                    node.children().count(),
-                    "children count should match"
-                );
-                for (e, a) in children.iter().zip(node.children()) {
-                    e.assert_match(a);
+        let mut asserted_text = false;
+        let mut asserted_children = false;
+
+        for m in &self.matches {
+            match m {
+                AstMatchContent::Text(text) => match ast.value {
+                    NodeValue::Math(ref nm) => {
+                        assert_eq!(text, &nm.literal, "Math literal should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::CodeBlock(ref ncb) => {
+                        assert_eq!(text, &ncb.literal, "CodeBlock literal should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::Text(ref nt) => {
+                        assert_eq!(text, nt, "Text content should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::Link(ref nl) => {
+                        assert_eq!(text, &nl.url, "Link destination should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::Image(ref ni) => {
+                        assert_eq!(text, &ni.url, "Image source should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::FrontMatter(ref nfm) => {
+                        assert_eq!(text, nfm, "Front matter content should match");
+                        asserted_text = true;
+                    }
+                    _ => panic!(
+                        "no text content matcher for this node type: {:?}",
+                        ast.value
+                    ),
+                },
+                AstMatchContent::Children(children) => {
+                    assert_eq!(
+                        children.len(),
+                        node.children().count(),
+                        "children count should match"
+                    );
+                    for (e, a) in children.iter().zip(node.children()) {
+                        e.assert_match(a);
+                    }
+                    asserted_children = true;
                 }
             }
         }
+
+        assert!(
+            asserted_children || node.children().count() == 0,
+            "children were not asserted"
+        );
+        assert!(
+            asserted_text
+                || !matches!(
+                    ast.value,
+                    NodeValue::Math(_)
+                        | NodeValue::CodeBlock(_)
+                        | NodeValue::Text(_)
+                        | NodeValue::Link(_)
+                        | NodeValue::Image(_)
+                        | NodeValue::FrontMatter(_)
+                ),
+            "text wasn't asserted"
+        );
     }
 }
