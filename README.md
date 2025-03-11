@@ -311,6 +311,11 @@ depending on your use-case. Here are some other projects to consider:
 - [comrak (Python package)](https://github.com/lmmx/comrak) — Python bindings for this library built with PyO3.
   Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
 
+### Elixir bindings
+
+- [mdex](https://github.com/leandrocp/mdex) - Elixir bindings for this library built with Rustler.
+  Available on Hex as [`mdex`](https://hex.pm/packages/mdex).
+
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
 extensions](https://github.github.com/gfm) rigorously.
 
