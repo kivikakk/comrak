@@ -1,3 +1,14 @@
+# [v0.37.0] - 25-03-2025
+## What's Changed
+* add --all-features to CI matrix, add missing shortcode case. by @charlottia in https://github.com/kivikakk/comrak/pull/546
+* Inline sourcepos fixes. by @kivikakk in https://github.com/kivikakk/comrak/pull/542
+* docs: add mdex (elixir bindings) in the list of related projects by @leandrocp in https://github.com/kivikakk/comrak/pull/547
+* Add Commonmarker to related projects by @gjtorikian in https://github.com/kivikakk/comrak/pull/548
+
+## New Contributors
+* @leandrocp made their first contribution in https://github.com/kivikakk/comrak/pull/547
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.36.0...v0.37.0
 # [v0.36.0] - 28-02-2025
 
 Bug fixes:
