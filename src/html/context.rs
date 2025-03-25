@@ -7,7 +7,7 @@ use std::io::{self, Write};
 /// Context struct given to formatter functions as taken by
 /// [`html::format_document_with_formatter`].  Output can be appended to through
 /// this struct's [`Write`] interface.
-pub struct Context<'o, 'c> {
+pub struct Context<'o, 'c, T = ()> {
     output: &'o mut dyn Write,
     last_was_lf: Cell<bool>,
 
@@ -17,16 +17,19 @@ pub struct Context<'o, 'c> {
     pub plugins: &'o Plugins<'o>,
     /// [`Anchorizer`] instance used in this render.
     pub anchorizer: Anchorizer,
+    /// Any user data used by the [`Context`].
+    pub user: T,
 
     pub(super) footnote_ix: u32,
     pub(super) written_footnote_ix: u32,
 }
 
-impl<'o, 'c> Context<'o, 'c> {
+impl<'o, 'c, T> Context<'o, 'c, T> {
     pub(super) fn new(
         output: &'o mut dyn Write,
         options: &'o Options<'c>,
         plugins: &'o Plugins<'o>,
+        user: T,
     ) -> Self {
         Context {
             output,
@@ -34,16 +37,17 @@ impl<'o, 'c> Context<'o, 'c> {
             options,
             plugins,
             anchorizer: Anchorizer::new(),
+            user,
             footnote_ix: 0,
             written_footnote_ix: 0,
         }
     }
 
-    pub(super) fn finish(&mut self) -> io::Result<()> {
+    pub(super) fn finish(mut self) -> io::Result<T> {
         if self.footnote_ix > 0 {
             self.write_all(b"</ol>\n</section>\n")?;
         }
-        Ok(())
+        Ok(self.user)
     }
 
     /// If the last byte written to ts [`Write`] interface was **not** a U+000A
@@ -68,7 +72,7 @@ impl<'o, 'c> Context<'o, 'c> {
     }
 }
 
-impl<'o, 'c> Write for Context<'o, 'c> {
+impl<'o, 'c, T> Write for Context<'o, 'c, T> {
     fn flush(&mut self) -> io::Result<()> {
         self.output.flush()
     }
@@ -82,7 +86,7 @@ impl<'o, 'c> Write for Context<'o, 'c> {
     }
 }
 
-impl<'o, 'c> std::fmt::Debug for Context<'o, 'c> {
+impl<'o, 'c, T> std::fmt::Debug for Context<'o, 'c, T> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         formatter.write_str("<comrak::html::Context>")
     }
