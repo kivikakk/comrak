@@ -88,6 +88,11 @@ pub enum ChildRendering {
 /// override to change this behaviour, in some or all cases.  These values are
 /// only noted when `entering` a node.
 ///
+/// If you supply a type parameter after the name of your formatter, it will be
+/// taken as an additional argument on the generated `format_document` method,
+/// is available on the [`Context`] as the `user` property, and becomes the
+/// return value of `format_document`.
+///
 /// ```
 /// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue, html::ChildRendering};
 /// # use std::io::Write;
@@ -144,6 +149,77 @@ macro_rules! create_formatter {
 
     ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
         $crate::create_formatter!($name<()>, { $( $pat => | $( $capture ),* | $case ),*, });
+    };
+
+    // TODO: is there a nice way to deduplicate the below two clauses? When a
+    // type isn't given, we default to `()`; in turn, we specialise the macro
+    // when `()` is the type and supply the `()` value on the user's behalf.
+    // This preserves the API from before the user type was added, and is just
+    // neater/cleaner besides.
+    //
+    // If you are reading this comment, you might know of a nice way to do this!
+    // I'd rather not resort to proc macros! TIA!
+    ($name:ident<()>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
+        #[allow(missing_copy_implementations)]
+        #[allow(missing_debug_implementations)]
+        /// Created by [`comrak::create_formatter!`][crate::create_formatter].
+        pub struct $name;
+
+        impl $name {
+            /// Formats an AST as HTML, modified by the given options.
+            #[inline]
+            pub fn format_document<'a>(
+                root: &'a $crate::nodes::AstNode<'a>,
+                options: &$crate::Options,
+                output: &mut dyn ::std::io::Write,
+            ) -> ::std::io::Result<()> {
+                $crate::html::format_document_with_formatter(
+                    root,
+                    options,
+                    output,
+                    &$crate::Plugins::default(),
+                    Self::formatter,
+                    ()
+                )
+            }
+
+            /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
+            #[inline]
+            pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
+                root: &'a $crate::nodes::AstNode<'a>,
+                options: &'o $crate::Options<'c>,
+                output: &'o mut dyn ::std::io::Write,
+                plugins: &'o $crate::Plugins<'o>,
+            ) -> ::std::io::Result<()> {
+                $crate::html::format_document_with_formatter(
+                    root,
+                    options,
+                    output,
+                    plugins,
+                    Self::formatter,
+                    ()
+                )
+            }
+
+            fn formatter<'a>(
+                context: &mut $crate::html::Context<()>,
+                node: &'a $crate::nodes::AstNode<'a>,
+                entering: bool,
+            ) -> ::std::io::Result<$crate::html::ChildRendering> {
+                match node.data.borrow().value {
+                    $(
+                        $pat => {
+                            $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
+                            $case
+                            // Don't warn on unconditional return in user code.
+                            #[allow(unreachable_code)]
+                            ::std::result::Result::Ok($crate::html::ChildRendering::HTML)
+                        }
+                    ),*
+                    _ => $crate::html::format_node_default(context, node, entering),
+                }
+            }
+        }
     };
 
     ($name:ident<$type:ty>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
