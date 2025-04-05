@@ -904,42 +904,23 @@ pub struct RenderOptions {
 
     /// Include source position attributes in HTML and XML output.
     ///
-    /// Sourcepos information is reliable for all core block items, and most
-    /// extensions. The description lists extension still has issues; see
-    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
+    /// Sourcepos information is reliable for core block items excluding
+    /// lists and list items, all inlines, and most extensions.
+    /// The description lists extension still has issues; see
+    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_
+    /// lists.rs#L60-L125>.
     ///
-    /// Sourcepos information is **not** reliable for inlines, and is not
-    /// included in HTML without also setting [`experimental_inline_sourcepos`].
-    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     ///
-    /// ```rust
-    /// # use comrak::{markdown_to_commonmark_xml, Options};
-    /// let mut options = Options::default();
-    /// options.render.sourcepos = true;
-    /// let input = "## Hello world!";
-    /// let xml = markdown_to_commonmark_xml(input, &options);
-    /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
-    /// ```
-    ///
-    /// [`experimental_inline_sourcepos`]: crate::RenderOptionsBuilder::experimental_inline_sourcepos
-    #[cfg_attr(feature = "bon", builder(default))]
-    pub sourcepos: bool,
-
-    /// Include inline sourcepos in HTML output, which is known to have issues.
-    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.render.sourcepos = true;
     /// let input = "Hello *world*!";
     /// assert_eq!(markdown_to_html(input, &options),
-    ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em>world</em>!</p>\n");
-    /// options.render.experimental_inline_sourcepos = true;
-    /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em data-sourcepos=\"1:7-1:13\">world</em>!</p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
-    pub experimental_inline_sourcepos: bool,
+    pub sourcepos: bool,
 
     /// Wrap escaped characters in a `<span>` to allow any
     /// post-processing to recognize them.
