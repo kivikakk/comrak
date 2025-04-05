@@ -1,12 +1,21 @@
-# [v0.38.0] - 05-04-2025
-## What's Changed
-* html: add user data to context. by @kivikakk in https://github.com/kivikakk/comrak/pull/555
+# [v0.38.0] - 2025-04-05
+
+Bug fixes:
+
 * Only delete parent if the node has no siblings by @digitalmoksha in https://github.com/kivikakk/comrak/pull/559
+
+New features/APIs:
+
+* html: add user data to context. by @kivikakk in https://github.com/kivikakk/comrak/pull/555
+
+Coming of age???:
+
 * experimental-inline-sourcepos: not really experimental any more! by @kivikakk in https://github.com/kivikakk/comrak/pull/560
 
+Diff: https://github.com/kivikakk/comrak/compare/v0.37.0...v0.38.0
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.37.0...v0.38.0
-# [v0.37.0] - 25-03-2025
+
+# [v0.37.0] - 2025-03-25
 
 Bug fixes:
 
@@ -18,11 +27,10 @@ Documentation:
 * docs: add mdex (elixir bindings) in the list of related projects by @leandrocp in https://github.com/kivikakk/comrak/pull/547
 * Add Commonmarker to related projects by @gjtorikian in https://github.com/kivikakk/comrak/pull/548
 
-
 Diff: https://github.com/kivikakk/comrak/compare/v0.36.0...v0.37.0
 
 
-# [v0.36.0] - 28-02-2025
+# [v0.36.0] - 2025-02-28
 
 Bug fixes:
 
@@ -52,14 +60,14 @@ Documentation:
 Diff: https://github.com/kivikakk/comrak/compare/v0.35.0...v0.36.0
 
 
-# [v0.35.0] - 23-01-2025
+# [v0.35.0] - 2025-01-23
 
 * Use CSS class `markdown-alert` instead of `alert` by @digitalmoksha in https://github.com/kivikakk/comrak/pull/524
 
 Diff: https://github.com/kivikakk/comrak/compare/v0.34.0...v0.35.0
 
 
-# [v0.34.0] - 21-01-2025
+# [v0.34.0] - 2025-01-21
 
 Admonition special!
 
@@ -69,7 +77,7 @@ Admonition special!
 Diff: https://github.com/kivikakk/comrak/compare/v0.33.0...v0.34.0
 
 
-# [v0.33.0] - 04-01-2025
+# [v0.33.0] - 2025-01-04
 
 Happy new year! Thanks to @nicoburns for these changes, enabling much faster
 compiles if you don't need the builders!
@@ -81,7 +89,7 @@ compiles if you don't need the builders!
 Diff: https://github.com/kivikakk/comrak/compare/v0.32.0...v0.33.0
 
 
-# [v0.32.0] - 17-12-2024
+# [v0.32.0] - 2024-12-17
 
 * rust-toolchain: remove by @charlottia in https://github.com/kivikakk/comrak/pull/493
 * Account for front matter when calculating `sourcepos` by @SamWilsn in https://github.com/kivikakk/comrak/pull/494
@@ -101,14 +109,14 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.32.0...v0.33.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.31.0...v0.32.0
 
 
-# [v0.31.0] - 26-11-2024
+# [v0.31.0] - 2024-11-26
 
 * Enhance description lists by @digitalmoksha in https://github.com/kivikakk/comrak/pull/462
 
 Diff: https://github.com/kivikakk/comrak/compare/v0.30.0...v0.31.0
 
 
-# [v0.30.0] - 22-11-2024
+# [v0.30.0] - 2024-11-22
 
 * Add `task-list-item` class to task list items by @nicoburns in https://github.com/kivikakk/comrak/pull/468
 * Add option for specifying a minimum width of ordered lists by @edwar4rd in https://github.com/kivikakk/comrak/pull/465
@@ -129,14 +137,14 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.30.0...v0.31.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.29.0...v0.30.0
 
 
-# [v0.29.0] - 10-10-2024
+# [v0.29.0] - 2024-10-10
 
 * Add support for backslash escape in wikilinks by @digitalmoksha in https://github.com/kivikakk/comrak/pull/471
 
 Diff: https://github.com/kivikakk/comrak/compare/v0.28.0...v0.29.0
 
 
-# [v0.28.0] - 05-09-2024
+# [v0.28.0] - 2024-09-05
 
 * Add a render option to render the image as <figure> by @JmPotato in https://github.com/kivikakk/comrak/pull/458
 * Fix edge cases for relaxed-autolink option by @digitalmoksha in https://github.com/kivikakk/comrak/pull/461
@@ -144,7 +152,7 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.28.0...v0.29.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.27.0...v0.28.0
 
 
-# [v0.27.0] - 19-08-2024
+# [v0.27.0] - 2024-08-19
 
 * Track line offsets for better accuracy of inline sourcepos by @digitalmoksha in https://github.com/kivikakk/comrak/pull/453
 * Add experimental-inline-sourcepos to cli options by @digitalmoksha in https://github.com/kivikakk/comrak/pull/455
@@ -152,7 +160,7 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.27.0...v0.28.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.26.0...v0.27.0
 
 
-# [v0.26.0] - 12-07-2024
+# [v0.26.0] - 2024-07-12
 
 * Restore inline sourcepos as experimental. by @kivikakk in https://github.com/kivikakk/comrak/pull/444
   * This is needed by some downstream users, so we re-introduce it, with
@@ -161,7 +169,7 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.26.0...v0.27.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.25.0...v0.26.0
 
 
-# [v0.25.0] - 12-07-2024
+# [v0.25.0] - 2024-07-12
 
 * Discord-flavored Markdown by @Meow and @liamwhite in https://github.com/kivikakk/comrak/pull/421
   * Three new extensions and two render options are added:
@@ -214,14 +222,14 @@ Diff: https://github.com/kivikakk/comrak/compare/v0.25.0...v0.26.0
 Diff: https://github.com/kivikakk/comrak/compare/v0.24.1...v0.25.0
 
 
-# [v0.24.1] - 19-05-2024
+# [v0.24.1] - 2024-05-19
 
 * Add GH_TOKEN to release workflow by @digitalmoksha in https://github.com/kivikakk/comrak/pull/418
 
 Diff: https://github.com/kivikakk/comrak/compare/v0.24.0...v0.24.1
 
 
-# [v0.24.0] - 19-05-2024
+# [v0.24.0] - 2024-05-19
 
 * Miscellany. by @kivikakk in https://github.com/kivikakk/comrak/pull/387
 * Add automation to release new crates by @gjtorikian in https://github.com/kivikakk/comrak/pull/374
