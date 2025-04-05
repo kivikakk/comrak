@@ -655,9 +655,9 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             {
                 self.cr();
             } else if self.options.render.hardbreaks {
-                self.output(&[b'\n'], allow_wrap, Escaping::Literal);
+                self.output(b"\n", allow_wrap, Escaping::Literal);
             } else {
-                self.output(&[b' '], allow_wrap, Escaping::Literal);
+                self.output(b" ", allow_wrap, Escaping::Literal);
             }
         }
     }
@@ -798,7 +798,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             write!(self, "](").unwrap();
             self.output(nl.url.as_bytes(), false, Escaping::Url);
             if !nl.title.is_empty() {
-                self.output(&[b' ', b'"'], allow_wrap, Escaping::Literal);
+                self.output(b" \"", allow_wrap, Escaping::Literal);
                 self.output(nl.title.as_bytes(), false, Escaping::Title);
                 write!(self, "\"").unwrap();
             }

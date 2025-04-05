@@ -132,7 +132,7 @@ fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) 
 }
 
 fn remove_sourcepos(i: &str) -> String {
-    const S: &'static str = " data-sourcepos=\"";
+    const S: &str = " data-sourcepos=\"";
 
     let mut r = i.to_string();
     while let Some(start_ix) = r.find(S) {

@@ -20,7 +20,7 @@ use crate::nodes::{
 use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
@@ -2690,10 +2690,7 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if match ast.value {
-            NodeValue::ThematicBreak => true,
-            _ => false,
-        } {
+        } else if matches!(ast.value, NodeValue::ThematicBreak) {
             // sourcepos.end set during opening.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
@@ -2958,7 +2955,7 @@ where
                         }
 
                         self.postprocess_text_node(n, root, &mut sourcepos, spxv);
-                        emptied = root.len() == 0;
+                        emptied = root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Don't recurse into links (no links-within-links) or
@@ -3344,24 +3341,23 @@ impl Spx {
     //     end column of the original node.
     pub(crate) fn consume(&mut self, mut rem: usize) -> usize {
         while let Some((sp, x)) = self.0.pop_front() {
-            if rem > x {
-                rem -= x;
-            } else if rem == x {
-                return sp.end.column;
-            } else {
-                // rem < x
-                assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
-                self.0.push_front((
-                    (
-                        sp.start.line,
-                        sp.start.column + rem,
-                        sp.end.line,
-                        sp.end.column,
-                    )
-                        .into(),
-                    x - rem,
-                ));
-                return sp.start.column + rem - 1;
+            match rem.cmp(&x) {
+                Ordering::Greater => rem -= x,
+                Ordering::Equal => return sp.end.column,
+                Ordering::Less => {
+                    assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
+                    self.0.push_front((
+                        (
+                            sp.start.line,
+                            sp.start.column + rem,
+                            sp.end.line,
+                            sp.end.column,
+                        )
+                            .into(),
+                        x - rem,
+                    ));
+                    return sp.start.column + rem - 1;
+                }
             }
         }
         unreachable!();
