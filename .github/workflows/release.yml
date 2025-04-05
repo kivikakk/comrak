@@ -59,9 +59,9 @@ jobs:
 
             - name: Update changelog.txt
               run: |
-                  echo "# [v${{ steps.version-label.outputs.version }}] - `date +%d-%m-%Y`" >> changelog.txt.tmp
+                  echo "# [v${{ steps.version-label.outputs.version }}] - `date +%Y-%m-%d`" >> changelog.txt.tmp
                   echo "${{steps.generate-release-notes.outputs.changelog}}" >> changelog.txt.tmp
-                  echo '-n' >> changelog.txt
+                  echo '' >> changelog.txt
                   cat changelog.txt >> changelog.txt.tmp
                   mv changelog.txt.tmp changelog.txt
 
@@ -76,8 +76,8 @@ jobs:
               id: cpr
               uses: peter-evans/create-pull-request@v7
               with:
-                  commit-message: "[skip test] update changelog"
-                  title: "[skip test] Release v${{ steps.version-label.outputs.version }}"
+                  commit-message: "changelog.txt: generate."
+                  title: "Release v${{ steps.version-label.outputs.version }}."
                   body: >
                       This is an automated PR to build the latest changelog. Upon merging,
                       a new release will be created and published to crates.io.<br/>
