@@ -1,3 +1,11 @@
+# [v0.38.0] - 05-04-2025
+## What's Changed
+* html: add user data to context. by @kivikakk in https://github.com/kivikakk/comrak/pull/555
+* Only delete parent if the node has no siblings by @digitalmoksha in https://github.com/kivikakk/comrak/pull/559
+* experimental-inline-sourcepos: not really experimental any more! by @kivikakk in https://github.com/kivikakk/comrak/pull/560
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.37.0...v0.38.0
 # [v0.37.0] - 25-03-2025
 
 Bug fixes:

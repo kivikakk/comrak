@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.37"
+comrak = "0.38"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
@@ -152,9 +152,6 @@ Options:
 
       --sourcepos
           Include source position attribute in HTML and XML output
-
-      --experimental-inline-sourcepos
-          Include inline sourcepos in HTML output, which is known to have issues
 
       --ignore-setext
           Ignore setext headers
