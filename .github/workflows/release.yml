@@ -76,8 +76,8 @@ jobs:
               id: cpr
               uses: peter-evans/create-pull-request@v7
               with:
-                  commit-message: "[skip test] update changelog"
-                  title: "[skip test] Release v${{ steps.version-label.outputs.version }}"
+                  commit-message: "changelog.txt: generate."
+                  title: "Release v${{ steps.version-label.outputs.version }}."
                   body: >
                       This is an automated PR to build the latest changelog. Upon merging,
                       a new release will be created and published to crates.io.<br/>
