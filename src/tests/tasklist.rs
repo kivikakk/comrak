@@ -11,7 +11,7 @@ fn tasklist() {
         concat!(
             "* [ ] Red\n",
             "* [x] Green\n",
-            "* [ ] Blue\n",
+            "* [ ] `Blue`\n",
             "* [!] Papayawhip\n",
             "<!-- end list -->\n",
             "1. [ ] Bird\n",
@@ -26,7 +26,7 @@ fn tasklist() {
             "<ul>\n",
             "<li><input type=\"checkbox\" disabled=\"\" /> Red</li>\n",
             "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Green</li>\n",
-            "<li><input type=\"checkbox\" disabled=\"\" /> Blue</li>\n",
+            "<li><input type=\"checkbox\" disabled=\"\" /> <code>Blue</code></li>\n",
             "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Papayawhip</li>\n",
             "</ul>\n",
             "<!-- end list -->\n",
