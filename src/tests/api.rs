@@ -103,7 +103,6 @@ fn exercise_full_api() {
         .escape(false)
         .list_style(ListStyleType::Dash)
         .sourcepos(false)
-        .experimental_inline_sourcepos(false)
         .escaped_char_spans(false)
         .ignore_setext(true)
         .ignore_empty_links(true)

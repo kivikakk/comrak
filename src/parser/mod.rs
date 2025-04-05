@@ -20,7 +20,7 @@ use crate::nodes::{
 use crate::scanners::{self, SetextChar};
 use crate::strings::{self, split_off_front_matter, Case};
 use std::cell::RefCell;
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
@@ -904,42 +904,23 @@ pub struct RenderOptions {
 
     /// Include source position attributes in HTML and XML output.
     ///
-    /// Sourcepos information is reliable for all core block items, and most
-    /// extensions. The description lists extension still has issues; see
-    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
+    /// Sourcepos information is reliable for core block items excluding
+    /// lists and list items, all inlines, and most extensions.
+    /// The description lists extension still has issues; see
+    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_
+    /// lists.rs#L60-L125>.
     ///
-    /// Sourcepos information is **not** reliable for inlines, and is not
-    /// included in HTML without also setting [`experimental_inline_sourcepos`].
-    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     ///
-    /// ```rust
-    /// # use comrak::{markdown_to_commonmark_xml, Options};
-    /// let mut options = Options::default();
-    /// options.render.sourcepos = true;
-    /// let input = "## Hello world!";
-    /// let xml = markdown_to_commonmark_xml(input, &options);
-    /// assert!(xml.contains("<text sourcepos=\"1:4-1:15\" xml:space=\"preserve\">"));
-    /// ```
-    ///
-    /// [`experimental_inline_sourcepos`]: crate::RenderOptionsBuilder::experimental_inline_sourcepos
-    #[cfg_attr(feature = "bon", builder(default))]
-    pub sourcepos: bool,
-
-    /// Include inline sourcepos in HTML output, which is known to have issues.
-    /// See <https://github.com/kivikakk/comrak/pull/439> for a discussion.
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.render.sourcepos = true;
     /// let input = "Hello *world*!";
     /// assert_eq!(markdown_to_html(input, &options),
-    ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em>world</em>!</p>\n");
-    /// options.render.experimental_inline_sourcepos = true;
-    /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p data-sourcepos=\"1:1-1:14\">Hello <em data-sourcepos=\"1:7-1:13\">world</em>!</p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
-    pub experimental_inline_sourcepos: bool,
+    pub sourcepos: bool,
 
     /// Wrap escaped characters in a `<span>` to allow any
     /// post-processing to recognize them.
@@ -2709,10 +2690,7 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if match ast.value {
-            NodeValue::ThematicBreak => true,
-            _ => false,
-        } {
+        } else if matches!(ast.value, NodeValue::ThematicBreak) {
             // sourcepos.end set during opening.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
@@ -2977,7 +2955,7 @@ where
                         }
 
                         self.postprocess_text_node(n, root, &mut sourcepos, spxv);
-                        emptied = root.len() == 0;
+                        emptied = root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Don't recurse into links (no links-within-links) or
@@ -3363,24 +3341,23 @@ impl Spx {
     //     end column of the original node.
     pub(crate) fn consume(&mut self, mut rem: usize) -> usize {
         while let Some((sp, x)) = self.0.pop_front() {
-            if rem > x {
-                rem -= x;
-            } else if rem == x {
-                return sp.end.column;
-            } else {
-                // rem < x
-                assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
-                self.0.push_front((
-                    (
-                        sp.start.line,
-                        sp.start.column + rem,
-                        sp.end.line,
-                        sp.end.column,
-                    )
-                        .into(),
-                    x - rem,
-                ));
-                return sp.start.column + rem - 1;
+            match rem.cmp(&x) {
+                Ordering::Greater => rem -= x,
+                Ordering::Equal => return sp.end.column,
+                Ordering::Less => {
+                    assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
+                    self.0.push_front((
+                        (
+                            sp.start.line,
+                            sp.start.column + rem,
+                            sp.end.line,
+                            sp.end.column,
+                        )
+                            .into(),
+                        x - rem,
+                    ));
+                    return sp.start.column + rem - 1;
+                }
             }
         }
         unreachable!();

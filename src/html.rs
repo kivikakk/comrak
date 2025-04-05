@@ -498,12 +498,9 @@ fn render_code<'a, T>(
         panic!()
     };
 
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<code")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
         context.escape(literal.as_bytes())?;
         context.write_all(b"</code>")?;
@@ -609,12 +606,9 @@ fn render_emph<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<em")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
     } else {
         context.write_all(b"</em>")?;
@@ -746,15 +740,12 @@ fn render_image<'a, T>(
         panic!()
     };
 
-    // Unreliable sourcepos.
     if entering {
         if context.options.render.figure_with_caption {
             context.write_all(b"<figure>")?;
         }
         context.write_all(b"<img")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b" src=\"")?;
         let url = nl.url.as_bytes();
         if context.options.render.unsafe_ || !dangerous_url(url) {
@@ -807,12 +798,9 @@ fn render_line_break<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<br")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b" />\n")?;
     }
 
@@ -828,7 +816,6 @@ fn render_link<'a, T>(
         panic!()
     };
 
-    // Unreliable sourcepos.
     let parent_node = node.parent();
 
     if !context.options.parse.relaxed_autolinks
@@ -840,9 +827,7 @@ fn render_link<'a, T>(
     {
         if entering {
             context.write_all(b"<a")?;
-            if context.options.render.experimental_inline_sourcepos {
-                render_sourcepos(context, node)?;
-            }
+            render_sourcepos(context, node)?;
             context.write_all(b" href=\"")?;
             let url = nl.url.as_bytes();
             if context.options.render.unsafe_ || !dangerous_url(url) {
@@ -954,13 +939,10 @@ fn render_soft_break<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         if context.options.render.hardbreaks {
             context.write_all(b"<br")?;
-            if context.options.render.experimental_inline_sourcepos {
-                render_sourcepos(context, node)?;
-            }
+            render_sourcepos(context, node)?;
             context.write_all(b" />\n")?;
         } else {
             context.write_all(b"\n")?;
@@ -975,7 +957,6 @@ fn render_strong<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
         || (parent_node.is_none()
@@ -983,9 +964,7 @@ fn render_strong<'a, T>(
     {
         if entering {
             context.write_all(b"<strong")?;
-            if context.options.render.experimental_inline_sourcepos {
-                render_sourcepos(context, node)?;
-            }
+            render_sourcepos(context, node)?;
             context.write_all(b">")?;
         } else {
             context.write_all(b"</strong>")?;
@@ -1069,7 +1048,6 @@ fn render_footnote_reference<'a, T>(
         panic!()
     };
 
-    // Unreliable sourcepos.
     if entering {
         let mut ref_id = format!("fnref-{}", nfr.name);
         if nfr.ref_num > 1 {
@@ -1077,9 +1055,7 @@ fn render_footnote_reference<'a, T>(
         }
 
         context.write_all(b"<sup")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
         context.escape_href(nfr.name.as_bytes())?;
         context.write_all(b"\" id=\"")?;
@@ -1095,12 +1071,9 @@ fn render_strikethrough<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<del")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
     } else {
         context.write_all(b"</del>")?;
@@ -1353,13 +1326,10 @@ fn render_escaped<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if context.options.render.escaped_char_spans {
         if entering {
             context.write_all(b"<span data-escaped-char")?;
-            if context.options.render.experimental_inline_sourcepos {
-                render_sourcepos(context, node)?;
-            }
+            render_sourcepos(context, node)?;
             context.write_all(b">")?;
         } else {
             context.write_all(b"</span>")?;
@@ -1416,9 +1386,7 @@ pub fn render_math<'a, T>(
 
         tag_attributes.push((String::from("data-math-style"), String::from(style_attr)));
 
-        // Unreliable sourcepos.
-        if context.options.render.experimental_inline_sourcepos && context.options.render.sourcepos
-        {
+        if context.options.render.sourcepos {
             let ast = node.data.borrow();
             tag_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
         }
@@ -1526,12 +1494,9 @@ fn render_spoiler_text<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<span")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b" class=\"spoiler\">")?;
     } else {
         context.write_all(b"</span>")?;
@@ -1545,12 +1510,9 @@ fn render_subscript<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sub")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
     } else {
         context.write_all(b"</sub>")?;
@@ -1564,12 +1526,9 @@ fn render_superscript<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<sup")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
     } else {
         context.write_all(b"</sup>")?;
@@ -1583,12 +1542,9 @@ fn render_underline<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<u")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b">")?;
     } else {
         context.write_all(b"</u>")?;
@@ -1606,12 +1562,9 @@ fn render_wiki_link<'a, T>(
         panic!()
     };
 
-    // Unreliable sourcepos.
     if entering {
         context.write_all(b"<a")?;
-        if context.options.render.experimental_inline_sourcepos {
-            render_sourcepos(context, node)?;
-        }
+        render_sourcepos(context, node)?;
         context.write_all(b" href=\"")?;
         let url = nl.url.as_bytes();
         if context.options.render.unsafe_ || !dangerous_url(url) {

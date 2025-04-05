@@ -344,12 +344,12 @@ pub mod tests {
 
     #[test]
     fn normalize_code_handles_lone_newline() {
-        assert_eq!(normalize_code(&[b'\n']), vec![b' ']);
+        assert_eq!(normalize_code(b"\n"), vec![b' ']);
     }
 
     #[test]
     fn normalize_code_handles_lone_space() {
-        assert_eq!(normalize_code(&[b' ']), vec![b' ']);
+        assert_eq!(normalize_code(b" "), vec![b' ']);
     }
 
     #[test]

@@ -183,7 +183,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         if options.extension.spoiler {
             s.special_chars[b'|' as usize] = true;
         }
-        for &c in &[b'"', b'\'', b'.', b'-'] {
+        for &c in b"\"'.-" {
             s.smart_chars[c as usize] = true;
         }
         s
@@ -1622,7 +1622,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                             .text()
                             .unwrap()
                             .as_bytes()
-                            .starts_with(&[b'^'])
+                            .starts_with(b"^")
                     } else {
                         false
                     }
