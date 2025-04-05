@@ -3080,7 +3080,7 @@ where
 
         // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
         // so we remove it.
-        if sourcepos.end.column < adjust {
+        if sourcepos.end.column < adjust && node.next_sibling().is_none() {
             parent.detach();
         } else {
             sourcepos.start.column = adjust;
