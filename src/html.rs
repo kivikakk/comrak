@@ -1699,7 +1699,8 @@ fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
     Ok(())
 }
 
-fn dangerous_url(input: &[u8]) -> bool {
+/// Check if the input would be considered a dangerous url
+pub fn dangerous_url(input: &[u8]) -> bool {
     scanners::dangerous_url(input).is_some()
 }
 
