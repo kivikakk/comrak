@@ -1,3 +1,12 @@
+# [v0.39.0] - 2025-05-02
+
+New APIs:
+
+* Make dangerous_url public by @digitalmoksha in https://github.com/kivikakk/comrak/pull/564
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.38.0...v0.39.0
+
+
 # [v0.38.0] - 2025-04-05
 
 Bug fixes:
@@ -667,3 +676,4 @@ each case.
 # [0.1.8]
 
 * Fix possible DoS in link parsing (#33, Demi Obenour).
+
