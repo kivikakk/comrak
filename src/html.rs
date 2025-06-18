@@ -642,7 +642,7 @@ fn render_heading<'a, T>(
                     id = context.anchorizer.anchorize(id);
                     write!(
                         context,
-                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                        "<a inert href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
                         id, prefix, id
                     )?;
                 }
