@@ -4,11 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     crane.url = "github:ipetkov/crane";
-    flake-utils.url = "github:numtide/flake-utils";
-    advisory-db = {
-      url = "github:rustsec/advisory-db";
-      flake = false;
+    fenix = {
+      url = "github:nix-community/fenix/monthly";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
@@ -16,9 +16,8 @@
       self,
       nixpkgs,
       crane,
+      fenix,
       flake-utils,
-      advisory-db,
-      ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -83,12 +82,16 @@
 
         formatter = pkgs.nixfmt-rfc-style;
 
-        devShells.default = craneLib.devShell {
+        devShells.default = pkgs.mkShell {
           name = "comrak";
 
-          inputsFrom = builtins.attrValues self.checks.${system};
-
           packages = [
+            (fenix.packages.${system}.complete.withComponents [
+              "cargo"
+              "rustc"
+              "rust-analyzer"
+              "clippy"
+            ])
             pkgs.rust-analyzer
             pkgs.clippy
             pkgs.cargo-fuzz
