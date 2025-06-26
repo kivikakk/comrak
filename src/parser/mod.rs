@@ -2922,14 +2922,18 @@ where
     }
 
     fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
-        let mut stack = vec![node];
+        self.postprocess_text_nodes_with_context(node, false);
+    }
+
+    fn postprocess_text_nodes_with_context(&mut self, node: &'a AstNode<'a>, in_bracket_context: bool) {
+        let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
-        while let Some(node) = stack.pop() {
+        while let Some((node, in_bracket_context)) = stack.pop() {
             let mut nch = node.first_child();
 
             while let Some(n) = nch {
-                let mut this_bracket = false;
+                let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
                 let mut sourcepos = n_ast.sourcepos;
@@ -2954,21 +2958,21 @@ where
                             }
                         }
 
-                        self.postprocess_text_node(n, root, &mut sourcepos, spxv);
+                        self.postprocess_text_node_with_context(n, root, &mut sourcepos, spxv, in_bracket_context);
                         emptied = root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
-                        // Don't recurse into links (no links-within-links) or
-                        // images (title part).
-                        this_bracket = true;
+                        // Recurse into links, images, and wikilinks to join adjacent text nodes,
+                        // but mark the context so autolinks won't be generated within them.
+                        child_in_bracket_context = true;
                     }
                     _ => {}
                 }
 
                 n_ast.sourcepos = sourcepos;
 
-                if !this_bracket && !emptied {
-                    children.push(n);
+                if !emptied {
+                    children.push((n, child_in_bracket_context));
                 }
 
                 nch = n.next_sibling();
@@ -2984,19 +2988,20 @@ where
         }
     }
 
-    fn postprocess_text_node(
+    fn postprocess_text_node_with_context(
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spxv: VecDeque<(Sourcepos, usize)>,
+        in_bracket_context: bool,
     ) {
         let mut spx = Spx(spxv);
         if self.options.extension.tasklist {
             self.process_tasklist(node, text, sourcepos, &mut spx);
         }
 
-        if self.options.extension.autolink {
+        if self.options.extension.autolink && !in_bracket_context {
             autolink::process_email_autolinks(
                 self.arena,
                 node,

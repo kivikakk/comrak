@@ -446,3 +446,67 @@ fn autolink_consecutive_email_smart() {
         ])
     );
 }
+
+#[test]
+fn autolink_not_generated_inside_links() {
+    html_opts!(
+        [extension.autolink],
+        "[Contact user@example.com for help](http://support.example.com)",
+        "<p><a href=\"http://support.example.com\">Contact user@example.com for help</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "[Visit https://www.example.com](http://example.com)",
+        "<p><a href=\"http://example.com\">Visit https://www.example.com</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "[Check out www.example.com](http://example.com)",
+        "<p><a href=\"http://example.com\">Check out www.example.com</a></p>\n",
+    );
+}
+
+#[test]
+fn autolink_not_generated_inside_images() {
+    // Test that emails inside image alt text don't become autolinks
+    html_opts!(
+        [extension.autolink],
+        "![Contact user@example.com](image.png)",
+        "<p><img src=\"image.png\" alt=\"Contact user@example.com\" /></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "![Visit https://www.example.com](image.png)",
+        "<p><img src=\"image.png\" alt=\"Visit https://www.example.com\" /></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "![Check www.example.com](image.png)",
+        "<p><img src=\"image.png\" alt=\"Check www.example.com\" /></p>\n",
+    );
+}
+
+#[test]
+fn autolink_not_generated_inside_wikilinks() {
+    html_opts!(
+        [extension.autolink, extension.wikilinks_title_after_pipe],
+        "[[http://example.com|Contact user@example.com]]",
+        "<p><a href=\"http://example.com\" data-wikilink=\"true\">Contact user@example.com</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, extension.wikilinks_title_after_pipe],
+        "[[http://example.com|Visit https://www.example.com]]",
+        "<p><a href=\"http://example.com\" data-wikilink=\"true\">Visit https://www.example.com</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, extension.wikilinks_title_before_pipe],
+        "[[Check www.example.com|http://example.com]]",
+        "<p><a href=\"http://example.com\" data-wikilink=\"true\">Check www.example.com</a></p>\n",
+    );
+}

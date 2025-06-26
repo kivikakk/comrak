@@ -246,9 +246,7 @@ fn sourcepos() {
             (paragraph (1:1-1:44) [
                 (text (1:1-1:5) "This ")
                 (wikilink (1:6-1:39) [
-                    (text (1:8-1:11) "link")
-                    (text (1:12-1:13) "[")
-                    (text (1:14-1:18) "label")
+                    (text (1:8-1:18) "link[label")
                 ])
                 (text (1:40-1:44) " that")
             ])
