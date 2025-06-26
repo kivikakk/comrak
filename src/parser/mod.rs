@@ -2925,7 +2925,11 @@ where
         self.postprocess_text_nodes_with_context(node, false);
     }
 
-    fn postprocess_text_nodes_with_context(&mut self, node: &'a AstNode<'a>, in_bracket_context: bool) {
+    fn postprocess_text_nodes_with_context(
+        &mut self,
+        node: &'a AstNode<'a>,
+        in_bracket_context: bool,
+    ) {
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
@@ -2958,7 +2962,13 @@ where
                             }
                         }
 
-                        self.postprocess_text_node_with_context(n, root, &mut sourcepos, spxv, in_bracket_context);
+                        self.postprocess_text_node_with_context(
+                            n,
+                            root,
+                            &mut sourcepos,
+                            spxv,
+                            in_bracket_context,
+                        );
                         emptied = root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
