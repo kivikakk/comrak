@@ -8,3 +8,4 @@ benches/cmark-gfm
 benches/comrak-*
 benches/pulldown-cmark
 benches/markdown-it
+/result
