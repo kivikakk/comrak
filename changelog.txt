@@ -1,13 +1,18 @@
 # [v0.39.1] - 2025-06-27
-## What's Changed
-* Fixes header-ids accessibility by @davemackintosh in https://github.com/kivikakk/comrak/pull/574
+
+Bug fixes:
+
+* Fix header-ids accessibility by @davemackintosh in https://github.com/kivikakk/comrak/pull/574
 * Recursively join text nodes inside links, images, and wikilinks by @JamieMagee in https://github.com/kivikakk/comrak/pull/575
 
 ## New Contributors
+
 * @davemackintosh made their first contribution in https://github.com/kivikakk/comrak/pull/574
 * @JamieMagee made their first contribution in https://github.com/kivikakk/comrak/pull/575
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.39.0...v0.39.1
+Diff: https://github.com/kivikakk/comrak/compare/v0.39.0...v0.39.1
+
+
 # [v0.39.0] - 2025-05-02
 
 New APIs:
