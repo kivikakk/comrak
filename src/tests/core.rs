@@ -759,7 +759,7 @@ fn ipv6_host_unescaped() {
     );
 
     html(
-        "[henwo](https://[2402:1f00:89aa:300::5%25eth0]?target=<yes>)",
-        "<p><a href=\"https://[2402:1f00:89aa:300::5%25eth0]?target=%3Cyes%3E\">henwo</a></p>\n",
+        "[henwo](https://[2402:1f00:89aa:300::5%25eth0]:9443?target=<yes>)",
+        "<p><a href=\"https://[2402:1f00:89aa:300::5%25eth0]:9443?target=%3Cyes%3E\">henwo</a></p>\n",
     );
 }
