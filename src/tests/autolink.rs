@@ -510,3 +510,12 @@ fn autolink_not_generated_inside_wikilinks() {
         "<p><a href=\"http://example.com\" data-wikilink=\"true\">Check www.example.com</a></p>\n",
     );
 }
+
+#[test]
+fn ipv6_host_scoped() {
+    html_opts!(
+        [extension.autolink],
+        "scoped https://[fe80::1ff:fe23:4567:890a%25eth2]",
+        "<p>scoped <a href=\"https://[fe80::1ff:fe23:4567:890a%25eth2]\">https://[fe80::1ff:fe23:4567:890a%25eth2]</a></p>\n",
+    );
+}

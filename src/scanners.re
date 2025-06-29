@@ -328,6 +328,16 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
 */
 }
 
+pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    'http' [s]? '://[' [0-9a-fA-F:]+ ('%25' [a-zA-Z0-9]+)? ']' { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 /*!re2c
 
     table_spoiler = ['|']['|'];
@@ -456,5 +466,3 @@ pub fn description_item_start(s: &[u8]) -> Option<usize> {
     * { return None; }
 */
 }
-
-// vim: set ft=rust:
