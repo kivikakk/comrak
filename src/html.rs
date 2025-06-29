@@ -1762,6 +1762,10 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 /// We assume they actually want the query string "?q=a%20b", a search for
 /// the string "a b", rather than "?q=a%2520b", a search for the literal
 /// string "a%20b".
+///
+/// We take some care with the square bracket characters `[` and `]`. We permit
+/// them to be unescaped in the output iff they surround what reasonably appears
+/// to be an IPv6 address in the host part of a URI.
 pub fn escape_href(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
     const HREF_SAFE: [bool; 256] = character_set!(
         b"-_.+!*(),%#@?=;:/,+$~",
@@ -1771,6 +1775,11 @@ pub fn escape_href(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 
     let size = buffer.len();
     let mut i = 0;
+
+    if let Some(ipv6_url_end) = scanners::ipv6_url_start(buffer) {
+        output.write_all(&buffer[0..ipv6_url_end])?;
+        i = ipv6_url_end;
+    }
 
     while i < size {
         let org = i;

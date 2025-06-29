@@ -750,3 +750,16 @@ fn emphasis_sourcepos_double_4() {
         ])
     );
 }
+
+#[test]
+fn ipv6_host_unescaped() {
+    html(
+        "test <http://[319:3cf0:dd1d:47b9:20c:29ff:fe2c:39be]/test>",
+        "<p>test <a href=\"http://[319:3cf0:dd1d:47b9:20c:29ff:fe2c:39be]/test\">http://[319:3cf0:dd1d:47b9:20c:29ff:fe2c:39be]/test</a></p>\n",
+    );
+
+    html(
+        "[henwo](https://[2402:1f00:89aa:300::5%25eth0]?target=<yes>)",
+        "<p><a href=\"https://[2402:1f00:89aa:300::5%25eth0]?target=%3Cyes%3E\">henwo</a></p>\n",
+    );
+}
