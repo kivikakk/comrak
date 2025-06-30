@@ -22486,6 +22486,306 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
     }
 }
 
+pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+
+    {
+        #[allow(unused_assignments)]
+        let mut yych: u8 = 0;
+        let mut yystate: usize = 0;
+        'yyl: loop {
+            match yystate {
+                0 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    cursor += 1;
+                    match yych {
+                        0x61..=0x7A => {
+                            yystate = 3;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                1 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                2 => {
+                    return None;
+                }
+                3 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x2F => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                5 => {
+                    cursor = marker;
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                6 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x2F => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                8 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x5B => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                9 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x25 | 0x5D => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                10 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    yystate = 11;
+                    continue 'yyl;
+                }
+                11 => match yych {
+                    0x25 => {
+                        cursor += 1;
+                        yystate = 12;
+                        continue 'yyl;
+                    }
+                    0x30..=0x3A | 0x41..=0x46 | 0x61..=0x66 => {
+                        cursor += 1;
+                        yystate = 10;
+                        continue 'yyl;
+                    }
+                    0x5D => {
+                        cursor += 1;
+                        yystate = 13;
+                        continue 'yyl;
+                    }
+                    _ => {
+                        yystate = 5;
+                        continue 'yyl;
+                    }
+                },
+                12 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x32 => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                13 => {
+                    return Some(cursor);
+                }
+                14 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x35 => {
+                            cursor += 1;
+                            yystate = 15;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                15 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    match yych {
+                        0x5D => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                16 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.get_unchecked(cursor)
+                        } else {
+                            0
+                        }
+                    };
+                    yystate = 17;
+                    continue 'yyl;
+                }
+                17 => match yych {
+                    0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                        cursor += 1;
+                        yystate = 16;
+                        continue 'yyl;
+                    }
+                    0x5D => {
+                        cursor += 1;
+                        yystate = 13;
+                        continue 'yyl;
+                    }
+                    _ => {
+                        yystate = 5;
+                        continue 'yyl;
+                    }
+                },
+                _ => panic!("internal lexer error"),
+            }
+        }
+    }
+}
+
 pub fn table_start(s: &[u8]) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;

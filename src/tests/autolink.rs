@@ -519,3 +519,18 @@ fn ipv6_host_scoped() {
         "<p>scoped <a href=\"https://[fe80::1ff:fe23:4567:890a%25eth2]\">https://[fe80::1ff:fe23:4567:890a%25eth2]</a></p>\n",
     );
 }
+
+#[test]
+fn ipv6_relaxed() {
+    html_opts!(
+        [extension.autolink],
+        "hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x",
+        "<p>hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x",
+        "<p>hi: <a href=\"nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x\">nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</a></p>\n",
+    );
+}

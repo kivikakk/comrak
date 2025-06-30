@@ -338,6 +338,16 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
 */
 }
 
+pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    [a-z]+ '://[' [0-9a-fA-F:]+ ('%25' [a-zA-Z0-9]+)? ']' { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 /*!re2c
 
     table_spoiler = ['|']['|'];
