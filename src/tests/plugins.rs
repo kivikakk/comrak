@@ -124,3 +124,27 @@ fn syntect_plugin_with_css_classes() {
 
     html_plugins(input, expected, &plugins);
 }
+
+#[test]
+#[cfg(feature = "syntect")]
+fn syntect_plugin_with_prefixed_css_classes() {
+    let prefix = Box::leak(Box::new("prefix-"));
+    let adapter = crate::plugins::syntect::SyntectAdapterBuilder::new()
+        .css_with_class_prefix(prefix)
+        .build();
+
+    let input = concat!("```rust\n", "fn main<'a>();\n", "```\n");
+
+    let expected = concat!(
+        "<pre class=\"syntax-highlighting\"><code class=\"language-rust\">",
+        "<span class=\"prefix-source prefix-rust\"><span class=\"prefix-meta prefix-function prefix-rust\"><span class=\"prefix-meta prefix-function prefix-rust\"><span class=\"prefix-storage prefix-type prefix-function prefix-rust\">fn</span> </span><span class=\"prefix-entity prefix-name prefix-function prefix-rust\">main</span></span><span class=\"prefix-meta prefix-generic prefix-rust\"><span class=\"prefix-punctuation prefix-definition prefix-generic prefix-begin prefix-rust\">&lt;</span>",
+        "<span class=\"prefix-storage prefix-modifier prefix-lifetime prefix-rust\">&#39;a</span><span class=\"prefix-punctuation prefix-definition prefix-generic prefix-end prefix-rust\">&gt;</span></span><span class=\"prefix-meta prefix-function prefix-rust\"><span class=\"prefix-meta prefix-function prefix-parameters prefix-rust\"><span class=\"prefix-punctuation prefix-section prefix-parameters prefix-begin prefix-rust\">(</span></span><span class=\"prefix-meta prefix-function prefix-rust\">",
+        "<span class=\"prefix-meta prefix-function prefix-parameters prefix-rust\"><span class=\"prefix-punctuation prefix-section prefix-parameters prefix-end prefix-rust\">)</span></span></span></span><span class=\"prefix-punctuation prefix-terminator prefix-rust\">;</span>\n</span>",
+        "</code></pre>\n",
+    );
+
+    let mut plugins = Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    html_plugins(input, expected, &plugins);
+}

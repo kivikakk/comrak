@@ -19,6 +19,7 @@ pub struct SyntectAdapter {
     theme: Option<String>,
     syntax_set: SyntaxSet,
     theme_set: ThemeSet,
+    css_class_prefix: Option<&'static str>, // syntect::html::ClassStyle::SpacePrefixed requires prefix to be &'static str
 }
 
 impl SyntectAdapter {
@@ -29,6 +30,7 @@ impl SyntectAdapter {
             theme: theme.map(String::from),
             syntax_set: SyntaxSet::load_defaults_newlines(),
             theme_set: ThemeSet::load_defaults(),
+            css_class_prefix: None,
         }
     }
 
@@ -54,10 +56,14 @@ impl SyntectAdapter {
             }
             None => {
                 // fall back to HTML classes.
+                let class_style = match &self.css_class_prefix {
+                    None => ClassStyle::Spaced,
+                    Some(prefix) => ClassStyle::SpacedPrefixed { prefix },
+                };
                 let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
                     syntax,
                     &self.syntax_set,
-                    ClassStyle::Spaced,
+                    class_style,
                 );
                 for line in LinesWithEndings::from(code) {
                     html_generator.parse_html_for_line_which_includes_newline(line)?;
@@ -188,6 +194,7 @@ pub struct SyntectAdapterBuilder {
     theme: Option<String>,
     syntax_set: Option<SyntaxSet>,
     theme_set: Option<ThemeSet>,
+    css_class_prefix: Option<&'static str>,
 }
 
 impl Default for SyntectAdapterBuilder {
@@ -196,6 +203,7 @@ impl Default for SyntectAdapterBuilder {
             theme: Some("InspiredGitHub".into()),
             syntax_set: None,
             theme_set: None,
+            css_class_prefix: None,
         }
     }
 }
@@ -216,6 +224,13 @@ impl SyntectAdapterBuilder {
     pub fn css(mut self) -> Self {
         self.theme = None;
         self
+    }
+
+    /// Uses CSS classes with the specified prefix instead of a Syntect theme.
+    pub fn css_with_class_prefix(self, prefix: &'static str) -> Self {
+        let mut builder = self.css();
+        builder.css_class_prefix = Some(prefix);
+        builder
     }
 
     /// Set the syntax set.
@@ -241,6 +256,7 @@ impl SyntectAdapterBuilder {
                 .syntax_set
                 .unwrap_or_else(SyntaxSet::load_defaults_newlines),
             theme_set: self.theme_set.unwrap_or_else(ThemeSet::load_defaults),
+            css_class_prefix: self.css_class_prefix,
         }
     }
 }
