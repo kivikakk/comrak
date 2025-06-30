@@ -68,7 +68,8 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
 
     /// Convenience wrapper for [`html::escape_href`].
     pub fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
-        html::escape_href(self, buffer)
+        let relaxed_autolinks = self.options.parse.relaxed_autolinks;
+        html::escape_href(self, buffer, relaxed_autolinks)
     }
 }
 
