@@ -308,7 +308,7 @@ pub struct ExtensionOptions<'c> {
     /// let mut options = Options::default();
     /// options.extension.header_ids = Some("user-content-".to_string());
     /// assert_eq!(markdown_to_html("# README\n", &options),
-    ///            "<h1><a inert href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
+    ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
     pub header_ids: Option<String>,
 
