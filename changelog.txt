@@ -1,12 +1,25 @@
-# [v0.39.2] - 2025-07-18
-## What's Changed
-* Syntect syntax highlighting: Make a CSS class prefix configurable. by @SteveBinary in https://github.com/kivikakk/comrak/pull/580
+# [v0.40.0] - 2025-07-18
+
+Reverts:
+
+* "Fix header-ids accessibility" was reverted in https://github.com/kivikakk/comrak/commit/2cb6188bfb4c5d69bf55c73c19b2049e9dfe5dba
+  * See discussion at https://github.com/kivikakk/comrak/pull/574#issuecomment-3046307805 for details.
+
+Bug fixes:
+
 * html: don't escape IPv6 address square bracket delimiters in links. by @kivikakk in https://github.com/kivikakk/comrak/pull/578
 
+New APIs:
+
+* Syntect syntax highlighting: Make a CSS class prefix configurable. by @SteveBinary in https://github.com/kivikakk/comrak/pull/580
+
 ## New Contributors
+
 * @SteveBinary made their first contribution in https://github.com/kivikakk/comrak/pull/580
 
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.39.1...v0.39.2
+Diff: https://github.com/kivikakk/comrak/compare/v0.39.1...v0.39.2
+
+
 # [v0.39.1] - 2025-06-27
 
 Bug fixes:
