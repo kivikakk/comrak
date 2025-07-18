@@ -17,7 +17,7 @@ New APIs:
 
 * @SteveBinary made their first contribution in https://github.com/kivikakk/comrak/pull/580
 
-Diff: https://github.com/kivikakk/comrak/compare/v0.39.1...v0.39.2
+Diff: https://github.com/kivikakk/comrak/compare/v0.39.1...v0.40.0
 
 
 # [v0.39.1] - 2025-06-27
