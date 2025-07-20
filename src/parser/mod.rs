@@ -658,6 +658,23 @@ pub struct ExtensionOptions<'c> {
     /// ```
     #[cfg_attr(feature = "arbitrary", arbitrary(value = None))]
     pub link_url_rewriter: Option<Arc<dyn URLRewriter + 'c>>,
+
+    /// Recognizes many emphasis that appear in CJK contexts but are not recognized by plain CommonMark.
+    ///
+    /// ```md
+    /// **この文は重要です。**但这句话并不重要。
+    /// ```
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.cjk_friendly_emphasis = true;
+    ///
+    /// assert_eq!(markdown_to_html("**この文は重要です。**但这句话并不重要。", &options),
+    ///            "<p><strong>この文は重要です。</strong>但这句话并不重要。</p>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub cjk_friendly_emphasis: bool,
 }
 
 impl<'c> ExtensionOptions<'c> {
