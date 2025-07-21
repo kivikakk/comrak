@@ -9,56 +9,67 @@ use comrak::{
 use std::sync::Arc;
 
 fuzz_target!(|s: &str| {
-    let mut extension = ExtensionOptions::default();
-    extension.strikethrough = true;
-    extension.tagfilter = true;
-    extension.table = true;
-    extension.autolink = true;
-    extension.tasklist = true;
-    extension.superscript = true;
-    extension.header_ids = Some("user-content-".to_string());
-    extension.footnotes = true;
-    extension.description_lists = true;
-    extension.front_matter_delimiter = Some("---".to_string());
-    extension.multiline_block_quotes = true;
-    extension.math_dollars = true;
-    extension.math_code = true;
-    extension.shortcodes = true;
-    extension.wikilinks_title_after_pipe = true;
-    extension.wikilinks_title_before_pipe = true;
-    extension.underline = true;
-    extension.spoiler = true;
-    extension.greentext = true;
-    extension.alerts = true;
+    let url_rewriter = |input: &str| format!("{input}#rewritten");
+    let extension = ExtensionOptions {
+        strikethrough: true,
+        tagfilter: true,
+        table: true,
+        autolink: true,
+        tasklist: true,
+        superscript: true,
+        header_ids: Some("user-content-".to_string()),
+        footnotes: true,
+        description_lists: true,
+        front_matter_delimiter: Some("---".to_string()),
+        multiline_block_quotes: true,
+        alerts: true,
+        math_dollars: true,
+        math_code: true,
+        shortcodes: true,
+        wikilinks_title_after_pipe: true,
+        wikilinks_title_before_pipe: true,
+        underline: true,
+        subscript: true,
+        spoiler: true,
+        greentext: true,
+        image_url_rewriter: Some(Arc::new(url_rewriter)),
+        link_url_rewriter: Some(Arc::new(url_rewriter)),
+        cjk_friendly_emphasis: true,
+    };
 
-    let mut parse = ParseOptions::default();
-    parse.smart = true;
-    parse.default_info_string = Some("rust".to_string());
-    parse.relaxed_tasklist_matching = true;
-    parse.relaxed_autolinks = true;
     let cb = |link_ref: BrokenLinkReference| {
         Some(ResolvedReference {
             url: link_ref.normalized.to_string(),
             title: link_ref.original.to_string(),
         })
     };
-    parse.broken_link_callback = Some(Arc::new(cb));
+    let parse = ParseOptions {
+        smart: true,
+        default_info_string: Some("rust".to_string()),
+        relaxed_tasklist_matching: true,
+        relaxed_autolinks: true,
+        broken_link_callback: Some(Arc::new(cb)),
+    };
 
-    let mut render = RenderOptions::default();
-    render.hardbreaks = true;
-    render.github_pre_lang = true;
-    render.full_info_string = true;
-    render.width = 80;
-    render.unsafe_ = true;
-    render.escape = true;
-    render.list_style = ListStyleType::Star;
-    render.sourcepos = true;
-    render.escaped_char_spans = true;
-    render.ignore_setext = true;
-    render.ignore_empty_links = true;
-    render.gfm_quirks = true;
-    render.prefer_fenced = true;
-    render.tasklist_classes = true;
+    let render = RenderOptions {
+        hardbreaks: true,
+        github_pre_lang: true,
+        full_info_string: true,
+        width: 80,
+        unsafe_: true,
+        escape: true,
+        list_style: ListStyleType::Star,
+        sourcepos: true,
+        escaped_char_spans: true,
+        ignore_setext: true,
+        ignore_empty_links: true,
+        gfm_quirks: true,
+        prefer_fenced: true,
+        figure_with_caption: true,
+        tasklist_classes: true,
+        ol_width: 3,
+        experimental_minimize_commonmark: true,
+    };
 
     markdown_to_html(
         s,
