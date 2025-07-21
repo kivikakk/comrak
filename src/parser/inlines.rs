@@ -27,6 +27,110 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
+trait FlankingCheckHelper
+where
+    Self: Sized + Copy,
+{
+    fn is_cjk_ambiguous_punctuation_candidate(&self) -> bool;
+    fn is_ideographic_vs(&self) -> bool;
+    fn is_cjk(&self) -> bool;
+    #[inline]
+    fn is_cjk_or_ideographic_vs(&self) -> bool {
+        self.is_cjk() || self.is_ideographic_vs()
+    }
+    fn is_non_emoji_general_purpose_vs(&self) -> bool;
+    fn is_cmark_punctuation(&self) -> bool;
+}
+
+impl FlankingCheckHelper for char {
+    /// https://github.com/tats-u/markdown-cjk-friendly/blob/main/ranges.md#cjk-characters
+    #[inline]
+    fn is_cjk(&self) -> bool {
+        // Snapshot as of Unicode 16
+        matches!(
+            u32::from(*self),
+            0x1100..=0x11ff
+              | 0x20a9
+              | 0x2329..=0x232a
+              | 0x2630..=0x2637
+              | 0x268a..=0x268f
+              | 0x2e80..=0x2e99
+              | 0x2e9b..=0x2ef3
+              | 0x2f00..=0x2fd5
+              | 0x2ff0..=0x303e
+              | 0x3041..=0x3096
+              | 0x3099..=0x30ff
+              | 0x3105..=0x312f
+              | 0x3131..=0x318e
+              | 0x3190..=0x31e5
+              | 0x31ef..=0x321e
+              | 0x3220..=0x3247
+              | 0x3250..=0xa48c
+              | 0xa490..=0xa4c6
+              | 0xa960..=0xa97c
+              | 0xac00..=0xd7a3
+              | 0xd7b0..=0xd7c6
+              | 0xd7cb..=0xd7fb
+              | 0xf900..=0xfaff
+              | 0xfe10..=0xfe19
+              | 0xfe30..=0xfe52
+              | 0xfe54..=0xfe66
+              | 0xfe68..=0xfe6b
+              | 0xff01..=0xffbe
+              | 0xffc2..=0xffc7
+              | 0xffca..=0xffcf
+              | 0xffd2..=0xffd7
+              | 0xffda..=0xffdc
+              | 0xffe0..=0xffe6
+              | 0xffe8..=0xffee
+              | 0x16fe0..=0x16fe4
+              | 0x16ff0..=0x16ff1
+              | 0x17000..=0x187f7
+              | 0x18800..=0x18cd5
+              | 0x18cff..=0x18d08
+              | 0x1aff0..=0x1aff3
+              | 0x1aff5..=0x1affb
+              | 0x1affd..=0x1affe
+              | 0x1b000..=0x1b122
+              | 0x1b132
+              | 0x1b150..=0x1b152
+              | 0x1b155
+              | 0x1b164..=0x1b167
+              | 0x1b170..=0x1b2fb
+              | 0x1d300..=0x1d356
+              | 0x1d360..=0x1d376
+              | 0x1f200
+              | 0x1f202
+              | 0x1f210..=0x1f219
+              | 0x1f21b..=0x1f22e
+              | 0x1f230..=0x1f231
+              | 0x1f237
+              | 0x1f23b
+              | 0x1f240..=0x1f248
+              | 0x1f260..=0x1f265
+              | 0x20000..=0x3fffd
+        )
+    }
+
+    #[inline]
+    fn is_non_emoji_general_purpose_vs(&self) -> bool {
+        matches!(u32::from(*self), 0xFE00..=0xFE0F)
+    }
+
+    #[inline]
+    fn is_ideographic_vs(&self) -> bool {
+        matches!(u32::from(*self), 0xE0100..=0xE01EF)
+    }
+    #[inline]
+    fn is_cmark_punctuation(&self) -> bool {
+        self.is_punctuation() || self.is_symbol()
+    }
+    #[inline]
+    fn is_cjk_ambiguous_punctuation_candidate(&self) -> bool {
+        matches!(u32::from(*self), 0x2018 | 0x2019 | 0x201c | 0x201d)
+    }
+}
+
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o Options<'c>,
@@ -953,31 +1057,35 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
     }
 
-    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
-        let before_char = if self.pos == 0 {
-            '\n'
-        } else {
-            let mut before_char_pos = self.pos - 1;
-            while before_char_pos > 0
-                && (self.input[before_char_pos] >> 6 == 2
-                    || self.skip_chars[self.input[before_char_pos] as usize])
-            {
-                before_char_pos -= 1;
-            }
-            match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..self.pos]) }
-                .chars()
-                .next()
-            {
-                Some(x) => {
-                    if (x as usize) < 256 && self.skip_chars[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    }
+    #[inline]
+    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
+        if pos == 0 {
+            return ('\n', None);
+        }
+        let mut before_char_pos = pos - 1;
+        while before_char_pos > 0
+            && (self.input[before_char_pos] >> 6 == 2
+                || self.skip_chars[self.input[before_char_pos] as usize])
+        {
+            before_char_pos -= 1;
+        }
+        match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..pos]) }
+            .chars()
+            .next()
+        {
+            Some(x) => {
+                if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    ('\n', None)
+                } else {
+                    (x, Some(before_char_pos))
                 }
-                None => '\n',
             }
-        };
+            None => ('\n', None),
+        }
+    }
+
+    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
+        let (before_char, before_char_pos) = self.get_before_char(self.pos);
 
         let mut numdelims = 0;
         if c == b'\'' || c == b'"' {
@@ -1014,24 +1122,77 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             }
         };
 
+        let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
+        let mut two_before_char: Option<char> = None;
+
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
-            && !((after_char.is_punctuation() || after_char.is_symbol())
-                && !before_char.is_whitespace()
-                && !(before_char.is_punctuation() || before_char.is_symbol()));
+            && (!after_char.is_cmark_punctuation()
+                || before_char.is_whitespace()
+                || if !cjk_friendly {
+                    before_char.is_cmark_punctuation()
+                } else {
+                    after_char.is_cjk()
+                        || if before_char.is_non_emoji_general_purpose_vs() {
+                            if let Some(before_char_pos) = before_char_pos {
+                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                two_before_char = Some(two_before_char_);
+                                two_before_char_.is_cjk()
+                                    || two_before_char_.is_cmark_punctuation()
+                                    || two_before_char_.is_cjk_ambiguous_punctuation_candidate()
+                                        && before_char == '\u{fe01}'
+                            } else {
+                                false
+                            }
+                        } else {
+                            before_char.is_cjk_or_ideographic_vs()
+                                || before_char.is_cmark_punctuation()
+                        }
+                });
         let right_flanking = numdelims > 0
             && !before_char.is_whitespace()
-            && !((before_char.is_punctuation() || before_char.is_symbol())
-                && !after_char.is_whitespace()
-                && !(after_char.is_punctuation() || after_char.is_symbol()));
+            && (!if !cjk_friendly {
+                before_char.is_cmark_punctuation()
+            } else {
+                !after_char.is_cjk()
+                    && if before_char.is_non_emoji_general_purpose_vs() {
+                        let two_before_char = if let Some(two_before_char_) = two_before_char {
+                            two_before_char_
+                        } else if let Some(before_char_pos) = before_char_pos {
+                            let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                            two_before_char = Some(two_before_char_);
+                            two_before_char_
+                        } else {
+                            '\n'
+                        };
+                        !two_before_char.is_cjk()
+                            && two_before_char.is_cmark_punctuation()
+                            && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
+                                && before_char == '\u{fe01}')
+                    } else {
+                        !before_char.is_cjk() && before_char.is_cmark_punctuation()
+                    }
+            } || after_char.is_whitespace()
+                || after_char.is_cmark_punctuation());
 
         if c == b'_' {
             (
                 numdelims,
                 left_flanking
-                    && (!right_flanking || before_char.is_punctuation() || before_char.is_symbol()),
-                right_flanking
-                    && (!left_flanking || after_char.is_punctuation() || after_char.is_symbol()),
+                    && (!right_flanking
+                        || if !(cjk_friendly && before_char.is_non_emoji_general_purpose_vs()) {
+                            before_char.is_cmark_punctuation()
+                        } else {
+                            let two_before_char = if let Some(two_before_char_) = two_before_char {
+                                two_before_char_
+                            } else if let Some(before_char_pos) = before_char_pos {
+                                self.get_before_char(before_char_pos).0
+                            } else {
+                                '\n'
+                            };
+                            two_before_char.is_cmark_punctuation()
+                        }),
+                right_flanking && (!left_flanking || after_char.is_cmark_punctuation()),
             )
         } else if c == b'\'' || c == b'"' {
             (

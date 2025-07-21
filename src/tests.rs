@@ -7,6 +7,7 @@ use std::panic;
 mod alerts;
 mod api;
 mod autolink;
+mod cjk_friendly_emphasis;
 mod commonmark;
 mod core;
 mod description_lists;
