@@ -92,6 +92,7 @@
               "rust-analyzer"
               "clippy"
               "rustfmt"
+              "rust-src"
             ])
             pkgs.rust-analyzer
             pkgs.clippy
