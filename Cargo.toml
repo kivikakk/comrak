@@ -1,7 +1,11 @@
 [package]
 name = "comrak"
 version = "0.40.0"
-authors = ["Asherah Connor <ashe@kivikakk.ee>", "Brett Walker <github@digitalmoksha.com>", "gjtorikian"]
+authors = [
+    "Asherah Connor <ashe@kivikakk.ee>",
+    "Brett Walker <github@digitalmoksha.com>",
+    "gjtorikian",
+]
 rust-version = "1.65"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
@@ -60,19 +64,23 @@ bon = ["dep:bon"]
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
 xdg = { version = "^2.5", optional = true }
 
-[target.'cfg(target_arch="wasm32")'.dependencies]
+[target.'cfg(any(target_arch = "wasm32", target_os = "ios"))'.dependencies]
 syntect = { version = "5.0", optional = true, default-features = false, features = [
     "default-fancy",
 ] }
-clap = { version = "4.0.32", optional = true, features = ["derive", "string"] }
 
-[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+[target.'cfg(not(any(target_arch = "wasm32", target_os = "ios")))'.dependencies]
 syntect = { version = "5.0", optional = true, default-features = false, features = [
     "default-themes",
     "default-syntaxes",
     "html",
     "regex-onig",
 ] }
+
+[target.'cfg(target_arch="wasm32")'.dependencies]
+clap = { version = "4.0.32", optional = true, features = ["derive", "string"] }
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
 clap = { version = "4.0", optional = true, features = [
     "derive",
     "string",
@@ -81,8 +89,8 @@ clap = { version = "4.0", optional = true, features = [
 
 [[example]]
 name = "syntect"
-required-features = [ "syntect" ]
+required-features = ["syntect"]
 
 [[example]]
 name = "s-expr"
-required-features = [ "bon" ]
+required-features = ["bon"]
