@@ -99,6 +99,7 @@
             pkgs.cargo-fuzz
             pkgs.python3
             pkgs.re2c
+            pkgs.hyperfine
           ];
         };
       }
