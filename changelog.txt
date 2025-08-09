@@ -1,3 +1,22 @@
+# [v0.41.0] - 2025-08-09
+
+New features:
+
+* Add CJK friendly emphasis extension by @tats-u in https://github.com/kivikakk/comrak/pull/582
+  * Add CJK friendly emphasis to README by @tats-u in https://github.com/kivikakk/comrak/pull/583
+
+Build changes:
+
+* Use syntect's default-fancy feature for ios by @tvanderstad in https://github.com/kivikakk/comrak/pull/585
+
+## New Contributors
+
+* @tats-u made their first contribution in https://github.com/kivikakk/comrak/pull/582
+* @tvanderstad made their first contribution in https://github.com/kivikakk/comrak/pull/585
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.40.0...v0.41.0
+
+
 # [v0.40.0] - 2025-07-18
 
 Reverts:
@@ -713,6 +732,7 @@ each case.
 # [0.1.8]
 
 * Fix possible DoS in link parsing (#33, Demi Obenour).
+
 
 
 
