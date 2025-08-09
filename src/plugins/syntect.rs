@@ -151,7 +151,7 @@ impl SyntectPreAttributes {
         }
     }
 
-    fn iter_mut(&mut self) -> SyntectPreAttributesIter {
+    fn iter_mut(&mut self) -> SyntectPreAttributesIter<'_> {
         SyntectPreAttributesIter {
             iter_mut: self.attributes.iter_mut(),
             syntect_style: &self.syntect_style,
