@@ -97,6 +97,7 @@
             pkgs.rust-analyzer
             pkgs.clippy
             pkgs.cargo-fuzz
+            pkgs.cargo-nextest
             pkgs.python3
             pkgs.re2c
             pkgs.hyperfine
