@@ -920,7 +920,8 @@ fn render_paragraph<'a, T>(
             render_sourcepos(context, node)?;
             context.write_all(b">")?;
         } else {
-            if let NodeValue::FootnoteDefinition(nfd) = &node.parent().unwrap().data.borrow().value
+            if let Some(NodeValue::FootnoteDefinition(nfd)) =
+                &node.parent().map(|n| n.data.borrow().value.clone())
             {
                 if node.next_sibling().is_none() {
                     context.write_all(b" ")?;
@@ -1093,10 +1094,10 @@ fn render_table<'a, T>(
         render_sourcepos(context, node)?;
         context.write_all(b">\n")?;
     } else {
-        if !node
+        if let Some(true) = node
             .last_child()
-            .unwrap()
-            .same_node(node.first_child().unwrap())
+            .map(|n| !n.same_node(node.first_child().unwrap()))
+        // node.first_child() guaranteed to exist in block since last_child does!
         {
             context.cr()?;
             context.write_all(b"</tbody>\n")?;
@@ -1113,16 +1114,24 @@ fn render_table_cell<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    let row = &node.parent().unwrap().data.borrow().value;
+    let Some(row_node) = node.parent() else {
+        panic!("rendered a table cell without a containing table row");
+    };
+    let row = &row_node.data.borrow().value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
-        _ => panic!(),
+        _ => panic!("rendered a table cell contained by something other than a table row"),
     };
 
-    let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
+    let Some(table_node) = row_node.parent() else {
+        panic!("rendered a table cell without a containing table");
+    };
+    let table = &table_node.data.borrow().value;
     let alignments = match *table {
         NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
-        _ => panic!(),
+        _ => {
+            panic!("rendered a table cell in a table row contained by something other than a table")
+        }
     };
 
     if entering {
@@ -1135,7 +1144,7 @@ fn render_table_cell<'a, T>(
             render_sourcepos(context, node)?;
         }
 
-        let mut start = node.parent().unwrap().first_child().unwrap();
+        let mut start = row_node.first_child().unwrap(); // guaranteed to exist because `node' itself does!
         let mut i = 0;
         while !start.same_node(node) {
             i += 1;
