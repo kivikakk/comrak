@@ -146,37 +146,37 @@ fn remove_sourcepos(i: &str) -> String {
 }
 
 macro_rules! html_opts {
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr) => {
-        html_opts!([$($optclass.$optname),*], $lhs, $rhs,)
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr) => {
+        html_opts!([$($optclass.$optname),*], $input, $expected,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr) => {
-        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs,)
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr) => {
+        html_opts!([$($optclass.$optname = $val),*], $input, $expected,)
     };
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr,) => {
-        html_opts!([$($optclass.$optname),*], $lhs, $rhs, roundtrip)
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr,) => {
+        html_opts!([$($optclass.$optname),*], $input, $expected, roundtrip)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr,) => {
-        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs, roundtrip)
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr,) => {
+        html_opts!([$($optclass.$optname = $val),*], $input, $expected, roundtrip)
     };
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, $rt:ident) => {
-        html_opts!([$($optclass.$optname),*], $lhs, $rhs, $rt,)
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, $rt:ident) => {
+        html_opts!([$($optclass.$optname),*], $input, $expected, $rt,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, $rt:ident) => {
-        html_opts!([$($optclass.$optname = $val),*], $lhs, $rhs, $rt,)
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, $rt:ident) => {
+        html_opts!([$($optclass.$optname = $val),*], $input, $expected, $rt,)
     };
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, roundtrip,) => {
-        html_opts!([$($optclass.$optname = true),*], $lhs, $rhs, roundtrip,)
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, roundtrip,) => {
+        html_opts!([$($optclass.$optname = true),*], $input, $expected, roundtrip,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, roundtrip,) => {
-        $crate::tests::html_opts_i($lhs, $rhs, true, |opts| {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, roundtrip,) => {
+        $crate::tests::html_opts_i($input, $expected, true, |opts| {
             $(opts.$optclass.$optname = $val;)*
         });
     };
-    ([$($optclass:ident.$optname:ident),*], $lhs:expr, $rhs:expr, no_roundtrip,) => {
-        html_opts!([$($optclass.$optname = true),*], $lhs, $rhs, no_roundtrip,)
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, no_roundtrip,) => {
+        html_opts!([$($optclass.$optname = true),*], $input, $expected, no_roundtrip,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr),*], $lhs:expr, $rhs:expr, no_roundtrip,) => {
-        $crate::tests::html_opts_i($lhs, $rhs, false, |opts| {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, no_roundtrip,) => {
+        $crate::tests::html_opts_i($input, $expected, false, |opts| {
             $(opts.$optclass.$optname = $val;)*
         });
     };
