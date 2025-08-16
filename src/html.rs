@@ -495,7 +495,7 @@ fn render_code<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -515,7 +515,7 @@ fn render_code_block<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -623,7 +623,7 @@ fn render_heading<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Heading(ref nch) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     match context.plugins.render.heading_adapter {
@@ -682,7 +682,7 @@ fn render_html_block<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // No sourcepos.
@@ -710,7 +710,7 @@ fn render_html_inline<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // No sourcepos.
@@ -737,7 +737,7 @@ fn render_image<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Image(ref nl) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -813,7 +813,7 @@ fn render_link<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Link(ref nl) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     let parent_node = node.parent();
@@ -856,7 +856,7 @@ fn render_list<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::List(ref nl) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -981,7 +981,7 @@ fn render_text<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Text(ref literal) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // Nowhere to put sourcepos.
@@ -1015,7 +1015,7 @@ fn render_footnote_definition<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1046,7 +1046,7 @@ fn render_footnote_reference<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1180,7 +1180,7 @@ fn render_table_row<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::TableRow(header) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1213,7 +1213,7 @@ fn render_task_item<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1247,7 +1247,7 @@ fn render_alert<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Alert(ref alert) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1354,7 +1354,7 @@ fn render_escaped_tag<'a, T>(
     _entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // Nowhere to put sourcepos.
@@ -1385,7 +1385,7 @@ pub fn render_math<'a, T>(
         ..
     }) = node.data.borrow().value
     else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
@@ -1469,7 +1469,7 @@ fn render_raw<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::Raw(ref literal) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // No sourcepos.
@@ -1487,7 +1487,7 @@ fn render_short_code<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     // Nowhere to put sourcepos.
@@ -1568,7 +1568,7 @@ fn render_wiki_link<'a, T>(
     entering: bool,
 ) -> io::Result<ChildRendering> {
     let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
-        panic!()
+        unreachable!()
     };
 
     if entering {
