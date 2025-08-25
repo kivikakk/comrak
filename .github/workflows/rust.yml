@@ -16,7 +16,7 @@ jobs:
           - stable
           - $MSRV
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
@@ -39,7 +39,7 @@ jobs:
           - stable
           - $MSRV
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
@@ -58,7 +58,7 @@ jobs:
           - stable
           - $MSRV
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
@@ -79,7 +79,7 @@ jobs:
           - stable
           - $MSRV
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
@@ -96,7 +96,7 @@ jobs:
           - stable
           - $MSRV
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
@@ -106,7 +106,7 @@ jobs:
   clippy_format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: true
     - name: Obtain Rust
