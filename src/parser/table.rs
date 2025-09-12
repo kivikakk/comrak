@@ -96,8 +96,7 @@ fn try_opening_header<'a>(
         let header_ast = &mut header.data.borrow_mut();
         header_ast.sourcepos.start.line = start.line;
         header_ast.sourcepos.end = start.column_add(
-            (container.data.borrow().content.len() - 2 - header_row.paragraph_offset)
-                as isize,
+            (container.data.borrow().content.len() - 2 - header_row.paragraph_offset) as isize,
         );
     }
 
