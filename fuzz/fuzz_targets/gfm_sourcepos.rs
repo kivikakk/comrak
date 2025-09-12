@@ -9,17 +9,21 @@ use comrak::{markdown_to_html, ExtensionOptions, Options, RenderOptions};
 // options are routinely used by Commonmarker users.
 
 fuzz_target!(|s: &str| {
-    let mut extension = ExtensionOptions::default();
-    extension.strikethrough = true;
-    extension.tagfilter = true;
-    extension.table = true;
-    extension.autolink = true;
+    let extension = ExtensionOptions {
+        strikethrough: true,
+        tagfilter: true,
+        table: true,
+        autolink: true,
+        ..Default::default()
+    };
 
-    let mut render = RenderOptions::default();
-    render.hardbreaks = true;
-    render.github_pre_lang = true;
-    render.unsafe_ = true;
-    render.sourcepos = true;
+    let render = RenderOptions {
+        hardbreaks: true,
+        github_pre_lang: true,
+        unsafe_: true,
+        sourcepos: true,
+        ..Default::default()
+    };
 
     markdown_to_html(
         s,
