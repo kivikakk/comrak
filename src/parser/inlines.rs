@@ -261,9 +261,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             skip_chars: [false; 256],
             smart_chars: [false; 256],
         };
-        for &c in &[
-            b'\n', b'\r', b'_', b'*', b'"', b'`', b'\\', b'&', b'<', b'[', b']', b'!', b'$',
-        ] {
+        for &c in b"\n\r_*\"`\\&<[]!$" {
             s.special_chars[c as usize] = true;
         }
         if options.extension.autolink {

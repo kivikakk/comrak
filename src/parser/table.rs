@@ -96,7 +96,7 @@ fn try_opening_header<'a>(
         let header_ast = &mut header.data.borrow_mut();
         header_ast.sourcepos.start.line = start.line;
         header_ast.sourcepos.end = start.column_add(
-            (container.data.borrow().content.as_bytes().len() - 2 - header_row.paragraph_offset)
+            (container.data.borrow().content.len() - 2 - header_row.paragraph_offset)
                 as isize,
         );
     }
@@ -148,10 +148,7 @@ fn try_opening_row<'a>(
 
     let sourcepos = container.data.borrow().sourcepos;
     let spoiler = parser.options.extension.spoiler;
-    let this_row = match row(&line[parser.first_nonspace..], spoiler) {
-        Some(this_row) => this_row,
-        None => return None,
-    };
+    let this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
     let new_row = parser.add_child(
         container,

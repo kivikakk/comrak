@@ -241,10 +241,7 @@ pub fn www_match<'a>(
         return None;
     }
 
-    let mut link_end = match check_domain(&contents[i..], false) {
-        None => return None,
-        Some(link_end) => link_end,
-    };
+    let mut link_end = check_domain(&contents[i..], false)?;
 
     while i + link_end < contents.len() && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
@@ -411,10 +408,7 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = match check_domain(&contents[i + 3..], true) {
-        None => return None,
-        Some(link_end) => link_end,
-    };
+    let mut link_end = check_domain(&contents[i + 3..], true)?;
 
     while link_end < size - i && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
