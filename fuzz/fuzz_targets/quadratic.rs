@@ -1,4 +1,3 @@
-#![feature(div_duration)]
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{

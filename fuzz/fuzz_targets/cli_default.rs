@@ -7,7 +7,7 @@ use comrak::{markdown_to_html_with_plugins, plugins::syntect::SyntectAdapter, Pl
 // Note that we end up fuzzing Syntect here.
 
 fuzz_target!(|s: &str| {
-    let adapter = SyntectAdapter::new("base16-ocean.dark");
+    let adapter = SyntectAdapter::new(Some("base16-ocean.dark"));
 
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&adapter);

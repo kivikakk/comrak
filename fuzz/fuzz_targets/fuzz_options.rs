@@ -7,7 +7,7 @@ use comrak::{markdown_to_html, Options};
 #[derive(Debug, arbitrary::Arbitrary)]
 struct FuzzInput<'s> {
     s: &'s str,
-    opts: Options,
+    opts: Options<'s>,
 }
 
 fuzz_target!(|i: FuzzInput| {
