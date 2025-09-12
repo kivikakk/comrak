@@ -60,3 +60,15 @@ name = "gfm_footnotes"
 path = "fuzz_targets/gfm_footnotes.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "commonmark"
+path = "fuzz_targets/commonmark.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse"
+path = "fuzz_targets/parse.rs"
+test = false
+doc = false
