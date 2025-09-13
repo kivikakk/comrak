@@ -1,4 +1,3 @@
-#![feature(div_duration)]
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
@@ -35,6 +34,7 @@ enum Markdown {
     // foofoo
     // foofoofoo
     // foofoofoofoo
+    #[allow(clippy::enum_variant_names)]
     Markdown {
         markdown: String,
     },
@@ -92,11 +92,11 @@ impl Markdown {
 
                     // Place the markdown in `output`
                     for _ in 0..iterations {
-                        output.push_str(&prefix)
+                        output.push_str(prefix)
                     }
-                    output.push_str(&markdown);
+                    output.push_str(markdown);
                     for _ in 0..iterations {
-                        output.push_str(&suffix)
+                        output.push_str(suffix)
                     }
                 }
                 output
@@ -117,9 +117,9 @@ impl Markdown {
 
                     // Place the markdown in `output`
                     for _ in 0..iterations {
-                        output.push_str(&prefix)
+                        output.push_str(prefix)
                     }
-                    output.push_str(&markdown);
+                    output.push_str(markdown);
                 }
                 output
             }
@@ -131,7 +131,7 @@ impl Markdown {
     }
 
     fn should_fuzz_string(s: &str) -> bool {
-        if s.len() == 0 {
+        if s.is_empty() {
             // Repeating a zero-length string is useless
             return false;
         }
@@ -147,18 +147,18 @@ impl Markdown {
     /// A filter to guiding the fuzzer. The fuzzer will skip any input which fails this predicate
     fn should_fuzz(&self) -> bool {
         match self {
-            Markdown::Markdown { markdown } => Markdown::should_fuzz_string(&markdown),
+            Markdown::Markdown { markdown } => Markdown::should_fuzz_string(markdown),
             Markdown::Sandwich {
                 prefix,
                 markdown,
                 suffix,
             } => {
-                Markdown::should_fuzz_string(&prefix)
-                    && Markdown::should_fuzz_string(&markdown)
-                    && Markdown::should_fuzz_string(&suffix)
+                Markdown::should_fuzz_string(prefix)
+                    && Markdown::should_fuzz_string(markdown)
+                    && Markdown::should_fuzz_string(suffix)
             }
             Markdown::Tree { prefix, markdown } => {
-                Markdown::should_fuzz_string(&prefix) && Markdown::should_fuzz_string(&markdown)
+                Markdown::should_fuzz_string(prefix) && Markdown::should_fuzz_string(markdown)
             }
         }
     }
@@ -172,7 +172,7 @@ struct FuzzOptions {
 }
 
 impl FuzzOptions {
-    fn to_options(&self) -> Options {
+    fn to_options(&self) -> Options<'_> {
         Options {
             extension: self.extension.to_options(),
             parse: self.parse.to_options(),
@@ -204,29 +204,30 @@ struct FuzzExtensionOptions {
 }
 
 impl FuzzExtensionOptions {
-    fn to_options(&self) -> ExtensionOptions {
-        let mut extension = ExtensionOptions::default();
-        extension.strikethrough = self.strikethrough;
-        extension.tagfilter = self.tagfilter;
-        extension.table = self.table;
-        extension.autolink = self.autolink;
-        extension.tasklist = self.tasklist;
-        extension.superscript = self.superscript;
-        extension.footnotes = self.footnotes;
-        extension.description_lists = self.description_lists;
-        extension.multiline_block_quotes = self.multiline_block_quotes;
-        extension.math_dollars = self.math_dollars;
-        extension.math_code = self.math_code;
-        extension.shortcodes = self.shortcodes;
-        extension.wikilinks_title_after_pipe = self.wikilinks_title_after_pipe;
-        extension.wikilinks_title_before_pipe = self.wikilinks_title_before_pipe;
-        extension.underline = self.underline;
-        extension.spoiler = self.spoiler;
-        extension.greentext = self.greentext;
-        extension.alerts = self.alerts;
-        extension.front_matter_delimiter = None;
-        extension.header_ids = None;
-        extension
+    fn to_options(&self) -> ExtensionOptions<'_> {
+        ExtensionOptions {
+            strikethrough: self.strikethrough,
+            tagfilter: self.tagfilter,
+            table: self.table,
+            autolink: self.autolink,
+            tasklist: self.tasklist,
+            superscript: self.superscript,
+            footnotes: self.footnotes,
+            description_lists: self.description_lists,
+            multiline_block_quotes: self.multiline_block_quotes,
+            math_dollars: self.math_dollars,
+            math_code: self.math_code,
+            shortcodes: self.shortcodes,
+            wikilinks_title_after_pipe: self.wikilinks_title_after_pipe,
+            wikilinks_title_before_pipe: self.wikilinks_title_before_pipe,
+            underline: self.underline,
+            spoiler: self.spoiler,
+            greentext: self.greentext,
+            alerts: self.alerts,
+            front_matter_delimiter: None,
+            header_ids: None,
+            ..Default::default()
+        }
     }
 }
 
@@ -238,13 +239,14 @@ struct FuzzParseOptions {
 }
 
 impl FuzzParseOptions {
-    fn to_options(&self) -> ParseOptions {
-        let mut parse = ParseOptions::default();
-        parse.smart = self.smart;
-        parse.default_info_string = None;
-        parse.relaxed_tasklist_matching = self.relaxed_tasklist_matching;
-        parse.relaxed_autolinks = self.relaxed_autolinks;
-        parse
+    fn to_options(&self) -> ParseOptions<'_> {
+        ParseOptions {
+            smart: self.smart,
+            default_info_string: None,
+            relaxed_tasklist_matching: self.relaxed_tasklist_matching,
+            relaxed_autolinks: self.relaxed_autolinks,
+            ..Default::default()
+        }
     }
 }
 
@@ -263,17 +265,18 @@ struct FuzzRenderOptions {
 
 impl FuzzRenderOptions {
     fn to_options(&self) -> RenderOptions {
-        let mut render = RenderOptions::default();
-        render.hardbreaks = self.hardbreaks;
-        render.github_pre_lang = self.github_pre_lang;
-        render.full_info_string = self.full_info_string;
-        render.width = self.width;
-        render.unsafe_ = self.unsafe_;
-        render.escape = self.escape;
-        render.list_style = self.list_style;
-        render.sourcepos = self.sourcepos;
-        render.escaped_char_spans = self.escaped_char_spans;
-        render
+        RenderOptions {
+            hardbreaks: self.hardbreaks,
+            github_pre_lang: self.github_pre_lang,
+            full_info_string: self.full_info_string,
+            width: self.width,
+            unsafe_: self.unsafe_,
+            escape: self.escape,
+            list_style: self.list_style,
+            sourcepos: self.sourcepos,
+            escaped_char_spans: self.escaped_char_spans,
+            ..Default::default()
+        }
     }
 }
 

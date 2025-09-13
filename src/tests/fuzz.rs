@@ -355,3 +355,20 @@ fn echaw9() {
         ]),
     );
 }
+
+#[test]
+// FIXME
+#[should_panic = "assertion failed: (sp.end.column - sp.start.column + 1 == x) || rem == 0"]
+fn relaxed_autolink_email_in_footnote() {
+    assert_ast_match!(
+        [
+            extension.autolink,
+            extension.footnotes,
+            parse.relaxed_autolinks
+        ],
+        "[^a@b.c\nA]:\n",
+        (document (1:1-1:1234) [
+            // TODO: what should this be parsed as?
+        ]),
+    );
+}

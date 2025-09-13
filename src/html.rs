@@ -577,10 +577,7 @@ fn render_code_block<'a, T>(
 
                     highlighter.write_highlighted(
                         context,
-                        match std::str::from_utf8(&info[..first_tag]) {
-                            Ok(lang) => Some(lang),
-                            Err(_) => None,
-                        },
+                        std::str::from_utf8(&info[..first_tag]).ok(),
                         &ncb.literal,
                     )?;
 
