@@ -114,7 +114,7 @@ impl FlankingCheckHelper for char {
 
     #[inline]
     fn is_non_emoji_general_purpose_vs(&self) -> bool {
-        matches!(u32::from(*self), 0xFE00..=0xFE0F)
+        matches!(u32::from(*self), 0xFE00..=0xFE0E)
     }
 
     #[inline]
