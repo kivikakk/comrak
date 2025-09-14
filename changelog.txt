@@ -1,3 +1,25 @@
+# [v0.41.1] - 2025-09-14
+
+Bug fixes:
+
+* Fix the range of non-emoji general purpose variation selector by @tats-u in https://github.com/kivikakk/comrak/pull/596
+
+Stability:
+
+* html: remove some panics on unusual ASTs, and document others. by @kivikakk in https://github.com/kivikakk/comrak/pull/589
+
+Behind the scenes:
+
+* Cleanup fuzzers, add unresolved `relaxed_autolink_email_in_footnote` test by @Mrmaxmeier in https://github.com/kivikakk/comrak/pull/594
+* build(deps): bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/590
+
+## New Contributors
+
+* @Mrmaxmeier made their first contribution in https://github.com/kivikakk/comrak/pull/594
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.41.0...v0.41.1
+
+
 # [v0.41.0] - 2025-08-09
 
 New features:
@@ -732,6 +754,7 @@ each case.
 # [0.1.8]
 
 * Fix possible DoS in link parsing (#33, Demi Obenour).
+
 
 
 
