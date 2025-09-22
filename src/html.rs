@@ -619,7 +619,7 @@ fn render_heading<'a, T>(
     node: &'a AstNode<'a>,
     entering: bool,
 ) -> io::Result<ChildRendering> {
-    let NodeValue::Heading(ref nch) = node.data.borrow().value else {
+    let NodeValue::Heading(ref nh) = node.data.borrow().value else {
         unreachable!()
     };
 
@@ -627,7 +627,7 @@ fn render_heading<'a, T>(
         None => {
             if entering {
                 context.cr()?;
-                write!(context, "<h{}", nch.level)?;
+                write!(context, "<h{}", nh.level)?;
                 render_sourcepos(context, node)?;
                 context.write_all(b">")?;
 
@@ -644,7 +644,7 @@ fn render_heading<'a, T>(
                     )?;
                 }
             } else {
-                writeln!(context, "</h{}>", nch.level)?;
+                writeln!(context, "</h{}>", nh.level)?;
             }
         }
         Some(adapter) => {
@@ -652,7 +652,7 @@ fn render_heading<'a, T>(
             collect_text(node, &mut text_content);
             let content = String::from_utf8(text_content).unwrap();
             let heading = HeadingMeta {
-                level: nch.level,
+                level: nh.level,
                 content,
             };
 

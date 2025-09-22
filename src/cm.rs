@@ -357,7 +357,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
             NodeValue::DescriptionDetails => self.format_description_details(entering),
-            NodeValue::Heading(ref nch) => self.format_heading(nch, entering),
+            NodeValue::Heading(ref nh) => self.format_heading(nh, entering),
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering),
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering),
             NodeValue::ThematicBreak => self.format_thematic_break(entering),
@@ -538,9 +538,9 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         }
     }
 
-    fn format_heading(&mut self, nch: &NodeHeading, entering: bool) {
+    fn format_heading(&mut self, nh: &NodeHeading, entering: bool) {
         if entering {
-            for _ in 0..nch.level {
+            for _ in 0..nh.level {
                 write!(self, "#").unwrap();
             }
             write!(self, " ").unwrap();
