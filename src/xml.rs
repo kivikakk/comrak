@@ -183,8 +183,8 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::DescriptionItem(..) => (),
                 NodeValue::DescriptionTerm => {}
                 NodeValue::DescriptionDetails => {}
-                NodeValue::Heading(ref nch) => {
-                    write!(self.output, " level=\"{}\"", nch.level)?;
+                NodeValue::Heading(ref nh) => {
+                    write!(self.output, " level=\"{}\"", nh.level)?;
                 }
                 NodeValue::CodeBlock(ref ncb) => {
                     if !ncb.info.is_empty() {
