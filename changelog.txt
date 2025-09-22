@@ -1,3 +1,13 @@
+# [v0.42.0] - unreleased
+
+Changed APIs:
+
+* `html::collect_text` now returns a `String`.  `html::collect_text_append` is
+  added if you still want to start with your own (`String`) buffer.
+  * There was no particular reason for this populating a `Vec<u8>` instead of a
+    `String`; it was just old.
+
+
 # [v0.41.1] - 2025-09-14
 
 Bug fixes:

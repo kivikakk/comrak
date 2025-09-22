@@ -1,9 +1,6 @@
 // Extract the document title by srching for a level-one header at the root level.
 
-use comrak::{
-    nodes::{AstNode, NodeCode, NodeValue},
-    parse_document, Arena, Options,
-};
+use comrak::{html::collect_text, nodes::NodeValue, parse_document, Arena, Options};
 
 fn main() {
     println!("{:?}", get_document_title("# Hello\n"));
@@ -25,27 +22,8 @@ fn get_document_title(document: &str) -> String {
             continue;
         }
 
-        let mut text = String::new();
-        collect_text(node, &mut text);
-
-        // The input was already known good UTF-8 (document: &str) so comrak
-        // guarantees the output will be too.
-        return text;
+        return collect_text(node);
     }
 
     "Untitled Document".to_string()
-}
-
-fn collect_text<'a>(node: &'a AstNode<'a>, output: &mut String) {
-    match node.data.borrow().value {
-        NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-            output.push_str(literal)
-        }
-        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
-        _ => {
-            for n in node.children() {
-                collect_text(n, output);
-            }
-        }
-    }
 }
