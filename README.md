@@ -269,6 +269,14 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`ExtensionOptions` struct](https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html).
 
+## Custom formatting
+
+The default HTML formatter can be partially specialised, to
+allow customising the output for certain node types without
+having to reimplement a whole formatter.  See the docs for
+[`comrak::create_formatter`](https://docs.rs/comrak/latest/comrak/macro.create_formatter.html)
+for details.
+
 ## Plugins
 
 ### Fenced code block syntax highlighting
