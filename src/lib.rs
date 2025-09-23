@@ -63,8 +63,6 @@
     clippy::too_many_arguments
 )]
 
-use std::io::BufWriter;
-
 pub mod adapters;
 pub mod arena_tree;
 mod character_set;
@@ -132,9 +130,9 @@ pub fn markdown_to_html(md: &str, options: &Options) -> String {
 pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plugins) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut bw = BufWriter::new(Vec::new());
-    format_html_with_plugins(root, options, &mut bw, plugins).unwrap();
-    String::from_utf8(bw.into_inner().unwrap()).unwrap()
+    let mut out = Vec::new();
+    format_html_with_plugins(root, options, &mut out, plugins).unwrap();
+    String::from_utf8(out).unwrap()
 }
 
 /// Return the version of the crate.
@@ -146,9 +144,9 @@ pub fn version() -> &'static str {
 pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut bw = BufWriter::new(Vec::new());
-    format_commonmark(root, options, &mut bw).unwrap();
-    String::from_utf8(bw.into_inner().unwrap()).unwrap()
+    let mut out = Vec::new();
+    format_commonmark(root, options, &mut out).unwrap();
+    String::from_utf8(out).unwrap()
 }
 
 /// Render Markdown to CommonMark XML.
@@ -166,7 +164,7 @@ pub fn markdown_to_commonmark_xml_with_plugins(
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut bw = BufWriter::new(Vec::new());
-    format_xml_with_plugins(root, options, &mut bw, plugins).unwrap();
-    String::from_utf8(bw.into_inner().unwrap()).unwrap()
+    let mut out = Vec::new();
+    format_xml_with_plugins(root, options, &mut out, plugins).unwrap();
+    String::from_utf8(out).unwrap()
 }

@@ -13,7 +13,6 @@ use crate::{nodes, Plugins};
 pub use typed_arena::Arena;
 
 use std::cmp::max;
-use std::io::BufWriter;
 use std::io::{self, Write};
 use std::str;
 
@@ -1027,11 +1026,10 @@ fn minimize_commonmark(text: &mut Vec<u8>, original_options: &Options) {
         let arena = Arena::new();
         let root = crate::parse_document(&arena, str::from_utf8(text).unwrap(), &options_without);
 
-        let mut bw = BufWriter::new(Vec::new());
-        format_document(root, &options_without, &mut bw).unwrap();
-        let result = bw.into_inner().unwrap();
+        let mut out = Vec::new();
+        format_document(root, &options_without, &mut out).unwrap();
 
-        if original == result {
+        if original == out {
             adjust += 1;
         } else {
             text.insert(ix - adjust, b'\\');
