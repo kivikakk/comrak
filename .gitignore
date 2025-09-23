@@ -9,3 +9,4 @@ benches/comrak-*
 benches/pulldown-cmark
 benches/markdown-it
 /result
+/bench-output.md
