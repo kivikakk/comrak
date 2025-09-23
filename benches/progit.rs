@@ -16,7 +16,7 @@ fn bench_progit(b: &mut Bencher) {
     b.iter(|| {
         let arena = Arena::new();
         let root = parse_document(&arena, &s, &Options::default());
-        let mut output = vec![];
+        let mut output = String::new();
         format_html(root, &Options::default(), &mut output).unwrap()
     });
 }

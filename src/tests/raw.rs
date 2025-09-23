@@ -38,10 +38,10 @@ fn raw_node() {
     let raw_node_block = arena.alloc(Node::new(RefCell::new(raw_ast_block)));
     root.first_child().unwrap().insert_after(raw_node_block);
 
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(root, &options, &mut output).unwrap();
     compare_strs(
-        &String::from_utf8(output).unwrap(),
+        &output,
         concat!(
             "<p>User input: &lt;iframe&gt;&lt;/iframe&gt;",
             "System Inline input: <iframe></iframe></p>\n",
@@ -51,14 +51,14 @@ fn raw_node() {
         &input,
     );
 
-    let mut md = vec![];
+    let mut md = String::new();
     cm::format_document_with_plugins(root, &options, &mut md, &Plugins::default()).unwrap();
-    compare_strs(&String::from_utf8(md).unwrap(), &input, "cm", &input);
+    compare_strs(&md, &input, "cm", &input);
 
-    let mut xml = vec![];
+    let mut xml = String::new();
     crate::xml::format_document(root, &options, &mut xml).unwrap();
     compare_strs(
-        &String::from_utf8(xml).unwrap(),
+        &xml,
         concat!(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
 	    "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",

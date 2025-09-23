@@ -9,9 +9,9 @@ fn round_trip_one_field() {
     let arena = Arena::new();
     let input = "---\nlayout: post\n---\nText\n";
     let root = parse_document(&arena, input, &options);
-    let mut buf = Vec::new();
+    let mut buf = String::new();
     format_commonmark(root, &options, &mut buf).unwrap();
-    assert_eq!(&String::from_utf8(buf).unwrap(), input);
+    assert_eq!(buf, input);
 }
 
 #[test]
@@ -21,9 +21,9 @@ fn round_trip_wide_delimiter() {
     let arena = Arena::new();
     let input = "\u{04fc}\nlayout: post\n\u{04fc}\nText\n";
     let root = parse_document(&arena, input, &options);
-    let mut buf = Vec::new();
+    let mut buf = String::new();
     format_commonmark(root, &options, &mut buf).unwrap();
-    assert_eq!(&String::from_utf8(buf).unwrap(), input);
+    assert_eq!(buf, input);
 }
 
 #[test]

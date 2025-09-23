@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     options.render.prefer_fenced = true;
     options.render.experimental_minimize_commonmark = true;
 
-    let mut out = vec![];
+    let mut out = String::new();
     format_commonmark(doc, &options, &mut out)?;
     std::fs::write("README.md", &out)?;
 

@@ -12,26 +12,26 @@ fn syntax_highlighter_plugin() {
     impl SyntaxHighlighterAdapter for MockAdapter {
         fn write_highlighted(
             &self,
-            output: &mut dyn Write,
+            output: &mut dyn std::fmt::Write,
             lang: Option<&str>,
             code: &str,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             write!(output, "<!--{}--><span>{}</span>", lang.unwrap(), code)
         }
 
         fn write_pre_tag(
             &self,
-            output: &mut dyn Write,
+            output: &mut dyn std::fmt::Write,
             attributes: HashMap<String, String>,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
 
         fn write_code_tag(
             &self,
-            output: &mut dyn Write,
+            output: &mut dyn std::fmt::Write,
             attributes: HashMap<String, String>,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
     }
@@ -56,14 +56,18 @@ fn heading_adapter_plugin() {
     impl HeadingAdapter for MockAdapter {
         fn enter(
             &self,
-            output: &mut dyn Write,
+            output: &mut dyn std::fmt::Write,
             heading: &HeadingMeta,
             _sourcepos: Option<Sourcepos>,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             write!(output, "<h{} data-heading=\"true\">", heading.level + 1)
         }
 
-        fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+        fn exit(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            heading: &HeadingMeta,
+        ) -> std::fmt::Result {
             write!(output, "</h{}>", heading.level + 1)
         }
     }

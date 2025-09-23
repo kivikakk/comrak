@@ -390,9 +390,9 @@ pub struct ExtensionOptions<'c> {
     /// let arena = Arena::new();
     /// let input ="---\nlayout: post\n---\nText\n";
     /// let root = parse_document(&arena, input, &options);
-    /// let mut buf = Vec::new();
+    /// let mut buf = String::new();
     /// format_commonmark(&root, &options, &mut buf);
-    /// assert_eq!(&String::from_utf8(buf).unwrap(), input);
+    /// assert_eq!(buf, input);
     /// ```
     pub front_matter_delimiter: Option<String>,
 
@@ -838,15 +838,15 @@ pub struct RenderOptions {
     /// # let arena = typed_arena::Arena::new();
     /// let mut options = Options::default();
     /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
-    /// let mut output = vec![];
+    /// let mut output = String::new();
     /// format_commonmark(node, &options, &mut output).unwrap();
-    /// assert_eq!(String::from_utf8(output).unwrap(),
+    /// assert_eq!(output,
     ///            "hello hello hello hello hello hello\n");
     ///
     /// options.render.width = 20;
-    /// let mut output = vec![];
+    /// let mut output = String::new();
     /// format_commonmark(node, &options, &mut output).unwrap();
-    /// assert_eq!(String::from_utf8(output).unwrap(),
+    /// assert_eq!(output,
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
     /// ```
@@ -924,8 +924,7 @@ pub struct RenderOptions {
     /// Sourcepos information is reliable for core block items excluding
     /// lists and list items, all inlines, and most extensions.
     /// The description lists extension still has issues; see
-    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_
-    /// lists.rs#L60-L125>.
+    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
     ///
     ///
     /// ```rust
@@ -1017,14 +1016,14 @@ pub struct RenderOptions {
     /// let input = "```\nhello\n```\n";
     /// let root = parse_document(&arena, input, &options);
     ///
-    /// let mut buf = Vec::new();
+    /// let mut buf = String::new();
     /// format_commonmark(&root, &options, &mut buf);
-    /// assert_eq!(str::from_utf8(&buf).unwrap(), "    hello\n");
+    /// assert_eq!(buf, "    hello\n");
     ///
     /// buf.clear();
     /// options.render.prefer_fenced = true;
     /// format_commonmark(&root, &options, &mut buf);
-    /// assert_eq!(str::from_utf8(&buf).unwrap(), "```\nhello\n```\n");
+    /// assert_eq!(buf, "```\nhello\n```\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub prefer_fenced: bool,
@@ -1122,7 +1121,7 @@ pub struct RenderPlugins<'p> {
     /// # use comrak::{markdown_to_html, Options, Plugins, markdown_to_html_with_plugins};
     /// # use comrak::adapters::SyntaxHighlighterAdapter;
     /// use std::collections::HashMap;
-    /// use std::io::{self, Write};
+    /// use std::fmt::{self, Write};
     /// let options = Options::default();
     /// let mut plugins = Plugins::default();
     /// let input = "```rust\nfn main<'a>();\n```";
@@ -1132,16 +1131,16 @@ pub struct RenderPlugins<'p> {
     ///
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {
-    ///     fn write_highlighted(&self, output: &mut dyn Write, lang: Option<&str>, code: &str) -> io::Result<()> {
+    ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, lang: Option<&str>, code: &str) -> fmt::Result {
     ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
     ///     }
     ///
-    ///     fn write_pre_tag(&self, output: &mut dyn Write, _attributes: HashMap<String, String>) -> io::Result<()> {
-    ///         output.write_all(b"<pre lang=\"rust\">")
+    ///     fn write_pre_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag(&self, output: &mut dyn Write, _attributes: HashMap<String, String>) -> io::Result<()> {
-    ///         output.write_all(b"<code class=\"language-rust\">")
+    ///     fn write_code_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }
     ///

@@ -65,7 +65,7 @@ fn no_stack_smash_html() {
     let s: String = ">".repeat(150_000);
     let arena = Arena::new();
     let root = parse_document(&arena, &s, &Options::default());
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(root, &Options::default(), &mut output).unwrap()
 }
 
@@ -74,7 +74,7 @@ fn no_stack_smash_cm() {
     let s: String = ">".repeat(150_000);
     let arena = Arena::new();
     let root = parse_document(&arena, &s, &Options::default());
-    let mut output = vec![];
+    let mut output = String::new();
     cm::format_document(root, &Options::default(), &mut output).unwrap()
 }
 

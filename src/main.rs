@@ -1,18 +1,19 @@
 //! The `comrak` binary.
 
+use std::env;
+use std::error::Error;
+use std::fs;
+use std::io::Read;
+use std::path::PathBuf;
+use std::process;
+use std::{boxed::Box, io::BufWriter};
+
+use clap::{Parser, ValueEnum};
+
 use comrak::{
     adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena, ListStyleType,
     Options, Plugins,
 };
-use std::boxed::Box;
-use std::env;
-use std::error::Error;
-use std::fs;
-use std::io::{BufWriter, Read, Write};
-use std::path::PathBuf;
-use std::process;
-
-use clap::{Parser, ValueEnum};
 use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
 
 const EXIT_SUCCESS: i32 = 0;
@@ -363,18 +364,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(output_filename) = cli.output {
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
-        formatter(root, &options, &mut bw, &plugins)?;
-        bw.flush()?;
+        fmt2io::write(&mut bw, |writer| {
+            formatter(root, &options, writer, &plugins)
+        })?;
+        std::io::Write::flush(&mut bw)?;
     } else if cli.inplace {
         let output_filename = cli.files.unwrap().first().unwrap().clone();
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
-        formatter(root, &options, &mut bw, &plugins)?;
-        bw.flush()?;
+        fmt2io::write(&mut bw, |writer| {
+            formatter(root, &options, writer, &plugins)
+        })?;
+        std::io::Write::flush(&mut bw)?;
     } else {
         let stdout = std::io::stdout();
         let mut bw = BufWriter::new(stdout.lock());
-        formatter(root, &options, &mut bw, &plugins)?;
-        bw.flush()?;
+        fmt2io::write(&mut bw, |writer| {
+            formatter(root, &options, writer, &plugins)
+        })?;
+        std::io::Write::flush(&mut bw)?;
     };
 
     process::exit(EXIT_SUCCESS);

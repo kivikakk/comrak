@@ -19,7 +19,7 @@ fn test_paragraph_at_root_crash() {
     // parent at all?  Normally it should have at least a Document.
     para.detach();
 
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(para, &options, &mut output).unwrap();
 }
 
@@ -43,7 +43,7 @@ fn test_empty_table_crash() {
         child.detach();
     }
 
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(table, &options, &mut output).unwrap();
 }
 
@@ -74,7 +74,7 @@ fn test_table_cell_out_of_water_crash() {
     // What if the table cell has no owning table?
     table_row.detach();
 
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(table_cell, &options, &mut output).unwrap();
 }
 
@@ -105,6 +105,6 @@ fn test_table_cell_out_of_school_crash() {
     // What if the table cell has no owning table row?
     table_cell.detach();
 
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(table_cell, &options, &mut output).unwrap();
 }

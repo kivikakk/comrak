@@ -3,7 +3,7 @@
 //! Each plugin has to implement one of the traits available in this module.
 
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::fmt;
 
 use crate::nodes::Sourcepos;
 
@@ -15,10 +15,10 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// code: The source code to be syntax highlighted.
     fn write_highlighted(
         &self,
-        output: &mut dyn Write,
+        output: &mut dyn fmt::Write,
         lang: Option<&str>,
         code: &str,
-    ) -> io::Result<()>;
+    ) -> fmt::Result;
 
     /// Generates the opening `<pre>` tag. Some syntax highlighter libraries might include their own
     /// `<pre>` tag possibly with some HTML attribute pre-filled.
@@ -26,9 +26,9 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// `attributes`: A map of HTML attributes provided by comrak.
     fn write_pre_tag(
         &self,
-        output: &mut dyn Write,
+        output: &mut dyn fmt::Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()>;
+    ) -> fmt::Result;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
     /// `<code>` tag possibly with some HTML attribute pre-filled.
@@ -36,9 +36,9 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// `attributes`: A map of HTML attributes provided by comrak.
     fn write_code_tag(
         &self,
-        output: &mut dyn Write,
+        output: &mut dyn fmt::Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()>;
+    ) -> fmt::Result;
 }
 
 /// The struct passed to the [`HeadingAdapter`] for custom heading implementations.
@@ -61,11 +61,11 @@ pub trait HeadingAdapter: Send + Sync {
     /// Render the opening tag.
     fn enter(
         &self,
-        output: &mut dyn Write,
+        output: &mut dyn fmt::Write,
         heading: &HeadingMeta,
         sourcepos: Option<Sourcepos>,
-    ) -> io::Result<()>;
+    ) -> fmt::Result;
 
     /// Render the closing tag.
-    fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()>;
+    fn exit(&self, output: &mut dyn fmt::Write, heading: &HeadingMeta) -> fmt::Result;
 }

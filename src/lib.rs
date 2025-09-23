@@ -32,11 +32,11 @@
 //!     }
 //! }
 //!
-//! let mut html = vec![];
+//! let mut html = String::new();
 //! format_html(root, &Options::default(), &mut html).unwrap();
 //!
 //! assert_eq!(
-//!     String::from_utf8(html).unwrap(),
+//!     &html,
 //!     "<p>This is your input.</p>\n\
 //!      <ol>\n\
 //!      <li>Also <a href=\"#\">your</a> input.</li>\n\
@@ -130,9 +130,9 @@ pub fn markdown_to_html(md: &str, options: &Options) -> String {
 pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plugins) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut out = Vec::new();
+    let mut out = String::new();
     format_html_with_plugins(root, options, &mut out, plugins).unwrap();
-    String::from_utf8(out).unwrap()
+    out
 }
 
 /// Return the version of the crate.
@@ -144,9 +144,9 @@ pub fn version() -> &'static str {
 pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut out = Vec::new();
+    let mut out = String::new();
     format_commonmark(root, options, &mut out).unwrap();
-    String::from_utf8(out).unwrap()
+    out
 }
 
 /// Render Markdown to CommonMark XML.
@@ -164,7 +164,7 @@ pub fn markdown_to_commonmark_xml_with_plugins(
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut out = Vec::new();
+    let mut out = String::new();
     format_xml_with_plugins(root, options, &mut out, plugins).unwrap();
-    String::from_utf8(out).unwrap()
+    out
 }

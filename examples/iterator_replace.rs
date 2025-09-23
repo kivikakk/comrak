@@ -17,10 +17,10 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
         }
     }
 
-    let mut html = vec![];
+    let mut html = String::new();
     format_html(root, &Options::default(), &mut html).unwrap();
 
-    String::from_utf8(html).unwrap()
+    html
 }
 
 fn main() {

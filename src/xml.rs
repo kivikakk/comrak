@@ -2,7 +2,7 @@ use crate::character_set::character_set;
 use crate::nodes::{AstNode, ListType, NodeCode, NodeMath, NodeTable, NodeValue};
 use crate::parser::{Options, Plugins};
 use std::cmp;
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 
 use crate::nodes::NodeHtmlBlock;
 
@@ -13,7 +13,7 @@ pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &Options,
     output: &mut dyn Write,
-) -> io::Result<()> {
+) -> fmt::Result {
     format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
@@ -23,9 +23,9 @@ pub fn format_document_with_plugins<'a>(
     options: &Options,
     output: &mut dyn Write,
     plugins: &Plugins,
-) -> io::Result<()> {
-    output.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
-    output.write_all(b"<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n")?;
+) -> fmt::Result {
+    output.write_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
+    output.write_str("<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n")?;
 
     XmlFormatter::new(options, output, plugins).format(root, false)
 }
@@ -47,29 +47,30 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         }
     }
 
-    fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
+    fn escape(&mut self, buffer: &str) -> fmt::Result {
+        let bytes = buffer.as_bytes();
         const XML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
 
         let mut offset = 0;
-        for (i, &byte) in buffer.iter().enumerate() {
+        for (i, &byte) in bytes.iter().enumerate() {
             if XML_UNSAFE[byte as usize] {
-                let esc: &[u8] = match byte {
-                    b'"' => b"&quot;",
-                    b'&' => b"&amp;",
-                    b'<' => b"&lt;",
-                    b'>' => b"&gt;",
+                let esc: &str = match byte {
+                    b'"' => "&quot;",
+                    b'&' => "&amp;",
+                    b'<' => "&lt;",
+                    b'>' => "&gt;",
                     _ => unreachable!(),
                 };
-                self.output.write_all(&buffer[offset..i])?;
-                self.output.write_all(esc)?;
+                self.output.write_str(&buffer[offset..i])?;
+                self.output.write_str(esc)?;
                 offset = i + 1;
             }
         }
-        self.output.write_all(&buffer[offset..])?;
+        self.output.write_str(&buffer[offset..])?;
         Ok(())
     }
 
-    fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> io::Result<()> {
+    fn format<'a>(&mut self, node: &'a AstNode<'a>, plain: bool) -> fmt::Result {
         // Traverse the AST iteratively using a work stack, with pre- and
         // post-child-traversal phases. During pre-order traversal render the
         // opening tags, then push the node back onto the stack for the
@@ -91,13 +92,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                             | NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal)
                             | NodeValue::Raw(ref literal) => {
-                                self.escape(literal.as_bytes())?;
+                                self.escape(literal)?;
                             }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
-                                self.output.write_all(b" ")?;
+                                self.output.write_str(" ")?;
                             }
                             NodeValue::Math(NodeMath { ref literal, .. }) => {
-                                self.escape(literal.as_bytes())?;
+                                self.escape(literal)?;
                             }
                             _ => (),
                         }
@@ -121,14 +122,18 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn indent(&mut self) -> io::Result<()> {
+    fn indent(&mut self) -> fmt::Result {
         for _ in 0..(cmp::min(self.indent, MAX_INDENT)) {
-            self.output.write_all(b" ")?;
+            self.output.write_str(" ")?;
         }
         Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: &'a AstNode<'a>, entering: bool) -> io::Result<bool> {
+    fn format_node<'a>(
+        &mut self,
+        node: &'a AstNode<'a>,
+        entering: bool,
+    ) -> Result<bool, std::fmt::Error> {
         if entering {
             self.indent()?;
 
@@ -145,21 +150,21 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             match ast.value {
                 NodeValue::Document => self
                     .output
-                    .write_all(b" xmlns=\"http://commonmark.org/xml/1.0\"")?,
+                    .write_str(" xmlns=\"http://commonmark.org/xml/1.0\"")?,
                 NodeValue::Text(ref literal)
                 | NodeValue::Code(NodeCode { ref literal, .. })
                 | NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. })
                 | NodeValue::HtmlInline(ref literal)
                 | NodeValue::Raw(ref literal) => {
-                    self.output.write_all(b" xml:space=\"preserve\">")?;
-                    self.escape(literal.as_bytes())?;
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(literal)?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
                 NodeValue::List(ref nl) => {
                     match nl.list_type {
                         ListType::Bullet => {
-                            self.output.write_all(b" type=\"bullet\"")?;
+                            self.output.write_str(" type=\"bullet\"")?;
                         }
                         ListType::Ordered => {
                             write!(
@@ -171,7 +176,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         }
                     }
                     if nl.is_task_list {
-                        self.output.write_all(b" tasklist=\"true\"")?;
+                        self.output.write_str(" tasklist=\"true\"")?;
                     }
                     write!(self.output, " tight=\"{}\"", nl.tight)?;
                 }
@@ -188,16 +193,16 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 }
                 NodeValue::CodeBlock(ref ncb) => {
                     if !ncb.info.is_empty() {
-                        self.output.write_all(b" info=\"")?;
-                        self.output.write_all(ncb.info.as_bytes())?;
-                        self.output.write_all(b"\"")?;
+                        self.output.write_str(" info=\"")?;
+                        self.output.write_str(&ncb.info)?;
+                        self.output.write_str("\"")?;
 
                         if ncb.info.eq("math") {
-                            self.output.write_all(b" math_style=\"display\"")?;
+                            self.output.write_str(" math_style=\"display\"")?;
                         }
                     }
-                    self.output.write_all(b" xml:space=\"preserve\">")?;
-                    self.escape(ncb.literal.as_bytes())?;
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&ncb.literal)?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
@@ -210,11 +215,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Strikethrough => {}
                 NodeValue::Superscript => {}
                 NodeValue::Link(ref nl) | NodeValue::Image(ref nl) => {
-                    self.output.write_all(b" destination=\"")?;
-                    self.escape(nl.url.as_bytes())?;
-                    self.output.write_all(b"\" title=\"")?;
-                    self.escape(nl.title.as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                    self.output.write_str(" destination=\"")?;
+                    self.escape(&nl.url)?;
+                    self.output.write_str("\" title=\"")?;
+                    self.escape(&nl.title)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::Table(..) => {
                     // noop
@@ -240,67 +245,67 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     }
                 }
                 NodeValue::FootnoteDefinition(ref fd) => {
-                    self.output.write_all(b" label=\"")?;
-                    self.escape(fd.name.as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                    self.output.write_str(" label=\"")?;
+                    self.escape(&fd.name)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::FootnoteReference(ref nfr) => {
-                    self.output.write_all(b" label=\"")?;
-                    self.escape(nfr.name.as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                    self.output.write_str(" label=\"")?;
+                    self.escape(&nfr.name)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::TaskItem(Some(_)) => {
-                    self.output.write_all(b" completed=\"true\"")?;
+                    self.output.write_str(" completed=\"true\"")?;
                 }
                 NodeValue::TaskItem(None) => {
-                    self.output.write_all(b" completed=\"false\"")?;
+                    self.output.write_str(" completed=\"false\"")?;
                 }
                 #[cfg(feature = "shortcodes")]
                 NodeValue::ShortCode(ref nsc) => {
-                    self.output.write_all(b" id=\"")?;
-                    self.escape(nsc.code.as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                    self.output.write_str(" id=\"")?;
+                    self.escape(&nsc.code)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::Escaped => {
                     // noop
                 }
                 NodeValue::Math(ref math, ..) => {
                     if math.display_math {
-                        self.output.write_all(b" math_style=\"display\"")?;
+                        self.output.write_str(" math_style=\"display\"")?;
                     } else {
-                        self.output.write_all(b" math_style=\"inline\"")?;
+                        self.output.write_str(" math_style=\"inline\"")?;
                     }
-                    self.output.write_all(b" xml:space=\"preserve\">")?;
-                    self.escape(math.literal.as_bytes())?;
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&math.literal)?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
                 NodeValue::WikiLink(ref nl) => {
-                    self.output.write_all(b" destination=\"")?;
-                    self.escape(nl.url.as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                    self.output.write_str(" destination=\"")?;
+                    self.escape(&nl.url)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::Underline => {}
                 NodeValue::Subscript => {}
                 NodeValue::SpoileredText => {}
                 NodeValue::EscapedTag(ref data) => {
-                    self.output.write_all(data.as_bytes())?;
+                    self.output.write_str(data)?;
                 }
                 NodeValue::Alert(ref alert) => {
-                    self.output.write_all(b" type=\"")?;
+                    self.output.write_str(" type=\"")?;
                     self.output
-                        .write_all(alert.alert_type.default_title().to_lowercase().as_bytes())?;
-                    self.output.write_all(b"\"")?;
+                        .write_str(&alert.alert_type.default_title().to_lowercase())?;
+                    self.output.write_str("\"")?;
                     if alert.title.is_some() {
                         let title = alert.title.as_ref().unwrap();
 
-                        self.output.write_all(b" title=\"")?;
-                        self.escape(title.as_bytes())?;
-                        self.output.write_all(b"\"")?;
+                        self.output.write_str(" title=\"")?;
+                        self.escape(&title)?;
+                        self.output.write_str("\"")?;
                     }
 
                     if alert.multiline {
-                        self.output.write_all(b" multiline=\"true\"")?;
+                        self.output.write_str(" multiline=\"true\"")?;
                     }
                 }
             }
@@ -308,9 +313,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             if node.first_child().is_some() {
                 self.indent += 2;
             } else if !was_literal {
-                self.output.write_all(b" /")?;
+                self.output.write_str(" /")?;
             }
-            self.output.write_all(b">\n")?;
+            self.output.write_str(">\n")?;
         } else if node.first_child().is_some() {
             self.indent -= 2;
             self.indent()?;
