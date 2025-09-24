@@ -26,6 +26,7 @@ Comrak's library supports Rust <span class="msrv">1.65</span>+.
 
 - Anywhere with a Rust toolchain:
   - `cargo install comrak`
+  - <code>[cargo binstall](https://github.com/cargo-bins/cargo-binstall) comrak</code>
 - Many Unix distributions:
   - `pacman -S comrak`
   - `brew install comrak`
