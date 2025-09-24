@@ -1,3 +1,17 @@
+# [v0.42.0] - 2025-09-24
+
+## What's Changed
+* Update `is_cjk` in CJK Friendly Emphasis to Unicode 17 by @tats-u in https://github.com/kivikakk/comrak/pull/598
+* rename a bunch of "nch" to "nh". by @kivikakk in https://github.com/kivikakk/comrak/pull/599
+* html::collect_text: deal in String, not Vec<u8>. by @kivikakk in https://github.com/kivikakk/comrak/pull/600
+* Anchorizer: String input can be &str. by @kivikakk in https://github.com/kivikakk/comrak/pull/603
+* cm::escape_inline: add function to escape input for inline text. by @kivikakk in https://github.com/kivikakk/comrak/pull/602
+* Cargo.toml: v0.42.0. by @kivikakk in https://github.com/kivikakk/comrak/pull/604
+* cm::escape_link_destination: add function to escape URL for use as link destination. by @kivikakk in https://github.com/kivikakk/comrak/pull/605
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.41.1...v0.42.0
+
 # [v0.42.0] - unreleased
 
 New APIs:
