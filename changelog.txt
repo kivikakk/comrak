@@ -6,6 +6,7 @@ Changed APIs:
   added if you still want to start with your own (`String`) buffer.
   * There was no particular reason for this populating a `Vec<u8>` instead of a
     `String`; it was just old.
+* `Anchorizer::anchorizer` now takes `&str` instead of a `String`.
 
 
 # [v0.41.1] - 2025-09-14

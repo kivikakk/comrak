@@ -14,9 +14,9 @@ use unicode_categories::UnicodeCategories;
 /// # use comrak::Anchorizer;
 /// let mut anchorizer = Anchorizer::new();
 /// // First "stuff" is unsuffixed.
-/// assert_eq!("stuff".to_string(), anchorizer.anchorize("Stuff".to_string()));
+/// assert_eq!("stuff", anchorizer.anchorize("Stuff"));
 /// // Second "stuff" has "-1" appended to make it unique.
-/// assert_eq!("stuff-1".to_string(), anchorizer.anchorize("Stuff".to_string()));
+/// assert_eq!("stuff-1", anchorizer.anchorize("Stuff"));
 /// ```
 #[derive(Debug, Default)]
 #[doc(hidden)]
@@ -37,9 +37,9 @@ impl Anchorizer {
     /// # use comrak::Anchorizer;
     /// let mut anchorizer = Anchorizer::new();
     /// let source = "Ticks aren't in";
-    /// assert_eq!("ticks-arent-in".to_string(), anchorizer.anchorize(source.to_string()));
+    /// assert_eq!("ticks-arent-in", anchorizer.anchorize(source));
     /// ```
-    pub fn anchorize(&mut self, header: String) -> String {
+    pub fn anchorize(&mut self, header: &str) -> String {
         fn is_permitted_char(&c: &char) -> bool {
             c == ' '
                 || c == '-'

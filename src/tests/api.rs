@@ -29,7 +29,7 @@ fn exercise_full_api() {
     let _: std::io::Result<()> =
         format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
 
-    let _: String = Anchorizer::new().anchorize("header".to_string());
+    let _: String = Anchorizer::new().anchorize("header");
 
     let _: &AstNode = parse_document(&arena, "document", &default_options);
 

@@ -633,7 +633,7 @@ fn render_heading<'a, T>(
 
                 if let Some(ref prefix) = context.options.extension.header_ids {
                     let text_content = collect_text(node);
-                    let id = context.anchorizer.anchorize(text_content);
+                    let id = context.anchorizer.anchorize(&text_content);
                     write!(
                         context,
                         "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
