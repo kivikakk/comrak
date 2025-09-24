@@ -82,6 +82,7 @@ mod tests;
 mod xml;
 
 pub use cm::escape_inline as escape_commonmark_inline;
+pub use cm::escape_link_destination as escape_commonmark_link_destination;
 pub use cm::format_document as format_commonmark;
 pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
 pub use html::format_document as format_html;
