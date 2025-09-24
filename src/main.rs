@@ -188,6 +188,7 @@ enum Extension {
     Spoiler,
     Greentext,
     Alerts,
+    CjkFriendlyEmphasis,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -273,7 +274,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .spoiler(exts.contains(&Extension::Spoiler))
         .greentext(exts.contains(&Extension::Greentext))
         .alerts(exts.contains(&Extension::Alerts))
-        .maybe_front_matter_delimiter(cli.front_matter_delimiter);
+        .maybe_front_matter_delimiter(cli.front_matter_delimiter)
+        .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis));
 
     #[cfg(feature = "shortcodes")]
     let extension = extension.shortcodes(cli.gemojis);
