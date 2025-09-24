@@ -1083,3 +1083,27 @@ pub fn escape_inline(text: &str) -> String {
 
     result
 }
+
+/// Escapes the input URL, rendering it suitable for inclusion as a [link
+/// destination] per the CommonMark spec.
+///
+/// [link destination]: https://spec.commonmark.org/0.31.2/#link-destination
+pub fn escape_link_destination(url: &str) -> String {
+    let mut result = String::with_capacity(url.len() * 3 / 2);
+
+    result.push('<');
+    for c in url.chars() {
+        match c {
+            '<' | '>' => {
+                result.push('\\');
+                result.push(c);
+            }
+            '\n' => result.push_str("%0A"),
+            '\r' => result.push_str("%0D"),
+            _ => result.push(c),
+        }
+    }
+    result.push('>');
+
+    result
+}
