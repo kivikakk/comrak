@@ -1,35 +1,38 @@
 # [v0.42.0] - 2025-09-24
 
-## What's Changed
-* Update `is_cjk` in CJK Friendly Emphasis to Unicode 17 by @tats-u in https://github.com/kivikakk/comrak/pull/598
-* rename a bunch of "nch" to "nh". by @kivikakk in https://github.com/kivikakk/comrak/pull/599
-* html::collect_text: deal in String, not Vec<u8>. by @kivikakk in https://github.com/kivikakk/comrak/pull/600
-* Anchorizer: String input can be &str. by @kivikakk in https://github.com/kivikakk/comrak/pull/603
-* cm::escape_inline: add function to escape input for inline text. by @kivikakk in https://github.com/kivikakk/comrak/pull/602
-* Cargo.toml: v0.42.0. by @kivikakk in https://github.com/kivikakk/comrak/pull/604
-* cm::escape_link_destination: add function to escape URL for use as link destination. by @kivikakk in https://github.com/kivikakk/comrak/pull/605
-
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.41.1...v0.42.0
-
-# [v0.42.0] - unreleased
-
 New APIs:
 
 * `cm::escape_inline` (aliased at crate level as `escape_commonmark_inline`)
-  is added; escapes input text suitable for inclusion in a CommonMark document
-  where regular inline processing takes place.
+  is added; escapes input text suitable for inclusion in a CommonMark
+  document where regular inline processing takes place.  (by @kivikakk in
+  https://github.com/kivikakk/comrak/pull/602)
 * `cm::escape_link_destination` (aliased at crate level as
-  `escape_commonmark_link_destination`) is added; escapes input URL suitable for
-  use as a link destination in a CommonMark document.
+  `escape_commonmark_link_destination`) is added; escapes input URL suitable
+  for use as a link destination in a CommonMark document.  (by @kivikakk in
+  https://github.com/kivikakk/comrak/pull/605)
 
 Changed APIs:
 
 * `html::collect_text` now returns a `String`.  `html::collect_text_append` is
-  added if you still want to start with your own (`String`) buffer.
+  added if you still want to start with your own (`String`) buffer.  (by
+  @kivikakk in https://github.com/kivikakk/comrak/pull/600)
   * There was no particular reason for this populating a `Vec<u8>` instead of a
     `String`; it was just old.
-* `Anchorizer::anchorizer` now takes `&str` instead of a `String`.
+* `Anchorizer::anchorizer` now takes `&str` instead of a `String`.  (by
+  @kivikakk in https://github.com/kivikakk/comrak/pull/603)
+  * As above.
+
+Updates:
+
+* Update `is_cjk` in CJK Friendly Emphasis to Unicode 17.  (by @tats-u in
+  https://github.com/kivikakk/comrak/pull/598)
+
+Behind the scenes:
+
+* Rename a bunch of "nch" to "nh". (by @kivikakk in
+  https://github.com/kivikakk/comrak/pull/599)
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.41.1...v0.42.0
 
 
 # [v0.41.1] - 2025-09-14
