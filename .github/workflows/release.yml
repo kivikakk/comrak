@@ -60,9 +60,11 @@ jobs:
             - name: Update changelog.txt
               run: |
                   echo "# [v${{ steps.version-label.outputs.version }}] - `date +%Y-%m-%d`" >> changelog.txt.tmp
-                  echo '' > changelog.txt
-                  echo '${{steps.generate-release-notes.outputs.changelog}}' >> changelog.txt.tmp
-                  echo '' >> changelog.txt
+                  cat <<'EOF' >> changelog.txt.tmp
+
+                  ${{steps.generate-release-notes.outputs.changelog}}
+
+                  EOF
                   cat changelog.txt >> changelog.txt.tmp
                   mv changelog.txt.tmp changelog.txt
 
