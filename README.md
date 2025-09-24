@@ -117,7 +117,7 @@ Options:
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
           wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript, spoiler,
-          greentext, alerts]
+          greentext, alerts, cjk-friendly-emphasis]
 
   -t, --to <FORMAT>
           Specify output format
