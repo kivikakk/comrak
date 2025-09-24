@@ -1,5 +1,11 @@
 # [v0.42.0] - unreleased
 
+New APIs:
+
+* `cm::escape_inline` (aliased at crate level as `escape_commonmark_inline`)
+  is added; escapes input text suitable for inclusion in a CommonMark document
+  where regular inline processing takes place.
+
 Changed APIs:
 
 * `html::collect_text` now returns a `String`.  `html::collect_text_append` is
