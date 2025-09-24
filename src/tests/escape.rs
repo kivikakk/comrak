@@ -34,3 +34,26 @@ fn escape_inline_baseline() {
         r#"some \<\"complicated\"\> \& '/problematic\\' input"#,
     );
 }
+
+/// Assert a suitable method to escape [link destination]s.
+///
+/// [link destination]: https://spec.commonmark.org/0.31.2/#link-destination
+#[test]
+fn escape_link_target() {
+    let url = "rabbits) <cup\rcakes\n> [hyacinth](";
+    let escaped = format!(
+        "<{}>",
+        url.replace("<", "\\<")
+            .replace(">", "\\>")
+            .replace("\n", "%0A")
+            .replace("\r", "%0D")
+    );
+
+    let md = format!("A [link]({escaped}).");
+    let html = markdown_to_html(&md, &Options::default());
+
+    assert_eq!(
+        "<p>A <a href=\"rabbits)%20%3Ccup%0Dcakes%0A%3E%20%5Bhyacinth%5D(\">link</a>.</p>\n",
+        html
+    );
+}
