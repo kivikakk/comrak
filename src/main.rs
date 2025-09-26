@@ -126,7 +126,7 @@ struct Cli {
     width: usize,
 
     /// Use the Comrak header IDs extension, with the given ID prefix
-    #[arg(long, value_name = "PREFIX")]
+    #[arg(long, value_name = "PREFIX", required = false)]
     header_ids: Option<String>,
 
     /// Ignore front-matter that starts and ends with the given string
