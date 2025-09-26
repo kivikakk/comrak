@@ -1,4 +1,4 @@
-# [Comrak](https://github.com/kivikakk/comrak)
+# [Comrak]
 
 [![Build status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml)
 [![CommonMark: 652/652](https://img.shields.io/badge/commonmark-652%2F652-brightgreen.svg)](https://github.com/commonmark/commonmark-spec/blob/9103e341a973013013bb1a80e13567007c5cef6f/spec.txt)
@@ -6,10 +6,14 @@
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-Rust port of [github's `cmark-gfm`](https://github.com/github/cmark-gfm).
+[Comrak] is a [CommonMark] and [GitHub Flavored Markdown] compatible Markdown parser and renderer, written in Rust.
 
-Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) in default mode.
-GFM support synced with release `0.29.0.gfm.13`.
+Compliant with [CommonMark 0.31.2] by default.
+
+[Comrak]: https://comrak.ee/
+[CommonMark]: https://commonmark.org/
+[GitHub Flavored Markdown]: https://github.github.com/gfm/
+[CommonMark 0.31.2]: https://spec.commonmark.org/0.31.2/
 
 ## Installation
 
@@ -33,7 +37,7 @@ Comrak's library supports Rust <span class="msrv">1.65</span>+.
   - `dnf install comrak`
   - `nix run nixpkgs#comrak`
 
-You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS.
+You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS, including Windows.
 
 ## Usage
 
@@ -316,22 +320,20 @@ depending on your use-case. Here are some other projects to consider:
 As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
 extensions](https://github.github.com/gfm) rigorously.
 
-### Elixir bindings
+### Bindings
 
-- [mdex](https://github.com/leandrocp/mdex) - Elixir bindings for this library built with Rustler.
-  Available on Hex as [`mdex`](https://hex.pm/packages/mdex).
-
-### Python bindings
-
-- [comrak (Python package)](https://github.com/lmmx/comrak) — Python bindings for this library built with PyO3.
-  Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
-
-### Ruby bindings
-
-- [commonmarker](https://github.com/gjtorikian/commonmarker) - Ruby bindings for this library built with Magnus/rb-sys.
+- [Commonmarker](https://github.com/gjtorikian/commonmarker) — Ruby bindings for this library built with Magnus/rb-sys.
   Available on RubyGems as [`commonmarker`](https://rubygems.org/gems/commonmarker).
+- [MDEx](https://github.com/leandrocp/mdex) — Elixir bindings for this library built with Rustler.
+  Available on Hex as [`mdex`](https://hex.pm/packages/mdex).
+- [comrak](https://github.com/lmmx/comrak) — Python bindings for this library built with PyO3.
+  Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
+- [comrak-wasm](https://github.com/nberlette/comrak-wasm) — TypeScript bindings for this library, built with WebAssembly.
+  Available on JSR as [`@nick/comrak`](https://jsr.io/@nick/comrak).
 
 ## Benchmarking
+
+We offer some tools to perform stdin-to-stdout benchmarking of Comrak with its contemporaries.  In this respect, Comrak is not and will not be the fastest: some alternatives do not construct an AST in this scenario.
 
 You'll need to [install hyperfine](https://github.com/sharkdp/hyperfine#installation), and CMake if you want to compare against `cmark-gfm`.
 
