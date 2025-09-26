@@ -41,12 +41,12 @@ a {
     color: light-dark(#0000EE, #8C8CFF);
 }
 
-a:active {
-    color: light-dark(#EE0000, #FA6464);
-}
-
 a:visited {
     color: light-dark(#551A8B, #FFADFF);
+}
+
+a:active {
+    color: light-dark(#EE0000, #FA6464);
 }
 
 h1, h2 {
