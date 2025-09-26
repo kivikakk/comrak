@@ -30,15 +30,10 @@ fn commonmark_avoids_spurious_backslash() {
     p2.append(ast(NodeValue::Text("Line 2".to_owned())));
     root.append(p2);
 
-    let mut output = vec![];
+    let mut output = String::new();
     cm::format_document(root, &options, &mut output).unwrap();
 
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        "Line 1\n\nLine 2\n",
-        "rendered",
-        "<synthetic>",
-    );
+    compare_strs(&output, "Line 1\n\nLine 2\n", "rendered", "<synthetic>");
 }
 
 #[test]
@@ -58,14 +53,9 @@ fn commonmark_renders_single_list_item() {
     p.append(ast(NodeValue::Text("Item 1".to_owned())));
     item.append(p);
     list.append(item);
-    let mut output = vec![];
+    let mut output = String::new();
     cm::format_document(item, &options, &mut output).unwrap();
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        "1. Item 1\n",
-        "rendered",
-        "<synthetic>",
-    );
+    compare_strs(&output, "1. Item 1\n", "rendered", "<synthetic>");
 }
 
 #[test_case("$$x^2$$ and $1 + 2$ and $`y^2`$", "$$x^2$$ and $1 + 2$ and $`y^2`$\n")]

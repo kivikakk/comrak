@@ -1,14 +1,10 @@
 #![cfg(feature = "bon")]
 
-use std::sync::{Arc, Mutex};
-
-use parser::BrokenLinkReference;
-
-use super::*;
-use crate::nodes::AlertType;
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
-    nodes::Sourcepos,
+    nodes::{AlertType, AstNode, Sourcepos},
+    parser::BrokenLinkReference,
+    *,
 };
 
 #[test]
@@ -17,16 +13,16 @@ fn exercise_full_api() {
     let default_options = Options::default();
     let default_plugins = Plugins::default();
     let node = parse_document(&arena, "# My document\n", &default_options);
-    let mut buffer = vec![];
+    let mut buffer = String::new();
 
     // Use every member of the exposed API without any defaults.
     // Not looking for specific outputs, just want to know if the API changes shape.
 
-    let _: std::io::Result<()> = format_commonmark(node, &default_options, &mut buffer);
+    let _: std::fmt::Result = format_commonmark(node, &default_options, &mut buffer);
 
-    let _: std::io::Result<()> = format_html(node, &default_options, &mut buffer);
+    let _: std::fmt::Result = format_html(node, &default_options, &mut buffer);
 
-    let _: std::io::Result<()> =
+    let _: std::fmt::Result =
         format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
 
     let _: String = Anchorizer::new().anchorize("header");
@@ -34,13 +30,13 @@ fn exercise_full_api() {
     let _: &AstNode = parse_document(&arena, "document", &default_options);
 
     // Ensure the closure can modify its context.
-    let blr_ctx_0 = Arc::new(Mutex::new(0));
+    let blr_ctx_0 = std::sync::Arc::new(std::sync::Mutex::new(0));
     #[allow(deprecated)]
     let _: &AstNode = parse_document_with_broken_link_callback(
         &arena,
         "document",
         &Options::default(),
-        Arc::new(|blr: BrokenLinkReference| {
+        std::sync::Arc::new(|blr: BrokenLinkReference| {
             *blr_ctx_0.lock().unwrap() += 1;
             let _: &str = blr.normalized;
             let _: &str = blr.original;
@@ -84,7 +80,7 @@ fn exercise_full_api() {
         .relaxed_tasklist_matching(false)
         .relaxed_autolinks(false);
 
-    let _parse = parse.broken_link_callback(Arc::new(|blr: BrokenLinkReference| {
+    let _parse = parse.broken_link_callback(std::sync::Arc::new(|blr: BrokenLinkReference| {
         *blr_ctx_0.lock().unwrap() += 1;
         let _: &str = blr.normalized;
         let _: &str = blr.original;
@@ -114,26 +110,26 @@ fn exercise_full_api() {
     impl SyntaxHighlighterAdapter for MockAdapter {
         fn write_highlighted(
             &self,
-            _output: &mut dyn Write,
+            _output: &mut dyn std::fmt::Write,
             _lang: Option<&str>,
             _code: &str,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             unreachable!()
         }
 
         fn write_pre_tag(
             &self,
-            _output: &mut dyn Write,
-            _attributes: HashMap<String, String>,
-        ) -> io::Result<()> {
+            _output: &mut dyn std::fmt::Write,
+            _attributes: std::collections::HashMap<String, String>,
+        ) -> std::fmt::Result {
             unreachable!()
         }
 
         fn write_code_tag(
             &self,
-            _output: &mut dyn Write,
-            _attributes: HashMap<String, String>,
-        ) -> io::Result<()> {
+            _output: &mut dyn std::fmt::Write,
+            _attributes: std::collections::HashMap<String, String>,
+        ) -> std::fmt::Result {
             unreachable!()
         }
     }
@@ -141,14 +137,18 @@ fn exercise_full_api() {
     impl HeadingAdapter for MockAdapter {
         fn enter(
             &self,
-            _output: &mut dyn Write,
+            _output: &mut dyn std::fmt::Write,
             _heading: &HeadingMeta,
             _sourcepos: Option<Sourcepos>,
-        ) -> io::Result<()> {
+        ) -> std::fmt::Result {
             unreachable!()
         }
 
-        fn exit(&self, _output: &mut dyn Write, _heading: &HeadingMeta) -> io::Result<()> {
+        fn exit(
+            &self,
+            _output: &mut dyn std::fmt::Write,
+            _heading: &HeadingMeta,
+        ) -> std::fmt::Result {
             unreachable!()
         }
     }

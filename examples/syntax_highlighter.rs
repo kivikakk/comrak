@@ -3,7 +3,7 @@
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::{markdown_to_html_with_plugins, Options, Plugins};
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 
 #[derive(Debug, Copy, Clone)]
 pub struct PotatoSyntaxAdapter {
@@ -22,7 +22,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
         output: &mut dyn Write,
         lang: Option<&str>,
         code: &str,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         write!(
             output,
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",
@@ -36,11 +36,11 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         if attributes.contains_key("lang") {
             write!(output, "<pre lang=\"{}\">", attributes["lang"])
         } else {
-            output.write_all(b"<pre>")
+            output.write_str("<pre>")
         }
     }
 
@@ -48,11 +48,11 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         if attributes.contains_key("class") {
             write!(output, "<code class=\"{}\">", attributes["class"])
         } else {
-            output.write_all(b"<code>")
+            output.write_str("<code>")
         }
     }
 }

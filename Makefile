@@ -10,13 +10,13 @@ bench:
 	cargo build --release
 	(cd vendor/cmark-gfm/; make bench PROG=../../target/release/comrak)
 
-binaries: build-comrak-branch build-comrak-master build-cmark-gfm build-pulldown-cmark build-markdown-it
+binaries: build-comrak-branch build-comrak-main build-cmark-gfm build-pulldown-cmark build-markdown-it
 
 build-comrak-branch:
 	cargo build --release
 	cp ${ROOT}/target/release/comrak ${ROOT}/benches/comrak-${COMMIT}
 
-build-comrak-master:
+build-comrak-main:
 	git clone https://github.com/kivikakk/comrak.git --depth 1 --single-branch ${ROOT}/vendor/comrak || true
 	cd ${ROOT}/vendor/comrak && \
 	cargo build --release && \
@@ -40,11 +40,17 @@ build-pulldown-cmark:
 bench-comrak: build-comrak-branch
 	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
 	cd benches && \
-	hyperfine --warmup 3 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT} './bench.sh ./{binary}'
+	hyperfine --warmup 3 --min-runs ${MIN_RUNS} -L binary comrak-${COMMIT} './bench.sh ./{binary}'
+
+bench-comrak-vs-main: build-comrak-branch build-comrak-main
+	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
+	cd benches && \
+	hyperfine --warmup 10 --min-runs ${MIN_RUNS} -L binary comrak-${COMMIT},comrak-main './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
+	echo "\n\nRun on" `date -u` >> ${ROOT}/bench-output.md
 
 bench-all: binaries
 	git clone https://github.com/progit/progit.git ${ROOT}/vendor/progit || true > /dev/null
 	cd benches && \
-	hyperfine --warmup 10 --min-runs ${MIN_RUNS}  -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm,markdown-it './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
+	hyperfine --warmup 10 --min-runs ${MIN_RUNS} -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm,markdown-it './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
 	echo "\n\nRun on" `date -u` >> ${ROOT}/bench-output.md
 

@@ -231,6 +231,7 @@ dependencies = [
  "clap",
  "emojis",
  "entities",
+ "fmt2io",
  "memchr",
  "shell-words",
  "slug",
@@ -369,6 +370,12 @@ dependencies = [
  "crc32fast",
  "miniz_oxide",
 ]
+
+[[package]]
+name = "fmt2io"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b6129284da9f7e5296cc22183a63f24300e945e297705dcc0672f7df01d62c8"
 
 [[package]]
 name = "fnv"

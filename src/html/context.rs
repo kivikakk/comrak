@@ -2,7 +2,7 @@ use crate::html::{self, Anchorizer};
 use crate::{Options, Plugins};
 
 use std::cell::Cell;
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 
 /// Context struct given to formatter functions as taken by
 /// [`html::format_document_with_formatter`].  Output can be appended to through
@@ -43,9 +43,9 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
         }
     }
 
-    pub(super) fn finish(mut self) -> io::Result<T> {
+    pub(super) fn finish(mut self) -> Result<T, fmt::Error> {
         if self.footnote_ix > 0 {
-            self.write_all(b"</ol>\n</section>\n")?;
+            self.write_str("</ol>\n</section>\n")?;
         }
         Ok(self.user)
     }
@@ -54,41 +54,37 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
     /// LINE FEED, writes one. Otherwise, does nothing.
     ///
     /// (In other words, ensures the output is at a new line.)
-    pub fn cr(&mut self) -> io::Result<()> {
+    pub fn cr(&mut self) -> fmt::Result {
         if !self.last_was_lf.get() {
-            self.write_all(b"\n")?;
+            self.write_str("\n")?;
         }
         Ok(())
     }
 
     /// Convenience wrapper for [`html::escape`].
-    pub fn escape(&mut self, buffer: &[u8]) -> io::Result<()> {
+    pub fn escape(&mut self, buffer: &str) -> fmt::Result {
         html::escape(self, buffer)
     }
 
     /// Convenience wrapper for [`html::escape_href`].
-    pub fn escape_href(&mut self, buffer: &[u8]) -> io::Result<()> {
+    pub fn escape_href(&mut self, buffer: &str) -> fmt::Result {
         let relaxed_autolinks = self.options.parse.relaxed_autolinks;
         html::escape_href(self, buffer, relaxed_autolinks)
     }
 }
 
 impl<'o, 'c, T> Write for Context<'o, 'c, T> {
-    fn flush(&mut self) -> io::Result<()> {
-        self.output.flush()
-    }
-
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let l = buf.len();
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let l = s.len();
         if l > 0 {
-            self.last_was_lf.set(buf[l - 1] == 10);
+            self.last_was_lf.set(s.as_bytes()[l - 1] == 10);
         }
-        self.output.write(buf)
+        self.output.write_str(s)
     }
 }
 
-impl<'o, 'c, T> std::fmt::Debug for Context<'o, 'c, T> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl<'o, 'c, T> fmt::Debug for Context<'o, 'c, T> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         formatter.write_str("<comrak::html::Context>")
     }
 }

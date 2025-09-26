@@ -3,7 +3,7 @@
 use crate::adapters::SyntaxHighlighterAdapter;
 use crate::html;
 use std::collections::{hash_map, HashMap};
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::{
@@ -80,7 +80,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         output: &mut dyn Write,
         lang: Option<&str>,
         code: &str,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         let fallback_syntax = "Plain Text";
 
         let lang: &str = match lang {
@@ -98,8 +98,8 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
             });
 
         match self.highlight_html(code, syntax) {
-            Ok(highlighted_code) => output.write_all(highlighted_code.as_bytes()),
-            Err(_) => output.write_all(code.as_bytes()),
+            Ok(highlighted_code) => output.write_str(&highlighted_code),
+            Err(_) => output.write_str(code),
         }
     }
 
@@ -107,7 +107,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
                 let theme = &self.theme_set.themes[theme];
@@ -133,7 +133,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }
 }

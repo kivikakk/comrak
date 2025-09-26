@@ -1,7 +1,6 @@
 use crate::nodes::{AstNode, NodeValue, Sourcepos};
 use crate::*;
 use std::collections::HashMap;
-use std::io::{self, Write};
 use std::panic;
 
 mod alerts;
@@ -72,14 +71,9 @@ fn commonmark(input: &str, expected: &str, opts: Option<&Options>) {
     let options = opts.unwrap_or(&defaults);
 
     let root = parse_document(&arena, input, options);
-    let mut output = vec![];
+    let mut output = String::new();
     cm::format_document(root, options, &mut output).unwrap();
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        expected,
-        "regular",
-        input,
-    );
+    compare_strs(&output, expected, "regular", input);
 }
 
 #[track_caller]
@@ -103,35 +97,29 @@ fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) 
     let arena = Arena::new();
 
     let root = parse_document(&arena, input, options);
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document(root, options, &mut output).unwrap();
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        expected,
-        "regular",
-        input,
-    );
+    compare_strs(&output, expected, "regular", input);
 
     if !roundtrip {
         return;
     }
 
-    let mut md = vec![];
+    let mut md = String::new();
     cm::format_document(root, options, &mut md).unwrap();
 
-    let md_string = &String::from_utf8(md).unwrap();
-    let root = parse_document(&arena, md_string, options);
-    let mut output_from_rt = vec![];
+    let root = parse_document(&arena, &md, options);
+    let mut output_from_rt = String::new();
     html::format_document(root, options, &mut output_from_rt).unwrap();
 
     let expected_no_sourcepos = remove_sourcepos(expected);
-    let actual_no_sourcepos = remove_sourcepos(std::str::from_utf8(&output_from_rt).unwrap());
+    let actual_no_sourcepos = remove_sourcepos(&output_from_rt);
 
     compare_strs(
         &actual_no_sourcepos,
         &expected_no_sourcepos,
         "roundtrip",
-        md_string,
+        &md,
     );
 }
 
@@ -193,28 +181,17 @@ fn html_plugins(input: &str, expected: &str, plugins: &Plugins) {
     let options = Options::default();
 
     let root = parse_document(&arena, input, &options);
-    let mut output = vec![];
+    let mut output = String::new();
     html::format_document_with_plugins(root, &options, &mut output, plugins).unwrap();
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        expected,
-        "regular",
-        input,
-    );
+    compare_strs(&output, expected, "regular", input);
 
-    let mut md = vec![];
+    let mut md = String::new();
     cm::format_document(root, &options, &mut md).unwrap();
 
-    let md_string = &String::from_utf8(md).unwrap();
-    let root = parse_document(&arena, md_string, &options);
-    let mut output_from_rt = vec![];
+    let root = parse_document(&arena, &md, &options);
+    let mut output_from_rt = String::new();
     html::format_document_with_plugins(root, &options, &mut output_from_rt, plugins).unwrap();
-    compare_strs(
-        &String::from_utf8(output_from_rt).unwrap(),
-        expected,
-        "roundtrip",
-        md_string,
-    );
+    compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
 #[track_caller]
@@ -232,32 +209,21 @@ where
     opts(&mut options);
 
     let root = parse_document(&arena, input, &options);
-    let mut output = vec![];
+    let mut output = String::new();
     crate::xml::format_document(root, &options, &mut output).unwrap();
-    compare_strs(
-        &String::from_utf8(output).unwrap(),
-        expected,
-        "regular",
-        input,
-    );
+    compare_strs(&output, expected, "regular", input);
 
     if options.render.sourcepos {
         return;
     }
 
-    let mut md = vec![];
+    let mut md = String::new();
     cm::format_document(root, &options, &mut md).unwrap();
 
-    let md_string = &String::from_utf8(md).unwrap();
-    let root = parse_document(&arena, md_string, &options);
-    let mut output_from_rt = vec![];
+    let root = parse_document(&arena, &md, &options);
+    let mut output_from_rt = String::new();
     crate::xml::format_document(root, &options, &mut output_from_rt).unwrap();
-    compare_strs(
-        &String::from_utf8(output_from_rt).unwrap(),
-        expected,
-        "roundtrip",
-        md_string,
-    );
+    compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
 fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &NodeValue) {
@@ -332,9 +298,9 @@ where
         let arena = Arena::new();
         let root = parse_document(&arena, md, &options);
 
-        let mut output = vec![];
+        let mut output = String::new();
         format_xml(root, &options, &mut output).unwrap();
-        eprintln!("{}", std::str::from_utf8(&output).unwrap());
+        eprintln!("{output}");
 
         panic::resume_unwind(err)
     }

@@ -45,6 +45,7 @@ emojis = { version = "0.6.2", optional = true }
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 bon = { version = "3", optional = true }
 caseless = "0.2.1"
+fmt2io = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
 ntest = "0.9"
@@ -54,7 +55,7 @@ toml = "0.7.3"
 
 [features]
 default = ["cli", "syntect", "bon"]
-cli = ["clap", "shell-words", "xdg"]
+cli = ["clap", "shell-words", "xdg", "fmt2io"]
 shortcodes = ["emojis"]
 bon = ["dep:bon"]
 

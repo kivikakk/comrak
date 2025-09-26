@@ -13,7 +13,7 @@ use crate::{nodes, Plugins};
 pub use typed_arena::Arena;
 
 use std::cmp::max;
-use std::io::BufWriter;
+use std::fmt;
 use std::io::{self, Write};
 use std::str;
 
@@ -21,8 +21,8 @@ use std::str;
 pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &Options,
-    output: &mut dyn Write,
-) -> io::Result<()> {
+    output: &mut dyn fmt::Write,
+) -> fmt::Result {
     // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
     // validation in normal workflow. As a middleground, we validate the AST in debug builds. See
     // https://github.com/kivikakk/comrak/issues/371.
@@ -38,20 +38,24 @@ pub fn format_document<'a>(
 pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
     options: &Options,
-    output: &mut dyn Write,
+    output: &mut dyn fmt::Write,
     _plugins: &Plugins,
-) -> io::Result<()> {
+) -> fmt::Result {
     let mut f = CommonMarkFormatter::new(root, options);
     f.format(root);
     let mut result = f.v;
     if !result.is_empty() && result[result.len() - 1] != b'\n' {
         result.push(b'\n');
     }
+
+    // TODO: redo all of comrak::cm internally with str instead of [u8], so we
+    // don't need the String::from_utf8 here.
+
+    let mut s = String::from_utf8(result).unwrap();
     if options.render.experimental_minimize_commonmark {
-        minimize_commonmark(&mut result, options);
+        minimize_commonmark(&mut s, options);
     }
-    output.write_all(&result)?;
-    Ok(())
+    output.write_str(&s)
 }
 
 struct CommonMarkFormatter<'a, 'o, 'c> {
@@ -80,12 +84,12 @@ enum Escaping {
 }
 
 impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.output(buf, false, Escaping::Literal);
         Ok(buf.len())
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
+    fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
 }
@@ -1009,11 +1013,12 @@ fn table_escape<'a>(node: &'a AstNode<'a>, c: u8) -> bool {
     }
 }
 
-fn minimize_commonmark(text: &mut Vec<u8>, original_options: &Options) {
+fn minimize_commonmark(text: &mut String, original_options: &Options) {
     let mut options_without = original_options.clone();
     options_without.render.experimental_minimize_commonmark = false;
 
     let ixs: Vec<usize> = text
+        .as_bytes()
         .iter()
         .enumerate()
         .filter_map(|(ix, &c)| if c == b'\\' { Some(ix) } else { None })
@@ -1025,16 +1030,17 @@ fn minimize_commonmark(text: &mut Vec<u8>, original_options: &Options) {
         text.remove(ix - adjust);
 
         let arena = Arena::new();
-        let root = crate::parse_document(&arena, str::from_utf8(text).unwrap(), &options_without);
+        let root = crate::parse_document(&arena, text, &options_without);
 
-        let mut bw = BufWriter::new(Vec::new());
-        format_document(root, &options_without, &mut bw).unwrap();
-        let result = bw.into_inner().unwrap();
+        let mut out = String::new();
+        format_document(root, &options_without, &mut out).unwrap();
 
-        if original == result {
+        if original == out {
+            // Removed character is guaranteed to be 1 byte wide, since it's
+            // always '\\'.
             adjust += 1;
         } else {
-            text.insert(ix - adjust, b'\\');
+            text.insert(ix - adjust, '\\');
         }
     }
 }

@@ -17,7 +17,7 @@ use crate::nodes::{
 use crate::parser::{Options, Plugins};
 use crate::scanners;
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 use std::str;
 
 #[doc(hidden)]
@@ -29,7 +29,7 @@ pub fn format_document<'a>(
     root: &'a AstNode<'a>,
     options: &Options,
     output: &mut dyn Write,
-) -> io::Result<()> {
+) -> fmt::Result {
     format_document_with_formatter(
         root,
         options,
@@ -44,9 +44,9 @@ pub fn format_document<'a>(
 pub fn format_document_with_plugins<'a>(
     root: &'a AstNode<'a>,
     options: &Options,
-    output: &mut dyn Write,
+    output: &mut dyn fmt::Write,
     plugins: &Plugins,
-) -> io::Result<()> {
+) -> fmt::Result {
     format_document_with_formatter(root, options, output, plugins, format_node_default, ())
 }
 
@@ -95,24 +95,24 @@ pub enum ChildRendering {
 ///
 /// ```
 /// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue, html::ChildRendering};
-/// # use std::io::Write;
+/// # use std::fmt::Write;
 /// create_formatter!(CustomFormatter<usize>, {
 ///     NodeValue::Emph => |context, entering| {
 ///         context.user += 1;
 ///         if entering {
-///             context.write_all(b"<i>")?;
+///             context.write_str("<i>")?;
 ///         } else {
-///             context.write_all(b"</i>")?;
+///             context.write_str("</i>")?;
 ///         }
 ///     },
 ///     NodeValue::Strong => |context, entering| {
 ///         context.user += 1;
-///         context.write_all(if entering { b"<b>" } else { b"</b>" })?;
+///         context.write_str(if entering { "<b>" } else { "</b>" })?;
 ///     },
 ///     NodeValue::Image(ref nl) => |context, node, entering| {
 ///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
-///             context.write_all(nl.url.to_uppercase().as_bytes())?;
+///             context.write_str(&nl.url.to_uppercase())?;
 ///             return Ok(ChildRendering::Skip);
 ///         }
 ///     },
@@ -126,11 +126,11 @@ pub enum ChildRendering {
 ///     &options,
 /// );
 ///
-/// let mut buf: Vec<u8> = vec![];
-/// let converted_count = CustomFormatter::format_document(doc, &options, &mut buf, 0).unwrap();
+/// let mut result: String = String::new();
+/// let converted_count = CustomFormatter::format_document(doc, &options, &mut result, 0).unwrap();
 ///
 /// assert_eq!(
-///     std::str::from_utf8(&buf).unwrap(),
+///     result,
 ///     "<p><i>Hello</i>, <b>world</b>.</p>\n<p>/IMG.PNG</p>\n"
 /// );
 ///
@@ -171,8 +171,8 @@ macro_rules! create_formatter {
             pub fn format_document<'a>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &$crate::Options,
-                output: &mut dyn ::std::io::Write,
-            ) -> ::std::io::Result<()> {
+                output: &mut dyn ::std::fmt::Write,
+            ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
@@ -188,9 +188,9 @@ macro_rules! create_formatter {
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &'o $crate::Options<'c>,
-                output: &'o mut dyn ::std::io::Write,
+                output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::Plugins<'o>,
-            ) -> ::std::io::Result<()> {
+            ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
@@ -205,7 +205,7 @@ macro_rules! create_formatter {
                 context: &mut $crate::html::Context<()>,
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
-            ) -> ::std::io::Result<$crate::html::ChildRendering> {
+            ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
                 match node.data.borrow().value {
                     $(
                         $pat => {
@@ -234,9 +234,9 @@ macro_rules! create_formatter {
             pub fn format_document<'a>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &$crate::Options,
-                output: &mut dyn ::std::io::Write,
+                output: &mut dyn ::std::fmt::Write,
                 user: $type,
-            ) -> ::std::io::Result<$type> {
+            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
@@ -252,10 +252,10 @@ macro_rules! create_formatter {
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &'o $crate::Options<'c>,
-                output: &'o mut dyn ::std::io::Write,
+                output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::Plugins<'o>,
                 user: $type,
-            ) -> ::std::io::Result<$type> {
+            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
@@ -270,7 +270,7 @@ macro_rules! create_formatter {
                 context: &mut $crate::html::Context<$type>,
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
-            ) -> ::std::io::Result<$crate::html::ChildRendering> {
+            ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
                 match node.data.borrow().value {
                     $(
                         $pat => {
@@ -330,9 +330,9 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
         context: &mut Context<T>,
         node: &'a AstNode<'a>,
         entering: bool,
-    ) -> io::Result<ChildRendering>,
+    ) -> Result<ChildRendering, fmt::Error>,
     user: T,
-) -> ::std::io::Result<T> {
+) -> Result<T, fmt::Error> {
     // Traverse the AST iteratively using a work stack, with pre- and
     // post-child-traversal phases. During pre-order traversal render the
     // opening tags, then push the node back onto the stack for the
@@ -356,13 +356,13 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal) => {
-                                context.escape(literal.as_bytes())?;
+                                context.escape(literal)?;
                             }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
-                                ::std::io::Write::write_all(&mut context, b" ")?;
+                                fmt::Write::write_str(&mut context, " ")?;
                             }
                             NodeValue::Math(NodeMath { ref literal, .. }) => {
-                                context.escape(literal.as_bytes())?;
+                                context.escape(literal)?;
                             }
                             _ => (),
                         }
@@ -402,7 +402,7 @@ pub fn format_node_default<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     match node.data.borrow().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
@@ -462,7 +462,7 @@ pub fn format_node_default<'a, T>(
 /// This function renders anything iff `context.options.render.sourcepos` is
 /// true, and includes a leading space if so, so you can use it  unconditionally
 /// immediately before writing a closing `>` in your opening HTML tag.
-pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: &'a AstNode<'a>) -> io::Result<()> {
+pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: &'a AstNode<'a>) -> fmt::Result {
     if context.options.render.sourcepos {
         let ast = node.data.borrow();
         if ast.sourcepos.start.line > 0 {
@@ -476,15 +476,15 @@ fn render_block_quote<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<blockquote")?;
+        context.write_str("<blockquote")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">\n")?;
+        context.write_str(">\n")?;
     } else {
         context.cr()?;
-        context.write_all(b"</blockquote>\n")?;
+        context.write_str("</blockquote>\n")?;
     }
     Ok(ChildRendering::HTML)
 }
@@ -493,17 +493,17 @@ fn render_code<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
-        context.write_all(b"<code")?;
+        context.write_str("<code")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
-        context.escape(literal.as_bytes())?;
-        context.write_all(b"</code>")?;
+        context.write_str(">")?;
+        context.escape(literal)?;
+        context.write_str("</code>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -513,7 +513,7 @@ fn render_code_block<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
         unreachable!()
     };
@@ -529,16 +529,17 @@ fn render_code_block<'a, T>(
             let mut code_attributes: HashMap<String, String> = HashMap::new();
             let code_attr: String;
 
-            let literal = &ncb.literal.as_bytes();
-            let info = &ncb.info.as_bytes();
+            let literal = &ncb.literal;
+            let info = &ncb.info;
+            let info_bytes = info.as_bytes();
 
             if !info.is_empty() {
-                while first_tag < info.len() && !isspace(info[first_tag]) {
+                while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
                     first_tag += 1;
                 }
 
-                let lang_str = std::str::from_utf8(&info[..first_tag]).unwrap();
-                let info_str = std::str::from_utf8(&info[first_tag..]).unwrap().trim();
+                let lang_str = &info[..first_tag];
+                let info_str = &info[first_tag..].trim();
 
                 if context.options.render.github_pre_lang {
                     pre_attributes.insert(String::from("lang"), lang_str.to_string());
@@ -569,7 +570,7 @@ fn render_code_block<'a, T>(
 
                     context.escape(literal)?;
 
-                    context.write_all(b"</code></pre>\n")?
+                    context.write_str("</code></pre>\n")?
                 }
                 Some(highlighter) => {
                     highlighter.write_pre_tag(context, pre_attributes)?;
@@ -577,11 +578,11 @@ fn render_code_block<'a, T>(
 
                     highlighter.write_highlighted(
                         context,
-                        std::str::from_utf8(&info[..first_tag]).ok(),
+                        Some(&info[..first_tag]),
                         &ncb.literal,
                     )?;
 
-                    context.write_all(b"</code></pre>\n")?
+                    context.write_str("</code></pre>\n")?
                 }
             }
         }
@@ -594,7 +595,7 @@ fn render_document<'a, T>(
     _context: &mut Context<T>,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     Ok(ChildRendering::HTML)
 }
 
@@ -602,13 +603,13 @@ fn render_emph<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<em")?;
+        context.write_str("<em")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</em>")?;
+        context.write_str("</em>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -618,7 +619,7 @@ fn render_heading<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Heading(ref nh) = node.data.borrow().value else {
         unreachable!()
     };
@@ -629,7 +630,7 @@ fn render_heading<'a, T>(
                 context.cr()?;
                 write!(context, "<h{}", nh.level)?;
                 render_sourcepos(context, node)?;
-                context.write_all(b">")?;
+                context.write_str(">")?;
 
                 if let Some(ref prefix) = context.options.extension.header_ids {
                     let text_content = collect_text(node);
@@ -672,7 +673,7 @@ fn render_html_block<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
         unreachable!()
     };
@@ -680,15 +681,15 @@ fn render_html_block<'a, T>(
     // No sourcepos.
     if entering {
         context.cr()?;
-        let literal = nhb.literal.as_bytes();
+        let literal = &nhb.literal;
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.unsafe_ {
-            context.write_all(b"<!-- raw HTML omitted -->")?;
+            context.write_str("<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter {
             tagfilter_block(literal, context)?;
         } else {
-            context.write_all(literal)?;
+            context.write_str(literal)?;
         }
         context.cr()?;
     }
@@ -700,23 +701,22 @@ fn render_html_inline<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
         unreachable!()
     };
 
     // No sourcepos.
     if entering {
-        let literal = literal.as_bytes();
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.unsafe_ {
-            context.write_all(b"<!-- raw HTML omitted -->")?;
+            context.write_str("<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter && tagfilter(literal) {
-            context.write_all(b"&lt;")?;
-            context.write_all(&literal[1..])?;
+            context.write_str("&lt;")?;
+            context.write_str(&literal[1..])?;
         } else {
-            context.write_all(literal)?;
+            context.write_str(literal)?;
         }
     }
 
@@ -727,41 +727,41 @@ fn render_image<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Image(ref nl) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
         if context.options.render.figure_with_caption {
-            context.write_all(b"<figure>")?;
+            context.write_str("<figure>")?;
         }
-        context.write_all(b"<img")?;
+        context.write_str("<img")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" src=\"")?;
-        let url = nl.url.as_bytes();
+        context.write_str(" src=\"")?;
+        let url = &nl.url;
         if context.options.render.unsafe_ || !dangerous_url(url) {
             if let Some(rewriter) = &context.options.extension.image_url_rewriter {
-                context.escape_href(rewriter.to_html(&nl.url).as_bytes())?;
+                context.escape_href(&rewriter.to_html(&nl.url))?;
             } else {
                 context.escape_href(url)?;
             }
         }
-        context.write_all(b"\" alt=\"")?;
+        context.write_str("\" alt=\"")?;
         return Ok(ChildRendering::Plain);
     } else {
         if !nl.title.is_empty() {
-            context.write_all(b"\" title=\"")?;
-            context.escape(nl.title.as_bytes())?;
+            context.write_str("\" title=\"")?;
+            context.escape(&nl.title)?;
         }
-        context.write_all(b"\" />")?;
+        context.write_str("\" />")?;
         if context.options.render.figure_with_caption {
             if !nl.title.is_empty() {
-                context.write_all(b"<figcaption>")?;
-                context.escape(nl.title.as_bytes())?;
-                context.write_all(b"</figcaption>")?;
+                context.write_str("<figcaption>")?;
+                context.escape(&nl.title)?;
+                context.write_str("</figcaption>")?;
             }
-            context.write_all(b"</figure>")?;
+            context.write_str("</figure>")?;
         };
     }
 
@@ -772,14 +772,14 @@ fn render_item<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<li")?;
+        context.write_str("<li")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</li>\n")?;
+        context.write_str("</li>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -789,11 +789,11 @@ fn render_line_break<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<br")?;
+        context.write_str("<br")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" />\n")?;
+        context.write_str(" />\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -803,7 +803,7 @@ fn render_link<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Link(ref nl) = node.data.borrow().value else {
         unreachable!()
     };
@@ -818,24 +818,24 @@ fn render_link<'a, T>(
             ))
     {
         if entering {
-            context.write_all(b"<a")?;
+            context.write_str("<a")?;
             render_sourcepos(context, node)?;
-            context.write_all(b" href=\"")?;
-            let url = nl.url.as_bytes();
+            context.write_str(" href=\"")?;
+            let url = &nl.url;
             if context.options.render.unsafe_ || !dangerous_url(url) {
                 if let Some(rewriter) = &context.options.extension.link_url_rewriter {
-                    context.escape_href(rewriter.to_html(&nl.url).as_bytes())?;
+                    context.escape_href(&rewriter.to_html(&nl.url))?;
                 } else {
                     context.escape_href(url)?;
                 }
             }
             if !nl.title.is_empty() {
-                context.write_all(b"\" title=\"")?;
-                context.escape(nl.title.as_bytes())?;
+                context.write_str("\" title=\"")?;
+                context.escape(&nl.title)?;
             }
-            context.write_all(b"\">")?;
+            context.write_str("\">")?;
         } else {
-            context.write_all(b"</a>")?;
+            context.write_str("</a>")?;
         }
     }
 
@@ -846,7 +846,7 @@ fn render_list<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::List(ref nl) = node.data.borrow().value else {
         unreachable!()
     };
@@ -855,30 +855,30 @@ fn render_list<'a, T>(
         context.cr()?;
         match nl.list_type {
             ListType::Bullet => {
-                context.write_all(b"<ul")?;
+                context.write_str("<ul")?;
                 if nl.is_task_list && context.options.render.tasklist_classes {
-                    context.write_all(b" class=\"contains-task-list\"")?;
+                    context.write_str(" class=\"contains-task-list\"")?;
                 }
                 render_sourcepos(context, node)?;
-                context.write_all(b">\n")?;
+                context.write_str(">\n")?;
             }
             ListType::Ordered => {
-                context.write_all(b"<ol")?;
+                context.write_str("<ol")?;
                 if nl.is_task_list && context.options.render.tasklist_classes {
-                    context.write_all(b" class=\"contains-task-list\"")?;
+                    context.write_str(" class=\"contains-task-list\"")?;
                 }
                 render_sourcepos(context, node)?;
                 if nl.start == 1 {
-                    context.write_all(b">\n")?;
+                    context.write_str(">\n")?;
                 } else {
                     writeln!(context, " start=\"{}\">", nl.start)?;
                 }
             }
         }
     } else if nl.list_type == ListType::Bullet {
-        context.write_all(b"</ul>\n")?;
+        context.write_str("</ul>\n")?;
     } else {
-        context.write_all(b"</ol>\n")?;
+        context.write_str("</ol>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -888,7 +888,7 @@ fn render_paragraph<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let tight = match node
         .parent()
         .and_then(|n| n.parent())
@@ -908,19 +908,19 @@ fn render_paragraph<'a, T>(
     if !tight {
         if entering {
             context.cr()?;
-            context.write_all(b"<p")?;
+            context.write_str("<p")?;
             render_sourcepos(context, node)?;
-            context.write_all(b">")?;
+            context.write_str(">")?;
         } else {
             if let Some(NodeValue::FootnoteDefinition(nfd)) =
                 &node.parent().map(|n| n.data.borrow().value.clone())
             {
                 if node.next_sibling().is_none() {
-                    context.write_all(b" ")?;
+                    context.write_str(" ")?;
                     put_footnote_backref(context, nfd)?;
                 }
             }
-            context.write_all(b"</p>\n")?;
+            context.write_str("</p>\n")?;
         }
     }
 
@@ -931,14 +931,14 @@ fn render_soft_break<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         if context.options.render.hardbreaks {
-            context.write_all(b"<br")?;
+            context.write_str("<br")?;
             render_sourcepos(context, node)?;
-            context.write_all(b" />\n")?;
+            context.write_str(" />\n")?;
         } else {
-            context.write_all(b"\n")?;
+            context.write_str("\n")?;
         }
     }
 
@@ -949,18 +949,18 @@ fn render_strong<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
         || (parent_node.is_none()
             || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
     {
         if entering {
-            context.write_all(b"<strong")?;
+            context.write_str("<strong")?;
             render_sourcepos(context, node)?;
-            context.write_all(b">")?;
+            context.write_str(">")?;
         } else {
-            context.write_all(b"</strong>")?;
+            context.write_str("</strong>")?;
         }
     }
 
@@ -971,14 +971,14 @@ fn render_text<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Text(ref literal) = node.data.borrow().value else {
         unreachable!()
     };
 
     // Nowhere to put sourcepos.
     if entering {
-        context.escape(literal.as_bytes())?;
+        context.escape(literal)?;
     }
 
     Ok(ChildRendering::HTML)
@@ -988,12 +988,12 @@ fn render_thematic_break<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<hr")?;
+        context.write_str("<hr")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" />\n")?;
+        context.write_str(" />\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1005,28 +1005,28 @@ fn render_footnote_definition<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
         if context.footnote_ix == 0 {
-            context.write_all(b"<section")?;
+            context.write_str("<section")?;
             render_sourcepos(context, node)?;
-            context.write_all(b" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
+            context.write_str(" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
         }
         context.footnote_ix += 1;
-        context.write_all(b"<li")?;
+        context.write_str("<li")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" id=\"fn-")?;
-        context.escape_href(nfd.name.as_bytes())?;
-        context.write_all(b"\">")?;
+        context.write_str(" id=\"fn-")?;
+        context.escape_href(&nfd.name)?;
+        context.write_str("\">")?;
     } else {
         if put_footnote_backref(context, nfd)? {
-            context.write_all(b"\n")?;
+            context.write_str("\n")?;
         }
-        context.write_all(b"</li>\n")?;
+        context.write_str("</li>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1036,7 +1036,7 @@ fn render_footnote_reference<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
         unreachable!()
     };
@@ -1047,12 +1047,12 @@ fn render_footnote_reference<'a, T>(
             ref_id = format!("{}-{}", ref_id, nfr.ref_num);
         }
 
-        context.write_all(b"<sup")?;
+        context.write_str("<sup")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" class=\"footnote-ref\"><a href=\"#fn-")?;
-        context.escape_href(nfr.name.as_bytes())?;
-        context.write_all(b"\" id=\"")?;
-        context.escape_href(ref_id.as_bytes())?;
+        context.write_str(" class=\"footnote-ref\"><a href=\"#fn-")?;
+        context.escape_href(&nfr.name)?;
+        context.write_str("\" id=\"")?;
+        context.escape_href(&ref_id)?;
         write!(context, "\" data-footnote-ref>{}</a></sup>", nfr.ix)?;
     }
 
@@ -1063,13 +1063,13 @@ fn render_strikethrough<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<del")?;
+        context.write_str("<del")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</del>")?;
+        context.write_str("</del>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1079,12 +1079,12 @@ fn render_table<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<table")?;
+        context.write_str("<table")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">\n")?;
+        context.write_str(">\n")?;
     } else {
         if let Some(true) = node
             .last_child()
@@ -1092,10 +1092,10 @@ fn render_table<'a, T>(
         // node.first_child() guaranteed to exist in block since last_child does!
         {
             context.cr()?;
-            context.write_all(b"</tbody>\n")?;
+            context.write_str("</tbody>\n")?;
         }
         context.cr()?;
-        context.write_all(b"</table>\n")?;
+        context.write_str("</table>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1105,7 +1105,7 @@ fn render_table_cell<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let Some(row_node) = node.parent() else {
         panic!("rendered a table cell without a containing table row");
     };
@@ -1129,10 +1129,10 @@ fn render_table_cell<'a, T>(
     if entering {
         context.cr()?;
         if in_header {
-            context.write_all(b"<th")?;
+            context.write_str("<th")?;
             render_sourcepos(context, node)?;
         } else {
-            context.write_all(b"<td")?;
+            context.write_str("<td")?;
             render_sourcepos(context, node)?;
         }
 
@@ -1145,22 +1145,22 @@ fn render_table_cell<'a, T>(
 
         match alignments[i] {
             TableAlignment::Left => {
-                context.write_all(b" align=\"left\"")?;
+                context.write_str(" align=\"left\"")?;
             }
             TableAlignment::Right => {
-                context.write_all(b" align=\"right\"")?;
+                context.write_str(" align=\"right\"")?;
             }
             TableAlignment::Center => {
-                context.write_all(b" align=\"center\"")?;
+                context.write_str(" align=\"center\"")?;
             }
             TableAlignment::None => (),
         }
 
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else if in_header {
-        context.write_all(b"</th>")?;
+        context.write_str("</th>")?;
     } else {
-        context.write_all(b"</td>")?;
+        context.write_str("</td>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1170,7 +1170,7 @@ fn render_table_row<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::TableRow(header) = node.data.borrow().value else {
         unreachable!()
     };
@@ -1178,21 +1178,21 @@ fn render_table_row<'a, T>(
     if entering {
         context.cr()?;
         if header {
-            context.write_all(b"<thead>\n")?;
+            context.write_str("<thead>\n")?;
         } else if let Some(n) = node.previous_sibling() {
             if let NodeValue::TableRow(true) = n.data.borrow().value {
-                context.write_all(b"<tbody>\n")?;
+                context.write_str("<tbody>\n")?;
             }
         }
-        context.write_all(b"<tr")?;
+        context.write_str("<tr")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
         context.cr()?;
-        context.write_all(b"</tr>")?;
+        context.write_str("</tr>")?;
         if header {
             context.cr()?;
-            context.write_all(b"</thead>")?;
+            context.write_str("</thead>")?;
         }
     }
 
@@ -1203,29 +1203,29 @@ fn render_task_item<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
         context.cr()?;
-        context.write_all(b"<li")?;
+        context.write_str("<li")?;
         if context.options.render.tasklist_classes {
-            context.write_all(b" class=\"task-list-item\"")?;
+            context.write_str(" class=\"task-list-item\"")?;
         }
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
-        context.write_all(b"<input type=\"checkbox\"")?;
+        context.write_str(">")?;
+        context.write_str("<input type=\"checkbox\"")?;
         if context.options.render.tasklist_classes {
-            context.write_all(b" class=\"task-list-item-checkbox\"")?;
+            context.write_str(" class=\"task-list-item-checkbox\"")?;
         }
         if symbol.is_some() {
-            context.write_all(b" checked=\"\"")?;
+            context.write_str(" checked=\"\"")?;
         }
-        context.write_all(b" disabled=\"\" /> ")?;
+        context.write_str(" disabled=\"\" /> ")?;
     } else {
-        context.write_all(b"</li>\n")?;
+        context.write_str("</li>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1237,29 +1237,29 @@ fn render_alert<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Alert(ref alert) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
         context.cr()?;
-        context.write_all(b"<div class=\"markdown-alert ")?;
-        context.write_all(alert.alert_type.css_class().as_bytes())?;
-        context.write_all(b"\"")?;
+        context.write_str("<div class=\"markdown-alert ")?;
+        context.write_str(&alert.alert_type.css_class())?;
+        context.write_str("\"")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">\n")?;
-        context.write_all(b"<p class=\"markdown-alert-title\">")?;
+        context.write_str(">\n")?;
+        context.write_str("<p class=\"markdown-alert-title\">")?;
         match alert.title {
-            Some(ref title) => context.escape(title.as_bytes())?,
+            Some(ref title) => context.escape(title)?,
             None => {
-                context.write_all(alert.alert_type.default_title().as_bytes())?;
+                context.write_str(&alert.alert_type.default_title())?;
             }
         }
-        context.write_all(b"</p>\n")?;
+        context.write_str("</p>\n")?;
     } else {
         context.cr()?;
-        context.write_all(b"</div>\n")?;
+        context.write_str("</div>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1269,13 +1269,13 @@ fn render_description_details<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<dd")?;
+        context.write_str("<dd")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</dd>\n")?;
+        context.write_str("</dd>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1285,7 +1285,7 @@ fn render_description_item<'a, T>(
     _context: &mut Context<T>,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     Ok(ChildRendering::HTML)
 }
 
@@ -1293,14 +1293,14 @@ fn render_description_list<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<dl")?;
+        context.write_str("<dl")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">\n")?;
+        context.write_str(">\n")?;
     } else {
-        context.write_all(b"</dl>\n")?;
+        context.write_str("</dl>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1310,13 +1310,13 @@ fn render_description_term<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<dt")?;
+        context.write_str("<dt")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</dt>\n")?;
+        context.write_str("</dt>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1326,14 +1326,14 @@ fn render_escaped<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if context.options.render.escaped_char_spans {
         if entering {
-            context.write_all(b"<span data-escaped-char")?;
+            context.write_str("<span data-escaped-char")?;
             render_sourcepos(context, node)?;
-            context.write_all(b">")?;
+            context.write_str(">")?;
         } else {
-            context.write_all(b"</span>")?;
+            context.write_str("</span>")?;
         }
     }
 
@@ -1344,13 +1344,13 @@ fn render_escaped_tag<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
         unreachable!()
     };
 
     // Nowhere to put sourcepos.
-    context.write_all(net.as_bytes())?;
+    context.write_str(net)?;
 
     Ok(ChildRendering::HTML)
 }
@@ -1359,7 +1359,7 @@ fn render_frontmatter<'a, T>(
     _context: &mut Context<T>,
     _node: &'a AstNode<'a>,
     _entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     Ok(ChildRendering::HTML)
 }
 
@@ -1369,7 +1369,7 @@ pub fn render_math<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Math(NodeMath {
         ref literal,
         display_math,
@@ -1393,8 +1393,8 @@ pub fn render_math<'a, T>(
         }
 
         write_opening_tag(context, tag, tag_attributes)?;
-        context.escape(literal.as_bytes())?;
-        write!(context, "</{}>", tag)?;
+        context.escape(literal)?;
+        write!(context, "</{tag}>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1405,7 +1405,7 @@ pub fn render_math_code_block<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     literal: &String,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     context.cr()?;
 
     // use vectors to ensure attributes always written in the same order,
@@ -1431,8 +1431,8 @@ pub fn render_math_code_block<'a, T>(
     write_opening_tag(context, "pre", pre_attributes)?;
     write_opening_tag(context, "code", code_attributes)?;
 
-    context.escape(literal.as_bytes())?;
-    context.write_all(b"</code></pre>\n")?;
+    context.escape(literal)?;
+    context.write_str("</code></pre>\n")?;
 
     Ok(ChildRendering::HTML)
 }
@@ -1441,15 +1441,15 @@ fn render_multiline_block_quote<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_all(b"<blockquote")?;
+        context.write_str("<blockquote")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">\n")?;
+        context.write_str(">\n")?;
     } else {
         context.cr()?;
-        context.write_all(b"</blockquote>\n")?;
+        context.write_str("</blockquote>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1459,14 +1459,14 @@ fn render_raw<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::Raw(ref literal) = node.data.borrow().value else {
         unreachable!()
     };
 
     // No sourcepos.
     if entering {
-        context.write_all(literal.as_bytes())?;
+        context.write_str(literal)?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1477,14 +1477,14 @@ fn render_short_code<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
         unreachable!()
     };
 
     // Nowhere to put sourcepos.
     if entering {
-        context.write_all(nsc.emoji.as_bytes())?;
+        context.write_str(&nsc.emoji)?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1494,13 +1494,13 @@ fn render_spoiler_text<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<span")?;
+        context.write_str("<span")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" class=\"spoiler\">")?;
+        context.write_str(" class=\"spoiler\">")?;
     } else {
-        context.write_all(b"</span>")?;
+        context.write_str("</span>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1510,13 +1510,13 @@ fn render_subscript<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<sub")?;
+        context.write_str("<sub")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</sub>")?;
+        context.write_str("</sub>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1526,13 +1526,13 @@ fn render_superscript<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<sup")?;
+        context.write_str("<sup")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</sup>")?;
+        context.write_str("</sup>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1542,13 +1542,13 @@ fn render_underline<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_all(b"<u")?;
+        context.write_str("<u")?;
         render_sourcepos(context, node)?;
-        context.write_all(b">")?;
+        context.write_str(">")?;
     } else {
-        context.write_all(b"</u>")?;
+        context.write_str("</u>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1558,23 +1558,23 @@ fn render_wiki_link<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
     entering: bool,
-) -> io::Result<ChildRendering> {
+) -> Result<ChildRendering, fmt::Error> {
     let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
         unreachable!()
     };
 
     if entering {
-        context.write_all(b"<a")?;
+        context.write_str("<a")?;
         render_sourcepos(context, node)?;
-        context.write_all(b" href=\"")?;
-        let url = nl.url.as_bytes();
+        context.write_str(" href=\"")?;
+        let url = &nl.url;
         if context.options.render.unsafe_ || !dangerous_url(url) {
             context.escape_href(url)?;
         }
-        context.write_all(b"\" data-wikilink=\"true")?;
-        context.write_all(b"\">")?;
+        context.write_str("\" data-wikilink=\"true")?;
+        context.write_str("\">")?;
     } else {
-        context.write_all(b"</a>")?;
+        context.write_str("</a>")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1614,7 +1614,7 @@ pub fn collect_text_append<'a>(node: &'a AstNode<'a>, output: &mut String) {
 fn put_footnote_backref<T>(
     context: &mut Context<T>,
     nfd: &NodeFootnoteDefinition,
-) -> io::Result<bool> {
+) -> Result<bool, fmt::Error> {
     if context.written_footnote_ix >= context.footnote_ix {
         return Ok(false);
     }
@@ -1626,24 +1626,25 @@ fn put_footnote_backref<T>(
 
     for ref_num in 1..=nfd.total_references {
         if ref_num > 1 {
-            ref_suffix = format!("-{}", ref_num);
-            superscript = format!("<sup class=\"footnote-ref\">{}</sup>", ref_num);
+            ref_suffix = format!("-{ref_num}");
+            superscript = format!("<sup class=\"footnote-ref\">{ref_num}</sup>");
             write!(context, " ")?;
         }
 
-        context.write_all(b"<a href=\"#fnref-")?;
-        context.escape_href(nfd.name.as_bytes())?;
+        context.write_str("<a href=\"#fnref-")?;
+        context.escape_href(&nfd.name)?;
         let fnix = context.footnote_ix;
         write!(
             context,
-            "{}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{}{}\" aria-label=\"Back to reference {}{}\">↩{}</a>",
-            ref_suffix, fnix, ref_suffix, fnix, ref_suffix, superscript
+            "{ref_suffix}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{fnix}{ref_suffix}\" aria-label=\"Back to reference {fnix}{ref_suffix}\">↩{superscript}</a>",
         )?;
     }
     Ok(true)
 }
 
-fn tagfilter(literal: &[u8]) -> bool {
+fn tagfilter(literal: &str) -> bool {
+    let bytes = literal.as_bytes();
+
     static TAGFILTER_BLACKLIST: [&str; 9] = [
         "title",
         "textarea",
@@ -1656,40 +1657,41 @@ fn tagfilter(literal: &[u8]) -> bool {
         "plaintext",
     ];
 
-    if literal.len() < 3 || literal[0] != b'<' {
+    if bytes.len() < 3 || bytes[0] != b'<' {
         return false;
     }
 
     let mut i = 1;
-    if literal[i] == b'/' {
+    if bytes[i] == b'/' {
         i += 1;
     }
 
-    let lc = unsafe { String::from_utf8_unchecked(literal[i..].to_vec()) }.to_lowercase();
+    let lc = literal[i..].to_lowercase();
     for t in TAGFILTER_BLACKLIST.iter() {
         if lc.starts_with(t) {
             let j = i + t.len();
-            return isspace(literal[j])
-                || literal[j] == b'>'
-                || (literal[j] == b'/' && literal.len() >= j + 2 && literal[j + 1] == b'>');
+            return isspace(bytes[j])
+                || bytes[j] == b'>'
+                || (bytes[j] == b'/' && bytes.len() >= j + 2 && bytes[j + 1] == b'>');
         }
     }
 
     false
 }
 
-fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
+fn tagfilter_block(input: &str, o: &mut dyn Write) -> fmt::Result {
+    let bytes = input.as_bytes();
     let size = input.len();
     let mut i = 0;
 
     while i < size {
         let org = i;
-        while i < size && input[i] != b'<' {
+        while i < size && bytes[i] != b'<' {
             i += 1;
         }
 
         if i > org {
-            o.write_all(&input[org..i])?;
+            o.write_str(&input[org..i])?;
         }
 
         if i >= size {
@@ -1697,9 +1699,9 @@ fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
         }
 
         if tagfilter(&input[i..]) {
-            o.write_all(b"&lt;")?;
+            o.write_str("&lt;")?;
         } else {
-            o.write_all(b"<")?;
+            o.write_str("<")?;
         }
 
         i += 1;
@@ -1709,8 +1711,8 @@ fn tagfilter_block(input: &[u8], o: &mut dyn Write) -> io::Result<()> {
 }
 
 /// Check if the input would be considered a dangerous url
-pub fn dangerous_url(input: &[u8]) -> bool {
-    scanners::dangerous_url(input).is_some()
+pub fn dangerous_url(input: &str) -> bool {
+    scanners::dangerous_url(input.as_bytes()).is_some()
 }
 
 /// Writes buffer to output, escaping anything that could be interpreted as an
@@ -1726,25 +1728,26 @@ pub fn dangerous_url(input: &[u8]) -> bool {
 ///
 /// Note that this is appropriate and sufficient for free text, but not for
 /// URLs in attributes.  See escape_href.
-pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
+pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
+    let bytes = buffer.as_bytes();
     const HTML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
 
     let mut offset = 0;
-    for (i, &byte) in buffer.iter().enumerate() {
+    for (i, &byte) in bytes.iter().enumerate() {
         if HTML_UNSAFE[byte as usize] {
-            let esc: &[u8] = match byte {
-                b'"' => b"&quot;",
-                b'&' => b"&amp;",
-                b'<' => b"&lt;",
-                b'>' => b"&gt;",
+            let esc: &str = match byte {
+                b'"' => "&quot;",
+                b'&' => "&amp;",
+                b'<' => "&lt;",
+                b'>' => "&gt;",
                 _ => unreachable!(),
             };
-            output.write_all(&buffer[offset..i])?;
-            output.write_all(esc)?;
+            output.write_str(&buffer[offset..i])?;
+            output.write_str(esc)?;
             offset = i + 1;
         }
     }
-    output.write_all(&buffer[offset..])?;
+    output.write_str(&buffer[offset..])?;
     Ok(())
 }
 
@@ -1777,48 +1780,49 @@ pub fn escape(output: &mut dyn Write, buffer: &[u8]) -> io::Result<()> {
 /// to be an IPv6 address in the host part of a URI.  If `relaxed_ipv6` is
 /// `true`, any scheme is permitted for such an address.  Otherwise, only `http`
 /// or `https` are permitted.
-pub fn escape_href(output: &mut dyn Write, buffer: &[u8], relaxed_ipv6: bool) -> io::Result<()> {
+pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> fmt::Result {
     const HREF_SAFE: [bool; 256] = character_set!(
         b"-_.+!*(),%#@?=;:/,+$~",
         b"abcdefghijklmnopqrstuvwxyz",
         b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     );
 
+    let bytes = buffer.as_bytes();
     let size = buffer.len();
     let mut i = 0;
 
     let possible_ipv6_url_end = if relaxed_ipv6 {
-        scanners::ipv6_relaxed_url_start(buffer)
+        scanners::ipv6_relaxed_url_start(bytes)
     } else {
-        scanners::ipv6_url_start(buffer)
+        scanners::ipv6_url_start(bytes)
     };
     if let Some(ipv6_url_end) = possible_ipv6_url_end {
-        output.write_all(&buffer[0..ipv6_url_end])?;
+        output.write_str(&buffer[0..ipv6_url_end])?;
         i = ipv6_url_end;
     }
 
     while i < size {
         let org = i;
-        while i < size && HREF_SAFE[buffer[i] as usize] {
+        while i < size && HREF_SAFE[bytes[i] as usize] {
             i += 1;
         }
 
         if i > org {
-            output.write_all(&buffer[org..i])?;
+            output.write_str(&buffer[org..i])?;
         }
 
         if i >= size {
             break;
         }
 
-        match buffer[i] as char {
-            '&' => {
-                output.write_all(b"&amp;")?;
+        match bytes[i] {
+            b'&' => {
+                output.write_str("&amp;")?;
             }
-            '\'' => {
-                output.write_all(b"&#x27;")?;
+            b'\'' => {
+                output.write_str("&#x27;")?;
             }
-            _ => write!(output, "%{:02X}", buffer[i])?,
+            _ => write!(output, "%{:02X}", bytes[i])?,
         }
 
         i += 1;
@@ -1833,16 +1837,16 @@ pub fn write_opening_tag<Str>(
     output: &mut dyn Write,
     tag: &str,
     attributes: impl IntoIterator<Item = (Str, Str)>,
-) -> io::Result<()>
+) -> fmt::Result
 where
     Str: AsRef<str>,
 {
-    write!(output, "<{}", tag)?;
+    write!(output, "<{tag}")?;
     for (attr, val) in attributes {
         write!(output, " {}=\"", attr.as_ref())?;
-        escape(output, val.as_ref().as_bytes())?;
-        output.write_all(b"\"")?;
+        escape(output, val.as_ref())?;
+        output.write_str("\"")?;
     }
-    output.write_all(b">")?;
+    output.write_str(">")?;
     Ok(())
 }

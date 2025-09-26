@@ -34,7 +34,7 @@ fn formatter<'a>(
     context: &mut comrak::html::Context,
     node: &'a comrak::nodes::AstNode<'a>,
     entering: bool,
-) -> std::io::Result<comrak::html::ChildRendering> {
+) -> Result<comrak::html::ChildRendering, std::fmt::Error> {
     let mut borrow = node.data.borrow_mut();
     if let NodeValue::Image(ref mut nl) = borrow.value {
         autotitle_images(nl, context, node, entering);
@@ -47,7 +47,7 @@ fn main() {
     let arena = Arena::new();
     let parsed = parse_document(&arena, "![my epic image](/img.png)", &Default::default());
 
-    let mut out = Vec::new();
+    let mut out = String::new();
     comrak::html::format_document_with_formatter(
         parsed,
         &Default::default(),
@@ -58,6 +58,5 @@ fn main() {
     )
     .unwrap_or_else(|_| unreachable!("writing to Vec<u8> cannot fail"));
 
-    // SAFETY: the formatter always emits valid UTF-8
-    println!("{}", unsafe { String::from_utf8_unchecked(out) });
+    println!("{out}");
 }

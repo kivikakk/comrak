@@ -4,7 +4,7 @@ use comrak::{
     nodes::Sourcepos,
     Options, Plugins,
 };
-use std::io::{self, Write};
+use std::fmt::{self, Write};
 
 fn main() {
     let adapter = CustomHeadingAdapter;
@@ -39,7 +39,7 @@ impl HeadingAdapter for CustomHeadingAdapter {
         output: &mut dyn Write,
         heading: &HeadingMeta,
         sourcepos: Option<Sourcepos>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         let id = slug::slugify(&heading.content);
 
         let search_include = !&heading.content.contains("hide");
@@ -57,7 +57,7 @@ impl HeadingAdapter for CustomHeadingAdapter {
         )
     }
 
-    fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> io::Result<()> {
+    fn exit(&self, output: &mut dyn Write, heading: &HeadingMeta) -> fmt::Result {
         write!(output, "</h{}>", heading.level)
     }
 }

@@ -1,22 +1,22 @@
 use comrak::html::ChildRendering;
 use comrak::{create_formatter, nodes::NodeValue};
-use std::io::Write;
+use std::fmt::Write;
 
 create_formatter!(CustomFormatter, {
     NodeValue::Emph => |context, entering| {
         if entering {
-            context.write_all(b"<i>")?;
+            context.write_str("<i>")?;
         } else {
-            context.write_all(b"</i>")?;
+            context.write_str("</i>")?;
         }
     },
     NodeValue::Strong => |context, entering| {
-        context.write_all(if entering { b"<b>" } else { b"</b>" })?;
+        context.write_str(if entering { "<b>" } else { "</b>" })?;
     },
     NodeValue::Image(ref nl) => |context, node, entering| {
         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
         if entering {
-            context.write_all(nl.url.to_uppercase().as_bytes())?;
+            context.write_str(&nl.url.to_uppercase())?;
         }
         return Ok(ChildRendering::Skip);
     },
@@ -33,11 +33,8 @@ fn main() {
         &options,
     );
 
-    let mut buf: Vec<u8> = vec![];
-    CustomFormatter::format_document(doc, &options, &mut buf).unwrap();
+    let mut out = String::new();
+    CustomFormatter::format_document(doc, &options, &mut out).unwrap();
 
-    assert_eq!(
-        std::str::from_utf8(&buf).unwrap(),
-        "<p><i>Hello</i>, <b>world</b>.</p>\n<p>/IMG.PNG</p>\n"
-    );
+    assert_eq!(out, "<p><i>Hello</i>, <b>world</b>.</p>\n<p>/IMG.PNG</p>\n");
 }
