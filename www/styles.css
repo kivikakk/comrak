@@ -8,20 +8,13 @@
     --dark-fg: #FBFBFE;
 
     --md-opacity: 60%;
-    --light-md: color-mix(in oklch, var(--light-fg), transparent calc(100% - var(--md-opacity)));
-    --dark-md: color-mix(in oklch, var(--dark-fg), transparent calc(100% - var(--md-opacity)));
-
-    --bg: light-dark(var(--light-bg), var(--dark-bg));
-    --fg: light-dark(var(--light-fg), var(--dark-fg));
-    --fg-md: light-dark(var(--light-md), var(--dark-md));
 }
 
 body {
-    background-color: var(--bg);
-    color: var(--fg);
+    background-color: light-dark(var(--light-bg), var(--dark-bg));
+    color: light-dark(var(--light-fg), var(--dark-fg));
 
     font-size: 20px;
-    text-wrap: pretty;
     line-height: 1.3;
 
     max-width: 1000px;
@@ -70,6 +63,13 @@ strong {
 
 a {
     white-space: nowrap;
+    text-decoration: none;
+}
+
+a:hover {
+    &, & code {
+        text-decoration: underline;
+    }
 }
 
 a:not(.anchor):not([data-footnote-ref]) {
@@ -91,13 +91,13 @@ code {
 
 ul {
     list-style-type: none;
+    padding-left: 1rem;
 }
 
-ul li::marker {
+ul li::before {
     content: '* ';
     font-family: monospace;
-    /* Can't use opacity here. */
-    color: var(--fg-md);
+    opacity: var(--md-opacity);
 }
 
 section.footnotes li:target {
