@@ -1,6 +1,6 @@
 # Comrak
 
-Comrak is a [CommonMark] and [GitHub Flavored Markdown] compatible Markdown parser and renderer, written in Rust.
+Comrak is a [CommonMark] and [GitHub Flavored Markdown] compatible parser and renderer, written in Rust.
 
 It is [developed on GitHub] by a community of contributors, and released under the [BSD 2-clause license], forever[^no-cla], for use by all.
 

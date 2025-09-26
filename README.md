@@ -6,7 +6,7 @@
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-[Comrak] is a [CommonMark] and [GitHub Flavored Markdown] compatible Markdown parser and renderer, written in Rust.
+[Comrak] is a [CommonMark] and [GitHub Flavored Markdown] compatible parser and renderer, written in Rust.
 
 Compliant with [CommonMark 0.31.2] by default.
 
