@@ -1,8 +1,22 @@
+Categories to use in this document, and the order in which to give them:
+
+* Reverts
+* Parser changes
+* Changed APIs
+* New APIs
+* Bug fixes
+* Stability
+* Dependency updates
+* Documentation
+* Build changes
+* Behind the scenes
+
+
 # [v0.43.0] - unreleased
 
-* `html::format_document`, `xml::format_document`, `cm::format_document` and
-  friends now take an `std::fmt::Write` as their `output` argument, instead of
-  an `std::io::Write`.
+Changed APIs:
+
+* `html::format_document`, `xml::format_document`, `cm::format_document` and friends now take an `std::fmt::Write` as their `output` argument, instead of an `std::io::Write`.
 
 
 # [v0.42.0] - 2025-09-24
@@ -798,8 +812,3 @@ each case.
 # [0.1.8]
 
 * Fix possible DoS in link parsing (#33, Demi Obenour).
-
-
-
-
-
