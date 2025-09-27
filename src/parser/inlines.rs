@@ -1126,6 +1126,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
             && (!after_char.is_cmark_punctuation()
+                || (self.options.extension.superscript && c == b'^')
+                || (self.options.extension.subscript && c == b'~')
                 || before_char.is_whitespace()
                 || if !cjk_friendly {
                     before_char.is_cmark_punctuation()

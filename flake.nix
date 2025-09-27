@@ -94,14 +94,17 @@
               "rustfmt"
               "rust-src"
             ])
-            pkgs.rust-analyzer
-            pkgs.clippy
-            pkgs.cargo-fuzz
-            pkgs.cargo-nextest
-            pkgs.python3
-            pkgs.re2c
-            pkgs.hyperfine
-          ];
+          ]
+          ++ (with pkgs; [
+            rust-analyzer
+            clippy
+            cargo-fuzz
+            cargo-nextest
+            python3
+            re2c
+            hyperfine
+            bacon
+          ]);
         };
       }
     );

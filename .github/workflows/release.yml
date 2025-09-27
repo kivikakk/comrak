@@ -57,37 +57,34 @@ jobs:
                   }
                   echo "changelog<<EOF"$'\n'"$(generate)"$'\n'EOF >> $GITHUB_OUTPUT
 
-            - name: Update changelog.txt
+            - name: Update CHANGELOG.md
               run: |
-                  echo "# [v${{ steps.version-label.outputs.version }}] - `date +%Y-%m-%d`" >> changelog.txt.tmp
-                  cat <<'EOF' >> changelog.txt.tmp
+                  echo "# [v${{ steps.version-label.outputs.version }}] - `date +%Y-%m-%d`" >> CHANGELOG.md.tmp
+                  cat <<'EOF' >> CHANGELOG.md.tmp
 
                   ${{steps.generate-release-notes.outputs.changelog}}
 
                   EOF
-                  cat changelog.txt >> changelog.txt.tmp
-                  mv changelog.txt.tmp changelog.txt
+                  cat CHANGELOG.md >> CHANGELOG.md.tmp
+                  mv CHANGELOG.md.tmp CHANGELOG.md
 
             - name: Update README
               run: |
                   cargo run --example update-readme
 
             - name: Commit Changelog and README
-              run: git add -f changelog.txt README.md
+              run: git add -f CHANGELOG.md README.md
 
             - name: Create Pull Request
               id: cpr
               uses: peter-evans/create-pull-request@v7
               with:
-                  commit-message: "changelog.txt: generate."
+                  commit-message: "CHANGELOG.md: add generated portion."
                   title: "Release v${{ steps.version-label.outputs.version }}."
                   body: >
-                      This is an automated PR to build the latest changelog. Upon merging,
-                      a new release will be created and published to crates.io.<br/>
-                      Due to security considerations, PRs created by GitHub Actions cannot
-                      be merged automatically. Please review the changes and merge the PR.<br/>
-                      If you require the test suites to run, you can close the PR and reopen it to trigger
-                      those workflows.
+                      This is an automated PR to prepend the automated changelog
+                      to CHANGELOG.md.<br/>
+                      Please review the changes and adapt them into the changelog proper.
                   delete-branch: true
                   labels: release
                   branch: "release/v${{ steps.version-label.outputs.version }}"
