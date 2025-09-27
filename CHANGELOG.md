@@ -14,6 +14,10 @@ Categories to use in this document, and the order in which to give them:
 
 # [v0.43.0] - unreleased
 
+Parser changes:
+
+* `superscript` or `subscript` extensions only: punctuation following a superscript or subscript delimiter no longer disqualifies the delimiter from being considered left-flanking, such that `e^-i^` and `n~-i~` now parse as superscript or subscript respectively.
+
 Changed APIs:
 
 * `html::format_document`, `xml::format_document`, `cm::format_document` and friends now take an `std::fmt::Write` as their `output` argument, instead of an `std::io::Write`.
