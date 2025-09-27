@@ -1,4 +1,4 @@
-name: Release and publish
+name: Prepare release brranch
 
 on:
     workflow_dispatch:
@@ -64,6 +64,8 @@ jobs:
 
                   ${{steps.generate-release-notes.outputs.changelog}}
 
+                  ---snip---
+
                   EOF
                   cat CHANGELOG.md >> CHANGELOG.md.tmp
                   mv CHANGELOG.md.tmp CHANGELOG.md
@@ -88,47 +90,3 @@ jobs:
                   delete-branch: true
                   labels: release
                   branch: "release/v${{ steps.version-label.outputs.version }}"
-
-            - name: Enable Pull Request Automerge
-              uses: peter-evans/enable-pull-request-automerge@v3
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-
-    release:
-        if: ${{ (github.event.pull_request.merged == true) && (contains(github.event.pull_request.labels.*.name, 'release')) }}
-        runs-on: ubuntu-latest
-        env:
-            CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-        steps:
-            - uses: actions/checkout@v5
-              with:
-                  submodules: recursive
-
-            - name: Configure Git
-              run: |
-                  git config --local user.email "actions@github.com"
-                  git config --local user.name "Actions Auto Build"
-
-            - name: Get current version
-              id: version-label
-              run: |
-                  VERSION=$(grep version Cargo.toml | head -n 1 | cut -d'"' -f2)
-                  echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-            - name: Create tag
-              run: |
-                  git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
-                  git push origin --tags
-
-            - name: Login to Crates.io
-              run: cargo login ${CRATES_IO_TOKEN}
-
-            - name: Publish GitHub release
-              run: |
-                  gh release create v${{ steps.version-label.outputs.version }} --generate-notes
-
-            - name: Publish crate
-              run: cargo publish
