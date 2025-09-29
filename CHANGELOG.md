@@ -1,3 +1,18 @@
+# [v0.43.0] - 2025-09-29
+
+## What's Changed
+* Add CJK Friendly Emphasis to CLI option by @tats-u in https://github.com/kivikakk/comrak/pull/607
+* Introduce `cargo binstall` by @tats-u in https://github.com/kivikakk/comrak/pull/608
+* bin: allow `--header-ids ''` for prefix-less headers. by @kivikakk in https://github.com/kivikakk/comrak/pull/610
+* www: add. by @kivikakk in https://github.com/kivikakk/comrak/pull/611
+* Replace io::Write with fmt::Write to avoid revalidating UTF-8. by @kivikakk in https://github.com/kivikakk/comrak/pull/601
+* superscript: failing test for #592. by @kivikakk in https://github.com/kivikakk/comrak/pull/593
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.42.0...v0.43.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Reverts
