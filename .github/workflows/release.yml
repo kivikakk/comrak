@@ -1,4 +1,4 @@
-name: Prepare release brranch
+name: Prepare release branch
 
 on:
     workflow_dispatch:
