@@ -11,16 +11,29 @@ Categories to use in this document, and the order in which to give them:
 * Build changes
 * Behind the scenes
 
+# [v0.44.0] - unreleased
 
-# [v0.43.0] - unreleased
+# [v0.43.0] - 2025-09-29
 
 Parser changes:
 
-* `superscript` or `subscript` extensions only: punctuation following a superscript or subscript delimiter no longer disqualifies the delimiter from being considered left-flanking, such that `e^-i^` and `n~-i~` now parse as superscript or subscript respectively.
+* `superscript` or `subscript` extensions only: punctuation following a superscript or subscript delimiter no longer disqualifies the delimiter from being considered left-flanking, such that `e^-i^` and `n~-i~` now parse as superscript or subscript respectively (by @kivikakk in https://github.com/kivikakk/comrak/pull/593)
 
 Changed APIs:
 
-* `html::format_document`, `xml::format_document`, `cm::format_document` and friends now take an `std::fmt::Write` as their `output` argument, instead of an `std::io::Write`.
+* `html::format_document`, `xml::format_document`, `cm::format_document` and friends now take an `std::fmt::Write` as their `output` argument, instead of an `std::io::Write`, to avoid revalidating UTF-8 (by @kivikakk in https://github.com/kivikakk/comrak/pull/601)
+* bin: allow `--header-ids ''` for prefix-less headers (by @kivikakk in https://github.com/kivikakk/comrak/pull/610)
+
+New APIs:
+
+* Add CJK Friendly Emphasis to CLI option (by @tats-u in https://github.com/kivikakk/comrak/pull/607)
+
+Documentation updates:
+
+* Introduce `cargo binstall` by (@tats-u in https://github.com/kivikakk/comrak/pull/608)
+* www: add (by @kivikakk in https://github.com/kivikakk/comrak/pull/611)
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.42.0...v0.43.0
 
 
 # [v0.42.0] - 2025-09-24

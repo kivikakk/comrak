@@ -1,4 +1,4 @@
-# [Comrak]
+# [Comrak](https://comrak.ee/)
 
 [![Build status](https://github.com/kivikakk/comrak/actions/workflows/rust.yml/badge.svg)](https://github.com/kivikakk/comrak/actions/workflows/rust.yml)
 [![CommonMark: 652/652](https://img.shields.io/badge/commonmark-652%2F652-brightgreen.svg)](https://github.com/commonmark/commonmark-spec/blob/9103e341a973013013bb1a80e13567007c5cef6f/spec.txt)
@@ -6,14 +6,9 @@
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
 
-[Comrak] is a [CommonMark] and [GitHub Flavored Markdown] compatible parser and renderer, written in Rust.
+[Comrak](https://comrak.ee/) is a [CommonMark](https://commonmark.org/) and [GitHub Flavored Markdown](https://github.github.com/gfm/) compatible parser and renderer, written in Rust.
 
-Compliant with [CommonMark 0.31.2] by default.
-
-[Comrak]: https://comrak.ee/
-[CommonMark]: https://commonmark.org/
-[GitHub Flavored Markdown]: https://github.github.com/gfm/
-[CommonMark 0.31.2]: https://spec.commonmark.org/0.31.2/
+Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) by default.
 
 ## Installation
 
@@ -21,7 +16,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.42"
+comrak = "0.43"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
