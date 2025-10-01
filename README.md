@@ -366,8 +366,7 @@ Thank you to Comrak's many contributors for PRs and issues opened!
 
 ### Financial Contributors
 
-Become a financial contributor and help sustain Comrak's development.  I'm
-self-employed — open-source software relies on the collective.
+Become a financial contributor and help sustain Comrak's development.
 
 - [GitHub Sponsors](https://github.com/sponsors/kivikakk)
 
