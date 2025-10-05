@@ -1502,28 +1502,27 @@ where
 
         while container.last_child_is_open(self.arena) {
             container = container.last_child(&self.arena).unwrap();
-            let ast = &mut container.get_mut(self.arena);
 
             self.find_first_nonspace(line);
 
-            match ast.value {
+            match container.get(self.arena).value {
                 NodeValue::BlockQuote => {
                     if !self.parse_block_quote_prefix(line) {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::Item(ref nl) => {
-                    if !self.parse_node_item_prefix(line, container, nl) {
+                NodeValue::Item(nl) => {
+                    if !self.parse_node_item_prefix(line, container, &nl) {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::DescriptionItem(ref di) => {
-                    if !self.parse_description_item_prefix(line, container, di) {
+                NodeValue::DescriptionItem(di) => {
+                    if !self.parse_description_item_prefix(line, container, &di) {
                         return (false, container, should_continue);
                     }
                 }
                 NodeValue::CodeBlock(..) => {
-                    if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
+                    if !self.parse_code_block_prefix(line, container, &mut should_continue) {
                         return (false, container, should_continue);
                     }
                 }
@@ -1556,7 +1555,6 @@ where
                     if !self.parse_multiline_block_quote_prefix(
                         line,
                         container,
-                        ast,
                         &mut should_continue,
                     ) {
                         return (false, container, should_continue);
@@ -1567,7 +1565,6 @@ where
                         if !self.parse_multiline_block_quote_prefix(
                             line,
                             container,
-                            ast,
                             &mut should_continue,
                         ) {
                             return (false, container, should_continue);
@@ -2264,10 +2261,10 @@ where
         &mut self,
         line: &[u8],
         container: AstNode,
-        ast: &mut Ast,
         should_continue: &mut bool,
     ) -> bool {
-        let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
+        let (fenced, fence_char, fence_length, fence_offset) = match container.get(self.arena).value
+        {
             NodeValue::CodeBlock(ref ncb) => (
                 ncb.fenced,
                 ncb.fence_char,
@@ -2298,7 +2295,7 @@ where
         if matched >= fence_length {
             *should_continue = false;
             self.advance_offset(line, matched, false);
-            self.current = self.finalize_borrowed(container, ast).unwrap();
+            self.current = self.finalize(container).unwrap();
             return false;
         }
 
@@ -2439,10 +2436,9 @@ where
         &mut self,
         line: &[u8],
         container: AstNode,
-        ast: &mut Ast,
         should_continue: &mut bool,
     ) -> bool {
-        let (fence_length, fence_offset) = match ast.value {
+        let (fence_length, fence_offset) = match container.get(self.arena).value {
             NodeValue::MultilineBlockQuote(ref node_value) => {
                 (node_value.fence_length, node_value.fence_offset)
             }
@@ -2464,12 +2460,10 @@ where
             // Make sure it's finalized.
             if container.last_child_is_open(self.arena) {
                 let child = container.last_child(&self.arena).unwrap();
-                let child_ast = &mut child.get_mut(self.arena);
-
-                self.finalize_borrowed(child, child_ast).unwrap();
+                self.finalize(child).unwrap();
             }
 
-            self.current = self.finalize_borrowed(container, ast).unwrap();
+            self.current = self.finalize(container).unwrap();
             return false;
         }
 
@@ -2675,11 +2669,6 @@ where
         }
     }
 
-    fn finalize(&mut self, node: AstNode) -> Option<AstNode> {
-        let n = node.get_mut(self.arena);
-        self.finalize_borrowed(node, n)
-    }
-
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
         {
@@ -2701,12 +2690,14 @@ where
         !strings::is_blank(content.as_bytes())
     }
 
-    fn finalize_borrowed(&mut self, node: AstNode, ast: &mut Ast) -> Option<AstNode> {
+    fn finalize(&mut self, node: AstNode) -> Option<AstNode> {
+        let parent = node.parent(&self.arena);
+        let ast = node.get_mut(self.arena);
+
         assert!(ast.open);
         ast.open = false;
 
         let content = &mut ast.content;
-        let parent = node.parent(&self.arena);
 
         if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
@@ -2815,7 +2806,8 @@ where
 
     fn process_inlines_node(&mut self, node: AstNode) {
         // XXX: acc Vec to avoid layering borrow for descendants with mutable
-        // borrow for parse_inlines. Can we do better?
+        // borrow for parse_inlines. We can do better. Note that the same
+        // pattern repeats quite a few times in this module.
         for node in node.descendants(self.arena).collect::<Vec<_>>() {
             if node.get(&self.arena).value.contains_inlines() {
                 self.parse_inlines(node);
@@ -2909,10 +2901,14 @@ where
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let ast = node.get_mut(self.arena);
         let mut replace = None;
-        match ast.value {
-            NodeValue::FootnoteReference(ref mut nfr) => {
+        match node.get(self.arena).value {
+            NodeValue::FootnoteReference(_) => {
+                // ??? XXX
+                let NodeValue::FootnoteReference(ref mut nfr) = node.get_mut(self.arena).value
+                else {
+                    unreachable!()
+                };
                 let normalized = strings::normalize_label(&nfr.name, Case::Fold);
                 if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
@@ -2932,7 +2928,8 @@ where
                 }
             }
             _ => {
-                for n in node.children(self.arena) {
+                // XXX: as in process_inlines_node.
+                for n in node.children(self.arena).collect::<Vec<_>>() {
                     self.find_footnote_references(n, map, ixp);
                 }
             }
@@ -2941,7 +2938,7 @@ where
         if let Some(mut label) = replace {
             label.insert_str(0, "[^");
             label.push(']');
-            ast.value = NodeValue::Text(label);
+            node.get_mut(self.arena).value = NodeValue::Text(label);
         }
     }
 
@@ -2951,7 +2948,8 @@ where
                 node.detach(self.arena);
             }
             _ => {
-                for n in node.children(self.arena) {
+                // XXX: as in process_inlines_node.
+                for n in node.children(self.arena).collect::<Vec<_>>() {
                     self.cleanup_footnote_definitions(n);
                 }
             }
@@ -2963,6 +2961,8 @@ where
     }
 
     fn postprocess_text_nodes_with_context(&mut self, node: AstNode, in_bracket_context: bool) {
+        // XXX We probably want to collect the modifications in a changelist and
+        // then apply in one go.
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 

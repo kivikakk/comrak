@@ -1,5 +1,5 @@
 use indextree::Arena;
-use std::str;
+use std::{mem, str};
 use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
@@ -93,25 +93,23 @@ pub(crate) fn process_email_autolinks<'a>(
                 let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
                 post.insert_after(arena, after);
 
-                let after_ast = &mut after.get_mut(arena);
+                let mut remainder = mem::take(after.get_mut(arena).value.text_mut().unwrap());
                 process_email_autolinks(
                     arena,
                     after,
-                    match after_ast.value {
-                        NodeValue::Text(ref mut t) => t,
-                        _ => unreachable!(),
-                    },
+                    &mut remainder,
                     relaxed_autolinks,
                     &mut asp,
                     spx,
                 );
-                after_ast.sourcepos = asp;
+                after.get_mut(arena).sourcepos = asp;
             }
 
             return;
         }
     }
 }
+
 fn email_match<'a>(
     arena: &'a mut Arena<Ast>,
     contents: &[u8],
