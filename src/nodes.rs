@@ -1,15 +1,14 @@
 //! The CommonMark AST.
 
-use crate::arena_tree::Node;
-use std::cell::RefCell;
+use indextree::{Arena, NodeId};
 use std::convert::TryFrom;
-
-#[cfg(feature = "shortcodes")]
-pub use crate::parser::shortcodes::NodeShortCode;
+use std::fmt::Debug;
 
 pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+#[cfg(feature = "shortcodes")]
+pub use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -664,148 +663,221 @@ impl Ast {
 
 /// The type of a node within the document.
 ///
-/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
-/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
-///
-/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
-///
-/// ```
-/// # use comrak::nodes::{AstNode, NodeValue};
-/// let root = AstNode::from(NodeValue::Document);
-/// ```
-///
-/// Note that no sourcepos information is given to the created node. If you wish
-/// to assign sourcepos information, use the `From` trait to create an `AstNode`
-/// from an `Ast`:
-///
-/// ```
-/// # use comrak::nodes::{Ast, AstNode, NodeValue};
-/// let root = AstNode::from(Ast::new_with_sourcepos(
-///     NodeValue::Paragraph,
-///     (4, 1, 4, 10).into(),
-/// ));
-/// ```
-///
-/// For practical use, you'll probably need it allocated in an `Arena`, in which
-/// case you can use `.into()` to simplify creation:
-///
-/// ```
-/// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
-/// # let arena = Arena::<AstNode>::new();
-/// let node_in_arena = arena.alloc(NodeValue::Document.into());
-/// ```
-pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+/// TODO
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
+pub struct AstNode(NodeId);
 
-impl<'a> From<NodeValue> for AstNode<'a> {
-    /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
-    fn from(value: NodeValue) -> Self {
-        Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+impl AstNode {
+    /// TODO
+    pub fn with_value(arena: &mut Arena<Ast>, value: NodeValue) -> Self {
+        Self::new(arena, Ast::new(value, LineColumn::default()))
     }
-}
 
-impl<'a> From<Ast> for AstNode<'a> {
-    /// Create a new AST node with the given Ast.
-    fn from(ast: Ast) -> Self {
-        Node::new(RefCell::new(ast))
+    pub(crate) fn new(arena: &mut Arena<Ast>, ast: Ast) -> Self {
+        Self(arena.new_node(ast))
     }
-}
 
-/// Validation errors produced by [Node::validate].
-#[derive(Debug, Clone)]
-pub enum ValidationError<'a> {
-    /// The type of a child node is not allowed in the parent node. This can happen when an inline
-    /// node is found in a block container, a block is found in an inline node, etc.
-    InvalidChildType {
-        /// The parent node.
-        parent: &'a AstNode<'a>,
-        /// The child node.
-        child: &'a AstNode<'a>,
-    },
-}
+    #[inline]
+    pub(crate) fn node_id(&self) -> NodeId {
+        self.0
+    }
 
-impl<'a> Node<'a, RefCell<Ast>> {
+    #[inline]
+    /// TODO
+    pub fn get<'a>(&self, arena: &'a Arena<Ast>) -> &'a Ast {
+        arena[self.node_id()].get()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn get_mut<'a>(&self, arena: &'a mut Arena<Ast>) -> &'a mut Ast {
+        arena[self.node_id()].get_mut()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn parent(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].parent().map(Self)
+    }
+
+    #[inline]
+    /// TODO
+    pub fn first_child(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].first_child().map(Self)
+    }
+
+    #[inline]
+    /// TODO
+    pub fn last_child(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].last_child().map(Self)
+    }
+
+    #[inline]
+    /// TODO
+    pub fn next_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].next_sibling().map(Self)
+    }
+
+    #[inline]
+    /// TODO
+    pub fn previous_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].previous_sibling().map(Self)
+    }
+
+    #[inline]
+    /// TODO
+    pub fn preceding_siblings<'a>(&self, arena: &'a Arena<Ast>) -> PrecedingSiblings<'a> {
+        self.node_id().preceding_siblings(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn following_siblings<'a>(&self, arena: &'a Arena<Ast>) -> FollowingSiblings<'a> {
+        self.node_id().following_siblings(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn ancestors<'a>(&self, arena: &'a Arena<Ast>) -> Ancestors<'a> {
+        self.node_id().ancestors(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn children<'a>(&self, arena: &'a Arena<Ast>) -> Children<'a> {
+        self.node_id().children(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn descendants<'a>(&self, arena: &'a Arena<Ast>) -> Descendants<'a> {
+        self.node_id().descendants(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn traverse<'a>(&self, arena: &'a Arena<Ast>) -> Traverse<'a> {
+        self.node_id().traverse(arena).into()
+    }
+
+    #[inline]
+    /// TODO
+    pub fn append_node(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().append(node.node_id(), arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn append_value(&self, arena: &mut Arena<Ast>, value: Ast) -> AstNode {
+        Self(self.node_id().append_value(value, arena))
+    }
+
+    #[inline]
+    /// TODO
+    pub fn prepend_node(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().prepend(node.node_id(), arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn prepend_value(&self, arena: &mut Arena<Ast>, value: Ast) -> AstNode {
+        // indextree doesn't expose a prepend_value; check if it ought to?
+        let node = AstNode::new(arena, value);
+        self.node_id().prepend(node.node_id(), arena);
+        node
+    }
+
+    #[inline]
+    /// TODO
+    pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().insert_after(node.node_id(), arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn insert_before(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().insert_before(node.node_id(), arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().detach(arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn remove_self(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().remove(arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn remove_subtree(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().remove_subtree(arena);
+    }
+
     /// Returns true if the given node can contain a node with the given value.
-    pub fn can_contain_type(&self, child: &NodeValue) -> bool {
+    pub fn can_contain_type(&self, arena: &Arena<Ast>, child: &NodeValue) -> bool {
         match *child {
             NodeValue::Document => {
                 return false;
             }
             NodeValue::FrontMatter(_) => {
-                return matches!(self.data.borrow().value, NodeValue::Document);
+                return matches!(self.get(arena).value, NodeValue::Document);
             }
             _ => {}
         }
 
-        match self.data.borrow().value {
-            NodeValue::Document
-            | NodeValue::BlockQuote
-            | NodeValue::FootnoteDefinition(_)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails
-            | NodeValue::Item(..)
-            | NodeValue::TaskItem(..) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-            }
+        match self.get(arena).value {
+        NodeValue::Document
+        | NodeValue::BlockQuote
+        | NodeValue::FootnoteDefinition(_)
+        | NodeValue::DescriptionTerm
+        | NodeValue::DescriptionDetails
+        | NodeValue::Item(..)
+        | NodeValue::TaskItem(..) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+        }
 
-            NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
+        NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
 
-            NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
+        NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
 
-            NodeValue::DescriptionItem(_) => matches!(
-                *child,
-                NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
-            ),
+        NodeValue::DescriptionItem(_) => matches!(
+            *child,
+            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
+        ),
 
-            #[cfg(feature = "shortcodes")]
-            NodeValue::ShortCode(..) => !child.block(),
+        #[cfg(feature = "shortcodes")]
+        NodeValue::ShortCode(..) => !child.block(),
 
-            NodeValue::Paragraph
-            | NodeValue::Heading(..)
-            | NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Link(..)
-            | NodeValue::Image(..)
-            | NodeValue::WikiLink(..)
-            | NodeValue::Strikethrough
-            | NodeValue::Superscript
-            | NodeValue::SpoileredText
-            | NodeValue::Underline
-            | NodeValue::Subscript
-            // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
-            // possibly going to fall into the spoiler. This should be fixed in
-            // inlines.
-            | NodeValue::EscapedTag(_)
-            => !child.block(),
+        NodeValue::Paragraph
+        | NodeValue::Heading(..)
+        | NodeValue::Emph
+        | NodeValue::Strong
+        | NodeValue::Link(..)
+        | NodeValue::Image(..)
+        | NodeValue::WikiLink(..)
+        | NodeValue::Strikethrough
+        | NodeValue::Superscript
+        | NodeValue::SpoileredText
+        | NodeValue::Underline
+        | NodeValue::Subscript
+        // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
+        // possibly going to fall into the spoiler. This should be fixed in
+        // inlines.
+        | NodeValue::EscapedTag(_)
+        => !child.block(),
 
-            NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
+        NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
-            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
+        NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
 
-            #[cfg(not(feature = "shortcodes"))]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
-                    | NodeValue::Code(..)
-                    | NodeValue::Emph
-                    | NodeValue::Strong
-                    | NodeValue::Link(..)
-                    | NodeValue::Image(..)
-                    | NodeValue::Strikethrough
-                    | NodeValue::HtmlInline(..)
-                    | NodeValue::Math(..)
-                    | NodeValue::WikiLink(..)
-                    | NodeValue::FootnoteReference(..)
-                    | NodeValue::Superscript
-                    | NodeValue::SpoileredText
-                    | NodeValue::Underline
-                    | NodeValue::Subscript
-                    | NodeValue::TaskItem(_)
-            ),
-
-            #[cfg(feature = "shortcodes")]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
+        #[cfg(not(feature = "shortcodes"))]
+        NodeValue::TableCell => matches!(
+            *child,
+            NodeValue::Text(..)
                 | NodeValue::Code(..)
                 | NodeValue::Emph
                 | NodeValue::Strong
@@ -820,19 +892,40 @@ impl<'a> Node<'a, RefCell<Ast>> {
                 | NodeValue::SpoileredText
                 | NodeValue::Underline
                 | NodeValue::Subscript
-                | NodeValue::ShortCode(..)
                 | NodeValue::TaskItem(_)
-            ),
+        ),
 
-            NodeValue::MultilineBlockQuote(_) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-            }
+        #[cfg(feature = "shortcodes")]
+        NodeValue::TableCell => matches!(
+            *child,
+            NodeValue::Text(..)
+            | NodeValue::Code(..)
+            | NodeValue::Emph
+            | NodeValue::Strong
+            | NodeValue::Link(..)
+            | NodeValue::Image(..)
+            | NodeValue::Strikethrough
+            | NodeValue::HtmlInline(..)
+            | NodeValue::Math(..)
+            | NodeValue::WikiLink(..)
+            | NodeValue::FootnoteReference(..)
+            | NodeValue::Superscript
+            | NodeValue::SpoileredText
+            | NodeValue::Underline
+            | NodeValue::Subscript
+            | NodeValue::ShortCode(..)
+            | NodeValue::TaskItem(_)
+        ),
 
-            NodeValue::Alert(_) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-            }
-            _ => false,
+        NodeValue::MultilineBlockQuote(_) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
         }
+
+        NodeValue::Alert(_) => {
+            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+        }
+        _ => false,
+    }
     }
 
     /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
@@ -846,39 +939,40 @@ impl<'a> Node<'a, RefCell<Ast>> {
     ///
     /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
     /// comrak, on the other hand, should always produce a valid tree.
-    pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
+    pub fn validate(self, arena: &Arena<Ast>) -> Result<(), ValidationError<'_>> {
         let mut stack = vec![self];
 
         while let Some(node) = stack.pop() {
             // Check that this node type is valid wrt to the type of its parent.
-            if let Some(parent) = node.parent() {
-                if !parent.can_contain_type(&node.data.borrow().value) {
+            if let Some(parent) = node.parent(arena) {
+                if !parent.can_contain_type(arena, &node.get(arena).value) {
                     return Err(ValidationError::InvalidChildType {
+                        arena,
                         parent,
                         child: node,
                     });
                 }
             }
 
-            stack.extend(node.children());
+            stack.extend(node.children(arena));
         }
 
         Ok(())
     }
 
-    pub(crate) fn last_child_is_open(&self) -> bool {
-        self.last_child().map_or(false, |n| n.data.borrow().open)
+    pub(crate) fn last_child_is_open(&self, arena: &Arena<Ast>) -> bool {
+        self.last_child(arena).map_or(false, |n| n.get(arena).open)
     }
 
-    pub(crate) fn ends_with_blank_line(&self) -> bool {
-        let mut it = Some(self);
+    pub(crate) fn ends_with_blank_line(&self, arena: &Arena<Ast>) -> bool {
+        let mut it = Some(*self);
         while let Some(cur) = it {
-            if cur.data.borrow().last_line_blank {
+            if cur.get(arena).last_line_blank {
                 return true;
             }
-            match cur.data.borrow().value {
+            match cur.get(arena).value {
                 NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                    it = cur.last_child()
+                    it = cur.last_child(arena)
                 }
                 _ => it = None,
             };
@@ -886,14 +980,172 @@ impl<'a> Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<&'a AstNode<'a>> {
-        let mut ch = Some(self);
+    pub(crate) fn containing_block(&self, arena: &Arena<Ast>) -> Option<AstNode> {
+        let mut ch = Some(*self);
         while let Some(n) = ch {
-            if n.data.borrow().value.block() {
+            if n.get(arena).value.block() {
                 return Some(n);
             }
-            ch = n.parent();
+            ch = n.parent(arena);
         }
         None
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct PrecedingSiblings<'a>(indextree::PrecedingSiblings<'a, Ast>);
+
+impl<'a> From<indextree::PrecedingSiblings<'a, Ast>> for PrecedingSiblings<'a> {
+    fn from(it: indextree::PrecedingSiblings<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for PrecedingSiblings<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct FollowingSiblings<'a>(indextree::FollowingSiblings<'a, Ast>);
+
+impl<'a> From<indextree::FollowingSiblings<'a, Ast>> for FollowingSiblings<'a> {
+    fn from(it: indextree::FollowingSiblings<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for FollowingSiblings<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Ancestors<'a>(indextree::Ancestors<'a, Ast>);
+
+impl<'a> From<indextree::Ancestors<'a, Ast>> for Ancestors<'a> {
+    fn from(it: indextree::Ancestors<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Ancestors<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Children<'a>(indextree::Children<'a, Ast>);
+
+impl<'a> From<indextree::Children<'a, Ast>> for Children<'a> {
+    fn from(it: indextree::Children<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Children<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+impl<'a> DoubleEndedIterator for Children<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(AstNode)
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Descendants<'a>(indextree::Descendants<'a, Ast>);
+
+impl<'a> From<indextree::Descendants<'a, Ast>> for Descendants<'a> {
+    fn from(it: indextree::Descendants<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Descendants<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Traverse<'a>(indextree::Traverse<'a, Ast>);
+
+impl<'a> From<indextree::Traverse<'a, Ast>> for Traverse<'a> {
+    fn from(it: indextree::Traverse<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Traverse<'a> {
+    type Item = NodeEdge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|edge| match edge {
+            indextree::NodeEdge::Start(node_id) => NodeEdge::Start(AstNode(node_id)),
+            indextree::NodeEdge::End(node_id) => NodeEdge::End(AstNode(node_id)),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Indicator if the node is at a start or endpoint of the tree
+pub enum NodeEdge {
+    /// TODO
+    Start(AstNode),
+
+    /// TODO
+    End(AstNode),
+}
+
+/// Validation errors produced by [Node::validate].
+#[derive(Clone)]
+pub enum ValidationError<'a> {
+    /// The type of a child node is not allowed in the parent node. This can happen when an inline
+    /// node is found in a block container, a block is found in an inline node, etc.
+    InvalidChildType {
+        /// The arena the nodes are resolvable in.
+        arena: &'a Arena<Ast>,
+        /// The parent node.
+        parent: AstNode,
+        /// The child node.
+        child: AstNode,
+    },
+}
+
+impl<'a> Debug for ValidationError<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidChildType {
+                arena,
+                parent,
+                child,
+            } => f
+                .debug_struct("InvalidChildType")
+                .field("parent", parent.get(arena))
+                .field("child", child.get(arena))
+                .finish(),
+        }
     }
 }

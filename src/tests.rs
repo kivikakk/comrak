@@ -1,7 +1,8 @@
-use crate::nodes::{AstNode, NodeValue, Sourcepos};
-use crate::*;
 use std::collections::HashMap;
 use std::panic;
+
+use crate::nodes::{Ast, AstNode, NodeValue, Sourcepos};
+use crate::*;
 
 mod alerts;
 mod autolink;
@@ -66,13 +67,13 @@ fn compare_strs(output: &str, expected: &str, kind: &str, original_input: &str) 
 
 #[track_caller]
 fn commonmark(input: &str, expected: &str, opts: Option<&Options>) {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let defaults = Options::default();
     let options = opts.unwrap_or(&defaults);
 
-    let root = parse_document(&arena, input, options);
+    let root = parse_document(&mut arena, input, options);
     let mut output = String::new();
-    cm::format_document(root, options, &mut output).unwrap();
+    cm::format_document(&arena, root, options, &mut output).unwrap();
     compare_strs(&output, expected, "regular", input);
 }
 
@@ -94,11 +95,11 @@ where
 
 #[track_caller]
 fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
-    let root = parse_document(&arena, input, options);
+    let root = parse_document(&mut arena, input, options);
     let mut output = String::new();
-    html::format_document(root, options, &mut output).unwrap();
+    html::format_document(&arena, root, options, &mut output).unwrap();
     compare_strs(&output, expected, "regular", input);
 
     if !roundtrip {
@@ -106,11 +107,11 @@ fn html_opts_w(input: &str, expected: &str, roundtrip: bool, options: &Options) 
     }
 
     let mut md = String::new();
-    cm::format_document(root, options, &mut md).unwrap();
+    cm::format_document(&arena, root, options, &mut md).unwrap();
 
-    let root = parse_document(&arena, &md, options);
+    let root = parse_document(&mut arena, &md, options);
     let mut output_from_rt = String::new();
-    html::format_document(root, options, &mut output_from_rt).unwrap();
+    html::format_document(&arena, root, options, &mut output_from_rt).unwrap();
 
     let expected_no_sourcepos = remove_sourcepos(expected);
     let actual_no_sourcepos = remove_sourcepos(&output_from_rt);
@@ -177,20 +178,21 @@ pub(crate) use html_opts;
 
 #[track_caller]
 fn html_plugins(input: &str, expected: &str, plugins: &Plugins) {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let options = Options::default();
 
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&mut arena, input, &options);
     let mut output = String::new();
-    html::format_document_with_plugins(root, &options, &mut output, plugins).unwrap();
+    html::format_document_with_plugins(&arena, root, &options, &mut output, plugins).unwrap();
     compare_strs(&output, expected, "regular", input);
 
     let mut md = String::new();
-    cm::format_document(root, &options, &mut md).unwrap();
+    cm::format_document(&arena, root, &options, &mut md).unwrap();
 
-    let root = parse_document(&arena, &md, &options);
+    let root = parse_document(&mut arena, &md, &options);
     let mut output_from_rt = String::new();
-    html::format_document_with_plugins(root, &options, &mut output_from_rt, plugins).unwrap();
+    html::format_document_with_plugins(&arena, root, &options, &mut output_from_rt, plugins)
+        .unwrap();
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
@@ -204,13 +206,13 @@ fn xml_opts<F>(input: &str, expected: &str, opts: F)
 where
     F: Fn(&mut Options),
 {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let mut options = Options::default();
     opts(&mut options);
 
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&mut arena, input, &options);
     let mut output = String::new();
-    crate::xml::format_document(root, &options, &mut output).unwrap();
+    crate::xml::format_document(&arena, root, &options, &mut output).unwrap();
     compare_strs(&output, expected, "regular", input);
 
     if options.render.sourcepos {
@@ -218,20 +220,25 @@ where
     }
 
     let mut md = String::new();
-    cm::format_document(root, &options, &mut md).unwrap();
+    cm::format_document(&arena, root, &options, &mut md).unwrap();
 
-    let root = parse_document(&arena, &md, &options);
+    let root = parse_document(&mut arena, &md, &options);
     let mut output_from_rt = String::new();
-    crate::xml::format_document(root, &options, &mut output_from_rt).unwrap();
+    crate::xml::format_document(&arena, root, &options, &mut output_from_rt).unwrap();
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
-fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &NodeValue) {
+fn asssert_node_eq<'a>(
+    arena: &'a Arena<Ast>,
+    node: AstNode,
+    location: &[usize],
+    expected: &NodeValue,
+) {
     let node = location
         .iter()
-        .fold(node, |node, &n| node.children().nth(n).unwrap());
+        .fold(node, |node, &n| node.children(arena).nth(n).unwrap());
 
-    let data = node.data.borrow();
+    let data = node.get(arena);
     let actual = format!("{:?}", data.value);
     let expected = format!("{:?}", expected);
 
@@ -288,18 +295,18 @@ where
     opts(&mut options);
 
     let result = panic::catch_unwind(|| {
-        let arena = Arena::new();
-        let root = parse_document(&arena, md, &options);
+        let mut arena = Arena::new();
+        let root = parse_document(&mut arena, md, &options);
 
-        amt.assert_match(root);
+        amt.assert_match(&arena, root);
     });
 
     if let Err(err) = result {
-        let arena = Arena::new();
-        let root = parse_document(&arena, md, &options);
+        let mut arena = Arena::new();
+        let root = parse_document(&mut arena, md, &options);
 
         let mut output = String::new();
-        format_xml(root, &options, &mut output).unwrap();
+        format_xml(&arena, root, &options, &mut output).unwrap();
         eprintln!("{output}");
 
         panic::resume_unwind(err)
@@ -345,8 +352,8 @@ enum AstMatchContent {
 
 impl AstMatchTree {
     #[track_caller]
-    fn assert_match<'a>(&self, node: &'a AstNode<'a>) {
-        let ast = node.data.borrow();
+    fn assert_match<'a>(&self, arena: &'a Arena<Ast>, node: AstNode) {
+        let ast = node.get(arena);
         assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");
         assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");
 
@@ -388,11 +395,11 @@ impl AstMatchTree {
                 AstMatchContent::Children(children) => {
                     assert_eq!(
                         children.len(),
-                        node.children().count(),
+                        node.children(arena).count(),
                         "children count should match"
                     );
-                    for (e, a) in children.iter().zip(node.children()) {
-                        e.assert_match(a);
+                    for (e, a) in children.iter().zip(node.children(arena)) {
+                        e.assert_match(arena, a);
                     }
                     asserted_children = true;
                 }
@@ -400,7 +407,7 @@ impl AstMatchTree {
         }
 
         assert!(
-            asserted_children || node.children().count() == 0,
+            asserted_children || node.children(arena).count() == 0,
             "children were not asserted"
         );
         assert!(

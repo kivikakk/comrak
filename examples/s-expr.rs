@@ -13,7 +13,7 @@ const INDENT: usize = 4;
 /// If true, the close parenthesis is printed in its own line.
 const CLOSE_NEWLINE: bool = false;
 
-use comrak::nodes::{AstNode, NodeValue};
+use comrak::nodes::{Ast, AstNode, NodeValue};
 use comrak::{parse_document, Arena, ExtensionOptions, Options};
 use std::env;
 use std::error::Error;
@@ -21,7 +21,8 @@ use std::fs::File;
 use std::io::{self, BufWriter, Read, Write};
 
 fn iter_nodes<'a, W: Write>(
-    node: &'a AstNode<'a>,
+    arena: &'a Arena<Ast>,
+    node: AstNode,
     writer: &mut W,
     indent: usize,
 ) -> io::Result<()> {
@@ -35,7 +36,7 @@ fn iter_nodes<'a, W: Write>(
         }};
     }
 
-    match &node.data.borrow().value {
+    match &node.get(arena).value {
         Text(t) => write!(writer, "{:?}", t)?,
         value => {
             try_node_inline!(value, FootnoteDefinition);
@@ -46,16 +47,16 @@ fn iter_nodes<'a, W: Write>(
                 return write!(writer, "Code({:?}, {})", code.literal, code.num_backticks);
             }
 
-            let has_blocks = node.children().any(|c| c.data.borrow().value.block());
+            let has_blocks = node.children(arena).any(|c| c.get(arena).value.block());
 
             write!(writer, "({:?}", value)?;
-            for child in node.children() {
+            for child in node.children(arena) {
                 if has_blocks {
                     write!(writer, "\n{1:0$}", indent + INDENT, " ")?;
                 } else {
                     write!(writer, " ")?;
                 }
-                iter_nodes(child, writer, indent + INDENT)?;
+                iter_nodes(arena, child, writer, indent + INDENT)?;
             }
 
             if indent == 0 {
@@ -72,7 +73,7 @@ fn iter_nodes<'a, W: Write>(
 }
 
 fn dump(source: &str) -> io::Result<()> {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
     let extension = ExtensionOptions::builder()
         .strikethrough(true)
@@ -95,10 +96,10 @@ fn dump(source: &str) -> io::Result<()> {
         ..Options::default()
     };
 
-    let doc = parse_document(&arena, source, &opts);
+    let doc = parse_document(&mut arena, source, &opts);
 
     let mut output = BufWriter::new(io::stdout());
-    iter_nodes(doc, &mut output, 0)
+    iter_nodes(&arena, doc, &mut output, 0)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

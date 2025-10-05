@@ -3,23 +3,22 @@ use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
 
 fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
-    // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-    let arena = Arena::new();
+    // The returned nodes are created in the supplied Arena.
+    let mut arena = Arena::new();
 
     // Parse the document into a root `AstNode`
-    let root = parse_document(&arena, document, &Options::default());
+    let root = parse_document(&mut arena, document, &Options::default());
 
     // Iterate over all the descendants of root.
-    for node in root.descendants() {
-        if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+    for node in root.descendants(&arena).collect::<Vec<_>>() {
+        if let NodeValue::Text(ref mut text) = node.get_mut(&mut arena).value {
             // If the node is a text node, replace `orig_string` with `replacement`.
             *text = text.replace(orig_string, replacement)
         }
     }
 
     let mut html = String::new();
-    format_html(root, &Options::default(), &mut html).unwrap();
-
+    format_html(&arena, root, &Options::default(), &mut html).unwrap();
     html
 }
 

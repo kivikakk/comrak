@@ -1,6 +1,4 @@
-use std::cell::RefCell;
-
-use self::nodes::{Ast, LineColumn, ListType, NodeList};
+use self::nodes::{ListType, NodeList};
 
 use super::*;
 use ntest::test_case;
@@ -14,47 +12,55 @@ fn commonmark_removes_redundant_strong() {
 
 #[test]
 fn commonmark_avoids_spurious_backslash() {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let options = Options::default();
-    let empty = LineColumn { line: 0, column: 0 };
 
-    let ast = |val: NodeValue| arena.alloc(AstNode::new(RefCell::new(Ast::new(val, empty))));
-    let root = ast(NodeValue::Document);
+    let root = AstNode::with_value(&mut arena, NodeValue::Document);
 
-    let p1 = ast(NodeValue::Paragraph);
-    p1.append(ast(NodeValue::Text("Line 1".to_owned())));
-    p1.append(ast(NodeValue::LineBreak));
-    root.append(p1);
+    let p1 = AstNode::with_value(&mut arena, NodeValue::Paragraph);
+    {
+        let node = AstNode::with_value(&mut arena, NodeValue::Text("Line 1".to_owned()));
+        p1.append_node(&mut arena, node);
+    }
+    {
+        let node = AstNode::with_value(&mut arena, NodeValue::LineBreak);
+        p1.append_node(&mut arena, node);
+    }
+    root.append_node(&mut arena, p1);
 
-    let p2 = ast(NodeValue::Paragraph);
-    p2.append(ast(NodeValue::Text("Line 2".to_owned())));
-    root.append(p2);
+    let p2 = AstNode::with_value(&mut arena, NodeValue::Paragraph);
+    {
+        let node = AstNode::with_value(&mut arena, NodeValue::Text("Line 2".to_owned()));
+        p2.append_node(&mut arena, node);
+    }
+    root.append_node(&mut arena, p2);
 
     let mut output = String::new();
-    cm::format_document(root, &options, &mut output).unwrap();
+    cm::format_document(&arena, root, &options, &mut output).unwrap();
 
     compare_strs(&output, "Line 1\n\nLine 2\n", "rendered", "<synthetic>");
 }
 
 #[test]
 fn commonmark_renders_single_list_item() {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let options = Options::default();
-    let empty = LineColumn { line: 0, column: 0 };
-    let ast = |val: NodeValue| arena.alloc(AstNode::new(RefCell::new(Ast::new(val, empty))));
     let list_options = NodeList {
         list_type: ListType::Ordered,
         start: 1,
         ..Default::default()
     };
-    let list = ast(NodeValue::List(list_options));
-    let item = ast(NodeValue::Item(list_options));
-    let p = ast(NodeValue::Paragraph);
-    p.append(ast(NodeValue::Text("Item 1".to_owned())));
-    item.append(p);
-    list.append(item);
+    let list = AstNode::with_value(&mut arena, NodeValue::List(list_options));
+    let item = AstNode::with_value(&mut arena, NodeValue::Item(list_options));
+    let p = AstNode::with_value(&mut arena, NodeValue::Paragraph);
+    {
+        let node = AstNode::with_value(&mut arena, NodeValue::Text("Item 1".to_owned()));
+        p.append_node(&mut arena, node);
+    }
+    item.append_node(&mut arena, p);
+    list.append_node(&mut arena, item);
     let mut output = String::new();
-    cm::format_document(item, &options, &mut output).unwrap();
+    cm::format_document(&arena, item, &options, &mut output).unwrap();
     compare_strs(&output, "1. Item 1\n", "rendered", "<synthetic>");
 }
 
