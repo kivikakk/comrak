@@ -1,14 +1,15 @@
+use indextree::Arena;
+use std::str;
+use unicode_categories::UnicodeCategories;
+
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
 use crate::parser::{inlines::make_inline, Spx};
-use std::str;
-use typed_arena::Arena;
-use unicode_categories::UnicodeCategories;
 
 pub(crate) fn process_email_autolinks<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    node: &'a AstNode<'a>,
+    arena: Arena<Ast>,
+    node: AstNode,
     contents_str: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
@@ -112,11 +113,11 @@ pub(crate) fn process_email_autolinks<'a>(
     }
 }
 fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(AstNode, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
@@ -226,11 +227,11 @@ fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
 }
 
 pub fn www_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(AstNode, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
 
     if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
@@ -384,11 +385,11 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
 }
 
 pub fn url_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(AstNode, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
     let size = contents.len();

@@ -1,4 +1,11 @@
-use crate::arena_tree::Node;
+use indextree::Arena;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::convert::TryFrom;
+use std::ptr;
+use std::str;
+use unicode_categories::UnicodeCategories;
+
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
@@ -10,18 +17,10 @@ use crate::parser::autolink;
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
     unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Options, ResolvedReference,
+    WikiLinksMode,
 };
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::ptr;
-use std::str;
-use typed_arena::Arena;
-use unicode_categories::UnicodeCategories;
-
-use super::WikiLinksMode;
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -132,7 +131,7 @@ impl FlankingCheckHelper for char {
 }
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+    pub arena: &'a mut Arena<Ast>,
     options: &'o Options<'c>,
     pub input: &'i [u8],
     line: usize,
@@ -144,7 +143,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
     footnote_defs: &'p FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a>>,
+    brackets: Vec<Bracket>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -222,7 +221,7 @@ impl<'a> FootnoteDefs<'a> {
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
-    inl: &'a AstNode<'a>,
+    inl: AstNode,
     position: usize,
     length: usize,
     delim_char: u8,
@@ -242,13 +241,13 @@ impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
             self.delim_char,
             self.can_open,
             self.can_close,
-            self.inl.data.borrow().sourcepos
+            "sourceposless" // XXX; self.inl.data.borrow().sourcepos
         )
     }
 }
 
-struct Bracket<'a> {
-    inl_text: &'a AstNode<'a>,
+struct Bracket {
+    inl_text: AstNode,
     position: usize,
     image: bool,
     bracket_after: bool,
@@ -262,7 +261,7 @@ struct WikilinkComponents<'i> {
 
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
+        arena: &'a mut Arena<Ast>,
         options: &'o Options<'c>,
         input: &'i [u8],
         line: usize,
@@ -326,17 +325,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.brackets.pop().is_some()
     }
 
-    pub fn parse_inline(&mut self, node: &'a AstNode<'a>) -> bool {
+    pub fn parse_inline(&mut self, node: AstNode) -> bool {
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
         };
 
-        let node_ast = node.data.borrow();
+        let node_ast = node.get(self.arena);
         let adjusted_line = self.line - node_ast.sourcepos.start.line;
         self.line_offset = node_ast.line_offsets[adjusted_line];
 
-        let new_inl: Option<&'a AstNode<'a>> = match c {
+        let new_inl: Option<AstNode> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
             '`' => Some(self.handle_backticks(&node_ast.line_offsets)),
@@ -469,8 +468,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
                 // if we've just produced a LineBreak, then we should consume any leading
                 // space on this line
-                if node.last_child().map_or(false, |n| {
-                    matches!(n.data.borrow().value, NodeValue::LineBreak)
+                if node.last_child(self.arena).map_or(false, |n| {
+                    matches!(n.get(self.arena).value, NodeValue::LineBreak)
                 }) {
                     // TODO: test this more explicitly.
                     let n = strings::ltrim(&mut contents);
@@ -492,7 +491,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         };
 
         if let Some(inl) = new_inl {
-            node.append(inl);
+            node.append(self.arena, inl);
         }
 
         true
@@ -663,7 +662,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                         closer = c.next.get();
                     }
                 } else if c.delim_char == b'\'' || c.delim_char == b'"' {
-                    *c.inl.data.borrow_mut().value.text_mut().unwrap() =
+                    *c.inl.get_mut(self.arena).value.text_mut().unwrap() =
                         if c.delim_char == b'\'' { "’" } else { "”" }.to_string();
                     closer = c.next.get();
 
@@ -671,8 +670,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                         *opener
                             .unwrap()
                             .inl
-                            .data
-                            .borrow_mut()
+                            .get_mut(self.arena)
                             .value
                             .text_mut()
                             .unwrap() = if old_c.delim_char == b'\'' {
@@ -777,7 +775,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn adjust_node_newlines(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: AstNode,
         matchlen: usize,
         extra: usize,
         parent_line_offsets: &[usize],
@@ -787,7 +785,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         if newlines > 0 {
             self.line += newlines;
-            let node_ast = &mut node.data.borrow_mut();
+            let node_ast = &mut node.get_mut(self.arena);
             node_ast.sourcepos.end.line += newlines;
             let adjusted_line = self.line - node_ast.sourcepos.start.line;
             node_ast.sourcepos.end.column =
@@ -796,7 +794,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_newline(&mut self) -> &'a AstNode<'a> {
+    fn handle_newline(&mut self) -> AstNode {
         let nlpos = self.pos;
         if self.input[self.pos] == b'\r' {
             self.pos += 1;
@@ -860,7 +858,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> AstNode {
         let startpos = self.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -959,7 +957,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> AstNode {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
             return self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1);
@@ -1027,7 +1025,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         skipped
     }
 
-    fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
+    fn handle_delim(&mut self, c: u8) -> AstNode {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = if c == b'\'' && self.options.parse.smart {
@@ -1056,7 +1054,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         inl
     }
 
-    fn handle_hyphen(&mut self) -> &'a AstNode<'a> {
+    fn handle_hyphen(&mut self) -> AstNode {
         let start = self.pos;
         self.pos += 1;
 
@@ -1089,7 +1087,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.make_inline(NodeValue::Text(buf), start, self.pos - 1)
     }
 
-    fn handle_period(&mut self) -> &'a AstNode<'a> {
+    fn handle_period(&mut self) -> AstNode {
         self.pos += 1;
         if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
@@ -1261,13 +1259,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: &'a AstNode<'a>) {
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: AstNode) {
         let d = self.delimiter_arena.alloc(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
             inl,
             position: self.pos,
-            length: inl.data.borrow().value.text().unwrap().len(),
+            length: inl.get(self.arena).value.text().unwrap().len(),
             delim_char: c,
             can_open,
             can_close,
@@ -1288,9 +1286,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         opener: &'d Delimiter<'a, 'd>,
         closer: &'d Delimiter<'a, 'd>,
     ) -> Option<&'d Delimiter<'a, 'd>> {
-        let opener_char = opener.inl.data.borrow().value.text().unwrap().as_bytes()[0];
-        let mut opener_num_chars = opener.inl.data.borrow().value.text().unwrap().len();
-        let mut closer_num_chars = closer.inl.data.borrow().value.text().unwrap().len();
+        let opener_char = opener.inl.get(self.arena).value.text().unwrap().as_bytes()[0];
+        let mut opener_num_chars = opener.inl.get(self.arena).value.text().unwrap().len();
+        let mut closer_num_chars = closer.inl.get(self.arena).value.text().unwrap().len();
         let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
             2
         } else {
@@ -1309,16 +1307,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         opener
             .inl
-            .data
-            .borrow_mut()
+            .get_mut(self.arena)
             .value
             .text_mut()
             .unwrap()
             .truncate(opener_num_chars);
         closer
             .inl
-            .data
-            .borrow_mut()
+            .get_mut(self.arena)
             .value
             .text_mut()
             .unwrap()
@@ -1366,48 +1362,48 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             self.pos,
         );
 
-        emph.data.borrow_mut().sourcepos = (
-            opener.inl.data.borrow().sourcepos.start.line,
-            opener.inl.data.borrow().sourcepos.start.column + opener_num_chars,
-            closer.inl.data.borrow().sourcepos.end.line,
-            closer.inl.data.borrow().sourcepos.end.column - closer_num_chars,
+        emph.get_mut(self.arena).sourcepos = (
+            opener.inl.get(self.arena).sourcepos.start.line,
+            opener.inl.get(self.arena).sourcepos.start.column + opener_num_chars,
+            closer.inl.get(self.arena).sourcepos.end.line,
+            closer.inl.get(self.arena).sourcepos.end.column - closer_num_chars,
         )
             .into();
 
         // Drop all the interior AST nodes into the emphasis node
         // and then insert the emphasis node
-        let mut tmp = opener.inl.next_sibling().unwrap();
-        while !tmp.same_node(closer.inl) {
-            let next = tmp.next_sibling();
-            emph.append(tmp);
+        let mut tmp = opener.inl.next_sibling(self.arena).unwrap();
+        while tmp != closer.inl {
+            let next = tmp.next_sibling(self.arena);
+            emph.append(self.arena, tmp);
             if let Some(n) = next {
                 tmp = n;
             } else {
                 break;
             }
         }
-        opener.inl.insert_after(emph);
+        opener.inl.insert_after(self.arena, emph);
 
         // Drop completely "used up" delimiters, adjust sourcepos of those not,
         // and return the next closest one for processing.
         if opener_num_chars == 0 {
-            opener.inl.detach();
+            opener.inl.detach(self.arena);
             self.remove_delimiter(opener);
         } else {
-            opener.inl.data.borrow_mut().sourcepos.end.column -= use_delims;
+            opener.inl.get_mut(self.arena).sourcepos.end.column -= use_delims;
         }
 
         if closer_num_chars == 0 {
-            closer.inl.detach();
+            closer.inl.detach(self.arena);
             self.remove_delimiter(closer);
             closer.next.get()
         } else {
-            closer.inl.data.borrow_mut().sourcepos.start.column += use_delims;
+            closer.inl.get_mut(self.arena).sourcepos.start.column += use_delims;
             Some(closer)
         }
     }
 
-    fn handle_backslash(&mut self) -> &'a AstNode<'a> {
+    fn handle_backslash(&mut self) -> AstNode {
         let startpos = self.pos;
         self.pos += 1;
 
@@ -1423,7 +1419,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
             if self.options.render.escaped_char_spans {
                 inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
-                inl.append(inline_text);
+                inl.append(self.arena, inline_text);
                 inl
             } else {
                 inline_text
@@ -1454,7 +1450,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.pos > old_pos || self.eof()
     }
 
-    fn handle_entity(&mut self) -> &'a AstNode<'a> {
+    fn handle_entity(&mut self) -> AstNode {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
@@ -1471,7 +1467,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     }
 
     #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_shortcodes_colon(&mut self) -> Option<AstNode> {
         let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
         let shortcode = unsafe {
@@ -1488,14 +1484,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         ))
     }
 
-    fn handle_autolink_with<F>(&mut self, node: &'a AstNode<'a>, f: F) -> Option<&'a AstNode<'a>>
+    fn handle_autolink_with<'q: 'a, F>(&'q mut self, node: AstNode, f: F) -> Option<AstNode>
     where
-        F: Fn(
-            &'a Arena<AstNode<'a>>,
-            &[u8],
-            usize,
-            bool,
-        ) -> Option<(&'a AstNode<'a>, usize, usize)>,
+        F: Fn(&'a mut Arena<Ast>, &[u8], usize, bool) -> Option<(AstNode, usize, usize)>,
     {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
@@ -1522,7 +1513,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // "wa://…" will need to traverse two Texts to complete the rewind.
         let mut reverse = need_reverse;
         while reverse > 0 {
-            let mut last_child = node.last_child().unwrap().data.borrow_mut();
+            let mut last_child = node.last_child(self.arena).unwrap().get_mut(self.arena);
             match last_child.value {
                 NodeValue::Text(ref mut prev) => {
                     if reverse < prev.len() {
@@ -1531,7 +1522,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                         reverse = 0;
                     } else {
                         reverse -= prev.len();
-                        node.last_child().unwrap().detach();
+                        node.last_child(self.arena).unwrap().detach(self.arena);
                     }
                 }
                 _ => panic!("expected text node before autolink colon"),
@@ -1539,7 +1530,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
 
         {
-            let sp = &mut post.data.borrow_mut().sourcepos;
+            let sp = &mut post.get_mut(self.arena).sourcepos;
             // See [`make_inline`].
             sp.start = (
                 self.line,
@@ -1557,21 +1548,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
             // Inner text node gets the same sp, since there are no surrounding
             // characters for autolinks of these kind.
-            post.first_child().unwrap().data.borrow_mut().sourcepos = *sp;
+            post.first_child(self.arena)
+                .unwrap()
+                .get_mut(self.arena)
+                .sourcepos = *sp;
         }
 
         Some(post)
     }
 
-    fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_colon(&mut self, node: AstNode) -> Option<AstNode> {
         self.handle_autolink_with(node, autolink::url_match)
     }
 
-    fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_w(&mut self, node: AstNode) -> Option<AstNode> {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> AstNode {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -1672,7 +1666,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.make_inline(NodeValue::Text("<".to_string()), self.pos - 1, self.pos - 1)
     }
 
-    fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
+    fn push_bracket(&mut self, image: bool, inl_text: AstNode) {
         let len = self.brackets.len();
         if len > 0 {
             self.brackets[len - 1].bracket_after = true;
@@ -1688,7 +1682,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_close_bracket(&mut self) -> Option<AstNode> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -1715,9 +1709,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // Ensure there was text if this was a link and not an image link
         if self.options.render.ignore_empty_links && !is_image {
             let mut non_blank_found = false;
-            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            let mut tmpch = self.brackets[brackets_len - 1]
+                .inl_text
+                .next_sibling(self.arena);
             while let Some(tmp) = tmpch {
-                match tmp.data.borrow().value {
+                match tmp.get(self.arena).value {
                     NodeValue::Text(ref s) if is_blank(s.as_bytes()) => (),
                     _ => {
                         non_blank_found = true;
@@ -1725,7 +1721,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     }
                 }
 
-                tmpch = tmp.next_sibling();
+                tmpch = tmp.next_sibling(self.arena);
             }
 
             if !non_blank_found {
@@ -1827,11 +1823,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
 
         if self.options.extension.footnotes
-            && match bracket_inl_text.next_sibling() {
+            && match bracket_inl_text.next_sibling(self.arena) {
                 Some(n) => {
-                    if n.data.borrow().value.text().is_some() {
-                        n.data
-                            .borrow()
+                    if n.get(self.arena).value.text().is_some() {
+                        n.get(self.arena)
                             .value
                             .text()
                             .unwrap()
@@ -1857,7 +1852,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             // Since we're handling the closing bracket, the only siblings at this point are
             // related to the footnote name.
             for sibling in sibling_iterator {
-                match sibling.data.borrow().value {
+                match sibling.get(self.arena).value {
                     NodeValue::Text(ref literal) | NodeValue::HtmlInline(ref literal) => {
                         text.push_str(literal);
                     }
@@ -1876,9 +1871,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     self.pos,
                     self.pos,
                 );
-                inl.data.borrow_mut().sourcepos.start.column =
-                    bracket_inl_text.data.borrow().sourcepos.start.column;
-                inl.data.borrow_mut().sourcepos.end.column = usize::try_from(
+                inl.get_mut(self.arena).sourcepos.start.column =
+                    bracket_inl_text.get(self.arena).sourcepos.start.column;
+                inl.get_mut(self.arena).sourcepos.end.column = usize::try_from(
                     self.pos as isize + self.column_offset + self.line_offset as isize,
                 )
                 .unwrap();
@@ -1887,7 +1882,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 // detach all the nodes, including bracket_inl_text
                 sibling_iterator = bracket_inl_text.following_siblings();
                 for sibling in sibling_iterator {
-                    match sibling.data.borrow().value {
+                    match sibling.get(self.arena).value {
                         NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
                             sibling.detach();
                         }
@@ -1923,23 +1918,27 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             self.pos,
             self.pos,
         );
-        inl.data.borrow_mut().sourcepos.start = self.brackets[brackets_len - 1]
+        inl.get_mut(self.arena).sourcepos.start = self.brackets[brackets_len - 1]
             .inl_text
             .data
             .borrow()
             .sourcepos
             .start;
-        inl.data.borrow_mut().sourcepos.end.column =
+        inl.get_mut(self.arena).sourcepos.end.column =
             usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
                 .unwrap();
 
-        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        self.brackets[brackets_len - 1]
+            .inl_text
+            .insert_before(self.arena, inl);
+        let mut tmpch = self.brackets[brackets_len - 1]
+            .inl_text
+            .next_sibling(self.arena);
         while let Some(tmp) = tmpch {
-            tmpch = tmp.next_sibling();
-            inl.append(tmp);
+            tmpch = tmp.next_sibling(self.arena);
+            inl.append(self.arena, tmp);
         }
-        self.brackets[brackets_len - 1].inl_text.detach();
+        self.brackets[brackets_len - 1].inl_text.detach(self.arena);
         self.process_emphasis(self.brackets[brackets_len - 1].position);
         self.brackets.pop();
 
@@ -2110,7 +2109,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_wikilink(&mut self) -> Option<AstNode> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(component.url);
@@ -2227,12 +2226,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     // Given a label, handles backslash escaped characters. Appends the resulting
     // nodes to the container
-    fn label_backslash_escapes(
-        &mut self,
-        container: &'a AstNode<'a>,
-        label: Vec<u8>,
-        start_column: usize,
-    ) {
+    fn label_backslash_escapes(&mut self, container: AstNode, label: Vec<u8>, start_column: usize) {
         let mut startpos = 0;
         let mut offset = 0;
         let len = label.len();
@@ -2247,7 +2241,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     start_column + offset - 1,
                 );
 
-                container.append(preceding_text);
+                container.append(self.arena, preceding_text);
 
                 let inline_text = self.make_inline(
                     NodeValue::Text(String::from_utf8(vec![label[offset + 1]]).unwrap()),
@@ -2262,10 +2256,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                         start_column + offset + 1,
                     );
 
-                    span.append(inline_text);
-                    container.append(span);
+                    span.append(self.arena, inline_text);
+                    container.append(self.arena, span);
                 } else {
-                    container.append(inline_text);
+                    container.append(self.arena, inline_text);
                 }
 
                 offset += 2;
@@ -2276,11 +2270,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
 
         if startpos != offset {
-            container.append(self.make_inline(
-                NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
-                start_column + startpos,
-                start_column + offset - 1,
-            ));
+            container.append(
+                self.arena,
+                self.make_inline(
+                    NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                    start_column + startpos,
+                    start_column + offset - 1,
+                ),
+            );
         }
     }
 
@@ -2291,12 +2288,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn make_inline(
-        &self,
-        value: NodeValue,
-        start_column: usize,
-        end_column: usize,
-    ) -> &'a AstNode<'a> {
+    fn make_inline(&mut self, value: NodeValue, start_column: usize, end_column: usize) -> AstNode {
         let start_column =
             start_column as isize + 1 + self.column_offset + self.line_offset as isize;
         let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
@@ -2317,16 +2309,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             table_visited: false,
             line_offsets: Vec::with_capacity(0),
         };
-        self.arena.alloc(Node::new(RefCell::new(ast)))
+        AstNode::new(self.arena, ast)
     }
 
     fn make_autolink(
-        &self,
+        &mut self,
         url: &[u8],
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
-    ) -> &'a AstNode<'a> {
+    ) -> AstNode {
         let inl = self.make_inline(
             NodeValue::Link(NodeLink {
                 url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
@@ -2335,11 +2327,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             start_column,
             end_column,
         );
-        inl.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
-            start_column + 1,
-            end_column - 1,
-        ));
+        inl.append(
+            self.arena,
+            self.make_inline(
+                NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
+                start_column + 1,
+                end_column - 1,
+            ),
+        );
         inl
     }
 }
@@ -2412,10 +2407,10 @@ pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
 }
 
 pub fn make_inline<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a mut Arena<Ast>,
     value: NodeValue,
     sourcepos: Sourcepos,
-) -> &'a AstNode<'a> {
+) -> AstNode {
     let ast = Ast {
         value,
         content: String::new(),
@@ -2426,7 +2421,7 @@ pub fn make_inline<'a>(
         table_visited: false,
         line_offsets: Vec::with_capacity(0),
     };
-    arena.alloc(Node::new(RefCell::new(ast)))
+    AstNode::new(arena, ast)
 }
 
 pub fn count_newlines(input: &[u8]) -> (usize, usize) {
