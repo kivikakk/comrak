@@ -5,6 +5,7 @@ use unicode_categories::UnicodeCategories;
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{Ast, AstNode, NodeLink, NodeValue, Sourcepos};
+use crate::parser::inlines::Subject;
 use crate::parser::{inlines::make_inline, Spx};
 
 pub(crate) fn process_email_autolinks<'a>(
@@ -227,39 +228,45 @@ fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
 }
 
 pub fn www_match<'a>(
-    arena: &'a mut Arena<Ast>,
-    contents: &[u8],
-    i: usize,
-    relaxed_autolinks: bool,
+    subject: &mut Subject,
+    // arena: &'a mut Arena<Ast>,
+    // contents: &[u8],
+    // i: usize,
+    // relaxed_autolinks: bool,
 ) -> Option<(AstNode, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
 
-    if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
+    let i = subject.pos;
+    let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
+
+    if i > 0 && !isspace(subject.input[i - 1]) && !WWW_DELIMS[subject.input[i - 1] as usize] {
         return None;
     }
 
-    if !contents[i..].starts_with(b"www.") {
+    if !subject.input[i..].starts_with(b"www.") {
         return None;
     }
 
-    let mut link_end = check_domain(&contents[i..], false)?;
+    let mut link_end = check_domain(&subject.input[i..], false)?;
 
-    while i + link_end < contents.len() && !isspace(contents[i + link_end]) {
+    while i + link_end < subject.input.len() && !isspace(subject.input[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
-        if relaxed_autolinks && contents[i + link_end - 1] == b']' && contents[i + link_end] == b'('
+        if relaxed_autolinks
+            && subject.input[i + link_end - 1] == b']'
+            && subject.input[i + link_end] == b'('
         {
             return None;
         }
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
+    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
 
     let mut url = "http://".to_string();
-    url.push_str(str::from_utf8(&contents[i..link_end + i]).unwrap());
+    url.push_str(str::from_utf8(&subject.input[i..link_end + i]).unwrap());
 
     let inl = make_inline(
-        arena,
+        subject.arena,
         NodeValue::Link(NodeLink {
             url,
             title: String::new(),
@@ -268,15 +275,15 @@ pub fn www_match<'a>(
     );
 
     let tnode = make_inline(
-        arena,
+        subject.arena,
         NodeValue::Text(
-            str::from_utf8(&contents[i..link_end + i])
+            str::from_utf8(&subject.input[i..link_end + i])
                 .unwrap()
                 .to_string(),
         ),
         (0, 1, 0, 1).into(),
     );
-    inl.append(arena, tnode);
+    inl.append(subject.arena, tnode);
     Some((inl, 0, link_end))
 }
 
@@ -385,52 +392,56 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
 }
 
 pub fn url_match<'a>(
-    arena: &'a mut Arena<Ast>,
-    contents: &[u8],
-    i: usize,
-    relaxed_autolinks: bool,
+    subject: &mut Subject,
+    // arena: &'a mut Arena<Ast>,
+    // contents: &[u8],
+    // i: usize,
+    // relaxed_autolinks: bool,
 ) -> Option<(AstNode, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
-    let size = contents.len();
+    let i = subject.pos;
+    let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
 
-    if size - i < 4 || contents[i + 1] != b'/' || contents[i + 2] != b'/' {
+    let size = subject.input.len();
+
+    if size - i < 4 || subject.input[i + 1] != b'/' || subject.input[i + 2] != b'/' {
         return None;
     }
 
     let mut rewind = 0;
-    while rewind < i && isalpha(contents[i - rewind - 1]) {
+    while rewind < i && isalpha(subject.input[i - rewind - 1]) {
         rewind += 1;
     }
 
     if !relaxed_autolinks {
-        let cond = |s: &&[u8]| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s;
+        let cond = |s: &&[u8]| size - i + rewind >= s.len() && &&subject.input[i - rewind..i] == s;
         if !SCHEMES.iter().any(cond) {
             return None;
         }
     }
 
-    let mut link_end = check_domain(&contents[i + 3..], true)?;
+    let mut link_end = check_domain(&subject.input[i + 3..], true)?;
 
-    while link_end < size - i && !isspace(contents[i + link_end]) {
+    while link_end < size - i && !isspace(subject.input[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
         if relaxed_autolinks
             && link_end > 0
-            && contents[i + link_end - 1] == b']'
-            && contents[i + link_end] == b'('
+            && subject.input[i + link_end - 1] == b']'
+            && subject.input[i + link_end] == b'('
         {
             return None;
         }
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
+    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
 
-    let url = str::from_utf8(&contents[i - rewind..i + link_end])
+    let url = str::from_utf8(&subject.input[i - rewind..i + link_end])
         .unwrap()
         .to_string();
     let inl = make_inline(
-        arena,
+        subject.arena,
         NodeValue::Link(NodeLink {
             url: url.clone(),
             title: String::new(),
@@ -438,7 +449,7 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    let tnode = make_inline(arena, NodeValue::Text(url), (0, 1, 0, 1).into());
-    inl.append(arena, tnode);
+    let tnode = make_inline(subject.arena, NodeValue::Text(url), (0, 1, 0, 1).into());
+    inl.append(subject.arena, tnode);
     Some((inl, rewind, rewind + link_end))
 }

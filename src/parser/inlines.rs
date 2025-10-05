@@ -2,7 +2,7 @@ use indextree::{Arena, NodeId};
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::str;
+use std::{mem, str};
 use unicode_categories::UnicodeCategories;
 
 use crate::ctype::{isdigit, ispunct, isspace};
@@ -131,7 +131,7 @@ impl FlankingCheckHelper for char {
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c> {
     pub arena: &'a mut Arena<Ast>,
-    options: &'o Options<'c>,
+    pub(crate) options: &'o Options<'c>,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -299,17 +299,18 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             Some(ch) => *ch as char,
         };
 
-        let node_ast = node.get(self.arena);
+        let node_ast = node.get_mut(self.arena);
         let adjusted_line = self.line - node_ast.sourcepos.start.line;
+        let line_offsets = mem::take(&mut node_ast.line_offsets); // XXX please put me back!
         self.line_offset = node_ast.line_offsets[adjusted_line];
 
         let new_inl: Option<AstNode> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
-            '`' => Some(self.handle_backticks(&node_ast.line_offsets)),
+            '`' => Some(self.handle_backticks(&line_offsets)),
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
-            '<' => Some(self.handle_pointy_brace(&node_ast.line_offsets)),
+            '<' => Some(self.handle_pointy_brace(&line_offsets)),
             ':' => {
                 let mut res = None;
 
@@ -403,7 +404,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             '^' if self.options.extension.superscript && !self.within_brackets => {
                 Some(self.handle_delim(b'^'))
             }
-            '$' => Some(self.handle_dollars(&node_ast.line_offsets)),
+            '$' => Some(self.handle_dollars(&line_offsets)),
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
@@ -1524,20 +1525,23 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         ))
     }
 
-    fn handle_autolink_with<F>(&mut self, node: AstNode, f: F) -> Option<AstNode>
-    where
-        F: Fn(&'a mut Arena<Ast>, &[u8], usize, bool) -> Option<(AstNode, usize, usize)>,
-    {
+    fn handle_autolink_with(
+        &mut self,
+        node: AstNode,
+        f: fn(&mut Subject) -> Option<(AstNode, usize, usize)>,
+    ) -> Option<AstNode> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
         let startpos = self.pos;
-        let (post, need_reverse, skip) = f(
-            self.arena,
-            self.input,
-            self.pos,
-            self.options.parse.relaxed_autolinks,
-        )?;
+
+        let (post, need_reverse, skip) = f(self)?;
+        // let (post, need_reverse, skip) = f(
+        //     self.arena,
+        //     self.input,
+        //     self.pos,
+        //     self.options.parse.relaxed_autolinks,
+        // )?;
 
         self.pos += skip - need_reverse;
 
@@ -1920,7 +1924,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 bracket_inl_text.insert_before(self.arena, inl);
 
                 // detach all the nodes, including bracket_inl_text
-                sibling_iterator = bracket_inl_text.following_siblings(self.arena);
+                // XXX: same issue as parse_inline.
+                let sibling_iterator = bracket_inl_text
+                    .following_siblings(self.arena)
+                    .collect::<Vec<_>>();
                 for sibling in sibling_iterator {
                     match sibling.get(self.arena).value {
                         NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
