@@ -9,25 +9,30 @@ use crate::{
 
 #[test]
 fn exercise_full_api() {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let default_options = Options::default();
     let default_plugins = Plugins::default();
-    let node = parse_document(&arena, "# My document\n", &default_options);
+    let node = parse_document(&mut arena, "# My document\n", &default_options);
     let mut buffer = String::new();
 
     // Use every member of the exposed API without any defaults.
     // Not looking for specific outputs, just want to know if the API changes shape.
 
-    let _: std::fmt::Result = format_commonmark(node, &default_options, &mut buffer);
+    let _: std::fmt::Result = format_commonmark(&arena, node, &default_options, &mut buffer);
 
-    let _: std::fmt::Result = format_html(node, &default_options, &mut buffer);
+    let _: std::fmt::Result = format_html(&arena, node, &default_options, &mut buffer);
 
-    let _: std::fmt::Result =
-        format_html_with_plugins(node, &default_options, &mut buffer, &default_plugins);
+    let _: std::fmt::Result = format_html_with_plugins(
+        &arena,
+        node,
+        &default_options,
+        &mut buffer,
+        &default_plugins,
+    );
 
     let _: String = Anchorizer::new().anchorize("header");
 
-    let _: &AstNode = parse_document(&arena, "document", &default_options);
+    let _: AstNode = parse_document(&mut arena, "document", &default_options);
 
     // Ensure the closure can modify its context.
     let blr_ctx_0 = std::sync::Arc::new(std::sync::Mutex::new(0));
@@ -150,7 +155,7 @@ fn exercise_full_api() {
 
     //
 
-    let ast = node.data.borrow();
+    let ast = node.get(&arena);
     let _: usize = ast.sourcepos.start.line;
     let _: usize = ast.sourcepos.start.column;
     let _: usize = ast.sourcepos.end.line;

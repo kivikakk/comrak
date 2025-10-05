@@ -7,18 +7,20 @@
 mod anchorizer;
 mod context;
 
+use indextree::Arena;
+use std::collections::HashMap;
+use std::fmt::{self, Write};
+use std::str;
+
 use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
 use crate::ctype::isspace;
 use crate::nodes::{
-    AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
+    Ast, AstNode, ListType, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
     TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::{node_matches, scanners};
-use std::collections::HashMap;
-use std::fmt::{self, Write};
-use std::str;
 
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;
@@ -26,11 +28,13 @@ pub use context::Context;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document<'a>(
+    arena: &'a Arena<Ast>,
     root: AstNode,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
     format_document_with_formatter(
+        arena,
         root,
         options,
         output,
@@ -42,12 +46,21 @@ pub fn format_document<'a>(
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
+    arena: &'a Arena<Ast>,
     root: AstNode,
     options: &Options,
     output: &mut dyn fmt::Write,
     plugins: &Plugins,
 ) -> fmt::Result {
-    format_document_with_formatter(root, options, output, plugins, format_node_default, ())
+    format_document_with_formatter(
+        arena,
+        root,
+        options,
+        output,
+        plugins,
+        format_node_default,
+        (),
+    )
 }
 
 /// Returned by the [`format_document_with_formatter`] callback to indicate
@@ -110,7 +123,7 @@ pub enum ChildRendering {
 ///         context.write_str(if entering { "<b>" } else { "</b>" })?;
 ///     },
 ///     NodeValue::Image(ref nl) => |context, node, entering| {
-///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
+///         assert!(node.get(arena).sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
 ///             context.write_str(&nl.url.to_uppercase())?;
 ///             return Ok(ChildRendering::Skip);
@@ -206,7 +219,7 @@ macro_rules! create_formatter {
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data.borrow().value {
+                match node.get(arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -271,7 +284,7 @@ macro_rules! create_formatter {
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data.borrow().value {
+                match node.get(arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -322,6 +335,7 @@ macro_rules! formatter_captures {
 /// returned [`ChildRendering`] is used to inform whether and how the node's
 /// children are recursed into automatically.
 pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
+    arena: &'a Arena<Ast>,
     root: AstNode,
     options: &'o Options<'c>,
     output: &'o mut dyn Write,
@@ -339,7 +353,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
     // post-order traversal phase, then push the children in reverse order
     // onto the stack and begin rendering first child.
 
-    let mut context = Context::new(output, options, plugins, user);
+    let mut context = Context::new(arena, output, options, plugins, user);
 
     enum Phase {
         Pre,
@@ -352,7 +366,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
             Phase::Pre => {
                 let new_cr = match child_rendering {
                     ChildRendering::Plain => {
-                        match node.data.borrow().value {
+                        match node.get(arena).value {
                             NodeValue::Text(ref literal)
                             | NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal) => {
@@ -379,7 +393,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
                 };
 
                 if !matches!(new_cr, ChildRendering::Skip) {
-                    for ch in node.reverse_children() {
+                    for ch in node.children(arena).rev() {
                         stack.push((ch, new_cr, Phase::Pre));
                     }
                 }
@@ -403,7 +417,7 @@ pub fn format_node_default<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    match node.data.borrow().value {
+    match node.get(context.arena).value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
         NodeValue::Code(_) => render_code(context, node, entering),
@@ -464,7 +478,7 @@ pub fn format_node_default<'a, T>(
 /// immediately before writing a closing `>` in your opening HTML tag.
 pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: AstNode) -> fmt::Result {
     if context.options.render.sourcepos {
-        let ast = node.data.borrow();
+        let ast = node.get(context.arena);
         if ast.sourcepos.start.line > 0 {
             write!(context, " data-sourcepos=\"{}\"", ast.sourcepos)?;
         }
@@ -494,7 +508,7 @@ fn render_code<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
+    let NodeValue::Code(NodeCode { ref literal, .. }) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -514,7 +528,7 @@ fn render_code_block<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
+    let NodeValue::CodeBlock(ref ncb) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -559,7 +573,7 @@ fn render_code_block<'a, T>(
             }
 
             if context.options.render.sourcepos {
-                let ast = node.data.borrow();
+                let ast = node.get(context.arena);
                 pre_attributes.insert("data-sourcepos".to_string(), ast.sourcepos.to_string());
             }
 
@@ -620,7 +634,7 @@ fn render_heading<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Heading(ref nh) = node.data.borrow().value else {
+    let NodeValue::Heading(ref nh) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -633,7 +647,7 @@ fn render_heading<'a, T>(
                 context.write_str(">")?;
 
                 if let Some(ref prefix) = context.options.extension.header_ids {
-                    let text_content = collect_text(node);
+                    let text_content = collect_text(context.arena, node);
                     let id = context.anchorizer.anchorize(&text_content);
                     write!(
                         context,
@@ -646,7 +660,7 @@ fn render_heading<'a, T>(
             }
         }
         Some(adapter) => {
-            let text_content = collect_text(node);
+            let text_content = collect_text(context.arena, node);
             let heading = HeadingMeta {
                 level: nh.level,
                 content: text_content,
@@ -655,7 +669,7 @@ fn render_heading<'a, T>(
             if entering {
                 context.cr()?;
                 let sp = if context.options.render.sourcepos {
-                    Some(node.data.borrow().sourcepos)
+                    Some(node.get(context.arena).sourcepos)
                 } else {
                     None
                 };
@@ -674,7 +688,7 @@ fn render_html_block<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
+    let NodeValue::HtmlBlock(ref nhb) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -702,7 +716,7 @@ fn render_html_inline<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
+    let NodeValue::HtmlInline(ref literal) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -728,7 +742,7 @@ fn render_image<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Image(ref nl) = node.data.borrow().value else {
+    let NodeValue::Image(ref nl) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -804,16 +818,16 @@ fn render_link<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Link(ref nl) = node.data.borrow().value else {
+    let NodeValue::Link(ref nl) = node.get(context.arena).value else {
         unreachable!()
     };
 
-    let parent_node = node.parent();
+    let parent_node = node.parent(context.arena);
 
     if !context.options.parse.relaxed_autolinks
         || (parent_node.is_none()
             || !matches!(
-                parent_node.unwrap().data.borrow().value,
+                parent_node.unwrap().get(context.arena).value,
                 NodeValue::Link(..)
             ))
     {
@@ -847,7 +861,7 @@ fn render_list<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::List(ref nl) = node.data.borrow().value else {
+    let NodeValue::List(ref nl) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -890,9 +904,9 @@ fn render_paragraph<'a, T>(
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     let tight = match node
-        .parent()
-        .and_then(|n| n.parent())
-        .map(|n| n.data.borrow().value.clone())
+        .parent(context.arena)
+        .and_then(|n| n.parent(context.arena))
+        .map(|n| n.get(context.arena).value.clone())
     {
         Some(NodeValue::List(nl)) => nl.tight,
         Some(NodeValue::DescriptionItem(nd)) => nd.tight,
@@ -901,7 +915,8 @@ fn render_paragraph<'a, T>(
 
     let tight = tight
         || matches!(
-            node.parent().map(|n| n.data.borrow().value.clone()),
+            node.parent(context.arena)
+                .map(|n| n.get(context.arena).value.clone()),
             Some(NodeValue::DescriptionTerm)
         );
 
@@ -912,10 +927,11 @@ fn render_paragraph<'a, T>(
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         } else {
-            if let Some(NodeValue::FootnoteDefinition(nfd)) =
-                &node.parent().map(|n| n.data.borrow().value.clone())
+            if let Some(NodeValue::FootnoteDefinition(nfd)) = &node
+                .parent(context.arena)
+                .map(|n| n.get(context.arena).value.clone())
             {
-                if node.next_sibling().is_none() {
+                if node.next_sibling(context.arena).is_none() {
                     context.write_str(" ")?;
                     put_footnote_backref(context, nfd)?;
                 }
@@ -950,10 +966,13 @@ fn render_strong<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let parent_node = node.parent();
+    let parent_node = node.parent(context.arena);
     if !context.options.render.gfm_quirks
         || (parent_node.is_none()
-            || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
+            || !matches!(
+                parent_node.unwrap().get(context.arena).value,
+                NodeValue::Strong
+            ))
     {
         if entering {
             context.write_str("<strong")?;
@@ -972,7 +991,7 @@ fn render_text<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Text(ref literal) = node.data.borrow().value else {
+    let NodeValue::Text(ref literal) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1006,7 +1025,7 @@ fn render_footnote_definition<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
+    let NodeValue::FootnoteDefinition(ref nfd) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1037,7 +1056,7 @@ fn render_footnote_reference<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
+    let NodeValue::FootnoteReference(ref nfr) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1087,8 +1106,8 @@ fn render_table<'a, T>(
         context.write_str(">\n")?;
     } else {
         if let Some(true) = node
-            .last_child()
-            .map(|n| !n.same_node(node.first_child().unwrap()))
+            .last_child(context.arena)
+            .map(|n| n != node.first_child(context.arena).unwrap())
         // node.first_child() guaranteed to exist in block since last_child does!
         {
             context.cr()?;
@@ -1106,19 +1125,19 @@ fn render_table_cell<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let Some(row_node) = node.parent() else {
+    let Some(row_node) = node.parent(context.arena) else {
         panic!("rendered a table cell without a containing table row");
     };
-    let row = &row_node.data.borrow().value;
+    let row = &row_node.get(context.arena).value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
         _ => panic!("rendered a table cell contained by something other than a table row"),
     };
 
-    let Some(table_node) = row_node.parent() else {
+    let Some(table_node) = row_node.parent(context.arena) else {
         panic!("rendered a table cell without a containing table");
     };
-    let table = &table_node.data.borrow().value;
+    let table = &table_node.get(context.arena).value;
     let alignments = match *table {
         NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
         _ => {
@@ -1136,11 +1155,11 @@ fn render_table_cell<'a, T>(
             render_sourcepos(context, node)?;
         }
 
-        let mut start = row_node.first_child().unwrap(); // guaranteed to exist because `node' itself does!
+        let mut start = row_node.first_child(context.arena).unwrap(); // guaranteed to exist because `node' itself does!
         let mut i = 0;
-        while !start.same_node(node) {
+        while start != node {
             i += 1;
-            start = start.next_sibling().unwrap();
+            start = start.next_sibling(context.arena).unwrap();
         }
 
         match alignments[i] {
@@ -1171,7 +1190,7 @@ fn render_table_row<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::TableRow(header) = node.data.borrow().value else {
+    let NodeValue::TableRow(header) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1179,8 +1198,8 @@ fn render_table_row<'a, T>(
         context.cr()?;
         if header {
             context.write_str("<thead>\n")?;
-        } else if let Some(n) = node.previous_sibling() {
-            if let NodeValue::TableRow(true) = n.data.borrow().value {
+        } else if let Some(n) = node.previous_sibling(context.arena) {
+            if let NodeValue::TableRow(true) = n.get(context.arena).value {
                 context.write_str("<tbody>\n")?;
             }
         }
@@ -1204,7 +1223,7 @@ fn render_task_item<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
+    let NodeValue::TaskItem(symbol) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1248,7 +1267,7 @@ fn render_alert<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Alert(ref alert) = node.data.borrow().value else {
+    let NodeValue::Alert(ref alert) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1355,7 +1374,7 @@ fn render_escaped_tag<'a, T>(
     node: AstNode,
     _entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
+    let NodeValue::EscapedTag(ref net) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1385,7 +1404,7 @@ pub fn render_math<'a, T>(
         display_math,
         dollar_math,
         ..
-    }) = node.data.borrow().value
+    }) = node.get(context.arena).value
     else {
         unreachable!()
     };
@@ -1398,7 +1417,7 @@ pub fn render_math<'a, T>(
         tag_attributes.push((String::from("data-math-style"), String::from(style_attr)));
 
         if context.options.render.sourcepos {
-            let ast = node.data.borrow();
+            let ast = node.get(context.arena);
             tag_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
         }
 
@@ -1434,7 +1453,7 @@ pub fn render_math_code_block<'a, T>(
     }
 
     if context.options.render.sourcepos {
-        let ast = node.data.borrow();
+        let ast = node.get(context.arena);
         pre_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
     }
 
@@ -1470,7 +1489,7 @@ fn render_raw<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Raw(ref literal) = node.data.borrow().value else {
+    let NodeValue::Raw(ref literal) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1488,7 +1507,7 @@ fn render_short_code<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
+    let NodeValue::ShortCode(ref nsc) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1569,7 +1588,7 @@ fn render_wiki_link<'a, T>(
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
+    let NodeValue::WikiLink(ref nl) = node.get(context.arena).value else {
         unreachable!()
     };
 
@@ -1596,9 +1615,9 @@ fn render_wiki_link<'a, T>(
 /// order, returning the concatenated literal contents of text, code and math
 /// blocks. Line breaks and soft breaks are represented as a single whitespace
 /// character.
-pub fn collect_text<'a>(node: AstNode) -> String {
+pub fn collect_text<'a>(arena: &'a Arena<Ast>, node: AstNode) -> String {
     let mut text = String::with_capacity(20);
-    collect_text_append(node, &mut text);
+    collect_text_append(arena, node, &mut text);
     text
 }
 
@@ -1606,16 +1625,16 @@ pub fn collect_text<'a>(node: AstNode) -> String {
 /// order, appending the literal contents of text, code and math blocks to
 /// an output buffer. Line breaks and soft breaks are represented as a single
 /// whitespace character.
-pub fn collect_text_append<'a>(node: AstNode, output: &mut String) {
-    match node.data.borrow().value {
+pub fn collect_text_append<'a>(arena: &'a Arena<Ast>, node: AstNode, output: &mut String) {
+    match node.get(arena).value {
         NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
             output.push_str(literal)
         }
         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
         NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
         _ => {
-            for n in node.children() {
-                collect_text_append(n, output);
+            for n in node.children(arena) {
+                collect_text_append(arena, n, output);
             }
         }
     }

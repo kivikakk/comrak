@@ -4,11 +4,11 @@ use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
+use crate::nodes::{Ast, AstNode, NodeLink, NodeValue, Sourcepos};
 use crate::parser::{inlines::make_inline, Spx};
 
 pub(crate) fn process_email_autolinks<'a>(
-    arena: Arena<Ast>,
+    arena: &'a mut Arena<Ast>,
     node: AstNode,
     contents_str: &mut String,
     relaxed_autolinks: bool,
@@ -53,7 +53,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
         if let Some((post, reverse, skip)) = post_org {
             i -= reverse;
-            node.insert_after(post);
+            node.insert_after(arena, post);
 
             let remain = if i + skip < len {
                 let remain = str::from_utf8(&contents[i + skip..]).unwrap();
@@ -77,10 +77,10 @@ pub(crate) fn process_email_autolinks<'a>(
                 nsp_end_col,
             )
                 .into();
-            post.data.borrow_mut().sourcepos = nsp;
+            post.get_mut(arena).sourcepos = nsp;
             // Inner text gets same sourcepos as link, since there's nothing but
             // the text.
-            post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
+            post.first_child(arena).unwrap().get_mut(arena).sourcepos = nsp;
 
             if let Some(remain) = remain {
                 let mut asp: Sourcepos = (
@@ -91,9 +91,9 @@ pub(crate) fn process_email_autolinks<'a>(
                 )
                     .into();
                 let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
-                post.insert_after(after);
+                post.insert_after(arena, after);
 
-                let after_ast = &mut after.data.borrow_mut();
+                let after_ast = &mut after.get_mut(arena);
                 process_email_autolinks(
                     arena,
                     after,
@@ -113,7 +113,7 @@ pub(crate) fn process_email_autolinks<'a>(
     }
 }
 fn email_match<'a>(
-    arena: Arena<Ast>,
+    arena: &'a mut Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
@@ -206,11 +206,13 @@ fn email_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
+    let tnode = make_inline(
         arena,
         NodeValue::Text(text.to_string()),
         (0, 1, 0, 1).into(),
-    ));
+    );
+
+    inl.append(arena, tnode);
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -227,7 +229,7 @@ fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
 }
 
 pub fn www_match<'a>(
-    arena: Arena<Ast>,
+    arena: &'a mut Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
@@ -268,7 +270,7 @@ pub fn www_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
+    let tnode = make_inline(
         arena,
         NodeValue::Text(
             str::from_utf8(&contents[i..link_end + i])
@@ -276,7 +278,8 @@ pub fn www_match<'a>(
                 .to_string(),
         ),
         (0, 1, 0, 1).into(),
-    ));
+    );
+    inl.append(arena, tnode);
     Some((inl, 0, link_end))
 }
 
@@ -385,7 +388,7 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
 }
 
 pub fn url_match<'a>(
-    arena: Arena<Ast>,
+    arena: &'a mut Arena<Ast>,
     contents: &[u8],
     i: usize,
     relaxed_autolinks: bool,
@@ -438,10 +441,7 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
-        arena,
-        NodeValue::Text(url),
-        (0, 1, 0, 1).into(),
-    ));
+    let tnode = make_inline(arena, NodeValue::Text(url), (0, 1, 0, 1).into());
+    inl.append(arena, tnode);
     Some((inl, rewind, rewind + link_end))
 }
