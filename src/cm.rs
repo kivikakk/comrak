@@ -15,7 +15,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::{nodes, Plugins};
+use crate::Plugins;
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(

@@ -130,7 +130,7 @@ pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plug
     let mut arena = Arena::new();
     let root = parse_document(&mut arena, md, options);
     let mut out = String::new();
-    format_html_with_plugins(root, options, &mut out, plugins).unwrap();
+    format_html_with_plugins(&arena, root, options, &mut out, plugins).unwrap();
     out
 }
 

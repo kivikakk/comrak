@@ -2120,7 +2120,7 @@ where
                 // block handled
             } else {
                 let new_container = if !indented && self.options.extension.table {
-                    table::try_opening_block(self, container, line)
+                    table::try_opening_block(self, *container, line)
                 } else {
                     None
                 };
@@ -2640,7 +2640,8 @@ where
     }
 
     fn finalize(&mut self, node: AstNode) -> Option<AstNode> {
-        self.finalize_borrowed(node, node.get_mut(self.arena))
+        let n = node.get_mut(self.arena);
+        self.finalize_borrowed(node, n)
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
@@ -2785,7 +2786,7 @@ where
     }
 
     fn parse_inlines(&mut self, node: AstNode) {
-        let delimiter_arena = Arena::new();
+        let mut delimiter_arena = Arena::new();
         let node_data = node.get(self.arena);
         let content = strings::rtrim_slice(node_data.content.as_bytes());
         let mut subj = inlines::Subject::new(
@@ -2794,7 +2795,7 @@ where
             content,
             node_data.sourcepos.start.line,
             &mut self.refmap,
-            &delimiter_arena,
+            &mut delimiter_arena,
         );
 
         while subj.parse_inline(node) {}
@@ -3084,14 +3085,14 @@ where
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
         // In this case reference inlines rarely have delimiters
         // so we often just need the minimal case
-        let delimiter_arena = Arena::with_capacity(0);
+        let mut delimiter_arena = Arena::with_capacity(0);
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
             &mut self.refmap,
-            &delimiter_arena,
+            &mut delimiter_arena,
         );
 
         let mut lab: String = match subj.link_label() {

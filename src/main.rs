@@ -365,21 +365,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(output_filename) = cli.output {
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     } else if cli.inplace {
         let output_filename = cli.files.unwrap().first().unwrap().clone();
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     } else {
         let stdout = std::io::stdout();
         let mut bw = BufWriter::new(stdout.lock());
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     };

@@ -1,7 +1,6 @@
 //! The CommonMark AST.
 
 use indextree::{Arena, NodeId};
-use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
@@ -737,6 +736,11 @@ impl AstNode {
     }
 
     #[inline]
+    pub fn following_siblings<'a>(&self, arena: &'a Arena<Ast>) -> FollowingSiblings<'a> {
+        self.node_id().following_siblings(arena).into()
+    }
+
+    #[inline]
     pub fn ancestors<'a>(&self, arena: &'a Arena<Ast>) -> Ancestors<'a> {
         self.node_id().ancestors(arena).into()
     }
@@ -758,6 +762,11 @@ impl AstNode {
 
     #[inline]
     pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().insert_before(node.node_id(), arena);
+    }
+
+    #[inline]
+    pub fn insert_before(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().insert_after(node.node_id(), arena);
     }
 
@@ -925,6 +934,7 @@ impl AstNode {
             if let Some(parent) = node.parent(arena) {
                 if !parent.can_contain_type(arena, &node.get(arena).value) {
                     return Err(ValidationError::InvalidChildType {
+                        arena,
                         parent,
                         child: node,
                     });
@@ -947,6 +957,22 @@ impl<'a> From<indextree::PrecedingSiblings<'a, Ast>> for PrecedingSiblings<'a> {
 }
 
 impl<'a> Iterator for PrecedingSiblings<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+struct FollowingSiblings<'a>(indextree::FollowingSiblings<'a, Ast>);
+
+impl<'a> From<indextree::FollowingSiblings<'a, Ast>> for FollowingSiblings<'a> {
+    fn from(it: indextree::FollowingSiblings<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for FollowingSiblings<'a> {
     type Item = AstNode;
 
     fn next(&mut self) -> Option<Self::Item> {
