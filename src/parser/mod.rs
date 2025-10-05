@@ -2814,7 +2814,9 @@ where
     }
 
     fn process_inlines_node(&mut self, node: AstNode) {
-        for node in node.descendants(self.arena) {
+        // XXX: acc Vec to avoid layering borrow for descendants with mutable
+        // borrow for parse_inlines. Can we do better?
+        for node in node.descendants(self.arena).collect::<Vec<_>>() {
             if node.get(&self.arena).value.contains_inlines() {
                 self.parse_inlines(node);
             }
@@ -2823,13 +2825,15 @@ where
 
     fn parse_inlines(&mut self, node: AstNode) {
         let mut delimiter_arena = Arena::new();
-        let node_data = node.get(self.arena);
-        let content = strings::rtrim_slice(node_data.content.as_bytes());
+        let node_data = node.get_mut(self.arena);
+        let content = mem::take(&mut node_data.content);
+        let line = node_data.sourcepos.start.line;
+
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
-            content,
-            node_data.sourcepos.start.line,
+            strings::rtrim_slice(content.as_bytes()),
+            line,
             &mut self.refmap,
             &self.footnote_defs,
             &mut delimiter_arena,
