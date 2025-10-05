@@ -1,15 +1,15 @@
 //! The CommonMark AST.
 
-use crate::arena_tree::Node;
+use indextree::{Arena, NodeId};
 use std::cell::RefCell;
 use std::convert::TryFrom;
-
-#[cfg(feature = "shortcodes")]
-pub use crate::parser::shortcodes::NodeShortCode;
+use std::fmt::Debug;
 
 pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+#[cfg(feature = "shortcodes")]
+pub use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -679,85 +679,110 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+#[derive(Clone, Copy, PartialEq)]
+pub struct AstNode(NodeId);
 
-impl<'a> From<NodeValue> for AstNode<'a> {
-    /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
-    fn from(value: NodeValue) -> Self {
-        Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+impl AstNode {
+    pub fn with_value(arena: &mut Arena<Ast>, value: NodeValue) -> Self {
+        Self::new(arena, Ast::new(value, LineColumn::default()))
     }
-}
 
-impl<'a> From<Ast> for AstNode<'a> {
-    /// Create a new AST node with the given Ast.
-    fn from(ast: Ast) -> Self {
-        Node::new(RefCell::new(ast))
+    pub(crate) fn new(arena: &mut Arena<Ast>, ast: Ast) -> Self {
+        Self(arena.new_node(ast))
     }
-}
 
-/// Validation errors produced by [Node::validate].
-#[derive(Debug, Clone)]
-pub enum ValidationError<'a> {
-    /// The type of a child node is not allowed in the parent node. This can happen when an inline
-    /// node is found in a block container, a block is found in an inline node, etc.
-    InvalidChildType {
-        /// The parent node.
-        parent: &'a AstNode<'a>,
-        /// The child node.
-        child: &'a AstNode<'a>,
-    },
-}
+    #[inline]
+    pub(crate) fn node_id(&self) -> NodeId {
+        self.0
+    }
 
-impl<'a> Node<'a, RefCell<Ast>> {
-    /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
-    /// invalid trees according to the CommonMark specification. One simple example is that block
-    /// containers, such as lists, should only contain blocks, but it's possible to put naked
-    /// inline text in a list item. Such invalid trees can lead comrak to generate incorrect output
-    /// if rendered.
-    ///
-    /// This method performs additional structural checks to ensure that a markdown AST is valid
-    /// according to the CommonMark specification.
-    ///
-    /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
-    /// comrak, on the other hand, should always produce a valid tree.
-    pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
-        let mut stack = vec![self];
+    #[inline]
+    pub fn get<'a>(&self, arena: &'a Arena<Ast>) -> &'a Ast {
+        arena[self.node_id()].get()
+    }
 
-        while let Some(node) = stack.pop() {
-            // Check that this node type is valid wrt to the type of its parent.
-            if let Some(parent) = node.parent() {
-                if !can_contain_type(parent, &node.data.borrow().value) {
-                    return Err(ValidationError::InvalidChildType {
-                        parent,
-                        child: node,
-                    });
-                }
+    #[inline]
+    pub fn get_mut<'a>(&self, arena: &'a mut Arena<Ast>) -> &'a mut Ast {
+        arena[self.node_id()].get_mut()
+    }
+
+    #[inline]
+    pub fn parent(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].parent().map(Self)
+    }
+
+    #[inline]
+    pub fn first_child(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].first_child().map(Self)
+    }
+
+    #[inline]
+    pub fn last_child(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].last_child().map(Self)
+    }
+
+    #[inline]
+    pub fn next_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].next_sibling().map(Self)
+    }
+
+    #[inline]
+    pub fn previous_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
+        arena[self.node_id()].previous_sibling().map(Self)
+    }
+
+    #[inline]
+    pub fn preceding_siblings<'a>(&self, arena: &'a Arena<Ast>) -> PrecedingSiblings<'a> {
+        self.node_id().preceding_siblings(arena).into()
+    }
+
+    #[inline]
+    pub fn ancestors<'a>(&self, arena: &'a Arena<Ast>) -> Ancestors<'a> {
+        self.node_id().ancestors(arena).into()
+    }
+
+    #[inline]
+    pub fn children<'a>(&self, arena: &'a Arena<Ast>) -> Children<'a> {
+        self.node_id().children(arena).into()
+    }
+
+    #[inline]
+    pub fn descendants<'a>(&self, arena: &'a Arena<Ast>) -> Descendants<'a> {
+        self.node_id().descendants(arena).into()
+    }
+
+    #[inline]
+    pub fn append(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().append(node.node_id(), arena);
+    }
+
+    #[inline]
+    pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().insert_after(node.node_id(), arena);
+    }
+
+    #[inline]
+    pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().remove(arena);
+    }
+
+    pub(crate) fn last_child_is_open(&self, arena: &Arena<Ast>) -> bool {
+        self.last_child(arena).map_or(false, |n| n.get(arena).open)
+    }
+
+    /// Returns true if the given node can contain a node with the given value.
+    pub fn can_contain_type(&self, arena: &Arena<Ast>, child: &NodeValue) -> bool {
+        match *child {
+            NodeValue::Document => {
+                return false;
             }
-
-            stack.extend(node.children());
+            NodeValue::FrontMatter(_) => {
+                return matches!(self.get(arena).value, NodeValue::Document);
+            }
+            _ => {}
         }
 
-        Ok(())
-    }
-}
-
-pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
-    node.last_child().map_or(false, |n| n.data.borrow().open)
-}
-
-/// Returns true if the given node can contain a node with the given value.
-pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
-    match *child {
-        NodeValue::Document => {
-            return false;
-        }
-        NodeValue::FrontMatter(_) => {
-            return matches!(node.data.borrow().value, NodeValue::Document);
-        }
-        _ => {}
-    }
-
-    match node.data.borrow().value {
+        match self.get(arena).value {
         NodeValue::Document
         | NodeValue::BlockQuote
         | NodeValue::FootnoteDefinition(_)
@@ -852,31 +877,163 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
         }
         _ => false,
     }
-}
+    }
 
-pub(crate) fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
-    let mut it = Some(node);
-    while let Some(cur) = it {
-        if cur.data.borrow().last_line_blank {
-            return true;
-        }
-        match cur.data.borrow().value {
-            NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                it = cur.last_child()
+    pub(crate) fn ends_with_blank_line(&self, arena: &Arena<Ast>) -> bool {
+        let mut it = Some(*self);
+        while let Some(cur) = it {
+            if cur.get(arena).last_line_blank {
+                return true;
             }
-            _ => it = None,
-        };
+            match cur.get(arena).value {
+                NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
+                    it = cur.last_child(arena)
+                }
+                _ => it = None,
+            };
+        }
+        false
     }
-    false
+
+    pub(crate) fn containing_block(&self, arena: &Arena<Ast>) -> Option<AstNode> {
+        let mut ch = Some(*self);
+        while let Some(n) = ch {
+            if n.get(arena).value.block() {
+                return Some(n);
+            }
+            ch = n.parent(arena);
+        }
+        None
+    }
+
+    /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
+    /// invalid trees according to the CommonMark specification. One simple example is that block
+    /// containers, such as lists, should only contain blocks, but it's possible to put naked
+    /// inline text in a list item. Such invalid trees can lead comrak to generate incorrect output
+    /// if rendered.
+    ///
+    /// This method performs additional structural checks to ensure that a markdown AST is valid
+    /// according to the CommonMark specification.
+    ///
+    /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
+    /// comrak, on the other hand, should always produce a valid tree.
+    pub fn validate(self, arena: &Arena<Ast>) -> Result<(), ValidationError> {
+        let mut stack = vec![self];
+
+        while let Some(node) = stack.pop() {
+            // Check that this node type is valid wrt to the type of its parent.
+            if let Some(parent) = node.parent(arena) {
+                if !parent.can_contain_type(arena, &node.get(arena).value) {
+                    return Err(ValidationError::InvalidChildType {
+                        parent,
+                        child: node,
+                    });
+                }
+            }
+
+            stack.extend(node.children(arena));
+        }
+
+        Ok(())
+    }
 }
 
-pub(crate) fn containing_block<'a>(node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-    let mut ch = Some(node);
-    while let Some(n) = ch {
-        if n.data.borrow().value.block() {
-            return Some(n);
-        }
-        ch = n.parent();
+struct PrecedingSiblings<'a>(indextree::PrecedingSiblings<'a, Ast>);
+
+impl<'a> From<indextree::PrecedingSiblings<'a, Ast>> for PrecedingSiblings<'a> {
+    fn from(it: indextree::PrecedingSiblings<'a, Ast>) -> Self {
+        Self(it)
     }
-    None
+}
+
+impl<'a> Iterator for PrecedingSiblings<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+struct Ancestors<'a>(indextree::Ancestors<'a, Ast>);
+
+impl<'a> From<indextree::Ancestors<'a, Ast>> for Ancestors<'a> {
+    fn from(it: indextree::Ancestors<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Ancestors<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+struct Children<'a>(indextree::Children<'a, Ast>);
+
+impl<'a> From<indextree::Children<'a, Ast>> for Children<'a> {
+    fn from(it: indextree::Children<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Children<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+impl<'a> DoubleEndedIterator for Children<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(AstNode)
+    }
+}
+
+struct Descendants<'a>(indextree::Descendants<'a, Ast>);
+
+impl<'a> From<indextree::Descendants<'a, Ast>> for Descendants<'a> {
+    fn from(it: indextree::Descendants<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Descendants<'a> {
+    type Item = AstNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(AstNode)
+    }
+}
+
+/// Validation errors produced by [Node::validate].
+#[derive(Clone)]
+pub enum ValidationError<'a> {
+    /// The type of a child node is not allowed in the parent node. This can happen when an inline
+    /// node is found in a block container, a block is found in an inline node, etc.
+    InvalidChildType {
+        arena: &'a Arena<Ast>,
+        /// The parent node.
+        parent: AstNode,
+        /// The child node.
+        child: AstNode,
+    },
+}
+
+impl<'a> Debug for ValidationError<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidChildType {
+                arena,
+                parent,
+                child,
+            } => f
+                .debug_struct("InvalidChildType")
+                .field("parent", parent.get(arena))
+                .field("child", child.get(arena))
+                .finish(),
+        }
+    }
 }

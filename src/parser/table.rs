@@ -1,11 +1,12 @@
-use crate::arena_tree::Node;
+use indextree::Node;
+use std::cell::RefCell;
+use std::cmp::min;
+
 use crate::nodes;
 use crate::nodes::{Ast, AstNode, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
 use crate::strings::trim;
-use std::cell::RefCell;
-use std::cmp::min;
 
 use super::inlines::count_newlines;
 
@@ -14,9 +15,9 @@ const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
 pub fn try_opening_block<'a>(
     parser: &mut Parser<'a, '_, '_>,
-    container: &'a AstNode<'a>,
+    container: AstNode,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool, bool)> {
+) -> Option<(AstNode, bool, bool)> {
     let aligns = match container.data.borrow().value {
         NodeValue::Paragraph => None,
         NodeValue::Table(NodeTable { ref alignments, .. }) => Some(alignments.clone()),
@@ -31,9 +32,9 @@ pub fn try_opening_block<'a>(
 
 fn try_opening_header<'a>(
     parser: &mut Parser<'a, '_, '_>,
-    container: &'a AstNode<'a>,
+    container: AstNode,
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool, bool)> {
+) -> Option<(AstNode, bool, bool)> {
     if container.data.borrow().table_visited {
         return Some((container, false, false));
     }
@@ -133,10 +134,10 @@ fn try_opening_header<'a>(
 
 fn try_opening_row<'a>(
     parser: &mut Parser<'a, '_, '_>,
-    container: &'a AstNode<'a>,
+    container: AstNode,
     alignments: &[TableAlignment],
     line: &[u8],
-) -> Option<(&'a AstNode<'a>, bool, bool)> {
+) -> Option<(AstNode, bool, bool)> {
     if parser.blank {
         return None;
     }
@@ -277,7 +278,7 @@ fn row(string: &[u8], spoiler: bool) -> Option<Row> {
 
 fn try_inserting_table_header_paragraph<'a>(
     parser: &mut Parser<'a, '_, '_>,
-    container: &'a AstNode<'a>,
+    container: AstNode,
     paragraph_offset: usize,
 ) {
     let container_ast = &mut container.data.borrow_mut();
@@ -341,7 +342,7 @@ fn unescape_pipes(string: &[u8]) -> Vec<u8> {
 // The purpose of this is to prevent a malicious input from generating a very
 // large number of autocompleted cells, which could cause a denial of service
 // vulnerability.
-fn incr_table_row_count<'a>(container: &'a AstNode<'a>, i: usize) -> bool {
+fn incr_table_row_count<'a>(container: AstNode, i: usize) -> bool {
     return match container.data.borrow_mut().value {
         NodeValue::Table(ref mut node_table) => {
             node_table.num_rows += 1;
@@ -353,7 +354,7 @@ fn incr_table_row_count<'a>(container: &'a AstNode<'a>, i: usize) -> bool {
 }
 
 // Calculate the number of autocompleted cells.
-fn get_num_autocompleted_cells<'a>(container: &'a AstNode<'a>) -> usize {
+fn get_num_autocompleted_cells<'a>(container: AstNode) -> usize {
     return match container.data.borrow().value {
         NodeValue::Table(ref node_table) => {
             let num_cells = node_table.num_columns * node_table.num_rows;
