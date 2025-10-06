@@ -50,9 +50,9 @@ The CLI help for the latest version is available in the [README], and the Rust d
 [bindings to other languages]: #bindings
 [directly in webpages]: https://gitlab-org.gitlab.io/ruby/gems/gitlab-glfm-markdown/
 [created with Comrak]: Makefile
-[`header.html`]: header.html
-[`index.md`]: index.md
-[`footer.html`]: footer.html
+[`header.html`]: https://github.com/kivikakk/comrak/blob/main/www/header.html
+[`index.md`]: https://github.com/kivikakk/comrak/blob/main/www/index.md?plain=1
+[`footer.html`]: https://github.com/kivikakk/comrak/blob/main/www/footer.html
 [README]: https://github.com/kivikakk/comrak#usage
 [docs.rs]: https://docs.rs/comrak/latest/comrak/
 
