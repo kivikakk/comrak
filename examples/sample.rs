@@ -4,8 +4,8 @@ fn small() {
     use comrak::{markdown_to_html, Options};
 
     assert_eq!(
-        markdown_to_html("Hello, **世界**!", &Options::default()),
-        "<p>Hello, <strong>世界</strong>!</p>\n"
+        markdown_to_html("¡Olá, **世界**!", &Options::default()),
+        "<p>¡Olá, <strong>世界</strong>!</p>\n"
     );
 }
 
@@ -14,39 +14,38 @@ fn large() {
     use comrak::{format_html, parse_document, Arena, Options};
 
     fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
-        // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-        let arena = Arena::new();
+        // The returned nodes are created in the supplied Arena.
+        let mut arena = Arena::new();
 
         // Parse the document into a root `AstNode`
-        let root = parse_document(&arena, document, &Options::default());
+        let root = parse_document(&mut arena, document, &Options::default());
 
         // Iterate over all the descendants of root.
-        for node in root.descendants() {
-            if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+        for node in root.descendants(&arena).collect::<Vec<_>>() {
+            if let NodeValue::Text(ref mut text) = node.get_mut(&mut arena).value {
                 // If the node is a text node, perform the string replacement.
                 *text = text.replace(orig_string, replacement)
             }
         }
 
         let mut html = String::new();
-        format_html(root, &Options::default(), &mut html).unwrap();
-
+        format_html(&arena, root, &Options::default(), &mut html).unwrap();
         html
     }
 
     fn main() {
-        let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
-        let orig = "my";
-        let repl = "your";
+        let doc = "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n";
+        let orig = "pretty";
+        let repl = "beautiful";
         let html = replace_text(doc, orig, repl);
 
         println!("{}", html);
         // Output:
         //
-        // <p>This is your input.</p>
+        // <p>Hello, beautiful world!</p>
         // <ol>
-        // <li>Also <a href="#">your</a> input.</li>
-        // <li>Certainly <em>your</em> input.</li>
+        // <li>Do you like <a href="#">beautiful</a> paintings?</li>
+        // <li>Or <em>beautiful</em> music?</li>
         // </ol>
     }
 
