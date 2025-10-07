@@ -5,8 +5,8 @@ use unicode_categories::UnicodeCategories;
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{Ast, AstNode, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::Subject;
-use crate::parser::{inlines::make_inline, Spx};
+use crate::parser::inlines::{make_inline, make_inline_node, Subject};
+use crate::parser::Spx;
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a mut Arena<Ast>,
@@ -91,7 +91,7 @@ pub(crate) fn process_email_autolinks<'a>(
                     initial_end_col,
                 )
                     .into();
-                let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
+                let after = make_inline_node(arena, NodeValue::Text(remain.to_string()), asp);
                 post.insert_after(arena, after);
 
                 let mut remainder = mem::take(after.get_mut(arena).value.text_mut().unwrap());
@@ -196,7 +196,7 @@ fn email_match<'a>(
     let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
     url.push_str(text);
 
-    let inl = make_inline(
+    let inl = make_inline_node(
         arena,
         NodeValue::Link(NodeLink {
             url,
@@ -205,13 +205,10 @@ fn email_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    let tnode = make_inline(
+    inl.append_value(
         arena,
-        NodeValue::Text(text.to_string()),
-        (0, 1, 0, 1).into(),
+        make_inline(NodeValue::Text(text.to_string()), (0, 1, 0, 1).into()),
     );
-
-    inl.append(arena, tnode);
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -266,7 +263,7 @@ pub fn www_match<'a>(
     let mut url = "http://".to_string();
     url.push_str(str::from_utf8(&subject.input[i..link_end + i]).unwrap());
 
-    let inl = make_inline(
+    let inl = make_inline_node(
         subject.arena,
         NodeValue::Link(NodeLink {
             url,
@@ -275,16 +272,17 @@ pub fn www_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    let tnode = make_inline(
+    inl.append_value(
         subject.arena,
-        NodeValue::Text(
-            str::from_utf8(&subject.input[i..link_end + i])
-                .unwrap()
-                .to_string(),
+        make_inline(
+            NodeValue::Text(
+                str::from_utf8(&subject.input[i..link_end + i])
+                    .unwrap()
+                    .to_string(),
+            ),
+            (0, 1, 0, 1).into(),
         ),
-        (0, 1, 0, 1).into(),
     );
-    inl.append(subject.arena, tnode);
     Some((inl, 0, link_end))
 }
 
@@ -441,7 +439,7 @@ pub fn url_match<'a>(
     let url = str::from_utf8(&subject.input[i - rewind..i + link_end])
         .unwrap()
         .to_string();
-    let inl = make_inline(
+    let inl = make_inline_node(
         subject.arena,
         NodeValue::Link(NodeLink {
             url: url.clone(),
@@ -450,7 +448,9 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    let tnode = make_inline(subject.arena, NodeValue::Text(url), (0, 1, 0, 1).into());
-    inl.append(subject.arena, tnode);
+    inl.append_value(
+        subject.arena,
+        make_inline(NodeValue::Text(url), (0, 1, 0, 1).into()),
+    );
     Some((inl, rewind, rewind + link_end))
 }

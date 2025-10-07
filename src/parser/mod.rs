@@ -2394,7 +2394,7 @@ where
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
-            term.append(&mut self.arena, last_child);
+            term.append_node(&mut self.arena, last_child);
 
             *container = details;
 
@@ -2480,9 +2480,7 @@ where
         assert!(start_column > 0);
 
         let child = Ast::new(value, (self.line_number, start_column).into());
-        let node = AstNode::new(&mut self.arena, child);
-        parent.append(&mut self.arena, node);
-        node
+        parent.append_value(&mut self.arena, child)
     }
 
     fn add_text_to_container(
@@ -2876,7 +2874,7 @@ where
                         }
                         _ => unreachable!(),
                     }
-                    self.root.append(self.arena, f.node);
+                    self.root.append_node(self.arena, f.node);
                 }
             }
         }

@@ -20,20 +20,20 @@ fn commonmark_avoids_spurious_backslash() {
     let p1 = AstNode::with_value(&mut arena, NodeValue::Paragraph);
     {
         let node = AstNode::with_value(&mut arena, NodeValue::Text("Line 1".to_owned()));
-        p1.append(&mut arena, node);
+        p1.append_node(&mut arena, node);
     }
     {
         let node = AstNode::with_value(&mut arena, NodeValue::LineBreak);
-        p1.append(&mut arena, node);
+        p1.append_node(&mut arena, node);
     }
-    root.append(&mut arena, p1);
+    root.append_node(&mut arena, p1);
 
     let p2 = AstNode::with_value(&mut arena, NodeValue::Paragraph);
     {
         let node = AstNode::with_value(&mut arena, NodeValue::Text("Line 2".to_owned()));
-        p2.append(&mut arena, node);
+        p2.append_node(&mut arena, node);
     }
-    root.append(&mut arena, p2);
+    root.append_node(&mut arena, p2);
 
     let mut output = String::new();
     cm::format_document(&arena, root, &options, &mut output).unwrap();
@@ -55,10 +55,10 @@ fn commonmark_renders_single_list_item() {
     let p = AstNode::with_value(&mut arena, NodeValue::Paragraph);
     {
         let node = AstNode::with_value(&mut arena, NodeValue::Text("Item 1".to_owned()));
-        p.append(&mut arena, node);
+        p.append_node(&mut arena, node);
     }
-    item.append(&mut arena, p);
-    list.append(&mut arena, item);
+    item.append_node(&mut arena, p);
+    list.append_node(&mut arena, item);
     let mut output = String::new();
     cm::format_document(&arena, item, &options, &mut output).unwrap();
     compare_strs(&output, "1. Item 1\n", "rendered", "<synthetic>");

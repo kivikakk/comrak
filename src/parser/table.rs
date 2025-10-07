@@ -87,8 +87,7 @@ fn try_opening_header<'a>(
         }),
         start,
     );
-    let table = AstNode::new(parser.arena, child);
-    container.append(parser.arena, table);
+    let table = container.append_value(parser.arena, child);
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
     {

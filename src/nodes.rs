@@ -793,20 +793,26 @@ impl AstNode {
 
     #[inline]
     /// TODO
-    pub fn append(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+    pub fn append_node(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().append(node.node_id(), arena);
     }
 
     #[inline]
     /// TODO
+    pub fn append_value(&self, arena: &mut Arena<Ast>, value: Ast) -> AstNode {
+        Self(self.node_id().append_value(value, arena))
+    }
+
+    #[inline]
+    /// TODO
     pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
-        self.node_id().insert_before(node.node_id(), arena);
+        self.node_id().insert_after(node.node_id(), arena);
     }
 
     #[inline]
     /// TODO
     pub fn insert_before(&self, arena: &mut Arena<Ast>, node: Self) -> () {
-        self.node_id().insert_after(node.node_id(), arena);
+        self.node_id().insert_before(node.node_id(), arena);
     }
 
     #[inline]
