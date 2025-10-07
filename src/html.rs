@@ -182,11 +182,13 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
             pub fn format_document<'a>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                arena: &'a $crate::Arena<$crate::nodes::Ast>,
+                root: $crate::nodes::AstNode,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
             ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -199,12 +201,14 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                arena: &'a $crate::Arena<$crate::nodes::Ast>,
+                root: $crate::nodes::AstNode,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::Plugins<'o>,
             ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -214,12 +218,12 @@ macro_rules! create_formatter {
                 )
             }
 
-            fn formatter<'a>(
-                context: &mut $crate::html::Context<()>,
-                node: &'a $crate::nodes::AstNode<'a>,
+            fn formatter<'a, 'o, 'c>(
+                context: &mut $crate::html::Context<'a, 'o, 'c, ()>,
+                node: $crate::nodes::AstNode,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.get(arena).value {
+                match node.get(context.arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -245,12 +249,14 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
             pub fn format_document<'a>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                arena: &'a $crate::Arena<$crate::nodes::Ast>,
+                root: $crate::nodes::AstNode,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
                 user: $type,
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -263,13 +269,15 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                arena: &'a $crate::Arena<$crate::nodes::Ast>,
+                root: $crate::nodes::AstNode,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::Plugins<'o>,
                 user: $type,
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -279,12 +287,12 @@ macro_rules! create_formatter {
                 )
             }
 
-            fn formatter<'a>(
-                context: &mut $crate::html::Context<$type>,
-                node: &'a $crate::nodes::AstNode<'a>,
+            fn formatter<'a, 'o, 'c>(
+                context: &mut $crate::html::Context<'a, 'o, 'c, $type>,
+                node: $crate::nodes::AstNode,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.get(arena).value {
+                match node.get(context.arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -412,8 +420,8 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
 /// [`format_document_with_plugins`] and as the fallback for any node types not
 /// handled in custom formatters created by [`create_formatter!`].
 #[inline]
-pub fn format_node_default<'a, T>(
-    context: &mut Context<T>,
+pub fn format_node_default<'a, 'o, 'c, T>(
+    context: &mut Context<'a, 'o, 'c, T>,
     node: AstNode,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {

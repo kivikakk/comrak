@@ -695,10 +695,11 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct AstNode(NodeId);
 
 impl AstNode {
+    /// TODO
     pub fn with_value(arena: &mut Arena<Ast>, value: NodeValue) -> Self {
         Self::new(arena, Ast::new(value, LineColumn::default()))
     }
@@ -713,81 +714,103 @@ impl AstNode {
     }
 
     #[inline]
+    /// TODO
     pub fn get<'a>(&self, arena: &'a Arena<Ast>) -> &'a Ast {
         arena[self.node_id()].get()
     }
 
     #[inline]
+    /// TODO
     pub fn get_mut<'a>(&self, arena: &'a mut Arena<Ast>) -> &'a mut Ast {
         arena[self.node_id()].get_mut()
     }
 
     #[inline]
+    /// TODO
     pub fn parent(&self, arena: &Arena<Ast>) -> Option<Self> {
         arena[self.node_id()].parent().map(Self)
     }
 
     #[inline]
+    /// TODO
     pub fn first_child(&self, arena: &Arena<Ast>) -> Option<Self> {
         arena[self.node_id()].first_child().map(Self)
     }
 
     #[inline]
+    /// TODO
     pub fn last_child(&self, arena: &Arena<Ast>) -> Option<Self> {
         arena[self.node_id()].last_child().map(Self)
     }
 
     #[inline]
+    /// TODO
     pub fn next_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
         arena[self.node_id()].next_sibling().map(Self)
     }
 
     #[inline]
+    /// TODO
     pub fn previous_sibling(&self, arena: &Arena<Ast>) -> Option<Self> {
         arena[self.node_id()].previous_sibling().map(Self)
     }
 
     #[inline]
+    /// TODO
     pub fn preceding_siblings<'a>(&self, arena: &'a Arena<Ast>) -> PrecedingSiblings<'a> {
         self.node_id().preceding_siblings(arena).into()
     }
 
     #[inline]
+    /// TODO
     pub fn following_siblings<'a>(&self, arena: &'a Arena<Ast>) -> FollowingSiblings<'a> {
         self.node_id().following_siblings(arena).into()
     }
 
     #[inline]
+    /// TODO
     pub fn ancestors<'a>(&self, arena: &'a Arena<Ast>) -> Ancestors<'a> {
         self.node_id().ancestors(arena).into()
     }
 
     #[inline]
+    /// TODO
     pub fn children<'a>(&self, arena: &'a Arena<Ast>) -> Children<'a> {
         self.node_id().children(arena).into()
     }
 
     #[inline]
+    /// TODO
     pub fn descendants<'a>(&self, arena: &'a Arena<Ast>) -> Descendants<'a> {
         self.node_id().descendants(arena).into()
     }
 
     #[inline]
+    /// TODO
+    pub fn traverse<'a>(&self, arena: &'a Arena<Ast>) -> Traverse<'a> {
+        self.node_id().traverse(arena).into()
+    }
+
+    #[inline]
+    /// TODO
     pub fn append(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().append(node.node_id(), arena);
     }
 
     #[inline]
+    /// TODO
     pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().insert_before(node.node_id(), arena);
     }
 
     #[inline]
+    /// TODO
     pub fn insert_before(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().insert_after(node.node_id(), arena);
     }
 
     #[inline]
+    /// TODO
     pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
         self.node_id().remove(arena);
     }
@@ -967,7 +990,9 @@ impl AstNode {
     }
 }
 
-struct PrecedingSiblings<'a>(indextree::PrecedingSiblings<'a, Ast>);
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct PrecedingSiblings<'a>(indextree::PrecedingSiblings<'a, Ast>);
 
 impl<'a> From<indextree::PrecedingSiblings<'a, Ast>> for PrecedingSiblings<'a> {
     fn from(it: indextree::PrecedingSiblings<'a, Ast>) -> Self {
@@ -983,7 +1008,9 @@ impl<'a> Iterator for PrecedingSiblings<'a> {
     }
 }
 
-struct FollowingSiblings<'a>(indextree::FollowingSiblings<'a, Ast>);
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct FollowingSiblings<'a>(indextree::FollowingSiblings<'a, Ast>);
 
 impl<'a> From<indextree::FollowingSiblings<'a, Ast>> for FollowingSiblings<'a> {
     fn from(it: indextree::FollowingSiblings<'a, Ast>) -> Self {
@@ -999,7 +1026,9 @@ impl<'a> Iterator for FollowingSiblings<'a> {
     }
 }
 
-struct Ancestors<'a>(indextree::Ancestors<'a, Ast>);
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Ancestors<'a>(indextree::Ancestors<'a, Ast>);
 
 impl<'a> From<indextree::Ancestors<'a, Ast>> for Ancestors<'a> {
     fn from(it: indextree::Ancestors<'a, Ast>) -> Self {
@@ -1015,7 +1044,9 @@ impl<'a> Iterator for Ancestors<'a> {
     }
 }
 
-struct Children<'a>(indextree::Children<'a, Ast>);
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Children<'a>(indextree::Children<'a, Ast>);
 
 impl<'a> From<indextree::Children<'a, Ast>> for Children<'a> {
     fn from(it: indextree::Children<'a, Ast>) -> Self {
@@ -1037,7 +1068,9 @@ impl<'a> DoubleEndedIterator for Children<'a> {
     }
 }
 
-struct Descendants<'a>(indextree::Descendants<'a, Ast>);
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Descendants<'a>(indextree::Descendants<'a, Ast>);
 
 impl<'a> From<indextree::Descendants<'a, Ast>> for Descendants<'a> {
     fn from(it: indextree::Descendants<'a, Ast>) -> Self {
@@ -1053,12 +1086,44 @@ impl<'a> Iterator for Descendants<'a> {
     }
 }
 
+/// TODO
+#[allow(missing_debug_implementations)]
+pub struct Traverse<'a>(indextree::Traverse<'a, Ast>);
+
+impl<'a> From<indextree::Traverse<'a, Ast>> for Traverse<'a> {
+    fn from(it: indextree::Traverse<'a, Ast>) -> Self {
+        Self(it)
+    }
+}
+
+impl<'a> Iterator for Traverse<'a> {
+    type Item = NodeEdge;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|edge| match edge {
+            indextree::NodeEdge::Start(node_id) => NodeEdge::Start(AstNode(node_id)),
+            indextree::NodeEdge::End(node_id) => NodeEdge::End(AstNode(node_id)),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Indicator if the node is at a start or endpoint of the tree
+pub enum NodeEdge {
+    /// TODO
+    Start(AstNode),
+
+    /// TODO
+    End(AstNode),
+}
+
 /// Validation errors produced by [Node::validate].
 #[derive(Clone)]
 pub enum ValidationError<'a> {
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
+        /// The arena the nodes are resolvable in.
         arena: &'a Arena<Ast>,
         /// The parent node.
         parent: AstNode,

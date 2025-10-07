@@ -355,8 +355,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let arena = Arena::new();
-    let root = comrak::parse_document(&arena, &String::from_utf8(s)?, &options);
+    let mut arena = Arena::new();
+    let root = comrak::parse_document(&mut arena, &String::from_utf8(s)?, &options);
 
     let formatter = if cli.inplace {
         comrak::format_commonmark_with_plugins
