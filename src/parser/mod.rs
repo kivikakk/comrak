@@ -2767,41 +2767,49 @@ where
             NodeValue::HtmlBlock(ref mut nhb) => {
                 mem::swap(&mut nhb.literal, content);
             }
-            NodeValue::List(ref mut nl) => {
-                nl.tight = true;
-                let mut ch = node.first_child(&self.arena);
-
-                while let Some(item) = ch {
-                    if item.get(&self.arena).last_line_blank
-                        && item.next_sibling(&self.arena).is_some()
-                    {
-                        nl.tight = false;
-                        break;
-                    }
-
-                    let mut subch = item.first_child(&self.arena);
-                    while let Some(subitem) = subch {
-                        if (item.next_sibling(&self.arena).is_some()
-                            || subitem.next_sibling(&self.arena).is_some())
-                            && subitem.ends_with_blank_line(self.arena)
-                        {
-                            nl.tight = false;
-                            break;
-                        }
-                        subch = subitem.next_sibling(self.arena);
-                    }
-
-                    if !nl.tight {
-                        break;
-                    }
-
-                    ch = item.next_sibling(self.arena);
-                }
+            NodeValue::List(_) => {
+                let tight = self.determine_list_tight(node);
+                let NodeValue::List(ref mut nl) = node.get_mut(self.arena).value else {
+                    unreachable!();
+                };
+                nl.tight = tight;
             }
             _ => (),
         }
 
         parent
+    }
+
+    fn determine_list_tight(&self, node: AstNode) -> bool {
+        let mut tight = true;
+        let mut ch = node.first_child(&self.arena);
+
+        while let Some(item) = ch {
+            if item.get(&self.arena).last_line_blank && item.next_sibling(&self.arena).is_some() {
+                tight = false;
+                break;
+            }
+
+            let mut subch = item.first_child(&self.arena);
+            while let Some(subitem) = subch {
+                if (item.next_sibling(&self.arena).is_some()
+                    || subitem.next_sibling(&self.arena).is_some())
+                    && subitem.ends_with_blank_line(self.arena)
+                {
+                    tight = false;
+                    break;
+                }
+                subch = subitem.next_sibling(self.arena);
+            }
+
+            if !tight {
+                break;
+            }
+
+            ch = item.next_sibling(self.arena);
+        }
+
+        tight
     }
 
     fn process_inlines(&mut self) {
