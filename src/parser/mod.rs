@@ -2987,6 +2987,8 @@ where
                 let n_ast = n.get_mut(self.arena);
                 let mut sourcepos = n_ast.sourcepos;
 
+                // XXX We'll probably have to mem::take the text out, mess with it, then replace.
+
                 match n_ast.value {
                     NodeValue::Text(ref mut root) => {
                         // Join adjacent text nodes together, then post-process.
