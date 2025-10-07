@@ -1809,10 +1809,7 @@ where
             return false;
         }
 
-        let has_content = {
-            let ast = container.get_mut(self.arena);
-            self.resolve_reference_link_definitions(&mut ast.content)
-        };
+        let has_content = self.resolve_reference_link_definitions(*container);
         if has_content {
             container.get_mut(self.arena).value = NodeValue::Heading(NodeHeading {
                 level: match sc {
@@ -2669,25 +2666,32 @@ where
         }
     }
 
-    fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
+    fn resolve_reference_link_definitions(&mut self, node: AstNode) -> bool {
         let mut seeked = 0;
+        let mut rrs_to_add = vec![];
+
         {
-            let mut pos = 0;
+            let content = &node.get(self.arena).content;
+            let mut pos_rr = (0, None);
             let mut seek: &[u8] = content.as_bytes();
             while !seek.is_empty()
                 && seek[0] == b'['
-                && unwrap_into(self.parse_reference_inline(seek), &mut pos)
+                && unwrap_into(self.parse_reference_inline(seek), &mut pos_rr)
             {
-                seek = &seek[pos..];
-                seeked += pos;
+                seek = &seek[pos_rr.0..];
+                seeked += pos_rr.0;
+                if let Some(rr) = pos_rr.1.take() {
+                    rrs_to_add.push(rr);
+                }
             }
         }
 
         if seeked != 0 {
+            let content = &mut node.get_mut(self.arena).content;
             *content = content[seeked..].to_string();
         }
 
-        !strings::is_blank(content.as_bytes())
+        !strings::is_blank(node.get(self.arena).content.as_bytes())
     }
 
     fn finalize(&mut self, node: AstNode) -> Option<AstNode> {
@@ -2716,7 +2720,7 @@ where
 
         match ast.value {
             NodeValue::Paragraph => {
-                let has_content = self.resolve_reference_link_definitions(content);
+                let has_content = self.resolve_reference_link_definitions(node);
                 if !has_content {
                     node.detach(&mut self.arena);
                 }
@@ -3156,18 +3160,22 @@ where
         }
     }
 
-    fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
-        // In this case reference inlines rarely have delimiters
-        // so we often just need the minimal case
-        let mut delimiter_arena = Arena::with_capacity(0);
+    fn parse_reference_inline(&self, content: &[u8]) -> Option<(usize, Option<ResolvedReference>)> {
+        // XXX None of these are actually used by the calls we make below.
+        // Ideally we refactor Subject's input scanning methods so we don't need
+        // to create a Subject at all.
+        let mut unused_delimiter_arena = Arena::with_capacity(0);
+        let mut unused_node_arena = Arena::new();
+        let mut unused_refmap = inlines::RefMap::new();
+
         let mut subj = inlines::Subject::new(
-            self.arena,
+            &mut unused_node_arena,
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
-            &mut self.refmap,
+            &mut unused_refmap,
             &self.footnote_defs,
-            &mut delimiter_arena,
+            &mut unused_delimiter_arena,
         );
 
         let mut lab: String = match subj.link_label() {
@@ -3220,13 +3228,14 @@ where
         }
 
         lab = strings::normalize_label(&lab, Case::Fold);
+        let mut rr = None;
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab).or_insert(ResolvedReference {
+            rr = Some(ResolvedReference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),
                 title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });
         }
-        Some(subj.pos)
+        Some((subj.pos, rr))
     }
 }
 
