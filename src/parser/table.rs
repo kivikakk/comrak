@@ -279,7 +279,7 @@ fn try_inserting_table_header_paragraph<'a>(
     container: AstNode,
     paragraph_offset: usize,
 ) {
-    let container_ast = &mut container.get_mut(parser.arena);
+    let container_ast = container.get(parser.arena);
 
     let preface = &container_ast.content.as_bytes()[..paragraph_offset];
     let mut paragraph_content = unescape_pipes(preface);
@@ -314,6 +314,7 @@ fn try_inserting_table_header_paragraph<'a>(
             .take_while(|&&c| c != b'\n')
             .count();
 
+    let container_ast = container.get_mut(parser.arena);
     container_ast.sourcepos.start.line += newlines;
 
     paragraph.content = String::from_utf8(paragraph_content).unwrap();

@@ -332,8 +332,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         let node_ast = node.get_mut(self.arena);
         let adjusted_line = self.line - node_ast.sourcepos.start.line;
-        let line_offsets = mem::take(&mut node_ast.line_offsets); // XXX please put me back!
-        self.line_offset = node_ast.line_offsets[adjusted_line];
+        let line_offsets = node_ast.line_offsets.clone(); // XXX LOLOLOL
+        self.line_offset = line_offsets[adjusted_line];
 
         let new_inl: Option<AstNode> = match c {
             '\0' => return false,

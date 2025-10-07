@@ -2985,38 +2985,18 @@ where
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
                 let n_ast = n.get_mut(self.arena);
-                let mut sourcepos = n_ast.sourcepos;
-
-                // XXX We'll probably have to mem::take the text out, mess with it, then replace.
-
                 match n_ast.value {
-                    NodeValue::Text(ref mut root) => {
-                        // Join adjacent text nodes together, then post-process.
-                        // Record the original list of sourcepos and bytecounts
-                        // for the post-processing step.
-                        let mut spxv = VecDeque::new();
-                        spxv.push_back((sourcepos, root.len()));
-                        while let Some(ns) = n.next_sibling(self.arena) {
-                            match ns.get(self.arena).value {
-                                NodeValue::Text(ref adj) => {
-                                    root.push_str(adj);
-                                    let sp = ns.get(self.arena).sourcepos;
-                                    spxv.push_back((sp, adj.len()));
-                                    sourcepos.end.column = sp.end.column;
-                                    ns.detach(self.arena);
-                                }
-                                _ => break,
-                            }
-                        }
-
-                        self.postprocess_text_node_with_context(
-                            n,
-                            root,
-                            &mut sourcepos,
-                            spxv,
-                            in_bracket_context,
-                        );
-                        emptied = root.is_empty();
+                    NodeValue::Text(ref mut n_root) => {
+                        let root = mem::take(n_root);
+                        let (sourcepos, mut root) =
+                            self.postprocess_text_node(n, root, in_bracket_context);
+                        let n_ast = n.get_mut(self.arena);
+                        n_ast.sourcepos = sourcepos;
+                        let NodeValue::Text(ref mut n_root) = n_ast.value else {
+                            unreachable!()
+                        };
+                        mem::swap(&mut root, n_root);
+                        emptied = n_root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -3025,8 +3005,6 @@ where
                     }
                     _ => {}
                 }
-
-                n_ast.sourcepos = sourcepos;
 
                 if !emptied {
                     children.push((n, child_in_bracket_context));
@@ -3043,6 +3021,44 @@ where
             // traversed in order
             stack.extend(children.drain(..).rev());
         }
+    }
+
+    fn postprocess_text_node(
+        &mut self,
+        node: AstNode,
+        mut root: String,
+        in_bracket_context: bool,
+    ) -> (Sourcepos, String) {
+        let ast = node.get_mut(self.arena);
+        let mut sourcepos = ast.sourcepos;
+
+        // Join adjacent text nodes together, then post-process.
+        // Record the original list of sourcepos and bytecounts
+        // for the post-processing step.
+        let mut spxv = VecDeque::new();
+        spxv.push_back((sourcepos, root.len()));
+        while let Some(ns) = node.next_sibling(self.arena) {
+            match ns.get(self.arena).value {
+                NodeValue::Text(ref adj) => {
+                    root.push_str(adj);
+                    let sp = ns.get(self.arena).sourcepos;
+                    spxv.push_back((sp, adj.len()));
+                    sourcepos.end.column = sp.end.column;
+                    ns.detach(self.arena);
+                }
+                _ => break,
+            }
+        }
+
+        self.postprocess_text_node_with_context(
+            node,
+            &mut root,
+            &mut sourcepos,
+            spxv,
+            in_bracket_context,
+        );
+
+        return (sourcepos, root);
     }
 
     fn postprocess_text_node_with_context(
