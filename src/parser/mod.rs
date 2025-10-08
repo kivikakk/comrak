@@ -8,18 +8,7 @@ pub mod alert;
 pub mod math;
 pub mod multiline_block_quote;
 
-use crate::adapters::SyntaxHighlighterAdapter;
-use crate::arena_tree::Node;
-use crate::ctype::{isdigit, isspace};
-use crate::entity;
-use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
-use crate::nodes::{
-    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
-    NodeHtmlBlock, NodeList, NodeValue,
-};
-use crate::scanners::{self, SetextChar};
-use crate::strings::{self, split_off_front_matter, Case};
-use std::cell::RefCell;
+use indextree::Arena;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
@@ -27,11 +16,20 @@ use std::mem;
 use std::panic::RefUnwindSafe;
 use std::str;
 use std::sync::Arc;
-use typed_arena::Arena;
 
 use crate::adapters::HeadingAdapter;
+use crate::adapters::SyntaxHighlighterAdapter;
+use crate::ctype::{isdigit, isspace};
+use crate::entity;
+use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
+use crate::nodes::{
+    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
+    NodeHtmlBlock, NodeList, NodeValue,
+};
 use crate::parser::alert::{AlertType, NodeAlert};
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+use crate::scanners::{self, SetextChar};
+use crate::strings::{self, split_off_front_matter, Case};
 
 #[cfg(feature = "bon")]
 use bon::Builder;
@@ -48,9 +46,9 @@ const CODE_INDENT: usize = 4;
 const MAX_LIST_DEPTH: usize = 100;
 
 macro_rules! node_matches {
-    ($node:expr, $( $pat:pat )|+) => {{
+    ($arena:expr, $node:expr, $( $pat:pat )|+) => {{
         matches!(
-            $node.data.borrow().value,
+            $node.get(&$arena).value,
             $( $pat )|+
         )
     }};
@@ -59,21 +57,20 @@ macro_rules! node_matches {
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
-pub fn parse_document<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    buffer: &str,
-    options: &Options,
-) -> &'a AstNode<'a> {
-    let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
-        value: NodeValue::Document,
-        content: String::new(),
-        sourcepos: (1, 1, 1, 1).into(),
-        internal_offset: 0,
-        open: true,
-        last_line_blank: false,
-        table_visited: false,
-        line_offsets: Vec::with_capacity(0),
-    })));
+pub fn parse_document<'a>(arena: &'a mut Arena<Ast>, buffer: &str, options: &Options) -> AstNode {
+    let root: AstNode = AstNode::new(
+        arena,
+        Ast {
+            value: NodeValue::Document,
+            content: String::new(),
+            sourcepos: (1, 1, 1, 1).into(),
+            internal_offset: 0,
+            open: true,
+            last_line_blank: false,
+            table_visited: false,
+            line_offsets: Vec::with_capacity(0),
+        },
+    );
     let mut parser = Parser::new(arena, root, options);
     let mut linebuf = Vec::with_capacity(buffer.len());
     parser.feed(&mut linebuf, buffer, true);
@@ -87,11 +84,11 @@ pub fn parse_document<'a>(
     note = "The broken link callback has been moved into ParseOptions."
 )]
 pub fn parse_document_with_broken_link_callback<'a, 'c>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a mut Arena<Ast>,
     buffer: &str,
     options: &Options,
     callback: Arc<dyn BrokenLinkCallback + 'c>,
-) -> &'a AstNode<'a> {
+) -> AstNode {
     let mut options_with_callback = options.clone();
     options_with_callback.parse.broken_link_callback = Some(callback);
     parse_document(arena, buffer, &options_with_callback)
@@ -139,10 +136,10 @@ pub struct BrokenLinkReference<'l> {
 }
 
 pub struct Parser<'a, 'o, 'c> {
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a mut Arena<Ast>,
     refmap: RefMap,
-    root: &'a AstNode<'a>,
-    current: &'a AstNode<'a>,
+    root: AstNode,
+    current: AstNode,
     line_number: usize,
     offset: usize,
     column: usize,
@@ -835,7 +832,7 @@ pub struct RenderOptions {
     /// ```
     /// # use comrak::{parse_document, Options, format_commonmark};
     /// # fn main() {
-    /// # let arena = typed_arena::Arena::new();
+    /// # let arena = indextree::Arena::new();
     /// let mut options = Options::default();
     /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
     /// let mut output = String::new();
@@ -1177,9 +1174,9 @@ pub struct ResolvedReference {
     pub title: String,
 }
 
-struct FootnoteDefinition<'a> {
+struct FootnoteDefinition {
     ix: Option<u32>,
-    node: &'a AstNode<'a>,
+    node: AstNode,
     name: String,
     total_references: u32,
 }
@@ -1188,7 +1185,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a mut Arena<Ast>, root: AstNode, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -1240,7 +1237,7 @@ where
                 s = rest;
                 self.finalize(node).unwrap();
 
-                node.data.borrow_mut().sourcepos = Sourcepos {
+                node.get_mut(&mut self.arena).sourcepos = Sourcepos {
                     start: nodes::LineColumn { line: 1, column: 1 },
                     end: nodes::LineColumn {
                         line: 1 + stripped_lines,
@@ -1442,7 +1439,7 @@ where
             let current = self.current;
             self.open_new_blocks(&mut container, line, all_matched);
 
-            if current.same_node(self.current) {
+            if current == self.current {
                 self.add_text_to_container(container, last_matched_container, line);
             }
         }
@@ -1453,17 +1450,13 @@ where
         self.curline_end_col = 0;
     }
 
-    fn check_open_blocks(
-        &mut self,
-        line: &[u8],
-        all_matched: &mut bool,
-    ) -> Option<&'a AstNode<'a>> {
+    fn check_open_blocks(&mut self, line: &[u8], all_matched: &mut bool) -> Option<AstNode> {
         let (new_all_matched, mut container, should_continue) =
             self.check_open_blocks_inner(self.root, line);
 
         *all_matched = new_all_matched;
         if !*all_matched {
-            container = container.parent().unwrap();
+            container = container.parent(&self.arena).unwrap();
         }
 
         if !should_continue {
@@ -1475,35 +1468,34 @@ where
 
     fn check_open_blocks_inner(
         &mut self,
-        mut container: &'a AstNode<'a>,
+        mut container: AstNode,
         line: &[u8],
-    ) -> (bool, &'a AstNode<'a>, bool) {
+    ) -> (bool, AstNode, bool) {
         let mut should_continue = true;
 
-        while nodes::last_child_is_open(container) {
-            container = container.last_child().unwrap();
-            let ast = &mut *container.data.borrow_mut();
+        while container.last_child_is_open(self.arena) {
+            container = container.last_child(&self.arena).unwrap();
 
             self.find_first_nonspace(line);
 
-            match ast.value {
+            match container.get(self.arena).value {
                 NodeValue::BlockQuote => {
                     if !self.parse_block_quote_prefix(line) {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::Item(ref nl) => {
-                    if !self.parse_node_item_prefix(line, container, nl) {
+                NodeValue::Item(nl) => {
+                    if !self.parse_node_item_prefix(line, container, &nl) {
                         return (false, container, should_continue);
                     }
                 }
-                NodeValue::DescriptionItem(ref di) => {
-                    if !self.parse_description_item_prefix(line, container, di) {
+                NodeValue::DescriptionItem(di) => {
+                    if !self.parse_description_item_prefix(line, container, &di) {
                         return (false, container, should_continue);
                     }
                 }
                 NodeValue::CodeBlock(..) => {
-                    if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
+                    if !self.parse_code_block_prefix(line, container, &mut should_continue) {
                         return (false, container, should_continue);
                     }
                 }
@@ -1536,7 +1528,6 @@ where
                     if !self.parse_multiline_block_quote_prefix(
                         line,
                         container,
-                        ast,
                         &mut should_continue,
                     ) {
                         return (false, container, should_continue);
@@ -1547,7 +1538,6 @@ where
                         if !self.parse_multiline_block_quote_prefix(
                             line,
                             container,
-                            ast,
                             &mut should_continue,
                         ) {
                             return (false, container, should_continue);
@@ -1590,7 +1580,7 @@ where
 
     fn handle_multiline_blockquote(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1607,7 +1597,7 @@ where
         };
 
         *container = self.add_child(
-            container,
+            *container,
             NodeValue::MultilineBlockQuote(nmbc),
             self.first_nonspace + 1,
         );
@@ -1621,12 +1611,7 @@ where
         !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
     }
 
-    fn handle_blockquote(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
-        indented: bool,
-    ) -> bool {
+    fn handle_blockquote(&mut self, container: &mut AstNode, line: &[u8], indented: bool) -> bool {
         if !self.detect_blockquote(line, indented) {
             return false;
         }
@@ -1638,7 +1623,7 @@ where
         if strings::is_space_or_tab(line[self.offset]) {
             self.advance_offset(line, 1, true);
         }
-        *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
+        *container = self.add_child(*container, NodeValue::BlockQuote, blockquote_startpos + 1);
 
         true
     }
@@ -1653,7 +1638,7 @@ where
 
     fn handle_atx_heading(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1666,7 +1651,7 @@ where
         let offset = self.offset;
         self.advance_offset(line, heading_startpos + *matched - offset, false);
         *container = self.add_child(
-            container,
+            *container,
             NodeValue::Heading(NodeHeading::default()),
             heading_startpos + 1,
         );
@@ -1682,7 +1667,7 @@ where
             hashpos += 1;
         }
 
-        let container_ast = &mut container.data.borrow_mut();
+        let container_ast = &mut container.get_mut(self.arena);
         container_ast.value = NodeValue::Heading(NodeHeading {
             level,
             setext: false,
@@ -1702,7 +1687,7 @@ where
 
     fn handle_code_fence(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1722,7 +1707,7 @@ where
             literal: String::new(),
         };
         *container = self.add_child(
-            container,
+            *container,
             NodeValue::CodeBlock(ncb),
             self.first_nonspace + 1,
         );
@@ -1742,7 +1727,7 @@ where
             && (unwrap_into(
                 scanners::html_block_start(&line[self.first_nonspace..]),
                 matched,
-            ) || (!node_matches!(container, NodeValue::Paragraph)
+            ) || (!node_matches!(self.arena, container, NodeValue::Paragraph)
                 && unwrap_into(
                     scanners::html_block_start_7(&line[self.first_nonspace..]),
                     matched,
@@ -1751,7 +1736,7 @@ where
 
     fn handle_html_block(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1766,7 +1751,7 @@ where
         };
 
         *container = self.add_child(
-            container,
+            *container,
             NodeValue::HtmlBlock(nhb),
             self.first_nonspace + 1,
         );
@@ -1782,13 +1767,13 @@ where
         sc: &mut scanners::SetextChar,
     ) -> bool {
         !indented
-            && node_matches!(container, NodeValue::Paragraph)
+            && node_matches!(self.arena, container, NodeValue::Paragraph)
             && unwrap_into(self.setext_heading_line(&line[self.first_nonspace..]), sc)
     }
 
     fn handle_setext_heading(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         sc: &mut scanners::SetextChar,
@@ -1797,12 +1782,9 @@ where
             return false;
         }
 
-        let has_content = {
-            let mut ast = container.data.borrow_mut();
-            self.resolve_reference_link_definitions(&mut ast.content)
-        };
+        let has_content = self.resolve_reference_link_definitions(*container);
         if has_content {
-            container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+            container.get_mut(self.arena).value = NodeValue::Heading(NodeHeading {
                 level: match sc {
                     scanners::SetextChar::Equals => 1,
                     scanners::SetextChar::Hyphen => 2,
@@ -1826,7 +1808,7 @@ where
     ) -> bool {
         !indented
             && !matches!(
-                (&container.data.borrow().value, all_matched),
+                (&container.get(self.arena).value, all_matched),
                 (&NodeValue::Paragraph, false)
             )
             && self.thematic_break_kill_pos <= self.first_nonspace
@@ -1835,7 +1817,7 @@ where
 
     fn handle_thematic_break(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1845,10 +1827,14 @@ where
             return false;
         }
 
-        *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
+        *container = self.add_child(
+            *container,
+            NodeValue::ThematicBreak,
+            self.first_nonspace + 1,
+        );
 
         let adv = line.len() - 1 - self.offset;
-        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
+        container.get_mut(self.arena).sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -1872,7 +1858,7 @@ where
 
     fn handle_footnote(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1887,21 +1873,21 @@ where
         let offset = self.first_nonspace + *matched - self.offset;
         self.advance_offset(line, offset, false);
         *container = self.add_child(
-            container,
+            *container,
             NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
                 name: str::from_utf8(c).unwrap().to_string(),
                 total_references: 0,
             }),
             self.first_nonspace + 1,
         );
-        container.data.borrow_mut().internal_offset = *matched;
+        container.get_mut(self.arena).internal_offset = *matched;
 
         true
     }
 
     fn detect_description_list(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1917,7 +1903,7 @@ where
 
     fn handle_description_list(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1944,14 +1930,14 @@ where
         depth: usize,
         nl: &mut NodeList,
     ) -> bool {
-        (!indented || node_matches!(container, NodeValue::List(..)))
+        (!indented || node_matches!(self.arena, container, NodeValue::List(..)))
             && self.indent < 4
             && depth < MAX_LIST_DEPTH
             && unwrap_into_2(
                 parse_list_marker(
                     line,
                     self.first_nonspace,
-                    node_matches!(container, NodeValue::Paragraph),
+                    node_matches!(self.arena, container, NodeValue::Paragraph),
                 ),
                 matched,
                 nl,
@@ -1960,7 +1946,7 @@ where
 
     fn handle_list(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         matched: &mut usize,
@@ -1995,14 +1981,14 @@ where
 
         nl.marker_offset = self.indent;
 
-        if match container.data.borrow().value {
+        if match container.get(self.arena).value {
             NodeValue::List(ref mnl) => !lists_match(nl, mnl),
             _ => true,
         } {
-            *container = self.add_child(container, NodeValue::List(*nl), self.first_nonspace + 1);
+            *container = self.add_child(*container, NodeValue::List(*nl), self.first_nonspace + 1);
         }
 
-        *container = self.add_child(container, NodeValue::Item(*nl), self.first_nonspace + 1);
+        *container = self.add_child(*container, NodeValue::Item(*nl), self.first_nonspace + 1);
 
         true
     }
@@ -2013,7 +1999,7 @@ where
 
     fn handle_code_block(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut AstNode,
         line: &[u8],
         indented: bool,
         maybe_lazy: bool,
@@ -2031,7 +2017,7 @@ where
             info: String::new(),
             literal: String::new(),
         };
-        *container = self.add_child(container, NodeValue::CodeBlock(ncb), self.offset + 1);
+        *container = self.add_child(*container, NodeValue::CodeBlock(ncb), self.offset + 1);
 
         true
     }
@@ -2046,12 +2032,7 @@ where
             )
     }
 
-    fn handle_alert(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
-        indented: bool,
-    ) -> bool {
+    fn handle_alert(&mut self, container: &mut AstNode, line: &[u8], indented: bool) -> bool {
         let mut alert_type: AlertType = Default::default();
 
         if !self.detect_alert(line, indented, &mut alert_type) {
@@ -2096,19 +2077,20 @@ where
         let offset = self.curline_len - self.offset - 1;
         self.advance_offset(line, offset, false);
 
-        *container = self.add_child(container, NodeValue::Alert(na), alert_startpos + 1);
+        *container = self.add_child(*container, NodeValue::Alert(na), alert_startpos + 1);
 
         true
     }
 
-    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut AstNode, line: &[u8], all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
+        let mut maybe_lazy = node_matches!(self.arena, self.current, NodeValue::Paragraph);
         let mut depth = 0;
 
         while !node_matches!(
+            self.arena,
             container,
             NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
         ) {
@@ -2132,7 +2114,7 @@ where
                 // block handled
             } else {
                 let new_container = if !indented && self.options.extension.table {
-                    table::try_opening_block(self, container, line)
+                    table::try_opening_block(self, *container, line)
                 } else {
                     None
                 };
@@ -2140,21 +2122,21 @@ where
                 match new_container {
                     Some((new_container, replace, mark_visited)) => {
                         if replace {
-                            container.insert_after(new_container);
-                            container.detach();
+                            container.insert_after(self.arena, new_container);
+                            container.remove_subtree(self.arena);
                             *container = new_container;
                         } else {
                             *container = new_container;
                         }
                         if mark_visited {
-                            container.data.borrow_mut().table_visited = true;
+                            container.get_mut(self.arena).table_visited = true;
                         }
                     }
                     _ => break,
                 }
             }
 
-            if container.data.borrow().value.accepts_lines() {
+            if container.get(self.arena).value.accepts_lines() {
                 break;
             }
 
@@ -2214,16 +2196,11 @@ where
         }
     }
 
-    fn parse_node_item_prefix(
-        &mut self,
-        line: &[u8],
-        container: &'a AstNode<'a>,
-        nl: &NodeList,
-    ) -> bool {
+    fn parse_node_item_prefix(&mut self, line: &[u8], container: AstNode, nl: &NodeList) -> bool {
         if self.indent >= nl.marker_offset + nl.padding {
             self.advance_offset(line, nl.marker_offset + nl.padding, true);
             true
-        } else if self.blank && container.first_child().is_some() {
+        } else if self.blank && container.first_child(self.arena).is_some() {
             let offset = self.first_nonspace - self.offset;
             self.advance_offset(line, offset, false);
             true
@@ -2235,13 +2212,13 @@ where
     fn parse_description_item_prefix(
         &mut self,
         line: &[u8],
-        container: &'a AstNode<'a>,
+        container: AstNode,
         di: &NodeDescriptionItem,
     ) -> bool {
         if self.indent >= di.marker_offset + di.padding {
             self.advance_offset(line, di.marker_offset + di.padding, true);
             true
-        } else if self.blank && container.first_child().is_some() {
+        } else if self.blank && container.first_child(self.arena).is_some() {
             let offset = self.first_nonspace - self.offset;
             self.advance_offset(line, offset, false);
             true
@@ -2253,11 +2230,11 @@ where
     fn parse_code_block_prefix(
         &mut self,
         line: &[u8],
-        container: &'a AstNode<'a>,
-        ast: &mut Ast,
+        container: AstNode,
         should_continue: &mut bool,
     ) -> bool {
-        let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
+        let (fenced, fence_char, fence_length, fence_offset) = match container.get(self.arena).value
+        {
             NodeValue::CodeBlock(ref ncb) => (
                 ncb.fenced,
                 ncb.fence_char,
@@ -2288,7 +2265,7 @@ where
         if matched >= fence_length {
             *should_continue = false;
             self.advance_offset(line, matched, false);
-            self.current = self.finalize_borrowed(container, ast).unwrap();
+            self.current = self.finalize(container).unwrap();
             return false;
         }
 
@@ -2308,31 +2285,31 @@ where
         }
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>, matched: usize) -> bool {
+    fn parse_desc_list_details(&mut self, container: &mut AstNode, matched: usize) -> bool {
         let mut tight = false;
-        let last_child = match container.last_child() {
+        let last_child = match container.last_child(&self.arena) {
             Some(lc) => lc,
             None => {
                 // Happens when the detail line is directly after the term,
                 // without a blank line between.
-                if !node_matches!(container, NodeValue::Paragraph) {
+                if !node_matches!(self.arena, container, NodeValue::Paragraph) {
                     // If the container is not a paragraph, then this can't
                     // be a description list item.
                     return false;
                 }
 
-                let parent = container.parent();
+                let parent = container.parent(&self.arena);
                 if parent.is_none() {
                     return false;
                 }
 
                 tight = true;
                 *container = parent.unwrap();
-                container.last_child().unwrap()
+                container.last_child(&self.arena).unwrap()
             }
         };
 
-        if node_matches!(last_child, NodeValue::Paragraph) {
+        if node_matches!(self.arena, last_child, NodeValue::Paragraph) {
             // We have found the details after the paragraph for the term.
             //
             // This paragraph is moved as a child of a new DescriptionTerm node.
@@ -2340,8 +2317,8 @@ where
             // If the node before the paragraph is a description list, the item
             // is added to it. If not, create a new list.
 
-            last_child.detach();
-            let last_child_sourcepos = last_child.data.borrow().sourcepos;
+            last_child.detach(&mut self.arena);
+            let last_child_sourcepos = last_child.get(self.arena).sourcepos;
 
             // TODO: description list sourcepos has issues.
             //
@@ -2358,18 +2335,18 @@ where
             //   is (l+1):0.
             //
             // See crate::tests::description_lists::sourcepos.
-            let list = match container.last_child() {
-                Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
-                    reopen_ast_nodes(lc);
+            let list = match container.last_child(&self.arena) {
+                Some(lc) if node_matches!(self.arena, lc, NodeValue::DescriptionList) => {
+                    reopen_ast_nodes(self.arena, lc);
                     lc
                 }
                 _ => {
                     let list = self.add_child(
-                        container,
+                        *container,
                         NodeValue::DescriptionList,
                         self.first_nonspace + 1,
                     );
-                    list.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+                    list.get_mut(&mut self.arena).sourcepos.start = last_child_sourcepos.start;
                     list
                 }
             };
@@ -2385,19 +2362,19 @@ where
                 NodeValue::DescriptionItem(metadata),
                 self.first_nonspace + 1,
             );
-            item.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+            item.get_mut(&mut self.arena).sourcepos.start = last_child_sourcepos.start;
             let term = self.add_child(item, NodeValue::DescriptionTerm, self.first_nonspace + 1);
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
-            term.append(last_child);
+            term.append_node(&mut self.arena, last_child);
 
             *container = details;
 
             true
-        } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
-            let parent = last_child.parent().unwrap();
-            let tight = match last_child.data.borrow().value {
+        } else if node_matches!(self.arena, last_child, NodeValue::DescriptionItem(..)) {
+            let parent = last_child.parent(&self.arena).unwrap();
+            let tight = match last_child.get(&self.arena).value {
                 NodeValue::DescriptionItem(ref ndi) => ndi.tight,
                 _ => false,
             };
@@ -2428,11 +2405,10 @@ where
     fn parse_multiline_block_quote_prefix(
         &mut self,
         line: &[u8],
-        container: &'a AstNode<'a>,
-        ast: &mut Ast,
+        container: AstNode,
         should_continue: &mut bool,
     ) -> bool {
-        let (fence_length, fence_offset) = match ast.value {
+        let (fence_length, fence_offset) = match container.get(self.arena).value {
             NodeValue::MultilineBlockQuote(ref node_value) => {
                 (node_value.fence_length, node_value.fence_offset)
             }
@@ -2452,14 +2428,12 @@ where
 
             // The last child, like an indented codeblock, could be left open.
             // Make sure it's finalized.
-            if nodes::last_child_is_open(container) {
-                let child = container.last_child().unwrap();
-                let child_ast = &mut *child.data.borrow_mut();
-
-                self.finalize_borrowed(child, child_ast).unwrap();
+            if container.last_child_is_open(self.arena) {
+                let child = container.last_child(&self.arena).unwrap();
+                self.finalize(child).unwrap();
             }
 
-            self.current = self.finalize_borrowed(container, ast).unwrap();
+            self.current = self.finalize(container).unwrap();
             return false;
         }
 
@@ -2471,45 +2445,38 @@ where
         true
     }
 
-    fn add_child(
-        &mut self,
-        mut parent: &'a AstNode<'a>,
-        value: NodeValue,
-        start_column: usize,
-    ) -> &'a AstNode<'a> {
-        while !nodes::can_contain_type(parent, &value) {
+    fn add_child(&mut self, mut parent: AstNode, value: NodeValue, start_column: usize) -> AstNode {
+        while !parent.can_contain_type(self.arena, &value) {
             parent = self.finalize(parent).unwrap();
         }
 
         assert!(start_column > 0);
 
         let child = Ast::new(value, (self.line_number, start_column).into());
-        let node = self.arena.alloc(Node::new(RefCell::new(child)));
-        parent.append(node);
-        node
+        parent.append_value(&mut self.arena, child)
     }
 
     fn add_text_to_container(
         &mut self,
-        mut container: &'a AstNode<'a>,
-        last_matched_container: &'a AstNode<'a>,
+        mut container: AstNode,
+        last_matched_container: AstNode,
         line: &[u8],
     ) {
         self.find_first_nonspace(line);
 
         if self.blank {
-            if let Some(last_child) = container.last_child() {
-                last_child.data.borrow_mut().last_line_blank = true;
+            if let Some(last_child) = container.last_child(&self.arena) {
+                last_child.get_mut(self.arena).last_line_blank = true;
             }
         }
 
-        container.data.borrow_mut().last_line_blank = self.blank
-            && match container.data.borrow().value {
+        container.get_mut(&mut self.arena).last_line_blank = self.blank
+            && match container.get(&self.arena).value {
                 NodeValue::BlockQuote | NodeValue::Heading(..) | NodeValue::ThematicBreak => false,
                 NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
                 NodeValue::Item(..) => {
-                    container.first_child().is_some()
-                        || container.data.borrow().sourcepos.start.line != self.line_number
+                    container.first_child(&self.arena).is_some()
+                        || container.get(&self.arena).sourcepos.start.line != self.line_number
                 }
                 NodeValue::MultilineBlockQuote(..) => false,
                 NodeValue::Alert(..) => false,
@@ -2517,28 +2484,28 @@ where
             };
 
         let mut tmp = container;
-        while let Some(parent) = tmp.parent() {
-            parent.data.borrow_mut().last_line_blank = false;
+        while let Some(parent) = tmp.parent(&self.arena) {
+            parent.get_mut(&mut self.arena).last_line_blank = false;
             tmp = parent;
         }
 
-        if !self.current.same_node(last_matched_container)
-            && container.same_node(last_matched_container)
+        if self.current != last_matched_container
+            && container == last_matched_container
             && !self.blank
             && (!self.options.extension.greentext
                 || !matches!(
-                    container.data.borrow().value,
+                    container.get(&self.arena).value,
                     NodeValue::BlockQuote | NodeValue::Document
                 ))
-            && node_matches!(self.current, NodeValue::Paragraph)
+            && node_matches!(self.arena, self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);
         } else {
-            while !self.current.same_node(last_matched_container) {
+            while self.current != last_matched_container {
                 self.current = self.finalize(self.current).unwrap();
             }
 
-            let add_text_result = match container.data.borrow().value {
+            let add_text_result = match container.get(&self.arena).value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 _ => AddTextResult::Otherwise,
@@ -2567,9 +2534,9 @@ where
                 _ => {
                     if self.blank {
                         // do nothing
-                    } else if container.data.borrow().value.accepts_lines() {
+                    } else if container.get(self.arena).value.accepts_lines() {
                         let mut line: Vec<u8> = line.into();
-                        if let NodeValue::Heading(ref nh) = container.data.borrow().value {
+                        if let NodeValue::Heading(ref nh) = container.get(self.arena).value {
                             if !nh.setext {
                                 strings::chop_trailing_hashtags(&mut line);
                             }
@@ -2611,8 +2578,8 @@ where
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &[u8]) {
-        let mut ast = node.data.borrow_mut();
+    fn add_line(&mut self, node: AstNode, line: &[u8]) {
+        let ast = node.get_mut(self.arena);
         assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
@@ -2632,7 +2599,7 @@ where
         }
     }
 
-    fn finish(&mut self, remaining: Vec<u8>) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: Vec<u8>) -> AstNode {
         if !remaining.is_empty() {
             self.process_line(&remaining);
         }
@@ -2643,7 +2610,7 @@ where
     }
 
     fn finalize_document(&mut self) {
-        while !self.current.same_node(self.root) {
+        while self.current != self.root {
             self.current = self.finalize(self.current).unwrap();
         }
 
@@ -2661,41 +2628,46 @@ where
         }
     }
 
-    fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-        self.finalize_borrowed(node, &mut node.data.borrow_mut())
-    }
-
-    fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
+    fn resolve_reference_link_definitions(&mut self, node: AstNode) -> bool {
         let mut seeked = 0;
+        let mut rrs_to_add = vec![];
+
         {
-            let mut pos = 0;
+            let content = &node.get(self.arena).content;
+            let mut pos_rr = (0, None);
             let mut seek: &[u8] = content.as_bytes();
             while !seek.is_empty()
                 && seek[0] == b'['
-                && unwrap_into(self.parse_reference_inline(seek), &mut pos)
+                && unwrap_into(self.parse_reference_inline(seek), &mut pos_rr)
             {
-                seek = &seek[pos..];
-                seeked += pos;
+                seek = &seek[pos_rr.0..];
+                seeked += pos_rr.0;
+                if let Some(rr) = pos_rr.1.take() {
+                    rrs_to_add.push(rr);
+                }
             }
         }
 
+        for (lab, rr) in rrs_to_add {
+            self.refmap.map.insert(lab, rr);
+        }
+
         if seeked != 0 {
+            let content = &mut node.get_mut(self.arena).content;
             *content = content[seeked..].to_string();
         }
 
-        !strings::is_blank(content.as_bytes())
+        !strings::is_blank(node.get(self.arena).content.as_bytes())
     }
 
-    fn finalize_borrowed(
-        &mut self,
-        node: &'a AstNode<'a>,
-        ast: &mut Ast,
-    ) -> Option<&'a AstNode<'a>> {
+    fn finalize(&mut self, node: AstNode) -> Option<AstNode> {
+        let parent = node.parent(&self.arena);
+        let ast = node.get_mut(self.arena);
+
         assert!(ast.open);
         ast.open = false;
 
         let content = &mut ast.content;
-        let parent = node.parent();
 
         if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
@@ -2714,9 +2686,9 @@ where
 
         match ast.value {
             NodeValue::Paragraph => {
-                let has_content = self.resolve_reference_link_definitions(content);
+                let has_content = self.resolve_reference_link_definitions(node);
                 if !has_content {
-                    node.detach();
+                    node.remove_subtree(&mut self.arena);
                 }
             }
             NodeValue::CodeBlock(ref mut ncb) => {
@@ -2761,33 +2733,12 @@ where
             NodeValue::HtmlBlock(ref mut nhb) => {
                 mem::swap(&mut nhb.literal, content);
             }
-            NodeValue::List(ref mut nl) => {
-                nl.tight = true;
-                let mut ch = node.first_child();
-
-                while let Some(item) = ch {
-                    if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
-                        nl.tight = false;
-                        break;
-                    }
-
-                    let mut subch = item.first_child();
-                    while let Some(subitem) = subch {
-                        if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
-                            && nodes::ends_with_blank_line(subitem)
-                        {
-                            nl.tight = false;
-                            break;
-                        }
-                        subch = subitem.next_sibling();
-                    }
-
-                    if !nl.tight {
-                        break;
-                    }
-
-                    ch = item.next_sibling();
-                }
+            NodeValue::List(_) => {
+                let tight = self.determine_list_tight(node);
+                let NodeValue::List(ref mut nl) = node.get_mut(self.arena).value else {
+                    unreachable!();
+                };
+                nl.tight = tight;
             }
             _ => (),
         }
@@ -2795,29 +2746,66 @@ where
         parent
     }
 
+    fn determine_list_tight(&self, node: AstNode) -> bool {
+        let mut tight = true;
+        let mut ch = node.first_child(&self.arena);
+
+        while let Some(item) = ch {
+            if item.get(&self.arena).last_line_blank && item.next_sibling(&self.arena).is_some() {
+                tight = false;
+                break;
+            }
+
+            let mut subch = item.first_child(&self.arena);
+            while let Some(subitem) = subch {
+                if (item.next_sibling(&self.arena).is_some()
+                    || subitem.next_sibling(&self.arena).is_some())
+                    && subitem.ends_with_blank_line(self.arena)
+                {
+                    tight = false;
+                    break;
+                }
+                subch = subitem.next_sibling(self.arena);
+            }
+
+            if !tight {
+                break;
+            }
+
+            ch = item.next_sibling(self.arena);
+        }
+
+        tight
+    }
+
     fn process_inlines(&mut self) {
         self.process_inlines_node(self.root);
     }
 
-    fn process_inlines_node(&mut self, node: &'a AstNode<'a>) {
-        for node in node.descendants() {
-            if node.data.borrow().value.contains_inlines() {
+    fn process_inlines_node(&mut self, node: AstNode) {
+        // XXX: acc Vec to avoid layering borrow for descendants with mutable
+        // borrow for parse_inlines. We can do better. Note that the same
+        // pattern repeats quite a few times in this module.
+        for node in node.descendants(self.arena).collect::<Vec<_>>() {
+            if node.get(&self.arena).value.contains_inlines() {
                 self.parse_inlines(node);
             }
         }
     }
 
-    fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
-        let delimiter_arena = Arena::new();
-        let node_data = node.data.borrow();
-        let content = strings::rtrim_slice(node_data.content.as_bytes());
+    fn parse_inlines(&mut self, node: AstNode) {
+        let mut delimiter_arena = Arena::new();
+        let node_data = node.get_mut(self.arena);
+        let content = mem::take(&mut node_data.content);
+        let line = node_data.sourcepos.start.line;
+
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
-            content,
-            node_data.sourcepos.start.line,
+            strings::rtrim_slice(content.as_bytes()),
+            line,
             &mut self.refmap,
-            &delimiter_arena,
+            &mut delimiter_arena,
         );
 
         while subj.parse_inline(node) {}
@@ -2828,42 +2816,35 @@ where
     }
 
     fn process_footnotes(&mut self) {
-        let mut map = HashMap::new();
-        Self::find_footnote_definitions(self.root, &mut map);
+        let mut fd_map = HashMap::new();
+        self.find_footnote_definitions(self.root, &mut fd_map);
 
-        let mut ix = 0;
-        Self::find_footnote_references(self.root, &mut map, &mut ix);
+        let mut next_ix = 0;
+        self.find_footnote_references(self.root, &mut fd_map, &mut next_ix);
 
-        if !map.is_empty() {
-            // In order for references to be found inside footnote definitions,
-            // such as `[^1]: another reference[^2]`,
-            // the node needed to remain in the AST. Now we can remove them.
-            Self::cleanup_footnote_definitions(self.root);
-        }
-
-        if ix > 0 {
-            let mut v = map.into_values().collect::<Vec<_>>();
-            v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
-            for f in v {
-                if f.ix.is_some() {
-                    match f.node.data.borrow_mut().value {
-                        NodeValue::FootnoteDefinition(ref mut nfd) => {
-                            nfd.name = f.name.to_string();
-                            nfd.total_references = f.total_references;
-                        }
-                        _ => unreachable!(),
-                    }
-                    self.root.append(f.node);
-                }
+        let mut fds = fd_map.into_values().collect::<Vec<_>>();
+        fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
+        for fd in fds {
+            if fd.ix.is_some() {
+                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.get_mut(self.arena).value
+                else {
+                    unreachable!()
+                };
+                nfd.name = fd.name.to_string();
+                nfd.total_references = fd.total_references;
+                self.root.append_node(self.arena, fd.node);
+            } else {
+                fd.node.remove_subtree(self.arena);
             }
         }
     }
 
     fn find_footnote_definitions(
-        node: &'a AstNode<'a>,
-        map: &mut HashMap<String, FootnoteDefinition<'a>>,
+        &self,
+        node: AstNode,
+        map: &mut HashMap<String, FootnoteDefinition>,
     ) {
-        match node.data.borrow().value {
+        match node.get(self.arena).value {
             NodeValue::FootnoteDefinition(ref nfd) => {
                 map.insert(
                     strings::normalize_label(&nfd.name, Case::Fold),
@@ -2876,22 +2857,26 @@ where
                 );
             }
             _ => {
-                for n in node.children() {
-                    Self::find_footnote_definitions(n, map);
+                for n in node.children(self.arena) {
+                    self.find_footnote_definitions(n, map);
                 }
             }
         }
     }
 
     fn find_footnote_references(
-        node: &'a AstNode<'a>,
+        &mut self,
+        node: AstNode,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let mut ast = node.data.borrow_mut();
         let mut replace = None;
-        match ast.value {
-            NodeValue::FootnoteReference(ref mut nfr) => {
+        match node.get(self.arena).value {
+            NodeValue::FootnoteReference(_) => {
+                let NodeValue::FootnoteReference(ref mut nfr) = node.get_mut(self.arena).value
+                else {
+                    unreachable!()
+                };
                 let normalized = strings::normalize_label(&nfr.name, Case::Fold);
                 if let Some(ref mut footnote) = map.get_mut(&normalized) {
                     let ix = match footnote.ix {
@@ -2911,8 +2896,9 @@ where
                 }
             }
             _ => {
-                for n in node.children() {
-                    Self::find_footnote_references(n, map, ixp);
+                // XXX: as in process_inlines_node.
+                for n in node.children(self.arena).collect::<Vec<_>>() {
+                    self.find_footnote_references(n, map, ixp);
                 }
             }
         }
@@ -2920,72 +2906,37 @@ where
         if let Some(mut label) = replace {
             label.insert_str(0, "[^");
             label.push(']');
-            ast.value = NodeValue::Text(label);
+            node.get_mut(self.arena).value = NodeValue::Text(label);
         }
     }
 
-    fn cleanup_footnote_definitions(node: &'a AstNode<'a>) {
-        match node.data.borrow().value {
-            NodeValue::FootnoteDefinition(_) => {
-                node.detach();
-            }
-            _ => {
-                for n in node.children() {
-                    Self::cleanup_footnote_definitions(n);
-                }
-            }
-        }
-    }
-
-    fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
+    fn postprocess_text_nodes(&mut self, node: AstNode) {
         self.postprocess_text_nodes_with_context(node, false);
     }
 
-    fn postprocess_text_nodes_with_context(
-        &mut self,
-        node: &'a AstNode<'a>,
-        in_bracket_context: bool,
-    ) {
+    fn postprocess_text_nodes_with_context(&mut self, node: AstNode, in_bracket_context: bool) {
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
         while let Some((node, in_bracket_context)) = stack.pop() {
-            let mut nch = node.first_child();
+            let mut nch = node.first_child(self.arena);
 
             while let Some(n) = nch {
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
-                let n_ast = &mut n.data.borrow_mut();
-                let mut sourcepos = n_ast.sourcepos;
-
+                let n_ast = n.get_mut(self.arena);
                 match n_ast.value {
-                    NodeValue::Text(ref mut root) => {
-                        // Join adjacent text nodes together, then post-process.
-                        // Record the original list of sourcepos and bytecounts
-                        // for the post-processing step.
-                        let mut spxv = VecDeque::new();
-                        spxv.push_back((sourcepos, root.len()));
-                        while let Some(ns) = n.next_sibling() {
-                            match ns.data.borrow().value {
-                                NodeValue::Text(ref adj) => {
-                                    root.push_str(adj);
-                                    let sp = ns.data.borrow().sourcepos;
-                                    spxv.push_back((sp, adj.len()));
-                                    sourcepos.end.column = sp.end.column;
-                                    ns.detach();
-                                }
-                                _ => break,
-                            }
-                        }
-
-                        self.postprocess_text_node_with_context(
-                            n,
-                            root,
-                            &mut sourcepos,
-                            spxv,
-                            in_bracket_context,
-                        );
-                        emptied = root.is_empty();
+                    NodeValue::Text(ref mut n_root) => {
+                        let root = mem::take(n_root);
+                        let (sourcepos, mut root) =
+                            self.postprocess_text_node(n, root, in_bracket_context);
+                        let n_ast = n.get_mut(self.arena);
+                        n_ast.sourcepos = sourcepos;
+                        let NodeValue::Text(ref mut n_root) = n_ast.value else {
+                            unreachable!()
+                        };
+                        mem::swap(&mut root, n_root);
+                        emptied = n_root.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -2995,16 +2946,14 @@ where
                     _ => {}
                 }
 
-                n_ast.sourcepos = sourcepos;
-
                 if !emptied {
                     children.push((n, child_in_bracket_context));
                 }
 
-                nch = n.next_sibling();
+                nch = n.next_sibling(self.arena);
 
                 if emptied {
-                    n.detach();
+                    n.remove_subtree(self.arena);
                 }
             }
 
@@ -3014,9 +2963,47 @@ where
         }
     }
 
+    fn postprocess_text_node(
+        &mut self,
+        node: AstNode,
+        mut root: String,
+        in_bracket_context: bool,
+    ) -> (Sourcepos, String) {
+        let ast = node.get_mut(self.arena);
+        let mut sourcepos = ast.sourcepos;
+
+        // Join adjacent text nodes together, then post-process.
+        // Record the original list of sourcepos and bytecounts
+        // for the post-processing step.
+        let mut spxv = VecDeque::new();
+        spxv.push_back((sourcepos, root.len()));
+        while let Some(ns) = node.next_sibling(self.arena) {
+            match ns.get(self.arena).value {
+                NodeValue::Text(ref adj) => {
+                    root.push_str(adj);
+                    let sp = ns.get(self.arena).sourcepos;
+                    spxv.push_back((sp, adj.len()));
+                    sourcepos.end.column = sp.end.column;
+                    ns.remove_subtree(self.arena);
+                }
+                _ => break,
+            }
+        }
+
+        self.postprocess_text_node_with_context(
+            node,
+            &mut root,
+            &mut sourcepos,
+            spxv,
+            in_bracket_context,
+        );
+
+        return (sourcepos, root);
+    }
+
     fn postprocess_text_node_with_context(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: AstNode,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spxv: VecDeque<(Sourcepos, usize)>,
@@ -3041,7 +3028,7 @@ where
 
     fn process_tasklist(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: AstNode,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
@@ -3057,22 +3044,24 @@ where
             return;
         }
 
-        let parent = node.parent().unwrap();
-        if node.previous_sibling().is_some() || parent.previous_sibling().is_some() {
+        let parent = node.parent(self.arena).unwrap();
+        if node.previous_sibling(self.arena).is_some()
+            || parent.previous_sibling(self.arena).is_some()
+        {
             return;
         }
 
-        if !node_matches!(parent, NodeValue::Paragraph) {
+        if !node_matches!(self.arena, parent, NodeValue::Paragraph) {
             return;
         }
 
-        let grandparent = parent.parent().unwrap();
-        if !node_matches!(grandparent, NodeValue::Item(..)) {
+        let grandparent = parent.parent(self.arena).unwrap();
+        if !node_matches!(self.arena, grandparent, NodeValue::Item(..)) {
             return;
         }
 
-        let great_grandparent = grandparent.parent().unwrap();
-        if !node_matches!(great_grandparent, NodeValue::List(..)) {
+        let great_grandparent = grandparent.parent(self.arena).unwrap();
+        if !node_matches!(self.arena, great_grandparent, NodeValue::List(..)) {
             return;
         }
 
@@ -3084,37 +3073,44 @@ where
         let adjust = spx.consume(end) + 1;
         assert_eq!(
             sourcepos.start.column,
-            parent.data.borrow().sourcepos.start.column
+            parent.get(self.arena).sourcepos.start.column
         );
 
         // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
         // so we remove it.
-        if sourcepos.end.column < adjust && node.next_sibling().is_none() {
-            parent.detach();
+        if sourcepos.end.column < adjust && node.next_sibling(self.arena).is_none() {
+            parent.remove_self(self.arena);
         } else {
             sourcepos.start.column = adjust;
-            parent.data.borrow_mut().sourcepos.start.column = adjust;
+            parent.get_mut(self.arena).sourcepos.start.column = adjust;
         }
 
-        grandparent.data.borrow_mut().value =
+        grandparent.get_mut(self.arena).value =
             NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
 
-        if let NodeValue::List(ref mut list) = &mut great_grandparent.data.borrow_mut().value {
+        if let NodeValue::List(ref mut list) = &mut great_grandparent.get_mut(self.arena).value {
             list.is_task_list = true;
         }
     }
 
-    fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
-        // In this case reference inlines rarely have delimiters
-        // so we often just need the minimal case
-        let delimiter_arena = Arena::with_capacity(0);
+    fn parse_reference_inline(
+        &self,
+        content: &[u8],
+    ) -> Option<(usize, Option<(String, ResolvedReference)>)> {
+        // XXX None of these are actually used by the calls we make below.
+        // Ideally we refactor Subject's input scanning methods so we don't need
+        // to create a Subject at all.
+        let mut unused_delimiter_arena = Arena::with_capacity(0);
+        let mut unused_node_arena = Arena::new();
+        let mut unused_refmap = inlines::RefMap::new();
+
         let mut subj = inlines::Subject::new(
-            self.arena,
+            &mut unused_node_arena,
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
-            &mut self.refmap,
-            &delimiter_arena,
+            &mut unused_refmap,
+            &mut unused_delimiter_arena,
         );
 
         let mut lab: String = match subj.link_label() {
@@ -3167,13 +3163,19 @@ where
         }
 
         lab = strings::normalize_label(&lab, Case::Fold);
+        let mut rr = None;
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab).or_insert(ResolvedReference {
-                url: String::from_utf8(strings::clean_url(url)).unwrap(),
-                title: String::from_utf8(strings::clean_title(&title)).unwrap(),
-            });
+            if !self.refmap.map.contains_key(&lab) {
+                rr = Some((
+                    lab,
+                    ResolvedReference {
+                        url: String::from_utf8(strings::clean_url(url)).unwrap(),
+                        title: String::from_utf8(strings::clean_title(&title)).unwrap(),
+                    },
+                ));
+            }
         }
-        Some(subj.pos)
+        Some((subj.pos, rr))
     }
 }
 
@@ -3318,10 +3320,10 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
         && list_data.bullet_char == item_data.bullet_char
 }
 
-fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
+fn reopen_ast_nodes<'a>(arena: &'a mut Arena<Ast>, mut ast: AstNode) {
     loop {
-        ast.data.borrow_mut().open = true;
-        ast = match ast.parent() {
+        ast.get_mut(arena).open = true;
+        ast = match ast.parent(arena) {
             Some(p) => p,
             None => return,
         }

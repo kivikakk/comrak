@@ -14,10 +14,10 @@ const HELP_START: &str =
     "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter\n";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
     let readme = std::fs::read_to_string("README.md")?;
-    let doc = parse_document(&arena, &readme, &Options::default());
+    let doc = parse_document(&mut arena, &readme, &Options::default());
 
     let cargo_toml = std::fs::read_to_string("Cargo.toml")?.parse::<Table>()?;
     let msrv = cargo_toml["package"].as_table().unwrap()["rust-version"]
@@ -27,8 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut in_msrv = false;
     let mut next_block_is_help_body = false;
 
-    for node in doc.descendants() {
-        match node.data.borrow_mut().value {
+    for node in doc.descendants(&arena).collect::<Vec<_>>() {
+        match node.get_mut(&mut arena).value {
             NodeValue::CodeBlock(ref mut ncb) => {
                 // Look for the Cargo.toml example block.
                 if ncb.info == "toml" && ncb.literal.starts_with(DEPENDENCIES) {
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     options.render.experimental_minimize_commonmark = true;
 
     let mut out = String::new();
-    format_commonmark(doc, &options, &mut out)?;
+    format_commonmark(&arena, doc, &options, &mut out)?;
     std::fs::write("README.md", &out)?;
 
     Ok(())

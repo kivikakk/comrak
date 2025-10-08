@@ -511,11 +511,11 @@ fn sourcepos() {
     options.extension.alerts = true;
 
     for (kind, (expecteds, text)) in node_values {
-        let arena = Arena::new();
-        let root = parse_document(&arena, text, &options);
+        let mut arena = Arena::new();
+        let root = parse_document(&mut arena, text, &options);
         let asts: Vec<_> = root
-            .descendants()
-            .filter(|d| NodeValueDiscriminants::from(&d.data.borrow().value) == kind)
+            .descendants(&arena)
+            .filter(|d| NodeValueDiscriminants::from(&d.get(&arena).value) == kind)
             .collect();
 
         if asts.len() != expecteds.len() {
@@ -528,7 +528,7 @@ fn sourcepos() {
         }
 
         for (ast, expected) in asts.into_iter().zip(expecteds) {
-            let actual = ast.data.borrow().sourcepos;
+            let actual = ast.get(&arena).sourcepos;
             assert_eq!(
                 *expected, actual,
                 "{} != {} for {:?}",

@@ -6,11 +6,11 @@ use super::*;
 fn round_trip_one_field() {
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let input = "---\nlayout: post\n---\nText\n";
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&mut arena, input, &options);
     let mut buf = String::new();
-    format_commonmark(root, &options, &mut buf).unwrap();
+    format_commonmark(&arena, root, &options, &mut buf).unwrap();
     assert_eq!(buf, input);
 }
 
@@ -18,11 +18,11 @@ fn round_trip_one_field() {
 fn round_trip_wide_delimiter() {
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("\u{04fc}".to_owned());
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let input = "\u{04fc}\nlayout: post\n\u{04fc}\nText\n";
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&mut arena, input, &options);
     let mut buf = String::new();
-    format_commonmark(root, &options, &mut buf).unwrap();
+    format_commonmark(&arena, root, &options, &mut buf).unwrap();
     assert_eq!(buf, input);
 }
 
@@ -93,12 +93,12 @@ fn trailing_space_open() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -109,12 +109,12 @@ fn leading_space_open() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -125,12 +125,12 @@ fn leading_space_close() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -141,12 +141,12 @@ fn trailing_space_close() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -157,12 +157,12 @@ fn second_line() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_none(), "no FrontMatter expected");
 }
@@ -173,12 +173,12 @@ fn fm_only_with_trailing_newline() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }
@@ -189,12 +189,12 @@ fn fm_only_without_trailing_newline() {
 
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some("---".to_owned());
-    let arena = Arena::new();
-    let root = parse_document(&arena, input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, input, &options);
 
     let found = root
-        .descendants()
-        .find(|n| matches!(n.data.borrow().value, NodeValue::FrontMatter(..)));
+        .descendants(&arena)
+        .find(|n| matches!(n.get(&arena).value, NodeValue::FrontMatter(..)));
 
     assert!(found.is_some(), "front matter expected");
 }

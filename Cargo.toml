@@ -35,7 +35,7 @@ required-features = ["cli", "syntect"]
 doc = false
 
 [dependencies]
-typed-arena = "2.0.2"
+indextree = "4.7.4"
 entities = "1.0.1"
 unicode_categories = "0.1.1"
 memchr = "2"
