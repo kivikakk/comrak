@@ -103,7 +103,9 @@ pub(crate) fn process_email_autolinks<'a>(
                     &mut asp,
                     spx,
                 );
-                after.get_mut(arena).sourcepos = asp;
+                let after_ast = after.get_mut(arena);
+                mem::swap(&mut remainder, after_ast.value.text_mut().unwrap());
+                after_ast.sourcepos = asp;
             }
 
             return;
