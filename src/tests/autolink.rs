@@ -357,8 +357,8 @@ fn autolink_failing_spec_underscores() {
 fn autolink_fuzz_leading_colon() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
-        "://-",
-        "<p><a href=\"://-\">://-</a></p>\n",
+        "://-.-",
+        "<p><a href=\"://-.-\">://-.-</a></p>\n",
         no_roundtrip,
     );
 }
@@ -367,8 +367,8 @@ fn autolink_fuzz_leading_colon() {
 fn autolink_fuzz_we() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
-        "we://w",
-        "<p><a href=\"we://w\">we://w</a></p>\n",
+        "we://w.w",
+        "<p><a href=\"we://w.w\">we://w.w</a></p>\n",
         no_roundtrip,
     );
 }
@@ -385,11 +385,7 @@ fn autolink_sourcepos() {
         ,
         (document (1:1-5:17) [
             (paragraph (1:1-1:13) [
-                (text (1:1-1:3) "a  ")
-                (link (1:4-1:10) "http://www.com" [
-                    (text (1:4-1:10) "www.com")
-                ])
-                (text (1:11-1:13) "  x")
+                (text (1:1-1:13) "a  www.com  x")
             ])
             (paragraph (3:1-3:21) [
                 (text (3:1-3:3) "b  ")
@@ -532,5 +528,14 @@ fn ipv6_relaxed() {
         [extension.autolink, parse.relaxed_autolinks],
         "hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x",
         "<p>hi: <a href=\"nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x\">nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</a></p>\n",
+    );
+}
+
+#[test]
+fn autolink_no_bare_www() {
+    html_opts!(
+        [extension.autolink],
+        concat!("www.\n"),
+        concat!("<p>www.</p>\n"),
     );
 }
