@@ -800,6 +800,12 @@ impl AstNode {
 
     #[inline]
     /// TODO
+    pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().detach(arena);
+    }
+
+    #[inline]
+    /// TODO
     pub fn remove_self(&self, arena: &mut Arena<Ast>) -> () {
         self.node_id().remove(arena);
     }
