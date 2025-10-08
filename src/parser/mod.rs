@@ -3079,7 +3079,7 @@ where
         // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
         // so we remove it.
         if sourcepos.end.column < adjust && node.next_sibling(self.arena).is_none() {
-            parent.remove_subtree(self.arena);
+            parent.remove_self(self.arena);
         } else {
             sourcepos.start.column = adjust;
             parent.get_mut(self.arena).sourcepos.start.column = adjust;
