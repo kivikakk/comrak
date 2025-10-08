@@ -817,7 +817,13 @@ impl AstNode {
 
     #[inline]
     /// TODO
-    pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
+    pub fn remove_self(&self, arena: &mut Arena<Ast>) -> () {
+        self.node_id().remove(arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn remove_subtree(&self, arena: &mut Arena<Ast>) -> () {
         self.node_id().remove_subtree(arena);
     }
 

@@ -11,13 +11,13 @@ fn test_paragraph_at_root_crash() {
     };
     let mut arena = Arena::new();
 
-    let para = parse_document(&mut arena, "para", &options)
-        .first_child(&arena)
-        .unwrap();
+    let doc = parse_document(&mut arena, "para", &options);
+
+    let para = doc.first_child(&arena).unwrap();
 
     // This is the bit we don't expect: what if the paragraph doesn't have a
     // parent at all?  Normally it should have at least a Document.
-    para.detach(&mut arena);
+    doc.remove_self(&mut arena);
 
     let mut output = String::new();
     html::format_document(&arena, para, &options, &mut output).unwrap();
@@ -39,9 +39,10 @@ fn test_empty_table_crash() {
         .unwrap();
 
     // What if the table has been emptied of *all* children?
-    while let Some(child) = table.first_child(&arena) {
-        child.detach(&mut arena);
-    }
+    table
+        .first_child(&arena)
+        .unwrap()
+        .remove_subtree(&mut arena);
 
     let mut output = String::new();
     html::format_document(&arena, table, &options, &mut output).unwrap();
@@ -61,18 +62,13 @@ fn test_table_cell_out_of_water_crash() {
 
     let doc = parse_document(&mut arena, "| x |\n| - |\n| z |", &options);
 
-    let table_row = doc
-        .first_child(&arena) // table
-        .unwrap()
-        .last_child(&arena) // table row
-        .unwrap();
-
-    let table_cell = table_row
-        .first_child(&arena) // table cell
-        .unwrap();
+    let table = doc.first_child(&arena).unwrap();
+    let table_row = table.last_child(&arena).unwrap();
+    let table_cell = table_row.first_child(&arena).unwrap();
 
     // What if the table cell has no owning table?
-    table_row.detach(&mut arena);
+    doc.remove_self(&mut arena);
+    table.remove_self(&mut arena);
 
     let mut output = String::new();
     html::format_document(&arena, table_cell, &options, &mut output).unwrap();
@@ -92,18 +88,14 @@ fn test_table_cell_out_of_school_crash() {
 
     let doc = parse_document(&mut arena, "| x |\n| - |\n| z |", &options);
 
-    let table_row = doc
-        .first_child(&arena) // table
-        .unwrap()
-        .last_child(&arena) // table row
-        .unwrap();
-
-    let table_cell = table_row
-        .first_child(&arena) // table cell
-        .unwrap();
+    let table = doc.first_child(&arena).unwrap();
+    let table_row = table.last_child(&arena).unwrap();
+    let table_cell = table_row.first_child(&arena).unwrap();
 
     // What if the table cell has no owning table row?
-    table_cell.detach(&mut arena);
+    doc.remove_self(&mut arena);
+    table.remove_self(&mut arena);
+    table_row.remove_self(&mut arena);
 
     let mut output = String::new();
     html::format_document(&arena, table_cell, &options, &mut output).unwrap();

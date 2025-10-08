@@ -2150,7 +2150,7 @@ where
                     Some((new_container, replace, mark_visited)) => {
                         if replace {
                             container.insert_after(self.arena, new_container);
-                            container.detach(self.arena);
+                            container.remove_subtree(self.arena);
                             *container = new_container;
                         } else {
                             *container = new_container;
@@ -2344,7 +2344,7 @@ where
             // If the node before the paragraph is a description list, the item
             // is added to it. If not, create a new list.
 
-            last_child.detach(&mut self.arena);
+            last_child.remove_subtree(&mut self.arena);
             let last_child_sourcepos = last_child.get(self.arena).sourcepos;
 
             // TODO: description list sourcepos has issues.
@@ -2724,7 +2724,7 @@ where
             NodeValue::Paragraph => {
                 let has_content = self.resolve_reference_link_definitions(node);
                 if !has_content {
-                    node.detach(&mut self.arena);
+                    node.remove_subtree(&mut self.arena);
                 }
             }
             NodeValue::CodeBlock(ref mut ncb) => {
@@ -2871,7 +2871,7 @@ where
                 nfd.total_references = fd.total_references;
                 self.root.append_node(self.arena, fd.node);
             } else {
-                fd.node.detach(self.arena);
+                fd.node.remove_subtree(self.arena);
             }
         }
     }
@@ -2990,7 +2990,7 @@ where
                 nch = n.next_sibling(self.arena);
 
                 if emptied {
-                    n.detach(self.arena);
+                    n.remove_subtree(self.arena);
                 }
             }
 
@@ -3021,7 +3021,7 @@ where
                     let sp = ns.get(self.arena).sourcepos;
                     spxv.push_back((sp, adj.len()));
                     sourcepos.end.column = sp.end.column;
-                    ns.detach(self.arena);
+                    ns.remove_subtree(self.arena);
                 }
                 _ => break,
             }
@@ -3148,7 +3148,7 @@ where
             // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
             // so we remove it.
             if sourcepos.end.column < adjust && node.next_sibling(self.arena).is_none() {
-                parent.detach(self.arena);
+                parent.remove_subtree(self.arena);
             } else {
                 sourcepos.start.column = adjust;
                 parent.data.borrow_mut().sourcepos.start.column = adjust;
