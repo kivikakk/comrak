@@ -818,7 +818,7 @@ impl AstNode {
     #[inline]
     /// TODO
     pub fn detach(&self, arena: &mut Arena<Ast>) -> () {
-        self.node_id().remove(arena);
+        self.node_id().remove_subtree(arena);
     }
 
     pub(crate) fn last_child_is_open(&self, arena: &Arena<Ast>) -> bool {

@@ -2853,33 +2853,25 @@ where
     }
 
     fn process_footnotes(&mut self) {
-        let mut map = HashMap::new();
-        self.find_footnote_definitions(self.root, &mut map);
+        let mut fd_map = HashMap::new();
+        self.find_footnote_definitions(self.root, &mut fd_map);
 
-        let mut ix = 0;
-        self.find_footnote_references(self.root, &mut map, &mut ix);
+        let mut next_ix = 0;
+        self.find_footnote_references(self.root, &mut fd_map, &mut next_ix);
 
-        if !map.is_empty() {
-            // In order for references to be found inside footnote definitions,
-            // such as `[^1]: another reference[^2]`,
-            // the node needed to remain in the AST. Now we can remove them.
-            self.cleanup_footnote_definitions(self.root);
-        }
-
-        if ix > 0 {
-            let mut v = map.into_values().collect::<Vec<_>>();
-            v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
-            for f in v {
-                if f.ix.is_some() {
-                    match f.node.get_mut(self.arena).value {
-                        NodeValue::FootnoteDefinition(ref mut nfd) => {
-                            nfd.name = f.name.to_string();
-                            nfd.total_references = f.total_references;
-                        }
-                        _ => unreachable!(),
-                    }
-                    self.root.append_node(self.arena, f.node);
-                }
+        let mut fds = fd_map.into_values().collect::<Vec<_>>();
+        fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
+        for fd in fds {
+            if fd.ix.is_some() {
+                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.get_mut(self.arena).value
+                else {
+                    unreachable!()
+                };
+                nfd.name = fd.name.to_string();
+                nfd.total_references = fd.total_references;
+                self.root.append_node(self.arena, fd.node);
+            } else {
+                fd.node.detach(self.arena);
             }
         }
     }
@@ -2918,7 +2910,6 @@ where
         let mut replace = None;
         match node.get(self.arena).value {
             NodeValue::FootnoteReference(_) => {
-                // ??? XXX
                 let NodeValue::FootnoteReference(ref mut nfr) = node.get_mut(self.arena).value
                 else {
                     unreachable!()
@@ -2953,20 +2944,6 @@ where
             label.insert_str(0, "[^");
             label.push(']');
             node.get_mut(self.arena).value = NodeValue::Text(label);
-        }
-    }
-
-    fn cleanup_footnote_definitions(&mut self, node: AstNode) {
-        match node.get(self.arena).value {
-            NodeValue::FootnoteDefinition(_) => {
-                node.detach(self.arena);
-            }
-            _ => {
-                // XXX: as in process_inlines_node.
-                for n in node.children(self.arena).collect::<Vec<_>>() {
-                    self.cleanup_footnote_definitions(n);
-                }
-            }
         }
     }
 
