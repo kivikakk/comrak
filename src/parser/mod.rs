@@ -2344,7 +2344,7 @@ where
             // If the node before the paragraph is a description list, the item
             // is added to it. If not, create a new list.
 
-            last_child.remove_subtree(&mut self.arena);
+            last_child.detach(&mut self.arena);
             let last_child_sourcepos = last_child.get(self.arena).sourcepos;
 
             // TODO: description list sourcepos has issues.
