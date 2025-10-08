@@ -974,7 +974,7 @@ impl AstNode {
     ///
     /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
     /// comrak, on the other hand, should always produce a valid tree.
-    pub fn validate(self, arena: &Arena<Ast>) -> Result<(), ValidationError> {
+    pub fn validate(self, arena: &Arena<Ast>) -> Result<(), ValidationError<'_>> {
         let mut stack = vec![self];
 
         while let Some(node) = stack.pop() {
