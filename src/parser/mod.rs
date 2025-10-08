@@ -2648,6 +2648,10 @@ where
             }
         }
 
+        for (lab, rr) in rrs_to_add {
+            self.refmap.map.insert(lab, rr);
+        }
+
         if seeked != 0 {
             let content = &mut node.get_mut(self.arena).content;
             *content = content[seeked..].to_string();
@@ -2934,8 +2938,6 @@ where
     }
 
     fn postprocess_text_nodes_with_context(&mut self, node: AstNode, in_bracket_context: bool) {
-        // XXX We probably want to collect the modifications in a changelist and
-        // then apply in one go.
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
@@ -3114,7 +3116,10 @@ where
         }
     }
 
-    fn parse_reference_inline(&self, content: &[u8]) -> Option<(usize, Option<ResolvedReference>)> {
+    fn parse_reference_inline(
+        &self,
+        content: &[u8],
+    ) -> Option<(usize, Option<(String, ResolvedReference)>)> {
         // XXX None of these are actually used by the calls we make below.
         // Ideally we refactor Subject's input scanning methods so we don't need
         // to create a Subject at all.
@@ -3183,10 +3188,15 @@ where
         lab = strings::normalize_label(&lab, Case::Fold);
         let mut rr = None;
         if !lab.is_empty() {
-            rr = Some(ResolvedReference {
-                url: String::from_utf8(strings::clean_url(url)).unwrap(),
-                title: String::from_utf8(strings::clean_title(&title)).unwrap(),
-            });
+            if !self.refmap.map.contains_key(&lab) {
+                rr = Some((
+                    lab,
+                    ResolvedReference {
+                        url: String::from_utf8(strings::clean_url(url)).unwrap(),
+                        title: String::from_utf8(strings::clean_title(&title)).unwrap(),
+                    },
+                ));
+            }
         }
         Some((subj.pos, rr))
     }
