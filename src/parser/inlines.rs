@@ -1424,7 +1424,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         // Drop completely "used up" delimiters, adjust sourcepos of those not,
         // and return the next closest one for processing.
         if opener_num_chars == 0 {
-            self.delimiter_arena[opener].get().inl.detach(self.arena);
+            self.delimiter_arena[opener]
+                .get()
+                .inl
+                .remove_subtree(self.arena);
             self.remove_delimiter(opener);
         } else {
             self.delimiter_arena[opener]
@@ -1437,7 +1440,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         }
 
         if closer_num_chars == 0 {
-            self.delimiter_arena[closer].get().inl.detach(self.arena);
+            self.delimiter_arena[closer]
+                .get()
+                .inl
+                .remove_subtree(self.arena);
             self.remove_delimiter(closer);
             self.delimiter_arena[closer].get().next.get()
         } else {
@@ -1567,7 +1573,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                         reverse = 0;
                     } else {
                         reverse -= prev.len();
-                        node.last_child(self.arena).unwrap().detach(self.arena);
+                        node.last_child(self.arena)
+                            .unwrap()
+                            .remove_subtree(self.arena);
                     }
                 }
                 _ => panic!("expected text node before autolink colon"),
@@ -1932,7 +1940,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                 for sibling in sibling_iterator {
                     match sibling.get(self.arena).value {
                         NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
-                            sibling.detach(self.arena);
+                            sibling.remove_subtree(self.arena);
                         }
                         _ => {}
                     };
@@ -1985,7 +1993,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             tmpch = tmp.next_sibling(self.arena);
             inl.append_node(self.arena, tmp);
         }
-        self.brackets[brackets_len - 1].inl_text.detach(self.arena);
+        self.brackets[brackets_len - 1]
+            .inl_text
+            .remove_subtree(self.arena);
         self.process_emphasis(self.brackets[brackets_len - 1].position);
         self.brackets.pop();
 
