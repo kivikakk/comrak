@@ -216,7 +216,7 @@ fn autolink_relaxed_links_schemes() {
         ],
         [
             "smb:///Volumes/shared/foo.pdf",
-            "<p><a href=\"smb:///Volumes/shared/foo.pdf\">smb:///Volumes/shared/foo.pdf</a></p>\n",
+            "<p>smb:///Volumes/shared/foo.pdf</p>\n",
         ],
         [
             "irc://irc.freenode.net/git",
@@ -512,7 +512,7 @@ fn ipv6_host_scoped() {
     html_opts!(
         [extension.autolink],
         "scoped https://[fe80::1ff:fe23:4567:890a%25eth2]",
-        "<p>scoped <a href=\"https://[fe80::1ff:fe23:4567:890a%25eth2]\">https://[fe80::1ff:fe23:4567:890a%25eth2]</a></p>\n",
+        "<p>scoped https://[fe80::1ff:fe23:4567:890a%25eth2]</p>\n",
     );
 }
 
@@ -527,7 +527,7 @@ fn ipv6_relaxed() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
         "hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x",
-        "<p>hi: <a href=\"nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x\">nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</a></p>\n",
+        "<p>hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</p>\n",
     );
 }
 
@@ -537,5 +537,20 @@ fn autolink_no_bare_www() {
         [extension.autolink],
         concat!("www.\n"),
         concat!("<p>www.</p>\n"),
+    );
+}
+
+#[test]
+fn autolink_no_bare_protocol() {
+    html_opts!(
+        [extension.autolink],
+        concat!("foo http:// foo\n"),
+        concat!("<p>foo http:// foo</p>\n"),
+    );
+
+    html_opts!(
+        [extension.autolink],
+        concat!("foo https:// foo\n"),
+        concat!("<p>foo https:// foo</p>\n"),
     );
 }
