@@ -241,7 +241,8 @@ pub fn www_match<'a>(
         return None;
     }
 
-    let mut link_end = check_domain(&contents[i..], false)?;
+    // Skip over "www." for domain validation, but account for its length in the overall link
+    let mut link_end = check_domain(&contents[i + 4..])? + 4;
 
     while i + link_end < contents.len() && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
@@ -278,7 +279,7 @@ pub fn www_match<'a>(
     Some((inl, 0, link_end))
 }
 
-fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
+fn check_domain(data: &[u8]) -> Option<usize> {
     let mut np = 0;
     let mut uscore1 = 0;
     let mut uscore2 = 0;
@@ -294,7 +295,7 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
             uscore2 = 0;
             np += 1;
         } else if !is_valid_hostchar(c) && c != '-' {
-            if uscore1 == 0 && uscore2 == 0 && (allow_short || np > 0) {
+            if uscore1 == 0 && uscore2 == 0 && np > 0 {
                 return Some(i);
             }
             return None;
@@ -303,7 +304,7 @@ fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
 
     if (uscore1 > 0 || uscore2 > 0) && np <= 10 {
         None
-    } else if allow_short || np > 0 {
+    } else if np > 0 {
         Some(data.len())
     } else {
         None
@@ -408,7 +409,7 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = check_domain(&contents[i + 3..], true)?;
+    let mut link_end = check_domain(&contents[i + 3..])?;
 
     while link_end < size - i && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
