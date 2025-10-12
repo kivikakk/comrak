@@ -178,6 +178,7 @@ enum Extension {
     Tasklist,
     Superscript,
     Footnotes,
+    InlineFootnotes,
     DescriptionLists,
     MultilineBlockQuotes,
     MathDollars,
@@ -264,6 +265,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .superscript(exts.contains(&Extension::Superscript))
         .maybe_header_ids(cli.header_ids)
         .footnotes(exts.contains(&Extension::Footnotes))
+        .inline_footnotes(exts.contains(&Extension::InlineFootnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
         .math_dollars(exts.contains(&Extension::MathDollars))

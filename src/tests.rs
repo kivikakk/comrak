@@ -15,6 +15,7 @@ mod escape;
 mod escaped_char_spans;
 mod footnotes;
 mod front_matter;
+mod inline_footnotes;
 mod fuzz;
 mod greentext;
 mod header_ids;
