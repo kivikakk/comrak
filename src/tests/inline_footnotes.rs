@@ -143,3 +143,27 @@ fn inline_footnote_with_code() {
     );
 }
 
+#[test]
+fn inline_footnote_multiline() {
+    html_opts!(
+        [extension.footnotes, extension.inline_footnotes],
+        concat!(
+            "Here is an inline note.^[Inline notes are easier to write, since\n",
+            "you don't have to pick an identifier and move down to type the\n",
+            "note.]\n"
+        ),
+        concat!(
+            "<p>Here is an inline note.<sup class=\"footnote-ref\"><a href=\"#fn-__inline_1\" id=\"fnref-__inline_1\" data-footnote-ref>1</a></sup></p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-__inline_1\">\n",
+            "<p>Inline notes are easier to write, since\n",
+            "you don't have to pick an identifier and move down to type the\n",
+            "note. <a href=\"#fnref-__inline_1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n"
+        ),
+    );
+}
+

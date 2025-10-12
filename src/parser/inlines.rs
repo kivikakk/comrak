@@ -2017,8 +2017,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             NodeValue::Paragraph,
             (1, 1).into(), // Use line 1 as base
         );
-        // Initialize line_offsets with a single entry for line 0
-        para_ast.line_offsets = vec![0];
+        // Build line_offsets by scanning for newlines in the content
+        let mut line_offsets = vec![0];
+        for (i, &byte) in content.iter().enumerate() {
+            if byte == b'\n' {
+                line_offsets.push(i + 1);
+            }
+        }
+        para_ast.line_offsets = line_offsets;
         let para_node = self.arena.alloc(Node::new(RefCell::new(para_ast)));
         def_node.append(para_node);
         
