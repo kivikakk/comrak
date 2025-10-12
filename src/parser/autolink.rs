@@ -241,7 +241,8 @@ pub fn www_match<'a>(
         return None;
     }
 
-    let mut link_end = check_domain(&contents[i..], false)?;
+    // Skip over "www." for domain validation, but account for its length in the overall link
+    let mut link_end = check_domain(&contents[i + 4..], relaxed_autolinks)? + 4;
 
     while i + link_end < contents.len() && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
@@ -408,7 +409,7 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = check_domain(&contents[i + 3..], true)?;
+    let mut link_end = check_domain(&contents[i + 3..], relaxed_autolinks)?;
 
     while link_end < size - i && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
