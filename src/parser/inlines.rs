@@ -2042,6 +2042,23 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         subj.process_emphasis(0);
         while subj.pop_bracket() {}
 
+        // Check if the parsed content is empty or contains only whitespace
+        // This handles whitespace-only content, null bytes, etc. generically
+        let has_non_whitespace_content = para_node.children().any(|child| {
+            let child_data = child.data.borrow();
+            match &child_data.value {
+                NodeValue::Text(text) => !text.trim().is_empty(),
+                NodeValue::SoftBreak | NodeValue::LineBreak => false,
+                _ => true, // Any other node type (link, emphasis, etc.) counts as content
+            }
+        });
+
+        if !has_non_whitespace_content {
+            // Content is empty or whitespace-only after parsing, treat as literal text
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+        }
+
         // Store the footnote definition
         self.footnote_defs.add_definition(def_node);
 
