@@ -2677,7 +2677,7 @@ where
         };
 
         self.process_inlines();
-        
+
         // Append auto-generated inline footnote definitions
         if self.options.extension.footnotes && self.options.extension.inline_footnotes {
             let inline_defs = self.footnote_defs.definitions();
@@ -2685,7 +2685,7 @@ where
                 self.root.append(*def);
             }
         }
-        
+
         if self.options.extension.footnotes {
             self.process_footnotes();
         }

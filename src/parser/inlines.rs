@@ -1944,10 +1944,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn handle_inline_footnote(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
-        
+
         // We're at ^, next should be [
         self.pos += 2; // Skip ^[
-        
+
         // Find the closing ]
         let mut depth = 1;
         let mut endpos = self.pos;
@@ -1962,36 +1962,28 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             }
             endpos += 1;
         }
-        
+
         if depth != 0 {
             // No matching closing bracket, treat as regular text
             self.pos = startpos + 1;
-            return Some(self.make_inline(
-                NodeValue::Text("^".to_string()),
-                startpos,
-                startpos,
-            ));
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
         }
-        
+
         // endpos is now one past the ], so adjust
         endpos -= 1;
-        
+
         // Extract the content
         let content = &self.input[self.pos..endpos];
-        
+
         // Empty inline footnote should not parse
         if content.is_empty() {
             self.pos = startpos + 1;
-            return Some(self.make_inline(
-                NodeValue::Text("^".to_string()),
-                startpos,
-                startpos,
-            ));
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
         }
-        
+
         // Generate unique name
         let name = self.footnote_defs.next_name();
-        
+
         // Create the footnote reference node
         let ref_node = self.make_inline(
             NodeValue::FootnoteReference(NodeFootnoteReference {
@@ -2002,7 +1994,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             startpos,
             endpos,
         );
-        
+
         // Parse the content as inlines
         let def_node = self.arena.alloc(Node::new(RefCell::new(Ast::new(
             NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
@@ -2011,7 +2003,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             }),
             (self.line, 1).into(),
         ))));
-        
+
         // Create a paragraph to hold the inline content
         let mut para_ast = Ast::new(
             NodeValue::Paragraph,
@@ -2027,7 +2019,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         para_ast.line_offsets = line_offsets;
         let para_node = self.arena.alloc(Node::new(RefCell::new(para_ast)));
         def_node.append(para_node);
-        
+
         // Parse the content recursively as inlines
         let delimiter_arena = Arena::new();
         let mut subj = Subject::new(
@@ -2039,17 +2031,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             self.footnote_defs,
             &delimiter_arena,
         );
-        
+
         while subj.parse_inline(para_node) {}
         subj.process_emphasis(0);
         while subj.pop_bracket() {}
-        
+
         // Store the footnote definition
         self.footnote_defs.add_definition(def_node);
-        
+
         // Move position past the closing ]
         self.pos = endpos + 1;
-        
+
         Some(ref_node)
     }
 
