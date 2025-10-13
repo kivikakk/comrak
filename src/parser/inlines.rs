@@ -477,11 +477,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     startpos += n;
                 }
 
-                Some(self.make_inline(
-                    NodeValue::Text(String::from_utf8(contents).unwrap()),
-                    startpos,
-                    endpos - 1,
-                ))
+                // Don't create empty text nodes - this can happen after trimming trailing
+                // whitespace and would cause sourcepos underflow in endpos - 1
+                if !contents.is_empty() {
+                    Some(self.make_inline(
+                        NodeValue::Text(String::from_utf8(contents).unwrap()),
+                        startpos,
+                        endpos - 1,
+                    ))
+                } else {
+                    None
+                }
             }
         };
 

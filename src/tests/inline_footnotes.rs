@@ -117,6 +117,26 @@ fn empty_inline_footnote_not_parsed() {
 }
 
 #[test]
+fn whitespace_only_inline_footnote() {
+    html_opts!(
+        [extension.footnotes, extension.inline_footnotes],
+        "Text^[\t\r]more.\n",
+        concat!(
+            "<p>Text<sup class=\"footnote-ref\"><a href=\"#fn-__inline_1\" id=\"fnref-__inline_1\" data-footnote-ref>1</a></sup>more.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-__inline_1\">\n",
+            "<p>\n",
+            " <a href=\"#fnref-__inline_1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
 fn inline_footnote_without_footnotes_enabled() {
     html_opts!(
         [extension.inline_footnotes],
