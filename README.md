@@ -16,7 +16,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.43"
+comrak = "0.44"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
@@ -115,9 +115,9 @@ Options:
           Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, description-lists, multiline-block-quotes, math-dollars, math-code,
-          wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript, spoiler,
-          greentext, alerts, cjk-friendly-emphasis]
+          footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
+          math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
+          spoiler, greentext, alerts, cjk-friendly-emphasis]
 
   -t, --to <FORMAT>
           Specify output format
@@ -255,6 +255,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Superscript
 - Header IDs
 - Footnotes
+- Inline footnotes
 - Description lists
 - Front matter
 - Multi-line blockquotes
