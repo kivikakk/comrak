@@ -1,3 +1,17 @@
+# [v0.44.0] - 2025-10-14
+
+## What's Changed
+* Add support for inline footnotes by @sheremetyev in https://github.com/kivikakk/comrak/pull/619
+* Make validation of autolinks stricter by @chamlis in https://github.com/kivikakk/comrak/pull/618
+
+## New Contributors
+* @sheremetyev made their first contribution in https://github.com/kivikakk/comrak/pull/619
+* @chamlis made their first contribution in https://github.com/kivikakk/comrak/pull/618
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.43.0...v0.44.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Reverts
