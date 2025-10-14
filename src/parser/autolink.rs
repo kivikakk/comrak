@@ -409,7 +409,7 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = check_domain(&contents[i + 3..], relaxed_autolinks)?;
+    let mut link_end = check_domain(&contents[i + 3..], relaxed_autolinks)? + 3;
 
     while link_end < size - i && !isspace(contents[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
