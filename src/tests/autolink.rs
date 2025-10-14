@@ -376,20 +376,20 @@ fn autolink_fuzz_we() {
 #[test]
 fn autolink_sourcepos() {
     assert_ast_match!(
-        [extension.autolink, parse.relaxed_autolinks],
-        "a  www.com  x\n"
+        [extension.autolink],
+        "a  www.makea.fish  x\n"
         "\n"
         "b  https://www.com  y\n"
         "\n"
         "c  foo@www.com  z\n"
         ,
         (document (1:1-5:17) [
-            (paragraph (1:1-1:13) [
+            (paragraph (1:1-1:20) [
                 (text (1:1-1:3) "a  ")
-                (link (1:4-1:10) "http://www.com" [
-                    (text (1:4-1:10) "www.com")
+                (link (1:4-1:17) "http://www.makea.fish" [
+                    (text (1:4-1:17) "www.makea.fish")
                 ])
-                (text (1:11-1:13) "  x")
+                (text (1:18-1:20) "  x")
             ])
             (paragraph (3:1-3:21) [
                 (text (3:1-3:3) "b  ")
