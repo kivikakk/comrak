@@ -255,6 +255,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - Superscript
 - Header IDs
 - Footnotes
+- Inline footnotes
 - Description lists
 - Front matter
 - Multi-line blockquotes
