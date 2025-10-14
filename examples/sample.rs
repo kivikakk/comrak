@@ -4,8 +4,8 @@ fn small() {
     use comrak::{markdown_to_html, Options};
 
     assert_eq!(
-        markdown_to_html("Hello, **世界**!", &Options::default()),
-        "<p>Hello, <strong>世界</strong>!</p>\n"
+        markdown_to_html("¡Olá, **世界**!", &Options::default()),
+        "<p>¡Olá, <strong>世界</strong>!</p>\n"
     );
 }
 
@@ -35,18 +35,18 @@ fn large() {
     }
 
     fn main() {
-        let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
-        let orig = "my";
-        let repl = "your";
+        let doc = "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n";
+        let orig = "pretty";
+        let repl = "beautiful";
         let html = replace_text(doc, orig, repl);
 
         println!("{}", html);
         // Output:
         //
-        // <p>This is your input.</p>
+        // <p>Hello, beautiful world!</p>
         // <ol>
-        // <li>Also <a href="#">your</a> input.</li>
-        // <li>Certainly <em>your</em> input.</li>
+        // <li>Do you like <a href="#">beautiful</a> paintings?</li>
+        // <li>Or <em>beautiful</em> music?</li>
         // </ol>
     }
 

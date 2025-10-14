@@ -179,8 +179,10 @@ And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
 ``` rust
 use comrak::{markdown_to_html, Options};
-assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
-           "<p>Hello, <strong>世界</strong>!</p>\n");
+assert_eq!(
+    markdown_to_html("¡Olá, **世界**!", &Options::default()),
+    "<p>¡Olá, <strong>世界</strong>!</p>\n"
+);
 ```
 
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
@@ -200,29 +202,29 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
     for node in root.descendants() {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
             // If the node is a text node, perform the string replacement.
-            *text = text.replace(orig_string, replacement);
+            *text = text.replace(orig_string, replacement)
         }
     }
 
-    let mut html = vec![];
+    let mut html = String::new();
     format_html(root, &Options::default(), &mut html).unwrap();
 
-    String::from_utf8(html).unwrap()
+    html
 }
 
 fn main() {
-    let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
-    let orig = "my";
-    let repl = "your";
-    let html = replace_text(&doc, &orig, &repl);
+    let doc = "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n";
+    let orig = "pretty";
+    let repl = "beautiful";
+    let html = replace_text(doc, orig, repl);
 
     println!("{}", html);
     // Output:
     //
-    // <p>This is your input.</p>
+    // <p>Hello, beautiful world!</p>
     // <ol>
-    // <li>Also <a href="#">your</a> input.</li>
-    // <li>Certainly <em>your</em> input.</li>
+    // <li>Do you like <a href="#">beautiful</a> paintings?</li>
+    // <li>Or <em>beautiful</em> music?</li>
     // </ol>
 }
 ```
