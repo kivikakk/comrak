@@ -12,7 +12,7 @@ cargo build --verbose --release
 
 cd vendor/cmark-gfm/test
 
-PROGRAM_ARG="--program=../../../target/release/comrak --syntax-highlighting none"
+PROGRAM_ARG="--program=../../../target/release/comrak --syntax-highlighting none --relaxed-autolinks"
 
 set +e
 

@@ -377,19 +377,19 @@ fn autolink_fuzz_we() {
 fn autolink_sourcepos() {
     assert_ast_match!(
         [extension.autolink],
-        "a  www.com  x\n"
+        "a  www.makea.fish  x\n"
         "\n"
         "b  https://www.com  y\n"
         "\n"
         "c  foo@www.com  z\n"
         ,
         (document (1:1-5:17) [
-            (paragraph (1:1-1:13) [
+            (paragraph (1:1-1:20) [
                 (text (1:1-1:3) "a  ")
-                (link (1:4-1:10) "http://www.com" [
-                    (text (1:4-1:10) "www.com")
+                (link (1:4-1:17) "http://www.makea.fish" [
+                    (text (1:4-1:17) "www.makea.fish")
                 ])
-                (text (1:11-1:13) "  x")
+                (text (1:18-1:20) "  x")
             ])
             (paragraph (3:1-3:21) [
                 (text (3:1-3:3) "b  ")
@@ -514,7 +514,7 @@ fn autolink_not_generated_inside_wikilinks() {
 #[test]
 fn ipv6_host_scoped() {
     html_opts!(
-        [extension.autolink],
+        [extension.autolink, parse.relaxed_autolinks],
         "scoped https://[fe80::1ff:fe23:4567:890a%25eth2]",
         "<p>scoped <a href=\"https://[fe80::1ff:fe23:4567:890a%25eth2]\">https://[fe80::1ff:fe23:4567:890a%25eth2]</a></p>\n",
     );
@@ -532,5 +532,35 @@ fn ipv6_relaxed() {
         [extension.autolink, parse.relaxed_autolinks],
         "hi: nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x",
         "<p>hi: <a href=\"nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x\">nex://[fe80::1ff:fe23:4567:890a%25eth2]/z/x</a></p>\n",
+    );
+}
+
+#[test]
+fn autolink_bare_www() {
+    html_opts!(
+        [extension.autolink],
+        "foo www. foo",
+        "<p>foo www. foo</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "foo www. foo",
+        "<p>foo <a href=\"http://www\">www</a>. foo</p>\n",
+    );
+}
+
+#[test]
+fn autolink_bare_scheme() {
+    html_opts!(
+        [extension.autolink],
+        "foo http:// foo",
+        "<p>foo http:// foo</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink, parse.relaxed_autolinks],
+        "foo http:// foo",
+        "<p>foo <a href=\"http://\">http://</a> foo</p>\n",
     );
 }
