@@ -1,17 +1,3 @@
-# [v0.44.0] - 2025-10-14
-
-## What's Changed
-* Add support for inline footnotes by @sheremetyev in https://github.com/kivikakk/comrak/pull/619
-* Make validation of autolinks stricter by @chamlis in https://github.com/kivikakk/comrak/pull/618
-
-## New Contributors
-* @sheremetyev made their first contribution in https://github.com/kivikakk/comrak/pull/619
-* @chamlis made their first contribution in https://github.com/kivikakk/comrak/pull/618
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.43.0...v0.44.0
-
----snip---
-
 Categories to use in this document, and the order in which to give them:
 
 * Reverts
@@ -25,7 +11,24 @@ Categories to use in this document, and the order in which to give them:
 * Build changes
 * Behind the scenes
 
-# [v0.44.0] - unreleased
+
+# [v0.44.0] - 2025-10-14
+
+Parser changes:
+
+* Autolink validation is now stricter in the default mode, to maintain conformance with the GitHub Flavored Markdown autolinks extension spec. Those parses which previously worked but no longer do --- such as `http://localhost` (!), `www.com` (!?), or `https://` (!?!) --- are now part of the `relaxed_autolinks` option. See more discussion in the PR. (by @chamlis in https://github.com/kivikakk/comrak/pull/618)
+
+New APIs:
+
+* You can write footnotes with their body inline by enabling the `inline_footnotes` extension and using the syntax `^[footnote content]` (by @sheremetyev in https://github.com/kivikakk/comrak/pull/619)
+
+## New Contributors
+
+* @sheremetyev made their first contribution in https://github.com/kivikakk/comrak/pull/619
+* @chamlis made their first contribution in https://github.com/kivikakk/comrak/pull/618
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.43.0...v0.44.0
+
 
 # [v0.43.0] - 2025-09-29
 
