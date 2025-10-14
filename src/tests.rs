@@ -20,6 +20,7 @@ mod greentext;
 mod header_ids;
 #[path = "tests/html.rs"]
 mod html_;
+mod inline_footnotes;
 mod math;
 mod multiline_block_quotes;
 mod options;

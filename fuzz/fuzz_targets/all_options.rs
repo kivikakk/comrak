@@ -19,6 +19,7 @@ fuzz_target!(|s: &str| {
         superscript: true,
         header_ids: Some("user-content-".to_string()),
         footnotes: true,
+        inline_footnotes: true,
         description_lists: true,
         front_matter_delimiter: Some("---".to_string()),
         multiline_block_quotes: true,

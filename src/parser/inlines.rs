@@ -2,8 +2,8 @@ use crate::arena_tree::Node;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, NodeCode, NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink,
-    Sourcepos,
+    Ast, AstNode, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
+    NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::autolink;
 #[cfg(feature = "shortcodes")]
@@ -131,7 +131,7 @@ impl FlankingCheckHelper for char {
     }
 }
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a>>,
     options: &'o Options<'c>,
     pub input: &'i [u8],
@@ -141,6 +141,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c> {
     line_offset: usize,
     flags: Flags,
     pub refmap: &'r mut RefMap,
+    footnote_defs: &'p FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
@@ -192,6 +193,34 @@ impl RefMap {
     }
 }
 
+pub struct FootnoteDefs<'a> {
+    defs: RefCell<Vec<&'a AstNode<'a>>>,
+    counter: RefCell<usize>,
+}
+
+impl<'a> FootnoteDefs<'a> {
+    pub fn new() -> Self {
+        Self {
+            defs: RefCell::new(Vec::new()),
+            counter: RefCell::new(0),
+        }
+    }
+
+    pub fn next_name(&self) -> String {
+        let mut counter = self.counter.borrow_mut();
+        *counter += 1;
+        format!("__inline_{}", *counter)
+    }
+
+    pub fn add_definition(&self, def: &'a AstNode<'a>) {
+        self.defs.borrow_mut().push(def);
+    }
+
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<&'a AstNode<'a>>> {
+        self.defs.borrow()
+    }
+}
+
 pub struct Delimiter<'a: 'd, 'd> {
     inl: &'a AstNode<'a>,
     position: usize,
@@ -231,13 +260,14 @@ struct WikilinkComponents<'i> {
     link_label: Option<(&'i [u8], usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
+impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
         options: &'o Options<'c>,
         input: &'i [u8],
         line: usize,
         refmap: &'r mut RefMap,
+        footnote_defs: &'p FootnoteDefs<'a>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
         let mut s = Subject {
@@ -250,6 +280,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             line_offset: 0,
             flags: Flags::default(),
             refmap,
+            footnote_defs,
             delimiter_arena,
             last_delimiter: None,
             brackets: vec![],
@@ -272,7 +303,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
         }
-        if options.extension.superscript {
+        if options.extension.superscript || options.extension.inline_footnotes {
             s.special_chars[b'^' as usize] = true;
         }
         #[cfg(feature = "shortcodes")]
@@ -402,8 +433,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
             '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
                 Some(self.handle_delim(b'~'))
             }
-            '^' if self.options.extension.superscript && !self.within_brackets => {
-                Some(self.handle_delim(b'^'))
+            '^' => {
+                // Check for inline footnote first
+                if self.options.extension.footnotes
+                    && self.options.extension.inline_footnotes
+                    && self.peek_char_n(1) == Some(&(b'['))
+                {
+                    self.handle_inline_footnote()
+                } else if self.options.extension.superscript && !self.within_brackets {
+                    Some(self.handle_delim(b'^'))
+                } else {
+                    // Just regular text
+                    self.pos += 1;
+                    Some(self.make_inline(
+                        NodeValue::Text("^".to_string()),
+                        self.pos - 1,
+                        self.pos - 1,
+                    ))
+                }
             }
             '$' => Some(self.handle_dollars(&node_ast.line_offsets)),
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
@@ -430,11 +477,17 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
                     startpos += n;
                 }
 
-                Some(self.make_inline(
-                    NodeValue::Text(String::from_utf8(contents).unwrap()),
-                    startpos,
-                    endpos - 1,
-                ))
+                // Don't create empty text nodes - this can happen after trimming trailing
+                // whitespace and would cause sourcepos underflow in endpos - 1
+                if !contents.is_empty() {
+                    Some(self.make_inline(
+                        NodeValue::Text(String::from_utf8(contents).unwrap()),
+                        startpos,
+                        endpos - 1,
+                    ))
+                } else {
+                    None
+                }
             }
         };
 
@@ -1893,6 +1946,126 @@ impl<'a, 'r, 'o, 'd, 'i, 'c> Subject<'a, 'r, 'o, 'd, 'i, 'c> {
         if !is_image {
             self.no_link_openers = true;
         }
+    }
+
+    fn handle_inline_footnote(&mut self) -> Option<&'a AstNode<'a>> {
+        let startpos = self.pos;
+
+        // We're at ^, next should be [
+        self.pos += 2; // Skip ^[
+
+        // Find the closing ]
+        let mut depth = 1;
+        let mut endpos = self.pos;
+        while endpos < self.input.len() && depth > 0 {
+            match self.input[endpos] {
+                b'[' => depth += 1,
+                b']' => depth -= 1,
+                b'\\' if endpos + 1 < self.input.len() => {
+                    endpos += 1; // Skip escaped character
+                }
+                _ => {}
+            }
+            endpos += 1;
+        }
+
+        if depth != 0 {
+            // No matching closing bracket, treat as regular text
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+        }
+
+        // endpos is now one past the ], so adjust
+        endpos -= 1;
+
+        // Extract the content
+        let content = &self.input[self.pos..endpos];
+
+        // Empty inline footnote should not parse
+        if content.is_empty() {
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+        }
+
+        // Generate unique name
+        let name = self.footnote_defs.next_name();
+
+        // Create the footnote reference node
+        let ref_node = self.make_inline(
+            NodeValue::FootnoteReference(NodeFootnoteReference {
+                name: name.clone(),
+                ref_num: 0,
+                ix: 0,
+            }),
+            startpos,
+            endpos,
+        );
+
+        // Parse the content as inlines
+        let def_node = self.arena.alloc(Node::new(RefCell::new(Ast::new(
+            NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                name: name.clone(),
+                total_references: 0,
+            }),
+            (self.line, 1).into(),
+        ))));
+
+        // Create a paragraph to hold the inline content
+        let mut para_ast = Ast::new(
+            NodeValue::Paragraph,
+            (1, 1).into(), // Use line 1 as base
+        );
+        // Build line_offsets by scanning for newlines in the content
+        let mut line_offsets = vec![0];
+        for (i, &byte) in content.iter().enumerate() {
+            if byte == b'\n' {
+                line_offsets.push(i + 1);
+            }
+        }
+        para_ast.line_offsets = line_offsets;
+        let para_node = self.arena.alloc(Node::new(RefCell::new(para_ast)));
+        def_node.append(para_node);
+
+        // Parse the content recursively as inlines
+        let delimiter_arena = Arena::new();
+        let mut subj = Subject::new(
+            self.arena,
+            self.options,
+            content,
+            1, // Use line 1 to match the paragraph's sourcepos
+            self.refmap,
+            self.footnote_defs,
+            &delimiter_arena,
+        );
+
+        while subj.parse_inline(para_node) {}
+        subj.process_emphasis(0);
+        while subj.pop_bracket() {}
+
+        // Check if the parsed content is empty or contains only whitespace
+        // This handles whitespace-only content, null bytes, etc. generically
+        let has_non_whitespace_content = para_node.children().any(|child| {
+            let child_data = child.data.borrow();
+            match &child_data.value {
+                NodeValue::Text(text) => !text.trim().is_empty(),
+                NodeValue::SoftBreak | NodeValue::LineBreak => false,
+                _ => true, // Any other node type (link, emphasis, etc.) counts as content
+            }
+        });
+
+        if !has_non_whitespace_content {
+            // Content is empty or whitespace-only after parsing, treat as literal text
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+        }
+
+        // Store the footnote definition
+        self.footnote_defs.add_definition(def_node);
+
+        // Move position past the closing ]
+        self.pos = endpos + 1;
+
+        Some(ref_node)
     }
 
     pub fn link_label(&mut self) -> Option<&str> {

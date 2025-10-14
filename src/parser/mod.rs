@@ -141,6 +141,7 @@ pub struct BrokenLinkReference<'l> {
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: RefMap,
+    footnote_defs: inlines::FootnoteDefs<'a>,
     root: &'a AstNode<'a>,
     current: &'a AstNode<'a>,
     line_number: usize,
@@ -326,6 +327,25 @@ pub struct ExtensionOptions<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub footnotes: bool,
+
+    /// Enables the inline footnotes extension.
+    ///
+    /// Allows inline footnote syntax `^[content]` where the content can include
+    /// inline markup. Inline footnotes are automatically converted to regular
+    /// footnotes with auto-generated names and share the same numbering sequence.
+    ///
+    /// Requires `footnotes` to be enabled as well.
+    ///
+    /// ```
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.footnotes = true;
+    /// options.extension.inline_footnotes = true;
+    /// assert_eq!(markdown_to_html("Hi^[An inline note].\n", &options),
+    ///            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-__inline_1\" id=\"fnref-__inline_1\" data-footnote-ref>1</a></sup>.</p>\n<section class=\"footnotes\" data-footnotes>\n<ol>\n<li id=\"fn-__inline_1\">\n<p>An inline note <a href=\"#fnref-__inline_1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n</li>\n</ol>\n</section>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub inline_footnotes: bool,
 
     /// Enables the description lists extension.
     ///
@@ -1192,6 +1212,7 @@ where
         Parser {
             arena,
             refmap: RefMap::new(),
+            footnote_defs: inlines::FootnoteDefs::new(),
             root,
             current: root,
             line_number: 0,
@@ -2656,6 +2677,15 @@ where
         };
 
         self.process_inlines();
+
+        // Append auto-generated inline footnote definitions
+        if self.options.extension.footnotes && self.options.extension.inline_footnotes {
+            let inline_defs = self.footnote_defs.definitions();
+            for def in inline_defs.iter() {
+                self.root.append(*def);
+            }
+        }
+
         if self.options.extension.footnotes {
             self.process_footnotes();
         }
@@ -2817,6 +2847,7 @@ where
             content,
             node_data.sourcepos.start.line,
             &mut self.refmap,
+            &self.footnote_defs,
             &delimiter_arena,
         );
 
@@ -3114,6 +3145,7 @@ where
             content,
             0, // XXX -1 in upstream; never used?
             &mut self.refmap,
+            &self.footnote_defs,
             &delimiter_arena,
         );
 
