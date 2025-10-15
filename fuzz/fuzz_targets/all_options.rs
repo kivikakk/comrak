@@ -51,6 +51,7 @@ fuzz_target!(|s: &str| {
         relaxed_autolinks: true,
         broken_link_callback: Some(Arc::new(cb)),
         ignore_setext: true,
+        tasklist_in_table: true,
     };
 
     let render = RenderOptions {
