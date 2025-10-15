@@ -15,7 +15,7 @@ use crate::nodes::{
     TableAlignment,
 };
 use crate::parser::{Options, Plugins};
-use crate::scanners;
+use crate::{node_matches, scanners};
 use std::collections::HashMap;
 use std::fmt::{self, Write};
 use std::str;
@@ -1208,15 +1208,25 @@ fn render_task_item<'a, T>(
         unreachable!()
     };
 
+    let write_li = node
+        .parent()
+        .map(|p| node_matches!(p, NodeValue::List(_)))
+        .unwrap_or_default();
+
     if entering {
         context.cr()?;
-        context.write_str("<li")?;
-        if context.options.render.tasklist_classes {
-            context.write_str(" class=\"task-list-item\"")?;
+        if write_li {
+            context.write_str("<li")?;
+            if context.options.render.tasklist_classes {
+                context.write_str(" class=\"task-list-item\"")?;
+            }
+            render_sourcepos(context, node)?;
+            context.write_str(">")?;
         }
-        render_sourcepos(context, node)?;
-        context.write_str(">")?;
         context.write_str("<input type=\"checkbox\"")?;
+        if !write_li {
+            render_sourcepos(context, node)?;
+        }
         if context.options.render.tasklist_classes {
             context.write_str(" class=\"task-list-item-checkbox\"")?;
         }
@@ -1225,7 +1235,9 @@ fn render_task_item<'a, T>(
         }
         context.write_str(" disabled=\"\" /> ")?;
     } else {
-        context.write_str("</li>\n")?;
+        if write_li {
+            context.write_str("</li>\n")?;
+        }
     }
 
     Ok(ChildRendering::HTML)

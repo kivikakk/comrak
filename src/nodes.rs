@@ -630,12 +630,29 @@ impl LineColumn {
 }
 
 impl Ast {
-    /// Create a new AST node with the given value.
+    /// Create a new AST node with the given value and starting sourcepos. The
+    /// end column is set to zero; it is expected this will be set manually
+    /// or later in the parse.  Use [`new_with_sourcepos`] if you have full
+    /// sourcepos.
     pub fn new(value: NodeValue, start: LineColumn) -> Self {
         Ast {
             value,
             content: String::new(),
             sourcepos: (start.line, start.column, start.line, 0).into(),
+            internal_offset: 0,
+            open: true,
+            last_line_blank: false,
+            table_visited: false,
+            line_offsets: Vec::with_capacity(0),
+        }
+    }
+
+    /// Create a new AST node with the given value and sourcepos.
+    pub fn new_with_sourcepos(value: NodeValue, sourcepos: Sourcepos) -> Self {
+        Ast {
+            value,
+            content: String::new(),
+            sourcepos,
             internal_offset: 0,
             open: true,
             last_line_blank: false,
@@ -820,6 +837,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
                 | NodeValue::SpoileredText
                 | NodeValue::Underline
                 | NodeValue::Subscript
+                | NodeValue::TaskItem(_)
         ),
 
         #[cfg(feature = "shortcodes")]
@@ -841,6 +859,7 @@ pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
             | NodeValue::Underline
             | NodeValue::Subscript
             | NodeValue::ShortCode(..)
+            | NodeValue::TaskItem(_)
         ),
 
         NodeValue::MultilineBlockQuote(_) => {

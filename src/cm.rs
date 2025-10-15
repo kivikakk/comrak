@@ -1,15 +1,14 @@
 use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
-    NodeLink, NodeMath, NodeTable, NodeValue, NodeWikiLink,
+    NodeLink, NodeList, NodeMath, NodeTable, NodeValue, NodeWikiLink, TableAlignment,
 };
-use crate::nodes::{NodeList, TableAlignment};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::{nodes, Plugins};
+use crate::{node_matches, nodes, Plugins};
 pub use typed_arena::Arena;
 
 use std::cmp::max;
@@ -725,7 +724,13 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     }
 
     fn format_task_item(&mut self, symbol: Option<char>, node: &'a AstNode<'a>, entering: bool) {
-        self.format_item(node, entering);
+        if node
+            .parent()
+            .map(|p| node_matches!(p, NodeValue::List(_)))
+            .unwrap_or_default()
+        {
+            self.format_item(node, entering);
+        }
         if entering {
             write!(self, "[{}] ", symbol.unwrap_or(' ')).unwrap();
         }

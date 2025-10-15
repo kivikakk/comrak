@@ -200,6 +200,84 @@ fn tasklist_32_with_classes() {
 }
 
 #[test]
+fn tasklist_in_table() {
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            parse.tasklist_in_table,
+            render.sourcepos
+        ],
+        concat!(
+            "|     | name |\n",
+            "| --- | ---- |\n",
+            "| [ ] | Rell |\n",
+            "| [x] | Kai  |\n"
+        ),
+        concat!(
+            "<table data-sourcepos=\"1:1-4:14\">\n",
+            "<thead>\n",
+            "<tr data-sourcepos=\"1:1-1:14\">\n",
+            "<th data-sourcepos=\"1:2-1:6\"></th>\n",
+            "<th data-sourcepos=\"1:8-1:13\">name</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr data-sourcepos=\"3:1-3:14\">\n",
+            "<td data-sourcepos=\"3:2-3:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:8-3:13\">Rell</td>\n",
+            "</tr>\n",
+            "<tr data-sourcepos=\"4:1-4:14\">\n",
+            "<td data-sourcepos=\"4:2-4:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:8-4:13\">Kai</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            parse.tasklist_in_table,
+            parse.relaxed_tasklist_matching,
+            render.sourcepos
+        ],
+        concat!(
+            "|     | name |\n",
+            "| --- | ---- |\n",
+            "| [~] | Rell |\n",
+            "| [x] | Kai  |\n"
+        ),
+        concat!(
+            "<table data-sourcepos=\"1:1-4:14\">\n",
+            "<thead>\n",
+            "<tr data-sourcepos=\"1:1-1:14\">\n",
+            "<th data-sourcepos=\"1:2-1:6\"></th>\n",
+            "<th data-sourcepos=\"1:8-1:13\">name</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr data-sourcepos=\"3:1-3:14\">\n",
+            "<td data-sourcepos=\"3:2-3:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:8-3:13\">Rell</td>\n",
+            "</tr>\n",
+            "<tr data-sourcepos=\"4:1-4:14\">\n",
+            "<td data-sourcepos=\"4:2-4:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:8-4:13\">Kai</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [],
