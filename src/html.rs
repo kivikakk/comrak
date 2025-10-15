@@ -1234,10 +1234,8 @@ fn render_task_item<'a, T>(
             context.write_str(" checked=\"\"")?;
         }
         context.write_str(" disabled=\"\" /> ")?;
-    } else {
-        if write_li {
-            context.write_str("</li>\n")?;
-        }
+    } else if write_li {
+        context.write_str("</li>\n")?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1416,7 +1414,7 @@ pub fn render_math<'a, T>(
 pub fn render_math_code_block<'a, T>(
     context: &mut Context<T>,
     node: &'a AstNode<'a>,
-    literal: &String,
+    literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
     context.cr()?;
 
