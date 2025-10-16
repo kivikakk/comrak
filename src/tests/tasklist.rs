@@ -200,6 +200,117 @@ fn tasklist_32_with_classes() {
 }
 
 #[test]
+fn tasklist_in_table() {
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            parse.tasklist_in_table,
+            render.sourcepos
+        ],
+        concat!(
+            "|     | name |\n",
+            "| --- | ---- |\n",
+            "| [ ] | Rell |\n",
+            "| [x] | Kai  |\n"
+        ),
+        concat!(
+            "<table data-sourcepos=\"1:1-4:14\">\n",
+            "<thead>\n",
+            "<tr data-sourcepos=\"1:1-1:14\">\n",
+            "<th data-sourcepos=\"1:2-1:6\"></th>\n",
+            "<th data-sourcepos=\"1:8-1:13\">name</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr data-sourcepos=\"3:1-3:14\">\n",
+            "<td data-sourcepos=\"3:2-3:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:8-3:13\">Rell</td>\n",
+            "</tr>\n",
+            "<tr data-sourcepos=\"4:1-4:14\">\n",
+            "<td data-sourcepos=\"4:2-4:6\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:8-4:13\">Kai</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            parse.tasklist_in_table,
+            parse.relaxed_tasklist_matching,
+            render.sourcepos
+        ],
+        concat!(
+            "|         | name |\n",
+            "| ------- | ---- |\n",
+            "| [~]     | Rell |\n",
+            "| [x]     | Kai  |\n",
+            "| [x] No. | Ez   |\n"
+        ),
+        concat!(
+            "<table data-sourcepos=\"1:1-5:18\">\n",
+            "<thead>\n",
+            "<tr data-sourcepos=\"1:1-1:18\">\n",
+            "<th data-sourcepos=\"1:2-1:10\"></th>\n",
+            "<th data-sourcepos=\"1:12-1:17\">name</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr data-sourcepos=\"3:1-3:18\">\n",
+            "<td data-sourcepos=\"3:2-3:10\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:12-3:17\">Rell</td>\n",
+            "</tr>\n",
+            "<tr data-sourcepos=\"4:1-4:18\">\n",
+            "<td data-sourcepos=\"4:2-4:10\">\n",
+            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:12-4:17\">Kai</td>\n",
+            "</tr>\n",
+            "<tr data-sourcepos=\"5:1-5:18\">\n",
+            "<td data-sourcepos=\"5:2-5:10\">[x] No.</td>\n",
+            "<td data-sourcepos=\"5:12-5:17\">Ez</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n"
+        ),
+    );
+}
+
+#[test]
+fn tasklist_in_table_fuzz() {
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            extension.autolink,
+            parse.tasklist_in_table,
+            parse.ignore_setext
+        ],
+        "o\n-\t\r[ ] W@W.I[ ] ",
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>o</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>[ ] <a href=\"mailto:W@W.I\">W@W.I</a>[ ]</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [],

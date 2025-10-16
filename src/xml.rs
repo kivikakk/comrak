@@ -300,7 +300,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         let title = alert.title.as_ref().unwrap();
 
                         self.output.write_str(" title=\"")?;
-                        self.escape(&title)?;
+                        self.escape(title)?;
                         self.output.write_str("\"")?;
                     }
 

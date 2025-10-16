@@ -50,6 +50,8 @@ fuzz_target!(|s: &str| {
         relaxed_tasklist_matching: true,
         relaxed_autolinks: true,
         broken_link_callback: Some(Arc::new(cb)),
+        ignore_setext: true,
+        tasklist_in_table: true,
     };
 
     let render = RenderOptions {
@@ -62,7 +64,6 @@ fuzz_target!(|s: &str| {
         list_style: ListStyleType::Star,
         sourcepos: true,
         escaped_char_spans: true,
-        ignore_setext: true,
         ignore_empty_links: true,
         gfm_quirks: true,
         prefer_fenced: true,
