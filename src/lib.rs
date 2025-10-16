@@ -87,8 +87,6 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
 pub use html::Anchorizer;
-#[allow(deprecated)]
-pub use parser::parse_document_with_broken_link_callback;
 pub use parser::{
     parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions, ListStyleType,
     Options, ParseOptions, Plugins, RenderOptions, RenderPlugins, ResolvedReference, URLRewriter,

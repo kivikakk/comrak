@@ -31,21 +31,6 @@ fn exercise_full_api() {
 
     // Ensure the closure can modify its context.
     let blr_ctx_0 = std::sync::Arc::new(std::sync::Mutex::new(0));
-    #[allow(deprecated)]
-    let _: &AstNode = parse_document_with_broken_link_callback(
-        &arena,
-        "document",
-        &Options::default(),
-        std::sync::Arc::new(|blr: BrokenLinkReference| {
-            *blr_ctx_0.lock().unwrap() += 1;
-            let _: &str = blr.normalized;
-            let _: &str = blr.original;
-            Some(ResolvedReference {
-                url: String::new(),
-                title: String::new(),
-            })
-        }),
-    );
 
     let extension = ExtensionOptions::builder()
         .strikethrough(false)
