@@ -31,21 +31,6 @@ fn exercise_full_api() {
 
     // Ensure the closure can modify its context.
     let blr_ctx_0 = std::sync::Arc::new(std::sync::Mutex::new(0));
-    #[allow(deprecated)]
-    let _: &AstNode = parse_document_with_broken_link_callback(
-        &arena,
-        "document",
-        &Options::default(),
-        std::sync::Arc::new(|blr: BrokenLinkReference| {
-            *blr_ctx_0.lock().unwrap() += 1;
-            let _: &str = blr.normalized;
-            let _: &str = blr.original;
-            Some(ResolvedReference {
-                url: String::new(),
-                title: String::new(),
-            })
-        }),
-    );
 
     let extension = ExtensionOptions::builder()
         .strikethrough(false)
@@ -78,7 +63,8 @@ fn exercise_full_api() {
         .smart(false)
         .default_info_string("abc".to_string())
         .relaxed_tasklist_matching(false)
-        .relaxed_autolinks(false);
+        .relaxed_autolinks(false)
+        .ignore_setext(true);
 
     let _parse = parse.broken_link_callback(std::sync::Arc::new(|blr: BrokenLinkReference| {
         *blr_ctx_0.lock().unwrap() += 1;
@@ -100,7 +86,6 @@ fn exercise_full_api() {
         .list_style(ListStyleType::Dash)
         .sourcepos(false)
         .escaped_char_spans(false)
-        .ignore_setext(true)
         .ignore_empty_links(true)
         .gfm_quirks(true)
         .prefer_fenced(true)

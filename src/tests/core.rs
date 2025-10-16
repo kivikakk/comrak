@@ -122,7 +122,7 @@ fn setext_heading_sourcepos() {
 #[test]
 fn ignore_setext_heading() {
     html_opts!(
-        [render.ignore_setext],
+        [parse.ignore_setext],
         concat!("text text\n---"),
         concat!("<p>text text</p>\n<hr />\n"),
     );

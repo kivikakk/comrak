@@ -12,6 +12,14 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
+# unreleased
+
+Changed APIs:
+
+* `parse_document_with_broken_link_callback` has been removed!  This entrypoint has been deprecated since 0.25.0.
+* `options.render.ignore_setext` was moved to `options.parse.ignore_setext`, as its effect takes place only in the parse stage.
+
+
 # [v0.44.0] - 2025-10-14
 
 Parser changes:

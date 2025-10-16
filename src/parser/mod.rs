@@ -80,23 +80,6 @@ pub fn parse_document<'a>(
     parser.finish(linebuf)
 }
 
-/// Parse a Markdown document to an AST, specifying
-/// [`ParseOptions::broken_link_callback`].
-#[deprecated(
-    since = "0.25.0",
-    note = "The broken link callback has been moved into ParseOptions."
-)]
-pub fn parse_document_with_broken_link_callback<'a, 'c>(
-    arena: &'a Arena<AstNode<'a>>,
-    buffer: &str,
-    options: &Options,
-    callback: Arc<dyn BrokenLinkCallback + 'c>,
-) -> &'a AstNode<'a> {
-    let mut options_with_callback = options.clone();
-    options_with_callback.parse.broken_link_callback = Some(callback);
-    parse_document(arena, buffer, &options_with_callback)
-}
-
 /// The type of the callback used when a reference link is encountered with no
 /// matching reference.
 ///
@@ -766,6 +749,23 @@ pub struct ParseOptions<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub relaxed_autolinks: bool,
 
+    /// Ignore setext headings in input.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// let input = "setext heading\n---";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<h2>setext heading</h2>\n");
+    ///
+    /// options.parse.ignore_setext = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>setext heading</p>\n<hr />\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub ignore_setext: bool,
+
     /// In case the parser encounters any potential links that have a broken
     /// reference (e.g `[foo]` when there is no `[foo]: url` entry at the
     /// bottom) the provided callback will be called with the reference name,
@@ -975,23 +975,6 @@ pub struct RenderOptions {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub escaped_char_spans: bool,
-
-    /// Ignore setext headings in input.
-    ///
-    /// ```rust
-    /// # use comrak::{markdown_to_html, Options};
-    /// let mut options = Options::default();
-    /// let input = "setext heading\n---";
-    ///
-    /// assert_eq!(markdown_to_html(input, &options),
-    ///            "<h2>setext heading</h2>\n");
-    ///
-    /// options.render.ignore_setext = true;
-    /// assert_eq!(markdown_to_html(input, &options),
-    ///            "<p>setext heading</p>\n<hr />\n");
-    /// ```
-    #[cfg_attr(feature = "bon", builder(default))]
-    pub ignore_setext: bool,
 
     /// Ignore empty links in input.
     ///
@@ -1589,7 +1572,7 @@ where
     }
 
     fn setext_heading_line(&mut self, s: &[u8]) -> Option<SetextChar> {
-        match self.options.render.ignore_setext {
+        match self.options.parse.ignore_setext {
             false => scanners::setext_heading_line(s),
             true => None,
         }
