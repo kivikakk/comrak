@@ -290,6 +290,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .maybe_default_info_string(cli.default_info_string)
         .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
         .relaxed_autolinks(cli.relaxed_autolinks)
+        .ignore_setext(cli.ignore_setext)
         .build();
 
     let render = RenderOptions::builder()
@@ -303,7 +304,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .sourcepos(cli.sourcepos)
         .experimental_minimize_commonmark(cli.experimental_minimize_commonmark)
         .escaped_char_spans(cli.escaped_char_spans)
-        .ignore_setext(cli.ignore_setext)
         .ignore_empty_links(cli.ignore_empty_links)
         .gfm_quirks(cli.gfm_quirks || cli.gfm)
         .tasklist_classes(cli.tasklist_classes)

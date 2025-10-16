@@ -63,7 +63,8 @@ fn exercise_full_api() {
         .smart(false)
         .default_info_string("abc".to_string())
         .relaxed_tasklist_matching(false)
-        .relaxed_autolinks(false);
+        .relaxed_autolinks(false)
+        .ignore_setext(true);
 
     let _parse = parse.broken_link_callback(std::sync::Arc::new(|blr: BrokenLinkReference| {
         *blr_ctx_0.lock().unwrap() += 1;
@@ -85,7 +86,6 @@ fn exercise_full_api() {
         .list_style(ListStyleType::Dash)
         .sourcepos(false)
         .escaped_char_spans(false)
-        .ignore_setext(true)
         .ignore_empty_links(true)
         .gfm_quirks(true)
         .prefer_fenced(true)
