@@ -3077,6 +3077,13 @@ where
         }
     }
 
+    // Processes tasklist items in a text node.  This function
+    // must not detach `node`, as we iterate through siblings in
+    // `postprocess_text_nodes_with_context` and may end up relying on it
+    // remaining in place.
+    //
+    // `text` is the mutably borrowed textual content of `node`.  If it is empty
+    // after the call to `process_tasklist`, it will be properly cleaned up.
     fn process_tasklist(
         &mut self,
         node: &'a AstNode<'a>,
@@ -3105,8 +3112,15 @@ where
             if node.previous_sibling().is_some() || node.next_sibling().is_some() {
                 return;
             }
-            node.detach();
-            parent.append(
+
+            // For now, require the task item is the only content of the table cell.
+            // If we want to relax this later, we can.
+            if end != text.len() {
+                return;
+            }
+
+            text.drain(..end);
+            parent.prepend(
                 self.arena.alloc(
                     Ast::new_with_sourcepos(
                         NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
