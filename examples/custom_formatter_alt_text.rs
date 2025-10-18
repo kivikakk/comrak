@@ -56,7 +56,7 @@ fn main() {
         formatter,
         (),
     )
-    .unwrap_or_else(|_| unreachable!("writing to Vec<u8> cannot fail"));
+    .unwrap_or_else(|_| unreachable!("writing to String cannot fail"));
 
     println!("{out}");
 }

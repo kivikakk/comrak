@@ -7,8 +7,10 @@
 //!
 //! ```
 //! use comrak::{markdown_to_html, Options};
-//! assert_eq!(markdown_to_html("Hello, **世界**!", &Options::default()),
-//!            "<p>Hello, <strong>世界</strong>!</p>\n");
+//! assert_eq!(
+//!     markdown_to_html("Olá, **世界**!", &Options::default()),
+//!     "<p>Olá, <strong>世界</strong>!</p>\n"
+//! );
 //! ```
 //!
 //! Or you can parse the input into an AST yourself, manipulate it, and then use your desired
@@ -23,12 +25,12 @@
 //!
 //! let root = parse_document(
 //!     &arena,
-//!     "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n",
+//!     "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n",
 //!     &Options::default());
 //!
 //! for node in root.descendants() {
 //!     if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-//!         *text = text.replace("my", "your");
+//!         *text = text.replace("pretty", "beautiful");
 //!     }
 //! }
 //!
@@ -37,10 +39,10 @@
 //!
 //! assert_eq!(
 //!     &html,
-//!     "<p>This is your input.</p>\n\
+//!     "<p>Hello, beautiful world!</p>\n\
 //!      <ol>\n\
-//!      <li>Also <a href=\"#\">your</a> input.</li>\n\
-//!      <li>Certainly <em>your</em> input.</li>\n\
+//!      <li>Do you like <a href=\"#\">beautiful</a> paintings?</li>\n\
+//!      <li>Or <em>beautiful</em> music?</li>\n\
 //!      </ol>\n");
 //! # }
 //! ```

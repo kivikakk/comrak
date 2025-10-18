@@ -1508,7 +1508,7 @@ where
     ) -> (bool, &'a AstNode<'a>, bool) {
         let mut should_continue = true;
 
-        while nodes::last_child_is_open(container) {
+        while container.last_child_is_open() {
             container = container.last_child().unwrap();
             let ast = &mut *container.data.borrow_mut();
 
@@ -2480,7 +2480,7 @@ where
 
             // The last child, like an indented codeblock, could be left open.
             // Make sure it's finalized.
-            if nodes::last_child_is_open(container) {
+            if container.last_child_is_open() {
                 let child = container.last_child().unwrap();
                 let child_ast = &mut *child.data.borrow_mut();
 
@@ -2505,7 +2505,7 @@ where
         value: NodeValue,
         start_column: usize,
     ) -> &'a AstNode<'a> {
-        while !nodes::can_contain_type(parent, &value) {
+        while !parent.can_contain_type(&value) {
             parent = self.finalize(parent).unwrap();
         }
 
@@ -2811,7 +2811,7 @@ where
                     let mut subch = item.first_child();
                     while let Some(subitem) = subch {
                         if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
-                            && nodes::ends_with_blank_line(subitem)
+                            && subitem.ends_with_blank_line()
                         {
                             nl.tight = false;
                             break;

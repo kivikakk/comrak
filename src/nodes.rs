@@ -669,7 +669,7 @@ impl Ast {
 ///
 /// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
 ///
-/// ```no_run
+/// ```
 /// # use comrak::nodes::{AstNode, NodeValue};
 /// let root = AstNode::from(NodeValue::Document);
 /// ```
@@ -678,20 +678,18 @@ impl Ast {
 /// to assign sourcepos information, use the `From` trait to create an `AstNode`
 /// from an `Ast`:
 ///
-/// ```no_run
+/// ```
 /// # use comrak::nodes::{Ast, AstNode, NodeValue};
-/// let root = AstNode::from(Ast::new(
+/// let root = AstNode::from(Ast::new_with_sourcepos(
 ///     NodeValue::Paragraph,
-///     (4, 1).into(), // start_line, start_col
+///     (4, 1, 4, 10).into(),
 /// ));
 /// ```
-///
-/// Adjust the `end` position manually.
 ///
 /// For practical use, you'll probably need it allocated in an `Arena`, in which
 /// case you can use `.into()` to simplify creation:
 ///
-/// ```no_run
+/// ```
 /// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
@@ -726,6 +724,117 @@ pub enum ValidationError<'a> {
 }
 
 impl<'a> Node<'a, RefCell<Ast>> {
+    /// Returns true if the given node can contain a node with the given value.
+    pub fn can_contain_type(&self, child: &NodeValue) -> bool {
+        match *child {
+            NodeValue::Document => {
+                return false;
+            }
+            NodeValue::FrontMatter(_) => {
+                return matches!(self.data.borrow().value, NodeValue::Document);
+            }
+            _ => {}
+        }
+
+        match self.data.borrow().value {
+            NodeValue::Document
+            | NodeValue::BlockQuote
+            | NodeValue::FootnoteDefinition(_)
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
+            | NodeValue::Item(..)
+            | NodeValue::TaskItem(..) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+
+            NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
+
+            NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
+
+            NodeValue::DescriptionItem(_) => matches!(
+                *child,
+                NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
+            ),
+
+            #[cfg(feature = "shortcodes")]
+            NodeValue::ShortCode(..) => !child.block(),
+
+            NodeValue::Paragraph
+            | NodeValue::Heading(..)
+            | NodeValue::Emph
+            | NodeValue::Strong
+            | NodeValue::Link(..)
+            | NodeValue::Image(..)
+            | NodeValue::WikiLink(..)
+            | NodeValue::Strikethrough
+            | NodeValue::Superscript
+            | NodeValue::SpoileredText
+            | NodeValue::Underline
+            | NodeValue::Subscript
+            // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
+            // possibly going to fall into the spoiler. This should be fixed in
+            // inlines.
+            | NodeValue::EscapedTag(_)
+            => !child.block(),
+
+            NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
+
+            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
+
+            #[cfg(not(feature = "shortcodes"))]
+            NodeValue::TableCell => matches!(
+                *child,
+                NodeValue::Text(..)
+                    | NodeValue::Code(..)
+                    | NodeValue::Emph
+                    | NodeValue::Strong
+                    | NodeValue::Link(..)
+                    | NodeValue::Image(..)
+                    | NodeValue::Strikethrough
+                    | NodeValue::HtmlInline(..)
+                    | NodeValue::Math(..)
+                    | NodeValue::WikiLink(..)
+                    | NodeValue::FootnoteReference(..)
+                    | NodeValue::Superscript
+                    | NodeValue::SpoileredText
+                    | NodeValue::Underline
+                    | NodeValue::Subscript
+                    | NodeValue::TaskItem(_)
+            ),
+
+            #[cfg(feature = "shortcodes")]
+            NodeValue::TableCell => matches!(
+                *child,
+                NodeValue::Text(..)
+                | NodeValue::Code(..)
+                | NodeValue::Emph
+                | NodeValue::Strong
+                | NodeValue::Link(..)
+                | NodeValue::Image(..)
+                | NodeValue::Strikethrough
+                | NodeValue::HtmlInline(..)
+                | NodeValue::Math(..)
+                | NodeValue::WikiLink(..)
+                | NodeValue::FootnoteReference(..)
+                | NodeValue::Superscript
+                | NodeValue::SpoileredText
+                | NodeValue::Underline
+                | NodeValue::Subscript
+                | NodeValue::ShortCode(..)
+                | NodeValue::TaskItem(_)
+            ),
+
+            NodeValue::MultilineBlockQuote(_) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+
+            NodeValue::Alert(_) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+            _ => false,
+        }
+    }
+
     /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
     /// invalid trees according to the CommonMark specification. One simple example is that block
     /// containers, such as lists, should only contain blocks, but it's possible to put naked
@@ -743,7 +852,7 @@ impl<'a> Node<'a, RefCell<Ast>> {
         while let Some(node) = stack.pop() {
             // Check that this node type is valid wrt to the type of its parent.
             if let Some(parent) = node.parent() {
-                if !can_contain_type(parent, &node.data.borrow().value) {
+                if !parent.can_contain_type(&node.data.borrow().value) {
                     return Err(ValidationError::InvalidChildType {
                         parent,
                         child: node,
@@ -756,146 +865,35 @@ impl<'a> Node<'a, RefCell<Ast>> {
 
         Ok(())
     }
-}
 
-pub(crate) fn last_child_is_open<'a>(node: &'a AstNode<'a>) -> bool {
-    node.last_child().map_or(false, |n| n.data.borrow().open)
-}
-
-/// Returns true if the given node can contain a node with the given value.
-pub fn can_contain_type<'a>(node: &'a AstNode<'a>, child: &NodeValue) -> bool {
-    match *child {
-        NodeValue::Document => {
-            return false;
-        }
-        NodeValue::FrontMatter(_) => {
-            return matches!(node.data.borrow().value, NodeValue::Document);
-        }
-        _ => {}
+    pub(crate) fn last_child_is_open(&self) -> bool {
+        self.last_child().map_or(false, |n| n.data.borrow().open)
     }
 
-    match node.data.borrow().value {
-        NodeValue::Document
-        | NodeValue::BlockQuote
-        | NodeValue::FootnoteDefinition(_)
-        | NodeValue::DescriptionTerm
-        | NodeValue::DescriptionDetails
-        | NodeValue::Item(..)
-        | NodeValue::TaskItem(..) => {
-            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-        }
-
-        NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
-
-        NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
-
-        NodeValue::DescriptionItem(_) => matches!(
-            *child,
-            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
-        ),
-
-        #[cfg(feature = "shortcodes")]
-        NodeValue::ShortCode(..) => !child.block(),
-
-        NodeValue::Paragraph
-        | NodeValue::Heading(..)
-        | NodeValue::Emph
-        | NodeValue::Strong
-        | NodeValue::Link(..)
-        | NodeValue::Image(..)
-        | NodeValue::WikiLink(..)
-        | NodeValue::Strikethrough
-        | NodeValue::Superscript
-        | NodeValue::SpoileredText
-        | NodeValue::Underline
-        | NodeValue::Subscript
-        // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
-        // possibly going to fall into the spoiler. This should be fixed in
-        // inlines.
-        | NodeValue::EscapedTag(_)
-        => !child.block(),
-
-        NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
-
-        NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-
-        #[cfg(not(feature = "shortcodes"))]
-        NodeValue::TableCell => matches!(
-            *child,
-            NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::Strikethrough
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
-                | NodeValue::FootnoteReference(..)
-                | NodeValue::Superscript
-                | NodeValue::SpoileredText
-                | NodeValue::Underline
-                | NodeValue::Subscript
-                | NodeValue::TaskItem(_)
-        ),
-
-        #[cfg(feature = "shortcodes")]
-        NodeValue::TableCell => matches!(
-            *child,
-            NodeValue::Text(..)
-            | NodeValue::Code(..)
-            | NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Link(..)
-            | NodeValue::Image(..)
-            | NodeValue::Strikethrough
-            | NodeValue::HtmlInline(..)
-            | NodeValue::Math(..)
-            | NodeValue::WikiLink(..)
-            | NodeValue::FootnoteReference(..)
-            | NodeValue::Superscript
-            | NodeValue::SpoileredText
-            | NodeValue::Underline
-            | NodeValue::Subscript
-            | NodeValue::ShortCode(..)
-            | NodeValue::TaskItem(_)
-        ),
-
-        NodeValue::MultilineBlockQuote(_) => {
-            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-        }
-
-        NodeValue::Alert(_) => {
-            child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-        }
-        _ => false,
-    }
-}
-
-pub(crate) fn ends_with_blank_line<'a>(node: &'a AstNode<'a>) -> bool {
-    let mut it = Some(node);
-    while let Some(cur) = it {
-        if cur.data.borrow().last_line_blank {
-            return true;
-        }
-        match cur.data.borrow().value {
-            NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                it = cur.last_child()
+    pub(crate) fn ends_with_blank_line(&self) -> bool {
+        let mut it = Some(self);
+        while let Some(cur) = it {
+            if cur.data.borrow().last_line_blank {
+                return true;
             }
-            _ => it = None,
-        };
-    }
-    false
-}
-
-pub(crate) fn containing_block<'a>(node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
-    let mut ch = Some(node);
-    while let Some(n) = ch {
-        if n.data.borrow().value.block() {
-            return Some(n);
+            match cur.data.borrow().value {
+                NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
+                    it = cur.last_child()
+                }
+                _ => it = None,
+            };
         }
-        ch = n.parent();
+        false
     }
-    None
+
+    pub(crate) fn containing_block(&'a self) -> Option<&'a AstNode<'a>> {
+        let mut ch = Some(self);
+        while let Some(n) = ch {
+            if n.data.borrow().value.block() {
+                return Some(n);
+            }
+            ch = n.parent();
+        }
+        None
+    }
 }
