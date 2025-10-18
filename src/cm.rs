@@ -1,3 +1,9 @@
+use std::cmp::max;
+use std::fmt;
+use std::io::{self, Write};
+use std::str;
+pub use typed_arena::Arena;
+
 use crate::ctype::{isalpha, isdigit, ispunct, isspace};
 use crate::nodes::{
     AstNode, ListDelimType, ListType, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
@@ -8,13 +14,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::{node_matches, nodes, Plugins};
-pub use typed_arena::Arena;
-
-use std::cmp::max;
-use std::fmt;
-use std::io::{self, Write};
-use std::str;
+use crate::{node_matches, Plugins};
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
@@ -292,7 +292,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     }
 
     fn get_in_tight_list_item(&self, node: &'a AstNode<'a>) -> bool {
-        let tmp = match nodes::containing_block(node) {
+        let tmp = match node.containing_block() {
             Some(tmp) => tmp,
             None => return false,
         };

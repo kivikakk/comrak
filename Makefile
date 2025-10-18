@@ -29,7 +29,7 @@ build-cmark-gfm:
 
 build-markdown-it:
 	cd ${ROOT}/vendor/markdown-it && \
-	cargo build --release && \
+	cargo build --release --no-default-features && \
 	cp target/release/markdown-it ${ROOT}/benches/markdown-it
 
 build-pulldown-cmark:

@@ -7,6 +7,10 @@
 mod anchorizer;
 mod context;
 
+use std::collections::HashMap;
+use std::fmt::{self, Write};
+use std::str;
+
 use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
 use crate::ctype::isspace;
@@ -16,9 +20,6 @@ use crate::nodes::{
 };
 use crate::parser::{Options, Plugins};
 use crate::{node_matches, scanners};
-use std::collections::HashMap;
-use std::fmt::{self, Write};
-use std::str;
 
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;

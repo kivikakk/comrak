@@ -1,5 +1,4 @@
 use crate::arena_tree::Node;
-use crate::nodes;
 use crate::nodes::{Ast, AstNode, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
@@ -288,7 +287,10 @@ fn try_inserting_table_header_paragraph<'a>(
     trim(&mut paragraph_content);
 
     if container.parent().is_none()
-        || !nodes::can_contain_type(container.parent().unwrap(), &NodeValue::Paragraph)
+        || !container
+            .parent()
+            .unwrap()
+            .can_contain_type(&NodeValue::Paragraph)
     {
         return;
     }

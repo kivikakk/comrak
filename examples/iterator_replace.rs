@@ -24,9 +24,10 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
 }
 
 fn main() {
-    let doc = "This is my input.\n\n1. Also [my](#) input.\n2. Certainly *my* input.\n";
-    let orig = "my";
-    let repl = "your";
+    let doc =
+        "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n";
+    let orig = "pretty";
+    let repl = "beautiful";
     let html = replace_text(doc, orig, repl);
 
     println!("{}", html);

@@ -8,17 +8,8 @@ pub mod alert;
 pub mod math;
 pub mod multiline_block_quote;
 
-use crate::adapters::SyntaxHighlighterAdapter;
-use crate::arena_tree::Node;
-use crate::ctype::{isdigit, isspace};
-use crate::entity;
-use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
-use crate::nodes::{
-    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
-    NodeHtmlBlock, NodeList, NodeValue,
-};
-use crate::scanners::{self, SetextChar};
-use crate::strings::{self, split_off_front_matter, Case};
+#[cfg(feature = "bon")]
+use bon::Builder;
 use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -29,14 +20,19 @@ use std::str;
 use std::sync::Arc;
 use typed_arena::Arena;
 
-use crate::adapters::HeadingAdapter;
+use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
+use crate::arena_tree::Node;
+use crate::ctype::{isdigit, isspace};
+use crate::entity;
+use crate::nodes::{
+    self, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
+};
 use crate::parser::alert::{AlertType, NodeAlert};
+use crate::parser::inlines::RefMap;
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
-
-#[cfg(feature = "bon")]
-use bon::Builder;
-
-use self::inlines::RefMap;
+use crate::scanners::{self, SetextChar};
+use crate::strings::{self, split_off_front_matter, Case};
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
@@ -1508,7 +1504,7 @@ where
     ) -> (bool, &'a AstNode<'a>, bool) {
         let mut should_continue = true;
 
-        while nodes::last_child_is_open(container) {
+        while container.last_child_is_open() {
             container = container.last_child().unwrap();
             let ast = &mut *container.data.borrow_mut();
 
@@ -2480,7 +2476,7 @@ where
 
             // The last child, like an indented codeblock, could be left open.
             // Make sure it's finalized.
-            if nodes::last_child_is_open(container) {
+            if container.last_child_is_open() {
                 let child = container.last_child().unwrap();
                 let child_ast = &mut *child.data.borrow_mut();
 
@@ -2505,7 +2501,7 @@ where
         value: NodeValue,
         start_column: usize,
     ) -> &'a AstNode<'a> {
-        while !nodes::can_contain_type(parent, &value) {
+        while !parent.can_contain_type(&value) {
             parent = self.finalize(parent).unwrap();
         }
 
@@ -2799,37 +2795,36 @@ where
                 mem::swap(&mut nhb.literal, content);
             }
             NodeValue::List(ref mut nl) => {
-                nl.tight = true;
-                let mut ch = node.first_child();
-
-                while let Some(item) = ch {
-                    if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
-                        nl.tight = false;
-                        break;
-                    }
-
-                    let mut subch = item.first_child();
-                    while let Some(subitem) = subch {
-                        if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
-                            && nodes::ends_with_blank_line(subitem)
-                        {
-                            nl.tight = false;
-                            break;
-                        }
-                        subch = subitem.next_sibling();
-                    }
-
-                    if !nl.tight {
-                        break;
-                    }
-
-                    ch = item.next_sibling();
-                }
+                nl.tight = self.determine_list_tight(node);
             }
             _ => (),
         }
 
         parent
+    }
+
+    fn determine_list_tight(&self, node: &'a AstNode<'a>) -> bool {
+        let mut ch = node.first_child();
+
+        while let Some(item) = ch {
+            if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
+                return false;
+            }
+
+            let mut subch = item.first_child();
+            while let Some(subitem) = subch {
+                if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                    && subitem.ends_with_blank_line()
+                {
+                    return false;
+                }
+                subch = subitem.next_sibling();
+            }
+
+            ch = item.next_sibling();
+        }
+
+        true
     }
 
     fn process_inlines(&mut self) {
@@ -2866,33 +2861,25 @@ where
     }
 
     fn process_footnotes(&mut self) {
-        let mut map = HashMap::new();
-        Self::find_footnote_definitions(self.root, &mut map);
+        let mut fd_map = HashMap::new();
+        Self::find_footnote_definitions(self.root, &mut fd_map);
 
-        let mut ix = 0;
-        Self::find_footnote_references(self.root, &mut map, &mut ix);
+        let mut next_ix = 0;
+        Self::find_footnote_references(self.root, &mut fd_map, &mut next_ix);
 
-        if !map.is_empty() {
-            // In order for references to be found inside footnote definitions,
-            // such as `[^1]: another reference[^2]`,
-            // the node needed to remain in the AST. Now we can remove them.
-            Self::cleanup_footnote_definitions(self.root);
-        }
-
-        if ix > 0 {
-            let mut v = map.into_values().collect::<Vec<_>>();
-            v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
-            for f in v {
-                if f.ix.is_some() {
-                    match f.node.data.borrow_mut().value {
-                        NodeValue::FootnoteDefinition(ref mut nfd) => {
-                            nfd.name = f.name.to_string();
-                            nfd.total_references = f.total_references;
-                        }
-                        _ => unreachable!(),
-                    }
-                    self.root.append(f.node);
-                }
+        let mut fds = fd_map.into_values().collect::<Vec<_>>();
+        fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
+        for fd in fds {
+            if fd.ix.is_some() {
+                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.data.borrow_mut().value
+                else {
+                    unreachable!()
+                };
+                nfd.name = fd.name.to_string();
+                nfd.total_references = fd.total_references;
+                self.root.append(fd.node);
+            } else {
+                fd.node.detach();
             }
         }
     }
@@ -2962,19 +2949,6 @@ where
         }
     }
 
-    fn cleanup_footnote_definitions(node: &'a AstNode<'a>) {
-        match node.data.borrow().value {
-            NodeValue::FootnoteDefinition(_) => {
-                node.detach();
-            }
-            _ => {
-                for n in node.children() {
-                    Self::cleanup_footnote_definitions(n);
-                }
-            }
-        }
-    }
-
     fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
         self.postprocess_text_nodes_with_context(node, false);
     }
@@ -2994,36 +2968,18 @@ where
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
-                let mut sourcepos = n_ast.sourcepos;
 
+                let sourcepos = n_ast.sourcepos;
                 match n_ast.value {
                     NodeValue::Text(ref mut root) => {
-                        // Join adjacent text nodes together, then post-process.
-                        // Record the original list of sourcepos and bytecounts
-                        // for the post-processing step.
-                        let mut spxv = VecDeque::new();
-                        spxv.push_back((sourcepos, root.len()));
-                        while let Some(ns) = n.next_sibling() {
-                            match ns.data.borrow().value {
-                                NodeValue::Text(ref adj) => {
-                                    root.push_str(adj);
-                                    let sp = ns.data.borrow().sourcepos;
-                                    spxv.push_back((sp, adj.len()));
-                                    sourcepos.end.column = sp.end.column;
-                                    ns.detach();
-                                }
-                                _ => break,
-                            }
-                        }
-
-                        self.postprocess_text_node_with_context(
+                        let sourcepos = self.postprocess_text_node_with_context(
                             n,
+                            sourcepos,
                             root,
-                            &mut sourcepos,
-                            spxv,
                             in_bracket_context,
                         );
                         emptied = root.is_empty();
+                        n_ast.sourcepos = sourcepos;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -3032,8 +2988,6 @@ where
                     }
                     _ => {}
                 }
-
-                n_ast.sourcepos = sourcepos;
 
                 if !emptied {
                     children.push((n, child_in_bracket_context));
@@ -3053,6 +3007,43 @@ where
     }
 
     fn postprocess_text_node_with_context(
+        &mut self,
+        node: &'a AstNode<'a>,
+        mut sourcepos: Sourcepos,
+        root: &mut String,
+        in_bracket_context: bool,
+    ) -> Sourcepos {
+        // Join adjacent text nodes together, then post-process.
+        // Record the original list of sourcepos and bytecounts
+        // for the post-processing step.
+
+        let mut spxv = VecDeque::new();
+        spxv.push_back((sourcepos, root.len()));
+        while let Some(ns) = node.next_sibling() {
+            match ns.data.borrow().value {
+                NodeValue::Text(ref adj) => {
+                    root.push_str(adj);
+                    let sp = ns.data.borrow().sourcepos;
+                    spxv.push_back((sp, adj.len()));
+                    sourcepos.end.column = sp.end.column;
+                    ns.detach();
+                }
+                _ => break,
+            }
+        }
+
+        self.postprocess_text_node_with_context_inner(
+            node,
+            root,
+            &mut sourcepos,
+            spxv,
+            in_bracket_context,
+        );
+
+        sourcepos
+    }
+
+    fn postprocess_text_node_with_context_inner(
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
@@ -3176,15 +3167,19 @@ where
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
         // In this case reference inlines rarely have delimiters
         // so we often just need the minimal case
-        let delimiter_arena = Arena::with_capacity(0);
+        let unused_node_arena = Arena::new();
+        let unused_footnote_defs = inlines::FootnoteDefs::new();
+        let unused_delimiter_arena = Arena::with_capacity(0);
+        let mut unused_refmap = inlines::RefMap::new();
+
         let mut subj = inlines::Subject::new(
-            self.arena,
+            &unused_node_arena,
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
-            &mut self.refmap,
-            &self.footnote_defs,
-            &delimiter_arena,
+            &mut unused_refmap,
+            &unused_footnote_defs,
+            &unused_delimiter_arena,
         );
 
         let mut lab: String = match subj.link_label() {
@@ -3238,7 +3233,7 @@ where
 
         lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab).or_insert(ResolvedReference {
+            self.refmap.map.entry(lab).or_insert(ResolvedReference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),
                 title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });

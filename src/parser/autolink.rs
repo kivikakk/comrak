@@ -1,10 +1,12 @@
-use crate::character_set::character_set;
-use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
-use crate::parser::{inlines::make_inline, Spx};
 use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
+
+use crate::character_set::character_set;
+use crate::ctype::{isalnum, isalpha, isspace};
+use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
+use crate::parser::inlines::Subject;
+use crate::parser::{inlines::make_inline, Spx};
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
@@ -226,12 +228,12 @@ fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
 }
 
 pub fn www_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    contents: &[u8],
-    i: usize,
-    relaxed_autolinks: bool,
+    subject: &mut Subject<'a, '_, '_, '_, '_, '_, '_>,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
+    let i = subject.pos;
+    let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
+    let contents = subject.input;
 
     if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
         return None;
@@ -259,7 +261,7 @@ pub fn www_match<'a>(
     url.push_str(str::from_utf8(&contents[i..link_end + i]).unwrap());
 
     let inl = make_inline(
-        arena,
+        subject.arena,
         NodeValue::Link(NodeLink {
             url,
             title: String::new(),
@@ -268,7 +270,7 @@ pub fn www_match<'a>(
     );
 
     inl.append(make_inline(
-        arena,
+        subject.arena,
         NodeValue::Text(
             str::from_utf8(&contents[i..link_end + i])
                 .unwrap()
@@ -384,13 +386,13 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
 }
 
 pub fn url_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    contents: &[u8],
-    i: usize,
-    relaxed_autolinks: bool,
+    subject: &mut Subject<'a, '_, '_, '_, '_, '_, '_>,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
+    let i = subject.pos;
+    let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
+    let contents = subject.input;
     let size = contents.len();
 
     if size - i < 4 || contents[i + 1] != b'/' || contents[i + 2] != b'/' {
@@ -429,7 +431,7 @@ pub fn url_match<'a>(
         .unwrap()
         .to_string();
     let inl = make_inline(
-        arena,
+        subject.arena,
         NodeValue::Link(NodeLink {
             url: url.clone(),
             title: String::new(),
@@ -438,7 +440,7 @@ pub fn url_match<'a>(
     );
 
     inl.append(make_inline(
-        arena,
+        subject.arena,
         NodeValue::Text(url),
         (0, 1, 0, 1).into(),
     ));
