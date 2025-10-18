@@ -100,6 +100,8 @@
             clippy
             cargo-fuzz
             cargo-nextest
+            cargo-flamegraph
+            samply
             python3
             re2c
             hyperfine

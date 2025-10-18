@@ -320,6 +320,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "syntect")]
     let adapter: SyntectAdapter;
 
+    #[cfg_attr(not(feature = "syntect"), allow(unused_mut))]
     let mut plugins: Plugins = Plugins::default();
 
     #[cfg(feature = "syntect")]
