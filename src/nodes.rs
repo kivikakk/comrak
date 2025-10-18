@@ -1,15 +1,15 @@
 //! The CommonMark AST.
 
-use crate::arena_tree::Node;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
-#[cfg(feature = "shortcodes")]
-pub use crate::parser::shortcodes::NodeShortCode;
-
+use crate::arena_tree::Node;
 pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+#[cfg(feature = "shortcodes")]
+pub use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -112,7 +112,7 @@ pub enum NodeValue {
 
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
-    Text(String),
+    Text(Cow<'static, str>),
 
     /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
@@ -474,7 +474,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&String> {
+    pub fn text(&self) -> Option<&Cow<'static, str>> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
@@ -484,7 +484,7 @@ impl NodeValue {
     /// Return a mutable reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&mut String> {
+    pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,

@@ -363,7 +363,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if res.is_none() {
                     self.pos += 1;
                     res = Some(self.make_inline(
-                        NodeValue::Text(":".to_string()),
+                        NodeValue::Text(":".into()),
                         self.pos - 1,
                         self.pos - 1,
                     ));
@@ -375,11 +375,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 Some(inl) => Some(inl),
                 None => {
                     self.pos += 1;
-                    Some(self.make_inline(
-                        NodeValue::Text("w".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    Some(self.make_inline(NodeValue::Text("w".into()), self.pos - 1, self.pos - 1))
                 }
             },
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
@@ -398,11 +394,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
 
                 if wikilink_inl.is_none() {
-                    let inl = self.make_inline(
-                        NodeValue::Text("[".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    );
+                    let inl =
+                        self.make_inline(NodeValue::Text("[".into()), self.pos - 1, self.pos - 1);
                     self.push_bracket(false, inl);
                     self.within_brackets = true;
 
@@ -419,20 +412,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.pos += 1;
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
-                    let inl = self.make_inline(
-                        NodeValue::Text("![".to_string()),
-                        self.pos - 2,
-                        self.pos - 1,
-                    );
+                    let inl =
+                        self.make_inline(NodeValue::Text("![".into()), self.pos - 2, self.pos - 1);
                     self.push_bracket(true, inl);
                     self.within_brackets = true;
                     Some(inl)
                 } else {
-                    Some(self.make_inline(
-                        NodeValue::Text("!".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    Some(self.make_inline(NodeValue::Text("!".into()), self.pos - 1, self.pos - 1))
                 }
             }
             '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
@@ -450,11 +436,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 } else {
                     // Just regular text
                     self.pos += 1;
-                    Some(self.make_inline(
-                        NodeValue::Text("^".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    Some(self.make_inline(NodeValue::Text("^".into()), self.pos - 1, self.pos - 1))
                 }
             }
             '$' => Some(self.handle_dollars(&ast.line_offsets)),
@@ -489,7 +471,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // whitespace and would cause sourcepos underflow in endpos - 1
                 if !contents.is_empty() {
                     Some(self.make_inline(
-                        NodeValue::Text(contents.to_string()),
+                        NodeValue::Text(contents.to_string().into()),
                         startpos,
                         endpos - 1,
                     ))
@@ -672,7 +654,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     }
                 } else if c.delim_char == b'\'' || c.delim_char == b'"' {
                     *c.inl.data.borrow_mut().value.text_mut().unwrap() =
-                        if c.delim_char == b'\'' { "’" } else { "”" }.to_string();
+                        if c.delim_char == b'\'' { "’" } else { "”" }.into();
                     closer = c.next.get();
 
                     if opener_found {
@@ -688,7 +670,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         } else {
                             "“"
                         }
-                        .to_string();
+                        .into();
                         self.remove_delimiter(opener.unwrap());
                         self.remove_delimiter(old_c);
                     }
@@ -880,7 +862,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             None => {
                 self.pos = startpos + openticks;
                 self.make_inline(
-                    NodeValue::Text("`".repeat(openticks)),
+                    NodeValue::Text("`".repeat(openticks).into()),
                     startpos,
                     self.pos - 1,
                 )
@@ -973,7 +955,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
-            return self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1);
+            return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
         }
         let startpos = self.pos;
         let opendollars = self.take_while(b'$');
@@ -1018,11 +1000,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             node
         } else if code_math {
             self.pos = startpos + 1;
-            self.make_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
+            self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1)
         } else {
             self.pos = startpos + fence_length;
             self.make_inline(
-                NodeValue::Text("$".repeat(opendollars)),
+                NodeValue::Text("$".repeat(opendollars).into()),
                 self.pos - fence_length,
                 self.pos - 1,
             )
@@ -1041,16 +1023,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
-        let contents = if c == b'\'' && self.options.parse.smart {
-            "’".to_string()
+        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
+            "’".into()
         } else if c == b'"' && self.options.parse.smart {
             if can_close {
-                "”".to_string()
+                "”".into()
             } else {
-                "“".to_string()
+                "“".into()
             }
         } else {
-            self.input[self.pos - numdelims..self.pos].to_string()
+            self.input[self.pos - numdelims..self.pos]
+                .to_string()
+                .into()
         };
         let inl = self.make_inline(
             NodeValue::Text(contents),
@@ -1070,7 +1054,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1;
 
         if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
-            return self.make_inline(NodeValue::Text("-".to_string()), self.pos - 1, self.pos - 1);
+            return self.make_inline(NodeValue::Text("-".into()), self.pos - 1, self.pos - 1);
         }
 
         while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
@@ -1095,7 +1079,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut buf = String::with_capacity(3 * (ems + ens));
         buf.push_str(&"—".repeat(ems));
         buf.push_str(&"–".repeat(ens));
-        self.make_inline(NodeValue::Text(buf), start, self.pos - 1)
+        self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
     }
 
     fn handle_period(&mut self) -> &'a AstNode<'a> {
@@ -1104,16 +1088,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.pos += 1;
             if self.peek_char().map_or(false, |&c| c == b'.') {
                 self.pos += 1;
-                self.make_inline(NodeValue::Text("…".to_string()), self.pos - 3, self.pos - 1)
+                self.make_inline(NodeValue::Text("…".into()), self.pos - 3, self.pos - 1)
             } else {
-                self.make_inline(
-                    NodeValue::Text("..".to_string()),
-                    self.pos - 2,
-                    self.pos - 1,
-                )
+                self.make_inline(NodeValue::Text("..".into()), self.pos - 2, self.pos - 1)
             }
         } else {
-            self.make_inline(NodeValue::Text(".".to_string()), self.pos - 1, self.pos - 1)
+            self.make_inline(NodeValue::Text(".".into()), self.pos - 1, self.pos - 1)
         }
     }
 
@@ -1317,6 +1297,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .value
             .text_mut()
             .unwrap()
+            .to_mut()
             .truncate(opener_num_chars);
         closer
             .inl
@@ -1325,6 +1306,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .value
             .text_mut()
             .unwrap()
+            .to_mut()
             .truncate(closer_num_chars);
 
         // Remove all the candidate delimiters from between the opener and the
@@ -1419,7 +1401,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.pos += 1;
 
             let inline_text = self.make_inline(
-                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string()),
+                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
                 self.pos - 2,
                 self.pos - 1,
             );
@@ -1438,11 +1420,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.skip_spaces();
             inl
         } else {
-            self.make_inline(
-                NodeValue::Text("\\".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            )
+            self.make_inline(NodeValue::Text("\\".into()), self.pos - 1, self.pos - 1)
         }
     }
 
@@ -1461,7 +1439,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
-            None => self.make_inline(NodeValue::Text("&".to_string()), self.pos - 1, self.pos - 1),
+            None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
             Some((entity, len)) => {
                 self.pos += len;
                 self.make_inline(
@@ -1517,12 +1495,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let mut last_child = node.last_child().unwrap().data.borrow_mut();
             match last_child.value {
                 NodeValue::Text(ref mut prev) => {
+                    let prev_len = prev.len();
                     if reverse < prev.len() {
-                        prev.truncate(prev.len() - reverse);
+                        prev.to_mut().truncate(prev_len - reverse);
                         last_child.sourcepos.end.column -= reverse;
                         reverse = 0;
                     } else {
-                        reverse -= prev.len();
+                        reverse -= prev_len;
                         node.last_child().unwrap().detach();
                     }
                 }
@@ -1661,7 +1640,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return inl;
         }
 
-        self.make_inline(NodeValue::Text("<".to_string()), self.pos - 1, self.pos - 1)
+        self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
     }
 
     fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
@@ -1686,22 +1665,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         let brackets_len = self.brackets.len();
         if brackets_len == 0 {
-            return Some(self.make_inline(
-                NodeValue::Text("]".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            ));
+            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
         }
 
         let is_image = self.brackets[brackets_len - 1].image;
 
         if !is_image && self.no_link_openers {
             self.brackets.pop();
-            return Some(self.make_inline(
-                NodeValue::Text("]".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            ));
+            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
         }
 
         // Ensure there was text if this was a link and not an image link
@@ -1723,7 +1694,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             if !non_blank_found {
                 self.brackets.pop();
                 return Some(self.make_inline(
-                    NodeValue::Text("]".to_string()),
+                    NodeValue::Text("]".into()),
                     self.pos - 1,
                     self.pos - 1,
                 ));
@@ -1844,7 +1815,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             // related to the footnote name.
             for sibling in sibling_iterator {
                 match sibling.data.borrow().value {
-                    NodeValue::Text(ref literal) | NodeValue::HtmlInline(ref literal) => {
+                    NodeValue::Text(ref literal) => {
+                        text.push_str(literal);
+                    }
+                    NodeValue::HtmlInline(ref literal) => {
                         text.push_str(literal);
                     }
                     _ => {}
@@ -1892,7 +1866,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         self.brackets.pop();
         self.pos = initial_pos;
-        Some(self.make_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1))
+        Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1))
     }
 
     fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
@@ -1958,7 +1932,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if depth != 0 {
             // No matching closing bracket, treat as regular text
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
         // endpos is now one past the ], so adjust
@@ -1970,7 +1944,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Empty inline footnote should not parse
         if content.is_empty() {
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
         // Generate unique name
@@ -2042,7 +2016,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if !has_non_whitespace_content {
             // Content is empty or whitespace-only after parsing, treat as literal text
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
         // Store the footnote definition
@@ -2229,7 +2203,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
             if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
                 let preceding_text = self.make_inline(
-                    NodeValue::Text(label[startpos..offset].to_string()),
+                    NodeValue::Text(label[startpos..offset].to_string().into()),
                     start_column + startpos,
                     start_column + offset - 1,
                 );
@@ -2237,7 +2211,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 container.append(preceding_text);
 
                 let inline_text = self.make_inline(
-                    NodeValue::Text(label[offset + 1..offset + 2].to_string()),
+                    NodeValue::Text(label[offset + 1..offset + 2].to_string().into()),
                     start_column + offset,
                     start_column + offset + 1,
                 );
@@ -2264,7 +2238,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         if startpos != offset {
             container.append(self.make_inline(
-                NodeValue::Text(label[startpos..offset].to_string()),
+                NodeValue::Text(label[startpos..offset].to_string().into()),
                 start_column + startpos,
                 start_column + offset - 1,
             ));
@@ -2323,7 +2297,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             end_column,
         );
         inl.append(self.make_inline(
-            NodeValue::Text(entity::unescape_html(url).into()),
+            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
             start_column + 1,
             end_column - 1,
         ));
