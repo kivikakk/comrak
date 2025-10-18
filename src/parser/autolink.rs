@@ -226,13 +226,7 @@ fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
         && &contents[cursor - rewind..cursor] == protocol.as_bytes()
 }
 
-pub fn www_match<'a>(
-    subject: &mut Subject,
-    // arena: &'a mut Arena<Ast>,
-    // contents: &[u8],
-    // i: usize,
-    // relaxed_autolinks: bool,
-) -> Option<(AstNode, usize, usize)> {
+pub fn www_match<'a>(subject: &mut Subject, node: AstNode) -> Option<(AstNode, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
 
     let i = subject.pos;
@@ -265,13 +259,15 @@ pub fn www_match<'a>(
     let mut url = "http://".to_string();
     url.push_str(str::from_utf8(&subject.input[i..link_end + i]).unwrap());
 
-    let inl = make_inline_node(
+    let inl = node.append_value(
         subject.arena,
-        NodeValue::Link(NodeLink {
-            url,
-            title: String::new(),
-        }),
-        (0, 1, 0, 1).into(),
+        make_inline(
+            NodeValue::Link(NodeLink {
+                url,
+                title: String::new(),
+            }),
+            (0, 1, 0, 1).into(),
+        ),
     );
 
     inl.append_value(
@@ -392,13 +388,7 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
     link_end
 }
 
-pub fn url_match<'a>(
-    subject: &mut Subject,
-    // arena: &'a mut Arena<Ast>,
-    // contents: &[u8],
-    // i: usize,
-    // relaxed_autolinks: bool,
-) -> Option<(AstNode, usize, usize)> {
+pub fn url_match<'a>(subject: &mut Subject, node: AstNode) -> Option<(AstNode, usize, usize)> {
     const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
 
     let i = subject.pos;
@@ -441,13 +431,15 @@ pub fn url_match<'a>(
     let url = str::from_utf8(&subject.input[i - rewind..i + link_end])
         .unwrap()
         .to_string();
-    let inl = make_inline_node(
+    let inl = node.append_value(
         subject.arena,
-        NodeValue::Link(NodeLink {
-            url: url.clone(),
-            title: String::new(),
-        }),
-        (0, 1, 0, 1).into(),
+        make_inline(
+            NodeValue::Link(NodeLink {
+                url: url.clone(),
+                title: String::new(),
+            }),
+            (0, 1, 0, 1).into(),
+        ),
     );
 
     inl.append_value(

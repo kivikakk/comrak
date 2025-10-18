@@ -335,102 +335,109 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let line_offsets = node_ast.line_offsets.clone(); // XXX LOLOLOL
         self.line_offset = line_offsets[adjusted_line];
 
-        let new_inl: Option<AstNode> = match c {
+        match c {
             '\0' => return false,
-            '\r' | '\n' => Some(self.handle_newline()),
-            '`' => Some(self.handle_backticks(&line_offsets)),
-            '\\' => Some(self.handle_backslash()),
-            '&' => Some(self.handle_entity()),
-            '<' => Some(self.handle_pointy_brace(&line_offsets)),
+            '\r' | '\n' => self.handle_newline(node),
+            '`' => self.handle_backticks(node, &line_offsets),
+            '\\' => self.handle_backslash(node),
+            '&' => self.handle_entity(node),
+            '<' => self.handle_pointy_brace(node, &line_offsets),
             ':' => {
-                let mut res = None;
+                let mut handled = false;
 
                 if self.options.extension.autolink {
-                    res = self.handle_autolink_colon(node);
+                    handled = self.handle_autolink_colon(node);
                 }
 
                 #[cfg(feature = "shortcodes")]
-                if res.is_none() && self.options.extension.shortcodes {
-                    res = self.handle_shortcodes_colon();
+                if !handled && self.options.extension.shortcodes {
+                    handled = self.handle_shortcodes_colon(node);
                 }
 
-                if res.is_none() {
+                if !handled {
                     self.pos += 1;
-                    res = Some(self.mk_inline_node(
-                        NodeValue::Text(":".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ));
+                    node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text(":".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        ),
+                    );
                 }
-
-                res
             }
-            'w' if self.options.extension.autolink => match self.handle_autolink_w(node) {
-                Some(inl) => Some(inl),
-                None => {
+            'w' if self.options.extension.autolink => {
+                if !self.handle_autolink_w(node) {
                     self.pos += 1;
-                    Some(self.mk_inline_node(
-                        NodeValue::Text("w".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text("w".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        ),
+                    );
                 }
-            },
-            '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
-            '-' => Some(self.handle_hyphen()),
-            '.' => Some(self.handle_period()),
+            }
+            '*' | '_' | '\'' | '"' => self.handle_delim(node, c as u8),
+            '-' => self.handle_hyphen(node),
+            '.' => self.handle_period(node),
             '[' => {
                 self.pos += 1;
 
-                let mut wikilink_inl = None;
+                let mut created_wikilink = false;
 
                 if self.options.extension.wikilinks().is_some()
                     && !self.within_brackets
                     && self.peek_char() == Some(&(b'['))
                 {
-                    wikilink_inl = self.handle_wikilink();
+                    created_wikilink = self.handle_wikilink(node);
                 }
 
-                if wikilink_inl.is_none() {
-                    let inl = self.mk_inline_node(
-                        NodeValue::Text("[".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
+                if !created_wikilink {
+                    let inl = node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text("[".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        ),
                     );
                     self.push_bracket(false, inl);
                     self.within_brackets = true;
-
-                    Some(inl)
-                } else {
-                    wikilink_inl
                 }
             }
             ']' => {
                 self.within_brackets = false;
-                self.handle_close_bracket()
+                self.handle_close_bracket(node)
             }
             '!' => {
                 self.pos += 1;
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
-                    let inl = self.mk_inline_node(
-                        NodeValue::Text("![".to_string()),
-                        self.pos - 2,
-                        self.pos - 1,
+                    let inl = node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text("![".to_string()),
+                            self.pos - 2,
+                            self.pos - 1,
+                        ),
                     );
                     self.push_bracket(true, inl);
                     self.within_brackets = true;
-                    Some(inl)
                 } else {
-                    Some(self.mk_inline_node(
-                        NodeValue::Text("!".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text("!".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        ),
+                    );
                 }
             }
             '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
-                Some(self.handle_delim(b'~'))
+                self.handle_delim(node, b'~')
             }
             '^' => {
                 // Check for inline footnote first
@@ -438,21 +445,24 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     && self.options.extension.inline_footnotes
                     && self.peek_char_n(1) == Some(&(b'['))
                 {
-                    self.handle_inline_footnote()
+                    self.handle_inline_footnote(node)
                 } else if self.options.extension.superscript && !self.within_brackets {
-                    Some(self.handle_delim(b'^'))
+                    self.handle_delim(node, b'^')
                 } else {
                     // Just regular text
                     self.pos += 1;
-                    Some(self.mk_inline_node(
-                        NodeValue::Text("^".to_string()),
-                        self.pos - 1,
-                        self.pos - 1,
-                    ))
+                    node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text("^".to_string()),
+                            self.pos - 1,
+                            self.pos - 1,
+                        ),
+                    );
                 }
             }
-            '$' => Some(self.handle_dollars(&line_offsets)),
-            '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
+            '$' => self.handle_dollars(node, &line_offsets),
+            '|' if self.options.extension.spoiler => self.handle_delim(node, b'|'),
             _ => {
                 let mut endpos = self.find_special_char();
                 let mut contents = self.input[self.pos..endpos].to_vec();
@@ -479,19 +489,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 // Don't create empty text nodes - this can happen after trimming trailing
                 // whitespace and would cause sourcepos underflow in endpos - 1
                 if !contents.is_empty() {
-                    Some(self.mk_inline_node(
-                        NodeValue::Text(String::from_utf8(contents).unwrap()),
-                        startpos,
-                        endpos - 1,
-                    ))
-                } else {
-                    None
+                    node.append_value(
+                        self.arena,
+                        self.mk_inline(
+                            NodeValue::Text(String::from_utf8(contents).unwrap()),
+                            startpos,
+                            endpos - 1,
+                        ),
+                    );
                 }
             }
-        };
-
-        if let Some(inl) = new_inl {
-            node.append_node(self.arena, inl);
         }
 
         true
@@ -823,7 +830,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_newline(&mut self) -> AstNode {
+    fn handle_newline(&mut self, node: AstNode) {
         let nlpos = self.pos;
         if self.input[self.pos] == b'\r' {
             self.pos += 1;
@@ -831,15 +838,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if self.input[self.pos] == b'\n' {
             self.pos += 1;
         }
-        let inl = if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
-            self.mk_inline_node(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
+        let ast = if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
+            self.mk_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
         } else {
-            self.mk_inline_node(NodeValue::SoftBreak, nlpos, self.pos - 1)
+            self.mk_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
         };
+        node.append_value(self.arena, ast);
         self.line += 1;
         self.column_offset = -(self.pos as isize);
         self.skip_spaces();
-        inl
     }
 
     fn take_while(&mut self, c: u8) -> usize {
@@ -887,7 +894,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> AstNode {
+    fn handle_backticks(&mut self, node: AstNode, parent_line_offsets: &[usize]) {
         let startpos = self.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -895,11 +902,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         match endpos {
             None => {
                 self.pos = startpos + openticks;
-                self.mk_inline_node(
-                    NodeValue::Text("`".repeat(openticks)),
-                    startpos,
-                    self.pos - 1,
-                )
+                node.append_value(
+                    self.arena,
+                    self.mk_inline(
+                        NodeValue::Text("`".repeat(openticks)),
+                        startpos,
+                        self.pos - 1,
+                    ),
+                );
             }
             Some(endpos) => {
                 let buf = &self.input[startpos + openticks..endpos - openticks];
@@ -908,14 +918,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     num_backticks: openticks,
                     literal: String::from_utf8(buf).unwrap(),
                 };
-                let node = self.mk_inline_node(NodeValue::Code(code), startpos, endpos - 1);
+                let code_node = node.append_value(
+                    self.arena,
+                    self.mk_inline(NodeValue::Code(code), startpos, endpos - 1),
+                );
                 self.adjust_node_newlines(
-                    node,
+                    code_node,
                     endpos - startpos - openticks,
                     openticks,
                     parent_line_offsets,
                 );
-                node
             }
         }
     }
@@ -986,14 +998,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> AstNode {
+    fn handle_dollars(&mut self, node: AstNode, parent_line_offsets: &[usize]) {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
-            return self.mk_inline_node(
-                NodeValue::Text("$".to_string()),
-                self.pos - 1,
-                self.pos - 1,
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1),
             );
+            return;
         }
         let startpos = self.pos;
         let opendollars = self.take_while(b'$');
@@ -1028,24 +1040,32 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 display_math: opendollars == 2,
                 literal: String::from_utf8(buf).unwrap(),
             };
-            let node = self.mk_inline_node(NodeValue::Math(math), startpos, endpos - 1);
+            let math_node = node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Math(math), startpos, endpos - 1),
+            );
             self.adjust_node_newlines(
-                node,
+                math_node,
                 endpos - startpos - fence_length,
                 fence_length,
                 parent_line_offsets,
             );
-            node
         } else if code_math {
             self.pos = startpos + 1;
-            self.mk_inline_node(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1)
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("$".to_string()), self.pos - 1, self.pos - 1),
+            );
         } else {
             self.pos = startpos + fence_length;
-            self.mk_inline_node(
-                NodeValue::Text("$".repeat(opendollars)),
-                self.pos - fence_length,
-                self.pos - 1,
-            )
+            node.append_value(
+                self.arena,
+                self.mk_inline(
+                    NodeValue::Text("$".repeat(opendollars)),
+                    self.pos - fence_length,
+                    self.pos - 1,
+                ),
+            );
         }
     }
 
@@ -1058,7 +1078,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         skipped
     }
 
-    fn handle_delim(&mut self, c: u8) -> AstNode {
+    fn handle_delim(&mut self, node: AstNode, c: u8) {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents = if c == b'\'' && self.options.parse.smart {
@@ -1074,29 +1094,30 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 .unwrap()
                 .to_string()
         };
-        let inl = self.mk_inline_node(
-            NodeValue::Text(contents),
-            self.pos - numdelims,
-            self.pos - 1,
+        let inl = node.append_value(
+            self.arena,
+            self.mk_inline(
+                NodeValue::Text(contents),
+                self.pos - numdelims,
+                self.pos - 1,
+            ),
         );
 
         if (can_open || can_close) && (!(c == b'\'' || c == b'"') || self.options.parse.smart) {
             self.push_delimiter(c, can_open, can_close, inl);
         }
-
-        inl
     }
 
-    fn handle_hyphen(&mut self) -> AstNode {
+    fn handle_hyphen(&mut self, node: AstNode) {
         let start = self.pos;
         self.pos += 1;
 
         if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
-            return self.mk_inline_node(
-                NodeValue::Text("-".to_string()),
-                self.pos - 1,
-                self.pos - 1,
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("-".to_string()), self.pos - 1, self.pos - 1),
             );
+            return;
         }
 
         while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
@@ -1121,26 +1142,30 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut buf = String::with_capacity(3 * (ems + ens));
         buf.push_str(&"—".repeat(ems));
         buf.push_str(&"–".repeat(ens));
-        self.mk_inline_node(NodeValue::Text(buf), start, self.pos - 1)
+        node.append_value(
+            self.arena,
+            self.mk_inline(NodeValue::Text(buf), start, self.pos - 1),
+        );
     }
 
-    fn handle_period(&mut self) -> AstNode {
+    fn handle_period(&mut self, node: AstNode) {
         self.pos += 1;
-        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
+        let inl = if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
             if self.peek_char().map_or(false, |&c| c == b'.') {
                 self.pos += 1;
-                self.mk_inline_node(NodeValue::Text("…".to_string()), self.pos - 3, self.pos - 1)
+                self.mk_inline(NodeValue::Text("…".to_string()), self.pos - 3, self.pos - 1)
             } else {
-                self.mk_inline_node(
+                self.mk_inline(
                     NodeValue::Text("..".to_string()),
                     self.pos - 2,
                     self.pos - 1,
                 )
             }
         } else {
-            self.mk_inline_node(NodeValue::Text(".".to_string()), self.pos - 1, self.pos - 1)
-        }
+            self.mk_inline(NodeValue::Text(".".to_string()), self.pos - 1, self.pos - 1)
+        };
+        node.append_value(self.arena, inl);
     }
 
     #[inline]
@@ -1511,7 +1536,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_backslash(&mut self) -> AstNode {
+    fn handle_backslash(&mut self, node: AstNode) {
         let startpos = self.pos;
         self.pos += 1;
 
@@ -1525,24 +1550,31 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             );
 
             if self.options.render.escaped_char_spans {
-                let inl = self.mk_inline_node(NodeValue::Escaped, self.pos - 2, self.pos - 1);
+                let inl = node.append_value(
+                    self.arena,
+                    self.mk_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1),
+                );
                 inl.append_value(self.arena, inline_text);
-                inl
             } else {
-                AstNode::new(self.arena, inline_text)
+                node.append_value(self.arena, inline_text);
             }
         } else if !self.eof() && self.skip_line_end() {
-            let inl = self.mk_inline_node(NodeValue::LineBreak, startpos, self.pos - 1);
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::LineBreak, startpos, self.pos - 1),
+            );
             self.line += 1;
             self.column_offset = -(self.pos as isize);
             self.skip_spaces();
-            inl
         } else {
-            self.mk_inline_node(
-                NodeValue::Text("\\".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            )
+            node.append_value(
+                self.arena,
+                self.mk_inline(
+                    NodeValue::Text("\\".to_string()),
+                    self.pos - 1,
+                    self.pos - 1,
+                ),
+            );
         }
     }
 
@@ -1557,58 +1589,70 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.pos > old_pos || self.eof()
     }
 
-    fn handle_entity(&mut self) -> AstNode {
+    fn handle_entity(&mut self, node: AstNode) {
         self.pos += 1;
 
-        match entity::unescape(&self.input[self.pos..]) {
-            None => {
-                self.mk_inline_node(NodeValue::Text("&".to_string()), self.pos - 1, self.pos - 1)
-            }
+        let inl = match entity::unescape(&self.input[self.pos..]) {
+            None => self.mk_inline(NodeValue::Text("&".to_string()), self.pos - 1, self.pos - 1),
             Some((entity, len)) => {
                 self.pos += len;
-                self.mk_inline_node(
+                self.mk_inline(
                     NodeValue::Text(String::from_utf8(entity).unwrap()),
                     self.pos - 1 - len,
                     self.pos - 1,
                 )
             }
-        }
+        };
+        node.append_value(self.arena, inl);
     }
 
     #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<AstNode> {
-        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
+    fn handle_shortcodes_colon(&mut self, node: AstNode) -> bool {
+        let Some(matchlen) = scanners::shortcode(&self.input[self.pos + 1..]) else {
+            return false;
+        };
 
         let shortcode = unsafe {
             str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
         };
 
-        let nsc = NodeShortCode::resolve(shortcode)?;
+        let Some(nsc) = NodeShortCode::resolve(shortcode) else {
+            return false;
+        };
         self.pos += 1 + matchlen;
 
-        Some(self.mk_inline_node(
-            NodeValue::ShortCode(nsc),
-            self.pos - 1 - matchlen,
-            self.pos - 1,
-        ))
+        node.append_value(
+            self.arena,
+            self.mk_inline(
+                NodeValue::ShortCode(nsc),
+                self.pos - 1 - matchlen,
+                self.pos - 1,
+            ),
+        );
+        true
     }
 
     fn handle_autolink_with(
         &mut self,
         node: AstNode,
-        f: fn(&mut Subject) -> Option<(AstNode, usize, usize)>,
-    ) -> Option<AstNode> {
+        f: fn(&mut Subject, AstNode) -> Option<(AstNode, usize, usize)>,
+    ) -> bool {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
-            return None;
+            return false;
         }
         let startpos = self.pos;
-        let (post, need_reverse, skip) = f(self)?;
+        let Some((post, need_reverse, skip)) = f(self, node) else {
+            return false;
+        };
         self.pos += skip - need_reverse;
 
         // We need to "rewind" by `need_reverse` chars, which should be in one
         // or more Text nodes beforehand. Typically the chars will *all* be in
         // a single Text node, containing whatever text came before the ":" that
         // triggered this method, eg. "See our website at http" ("://blah.com").
+        //
+        // Note that `f` appends the newly created autolink after `node`, so we
+        // have to choose the previous sibling before node's last child.
         //
         // relaxed_autolinks allows some slightly pathological cases. First,
         // "://…" is a possible parse, meaning `reverse == 0`. There may also be
@@ -1617,8 +1661,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // "wa://…" will need to traverse two Texts to complete the rewind.
         let mut reverse = need_reverse;
         while reverse > 0 {
-            let last_child = node.last_child(self.arena).unwrap().get_mut(self.arena);
-            match last_child.value {
+            let last_child = node
+                .last_child(self.arena)
+                .unwrap()
+                .previous_sibling(self.arena)
+                .unwrap()
+                .get_mut(self.arena);
+            match &mut last_child.value {
                 NodeValue::Text(ref mut prev) => {
                     if reverse < prev.len() {
                         prev.truncate(prev.len() - reverse);
@@ -1628,10 +1677,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                         reverse -= prev.len();
                         node.last_child(self.arena)
                             .unwrap()
+                            .previous_sibling(self.arena)
+                            .unwrap()
                             .remove_subtree(self.arena);
                     }
                 }
-                _ => panic!("expected text node before autolink colon"),
+                val => panic!("expected text node before autolink colon; got {:?}", val),
             }
         }
 
@@ -1660,40 +1711,42 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 .sourcepos = *sp;
         }
 
-        Some(post)
+        true
     }
 
-    fn handle_autolink_colon(&mut self, node: AstNode) -> Option<AstNode> {
+    fn handle_autolink_colon(&mut self, node: AstNode) -> bool {
         self.handle_autolink_with(node, autolink::url_match)
     }
 
-    fn handle_autolink_w(&mut self, node: AstNode) -> Option<AstNode> {
+    fn handle_autolink_w(&mut self, node: AstNode) -> bool {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> AstNode {
+    fn handle_pointy_brace(&mut self, node: AstNode, parent_line_offsets: &[usize]) {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
             self.pos += matchlen;
-            let inl = self.make_autolink(
+            self.make_autolink(
+                node,
                 &self.input[self.pos - matchlen..self.pos - 1],
                 AutolinkType::Uri,
                 self.pos - 1 - matchlen,
                 self.pos - 1,
             );
-            return inl;
+            return;
         }
 
         if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
             self.pos += matchlen;
-            let inl = self.make_autolink(
+            self.make_autolink(
+                node,
                 &self.input[self.pos - matchlen..self.pos - 1],
                 AutolinkType::Email,
                 self.pos - 1 - matchlen,
                 self.pos - 1,
             );
-            return inl;
+            return;
         }
 
         // Most comments below are verbatim from cmark upstream.
@@ -1760,16 +1813,22 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if let Some(matchlen) = matchlen {
             let contents = &self.input[self.pos - 1..self.pos + matchlen];
             self.pos += matchlen;
-            let inl = self.mk_inline_node(
-                NodeValue::HtmlInline(str::from_utf8(contents).unwrap().to_string()),
-                self.pos - matchlen - 1,
-                self.pos - 1,
+            let inl = node.append_value(
+                self.arena,
+                self.mk_inline(
+                    NodeValue::HtmlInline(str::from_utf8(contents).unwrap().to_string()),
+                    self.pos - matchlen - 1,
+                    self.pos - 1,
+                ),
             );
             self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
-            return inl;
+            return;
         }
 
-        self.mk_inline_node(NodeValue::Text("<".to_string()), self.pos - 1, self.pos - 1)
+        node.append_value(
+            self.arena,
+            self.mk_inline(NodeValue::Text("<".to_string()), self.pos - 1, self.pos - 1),
+        );
     }
 
     fn push_bracket(&mut self, image: bool, inl_text: AstNode) {
@@ -1788,28 +1847,28 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<AstNode> {
+    fn handle_close_bracket(&mut self, node: AstNode) {
         self.pos += 1;
         let initial_pos = self.pos;
 
         let brackets_len = self.brackets.len();
         if brackets_len == 0 {
-            return Some(self.mk_inline_node(
-                NodeValue::Text("]".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            ));
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1),
+            );
+            return;
         }
 
         let is_image = self.brackets[brackets_len - 1].image;
 
         if !is_image && self.no_link_openers {
             self.brackets.pop();
-            return Some(self.mk_inline_node(
-                NodeValue::Text("]".to_string()),
-                self.pos - 1,
-                self.pos - 1,
-            ));
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1),
+            );
+            return;
         }
 
         // Ensure there was text if this was a link and not an image link
@@ -1832,11 +1891,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
             if !non_blank_found {
                 self.brackets.pop();
-                return Some(self.mk_inline_node(
-                    NodeValue::Text("]".to_string()),
-                    self.pos - 1,
-                    self.pos - 1,
-                ));
+                node.append_value(
+                    self.arena,
+                    self.mk_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1),
+                );
+                return;
             }
         }
 
@@ -1876,7 +1935,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     String::from_utf8(url).unwrap(),
                     String::from_utf8(title).unwrap(),
                 );
-                return None;
+                return;
             } else {
                 self.pos = after_link_text_pos;
             }
@@ -1923,7 +1982,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         if let Some(reff) = reff {
             self.close_bracket_match(is_image, reff.url.clone(), reff.title);
-            return None;
+            return;
         }
 
         let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
@@ -2004,13 +2063,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 self.remove_delimiters(self.brackets[brackets_len - 1].position);
 
                 self.brackets.pop();
-                return None;
+                return;
             }
         }
 
         self.brackets.pop();
         self.pos = initial_pos;
-        Some(self.mk_inline_node(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1))
+        node.append_value(
+            self.arena,
+            self.mk_inline(NodeValue::Text("]".to_string()), self.pos - 1, self.pos - 1),
+        );
     }
 
     fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
@@ -2057,7 +2119,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_inline_footnote(&mut self) -> Option<AstNode> {
+    fn handle_inline_footnote(&mut self, node: AstNode) {
         let startpos = self.pos;
 
         // We're at ^, next should be [
@@ -2081,7 +2143,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if depth != 0 {
             // No matching closing bracket, treat as regular text
             self.pos = startpos + 1;
-            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("^".to_string()), startpos, startpos),
+            );
+            return;
         }
 
         // endpos is now one past the ], so adjust
@@ -2093,14 +2159,18 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // Empty inline footnote should not parse
         if content.is_empty() {
             self.pos = startpos + 1;
-            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("^".to_string()), startpos, startpos),
+            );
+            return;
         }
 
         // Generate unique name
         let name = self.footnote_defs.next_name();
 
         // Create the footnote reference node
-        let ref_node = self.mk_inline_node(
+        let ref_ast = self.mk_inline(
             NodeValue::FootnoteReference(NodeFootnoteReference {
                 name: name.clone(),
                 ref_num: 0,
@@ -2167,7 +2237,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if !has_non_whitespace_content {
             // Content is empty or whitespace-only after parsing, treat as literal text
             self.pos = startpos + 1;
-            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
+            node.append_value(
+                self.arena,
+                self.mk_inline(NodeValue::Text("^".to_string()), startpos, startpos),
+            );
+            return;
         }
 
         // Store the footnote definition
@@ -2176,7 +2250,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // Move position past the closing ]
         self.pos = endpos + 1;
 
-        Some(ref_node)
+        node.append_value(self.arena, ref_ast);
     }
 
     pub fn link_label(&mut self) -> Option<&str> {
@@ -2221,9 +2295,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<AstNode> {
+    fn handle_wikilink(&mut self, node: AstNode) -> bool {
         let startpos = self.pos;
-        let component = self.wikilink_url_link_label()?;
+        let Some(component) = self.wikilink_url_link_label() else {
+            return false;
+        };
         let url_clean = strings::clean_url(component.url);
         let (link_label, link_label_start_column, _link_label_end_column) =
             match component.link_label {
@@ -2238,11 +2314,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let nl = NodeWikiLink {
             url: String::from_utf8(url_clean).unwrap(),
         };
-        let inl = self.mk_inline_node(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
+        let inl = node.append_value(
+            self.arena,
+            self.mk_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1),
+        );
 
         self.label_backslash_escapes(inl, link_label, link_label_start_column);
-
-        Some(inl)
+        true
     }
 
     fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents<'i>> {
@@ -2428,12 +2506,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn make_autolink(
         &mut self,
+        node: AstNode,
         url: &[u8],
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
-    ) -> AstNode {
-        let inl = AstNode::new(
+    ) {
+        let inl = node.append_value(
             self.arena,
             self.mk_inline(
                 NodeValue::Link(NodeLink {
@@ -2452,7 +2531,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 end_column - 1,
             ),
         );
-        inl
     }
 }
 
