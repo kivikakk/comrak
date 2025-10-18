@@ -334,29 +334,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut s: Vec<u8> = Vec::with_capacity(2048);
-
-    match cli.files {
+    // The stdlib is very good at reserving buffer space based on available
+    // information; don't try to one-up it.
+    let input = match cli.files {
         None => {
-            std::io::stdin().read_to_end(&mut s)?;
+            let mut buf = String::new();
+            std::io::stdin().read_to_string(&mut buf)?;
+            buf
         }
-        Some(ref fs) => {
-            for f in fs {
-                match fs::File::open(f) {
+        Some(ref paths) => {
+            let mut buf = String::new();
+            for path in paths {
+                match fs::File::open(path) {
                     Ok(mut io) => {
-                        io.read_to_end(&mut s)?;
+                        io.read_to_string(&mut buf)?;
                     }
                     Err(e) => {
-                        eprintln!("failed to read {}: {}", f.display(), e);
+                        eprintln!("failed to read {}: {}", path.display(), e);
                         process::exit(EXIT_READ_INPUT);
                     }
                 }
             }
+            buf
         }
     };
 
     let arena = Arena::new();
-    let root = comrak::parse_document(&arena, &String::from_utf8(s)?, &options);
+    let root = comrak::parse_document(&arena, &input, &options);
 
     let formatter = if cli.inplace {
         comrak::format_commonmark_with_plugins
@@ -381,7 +385,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         })?;
         std::io::Write::flush(&mut bw)?;
     } else if cli.inplace {
-        let output_filename = cli.files.unwrap().first().unwrap().clone();
+        // We already assert there's exactly one input file.
+        let output_filename = cli.files.as_ref().unwrap().first().unwrap();
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         fmt2io::write(&mut bw, |writer| {
             formatter(root, &options, writer, &plugins)

@@ -372,3 +372,13 @@ fn relaxed_autolink_email_in_footnote() {
         ]),
     );
 }
+
+#[test]
+fn truncate() {
+    html("![](\\#\0)", "<p><img src=\"#%EF%BF%BD\" alt=\"\" /></p>\n");
+}
+
+#[test]
+fn truncate2() {
+    html("~~~ ú", "<pre><code class=\"language-ú\"></code></pre>\n");
+}

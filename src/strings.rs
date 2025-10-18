@@ -41,8 +41,12 @@ pub fn unescape(s: &mut String) {
         shift_buf_left(window, found);
     }
 
-    let new_size = b.len() - found;
-    s.truncate(new_size);
+    if found > 0 {
+        let new_size = b.len() - found;
+        // HACK: see shift_buf_left.
+        b[new_size] = b'\0';
+        s.truncate(new_size);
+    }
 }
 
 pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
@@ -170,9 +174,13 @@ pub fn ltrim(line: &mut String) -> usize {
     // SAFETY: we only shift over spaces, and truncate any duplicated continuation characters.
     let bytes = unsafe { line.as_bytes_mut() };
     let spaces = bytes.iter().take_while(|&&b| isspace(b)).count();
-    shift_buf_left(bytes, spaces);
-    let new_len = line.len() - spaces;
-    line.truncate(new_len);
+    if spaces > 0 {
+        shift_buf_left(bytes, spaces);
+        let new_len = bytes.len() - spaces;
+        // HACK: see shift_buf_left.
+        bytes[new_len] = b'\0';
+        line.truncate(new_len);
+    }
     spaces
 }
 
@@ -194,6 +202,15 @@ pub fn trim_slice(i: &str) -> &str {
     rtrim_slice(ltrim_slice(i))
 }
 
+// HACK: Using this function safely on a buffer obtained from
+// String::as_bytes_mut() requires care when truncating it.
+//
+// Say the string ends in a multibyte character, i.e. the last byte is a UTF-8
+// continuation byte. That byte will be repeated at the end of the buffer when
+// it's shifted left by one at a time; therefore the truncation point won't be
+// a valid UTF-8 character boundary, and String::truncate will panic. In such
+// cases, set the byte immediately after the retained portion to b'\0' (or any
+// non-continuation byte!).
 fn shift_buf_left(buf: &mut [u8], n: usize) {
     if n == 0 {
         return;
