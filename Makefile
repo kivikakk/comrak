@@ -19,6 +19,8 @@ build-comrak-branch:
 build-comrak-main:
 	git clone https://github.com/kivikakk/comrak.git --depth 1 --single-branch ${ROOT}/vendor/comrak || true
 	cd ${ROOT}/vendor/comrak && \
+	git fetch && \
+	git checkout origin/main && \
 	cargo build --release --bin comrak --no-default-features --features cli && \
 	cp ./target/release/comrak ${ROOT}/benches/comrak-main
 
