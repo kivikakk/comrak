@@ -9,18 +9,18 @@ fn test_paragraph_at_root_crash() {
     let options = Options {
         ..Default::default()
     };
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
-    let para = parse_document(&arena, "para", &options)
-        .first_child()
-        .unwrap();
+    let doc = parse_document(&mut arena, "para", &options);
+
+    let para = doc.first_child(&arena).unwrap();
 
     // This is the bit we don't expect: what if the paragraph doesn't have a
     // parent at all?  Normally it should have at least a Document.
-    para.detach();
+    doc.remove_self(&mut arena);
 
     let mut output = String::new();
-    html::format_document(para, &options, &mut output).unwrap();
+    html::format_document(&arena, para, &options, &mut output).unwrap();
 }
 
 #[test]
@@ -32,19 +32,20 @@ fn test_empty_table_crash() {
         },
         ..Default::default()
     };
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
-    let table = parse_document(&arena, "| x |\n| - |\n| z |", &options)
-        .first_child()
+    let table = parse_document(&mut arena, "| x |\n| - |\n| z |", &options)
+        .first_child(&arena)
         .unwrap();
 
     // What if the table has been emptied of *all* children?
-    while let Some(child) = table.first_child() {
-        child.detach();
-    }
+    table
+        .first_child(&arena)
+        .unwrap()
+        .remove_subtree(&mut arena);
 
     let mut output = String::new();
-    html::format_document(table, &options, &mut output).unwrap();
+    html::format_document(&arena, table, &options, &mut output).unwrap();
 }
 
 #[test]
@@ -57,25 +58,20 @@ fn test_table_cell_out_of_water_crash() {
         },
         ..Default::default()
     };
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
-    let doc = parse_document(&arena, "| x |\n| - |\n| z |", &options);
+    let doc = parse_document(&mut arena, "| x |\n| - |\n| z |", &options);
 
-    let table_row = doc
-        .first_child() // table
-        .unwrap()
-        .last_child() // table row
-        .unwrap();
-
-    let table_cell = table_row
-        .first_child() // table cell
-        .unwrap();
+    let table = doc.first_child(&arena).unwrap();
+    let table_row = table.last_child(&arena).unwrap();
+    let table_cell = table_row.first_child(&arena).unwrap();
 
     // What if the table cell has no owning table?
-    table_row.detach();
+    doc.remove_self(&mut arena);
+    table.remove_self(&mut arena);
 
     let mut output = String::new();
-    html::format_document(table_cell, &options, &mut output).unwrap();
+    html::format_document(&arena, table_cell, &options, &mut output).unwrap();
 }
 
 #[test]
@@ -88,23 +84,19 @@ fn test_table_cell_out_of_school_crash() {
         },
         ..Default::default()
     };
-    let arena = Arena::new();
+    let mut arena = Arena::new();
 
-    let doc = parse_document(&arena, "| x |\n| - |\n| z |", &options);
+    let doc = parse_document(&mut arena, "| x |\n| - |\n| z |", &options);
 
-    let table_row = doc
-        .first_child() // table
-        .unwrap()
-        .last_child() // table row
-        .unwrap();
-
-    let table_cell = table_row
-        .first_child() // table cell
-        .unwrap();
+    let table = doc.first_child(&arena).unwrap();
+    let table_row = table.last_child(&arena).unwrap();
+    let table_cell = table_row.first_child(&arena).unwrap();
 
     // What if the table cell has no owning table row?
-    table_cell.detach();
+    doc.remove_self(&mut arena);
+    table.remove_self(&mut arena);
+    table_row.remove_self(&mut arena);
 
     let mut output = String::new();
-    html::format_document(table_cell, &options, &mut output).unwrap();
+    html::format_document(&arena, table_cell, &options, &mut output).unwrap();
 }

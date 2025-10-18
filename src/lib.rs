@@ -21,21 +21,21 @@
 //! use comrak::nodes::{AstNode, NodeValue};
 //!
 //! # fn main() {
-//! let arena = Arena::new();
+//! let mut arena = Arena::new();
 //!
 //! let root = parse_document(
-//!     &arena,
+//!     &mut arena,
 //!     "Hello, pretty world!\n\n1. Do you like [pretty](#) paintings?\n2. Or *pretty* music?\n",
 //!     &Options::default());
 //!
-//! for node in root.descendants() {
-//!     if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+//! for node in root.descendants(&arena).collect::<Vec<_>>() {
+//!     if let NodeValue::Text(ref mut text) = node.get_mut(&mut arena).value {
 //!         *text = text.replace("pretty", "beautiful");
 //!     }
 //! }
 //!
 //! let mut html = String::new();
-//! format_html(root, &Options::default(), &mut html).unwrap();
+//! format_html(&arena, root, &Options::default(), &mut html).unwrap();
 //!
 //! assert_eq!(
 //!     &html,
@@ -66,7 +66,6 @@
 )]
 
 pub mod adapters;
-pub mod arena_tree;
 mod character_set;
 mod cm;
 mod ctype;
@@ -89,12 +88,12 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
 pub use html::Anchorizer;
+pub use indextree::Arena;
 pub use parser::{
     parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions, ListStyleType,
     Options, ParseOptions, Plugins, RenderOptions, RenderPlugins, ResolvedReference, URLRewriter,
     WikiLinksMode,
 };
-pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
@@ -128,10 +127,10 @@ pub fn markdown_to_html(md: &str, options: &Options) -> String {
 ///
 /// See the documentation of the crate root for an example.
 pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plugins) -> String {
-    let arena = Arena::new();
-    let root = parse_document(&arena, md, options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, md, options);
     let mut out = String::new();
-    format_html_with_plugins(root, options, &mut out, plugins).unwrap();
+    format_html_with_plugins(&arena, root, options, &mut out, plugins).unwrap();
     out
 }
 
@@ -142,10 +141,10 @@ pub fn version() -> &'static str {
 
 /// Render Markdown back to CommonMark.
 pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
-    let arena = Arena::new();
-    let root = parse_document(&arena, md, options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, md, options);
     let mut out = String::new();
-    format_commonmark(root, options, &mut out).unwrap();
+    format_commonmark(&arena, root, options, &mut out).unwrap();
     out
 }
 
@@ -162,9 +161,9 @@ pub fn markdown_to_commonmark_xml_with_plugins(
     options: &Options,
     plugins: &Plugins,
 ) -> String {
-    let arena = Arena::new();
-    let root = parse_document(&arena, md, options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, md, options);
     let mut out = String::new();
-    format_xml_with_plugins(root, options, &mut out, plugins).unwrap();
+    format_xml_with_plugins(&arena, root, options, &mut out, plugins).unwrap();
     out
 }

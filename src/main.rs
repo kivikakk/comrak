@@ -359,8 +359,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let arena = Arena::new();
-    let root = comrak::parse_document(&arena, &input, &options);
+    let mut arena = Arena::new();
+    let root = comrak::parse_document(&mut arena, &input, &options);
 
     let formatter = if cli.inplace {
         comrak::format_commonmark_with_plugins
@@ -381,7 +381,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(output_filename) = cli.output {
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     } else if cli.inplace {
@@ -389,14 +389,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let output_filename = cli.files.as_ref().unwrap().first().unwrap();
         let mut bw = BufWriter::new(fs::File::create(output_filename)?);
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     } else {
         let stdout = std::io::stdout();
         let mut bw = BufWriter::new(stdout.lock());
         fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+            formatter(&arena, root, &options, writer, &plugins)
         })?;
         std::io::Write::flush(&mut bw)?;
     };
