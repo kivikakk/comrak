@@ -16,10 +16,7 @@ fn assert_escape_inline(input: &str, expected: &str) {
         .strip_suffix("</p>\n")
         .expect("html should be one paragraph")
         .to_string();
-    assert_eq!(
-        input,
-        std::str::from_utf8(&entity::unescape_html(html.as_bytes())).unwrap()
-    );
+    assert_eq!(input, entity::unescape_html(&html));
 }
 
 #[test]

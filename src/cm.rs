@@ -992,7 +992,7 @@ fn shortest_unused_sequence(literal: &[u8], f: u8) -> usize {
 }
 
 fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
-    if nl.url.is_empty() || scanners::scheme(nl.url.as_bytes()).is_none() {
+    if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
 

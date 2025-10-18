@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -133,7 +134,8 @@ impl FlankingCheckHelper for char {
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a>>,
     pub options: &'o Options<'c>,
-    pub input: &'i [u8],
+    pub input: &'i str,
+    pub bytes: &'i [u8],
     line: usize,
     pub pos: usize,
     column_offset: isize,
@@ -261,15 +263,15 @@ struct Bracket<'a> {
 
 #[derive(Clone, Copy)]
 struct WikilinkComponents<'i> {
-    url: &'i [u8],
-    link_label: Option<(&'i [u8], usize, usize)>,
+    url: &'i str,
+    link_label: Option<(&'i str, usize, usize)>,
 }
 
 impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
         options: &'o Options<'c>,
-        input: &'i [u8],
+        input: &'i str,
         line: usize,
         refmap: &'r mut RefMap,
         footnote_defs: &'p FootnoteDefs<'a>,
@@ -279,6 +281,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             arena,
             options,
             input,
+            bytes: input.as_bytes(),
             line,
             pos: 0,
             column_offset: 0,
@@ -461,7 +464,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
-                let mut contents = self.input[self.pos..endpos].to_vec();
+                let mut contents = &self.input[self.pos..endpos];
                 let mut startpos = self.pos;
                 self.pos = endpos;
 
@@ -469,7 +472,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     .peek_char()
                     .map_or(false, |&c| strings::is_line_end_char(c))
                 {
-                    endpos -= strings::rtrim(&mut contents);
+                    let size_before = contents.len();
+                    contents = strings::rtrim_slice(contents);
+                    endpos -= size_before - contents.len();
                 }
 
                 // if we've just produced a LineBreak, then we should consume any leading
@@ -478,15 +483,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     matches!(n.data.borrow().value, NodeValue::LineBreak)
                 }) {
                     // TODO: test this more explicitly.
-                    let n = strings::ltrim(&mut contents);
-                    startpos += n;
+                    let size_before = contents.len();
+                    contents = strings::ltrim_slice(contents);
+                    startpos += size_before - contents.len();
                 }
 
                 // Don't create empty text nodes - this can happen after trimming trailing
                 // whitespace and would cause sourcepos underflow in endpos - 1
                 if !contents.is_empty() {
                     Some(self.make_inline(
-                        NodeValue::Text(String::from_utf8(contents).unwrap()),
+                        NodeValue::Text(contents.to_string()),
                         startpos,
                         endpos - 1,
                     ))
@@ -757,7 +763,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if self.pos + n >= self.input.len() {
             None
         } else {
-            let c = &self.input[self.pos + n];
+            let c = &self.bytes[self.pos + n];
             assert!(*c > 0);
             Some(c)
         }
@@ -765,14 +771,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn find_special_char(&self) -> usize {
         for n in self.pos..self.input.len() {
-            if self.special_chars[self.input[n] as usize] {
-                if self.input[n] == b'^' && self.within_brackets {
+            if self.special_chars[self.bytes[n] as usize] {
+                if self.bytes[n] == b'^' && self.within_brackets {
                     // NO OP
                 } else {
                     return n;
                 }
             }
-            if self.options.parse.smart && self.smart_chars[self.input[n] as usize] {
+            if self.options.parse.smart && self.smart_chars[self.bytes[n] as usize] {
                 return n;
             }
         }
@@ -803,13 +809,13 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn handle_newline(&mut self) -> &'a AstNode<'a> {
         let nlpos = self.pos;
-        if self.input[self.pos] == b'\r' {
+        if self.bytes[self.pos] == b'\r' {
             self.pos += 1;
         }
-        if self.input[self.pos] == b'\n' {
+        if self.bytes[self.pos] == b'\n' {
             self.pos += 1;
         }
-        let inl = if nlpos > 1 && self.input[nlpos - 1] == b' ' && self.input[nlpos - 2] == b' ' {
+        let inl = if nlpos > 1 && self.bytes[nlpos - 1] == b' ' && self.bytes[nlpos - 2] == b' ' {
             self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
         } else {
             self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
@@ -884,7 +890,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
-                    literal: String::from_utf8(buf).unwrap(),
+                    literal: buf,
                 };
                 let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
                 self.adjust_node_newlines(
@@ -917,7 +923,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 return None;
             }
 
-            let c = self.input[self.pos - 1];
+            let c = self.bytes[self.pos - 1];
 
             // space not allowed before ending $
             if opendollarlength == 1 && isspace(c) {
@@ -955,7 +961,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 return None;
             }
 
-            let c = self.input[self.pos - 1];
+            let c = self.bytes[self.pos - 1];
             self.pos += 1;
             if c == b'`' {
                 return Some(self.pos);
@@ -992,15 +998,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         if let Some(endpos) = endpos {
             let buf = &self.input[startpos + fence_length..endpos - fence_length];
-            let buf: Vec<u8> = if code_math || opendollars == 1 {
+            let buf = if code_math || opendollars == 1 {
                 strings::normalize_code(buf)
             } else {
-                buf.to_vec()
+                buf.to_string()
             };
             let math = NodeMath {
                 dollar_math: !code_math,
                 display_math: opendollars == 2,
-                literal: String::from_utf8(buf).unwrap(),
+                literal: buf,
             };
             let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(
@@ -1044,9 +1050,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 "“".to_string()
             }
         } else {
-            str::from_utf8(&self.input[self.pos - numdelims..self.pos])
-                .unwrap()
-                .to_string()
+            self.input[self.pos - numdelims..self.pos].to_string()
         };
         let inl = self.make_inline(
             NodeValue::Text(contents),
@@ -1120,15 +1124,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
         let mut before_char_pos = pos - 1;
         while before_char_pos > 0
-            && (self.input[before_char_pos] >> 6 == 2
-                || self.skip_chars[self.input[before_char_pos] as usize])
+            && (self.bytes[before_char_pos] >> 6 == 2
+                || self.skip_chars[self.bytes[before_char_pos] as usize])
         {
             before_char_pos -= 1;
         }
-        match unsafe { str::from_utf8_unchecked(&self.input[before_char_pos..pos]) }
-            .chars()
-            .next()
-        {
+        match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
                 if (x as usize) < 256 && self.skip_chars[x as usize] {
                     ('\n', None)
@@ -1159,14 +1160,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         } else {
             let mut after_char_pos = self.pos;
             while after_char_pos < self.input.len() - 1
-                && self.skip_chars[self.input[after_char_pos] as usize]
+                && self.skip_chars[self.bytes[after_char_pos] as usize]
             {
                 after_char_pos += 1;
             }
-            match unsafe { str::from_utf8_unchecked(&self.input[after_char_pos..]) }
-                .chars()
-                .next()
-            {
+            match self.input[after_char_pos..].chars().next() {
                 Some(x) => {
                     if (x as usize) < 256 && self.skip_chars[x as usize] {
                         '\n'
@@ -1421,7 +1419,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             self.pos += 1;
 
             let inline_text = self.make_inline(
-                NodeValue::Text(String::from_utf8(vec![self.input[self.pos - 1]]).unwrap()),
+                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string()),
                 self.pos - 2,
                 self.pos - 1,
             );
@@ -1467,7 +1465,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             Some((entity, len)) => {
                 self.pos += len;
                 self.make_inline(
-                    NodeValue::Text(String::from_utf8(entity).unwrap()),
+                    NodeValue::Text(entity.into()), // XXX: what if Cow<'static, str>
                     self.pos - 1 - len,
                     self.pos - 1,
                 )
@@ -1479,9 +1477,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
         let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
-        let shortcode = unsafe {
-            str::from_utf8_unchecked(&self.input[self.pos + 1..self.pos + 1 + matchlen - 1])
-        };
+        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
 
         let nsc = NodeShortCode::resolve(shortcode)?;
         self.pos += 1 + matchlen;
@@ -1596,9 +1592,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut matchlen: Option<usize> = None;
 
         if self.pos + 2 <= self.input.len() {
-            let c = self.input[self.pos];
+            let c = self.bytes[self.pos];
             if c == b'!' && !self.flags.skip_html_comment {
-                let c = self.input[self.pos + 1];
+                let c = self.bytes[self.pos + 1];
                 if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
                     if self.peek_char_n(3) == Some(&b'>') {
                         matchlen = Some(4);
@@ -1657,7 +1653,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             let contents = &self.input[self.pos - 1..self.pos + matchlen];
             self.pos += matchlen;
             let inl = self.make_inline(
-                NodeValue::HtmlInline(str::from_utf8(contents).unwrap().to_string()),
+                NodeValue::HtmlInline(contents.to_string()),
                 self.pos - matchlen - 1,
                 self.pos - 1,
             );
@@ -1714,7 +1710,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
             while let Some(tmp) = tmpch {
                 match tmp.data.borrow().value {
-                    NodeValue::Text(ref s) if is_blank(s.as_bytes()) => (),
+                    NodeValue::Text(ref s) if is_blank(s) => (),
                     _ => {
                         non_blank_found = true;
                         break;
@@ -1739,7 +1735,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // Try to find a link destination within parenthesis
 
         let mut sps = 0;
-        let mut url: &[u8] = &[];
+        let mut url: &str = "";
         let mut n: usize = 0;
         if self.peek_char() == Some(&(b'(')) && {
             sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
@@ -1761,15 +1757,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             };
             let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
-            if endall < self.input.len() && self.input[endall] == b')' {
+            if endall < self.input.len() && self.bytes[endall] == b')' {
                 self.pos = endall + 1;
                 let url = strings::clean_url(url);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                self.close_bracket_match(
-                    is_image,
-                    String::from_utf8(url).unwrap(),
-                    String::from_utf8(title).unwrap(),
-                );
+                self.close_bracket_match(is_image, url.into(), title.into());
                 return None;
             } else {
                 self.pos = after_link_text_pos;
@@ -1778,9 +1770,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         // Try to see if this is a reference link
 
-        let (mut lab, mut found_label) = match self.link_label() {
-            Some(lab) => (lab.to_string(), true),
-            None => ("".to_string(), false),
+        let (mut lab, mut found_label): (Cow<str>, bool) = match self.link_label() {
+            Some(lab) => (lab.to_string().into(), true),
+            None => ("".into(), false),
         };
 
         if !found_label {
@@ -1788,16 +1780,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
 
         if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = str::from_utf8(
-                &self.input[self.brackets[brackets_len - 1].position..initial_pos - 1],
-            )
-            .unwrap()
-            .to_string();
+            // XXX: is there a difference?
+            // lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
+            lab = (&self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]).into();
             found_label = true;
         }
 
         // Need to normalize both to lookup in refmap and to call callback
-        let unfolded_lab = lab.to_owned();
+        let unfolded_lab = lab.clone();
         let lab = strings::normalize_label(&lab, Case::Fold);
         let mut reff = if found_label {
             self.refmap.lookup(&lab)
@@ -1954,7 +1944,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut depth = 1;
         let mut endpos = self.pos;
         while endpos < self.input.len() && depth > 0 {
-            match self.input[endpos] {
+            match self.bytes[endpos] {
                 b'[' => depth += 1,
                 b']' => depth -= 1,
                 b'\\' if endpos + 1 < self.input.len() => {
@@ -2013,7 +2003,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         );
         // Build line_offsets by scanning for newlines in the content
         let mut line_offsets = vec![0];
-        for (i, &byte) in content.iter().enumerate() {
+        for (i, &byte) in content.as_bytes().iter().enumerate() {
             if byte == b'\n' {
                 line_offsets.push(i + 1);
             }
@@ -2096,7 +2086,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if c == b']' {
             let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
             self.pos += 1;
-            Some(str::from_utf8(raw_label).unwrap())
+            Some(raw_label)
         } else {
             self.pos = startpos;
             None
@@ -2121,11 +2111,11 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             };
 
         let nl = NodeWikiLink {
-            url: String::from_utf8(url_clean).unwrap(),
+            url: url_clean.into(),
         };
         let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
 
-        self.label_backslash_escapes(inl, link_label, link_label_start_column);
+        self.label_backslash_escapes(inl, &link_label, link_label_start_column);
 
         Some(inl)
     }
@@ -2226,19 +2216,20 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     fn label_backslash_escapes(
         &mut self,
         container: &'a AstNode<'a>,
-        label: Vec<u8>,
+        label: &str,
         start_column: usize,
     ) {
         let mut startpos = 0;
         let mut offset = 0;
+        let bytes = label.as_bytes();
         let len = label.len();
 
         while offset < len {
-            let c = label[offset];
+            let c = bytes[offset];
 
-            if c == b'\\' && (offset + 1) < len && ispunct(label[offset + 1]) {
+            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
                 let preceding_text = self.make_inline(
-                    NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                    NodeValue::Text(label[startpos..offset].to_string()),
                     start_column + startpos,
                     start_column + offset - 1,
                 );
@@ -2246,7 +2237,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 container.append(preceding_text);
 
                 let inline_text = self.make_inline(
-                    NodeValue::Text(String::from_utf8(vec![label[offset + 1]]).unwrap()),
+                    NodeValue::Text(label[offset + 1..offset + 2].to_string()),
                     start_column + offset,
                     start_column + offset + 1,
                 );
@@ -2273,7 +2264,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         if startpos != offset {
             container.append(self.make_inline(
-                NodeValue::Text(String::from_utf8(label[startpos..offset].to_owned()).unwrap()),
+                NodeValue::Text(label[startpos..offset].to_string()),
                 start_column + startpos,
                 start_column + offset - 1,
             ));
@@ -2318,21 +2309,21 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn make_autolink(
         &self,
-        url: &[u8],
+        url: &str,
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
     ) -> &'a AstNode<'a> {
         let inl = self.make_inline(
             NodeValue::Link(NodeLink {
-                url: String::from_utf8(strings::clean_autolink(url, kind)).unwrap(),
+                url: strings::clean_autolink(url, kind).into(),
                 title: String::new(),
             }),
             start_column,
             end_column,
         );
         inl.append(self.make_inline(
-            NodeValue::Text(String::from_utf8(entity::unescape_html(url)).unwrap()),
+            NodeValue::Text(entity::unescape_html(url).into()),
             start_column + 1,
             end_column - 1,
         ));
@@ -2340,14 +2331,15 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     }
 }
 
-pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
+pub fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
+    let bytes = input.as_bytes();
     let len = input.len();
     let mut i = 0;
 
-    if i < len && input[i] == b'<' {
+    if i < len && bytes[i] == b'<' {
         i += 1;
         while i < len {
-            let b = input[i];
+            let b = bytes[i];
             if b == b'>' {
                 i += 1;
                 break;
@@ -2370,27 +2362,28 @@ pub fn manual_scan_link_url(input: &[u8]) -> Option<(&[u8], usize)> {
     }
 }
 
-pub fn manual_scan_link_url_2(input: &[u8]) -> Option<(&[u8], usize)> {
+pub fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
+    let bytes = input.as_bytes();
     let len = input.len();
     let mut i = 0;
     let mut nb_p = 0;
 
     while i < len {
-        if input[i] == b'\\' && i + 1 < len && ispunct(input[i + 1]) {
+        if bytes[i] == b'\\' && i + 1 < len && ispunct(bytes[i + 1]) {
             i += 2;
-        } else if input[i] == b'(' {
+        } else if bytes[i] == b'(' {
             nb_p += 1;
             i += 1;
             if nb_p > 32 {
                 return None;
             }
-        } else if input[i] == b')' {
+        } else if bytes[i] == b')' {
             if nb_p == 0 {
                 break;
             }
             nb_p -= 1;
             i += 1;
-        } else if isspace(input[i]) || input[i].is_ascii_control() {
+        } else if isspace(bytes[i]) || bytes[i].is_ascii_control() {
             if i == 0 {
                 return None;
             }
@@ -2425,11 +2418,11 @@ pub fn make_inline<'a>(
     arena.alloc(Node::new(RefCell::new(ast)))
 }
 
-pub fn count_newlines(input: &[u8]) -> (usize, usize) {
+pub fn count_newlines(input: &str) -> (usize, usize) {
     let mut nls = 0;
     let mut since_nl = 0;
 
-    for &c in input {
+    for &c in input.as_bytes() {
         if c == b'\n' {
             nls += 1;
             since_nl = 0;

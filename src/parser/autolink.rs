@@ -11,12 +11,12 @@ use crate::parser::{inlines::make_inline, Spx};
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
     node: &'a AstNode<'a>,
-    contents_str: &mut String,
+    contents: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
     spx: &mut Spx,
 ) {
-    let contents = contents_str.as_bytes();
+    let bytes = contents.as_bytes();
     let len = contents.len();
     let mut i = 0;
 
@@ -27,7 +27,7 @@ pub(crate) fn process_email_autolinks<'a>(
         // cmark-gfm ignores links inside brackets, such as `[[http://example.com]`
         while i < len {
             if !relaxed_autolinks {
-                match contents[i] {
+                match bytes[i] {
                     b'[' => {
                         bracket_opening += 1;
                     }
@@ -43,7 +43,7 @@ pub(crate) fn process_email_autolinks<'a>(
                 }
             }
 
-            if contents[i] == b'@' {
+            if bytes[i] == b'@' {
                 post_org = email_match(arena, contents, i, relaxed_autolinks);
                 if post_org.is_some() {
                     break;
@@ -57,7 +57,7 @@ pub(crate) fn process_email_autolinks<'a>(
             node.insert_after(post);
 
             let remain = if i + skip < len {
-                let remain = str::from_utf8(&contents[i + skip..]).unwrap();
+                let remain = &contents[i + skip..];
                 assert!(!remain.is_empty());
                 Some(remain.to_string())
             } else {
@@ -69,7 +69,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
             let nsp_end_col = spx.consume(skip);
 
-            contents_str.truncate(i);
+            contents.truncate(i);
 
             let nsp: Sourcepos = (
                 sourcepos.end.line,
@@ -115,20 +115,21 @@ pub(crate) fn process_email_autolinks<'a>(
 }
 fn email_match<'a>(
     arena: &'a Arena<AstNode<'a>>,
-    contents: &[u8],
+    contents: &str,
     i: usize,
     relaxed_autolinks: bool,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
+    let bytes = contents.as_bytes();
 
     let mut auto_mailto = true;
     let mut is_xmpp = false;
     let mut rewind = 0;
 
     while rewind < i {
-        let c = contents[i - rewind - 1];
+        let c = bytes[i - rewind - 1];
 
         if isalnum(c) || EMAIL_OK_SET[c as usize] {
             rewind += 1;
@@ -161,13 +162,13 @@ fn email_match<'a>(
     let mut np = 0;
 
     while link_end < size - i {
-        let c = contents[i + link_end];
+        let c = bytes[i + link_end];
 
         if isalnum(c) {
             // empty
         } else if c == b'@' {
             return None;
-        } else if c == b'.' && link_end < size - i - 1 && isalnum(contents[i + link_end + 1]) {
+        } else if c == b'.' && link_end < size - i - 1 && isalnum(bytes[i + link_end + 1]) {
             np += 1;
         } else if c == b'/' && is_xmpp {
             // xmpp allows a `/` in the url
@@ -180,7 +181,7 @@ fn email_match<'a>(
 
     if link_end < 2
         || np == 0
-        || (!isalpha(contents[i + link_end - 1]) && contents[i + link_end - 1] != b'.')
+        || (!isalpha(bytes[i + link_end - 1]) && bytes[i + link_end - 1] != b'.')
     {
         return None;
     }
@@ -190,13 +191,12 @@ fn email_match<'a>(
         return None;
     }
 
-    let mut url = if auto_mailto {
-        "mailto:".to_string()
+    let text = &contents[i - rewind..link_end + i];
+    let url = if auto_mailto {
+        format!("mailto:{text}")
     } else {
-        "".to_string()
+        text.to_string()
     };
-    let text = str::from_utf8(&contents[i - rewind..link_end + i]).unwrap();
-    url.push_str(text);
 
     let inl = make_inline(
         arena,
@@ -215,16 +215,16 @@ fn email_match<'a>(
     Some((inl, rewind, rewind + link_end))
 }
 
-fn validate_protocol(protocol: &str, contents: &[u8], cursor: usize) -> bool {
+fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
     let size = contents.len();
+    let bytes = contents.as_bytes();
     let mut rewind = 0;
 
-    while rewind < cursor && isalpha(contents[cursor - rewind - 1]) {
+    while rewind < cursor && isalpha(bytes[cursor - rewind - 1]) {
         rewind += 1;
     }
 
-    size - cursor + rewind >= protocol.len()
-        && &contents[cursor - rewind..cursor] == protocol.as_bytes()
+    size - cursor + rewind >= protocol.len() && &contents[cursor - rewind..cursor] == protocol
 }
 
 pub fn www_match<'a>(
@@ -233,32 +233,31 @@ pub fn www_match<'a>(
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
-    let contents = subject.input;
+    let bytes = subject.input.as_bytes();
 
-    if i > 0 && !isspace(contents[i - 1]) && !WWW_DELIMS[contents[i - 1] as usize] {
+    if i > 0 && !isspace(bytes[i - 1]) && !WWW_DELIMS[bytes[i - 1] as usize] {
         return None;
     }
 
-    if !contents[i..].starts_with(b"www.") {
+    if !subject.input[i..].starts_with("www.") {
         return None;
     }
 
     // Skip over "www." for domain validation, but account for its length in the overall link
-    let mut link_end = check_domain(&contents[i + 4..], relaxed_autolinks)? + 4;
+    let mut link_end = check_domain(&subject.input[i + 4..], relaxed_autolinks)? + 4;
 
-    while i + link_end < contents.len() && !isspace(contents[i + link_end]) {
+    while i + link_end < subject.input.len() && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
-        if relaxed_autolinks && contents[i + link_end - 1] == b']' && contents[i + link_end] == b'('
-        {
+        if relaxed_autolinks && bytes[i + link_end - 1] == b']' && bytes[i + link_end] == b'(' {
             return None;
         }
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
+    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
 
     let mut url = "http://".to_string();
-    url.push_str(str::from_utf8(&contents[i..link_end + i]).unwrap());
+    url.push_str(&subject.input[i..link_end + i]);
 
     let inl = make_inline(
         subject.arena,
@@ -271,22 +270,18 @@ pub fn www_match<'a>(
 
     inl.append(make_inline(
         subject.arena,
-        NodeValue::Text(
-            str::from_utf8(&contents[i..link_end + i])
-                .unwrap()
-                .to_string(),
-        ),
+        NodeValue::Text(subject.input[i..link_end + i].into()),
         (0, 1, 0, 1).into(),
     ));
     Some((inl, 0, link_end))
 }
 
-fn check_domain(data: &[u8], allow_short: bool) -> Option<usize> {
+fn check_domain(data: &str, allow_short: bool) -> Option<usize> {
     let mut np = 0;
     let mut uscore1 = 0;
     let mut uscore2 = 0;
 
-    for (i, c) in unsafe { str::from_utf8_unchecked(data) }.char_indices() {
+    for (i, c) in data.char_indices() {
         if c == '\\' && i < data.len() - 1 {
             // Ignore escaped characters per https://github.com/github/cmark-gfm/pull/292.
             // Not sure I love this, but it tracks upstream ..
@@ -317,10 +312,11 @@ fn is_valid_hostchar(ch: char) -> bool {
     !(ch.is_whitespace() || ch.is_punctuation() || ch.is_symbol())
 }
 
-fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> usize {
+fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> usize {
     const LINK_END_ASSORTMENT: [bool; 256] = character_set!(b"?!.,:*_~'\"");
 
-    for (i, &b) in data.iter().enumerate().take(link_end) {
+    let bytes = data.as_bytes();
+    for (i, &b) in bytes.iter().enumerate().take(link_end) {
         if b == b'<' {
             link_end = i;
             break;
@@ -328,7 +324,7 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
     }
 
     while link_end > 0 {
-        let cclose = data[link_end - 1];
+        let cclose = bytes[link_end - 1];
 
         // Allow any number of matching parentheses (as recognised in copen/cclose)
         // at the end of the URL.  If there is a greater number of closing
@@ -352,11 +348,11 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
         } else if cclose == b';' {
             let mut new_end = link_end - 2;
 
-            while new_end > 0 && isalpha(data[new_end]) {
+            while new_end > 0 && isalpha(bytes[new_end]) {
                 new_end -= 1;
             }
 
-            if new_end < link_end - 2 && data[new_end] == b'&' {
+            if new_end < link_end - 2 && bytes[new_end] == b'&' {
                 link_end = new_end;
             } else {
                 link_end -= 1;
@@ -364,7 +360,7 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
         } else if let Some(copen) = copen {
             let mut opening = 0;
             let mut closing = 0;
-            for &b in data.iter().take(link_end) {
+            for &b in bytes.iter().take(link_end) {
                 if b == copen {
                     opening += 1;
                 } else if b == cclose {
@@ -388,52 +384,51 @@ fn autolink_delim(data: &[u8], mut link_end: usize, relaxed_autolinks: bool) -> 
 pub fn url_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_, '_>,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
-    const SCHEMES: [&[u8]; 3] = [b"http", b"https", b"ftp"];
+    const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
-    let contents = subject.input;
-    let size = contents.len();
+    let bytes = subject.input.as_bytes();
+    let size = subject.input.len();
 
-    if size - i < 4 || contents[i + 1] != b'/' || contents[i + 2] != b'/' {
+    if size - i < 4 || bytes[i + 1] != b'/' || bytes[i + 2] != b'/' {
         return None;
     }
 
     let mut rewind = 0;
-    while rewind < i && isalpha(contents[i - rewind - 1]) {
+    while rewind < i && isalpha(bytes[i - rewind - 1]) {
         rewind += 1;
     }
 
     if !relaxed_autolinks {
-        let cond = |s: &&[u8]| size - i + rewind >= s.len() && &&contents[i - rewind..i] == s;
+        let scheme = &subject.input[i - rewind..i];
+        let cond = |s: &&str| size - i + rewind >= s.len() && &scheme == s;
         if !SCHEMES.iter().any(cond) {
             return None;
         }
     }
 
-    let mut link_end = check_domain(&contents[i + 3..], relaxed_autolinks)? + 3;
+    let mut link_end = check_domain(&subject.input[i + 3..], relaxed_autolinks)? + 3;
 
-    while link_end < size - i && !isspace(contents[i + link_end]) {
+    while link_end < size - i && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
         if relaxed_autolinks
             && link_end > 0
-            && contents[i + link_end - 1] == b']'
-            && contents[i + link_end] == b'('
+            && bytes[i + link_end - 1] == b']'
+            && bytes[i + link_end] == b'('
         {
             return None;
         }
         link_end += 1;
     }
 
-    link_end = autolink_delim(&contents[i..], link_end, relaxed_autolinks);
+    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
 
-    let url = str::from_utf8(&contents[i - rewind..i + link_end])
-        .unwrap()
-        .to_string();
+    let url = &subject.input[i - rewind..i + link_end];
     let inl = make_inline(
         subject.arena,
         NodeValue::Link(NodeLink {
-            url: url.clone(),
+            url: url.to_string(),
             title: String::new(),
         }),
         (0, 1, 0, 1).into(),
@@ -441,7 +436,7 @@ pub fn url_match<'a>(
 
     inl.append(make_inline(
         subject.arena,
-        NodeValue::Text(url),
+        NodeValue::Text(url.to_string()),
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))

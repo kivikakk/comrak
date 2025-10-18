@@ -1723,7 +1723,7 @@ fn tagfilter_block(input: &str, o: &mut dyn Write) -> fmt::Result {
 
 /// Check if the input would be considered a dangerous url
 pub fn dangerous_url(input: &str) -> bool {
-    scanners::dangerous_url(input.as_bytes()).is_some()
+    scanners::dangerous_url(input).is_some()
 }
 
 /// Writes buffer to output, escaping anything that could be interpreted as an
@@ -1803,9 +1803,9 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
     let mut i = 0;
 
     let possible_ipv6_url_end = if relaxed_ipv6 {
-        scanners::ipv6_relaxed_url_start(bytes)
+        scanners::ipv6_relaxed_url_start(buffer)
     } else {
-        scanners::ipv6_url_start(bytes)
+        scanners::ipv6_url_start(buffer)
     };
     if let Some(ipv6_url_end) = possible_ipv6_url_end {
         output.write_str(&buffer[0..ipv6_url_end])?;
