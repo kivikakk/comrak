@@ -2,7 +2,7 @@
 
 use crate::parser::alert::AlertType;
 
-pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
+pub fn atx_heading_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -16,7 +16,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -44,7 +44,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -74,7 +74,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -101,7 +101,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -136,7 +136,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -166,7 +166,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -196,7 +196,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -226,7 +226,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -254,7 +254,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_block_end_1(s: &[u8]) -> bool {
+pub fn html_block_end_1(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -269,7 +269,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -330,7 +330,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -351,7 +351,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -377,7 +377,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -399,7 +399,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -421,7 +421,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -443,7 +443,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -465,7 +465,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -487,7 +487,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -509,7 +509,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -529,7 +529,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -601,7 +601,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -666,7 +666,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -686,7 +686,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -706,7 +706,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -726,7 +726,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -746,7 +746,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -766,7 +766,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -786,7 +786,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -806,7 +806,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -887,7 +887,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -952,7 +952,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1028,7 +1028,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1093,7 +1093,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1158,7 +1158,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1223,7 +1223,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1288,7 +1288,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1353,7 +1353,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1418,7 +1418,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1483,7 +1483,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1548,7 +1548,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1615,7 +1615,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1678,7 +1678,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1743,7 +1743,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1808,7 +1808,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1873,7 +1873,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -1938,7 +1938,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2003,7 +2003,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2071,7 +2071,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
     }
 }
 
-pub fn html_block_end_2(s: &[u8]) -> bool {
+pub fn html_block_end_2(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -2086,7 +2086,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2147,7 +2147,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2168,7 +2168,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2194,7 +2194,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2216,7 +2216,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2238,7 +2238,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2260,7 +2260,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2282,7 +2282,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2304,7 +2304,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2326,7 +2326,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2346,7 +2346,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2418,7 +2418,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2478,7 +2478,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2498,7 +2498,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2518,7 +2518,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2538,7 +2538,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2558,7 +2558,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2578,7 +2578,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2598,7 +2598,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2618,7 +2618,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2685,7 +2685,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2751,7 +2751,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
     }
 }
 
-pub fn html_block_end_3(s: &[u8]) -> bool {
+pub fn html_block_end_3(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -2766,7 +2766,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2827,7 +2827,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2848,7 +2848,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2874,7 +2874,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2896,7 +2896,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2918,7 +2918,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2940,7 +2940,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2962,7 +2962,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -2984,7 +2984,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3006,7 +3006,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3026,7 +3026,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3098,7 +3098,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3163,7 +3163,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3183,7 +3183,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3203,7 +3203,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3223,7 +3223,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3243,7 +3243,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3263,7 +3263,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3283,7 +3283,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3305,7 +3305,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3371,7 +3371,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
     }
 }
 
-pub fn html_block_end_4(s: &[u8]) -> bool {
+pub fn html_block_end_4(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -3386,7 +3386,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3447,7 +3447,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3468,7 +3468,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3533,7 +3533,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3555,7 +3555,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3577,7 +3577,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3599,7 +3599,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3621,7 +3621,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3643,7 +3643,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3665,7 +3665,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3685,7 +3685,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3757,7 +3757,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3777,7 +3777,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3797,7 +3797,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3817,7 +3817,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3837,7 +3837,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3857,7 +3857,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3877,7 +3877,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3900,7 +3900,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
     }
 }
 
-pub fn html_block_end_5(s: &[u8]) -> bool {
+pub fn html_block_end_5(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -3915,7 +3915,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3976,7 +3976,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -3997,7 +3997,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4023,7 +4023,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4045,7 +4045,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4067,7 +4067,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4089,7 +4089,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4111,7 +4111,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4133,7 +4133,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4155,7 +4155,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4175,7 +4175,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4247,7 +4247,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4307,7 +4307,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4327,7 +4327,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4347,7 +4347,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4367,7 +4367,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4387,7 +4387,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4407,7 +4407,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4427,7 +4427,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4447,7 +4447,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4514,7 +4514,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4580,7 +4580,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
     }
 }
 
-pub fn alert_start(s: &[u8]) -> Option<AlertType> {
+pub fn alert_start(s: &str) -> Option<AlertType> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -4594,7 +4594,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4622,7 +4622,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4647,7 +4647,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4672,7 +4672,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4697,7 +4697,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4717,7 +4717,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4757,7 +4757,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4777,7 +4777,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4797,7 +4797,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4817,7 +4817,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4837,7 +4837,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4857,7 +4857,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4877,7 +4877,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4897,7 +4897,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4917,7 +4917,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4937,7 +4937,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4957,7 +4957,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4977,7 +4977,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -4997,7 +4997,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5017,7 +5017,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5037,7 +5037,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5057,7 +5057,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5077,7 +5077,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5097,7 +5097,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5120,7 +5120,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5140,7 +5140,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5160,7 +5160,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5183,7 +5183,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5203,7 +5203,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5223,7 +5223,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5243,7 +5243,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5263,7 +5263,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5283,7 +5283,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5303,7 +5303,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5326,7 +5326,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5349,7 +5349,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5375,7 +5375,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
     }
 }
 
-pub fn open_code_fence(s: &[u8]) -> Option<usize> {
+pub fn open_code_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -5390,7 +5390,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5422,7 +5422,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5443,7 +5443,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5463,7 +5463,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5488,7 +5488,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5508,7 +5508,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5582,7 +5582,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5656,7 +5656,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5722,7 +5722,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5742,7 +5742,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5762,7 +5762,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5782,7 +5782,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5802,7 +5802,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5822,7 +5822,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5842,7 +5842,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5862,7 +5862,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5928,7 +5928,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5948,7 +5948,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5968,7 +5968,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -5988,7 +5988,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6008,7 +6008,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6028,7 +6028,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6048,7 +6048,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6071,7 +6071,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn close_code_fence(s: &[u8]) -> Option<usize> {
+pub fn close_code_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -6086,7 +6086,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6118,7 +6118,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6139,7 +6139,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6159,7 +6159,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6184,7 +6184,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6204,7 +6204,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6236,7 +6236,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6268,7 +6268,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6299,7 +6299,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6333,7 +6333,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_block_start(s: &[u8]) -> Option<usize> {
+pub fn html_block_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -6347,7 +6347,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6375,7 +6375,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6480,7 +6480,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6515,7 +6515,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6608,7 +6608,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6638,7 +6638,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6668,7 +6668,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6698,7 +6698,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6728,7 +6728,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6758,7 +6758,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6788,7 +6788,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6808,7 +6808,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6833,7 +6833,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6858,7 +6858,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6883,7 +6883,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6908,7 +6908,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6943,7 +6943,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -6978,7 +6978,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7033,7 +7033,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7053,7 +7053,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7076,7 +7076,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7096,7 +7096,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7126,7 +7126,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7151,7 +7151,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7201,7 +7201,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7221,7 +7221,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7241,7 +7241,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7261,7 +7261,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7281,7 +7281,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7301,7 +7301,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7321,7 +7321,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7341,7 +7341,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7361,7 +7361,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7381,7 +7381,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7406,7 +7406,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7426,7 +7426,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7451,7 +7451,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7476,7 +7476,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7501,7 +7501,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 43 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7521,7 +7521,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 44 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7541,7 +7541,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 45 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7561,7 +7561,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 46 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7581,7 +7581,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 47 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7601,7 +7601,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 48 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7631,7 +7631,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 49 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7651,7 +7651,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 50 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7671,7 +7671,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 51 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7691,7 +7691,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 52 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7711,7 +7711,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 53 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7734,7 +7734,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 55 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7754,7 +7754,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 56 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7774,7 +7774,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 57 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7794,7 +7794,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 58 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7814,7 +7814,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 59 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7839,7 +7839,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 60 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7859,7 +7859,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 61 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7879,7 +7879,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 62 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7899,7 +7899,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 63 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7919,7 +7919,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 64 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7939,7 +7939,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 65 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7959,7 +7959,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 66 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -7989,7 +7989,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 67 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8009,7 +8009,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 68 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8042,7 +8042,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 70 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8062,7 +8062,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 71 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8082,7 +8082,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 72 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8102,7 +8102,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 73 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8122,7 +8122,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 74 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8142,7 +8142,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 75 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8162,7 +8162,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 76 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8182,7 +8182,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 77 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8202,7 +8202,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 78 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8222,7 +8222,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 79 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8252,7 +8252,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 80 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8272,7 +8272,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 81 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8292,7 +8292,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 82 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8312,7 +8312,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 83 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8337,7 +8337,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 84 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8357,7 +8357,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 85 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8377,7 +8377,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 86 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8397,7 +8397,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 87 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8417,7 +8417,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 88 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8437,7 +8437,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 89 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8457,7 +8457,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 90 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8477,7 +8477,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 91 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8497,7 +8497,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 92 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8517,7 +8517,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 93 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8542,7 +8542,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 94 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8562,7 +8562,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 95 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8582,7 +8582,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 96 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8602,7 +8602,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 97 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8622,7 +8622,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 98 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8642,7 +8642,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 99 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8662,7 +8662,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 100 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8682,7 +8682,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 101 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8702,7 +8702,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 102 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8722,7 +8722,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 103 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8742,7 +8742,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 104 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8762,7 +8762,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 105 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8782,7 +8782,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 106 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8802,7 +8802,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 107 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8822,7 +8822,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 108 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8842,7 +8842,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 109 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8872,7 +8872,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 110 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8892,7 +8892,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 111 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8912,7 +8912,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 112 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8932,7 +8932,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 113 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8952,7 +8952,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 114 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8972,7 +8972,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 115 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -8992,7 +8992,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 116 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9012,7 +9012,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 117 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9032,7 +9032,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 118 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9052,7 +9052,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 119 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9072,7 +9072,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 120 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9102,7 +9102,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 121 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9122,7 +9122,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 122 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9142,7 +9142,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 123 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9172,7 +9172,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 124 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9192,7 +9192,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 125 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9215,7 +9215,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 127 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9235,7 +9235,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 128 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9255,7 +9255,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 129 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9275,7 +9275,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 130 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9295,7 +9295,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 131 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9315,7 +9315,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 132 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9335,7 +9335,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 133 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9355,7 +9355,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 134 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9375,7 +9375,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 135 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9395,7 +9395,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 136 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9415,7 +9415,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 137 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9435,7 +9435,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 138 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9455,7 +9455,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 139 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9475,7 +9475,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 140 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9495,7 +9495,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 141 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9515,7 +9515,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 142 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9545,7 +9545,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 143 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9565,7 +9565,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 144 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9585,7 +9585,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 145 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9605,7 +9605,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 146 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9625,7 +9625,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 147 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9645,7 +9645,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 148 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9665,7 +9665,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 149 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9685,7 +9685,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 150 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9705,7 +9705,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 151 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9725,7 +9725,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 152 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9745,7 +9745,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 153 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9765,7 +9765,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 154 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9785,7 +9785,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 155 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9805,7 +9805,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 156 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9825,7 +9825,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 157 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9845,7 +9845,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 158 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9865,7 +9865,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 159 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9885,7 +9885,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 160 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9905,7 +9905,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 161 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9928,7 +9928,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
                 163 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9951,7 +9951,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
+pub fn html_block_start_7(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -9966,7 +9966,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -9995,7 +9995,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10020,7 +10020,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10050,7 +10050,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10085,7 +10085,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10115,7 +10115,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10150,7 +10150,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10170,7 +10170,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10200,7 +10200,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10225,7 +10225,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10267,7 +10267,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10304,7 +10304,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10344,7 +10344,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10420,7 +10420,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10491,7 +10491,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10551,7 +10551,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10611,7 +10611,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10631,7 +10631,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10651,7 +10651,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10671,7 +10671,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10691,7 +10691,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10711,7 +10711,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10731,7 +10731,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10751,7 +10751,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10781,7 +10781,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10801,7 +10801,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10821,7 +10821,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10841,7 +10841,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10861,7 +10861,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10881,7 +10881,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10901,7 +10901,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10921,7 +10921,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10941,7 +10941,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10961,7 +10961,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -10981,7 +10981,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11001,7 +11001,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11021,7 +11021,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11041,7 +11041,7 @@ pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11069,7 +11069,7 @@ pub enum SetextChar {
     Hyphen,
 }
 
-pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
+pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -11083,7 +11083,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11115,7 +11115,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11140,7 +11140,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11164,7 +11164,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11199,7 +11199,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11229,7 +11229,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11259,7 +11259,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11292,7 +11292,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
     }
 }
 
-pub fn footnote_definition(s: &[u8]) -> Option<usize> {
+pub fn footnote_definition(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -11306,7 +11306,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11334,7 +11334,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11354,7 +11354,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11378,7 +11378,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11440,7 +11440,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11460,7 +11460,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11480,7 +11480,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11500,7 +11500,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11520,7 +11520,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11540,7 +11540,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11560,7 +11560,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11580,7 +11580,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11600,7 +11600,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11626,7 +11626,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn scheme(s: &[u8]) -> Option<usize> {
+pub fn scheme(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -11640,7 +11640,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11668,7 +11668,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11688,7 +11688,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11718,7 +11718,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11746,7 +11746,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11771,7 +11771,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11796,7 +11796,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11821,7 +11821,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11846,7 +11846,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11871,7 +11871,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11896,7 +11896,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11921,7 +11921,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11946,7 +11946,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11971,7 +11971,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -11996,7 +11996,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12021,7 +12021,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12046,7 +12046,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12071,7 +12071,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12096,7 +12096,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12121,7 +12121,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12146,7 +12146,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12171,7 +12171,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12196,7 +12196,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12221,7 +12221,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12246,7 +12246,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12271,7 +12271,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12296,7 +12296,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12321,7 +12321,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12346,7 +12346,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12371,7 +12371,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12396,7 +12396,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12421,7 +12421,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12446,7 +12446,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12469,7 +12469,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn autolink_uri(s: &[u8]) -> Option<usize> {
+pub fn autolink_uri(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -12483,7 +12483,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12511,7 +12511,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12531,7 +12531,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12561,7 +12561,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12586,7 +12586,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12646,7 +12646,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12674,7 +12674,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12694,7 +12694,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12714,7 +12714,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12734,7 +12734,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12754,7 +12754,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12774,7 +12774,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12794,7 +12794,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12814,7 +12814,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12839,7 +12839,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12864,7 +12864,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12889,7 +12889,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12914,7 +12914,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12939,7 +12939,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12964,7 +12964,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -12989,7 +12989,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13014,7 +13014,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13039,7 +13039,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13064,7 +13064,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13089,7 +13089,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13114,7 +13114,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13139,7 +13139,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13164,7 +13164,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13189,7 +13189,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13214,7 +13214,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13239,7 +13239,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13264,7 +13264,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13289,7 +13289,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13314,7 +13314,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13339,7 +13339,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13364,7 +13364,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13389,7 +13389,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13414,7 +13414,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13439,7 +13439,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13464,7 +13464,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 43 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13489,7 +13489,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
                 44 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13512,7 +13512,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn autolink_email(s: &[u8]) -> Option<usize> {
+pub fn autolink_email(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -13526,7 +13526,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13561,7 +13561,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13586,7 +13586,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13625,7 +13625,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13645,7 +13645,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13680,7 +13680,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13705,7 +13705,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13743,7 +13743,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13768,7 +13768,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13803,7 +13803,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13828,7 +13828,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13863,7 +13863,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13888,7 +13888,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13923,7 +13923,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13948,7 +13948,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -13983,7 +13983,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14008,7 +14008,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14043,7 +14043,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14068,7 +14068,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14103,7 +14103,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14128,7 +14128,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14163,7 +14163,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14188,7 +14188,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14223,7 +14223,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14248,7 +14248,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14283,7 +14283,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14308,7 +14308,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14343,7 +14343,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14368,7 +14368,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14403,7 +14403,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14428,7 +14428,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14463,7 +14463,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14488,7 +14488,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14523,7 +14523,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14548,7 +14548,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14583,7 +14583,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14608,7 +14608,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14643,7 +14643,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14668,7 +14668,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 43 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14703,7 +14703,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 44 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14728,7 +14728,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 45 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14763,7 +14763,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 46 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14788,7 +14788,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 47 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14823,7 +14823,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 48 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14848,7 +14848,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 49 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14883,7 +14883,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 50 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14908,7 +14908,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 51 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14943,7 +14943,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 52 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -14968,7 +14968,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 53 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15003,7 +15003,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 54 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15028,7 +15028,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 55 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15063,7 +15063,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 56 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15088,7 +15088,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 57 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15123,7 +15123,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 58 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15148,7 +15148,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 59 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15183,7 +15183,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 60 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15208,7 +15208,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 61 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15243,7 +15243,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 62 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15268,7 +15268,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 63 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15303,7 +15303,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 64 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15328,7 +15328,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 65 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15363,7 +15363,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 66 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15388,7 +15388,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 67 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15423,7 +15423,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 68 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15448,7 +15448,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 69 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15483,7 +15483,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 70 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15508,7 +15508,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 71 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15543,7 +15543,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 72 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15568,7 +15568,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 73 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15603,7 +15603,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 74 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15628,7 +15628,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 75 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15663,7 +15663,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 76 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15688,7 +15688,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 77 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15723,7 +15723,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 78 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15748,7 +15748,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 79 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15783,7 +15783,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 80 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15808,7 +15808,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 81 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15843,7 +15843,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 82 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15868,7 +15868,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 83 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15903,7 +15903,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 84 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15928,7 +15928,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 85 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15963,7 +15963,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 86 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -15988,7 +15988,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 87 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16023,7 +16023,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 88 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16048,7 +16048,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 89 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16083,7 +16083,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 90 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16108,7 +16108,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 91 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16143,7 +16143,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 92 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16168,7 +16168,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 93 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16203,7 +16203,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 94 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16228,7 +16228,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 95 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16263,7 +16263,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 96 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16288,7 +16288,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 97 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16323,7 +16323,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 98 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16348,7 +16348,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 99 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16383,7 +16383,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 100 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16408,7 +16408,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 101 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16443,7 +16443,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 102 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16468,7 +16468,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 103 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16503,7 +16503,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 104 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16528,7 +16528,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 105 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16563,7 +16563,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 106 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16588,7 +16588,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 107 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16623,7 +16623,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 108 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16648,7 +16648,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 109 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16683,7 +16683,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 110 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16708,7 +16708,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 111 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16743,7 +16743,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 112 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16768,7 +16768,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 113 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16803,7 +16803,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 114 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16828,7 +16828,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 115 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16863,7 +16863,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 116 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16888,7 +16888,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 117 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16923,7 +16923,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 118 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16948,7 +16948,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 119 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -16983,7 +16983,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 120 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17008,7 +17008,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 121 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17043,7 +17043,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 122 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17068,7 +17068,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 123 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17103,7 +17103,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 124 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17128,7 +17128,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 125 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17163,7 +17163,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 126 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17188,7 +17188,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 127 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17223,7 +17223,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 128 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17248,7 +17248,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 129 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17283,7 +17283,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 130 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17303,7 +17303,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 131 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17333,7 +17333,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
                 132 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17361,7 +17361,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_tag(s: &[u8]) -> Option<usize> {
+pub fn html_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -17375,7 +17375,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17407,7 +17407,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17428,7 +17428,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17453,7 +17453,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17488,7 +17488,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17523,7 +17523,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17560,7 +17560,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17583,7 +17583,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17608,7 +17608,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17648,7 +17648,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17688,7 +17688,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17764,7 +17764,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17835,7 +17835,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17895,7 +17895,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17955,7 +17955,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17975,7 +17975,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -17995,7 +17995,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18015,7 +18015,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18035,7 +18035,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18055,7 +18055,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18075,7 +18075,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18095,7 +18095,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18125,7 +18125,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18145,7 +18145,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18165,7 +18165,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18185,7 +18185,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18205,7 +18205,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18225,7 +18225,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18245,7 +18245,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18265,7 +18265,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18285,7 +18285,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18305,7 +18305,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18325,7 +18325,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18345,7 +18345,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18365,7 +18365,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18385,7 +18385,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18408,7 +18408,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_comment(s: &[u8]) -> Option<usize> {
+pub fn html_comment(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -18422,7 +18422,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18450,7 +18450,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18470,7 +18470,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18535,7 +18535,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18595,7 +18595,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18615,7 +18615,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18635,7 +18635,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18655,7 +18655,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18675,7 +18675,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18695,7 +18695,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18715,7 +18715,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18735,7 +18735,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18801,7 +18801,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
+pub fn html_processing_instruction(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -18816,7 +18816,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18877,7 +18877,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18944,7 +18944,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18968,7 +18968,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -18990,7 +18990,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19012,7 +19012,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19034,7 +19034,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19056,7 +19056,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19078,7 +19078,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19100,7 +19100,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19120,7 +19120,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19185,7 +19185,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19205,7 +19205,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19225,7 +19225,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19245,7 +19245,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19265,7 +19265,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 20 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19285,7 +19285,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 21 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19305,7 +19305,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19328,7 +19328,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_declaration(s: &[u8]) -> Option<usize> {
+pub fn html_declaration(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -19343,7 +19343,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19372,7 +19372,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19399,7 +19399,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19457,7 +19457,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19492,7 +19492,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19512,7 +19512,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19532,7 +19532,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19552,7 +19552,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19572,7 +19572,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19592,7 +19592,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19612,7 +19612,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19635,7 +19635,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn html_cdata(s: &[u8]) -> Option<usize> {
+pub fn html_cdata(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -19650,7 +19650,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19679,7 +19679,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19699,7 +19699,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19729,7 +19729,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19749,7 +19749,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19769,7 +19769,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19791,7 +19791,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19854,7 +19854,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19914,7 +19914,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19934,7 +19934,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19954,7 +19954,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19974,7 +19974,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -19994,7 +19994,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20014,7 +20014,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20034,7 +20034,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20054,7 +20054,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20112,7 +20112,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn spacechars(s: &[u8]) -> Option<usize> {
+pub fn spacechars(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 
@@ -20125,7 +20125,7 @@ pub fn spacechars(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20148,7 +20148,7 @@ pub fn spacechars(s: &[u8]) -> Option<usize> {
                 2 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20174,7 +20174,7 @@ pub fn spacechars(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn link_title(s: &[u8]) -> Option<usize> {
+pub fn link_title(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -20189,7 +20189,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20226,7 +20226,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20247,7 +20247,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20268,7 +20268,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20287,7 +20287,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20382,7 +20382,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20447,7 +20447,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20467,7 +20467,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20487,7 +20487,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20507,7 +20507,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20527,7 +20527,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20547,7 +20547,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20567,7 +20567,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20587,7 +20587,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20661,7 +20661,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20726,7 +20726,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20746,7 +20746,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20766,7 +20766,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20786,7 +20786,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20806,7 +20806,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20826,7 +20826,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20846,7 +20846,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20866,7 +20866,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -20940,7 +20940,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21005,7 +21005,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21025,7 +21025,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21045,7 +21045,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21065,7 +21065,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 39 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21085,7 +21085,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21105,7 +21105,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 41 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21125,7 +21125,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                 42 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21147,7 +21147,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21214,7 +21214,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21281,7 +21281,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21349,7 +21349,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn dangerous_url(s: &[u8]) -> Option<usize> {
+pub fn dangerous_url(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -21364,7 +21364,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21405,7 +21405,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21427,7 +21427,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21449,7 +21449,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21471,7 +21471,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21491,7 +21491,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21521,7 +21521,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21541,7 +21541,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21561,7 +21561,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21581,7 +21581,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21601,7 +21601,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21621,7 +21621,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21641,7 +21641,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21661,7 +21661,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21681,7 +21681,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21701,7 +21701,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21723,7 +21723,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21750,7 +21750,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 22 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21770,7 +21770,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 23 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21790,7 +21790,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 24 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21810,7 +21810,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 25 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21830,7 +21830,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 26 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21850,7 +21850,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 27 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21870,7 +21870,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 28 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21890,7 +21890,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 29 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21910,7 +21910,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 30 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21945,7 +21945,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 31 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21965,7 +21965,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 32 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -21985,7 +21985,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 33 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22005,7 +22005,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 34 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22025,7 +22025,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 35 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22045,7 +22045,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 36 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22065,7 +22065,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 37 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22085,7 +22085,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 38 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22108,7 +22108,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
                 40 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22131,7 +22131,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
+pub fn ipv6_url_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -22145,7 +22145,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22173,7 +22173,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22193,7 +22193,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22218,7 +22218,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22238,7 +22238,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22263,7 +22263,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22283,7 +22283,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22303,7 +22303,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22323,7 +22323,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22343,7 +22343,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22362,7 +22362,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22394,7 +22394,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22417,7 +22417,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 17 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22437,7 +22437,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 18 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22456,7 +22456,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
                 19 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22486,7 +22486,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
+pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -22500,7 +22500,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22528,7 +22528,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22553,7 +22553,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22578,7 +22578,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22603,7 +22603,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22623,7 +22623,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22643,7 +22643,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22662,7 +22662,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22694,7 +22694,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22717,7 +22717,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22737,7 +22737,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22756,7 +22756,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22786,7 +22786,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn table_start(s: &[u8]) -> Option<usize> {
+pub fn table_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -22800,7 +22800,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22836,7 +22836,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22867,7 +22867,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22897,7 +22897,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22917,7 +22917,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22952,7 +22952,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -22992,7 +22992,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -23012,7 +23012,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -23052,7 +23052,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -23072,7 +23072,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -23115,7 +23115,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
+pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -23134,7 +23134,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     0 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23204,7 +23204,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23279,7 +23279,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23344,7 +23344,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     6 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23364,7 +23364,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     7 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23386,7 +23386,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23408,7 +23408,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23430,7 +23430,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23452,7 +23452,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23474,7 +23474,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23496,7 +23496,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23516,7 +23516,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     14 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23546,7 +23546,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     16 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23566,7 +23566,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     17 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23586,7 +23586,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     18 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23606,7 +23606,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     19 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23626,7 +23626,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     20 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23646,7 +23646,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     21 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23666,7 +23666,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     22 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23698,7 +23698,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     0 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23759,7 +23759,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23824,7 +23824,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23884,7 +23884,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     6 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23906,7 +23906,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23928,7 +23928,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23950,7 +23950,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23972,7 +23972,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -23994,7 +23994,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24016,7 +24016,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24036,7 +24036,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     13 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24066,7 +24066,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     15 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24086,7 +24086,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     16 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24106,7 +24106,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     17 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24126,7 +24126,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     18 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24146,7 +24146,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     19 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24166,7 +24166,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
                     20 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
                                 0
                             }
@@ -24190,7 +24190,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
     }
 }
 
-pub fn table_cell_end(s: &[u8]) -> Option<usize> {
+pub fn table_cell_end(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 
@@ -24203,7 +24203,7 @@ pub fn table_cell_end(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24226,7 +24226,7 @@ pub fn table_cell_end(s: &[u8]) -> Option<usize> {
                 2 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24252,7 +24252,7 @@ pub fn table_cell_end(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn table_row_end(s: &[u8]) -> Option<usize> {
+pub fn table_row_end(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -24266,7 +24266,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24302,7 +24302,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24324,7 +24324,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24344,7 +24344,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24381,7 +24381,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24405,7 +24405,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
 }
 
 #[cfg(feature = "shortcodes")]
-pub fn shortcode(s: &[u8]) -> Option<usize> {
+pub fn shortcode(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -24419,7 +24419,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24447,7 +24447,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24466,7 +24466,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24504,7 +24504,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -24519,7 +24519,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24547,7 +24547,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24567,7 +24567,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24592,7 +24592,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24624,7 +24624,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24658,7 +24658,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
     }
 }
 
-pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -24673,7 +24673,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24701,7 +24701,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24721,7 +24721,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24746,7 +24746,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24778,7 +24778,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24813,7 +24813,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
 }
 
 // Returns both the length of the match, and the tasklist character.
-pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
+pub fn tasklist(s: &str) -> Option<(usize, u8)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -24830,7 +24830,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24862,7 +24862,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24888,7 +24888,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24951,7 +24951,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 5 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -24981,7 +24981,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25044,7 +25044,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25064,7 +25064,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25084,7 +25084,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 10 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25104,7 +25104,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 11 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25124,7 +25124,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 12 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25144,7 +25144,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 13 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25164,7 +25164,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 14 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25184,7 +25184,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 15 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25204,7 +25204,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                 16 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25227,7 +25227,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
                         if cursor == len + 1 {
                             cursor -= 1;
                         }
-                        return Some((cursor, s[t1]));
+                        return Some((cursor, s.as_bytes()[t1]));
                     }
                 }
                 _ => panic!("internal lexer error"),
@@ -25236,7 +25236,7 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
     }
 }
 
-pub fn description_item_start(s: &[u8]) -> Option<usize> {
+pub fn description_item_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 
@@ -25249,7 +25249,7 @@ pub fn description_item_start(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25276,7 +25276,7 @@ pub fn description_item_start(s: &[u8]) -> Option<usize> {
                 3 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }
@@ -25296,7 +25296,7 @@ pub fn description_item_start(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
                             0
                         }

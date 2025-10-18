@@ -23,8 +23,16 @@ pub fn isspace(ch: u8) -> bool {
     CMARK_CTYPE_CLASS[ch as usize] == 1
 }
 
+pub fn isspace_char(ch: char) -> bool {
+    (ch as u64) < 256 && CMARK_CTYPE_CLASS[ch as usize] == 1
+}
+
 pub fn ispunct(ch: u8) -> bool {
     CMARK_CTYPE_CLASS[ch as usize] == 2
+}
+
+pub fn ispunct_char(ch: char) -> bool {
+    (ch as u64) < 256 && CMARK_CTYPE_CLASS[ch as usize] == 2
 }
 
 pub fn isdigit(ch: u8) -> bool {

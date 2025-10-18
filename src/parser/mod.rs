@@ -76,7 +76,7 @@ pub fn parse_document<'a>(
         line_offsets: Vec::with_capacity(0),
     })));
     let mut parser = Parser::new(arena, root, options);
-    let mut linebuf = Vec::with_capacity(buffer.len());
+    let mut linebuf = String::with_capacity(buffer.len());
     parser.feed(&mut linebuf, buffer, true);
     parser.finish(linebuf)
 }
@@ -1236,7 +1236,7 @@ where
         }
     }
 
-    fn feed(&mut self, linebuf: &mut Vec<u8>, mut s: &str, eof: bool) {
+    fn feed(&mut self, linebuf: &mut String, mut s: &str, eof: bool) {
         if let (0, Some(delimiter)) = (
             self.total_size,
             &self.options.extension.front_matter_delimiter,
@@ -1275,7 +1275,8 @@ where
             }
         }
 
-        let s = s.as_bytes();
+        let s = s;
+        let sb = s.as_bytes();
 
         if s.len() > usize::MAX - self.total_size {
             self.total_size = usize::MAX;
@@ -1284,7 +1285,7 @@ where
         }
 
         let mut buffer = 0;
-        if self.last_buffer_ended_with_cr && !s.is_empty() && s[0] == b'\n' {
+        if self.last_buffer_ended_with_cr && !s.is_empty() && sb[0] == b'\n' {
             buffer += 1;
         }
         self.last_buffer_ended_with_cr = false;
@@ -1295,11 +1296,11 @@ where
             let mut process = false;
             let mut eol = buffer;
             while eol < end {
-                if strings::is_line_end_char(s[eol]) {
+                if strings::is_line_end_char(sb[eol]) {
                     process = true;
                     break;
                 }
-                if s[eol] == 0 {
+                if sb[eol] == 0 {
                     break;
                 }
                 eol += 1;
@@ -1311,31 +1312,31 @@ where
 
             if process {
                 if !linebuf.is_empty() {
-                    linebuf.extend_from_slice(&s[buffer..eol]);
+                    linebuf.push_str(&s[buffer..eol]);
                     self.process_line(linebuf);
                     linebuf.truncate(0);
                 } else {
                     self.process_line(&s[buffer..eol]);
                 }
-            } else if eol < end && s[eol] == b'\0' {
-                linebuf.extend_from_slice(&s[buffer..eol]);
-                linebuf.extend_from_slice(&"\u{fffd}".to_string().into_bytes());
+            } else if eol < end && sb[eol] == b'\0' {
+                linebuf.push_str(&s[buffer..eol]);
+                linebuf.push_str("\u{fffd}");
             } else {
-                linebuf.extend_from_slice(&s[buffer..eol]);
+                linebuf.push_str(&s[buffer..eol]);
             }
 
             buffer = eol;
             if buffer < end {
-                if s[buffer] == b'\0' {
+                if sb[buffer] == b'\0' {
                     buffer += 1;
                 } else {
-                    if s[buffer] == b'\r' {
+                    if sb[buffer] == b'\r' {
                         buffer += 1;
                         if buffer == end {
                             self.last_buffer_ended_with_cr = true;
                         }
                     }
-                    if buffer < end && s[buffer] == b'\n' {
+                    if buffer < end && sb[buffer] == b'\n' {
                         buffer += 1;
                     }
                 }
@@ -1343,14 +1344,15 @@ where
         }
     }
 
-    fn scan_thematic_break_inner(&mut self, line: &[u8]) -> (usize, bool) {
+    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
         let mut i = self.first_nonspace;
 
         if i >= line.len() {
             return (i, false);
         }
 
-        let c = line[i];
+        let bytes = line.as_bytes();
+        let c = bytes[i];
         if c != b'*' && c != b'_' && c != b'-' {
             return (i, false);
         }
@@ -1362,7 +1364,7 @@ where
             if i >= line.len() {
                 return (i, false);
             }
-            nextc = line[i];
+            nextc = bytes[i];
 
             if nextc == c {
                 count += 1;
@@ -1378,7 +1380,7 @@ where
         }
     }
 
-    fn scan_thematic_break(&mut self, line: &[u8]) -> Option<usize> {
+    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
         let (offset, found) = self.scan_thematic_break_inner(line);
         if !found {
             self.thematic_break_kill_pos = offset;
@@ -1388,8 +1390,9 @@ where
         }
     }
 
-    fn find_first_nonspace(&mut self, line: &[u8]) {
+    fn find_first_nonspace(&mut self, line: &str) {
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+        let bytes = line.as_bytes();
 
         if self.first_nonspace <= self.offset {
             self.first_nonspace = self.offset;
@@ -1399,7 +1402,7 @@ where
                 if self.first_nonspace >= line.len() {
                     break;
                 }
-                match line[self.first_nonspace] {
+                match bytes[self.first_nonspace] {
                     32 => {
                         self.first_nonspace += 1;
                         self.first_nonspace_column += 1;
@@ -1420,25 +1423,27 @@ where
 
         self.indent = self.first_nonspace_column - self.column;
         self.blank = self.first_nonspace < line.len()
-            && strings::is_line_end_char(line[self.first_nonspace]);
+            && strings::is_line_end_char(bytes[self.first_nonspace]);
     }
 
-    fn process_line(&mut self, line: &[u8]) {
-        let mut new_line: Vec<u8>;
-        let line = if line.is_empty() || !strings::is_line_end_char(*line.last().unwrap()) {
-            new_line = line.into();
-            new_line.push(b'\n');
-            &new_line
-        } else {
-            line
-        };
+    fn process_line(&mut self, line: &str) {
+        let mut new_line: String;
+        let line =
+            if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
+                new_line = line.into();
+                new_line.push('\n');
+                &new_line
+            } else {
+                line
+            };
+        let bytes = line.as_bytes();
 
         self.curline_len = line.len();
         self.curline_end_col = line.len();
-        if self.curline_end_col > 0 && line[self.curline_end_col - 1] == b'\n' {
+        if self.curline_end_col > 0 && bytes[self.curline_end_col - 1] == b'\n' {
             self.curline_end_col -= 1;
         }
-        if self.curline_end_col > 0 && line[self.curline_end_col - 1] == b'\r' {
+        if self.curline_end_col > 0 && bytes[self.curline_end_col - 1] == b'\r' {
             self.curline_end_col -= 1;
         }
 
@@ -1451,10 +1456,7 @@ where
         self.blank = false;
         self.partially_consumed_tab = false;
 
-        if self.line_number == 0
-            && line.len() >= 3
-            && unsafe { str::from_utf8_unchecked(line) }.starts_with('\u{feff}')
-        {
+        if self.line_number == 0 && line.len() >= 3 && line.starts_with('\u{feff}') {
             self.offset += 3;
         }
 
@@ -1477,11 +1479,7 @@ where
         self.curline_end_col = 0;
     }
 
-    fn check_open_blocks(
-        &mut self,
-        line: &[u8],
-        all_matched: &mut bool,
-    ) -> Option<&'a AstNode<'a>> {
+    fn check_open_blocks(&mut self, line: &str, all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
         let (new_all_matched, mut container, should_continue) =
             self.check_open_blocks_inner(self.root, line);
 
@@ -1500,7 +1498,7 @@ where
     fn check_open_blocks_inner(
         &mut self,
         mut container: &'a AstNode<'a>,
-        line: &[u8],
+        line: &str,
     ) -> (bool, &'a AstNode<'a>, bool) {
         let mut should_continue = true;
 
@@ -1587,11 +1585,12 @@ where
         (true, container, should_continue)
     }
 
-    fn is_not_greentext(&mut self, line: &[u8]) -> bool {
-        !self.options.extension.greentext || strings::is_space_or_tab(line[self.first_nonspace + 1])
+    fn is_not_greentext(&mut self, line: &str) -> bool {
+        !self.options.extension.greentext
+            || strings::is_space_or_tab(line.as_bytes()[self.first_nonspace + 1])
     }
 
-    fn setext_heading_line(&mut self, s: &[u8]) -> Option<SetextChar> {
+    fn setext_heading_line(&mut self, s: &str) -> Option<SetextChar> {
         match self.options.parse.ignore_setext {
             false => scanners::setext_heading_line(s),
             true => None,
@@ -1600,7 +1599,7 @@ where
 
     fn detect_multiline_blockquote(
         &mut self,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1615,7 +1614,7 @@ where
     fn handle_multiline_blockquote(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1641,14 +1640,14 @@ where
         true
     }
 
-    fn detect_blockquote(&mut self, line: &[u8], indented: bool) -> bool {
-        !indented && line[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+    fn detect_blockquote(&mut self, line: &str, indented: bool) -> bool {
+        !indented && line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
     }
 
     fn handle_blockquote(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
     ) -> bool {
         if !self.detect_blockquote(line, indented) {
@@ -1659,7 +1658,7 @@ where
 
         let offset = self.first_nonspace + 1 - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line[self.offset]) {
+        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
             self.advance_offset(line, 1, true);
         }
         *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
@@ -1667,7 +1666,7 @@ where
         true
     }
 
-    fn detect_atx_heading(&mut self, line: &[u8], indented: bool, matched: &mut usize) -> bool {
+    fn detect_atx_heading(&mut self, line: &str, indented: bool, matched: &mut usize) -> bool {
         !indented
             && unwrap_into(
                 scanners::atx_heading_start(&line[self.first_nonspace..]),
@@ -1678,7 +1677,7 @@ where
     fn handle_atx_heading(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1695,13 +1694,14 @@ where
             heading_startpos + 1,
         );
 
-        let mut hashpos = line[self.first_nonspace..]
+        let bytes = line.as_bytes();
+        let mut hashpos = bytes[self.first_nonspace..]
             .iter()
             .position(|&c| c == b'#')
             .unwrap()
             + self.first_nonspace;
         let mut level = 0;
-        while line[hashpos] == b'#' {
+        while bytes[hashpos] == b'#' {
             level += 1;
             hashpos += 1;
         }
@@ -1716,7 +1716,7 @@ where
         true
     }
 
-    fn detect_code_fence(&mut self, line: &[u8], indented: bool, matched: &mut usize) -> bool {
+    fn detect_code_fence(&mut self, line: &str, indented: bool, matched: &mut usize) -> bool {
         !indented
             && unwrap_into(
                 scanners::open_code_fence(&line[self.first_nonspace..]),
@@ -1727,7 +1727,7 @@ where
     fn handle_code_fence(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1739,7 +1739,7 @@ where
         let offset = self.offset;
         let ncb = NodeCodeBlock {
             fenced: true,
-            fence_char: line[first_nonspace],
+            fence_char: line.as_bytes()[first_nonspace],
             fence_length: *matched,
             fence_offset: first_nonspace - offset,
             info: String::with_capacity(10),
@@ -1758,7 +1758,7 @@ where
     fn detect_html_block(
         &mut self,
         container: &AstNode,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1776,7 +1776,7 @@ where
     fn handle_html_block(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1801,7 +1801,7 @@ where
     fn detect_setext_heading(
         &mut self,
         container: &AstNode,
-        line: &[u8],
+        line: &str,
         indented: bool,
         sc: &mut scanners::SetextChar,
     ) -> bool {
@@ -1813,7 +1813,7 @@ where
     fn handle_setext_heading(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         sc: &mut scanners::SetextChar,
     ) -> bool {
@@ -1843,7 +1843,7 @@ where
     fn detect_thematic_break(
         &mut self,
         container: &AstNode,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         all_matched: bool,
@@ -1860,7 +1860,7 @@ where
     fn handle_thematic_break(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         all_matched: bool,
@@ -1880,7 +1880,7 @@ where
 
     fn detect_footnote(
         &mut self,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         depth: usize,
@@ -1897,7 +1897,7 @@ where
     fn handle_footnote(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         depth: usize,
@@ -1907,13 +1907,13 @@ where
         }
 
         let mut c = &line[self.first_nonspace + 2..self.first_nonspace + *matched];
-        c = c.split(|&e| e == b']').next().unwrap();
+        c = c.split(|e| e == ']').next().unwrap();
         let offset = self.first_nonspace + *matched - self.offset;
         self.advance_offset(line, offset, false);
         *container = self.add_child(
             container,
             NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                name: str::from_utf8(c).unwrap().to_string(),
+                name: c.to_string(),
                 total_references: 0,
             }),
             self.first_nonspace + 1,
@@ -1926,7 +1926,7 @@ where
     fn detect_description_list(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1942,7 +1942,7 @@ where
     fn handle_description_list(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
     ) -> bool {
@@ -1952,7 +1952,7 @@ where
 
         let offset = self.first_nonspace + *matched - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line[self.offset]) {
+        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
             self.advance_offset(line, 1, true);
         }
 
@@ -1962,7 +1962,7 @@ where
     fn detect_list(
         &mut self,
         container: &AstNode,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         depth: usize,
@@ -1985,7 +1985,7 @@ where
     fn handle_list(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         matched: &mut usize,
         depth: usize,
@@ -2000,12 +2000,13 @@ where
         let (save_partially_consumed_tab, save_offset, save_column) =
             (self.partially_consumed_tab, self.offset, self.column);
 
-        while self.column - save_column <= 5 && strings::is_space_or_tab(line[self.offset]) {
+        let bytes = line.as_bytes();
+        while self.column - save_column <= 5 && strings::is_space_or_tab(bytes[self.offset]) {
             self.advance_offset(line, 1, true);
         }
 
         let i = self.column - save_column;
-        if !(1..5).contains(&i) || strings::is_line_end_char(line[self.offset]) {
+        if !(1..5).contains(&i) || strings::is_line_end_char(bytes[self.offset]) {
             nl.padding = *matched + 1;
             self.offset = save_offset;
             self.column = save_column;
@@ -2038,7 +2039,7 @@ where
     fn handle_code_block(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
         maybe_lazy: bool,
     ) -> bool {
@@ -2060,10 +2061,10 @@ where
         true
     }
 
-    fn detect_alert(&mut self, line: &[u8], indented: bool, alert_type: &mut AlertType) -> bool {
+    fn detect_alert(&mut self, line: &str, indented: bool, alert_type: &mut AlertType) -> bool {
         !indented
             && self.options.extension.alerts
-            && line[self.first_nonspace] == b'>'
+            && line.as_bytes()[self.first_nonspace] == b'>'
             && unwrap_into(
                 scanners::alert_start(&line[self.first_nonspace..]),
                 alert_type,
@@ -2073,7 +2074,7 @@ where
     fn handle_alert(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &[u8],
+        line: &str,
         indented: bool,
     ) -> bool {
         let mut alert_type: AlertType = Default::default();
@@ -2086,8 +2087,9 @@ where
         let mut title_startpos = self.first_nonspace;
         let mut fence_length = 0;
 
-        while line[title_startpos] != b']' {
-            if line[title_startpos] == b'>' {
+        let bytes = line.as_bytes();
+        while bytes[title_startpos] != b']' {
+            if bytes[title_startpos] == b'>' {
                 fence_length += 1
             }
             title_startpos += 1;
@@ -2101,20 +2103,16 @@ where
         }
 
         // anything remaining on this line is considered an alert title
-        let mut tmp = entity::unescape_html(&line[title_startpos..]);
-        strings::trim(&mut tmp);
-        strings::unescape(&mut tmp);
+        let mut title = entity::unescape_html(&line[title_startpos..]).into_owned();
+        strings::trim(&mut title);
+        strings::unescape(&mut title);
 
         let na = NodeAlert {
             alert_type,
             multiline: fence_length >= 3,
             fence_length,
             fence_offset: self.first_nonspace - self.offset,
-            title: if tmp.is_empty() {
-                None
-            } else {
-                Some(String::from_utf8(tmp).unwrap())
-            },
+            title: if title.is_empty() { None } else { Some(title) },
         };
 
         let offset = self.curline_len - self.offset - 1;
@@ -2125,7 +2123,7 @@ where
         true
     }
 
-    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &[u8], all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &str, all_matched: bool) {
         let mut matched: usize = 0;
         let mut nl: NodeList = NodeList::default();
         let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
@@ -2186,9 +2184,10 @@ where
         }
     }
 
-    fn advance_offset(&mut self, line: &[u8], mut count: usize, columns: bool) {
+    fn advance_offset(&mut self, line: &str, mut count: usize, columns: bool) {
+        let bytes = line.as_bytes();
         while count > 0 {
-            match line[self.offset] {
+            match bytes[self.offset] {
                 9 => {
                     let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
                     if columns {
@@ -2214,12 +2213,13 @@ where
         }
     }
 
-    fn parse_block_quote_prefix(&mut self, line: &[u8]) -> bool {
+    fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
+        let bytes = line.as_bytes();
         let indent = self.indent;
-        if indent <= 3 && line[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
+        if indent <= 3 && bytes[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
             self.advance_offset(line, indent + 1, true);
 
-            if strings::is_space_or_tab(line[self.offset]) {
+            if strings::is_space_or_tab(bytes[self.offset]) {
                 self.advance_offset(line, 1, true);
             }
 
@@ -2229,18 +2229,18 @@ where
         false
     }
 
-    fn parse_footnote_definition_block_prefix(&mut self, line: &[u8]) -> bool {
+    fn parse_footnote_definition_block_prefix(&mut self, line: &str) -> bool {
         if self.indent >= 4 {
             self.advance_offset(line, 4, true);
             true
         } else {
-            line == b"\n" || line == b"\r\n"
+            line == "\n" || line == "\r\n"
         }
     }
 
     fn parse_node_item_prefix(
         &mut self,
-        line: &[u8],
+        line: &str,
         container: &'a AstNode<'a>,
         nl: &NodeList,
     ) -> bool {
@@ -2258,7 +2258,7 @@ where
 
     fn parse_description_item_prefix(
         &mut self,
-        line: &[u8],
+        line: &str,
         container: &'a AstNode<'a>,
         di: &NodeDescriptionItem,
     ) -> bool {
@@ -2276,7 +2276,7 @@ where
 
     fn parse_code_block_prefix(
         &mut self,
-        line: &[u8],
+        line: &str,
         container: &'a AstNode<'a>,
         ast: &mut Ast,
         should_continue: &mut bool,
@@ -2303,7 +2303,8 @@ where
             return false;
         }
 
-        let matched = if self.indent <= 3 && line[self.first_nonspace] == fence_char {
+        let bytes = line.as_bytes();
+        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == fence_char {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -2317,7 +2318,7 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(line[self.offset]) {
+        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -2451,7 +2452,7 @@ where
 
     fn parse_multiline_block_quote_prefix(
         &mut self,
-        line: &[u8],
+        line: &str,
         container: &'a AstNode<'a>,
         ast: &mut Ast,
         should_continue: &mut bool,
@@ -2464,7 +2465,8 @@ where
             _ => unreachable!(),
         };
 
-        let matched = if self.indent <= 3 && line[self.first_nonspace] == b'>' {
+        let bytes = line.as_bytes();
+        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == b'>' {
             scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -2488,7 +2490,7 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(line[self.offset]) {
+        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -2517,7 +2519,7 @@ where
         &mut self,
         mut container: &'a AstNode<'a>,
         last_matched_container: &'a AstNode<'a>,
-        line: &[u8],
+        line: &str,
     ) {
         self.find_first_nonspace(line);
 
@@ -2592,10 +2594,10 @@ where
                     if self.blank {
                         // do nothing
                     } else if container.data.borrow().value.accepts_lines() {
-                        let mut line: Vec<u8> = line.into();
+                        let mut line = line;
                         if let NodeValue::Heading(ref nh) = container.data.borrow().value {
                             if !nh.setext {
-                                strings::chop_trailing_hashtags(&mut line);
+                                line = strings::chop_trailing_hashtags(line);
                             }
                         };
                         let count = self.first_nonspace - self.offset;
@@ -2635,12 +2637,13 @@ where
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &[u8]) {
+    fn add_line(&mut self, node: &'a AstNode<'a>, line: &str) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+            ast.content.reserve(chars_to_tab);
             for _ in 0..chars_to_tab {
                 ast.content.push(' ');
             }
@@ -2651,12 +2654,11 @@ where
             // inline sourcepos during inline processing.
             ast.line_offsets.push(self.offset);
 
-            ast.content
-                .push_str(str::from_utf8(&line[self.offset..]).unwrap());
+            ast.content.push_str(&line[self.offset..]);
         }
     }
 
-    fn finish(&mut self, remaining: Vec<u8>) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: String) -> &'a AstNode<'a> {
         if !remaining.is_empty() {
             self.process_line(&remaining);
         }
@@ -2701,22 +2703,22 @@ where
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
         {
-            let mut pos = 0;
-            let mut seek: &[u8] = content.as_bytes();
-            while !seek.is_empty()
-                && seek[0] == b'['
-                && unwrap_into(self.parse_reference_inline(seek), &mut pos)
+            let mut offset = 0;
+            let bytes: &[u8] = content.as_bytes();
+            while seeked < content.len()
+                && bytes[seeked] == b'['
+                && unwrap_into(self.parse_reference_inline(&content[seeked..]), &mut offset)
             {
-                seek = &seek[pos..];
-                seeked += pos;
+                seeked += offset;
             }
         }
 
         if seeked != 0 {
+            // TODO: shift buf left, check UTF-8 boundary
             *content = content[seeked..].to_string();
         }
 
-        !strings::is_blank(content.as_bytes())
+        !strings::is_blank(content)
     }
 
     fn finalize_borrowed(
@@ -2766,18 +2768,18 @@ where
                     }
                     assert!(pos < content.len());
 
-                    let mut tmp = entity::unescape_html(&content.as_bytes()[..pos]);
-                    strings::trim(&mut tmp);
-                    strings::unescape(&mut tmp);
-                    if tmp.is_empty() {
+                    let mut info = entity::unescape_html(&content[..pos]).into();
+                    strings::trim(&mut info);
+                    strings::unescape(&mut info);
+                    if info.is_empty() {
                         ncb.info = self
                             .options
                             .parse
                             .default_info_string
                             .as_ref()
-                            .map_or(String::new(), |s| s.clone());
+                            .map_or(info, |s| s.clone());
                     } else {
-                        ncb.info = String::from_utf8(tmp).unwrap();
+                        ncb.info = info;
                     }
 
                     if content.as_bytes()[pos] == b'\r' {
@@ -2842,7 +2844,7 @@ where
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
         let delimiter_arena = Arena::new();
         let node_data = node.data.borrow();
-        let content = strings::rtrim_slice(node_data.content.as_bytes());
+        let content = strings::rtrim_slice(&node_data.content);
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -3082,7 +3084,7 @@ where
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
     ) {
-        let (end, symbol) = match scanners::tasklist(text.as_bytes()) {
+        let (end, symbol) = match scanners::tasklist(text) {
             Some(p) => p,
             None => return,
         };
@@ -3164,9 +3166,9 @@ where
         }
     }
 
-    fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
-        // In this case reference inlines rarely have delimiters
-        // so we often just need the minimal case
+    fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
+        // These are totally unused; we should extract the relevant input
+        // scanning from Subject so we don't have to make all this.
         let unused_node_arena = Arena::new();
         let unused_footnote_defs = inlines::FootnoteDefs::new();
         let unused_delimiter_arena = Arena::with_capacity(0);
@@ -3210,11 +3212,11 @@ where
             Some(matchlen) => {
                 let t = &subj.input[subj.pos..subj.pos + matchlen];
                 subj.pos += matchlen;
-                t.to_vec()
+                t.to_string()
             }
             _ => {
                 subj.pos = beforetitle;
-                vec![]
+                String::new()
             }
         };
 
@@ -3234,8 +3236,8 @@ where
         lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
             self.refmap.map.entry(lab).or_insert(ResolvedReference {
-                url: String::from_utf8(strings::clean_url(url)).unwrap(),
-                title: String::from_utf8(strings::clean_title(&title)).unwrap(),
+                url: strings::clean_url(url).into(),
+                title: strings::clean_title(&title).into(),
             });
         }
         Some(subj.pos)
@@ -3249,25 +3251,26 @@ enum AddTextResult {
 }
 
 fn parse_list_marker(
-    line: &[u8],
+    line: &str,
     mut pos: usize,
     interrupts_paragraph: bool,
 ) -> Option<(usize, NodeList)> {
-    let mut c = line[pos];
+    let bytes = line.as_bytes();
+    let mut c = bytes[pos];
     let startpos = pos;
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !isspace(line[pos]) {
+        if !isspace(bytes[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(line[i]) {
+            while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
             }
-            if line[i] == b'\n' {
+            if bytes[i] == b'\n' {
                 return None;
             }
         }
@@ -3290,11 +3293,11 @@ fn parse_list_marker(
         let mut digits = 0;
 
         loop {
-            start = (10 * start) + (line[pos] - b'0') as usize;
+            start = (10 * start) + (bytes[pos] - b'0') as usize;
             pos += 1;
             digits += 1;
 
-            if !(digits < 9 && isdigit(line[pos])) {
+            if !(digits < 9 && isdigit(bytes[pos])) {
                 break;
             }
         }
@@ -3303,23 +3306,23 @@ fn parse_list_marker(
             return None;
         }
 
-        c = line[pos];
+        c = bytes[pos];
         if c != b'.' && c != b')' {
             return None;
         }
 
         pos += 1;
 
-        if !isspace(line[pos]) {
+        if !isspace(bytes[pos]) {
             return None;
         }
 
         if interrupts_paragraph {
             let mut i = pos;
-            while strings::is_space_or_tab(line[i]) {
+            while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
             }
-            if strings::is_line_end_char(line[i]) {
+            if strings::is_line_end_char(bytes[i]) {
                 return None;
             }
         }

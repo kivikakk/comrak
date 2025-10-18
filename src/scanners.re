@@ -4,7 +4,7 @@
     re2c:encoding-policy     = substitute;
 
     re2c:define:YYCTYPE      = u8;
-    re2c:define:YYPEEK       = "if cursor < len { *s.get_unchecked(cursor) } else { 0 }";
+    re2c:define:YYPEEK       = "if cursor < len { *s.as_bytes().get_unchecked(cursor) } else { 0 }";
     re2c:define:YYSKIP       = "cursor += 1;";
     re2c:define:YYBACKUP     = "marker = cursor;";
     re2c:define:YYRESTORE    = "cursor = marker;";
@@ -62,7 +62,7 @@
 
 use crate::parser::alert::AlertType;
 
-pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
+pub fn atx_heading_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -72,7 +72,7 @@ pub fn atx_heading_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_block_end_1(s: &[u8]) -> bool {
+pub fn html_block_end_1(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -82,7 +82,7 @@ pub fn html_block_end_1(s: &[u8]) -> bool {
 */
 }
 
-pub fn html_block_end_2(s: &[u8]) -> bool {
+pub fn html_block_end_2(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -92,7 +92,7 @@ pub fn html_block_end_2(s: &[u8]) -> bool {
 */
 }
 
-pub fn html_block_end_3(s: &[u8]) -> bool {
+pub fn html_block_end_3(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -102,7 +102,7 @@ pub fn html_block_end_3(s: &[u8]) -> bool {
 */
 }
 
-pub fn html_block_end_4(s: &[u8]) -> bool {
+pub fn html_block_end_4(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -112,7 +112,7 @@ pub fn html_block_end_4(s: &[u8]) -> bool {
 */
 }
 
-pub fn html_block_end_5(s: &[u8]) -> bool {
+pub fn html_block_end_5(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -122,7 +122,7 @@ pub fn html_block_end_5(s: &[u8]) -> bool {
 */
 }
 
-pub fn alert_start(s: &[u8]) -> Option<AlertType> {
+pub fn alert_start(s: &str) -> Option<AlertType> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -137,7 +137,7 @@ pub fn alert_start(s: &[u8]) -> Option<AlertType> {
 */
 }
 
-pub fn open_code_fence(s: &[u8]) -> Option<usize> {
+pub fn open_code_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -149,7 +149,7 @@ pub fn open_code_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn close_code_fence(s: &[u8]) -> Option<usize> {
+pub fn close_code_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -161,7 +161,7 @@ pub fn close_code_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_block_start(s: &[u8]) -> Option<usize> {
+pub fn html_block_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -176,7 +176,7 @@ pub fn html_block_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_block_start_7(s: &[u8]) -> Option<usize> {
+pub fn html_block_start_7(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -191,7 +191,7 @@ pub enum SetextChar {
     Hyphen,
 }
 
-pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
+pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -202,7 +202,7 @@ pub fn setext_heading_line(s: &[u8]) -> Option<SetextChar> {
 */
 }
 
-pub fn footnote_definition(s: &[u8]) -> Option<usize> {
+pub fn footnote_definition(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -212,7 +212,7 @@ pub fn footnote_definition(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn scheme(s: &[u8]) -> Option<usize> {
+pub fn scheme(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -222,7 +222,7 @@ pub fn scheme(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn autolink_uri(s: &[u8]) -> Option<usize> {
+pub fn autolink_uri(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -232,7 +232,7 @@ pub fn autolink_uri(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn autolink_email(s: &[u8]) -> Option<usize> {
+pub fn autolink_email(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -246,7 +246,7 @@ pub fn autolink_email(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_tag(s: &[u8]) -> Option<usize> {
+pub fn html_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -256,7 +256,7 @@ pub fn html_tag(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_comment(s: &[u8]) -> Option<usize> {
+pub fn html_comment(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -266,7 +266,7 @@ pub fn html_comment(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
+pub fn html_processing_instruction(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -276,7 +276,7 @@ pub fn html_processing_instruction(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_declaration(s: &[u8]) -> Option<usize> {
+pub fn html_declaration(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -286,7 +286,7 @@ pub fn html_declaration(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn html_cdata(s: &[u8]) -> Option<usize> {
+pub fn html_cdata(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -296,7 +296,7 @@ pub fn html_cdata(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn spacechars(s: &[u8]) -> Option<usize> {
+pub fn spacechars(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 /*!re2c
@@ -305,7 +305,7 @@ pub fn spacechars(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn link_title(s: &[u8]) -> Option<usize> {
+pub fn link_title(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -317,7 +317,7 @@ pub fn link_title(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn dangerous_url(s: &[u8]) -> Option<usize> {
+pub fn dangerous_url(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -328,7 +328,7 @@ pub fn dangerous_url(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
+pub fn ipv6_url_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -338,7 +338,7 @@ pub fn ipv6_url_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
+pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -360,7 +360,7 @@ pub fn ipv6_relaxed_url_start(s: &[u8]) -> Option<usize> {
 
 */
 
-pub fn table_start(s: &[u8]) -> Option<usize> {
+pub fn table_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -372,7 +372,7 @@ pub fn table_start(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
+pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -393,7 +393,7 @@ pub fn table_cell(s: &[u8], spoiler: bool) -> Option<usize> {
     }
 }
 
-pub fn table_cell_end(s: &[u8]) -> Option<usize> {
+pub fn table_cell_end(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 /*!re2c
@@ -402,7 +402,7 @@ pub fn table_cell_end(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn table_row_end(s: &[u8]) -> Option<usize> {
+pub fn table_row_end(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -413,7 +413,7 @@ pub fn table_row_end(s: &[u8]) -> Option<usize> {
 }
 
 #[cfg(feature = "shortcodes")]
-pub fn shortcode(s: &[u8]) -> Option<usize> {
+pub fn shortcode(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -423,7 +423,7 @@ pub fn shortcode(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -434,7 +434,7 @@ pub fn open_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
+pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let mut ctxmarker = 0;
@@ -446,7 +446,7 @@ pub fn close_multiline_block_quote_fence(s: &[u8]) -> Option<usize> {
 }
 
 // Returns both the length of the match, and the tasklist character.
-pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
+pub fn tasklist(s: &str) -> Option<(usize, u8)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -462,13 +462,13 @@ pub fn tasklist(s: &[u8]) -> Option<(usize, u8)> {
         if cursor == len + 1 {
             cursor -= 1;
         }
-        return Some((cursor, s[t1]));
+        return Some((cursor, s.as_bytes()[t1]));
     }
     * { return None; }
 */
 }
 
-pub fn description_item_start(s: &[u8]) -> Option<usize> {
+pub fn description_item_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let len = s.len();
 /*!re2c

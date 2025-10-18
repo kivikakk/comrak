@@ -105,3 +105,32 @@ fn commonmark_alerts(markdown: &str, cm: &str) {
 
     commonmark(markdown, cm, Some(&options));
 }
+
+#[test]
+fn commonmark_experimental_minimize() {
+    let input = r#"This is some text.
+
+It contains [brackets] which could be important.
+
+It contains #hashes# and !exclamation marks! and * asterisks *, _ underscores _,
+the < works >.
+
+Let's include some *important\* _ones\_ too.
+"#;
+
+    let expected = r#"This is some text.
+
+It contains \[brackets\] which could be important.
+
+It contains \#hashes\# and \!exclamation marks\! and \* asterisks \*, \_ underscores \_,
+the \< works \>.
+
+Let's include some \*important\* \_ones\_ too.
+"#;
+
+    let mut options = Options::default();
+    commonmark(input, expected, Some(&options));
+
+    options.render.experimental_minimize_commonmark = true;
+    commonmark(input, input, Some(&options));
+}

@@ -14,7 +14,7 @@ const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 pub fn try_opening_block<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
-    line: &[u8],
+    line: &str,
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
     let aligns = match container.data.borrow().value {
         NodeValue::Paragraph => None,
@@ -31,7 +31,7 @@ pub fn try_opening_block<'a>(
 fn try_opening_header<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
-    line: &[u8],
+    line: &str,
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
     if container.data.borrow().table_visited {
         return Some((container, false, false));
@@ -48,7 +48,7 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    let header_row = match row(container.data.borrow().content.as_bytes(), spoiler) {
+    let header_row = match row(&container.data.borrow().content, spoiler) {
         Some(header_row) => header_row,
         None => return Some((container, false, true)),
     };
@@ -134,7 +134,7 @@ fn try_opening_row<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: &'a AstNode<'a>,
     alignments: &[TableAlignment],
-    line: &[u8],
+    line: &str,
 ) -> Option<(&'a AstNode<'a>, bool, bool)> {
     if parser.blank {
         return None;
@@ -205,7 +205,8 @@ struct Cell {
     content: String,
 }
 
-fn row(string: &[u8], spoiler: bool) -> Option<Row> {
+fn row(string: &str, spoiler: bool) -> Option<Row> {
+    let bytes = string.as_bytes();
     let len = string.len();
     let mut cells: Vec<Cell> = vec![];
 
@@ -226,7 +227,7 @@ fn row(string: &[u8], spoiler: bool) -> Option<Row> {
             let mut start_offset = offset;
             let mut internal_offset = 0;
 
-            while start_offset > paragraph_offset && string[start_offset - 1] != b'|' {
+            while start_offset > paragraph_offset && bytes[start_offset - 1] != b'|' {
                 start_offset -= 1;
                 internal_offset += 1;
             }
@@ -241,7 +242,7 @@ fn row(string: &[u8], spoiler: bool) -> Option<Row> {
                 start_offset,
                 end_offset: offset + cell_matched - 1,
                 internal_offset,
-                content: String::from_utf8(cell).unwrap(),
+                content: cell,
             });
         }
 
@@ -281,7 +282,7 @@ fn try_inserting_table_header_paragraph<'a>(
 ) {
     let container_ast = &mut container.data.borrow_mut();
 
-    let preface = &container_ast.content.as_bytes()[..paragraph_offset];
+    let preface = &container_ast.content[..paragraph_offset];
     let mut paragraph_content = unescape_pipes(preface);
     let (newlines, _since_newline) = count_newlines(&paragraph_content);
     trim(&mut paragraph_content);
@@ -308,6 +309,7 @@ fn try_inserting_table_header_paragraph<'a>(
     let last_line_offset = *paragraph.line_offsets.last().unwrap_or(&0);
     paragraph.sourcepos.end.column = last_line_offset
         + preface
+            .as_bytes()
             .iter()
             .rev()
             .skip(1)
@@ -316,21 +318,33 @@ fn try_inserting_table_header_paragraph<'a>(
 
     container_ast.sourcepos.start.line += newlines;
 
-    paragraph.content = String::from_utf8(paragraph_content).unwrap();
+    paragraph.content = paragraph_content;
     let node = parser.arena.alloc(Node::new(RefCell::new(paragraph)));
     container.insert_before(node);
 }
 
-fn unescape_pipes(string: &[u8]) -> Vec<u8> {
+fn unescape_pipes(string: &str) -> String {
     let len = string.len();
-    let mut v = Vec::with_capacity(len);
+    let mut v = String::with_capacity(len);
 
-    for (i, &c) in string.iter().enumerate() {
-        if c == b'\\' && i + 1 < len && string[i + 1] == b'|' {
-            continue;
+    let mut last_was_backslash = false;
+
+    for c in string.chars() {
+        if last_was_backslash {
+            if c != '|' {
+                v.push('\\');
+            }
+            v.push(c);
+            last_was_backslash = false;
+        } else if c == '\\' {
+            last_was_backslash = true;
         } else {
             v.push(c);
         }
+    }
+
+    if last_was_backslash {
+        v.push('\\');
     }
 
     v
@@ -370,6 +384,6 @@ fn get_num_autocompleted_cells<'a>(container: &'a AstNode<'a>) -> usize {
     };
 }
 
-pub fn matches(line: &[u8], spoiler: bool) -> bool {
+pub fn matches(line: &str, spoiler: bool) -> bool {
     row(line, spoiler).is_some()
 }

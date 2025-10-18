@@ -1,8 +1,10 @@
-use crate::ctype::{ispunct, isspace};
-use crate::entity;
-use crate::parser::AutolinkType;
+use std::borrow::Cow;
 use std::ptr;
 use std::str;
+
+use crate::ctype::{ispunct, isspace, isspace_char};
+use crate::entity;
+use crate::parser::AutolinkType;
 
 #[derive(PartialEq, Eq)]
 pub enum Case {
@@ -10,19 +12,22 @@ pub enum Case {
     Fold,
 }
 
-pub fn unescape(v: &mut Vec<u8>) {
+pub fn unescape(s: &mut String) {
+    // SAFETY: we only shift over backslash characters, and always truncate any
+    // continuation characters duplicated as a result of the shifting.
+    let b = unsafe { s.as_bytes_mut() };
     let mut r = 0;
     let mut prev = None;
     let mut found = 0;
 
-    while r < v.len() {
-        if v[r] == b'\\' && r + 1 < v.len() && ispunct(v[r + 1]) {
-            if v[r + 1] == b'\\' {
+    while r < b.len() {
+        if b[r] == b'\\' && r + 1 < b.len() && ispunct(b[r + 1]) {
+            if b[r + 1] == b'\\' {
                 r += 1;
             }
 
             if let Some(prev) = prev {
-                let window = &mut v[(prev + 1 - found)..r];
+                let window = &mut b[(prev + 1 - found)..r];
                 shift_buf_left(window, found);
             }
             prev = Some(r);
@@ -32,32 +37,37 @@ pub fn unescape(v: &mut Vec<u8>) {
     }
 
     if let Some(prev) = prev {
-        let window = &mut v[(prev + 1 - found)..r];
+        let window = &mut b[(prev + 1 - found)..r];
         shift_buf_left(window, found);
     }
 
-    let new_size = v.len() - found;
-    v.truncate(new_size);
+    if found > 0 {
+        let new_size = b.len() - found;
+        // HACK: see shift_buf_left.
+        b[new_size] = b'\0';
+        s.truncate(new_size);
+    }
 }
 
-pub fn clean_autolink(url: &[u8], kind: AutolinkType) -> Vec<u8> {
-    let mut url_vec = url.to_vec();
-    trim(&mut url_vec);
+pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
+    url = trim_slice(url);
 
-    if url_vec.is_empty() {
-        return url_vec;
+    if url.is_empty() {
+        return "".into();
     }
 
-    let mut buf = Vec::with_capacity(url_vec.len());
     if kind == AutolinkType::Email {
-        buf.extend_from_slice(b"mailto:");
+        let mut buf = String::with_capacity(url.len() + "mailto:".len());
+        buf.push_str("mailto:");
+        buf.push_str(&entity::unescape_html(url));
+        buf.into()
+    } else {
+        entity::unescape_html(url)
     }
-
-    buf.extend_from_slice(&entity::unescape_html(&url_vec));
-    buf
 }
 
-pub fn normalize_code(v: &[u8]) -> Vec<u8> {
+pub fn normalize_code(v: &str) -> String {
+    let v = v.as_bytes();
     let mut r = Vec::with_capacity(v.len());
     let mut i = 0;
     let mut contains_nonspace = false;
@@ -86,7 +96,9 @@ pub fn normalize_code(v: &[u8]) -> Vec<u8> {
         r.pop();
     }
 
-    r
+    // SAFETY: we only remove ASCII whitespace, CR and LF; we do not change the
+    // UTF-8 correctness of the incoming buffer at all.
+    unsafe { String::from_utf8_unchecked(r) }
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
@@ -125,73 +137,80 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     matches!(ch, 9 | 32)
 }
 
-pub fn chop_trailing_hashtags(line: &mut Vec<u8>) {
-    rtrim(line);
+pub fn chop_trailing_hashtags(mut line: &str) -> &str {
+    line = rtrim_slice(line);
 
     let orig_n = line.len() - 1;
     let mut n = orig_n;
 
-    while line[n] == b'#' {
+    let bytes = line.as_bytes();
+    while bytes[n] == b'#' {
         if n == 0 {
-            return;
+            return line;
         }
         n -= 1;
     }
 
-    if n != orig_n && is_space_or_tab(line[n]) {
-        line.truncate(n);
-        rtrim(line);
+    if n != orig_n && is_space_or_tab(bytes[n]) {
+        rtrim_slice(&line[..n])
+    } else {
+        line
     }
 }
 
-pub fn rtrim(line: &mut Vec<u8>) -> usize {
-    let spaces = line.iter().rev().take_while(|&&b| isspace(b)).count();
+pub fn rtrim(line: &mut String) -> usize {
+    let spaces = line
+        .as_bytes()
+        .iter()
+        .rev()
+        .take_while(|&&b| isspace(b))
+        .count();
     let new_len = line.len() - spaces;
     line.truncate(new_len);
     spaces
 }
 
-pub fn ltrim(line: &mut Vec<u8>) -> usize {
-    let spaces = line.iter().take_while(|&&b| isspace(b)).count();
-    shift_buf_left(line, spaces);
-    let new_len = line.len() - spaces;
-    line.truncate(new_len);
+pub fn ltrim(line: &mut String) -> usize {
+    // SAFETY: we only shift over spaces, and truncate any duplicated continuation characters.
+    let bytes = unsafe { line.as_bytes_mut() };
+    let spaces = bytes.iter().take_while(|&&b| isspace(b)).count();
+    if spaces > 0 {
+        shift_buf_left(bytes, spaces);
+        let new_len = bytes.len() - spaces;
+        // HACK: see shift_buf_left.
+        bytes[new_len] = b'\0';
+        line.truncate(new_len);
+    }
     spaces
 }
 
-pub fn trim(line: &mut Vec<u8>) {
+pub fn trim(line: &mut String) {
     ltrim(line);
     rtrim(line);
 }
 
-pub fn ltrim_slice(mut i: &[u8]) -> &[u8] {
-    while let [first, rest @ ..] = i {
-        if isspace(*first) {
-            i = rest;
-        } else {
-            break;
-        }
-    }
-    i
+pub fn ltrim_slice(i: &str) -> &str {
+    // Compared to upstream, this additionally trims U+000C FORM FEED.
+    i.trim_start_matches(isspace_char)
 }
 
-pub fn rtrim_slice(mut i: &[u8]) -> &[u8] {
-    while let [rest @ .., last] = i {
-        if isspace(*last) {
-            i = rest;
-        } else {
-            break;
-        }
-    }
-    i
+pub fn rtrim_slice(i: &str) -> &str {
+    i.trim_end_matches(isspace_char)
 }
 
-pub fn trim_slice(mut i: &[u8]) -> &[u8] {
-    i = ltrim_slice(i);
-    i = rtrim_slice(i);
-    i
+pub fn trim_slice(i: &str) -> &str {
+    rtrim_slice(ltrim_slice(i))
 }
 
+// HACK: Using this function safely on a buffer obtained from
+// String::as_bytes_mut() requires care when truncating it.
+//
+// Say the string ends in a multibyte character, i.e. the last byte is a UTF-8
+// continuation byte. That byte will be repeated at the end of the buffer when
+// it's shifted left by one at a time; therefore the truncation point won't be
+// a valid UTF-8 character boundary, and String::truncate will panic. In such
+// cases, set the byte immediately after the retained portion to b'\0' (or any
+// non-continuation byte!).
 fn shift_buf_left(buf: &mut [u8], n: usize) {
     if n == 0 {
         return;
@@ -205,28 +224,27 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
     }
 }
 
-pub fn clean_url(url: &[u8]) -> Vec<u8> {
+pub fn clean_url(url: &str) -> Cow<'static, str> {
     let url = trim_slice(url);
 
-    let url_len = url.len();
-    if url_len == 0 {
-        return vec![];
+    if url.len() == 0 {
+        return "".into();
     }
 
-    let mut b = entity::unescape_html(url);
-
+    let mut b = entity::unescape_html(url).into_owned();
     unescape(&mut b);
-    b
+    b.into()
 }
 
-pub fn clean_title(title: &[u8]) -> Vec<u8> {
+pub fn clean_title(title: &str) -> Cow<'static, str> {
     let title_len = title.len();
     if title_len == 0 {
-        return vec![];
+        return "".into();
     }
 
-    let first = title[0];
-    let last = title[title_len - 1];
+    let bytes = title.as_bytes();
+    let first = bytes[0];
+    let last = bytes[title_len - 1];
 
     let mut b = if (first == b'\'' && last == b'\'')
         || (first == b'(' && last == b')')
@@ -235,14 +253,15 @@ pub fn clean_title(title: &[u8]) -> Vec<u8> {
         entity::unescape_html(&title[1..title_len - 1])
     } else {
         entity::unescape_html(title)
-    };
+    }
+    .into_owned();
 
     unescape(&mut b);
-    b
+    b.into()
 }
 
-pub fn is_blank(s: &[u8]) -> bool {
-    for &c in s {
+pub fn is_blank(s: &str) -> bool {
+    for c in s.as_bytes() {
         match c {
             10 | 13 => return true,
             32 | 9 => (),
@@ -253,9 +272,7 @@ pub fn is_blank(s: &[u8]) -> bool {
 }
 
 pub fn normalize_label(i: &str, casing: Case) -> String {
-    // trim_slice only removes bytes from start and end that match isspace();
-    // result is UTF-8.
-    let i = unsafe { str::from_utf8_unchecked(trim_slice(i.as_bytes())) };
+    let i = trim_slice(i);
 
     let mut v = String::with_capacity(i.len());
     let mut last_was_whitespace = false;
@@ -344,12 +361,12 @@ pub mod tests {
 
     #[test]
     fn normalize_code_handles_lone_newline() {
-        assert_eq!(normalize_code(b"\n"), vec![b' ']);
+        assert_eq!(normalize_code("\n"), " ");
     }
 
     #[test]
     fn normalize_code_handles_lone_space() {
-        assert_eq!(normalize_code(b" "), vec![b' ']);
+        assert_eq!(normalize_code(" "), " ");
     }
 
     #[test]
