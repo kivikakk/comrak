@@ -88,8 +88,10 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 Phase::Pre => {
                     let new_plain = if plain {
                         match node.data.borrow().value {
-                            NodeValue::Text(ref literal)
-                            | NodeValue::Code(NodeCode { ref literal, .. })
+                            NodeValue::Text(ref literal) => {
+                                self.escape(literal)?;
+                            }
+                            NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal)
                             | NodeValue::Raw(ref literal) => {
                                 self.escape(literal)?;
@@ -151,8 +153,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Document => self
                     .output
                     .write_str(" xmlns=\"http://commonmark.org/xml/1.0\"")?,
-                NodeValue::Text(ref literal)
-                | NodeValue::Code(NodeCode { ref literal, .. })
+                NodeValue::Text(ref literal) => {
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
+                NodeValue::Code(NodeCode { ref literal, .. })
                 | NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. })
                 | NodeValue::HtmlInline(ref literal)
                 | NodeValue::Raw(ref literal) => {

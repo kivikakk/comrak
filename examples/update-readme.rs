@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             NodeValue::Text(ref mut t) => {
                 if in_msrv {
-                    std::mem::swap(t, &mut msrv.to_string());
+                    std::mem::swap(t, &mut msrv.to_string().into());
                 }
             }
             _ => {}

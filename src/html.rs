@@ -354,8 +354,10 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
                 let new_cr = match child_rendering {
                     ChildRendering::Plain => {
                         match node.data.borrow().value {
-                            NodeValue::Text(ref literal)
-                            | NodeValue::Code(NodeCode { ref literal, .. })
+                            NodeValue::Text(ref literal) => {
+                                context.escape(literal)?;
+                            }
+                            NodeValue::Code(NodeCode { ref literal, .. })
                             | NodeValue::HtmlInline(ref literal) => {
                                 context.escape(literal)?;
                             }
@@ -1609,9 +1611,8 @@ pub fn collect_text<'a>(node: &'a AstNode<'a>) -> String {
 /// whitespace character.
 pub fn collect_text_append<'a>(node: &'a AstNode<'a>, output: &mut String) {
     match node.data.borrow().value {
-        NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
-            output.push_str(literal)
-        }
+        NodeValue::Text(ref literal) => output.push_str(literal),
+        NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
         NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
         _ => {

@@ -30,7 +30,7 @@
 //!
 //! for node in root.descendants() {
 //!     if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
-//!         *text = text.replace("pretty", "beautiful");
+//!         *text = text.to_mut().replace("pretty", "beautiful").into()
 //!     }
 //! }
 //!

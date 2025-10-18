@@ -2947,7 +2947,7 @@ where
         if let Some(mut label) = replace {
             label.insert_str(0, "[^");
             label.push(']');
-            ast.value = NodeValue::Text(label);
+            ast.value = NodeValue::Text(label.into());
         }
     }
 
@@ -2977,7 +2977,7 @@ where
                         let sourcepos = self.postprocess_text_node_with_context(
                             n,
                             sourcepos,
-                            root,
+                            root.to_mut(),
                             in_bracket_context,
                         );
                         emptied = root.is_empty();

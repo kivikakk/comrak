@@ -91,7 +91,7 @@ pub(crate) fn process_email_autolinks<'a>(
                     initial_end_col,
                 )
                     .into();
-                let after = make_inline(arena, NodeValue::Text(remain.to_string()), asp);
+                let after = make_inline(arena, NodeValue::Text(remain.into()), asp);
                 post.insert_after(after);
 
                 let after_ast = &mut after.data.borrow_mut();
@@ -99,7 +99,7 @@ pub(crate) fn process_email_autolinks<'a>(
                     arena,
                     after,
                     match after_ast.value {
-                        NodeValue::Text(ref mut t) => t,
+                        NodeValue::Text(ref mut t) => t.to_mut(),
                         _ => unreachable!(),
                     },
                     relaxed_autolinks,
@@ -209,7 +209,7 @@ fn email_match<'a>(
 
     inl.append(make_inline(
         arena,
-        NodeValue::Text(text.to_string()),
+        NodeValue::Text(text.to_string().into()),
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
@@ -270,7 +270,7 @@ pub fn www_match<'a>(
 
     inl.append(make_inline(
         subject.arena,
-        NodeValue::Text(subject.input[i..link_end + i].into()),
+        NodeValue::Text(subject.input[i..link_end + i].to_string().into()),
         (0, 1, 0, 1).into(),
     ));
     Some((inl, 0, link_end))
@@ -436,7 +436,7 @@ pub fn url_match<'a>(
 
     inl.append(make_inline(
         subject.arena,
-        NodeValue::Text(url.to_string()),
+        NodeValue::Text(url.to_string().into()),
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
