@@ -139,7 +139,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
     line_offset: usize,
     flags: Flags,
     pub refmap: &'r mut RefMap,
-    footnote_defs: &'p FootnoteDefs<'a>,
+    footnote_defs: &'p FootnoteDefs,
     delimiter_arena: &'d mut Arena<Delimiter>,
     last_delimiter: Option<NodeId>,
     brackets: Vec<Bracket>,
@@ -191,12 +191,12 @@ impl RefMap {
     }
 }
 
-pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<&'a AstNode<'a>>>,
+pub struct FootnoteDefs {
+    defs: RefCell<Vec<AstNode>>,
     counter: RefCell<usize>,
 }
 
-impl<'a> FootnoteDefs<'a> {
+impl<'a> FootnoteDefs {
     pub fn new() -> Self {
         Self {
             defs: RefCell::new(Vec::new()),
@@ -210,11 +210,11 @@ impl<'a> FootnoteDefs<'a> {
         format!("__inline_{}", *counter)
     }
 
-    pub fn add_definition(&self, def: &'a AstNode<'a>) {
+    pub fn add_definition(&self, def: AstNode) {
         self.defs.borrow_mut().push(def);
     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<&'a AstNode<'a>>> {
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<AstNode>> {
         self.defs.borrow()
     }
 }
@@ -265,7 +265,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         input: &'i [u8],
         line: usize,
         refmap: &'r mut RefMap,
-        footnote_defs: &'p FootnoteDefs<'a>,
+        footnote_defs: &'p FootnoteDefs,
         delimiter_arena: &'d mut Arena<Delimiter>,
     ) -> Self {
         let mut s = Subject {
@@ -444,7 +444,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 } else {
                     // Just regular text
                     self.pos += 1;
-                    Some(self.make_inline(
+                    Some(self.mk_inline_node(
                         NodeValue::Text("^".to_string()),
                         self.pos - 1,
                         self.pos - 1,
@@ -2057,7 +2057,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
     }
 
-    fn handle_inline_footnote(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_inline_footnote(&mut self) -> Option<AstNode> {
         let startpos = self.pos;
 
         // We're at ^, next should be [
@@ -2081,7 +2081,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if depth != 0 {
             // No matching closing bracket, treat as regular text
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
         }
 
         // endpos is now one past the ], so adjust
@@ -2093,14 +2093,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         // Empty inline footnote should not parse
         if content.is_empty() {
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
         }
 
         // Generate unique name
         let name = self.footnote_defs.next_name();
 
         // Create the footnote reference node
-        let ref_node = self.make_inline(
+        let ref_node = self.mk_inline_node(
             NodeValue::FootnoteReference(NodeFootnoteReference {
                 name: name.clone(),
                 ref_num: 0,
@@ -2111,13 +2111,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         );
 
         // Parse the content as inlines
-        let def_node = self.arena.alloc(Node::new(RefCell::new(Ast::new(
-            NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                name: name.clone(),
-                total_references: 0,
-            }),
-            (self.line, 1).into(),
-        ))));
+        let def_node = AstNode::new(
+            self.arena,
+            Ast::new(
+                NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                    name: name.clone(),
+                    total_references: 0,
+                }),
+                (self.line, 1).into(),
+            ),
+        );
 
         // Create a paragraph to hold the inline content
         let mut para_ast = Ast::new(
@@ -2132,11 +2135,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             }
         }
         para_ast.line_offsets = line_offsets;
-        let para_node = self.arena.alloc(Node::new(RefCell::new(para_ast)));
-        def_node.append(para_node);
+        let para_node = def_node.append_value(self.arena, para_ast);
 
         // Parse the content recursively as inlines
-        let delimiter_arena = Arena::new();
+        let mut delimiter_arena = Arena::new();
         let mut subj = Subject::new(
             self.arena,
             self.options,
@@ -2144,7 +2146,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             1, // Use line 1 to match the paragraph's sourcepos
             self.refmap,
             self.footnote_defs,
-            &delimiter_arena,
+            &mut delimiter_arena,
         );
 
         while subj.parse_inline(para_node) {}
@@ -2153,8 +2155,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
         // Check if the parsed content is empty or contains only whitespace
         // This handles whitespace-only content, null bytes, etc. generically
-        let has_non_whitespace_content = para_node.children().any(|child| {
-            let child_data = child.data.borrow();
+        let has_non_whitespace_content = para_node.children(self.arena).any(|child| {
+            let child_data = child.get(self.arena);
             match &child_data.value {
                 NodeValue::Text(text) => !text.trim().is_empty(),
                 NodeValue::SoftBreak | NodeValue::LineBreak => false,
@@ -2165,7 +2167,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if !has_non_whitespace_content {
             // Content is empty or whitespace-only after parsing, treat as literal text
             self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".to_string()), startpos, startpos));
+            return Some(self.mk_inline_node(NodeValue::Text("^".to_string()), startpos, startpos));
         }
 
         // Store the footnote definition

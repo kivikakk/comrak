@@ -805,6 +805,21 @@ impl AstNode {
 
     #[inline]
     /// TODO
+    pub fn prepend_node(&self, arena: &mut Arena<Ast>, node: Self) -> () {
+        self.node_id().prepend(node.node_id(), arena);
+    }
+
+    #[inline]
+    /// TODO
+    pub fn prepend_value(&self, arena: &mut Arena<Ast>, value: Ast) -> AstNode {
+        // indextree doesn't expose a prepend_value; check if it ought to?
+        let node = AstNode::new(arena, value);
+        self.node_id().prepend(node.node_id(), arena);
+        node
+    }
+
+    #[inline]
+    /// TODO
     pub fn insert_after(&self, arena: &mut Arena<Ast>, node: Self) -> () {
         self.node_id().insert_after(node.node_id(), arena);
     }

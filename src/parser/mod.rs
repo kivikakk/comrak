@@ -126,7 +126,7 @@ pub struct BrokenLinkReference<'l> {
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a mut Arena<Ast>,
     refmap: RefMap,
-    footnote_defs: inlines::FootnoteDefs<'a>,
+    footnote_defs: inlines::FootnoteDefs,
     root: AstNode,
     current: AstNode,
     line_number: usize,
@@ -1218,6 +1218,7 @@ where
             refmap: RefMap::new(),
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
+            current: root,
             line_number: 0,
             offset: 0,
             column: 0,
@@ -3108,14 +3109,13 @@ where
             }
 
             text.drain(..end);
-            parent.prepend(
-                self.arena.alloc(
-                    Ast::new_with_sourcepos(
-                        NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
-                        *sourcepos,
-                    )
-                    .into(),
-                ),
+            parent.prepend_value(
+                self.arena,
+                Ast::new_with_sourcepos(
+                    NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
+                    *sourcepos,
+                )
+                .into(),
             );
         } else if node_matches!(self.arena, parent, NodeValue::Paragraph) {
             if node.previous_sibling(self.arena).is_some()
@@ -3142,7 +3142,7 @@ where
             let adjust = spx.consume(end) + 1;
             assert_eq!(
                 sourcepos.start.column,
-                parent.data.borrow().sourcepos.start.column
+                parent.get(self.arena).sourcepos.start.column
             );
 
             // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
@@ -3151,13 +3151,14 @@ where
                 parent.remove_self(self.arena);
             } else {
                 sourcepos.start.column = adjust;
-                parent.data.borrow_mut().sourcepos.start.column = adjust;
+                parent.get_mut(self.arena).sourcepos.start.column = adjust;
             }
 
-            grandparent.data.borrow_mut().value =
+            grandparent.get_mut(self.arena).value =
                 NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
 
-            if let NodeValue::List(ref mut list) = &mut great_grandparent.data.borrow_mut().value {
+            if let NodeValue::List(ref mut list) = &mut great_grandparent.get_mut(self.arena).value
+            {
                 list.is_task_list = true;
             }
         }

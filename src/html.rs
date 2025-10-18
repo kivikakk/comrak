@@ -1236,8 +1236,8 @@ fn render_task_item<'a, T>(
     };
 
     let write_li = node
-        .parent()
-        .map(|p| node_matches!(p, NodeValue::List(_)))
+        .parent(context.arena)
+        .map(|p| node_matches!(context.arena, p, NodeValue::List(_)))
         .unwrap_or_default();
 
     if entering {
