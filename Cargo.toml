@@ -31,7 +31,7 @@ lto = true
 
 [[bin]]
 name = "comrak"
-required-features = ["cli", "syntect"]
+required-features = ["cli"]
 doc = false
 
 [dependencies]
@@ -55,7 +55,7 @@ toml = "0.7.3"
 
 [features]
 default = ["cli", "syntect", "bon"]
-cli = ["clap", "shell-words", "xdg", "fmt2io"]
+cli = ["clap", "bon", "shell-words", "xdg", "fmt2io"]
 shortcodes = ["emojis"]
 bon = ["dep:bon"]
 
