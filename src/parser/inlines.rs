@@ -1,18 +1,3 @@
-use crate::arena_tree::Node;
-use crate::ctype::{isdigit, ispunct, isspace};
-use crate::entity;
-use crate::nodes::{
-    Ast, AstNode, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
-    NodeValue, NodeWikiLink, Sourcepos,
-};
-use crate::parser::autolink;
-#[cfg(feature = "shortcodes")]
-use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{
-    unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Options, ResolvedReference,
-};
-use crate::scanners;
-use crate::strings::{self, is_blank, Case};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -21,7 +6,21 @@ use std::str;
 use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
-use super::WikiLinksMode;
+use crate::arena_tree::Node;
+use crate::ctype::{isdigit, ispunct, isspace};
+use crate::entity;
+use crate::nodes::{
+    Ast, AstNode, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
+    NodeValue, NodeWikiLink, Sourcepos,
+};
+#[cfg(feature = "shortcodes")]
+use crate::parser::shortcodes::NodeShortCode;
+use crate::parser::{
+    autolink, unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Options,
+    ResolvedReference, WikiLinksMode,
+};
+use crate::scanners;
+use crate::strings::{self, is_blank, Case};
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -133,7 +132,7 @@ impl FlankingCheckHelper for char {
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a>>,
-    options: &'o Options<'c>,
+    pub options: &'o Options<'c>,
     pub input: &'i [u8],
     line: usize,
     pub pos: usize,
@@ -242,7 +241,13 @@ impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
             self.delim_char,
             self.can_open,
             self.can_close,
-            self.inl.data.borrow().sourcepos
+            self.inl
+                .data
+                .try_borrow()
+                .map_or("<couldn't borrow>".to_string(), |d| format!(
+                    "{}",
+                    d.sourcepos
+                ))
         )
     }
 }
@@ -1488,25 +1493,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         ))
     }
 
-    fn handle_autolink_with<F>(&mut self, node: &'a AstNode<'a>, f: F) -> Option<&'a AstNode<'a>>
-    where
-        F: Fn(
-            &'a Arena<AstNode<'a>>,
-            &[u8],
-            usize,
-            bool,
-        ) -> Option<(&'a AstNode<'a>, usize, usize)>,
-    {
+    fn handle_autolink_with(
+        &mut self,
+        node: &'a AstNode<'a>,
+        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_, '_>) -> Option<(&'a AstNode<'a>, usize, usize)>,
+    ) -> Option<&'a AstNode<'a>> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
         let startpos = self.pos;
-        let (post, need_reverse, skip) = f(
-            self.arena,
-            self.input,
-            self.pos,
-            self.options.parse.relaxed_autolinks,
-        )?;
+        let (post, need_reverse, skip) = f(self)?;
 
         self.pos += skip - need_reverse;
 

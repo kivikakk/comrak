@@ -2799,37 +2799,36 @@ where
                 mem::swap(&mut nhb.literal, content);
             }
             NodeValue::List(ref mut nl) => {
-                nl.tight = true;
-                let mut ch = node.first_child();
-
-                while let Some(item) = ch {
-                    if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
-                        nl.tight = false;
-                        break;
-                    }
-
-                    let mut subch = item.first_child();
-                    while let Some(subitem) = subch {
-                        if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
-                            && subitem.ends_with_blank_line()
-                        {
-                            nl.tight = false;
-                            break;
-                        }
-                        subch = subitem.next_sibling();
-                    }
-
-                    if !nl.tight {
-                        break;
-                    }
-
-                    ch = item.next_sibling();
-                }
+                nl.tight = self.determine_list_tight(node);
             }
             _ => (),
         }
 
         parent
+    }
+
+    fn determine_list_tight(&self, node: &'a AstNode<'a>) -> bool {
+        let mut ch = node.first_child();
+
+        while let Some(item) = ch {
+            if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
+                return false;
+            }
+
+            let mut subch = item.first_child();
+            while let Some(subitem) = subch {
+                if (item.next_sibling().is_some() || subitem.next_sibling().is_some())
+                    && subitem.ends_with_blank_line()
+                {
+                    return false;
+                }
+                subch = subitem.next_sibling();
+            }
+
+            ch = item.next_sibling();
+        }
+
+        true
     }
 
     fn process_inlines(&mut self) {
@@ -2866,33 +2865,25 @@ where
     }
 
     fn process_footnotes(&mut self) {
-        let mut map = HashMap::new();
-        Self::find_footnote_definitions(self.root, &mut map);
+        let mut fd_map = HashMap::new();
+        Self::find_footnote_definitions(self.root, &mut fd_map);
 
-        let mut ix = 0;
-        Self::find_footnote_references(self.root, &mut map, &mut ix);
+        let mut next_ix = 0;
+        Self::find_footnote_references(self.root, &mut fd_map, &mut next_ix);
 
-        if !map.is_empty() {
-            // In order for references to be found inside footnote definitions,
-            // such as `[^1]: another reference[^2]`,
-            // the node needed to remain in the AST. Now we can remove them.
-            Self::cleanup_footnote_definitions(self.root);
-        }
-
-        if ix > 0 {
-            let mut v = map.into_values().collect::<Vec<_>>();
-            v.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
-            for f in v {
-                if f.ix.is_some() {
-                    match f.node.data.borrow_mut().value {
-                        NodeValue::FootnoteDefinition(ref mut nfd) => {
-                            nfd.name = f.name.to_string();
-                            nfd.total_references = f.total_references;
-                        }
-                        _ => unreachable!(),
-                    }
-                    self.root.append(f.node);
-                }
+        let mut fds = fd_map.into_values().collect::<Vec<_>>();
+        fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
+        for fd in fds {
+            if fd.ix.is_some() {
+                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.data.borrow_mut().value
+                else {
+                    unreachable!()
+                };
+                nfd.name = fd.name.to_string();
+                nfd.total_references = fd.total_references;
+                self.root.append(fd.node);
+            } else {
+                fd.node.detach();
             }
         }
     }
@@ -2959,19 +2950,6 @@ where
             label.insert_str(0, "[^");
             label.push(']');
             ast.value = NodeValue::Text(label);
-        }
-    }
-
-    fn cleanup_footnote_definitions(node: &'a AstNode<'a>) {
-        match node.data.borrow().value {
-            NodeValue::FootnoteDefinition(_) => {
-                node.detach();
-            }
-            _ => {
-                for n in node.children() {
-                    Self::cleanup_footnote_definitions(n);
-                }
-            }
         }
     }
 
