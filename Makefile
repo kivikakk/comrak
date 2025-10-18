@@ -13,13 +13,13 @@ bench:
 binaries: build-comrak-branch build-comrak-main build-cmark-gfm build-pulldown-cmark build-markdown-it
 
 build-comrak-branch:
-	cargo build --release
+	cargo build --release --bin comrak --no-default-features --features cli
 	cp ${ROOT}/target/release/comrak ${ROOT}/benches/comrak-${COMMIT}
 
 build-comrak-main:
 	git clone https://github.com/kivikakk/comrak.git --depth 1 --single-branch ${ROOT}/vendor/comrak || true
 	cd ${ROOT}/vendor/comrak && \
-	cargo build --release && \
+	cargo build --release --bin comrak --no-default-features --features cli && \
 	cp ./target/release/comrak ${ROOT}/benches/comrak-main
 
 build-cmark-gfm:
@@ -54,3 +54,16 @@ bench-all: binaries
 	hyperfine --warmup 10 --min-runs ${MIN_RUNS} -L binary comrak-${COMMIT},comrak-main,pulldown-cmark,cmark-gfm,markdown-it './bench.sh ./{binary}' --export-markdown ${ROOT}/bench-output.md &&\
 	echo "\n\nRun on" `date -u` >> ${ROOT}/bench-output.md
 
+benches/samply-bench-input.md:
+	cat ${ROOT}/vendor/progit/*/*/*.markdown > $@
+
+SAMPLY_OPTIONS:=-r 10000 --iteration-count 20 --reuse-threads
+SAMPLY_COMRAK_ARGS:=--syntax-highlighting none benches/samply-bench-input.md -o /dev/null
+
+samply-comrak-branch: benches/samply-bench-input.md build-comrak-branch
+	cat ${ROOT}/vendor/progit/*/*/*.markdown > benches/samply-bench-input.md
+	samply record -o profile-branch.json.gz ${SAMPLY_OPTIONS}         ${ROOT}/benches/comrak-${COMMIT} ${SAMPLY_COMRAK_ARGS}
+
+samply-comrak-main: benches/samply-bench-input.md build-comrak-main
+	cat ${ROOT}/vendor/progit/*/*/*.markdown > benches/samply-bench-input.md
+	samply record -o profile-main.json.gz   ${SAMPLY_OPTIONS} -P 3001 ${ROOT}/benches/comrak-main      ${SAMPLY_COMRAK_ARGS}

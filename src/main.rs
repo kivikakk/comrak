@@ -10,10 +10,9 @@ use std::{boxed::Box, io::BufWriter};
 
 use clap::{Parser, ValueEnum};
 
-use comrak::{
-    adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter, Arena, ListStyleType,
-    Options, Plugins,
-};
+#[cfg(feature = "syntect")]
+use comrak::{adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter};
+use comrak::{Arena, ListStyleType, Options, Plugins};
 use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
 
 const EXIT_SUCCESS: i32 = 0;
@@ -136,6 +135,7 @@ struct Cli {
 
     /// Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling.
     #[arg(long, value_name = "THEME", default_value = "base16-ocean.dark")]
+    #[cfg(feature = "syntect")]
     syntax_highlighting: String,
 
     /// Specify bullet character for lists (-, +, *) in CommonMark output
@@ -315,16 +315,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         render,
     };
 
+    #[cfg(feature = "syntect")]
     let syntax_highlighter: Option<&dyn SyntaxHighlighterAdapter>;
-    let mut plugins: Plugins = Plugins::default();
+    #[cfg(feature = "syntect")]
     let adapter: SyntectAdapter;
 
-    let theme = cli.syntax_highlighting;
-    if theme.is_empty() || theme == "none" {
-        syntax_highlighter = None;
-    } else {
-        adapter = SyntectAdapter::new(Some(&theme));
-        syntax_highlighter = Some(&adapter);
+    #[cfg_attr(not(feature = "syntect"), allow(unused_mut))]
+    let mut plugins: Plugins = Plugins::default();
+
+    #[cfg(feature = "syntect")]
+    {
+        let theme = cli.syntax_highlighting;
+        if theme.is_empty() || theme == "none" {
+            syntax_highlighter = None;
+        } else {
+            adapter = SyntectAdapter::new(Some(&theme));
+            syntax_highlighter = Some(&adapter);
+        }
     }
 
     let mut s: Vec<u8> = Vec::with_capacity(2048);
@@ -356,7 +363,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         match cli.format {
             Format::Html => {
-                plugins.render.codefence_syntax_highlighter = syntax_highlighter;
+                #[cfg(feature = "syntect")]
+                {
+                    plugins.render.codefence_syntax_highlighter = syntax_highlighter;
+                }
                 comrak::format_html_with_plugins
             }
             Format::Xml => comrak::format_xml_with_plugins,
