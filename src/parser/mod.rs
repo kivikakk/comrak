@@ -8,17 +8,8 @@ pub mod alert;
 pub mod math;
 pub mod multiline_block_quote;
 
-use crate::adapters::SyntaxHighlighterAdapter;
-use crate::arena_tree::Node;
-use crate::ctype::{isdigit, isspace};
-use crate::entity;
-use crate::nodes::{self, NodeFootnoteDefinition, Sourcepos};
-use crate::nodes::{
-    Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem, NodeHeading,
-    NodeHtmlBlock, NodeList, NodeValue,
-};
-use crate::scanners::{self, SetextChar};
-use crate::strings::{self, split_off_front_matter, Case};
+#[cfg(feature = "bon")]
+use bon::Builder;
 use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -29,14 +20,19 @@ use std::str;
 use std::sync::Arc;
 use typed_arena::Arena;
 
-use crate::adapters::HeadingAdapter;
+use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
+use crate::arena_tree::Node;
+use crate::ctype::{isdigit, isspace};
+use crate::entity;
+use crate::nodes::{
+    self, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
+};
 use crate::parser::alert::{AlertType, NodeAlert};
+use crate::parser::inlines::RefMap;
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
-
-#[cfg(feature = "bon")]
-use bon::Builder;
-
-use self::inlines::RefMap;
+use crate::scanners::{self, SetextChar};
+use crate::strings::{self, split_off_front_matter, Case};
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
@@ -2972,36 +2968,18 @@ where
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
                 let n_ast = &mut n.data.borrow_mut();
-                let mut sourcepos = n_ast.sourcepos;
 
+                let sourcepos = n_ast.sourcepos;
                 match n_ast.value {
                     NodeValue::Text(ref mut root) => {
-                        // Join adjacent text nodes together, then post-process.
-                        // Record the original list of sourcepos and bytecounts
-                        // for the post-processing step.
-                        let mut spxv = VecDeque::new();
-                        spxv.push_back((sourcepos, root.len()));
-                        while let Some(ns) = n.next_sibling() {
-                            match ns.data.borrow().value {
-                                NodeValue::Text(ref adj) => {
-                                    root.push_str(adj);
-                                    let sp = ns.data.borrow().sourcepos;
-                                    spxv.push_back((sp, adj.len()));
-                                    sourcepos.end.column = sp.end.column;
-                                    ns.detach();
-                                }
-                                _ => break,
-                            }
-                        }
-
-                        self.postprocess_text_node_with_context(
+                        let sourcepos = self.postprocess_text_node_with_context(
                             n,
+                            sourcepos,
                             root,
-                            &mut sourcepos,
-                            spxv,
                             in_bracket_context,
                         );
                         emptied = root.is_empty();
+                        n_ast.sourcepos = sourcepos;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -3010,8 +2988,6 @@ where
                     }
                     _ => {}
                 }
-
-                n_ast.sourcepos = sourcepos;
 
                 if !emptied {
                     children.push((n, child_in_bracket_context));
@@ -3031,6 +3007,43 @@ where
     }
 
     fn postprocess_text_node_with_context(
+        &mut self,
+        node: &'a AstNode<'a>,
+        mut sourcepos: Sourcepos,
+        root: &mut String,
+        in_bracket_context: bool,
+    ) -> Sourcepos {
+        // Join adjacent text nodes together, then post-process.
+        // Record the original list of sourcepos and bytecounts
+        // for the post-processing step.
+
+        let mut spxv = VecDeque::new();
+        spxv.push_back((sourcepos, root.len()));
+        while let Some(ns) = node.next_sibling() {
+            match ns.data.borrow().value {
+                NodeValue::Text(ref adj) => {
+                    root.push_str(adj);
+                    let sp = ns.data.borrow().sourcepos;
+                    spxv.push_back((sp, adj.len()));
+                    sourcepos.end.column = sp.end.column;
+                    ns.detach();
+                }
+                _ => break,
+            }
+        }
+
+        self.postprocess_text_node_with_context_inner(
+            node,
+            root,
+            &mut sourcepos,
+            spxv,
+            in_bracket_context,
+        );
+
+        sourcepos
+    }
+
+    fn postprocess_text_node_with_context_inner(
         &mut self,
         node: &'a AstNode<'a>,
         text: &mut String,
@@ -3154,15 +3167,19 @@ where
     fn parse_reference_inline(&mut self, content: &[u8]) -> Option<usize> {
         // In this case reference inlines rarely have delimiters
         // so we often just need the minimal case
-        let delimiter_arena = Arena::with_capacity(0);
+        let unused_node_arena = Arena::new();
+        let unused_footnote_defs = inlines::FootnoteDefs::new();
+        let unused_delimiter_arena = Arena::with_capacity(0);
+        let mut unused_refmap = inlines::RefMap::new();
+
         let mut subj = inlines::Subject::new(
-            self.arena,
+            &unused_node_arena,
             self.options,
             content,
             0, // XXX -1 in upstream; never used?
-            &mut self.refmap,
-            &self.footnote_defs,
-            &delimiter_arena,
+            &mut unused_refmap,
+            &unused_footnote_defs,
+            &unused_delimiter_arena,
         );
 
         let mut lab: String = match subj.link_label() {
@@ -3216,7 +3233,7 @@ where
 
         lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
-            subj.refmap.map.entry(lab).or_insert(ResolvedReference {
+            self.refmap.map.entry(lab).or_insert(ResolvedReference {
                 url: String::from_utf8(strings::clean_url(url)).unwrap(),
                 title: String::from_utf8(strings::clean_title(&title)).unwrap(),
             });
