@@ -392,11 +392,11 @@ pub struct ExtensionOptions<'c> {
     /// use comrak::parse_document;
     /// let mut options = Options::default();
     /// options.extension.front_matter_delimiter = Some("---".to_owned());
-    /// let arena = Arena::new();
+    /// let mut arena = Arena::new();
     /// let input ="---\nlayout: post\n---\nText\n";
-    /// let root = parse_document(&arena, input, &options);
+    /// let root = parse_document(&mut arena, input, &options);
     /// let mut buf = String::new();
-    /// format_commonmark(&root, &options, &mut buf);
+    /// format_commonmark(&arena, root, &options, &mut buf);
     /// assert_eq!(buf, input);
     /// ```
     pub front_matter_delimiter: Option<String>,
@@ -876,17 +876,17 @@ pub struct RenderOptions {
     /// ```
     /// # use comrak::{parse_document, Options, format_commonmark};
     /// # fn main() {
-    /// # let arena = indextree::Arena::new();
+    /// # let mut arena = indextree::Arena::new();
     /// let mut options = Options::default();
-    /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
+    /// let node = parse_document(&mut arena, "hello hello hello hello hello hello", &options);
     /// let mut output = String::new();
-    /// format_commonmark(node, &options, &mut output).unwrap();
+    /// format_commonmark(&arena, node, &options, &mut output).unwrap();
     /// assert_eq!(output,
     ///            "hello hello hello hello hello hello\n");
     ///
     /// options.render.width = 20;
     /// let mut output = String::new();
-    /// format_commonmark(node, &options, &mut output).unwrap();
+    /// format_commonmark(&arena, node, &options, &mut output).unwrap();
     /// assert_eq!(output,
     ///            "hello hello hello\nhello hello hello\n");
     /// # }
@@ -1035,18 +1035,18 @@ pub struct RenderOptions {
     /// ```rust
     /// # use std::str;
     /// # use comrak::{Arena, Options, format_commonmark, parse_document};
-    /// let arena = Arena::new();
+    /// let mut arena = Arena::new();
     /// let mut options = Options::default();
     /// let input = "```\nhello\n```\n";
-    /// let root = parse_document(&arena, input, &options);
+    /// let root = parse_document(&mut arena, input, &options);
     ///
     /// let mut buf = String::new();
-    /// format_commonmark(&root, &options, &mut buf);
+    /// format_commonmark(&arena, root, &options, &mut buf);
     /// assert_eq!(buf, "    hello\n");
     ///
     /// buf.clear();
     /// options.render.prefer_fenced = true;
-    /// format_commonmark(&root, &options, &mut buf);
+    /// format_commonmark(&arena, root, &options, &mut buf);
     /// assert_eq!(buf, "```\nhello\n```\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]

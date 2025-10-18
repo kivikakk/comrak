@@ -123,7 +123,7 @@ pub enum ChildRendering {
 ///         context.write_str(if entering { "<b>" } else { "</b>" })?;
 ///     },
 ///     NodeValue::Image(ref nl) => |context, node, entering| {
-///         assert!(node.get(arena).sourcepos == (3, 1, 3, 18).into());
+///         assert!(node.get(context.arena).sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
 ///             context.write_str(&nl.url.to_uppercase())?;
 ///             return Ok(ChildRendering::Skip);
@@ -132,15 +132,15 @@ pub enum ChildRendering {
 /// });
 ///
 /// let options = Options::default();
-/// let arena = Arena::new();
+/// let mut arena = Arena::new();
 /// let doc = parse_document(
-///     &arena,
+///     &mut arena,
 ///     "_Hello_, **world**.\n\n![title](/img.png)",
 ///     &options,
 /// );
 ///
 /// let mut result: String = String::new();
-/// let converted_count = CustomFormatter::format_document(doc, &options, &mut result, 0).unwrap();
+/// let converted_count = CustomFormatter::format_document(&arena, doc, &options, &mut result, 0).unwrap();
 ///
 /// assert_eq!(
 ///     result,

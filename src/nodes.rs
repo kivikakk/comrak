@@ -663,38 +663,7 @@ impl Ast {
 
 /// The type of a node within the document.
 ///
-/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
-/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
-///
-/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
-///
-/// ```no_run
-/// # use comrak::nodes::{AstNode, NodeValue};
-/// let root = AstNode::from(NodeValue::Document);
-/// ```
-///
-/// Note that no sourcepos information is given to the created node. If you wish
-/// to assign sourcepos information, use the `From` trait to create an `AstNode`
-/// from an `Ast`:
-///
-/// ```no_run
-/// # use comrak::nodes::{Ast, AstNode, NodeValue};
-/// let root = AstNode::from(Ast::new(
-///     NodeValue::Paragraph,
-///     (4, 1).into(), // start_line, start_col
-/// ));
-/// ```
-///
-/// Adjust the `end` position manually.
-///
-/// For practical use, you'll probably need it allocated in an `Arena`, in which
-/// case you can use `.into()` to simplify creation:
-///
-/// ```no_run
-/// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
-/// # let arena = Arena::<AstNode>::new();
-/// let node_in_arena = arena.alloc(NodeValue::Document.into());
-/// ```
+/// TODO
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct AstNode(NodeId);
 
