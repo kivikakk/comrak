@@ -60,7 +60,7 @@ benches/samply-bench-input.md:
 	cat ${ROOT}/vendor/progit/*/*/*.markdown > $@
 
 SAMPLY_OPTIONS:=-r 10000 --iteration-count 20 --reuse-threads
-SAMPLY_COMRAK_ARGS:=--syntax-highlighting none benches/samply-bench-input.md -o /dev/null
+SAMPLY_COMRAK_ARGS:=benches/samply-bench-input.md -o /dev/null
 
 samply-comrak-branch: benches/samply-bench-input.md build-comrak-branch
 	cat ${ROOT}/vendor/progit/*/*/*.markdown > benches/samply-bench-input.md
