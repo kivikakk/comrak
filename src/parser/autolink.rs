@@ -200,10 +200,10 @@ fn email_match<'a>(
 
     let inl = make_inline(
         arena,
-        NodeValue::Link(NodeLink {
+        NodeValue::Link(Box::new(NodeLink {
             url,
             title: String::new(),
-        }),
+        })),
         (0, 1, 0, 1).into(),
     );
 
@@ -261,10 +261,10 @@ pub fn www_match<'a>(
 
     let inl = make_inline(
         subject.arena,
-        NodeValue::Link(NodeLink {
+        NodeValue::Link(Box::new(NodeLink {
             url,
             title: String::new(),
-        }),
+        })),
         (0, 1, 0, 1).into(),
     );
 
@@ -427,10 +427,10 @@ pub fn url_match<'a>(
     let url = &subject.input[i - rewind..i + link_end];
     let inl = make_inline(
         subject.arena,
-        NodeValue::Link(NodeLink {
+        NodeValue::Link(Box::new(NodeLink {
             url: url.to_string(),
             title: String::new(),
-        }),
+        })),
         (0, 1, 0, 1).into(),
     );
 

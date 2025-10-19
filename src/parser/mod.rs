@@ -1782,7 +1782,11 @@ where
         let offset = self.curline_len - self.offset - 1;
         self.advance_offset(line, offset, false);
 
-        *container = self.add_child(container, NodeValue::Alert(na), alert_startpos + 1);
+        *container = self.add_child(
+            container,
+            NodeValue::Alert(Box::new(na)),
+            alert_startpos + 1,
+        );
 
         true
     }
@@ -1903,7 +1907,7 @@ where
         };
         *container = self.add_child(
             container,
-            NodeValue::CodeBlock(ncb),
+            NodeValue::CodeBlock(Box::new(ncb)),
             self.first_nonspace + 1,
         );
         self.advance_offset(line, first_nonspace + matched - offset, false);
@@ -2318,7 +2322,11 @@ where
             info: String::new(),
             literal: String::new(),
         };
-        *container = self.add_child(container, NodeValue::CodeBlock(ncb), self.offset + 1);
+        *container = self.add_child(
+            container,
+            NodeValue::CodeBlock(Box::new(ncb)),
+            self.offset + 1,
+        );
 
         true
     }

@@ -77,7 +77,7 @@ pub enum NodeValue {
     /// **Block**. A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
     /// or [indented](https://github.github.com/gfm/#indented-code-blocks).  Contains raw text
     /// which is not parsed as Markdown, although is HTML escaped.
-    CodeBlock(NodeCodeBlock),
+    CodeBlock(Box<NodeCodeBlock>),
 
     /// **Block**. A [HTML block](https://github.github.com/gfm/#html-blocks).  Contains raw text
     /// which is neither parsed as Markdown nor HTML escaped.
@@ -101,7 +101,7 @@ pub enum NodeValue {
 
     /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
-    Table(NodeTable),
+    Table(Box<NodeTable>),
 
     /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
     /// Contains table cells.
@@ -153,17 +153,17 @@ pub enum NodeValue {
 
     /// **Inline**.  A [link](https://github.github.com/gfm/#links) to some URL, with possible
     /// title.
-    Link(NodeLink),
+    Link(Box<NodeLink>),
 
     /// **Inline**.  An [image](https://github.github.com/gfm/#images).
-    Image(NodeLink),
+    Image(Box<NodeLink>),
 
     /// **Inline**.  A footnote reference.
     FootnoteReference(NodeFootnoteReference),
 
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
-    ShortCode(NodeShortCode),
+    ShortCode(Box<NodeShortCode>),
 
     /// **Inline**. A math span. Contains raw text which is not parsed as Markdown.
     /// Dollar math or code math
@@ -213,7 +213,7 @@ pub enum NodeValue {
 
     /// **Block**. GitHub style alert boxes which uses a modified blockquote syntax.
     /// Enabled with the `alerts` option.
-    Alert(NodeAlert),
+    Alert(Box<NodeAlert>),
 }
 
 /// Alignment of a single table cell.
@@ -565,6 +565,19 @@ pub struct Ast {
     pub(crate) table_visited: bool,
     pub(crate) line_offsets: Vec<usize>,
 }
+
+#[allow(dead_code)]
+/// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
+/// bigger.
+const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
+
+#[allow(dead_code)]
+/// Assert the total size of what we allocate in the Arena, for reference.
+///
+/// Note that the size adds to Ast:
+/// * 8 bytes for RefCell.
+/// * 40 bytes for arena_tree::Node's 5 pointers.
+const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

@@ -17,9 +17,9 @@ pub fn try_opening_block<'a>(
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
-    let aligns = match container.data.borrow().value {
+    let aligns = match &container.data.borrow().value {
         NodeValue::Paragraph => None,
-        NodeValue::Table(NodeTable { ref alignments, .. }) => Some(alignments.clone()),
+        NodeValue::Table(nt) => Some(nt.alignments.clone()),
         _ => return None,
     };
 
@@ -96,12 +96,12 @@ fn try_opening_header<'a>(
 
     let start = container.data.borrow().sourcepos.start;
     let child = Ast::new(
-        NodeValue::Table(NodeTable {
+        NodeValue::Table(Box::new(NodeTable {
             alignments,
             num_columns: header_row.cells.len(),
             num_rows: 0,
             num_nonempty_cells: 0,
-        }),
+        })),
         start,
     );
     let table = parser.arena.alloc(child.into());

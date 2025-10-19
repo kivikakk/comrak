@@ -6,7 +6,7 @@ use typed_arena::Arena;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeList, NodeMath, NodeTable, NodeValue, NodeWikiLink, TableAlignment,
+    NodeList, NodeMath, NodeValue, NodeWikiLink, TableAlignment,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -910,8 +910,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
             if in_header && node.next_sibling().is_none() {
                 let table = &node.parent().unwrap().parent().unwrap().data.borrow().value;
-                let alignments = match *table {
-                    NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
+                let alignments = match table {
+                    NodeValue::Table(nt) => &nt.alignments,
                     _ => panic!(),
                 };
 

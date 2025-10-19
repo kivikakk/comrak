@@ -1353,7 +1353,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1 + matchlen;
 
         Some(self.make_inline(
-            NodeValue::ShortCode(nsc),
+            NodeValue::ShortCode(Box::new(nsc)),
             self.pos - 1 - matchlen,
             self.pos - 1,
         ))
@@ -1763,9 +1763,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let nl = NodeLink { url, title };
         let inl = self.make_inline(
             if is_image {
-                NodeValue::Image(nl)
+                NodeValue::Image(Box::new(nl))
             } else {
-                NodeValue::Link(nl)
+                NodeValue::Link(Box::new(nl))
             },
             // Manually set below.
             self.pos,
@@ -2173,10 +2173,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         end_column: usize,
     ) -> Node<'a> {
         let inl = self.make_inline(
-            NodeValue::Link(NodeLink {
+            NodeValue::Link(Box::new(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
                 title: String::new(),
-            }),
+            })),
             start_column,
             end_column,
         );

@@ -2,7 +2,7 @@ use std::cmp;
 use std::fmt::{self, Write};
 
 use crate::character_set::character_set;
-use crate::nodes::{ListType, NodeCode, NodeMath, NodeTable, NodeValue};
+use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::{Options, Plugins};
 
@@ -236,13 +236,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     let header_row = &ancestors.next().unwrap().data.borrow().value;
                     let table = &ancestors.next().unwrap().data.borrow().value;
 
-                    if let (
-                        NodeValue::TableRow(true),
-                        NodeValue::Table(NodeTable { alignments, .. }),
-                    ) = (header_row, table)
-                    {
+                    if let (NodeValue::TableRow(true), NodeValue::Table(nt)) = (header_row, table) {
                         let ix = node.preceding_siblings().count() - 1;
-                        if let Some(xml_align) = alignments[ix].xml_name() {
+                        if let Some(xml_align) = nt.alignments[ix].xml_name() {
                             write!(self.output, " align=\"{}\"", xml_align)?;
                         }
                     }
