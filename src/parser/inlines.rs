@@ -768,7 +768,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
-                    literal: buf,
+                    literal: buf.into(),
                 };
                 let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
                 self.adjust_node_newlines(
@@ -879,12 +879,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let buf = if code_math || opendollars == 1 {
                 strings::normalize_code(buf)
             } else {
-                buf.to_string()
+                buf.into()
             };
             let math = NodeMath {
                 dollar_math: !code_math,
                 display_math: opendollars == 2,
-                literal: buf,
+                literal: buf.into(),
             };
             let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(

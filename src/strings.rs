@@ -66,39 +66,54 @@ pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
     }
 }
 
-pub fn normalize_code(v: &str) -> String {
-    let v = v.as_bytes();
-    let mut r = Vec::with_capacity(v.len());
+pub fn normalize_code(v: &str) -> Cow<'_, str> {
+    let b = v.as_bytes();
+    let mut r = String::new();
+    let mut offset = 0;
     let mut i = 0;
     let mut contains_nonspace = false;
 
-    while i < v.len() {
-        match v[i] {
+    while i < b.len() {
+        match b[i] {
             b'\r' => {
-                if i + 1 == v.len() || v[i + 1] != b'\n' {
-                    r.push(b' ');
+                if i + 1 == v.len() || b[i + 1] != b'\n' {
+                    r.push_str(&v[offset..i]);
+                    r.push(' ');
+                    offset = i + 1;
                 }
             }
             b'\n' => {
-                r.push(b' ');
+                r.push_str(&v[offset..i]);
+                r.push(' ');
+                offset = i + 1;
             }
-            c => r.push(c),
-        }
-        if v[i] != b' ' && v[i] != b'\r' && v[i] != b'\n' {
-            contains_nonspace = true;
+            b' ' => {}
+            _ => contains_nonspace = true,
         }
 
         i += 1
     }
 
-    if contains_nonspace && !r.is_empty() && r[0] == b' ' && r[r.len() - 1] == b' ' {
-        r.remove(0);
-        r.pop();
+    if offset == 0 {
+        if contains_nonspace && b[0] == b' ' && b[i - 1] == b' ' {
+            return v[1..i - 1].into();
+        } else {
+            return v.into();
+        }
     }
 
-    // SAFETY: we only remove ASCII whitespace, CR and LF; we do not change the
-    // UTF-8 correctness of the incoming buffer at all.
-    unsafe { String::from_utf8_unchecked(r) }
+    r.push_str(&v[offset..i]);
+
+    // SAFETY: we only shift over a space, and we are guaranteed to duplicate a
+    // space in the last byte of the buffer before truncating.
+    let bytes = unsafe { r.as_bytes_mut() };
+    let len = bytes.len();
+    if contains_nonspace && bytes[0] == b' ' && bytes[len - 1] == b' ' {
+        shift_buf_left(bytes, 1);
+        r.truncate(len - 2);
+    }
+
+    r.into()
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
@@ -134,7 +149,7 @@ fn remove_trailing_blank_lines_ix(line: &str) -> usize {
         return i;
     }
 
-    return line.len();
+    line.len()
 }
 
 pub fn is_line_end_char(ch: u8) -> bool {
