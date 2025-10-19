@@ -11,7 +11,6 @@ pub mod multiline_block_quote;
 #[cfg(feature = "bon")]
 use bon::Builder;
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
@@ -22,7 +21,6 @@ use std::sync::Arc;
 use typed_arena::Arena;
 
 use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
-use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::nodes::{
@@ -66,16 +64,19 @@ pub fn parse_document<'a>(
     md: &str,
     options: &Options,
 ) -> &'a AstNode<'a> {
-    let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
-        value: NodeValue::Document,
-        content: String::new(),
-        sourcepos: (1, 1, 1, 1).into(),
-        internal_offset: 0,
-        open: true,
-        last_line_blank: false,
-        table_visited: false,
-        line_offsets: Vec::with_capacity(0),
-    })));
+    let root: &'a AstNode<'a> = arena.alloc(
+        Ast {
+            value: NodeValue::Document,
+            content: String::new(),
+            sourcepos: (1, 1, 1, 1).into(),
+            internal_offset: 0,
+            open: true,
+            last_line_blank: false,
+            table_visited: false,
+            line_offsets: Vec::with_capacity(0),
+        }
+        .into(),
+    );
     let mut parser = Parser::new(arena, root, options);
     let linebuf = String::new();
     let linebuf = parser.feed(linebuf, md, true);
@@ -1764,7 +1765,7 @@ where
         }
     }
 
-    fn handle_alert(&mut self, container: &mut &'a Node<'a, RefCell<Ast>>, line: &str) -> bool {
+    fn handle_alert(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(alert_type) = self.detect_alert(line) else {
             return false;
         };
@@ -1817,11 +1818,7 @@ where
         }
     }
 
-    fn handle_multiline_blockquote(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_multiline_blockquote(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
@@ -1852,11 +1849,7 @@ where
         }
     }
 
-    fn handle_blockquote(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_blockquote(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         if !self.detect_blockquote(line) {
             return false;
         }
@@ -1877,11 +1870,7 @@ where
         line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
     }
 
-    fn handle_atx_heading(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_atx_heading(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_atx_heading(line) else {
             return false;
         };
@@ -1921,11 +1910,7 @@ where
         scanners::atx_heading_start(&line[self.first_nonspace..])
     }
 
-    fn handle_code_fence(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_code_fence(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_code_fence(line) else {
             return false;
         };
@@ -1954,11 +1939,7 @@ where
         scanners::open_code_fence(&line[self.first_nonspace..])
     }
 
-    fn handle_html_block(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_html_block(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_html_block(container, line) else {
             return false;
         };
@@ -1987,11 +1968,7 @@ where
         })
     }
 
-    fn handle_setext_heading(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_setext_heading(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(sc) = self.detect_setext_heading(container, line) else {
             return false;
         };
@@ -2029,7 +2006,7 @@ where
 
     fn handle_thematic_break(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
         all_matched: bool,
     ) -> bool {
@@ -2107,7 +2084,7 @@ where
 
     fn handle_footnote(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
         depth: usize,
     ) -> bool {
@@ -2140,11 +2117,7 @@ where
         }
     }
 
-    fn handle_description_list(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-    ) -> bool {
+    fn handle_description_list(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_description_list(container, line) else {
             return false;
         };
@@ -2160,7 +2133,7 @@ where
 
     fn detect_description_list(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
     ) -> Option<usize> {
         if self.options.extension.description_lists {
@@ -2292,7 +2265,7 @@ where
 
     fn handle_list(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
         indented: bool,
         depth: usize,
@@ -2361,7 +2334,7 @@ where
 
     fn handle_code_block(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
         indented: bool,
         maybe_lazy: bool,
@@ -2390,7 +2363,7 @@ where
 
     fn handle_table(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
+        container: &mut &'a AstNode<'a>,
         line: &str,
         indented: bool,
     ) -> bool {
@@ -2416,7 +2389,7 @@ where
 
     fn detect_table(
         &mut self,
-        container: &'a Node<'a, RefCell<Ast>>,
+        container: &'a AstNode<'a>,
         line: &str,
         indented: bool,
     ) -> Option<(&'a AstNode<'a>, bool, bool)> {

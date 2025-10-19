@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
-use crate::arena_tree::Node;
+use crate::arena_tree;
 pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
@@ -694,19 +694,19 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
 
 impl<'a> From<NodeValue> for AstNode<'a> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
     fn from(value: NodeValue) -> Self {
-        Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+        arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
     }
 }
 
 impl<'a> From<Ast> for AstNode<'a> {
     /// Create a new AST node with the given Ast.
     fn from(ast: Ast) -> Self {
-        Node::new(RefCell::new(ast))
+        arena_tree::Node::new(RefCell::new(ast))
     }
 }
 
@@ -723,7 +723,7 @@ pub enum ValidationError<'a> {
     },
 }
 
-impl<'a> Node<'a, RefCell<Ast>> {
+impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {
