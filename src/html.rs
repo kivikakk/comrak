@@ -1602,10 +1602,10 @@ fn tagfilter(literal: &str) -> bool {
 
 fn tagfilter_block(output: &mut dyn Write, buffer: &str) -> fmt::Result {
     let bytes = buffer.as_bytes();
-    let matcher = jetscii::bytes!(b'<');
+    const MATCHER: jetscii::BytesConst = jetscii::bytes!(b'<');
 
     let mut offset = 0;
-    while let Some(i) = matcher.find(&bytes[offset..]) {
+    while let Some(i) = MATCHER.find(&bytes[offset..]) {
         output.write_str(&buffer[offset..offset + i])?;
         if tagfilter(&buffer[offset + i..]) {
             output.write_str("&lt;")?;
@@ -1638,10 +1638,10 @@ pub fn dangerous_url(input: &str) -> bool {
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
     let bytes = buffer.as_bytes();
-    let matcher = jetscii::bytes!(b'"', b'&', b'<', b'>');
+    const MATCHER: jetscii::BytesConst = jetscii::bytes!(b'"', b'&', b'<', b'>');
 
     let mut offset = 0;
-    while let Some(i) = matcher.find(&bytes[offset..]) {
+    while let Some(i) = MATCHER.find(&bytes[offset..]) {
         let esc: &str = match bytes[offset + i] {
             b'"' => "&quot;",
             b'&' => "&amp;",

@@ -2485,10 +2485,10 @@ where
 
                     let matches_end_condition = match block_type {
                         1 => scanners::html_block_end_1(&line[self.first_nonspace..]),
-                        2 => scanners::html_block_end_2(&line[self.first_nonspace..]),
-                        3 => scanners::html_block_end_3(&line[self.first_nonspace..]),
-                        4 => scanners::html_block_end_4(&line[self.first_nonspace..]),
-                        5 => scanners::html_block_end_5(&line[self.first_nonspace..]),
+                        2 => Self::html_block_end_2(&line[self.first_nonspace..]),
+                        3 => Self::html_block_end_3(&line[self.first_nonspace..]),
+                        4 => Self::html_block_end_4(&line[self.first_nonspace..]),
+                        5 => Self::html_block_end_5(&line[self.first_nonspace..]),
                         _ => false,
                     };
 
@@ -2541,6 +2541,26 @@ where
 
             self.current = container;
         }
+    }
+
+    fn html_block_end_2(buf: &str) -> bool {
+        const MATCHER: jetscii::Substring = jetscii::Substring::new("-->");
+        MATCHER.find(buf).is_some()
+    }
+
+    fn html_block_end_3(buf: &str) -> bool {
+        const MATCHER: jetscii::Substring = jetscii::Substring::new("?>");
+        MATCHER.find(buf).is_some()
+    }
+
+    fn html_block_end_4(buf: &str) -> bool {
+        const MATCHER: jetscii::BytesConst = jetscii::bytes!('>');
+        MATCHER.find(buf.as_bytes()).is_some()
+    }
+
+    fn html_block_end_5(buf: &str) -> bool {
+        const MATCHER: jetscii::Substring = jetscii::Substring::new("]]>");
+        MATCHER.find(buf).is_some()
     }
 
     fn add_line(&mut self, node: Node<'a>, line: &str) {
