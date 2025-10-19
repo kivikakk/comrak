@@ -1389,8 +1389,7 @@ where
 
         self.line_number += 1;
 
-        let mut all_matched = true;
-        if let Some(last_matched_container) = self.check_open_blocks(line, &mut all_matched) {
+        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
             let mut container = last_matched_container;
             let current = self.current;
             self.open_new_blocks(&mut container, line, all_matched);
@@ -1410,20 +1409,19 @@ where
     // Check open blocks //
     ///////////////////////
 
-    fn check_open_blocks(&mut self, line: &str, all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
-        let (new_all_matched, mut container, should_continue) =
+    fn check_open_blocks(&mut self, line: &str) -> Option<(&'a AstNode<'a>, bool)> {
+        let (all_matched, mut container, should_continue) =
             self.check_open_blocks_inner(self.root, line);
 
-        *all_matched = new_all_matched;
-        if !*all_matched {
+        if !should_continue {
+            return None;
+        }
+
+        if !all_matched {
             container = container.parent().unwrap();
         }
 
-        if !should_continue {
-            None
-        } else {
-            Some(container)
-        }
+        Some((container, all_matched))
     }
 
     fn check_open_blocks_inner(
@@ -1740,42 +1738,22 @@ where
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
-            if self.handle_alert(container, line, indented)
-                || self.handle_multiline_blockquote(container, line, indented)
-                || self.handle_blockquote(container, line, indented)
-                || self.handle_atx_heading(container, line, indented)
-                || self.handle_code_fence(container, line, indented)
-                || self.handle_html_block(container, line, indented)
-                || self.handle_setext_heading(container, line, indented)
-                || self.handle_thematic_break(container, line, indented, all_matched)
-                || self.handle_footnote(container, line, indented, depth)
-                || self.handle_description_list(container, line, indented)
+            if !((!indented
+                && (self.handle_alert(container, line)
+                    || self.handle_multiline_blockquote(container, line)
+                    || self.handle_blockquote(container, line)
+                    || self.handle_atx_heading(container, line)
+                    || self.handle_code_fence(container, line)
+                    || self.handle_html_block(container, line)
+                    || self.handle_setext_heading(container, line)
+                    || self.handle_thematic_break(container, line, all_matched)
+                    || self.handle_footnote(container, line, depth)
+                    || self.handle_description_list(container, line)))
                 || self.handle_list(container, line, indented, depth)
                 || self.handle_code_block(container, line, indented, maybe_lazy)
+                || self.handle_table(container, line, indented))
             {
-                // block handled
-            } else {
-                let new_container = if !indented && self.options.extension.table {
-                    table::try_opening_block(self, container, line)
-                } else {
-                    None
-                };
-
-                match new_container {
-                    Some((new_container, replace, mark_visited)) => {
-                        if replace {
-                            container.insert_after(new_container);
-                            container.detach();
-                            *container = new_container;
-                        } else {
-                            *container = new_container;
-                        }
-                        if mark_visited {
-                            container.data.borrow_mut().table_visited = true;
-                        }
-                    }
-                    _ => break,
-                }
+                break;
             }
 
             if container.data.borrow().value.accepts_lines() {
@@ -1786,13 +1764,8 @@ where
         }
     }
 
-    fn handle_alert(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-    ) -> bool {
-        let Some(alert_type) = self.detect_alert(line, indented) else {
+    fn handle_alert(&mut self, container: &mut &'a Node<'a, RefCell<Ast>>, line: &str) -> bool {
+        let Some(alert_type) = self.detect_alert(line) else {
             return false;
         };
 
@@ -1836,11 +1809,8 @@ where
         true
     }
 
-    fn detect_alert(&self, line: &str, indented: bool) -> Option<AlertType> {
-        if !indented
-            && self.options.extension.alerts
-            && line.as_bytes()[self.first_nonspace] == b'>'
-        {
+    fn detect_alert(&self, line: &str) -> Option<AlertType> {
+        if self.options.extension.alerts && line.as_bytes()[self.first_nonspace] == b'>' {
             scanners::alert_start(&line[self.first_nonspace..])
         } else {
             None
@@ -1851,9 +1821,8 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(matched) = self.detect_multiline_blockquote(line, indented) else {
+        let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
 
@@ -1875,8 +1844,8 @@ where
         true
     }
 
-    fn detect_multiline_blockquote(&self, line: &str, indented: bool) -> Option<usize> {
-        if !indented && self.options.extension.multiline_block_quotes {
+    fn detect_multiline_blockquote(&self, line: &str) -> Option<usize> {
+        if self.options.extension.multiline_block_quotes {
             scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..])
         } else {
             None
@@ -1887,9 +1856,8 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        if !self.detect_blockquote(line, indented) {
+        if !self.detect_blockquote(line) {
             return false;
         }
 
@@ -1905,17 +1873,16 @@ where
         true
     }
 
-    fn detect_blockquote(&self, line: &str, indented: bool) -> bool {
-        !indented && line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+    fn detect_blockquote(&self, line: &str) -> bool {
+        line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
     }
 
     fn handle_atx_heading(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(matched) = self.detect_atx_heading(line, indented) else {
+        let Some(matched) = self.detect_atx_heading(line) else {
             return false;
         };
 
@@ -1950,21 +1917,16 @@ where
         true
     }
 
-    fn detect_atx_heading(&self, line: &str, indented: bool) -> Option<usize> {
-        if !indented {
-            scanners::atx_heading_start(&line[self.first_nonspace..])
-        } else {
-            None
-        }
+    fn detect_atx_heading(&self, line: &str) -> Option<usize> {
+        scanners::atx_heading_start(&line[self.first_nonspace..])
     }
 
     fn handle_code_fence(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(matched) = self.detect_code_fence(line, indented) else {
+        let Some(matched) = self.detect_code_fence(line) else {
             return false;
         };
 
@@ -1988,21 +1950,16 @@ where
         true
     }
 
-    fn detect_code_fence(&self, line: &str, indented: bool) -> Option<usize> {
-        if !indented {
-            scanners::open_code_fence(&line[self.first_nonspace..])
-        } else {
-            None
-        }
+    fn detect_code_fence(&self, line: &str) -> Option<usize> {
+        scanners::open_code_fence(&line[self.first_nonspace..])
     }
 
     fn handle_html_block(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(matched) = self.detect_html_block(container, line, indented) else {
+        let Some(matched) = self.detect_html_block(container, line) else {
             return false;
         };
 
@@ -2020,27 +1977,22 @@ where
         true
     }
 
-    fn detect_html_block(&self, container: &AstNode, line: &str, indented: bool) -> Option<usize> {
-        if !indented {
-            scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
-                if !node_matches!(container, NodeValue::Paragraph) {
-                    scanners::html_block_start_7(&line[self.first_nonspace..])
-                } else {
-                    None
-                }
-            })
-        } else {
-            None
-        }
+    fn detect_html_block(&self, container: &AstNode, line: &str) -> Option<usize> {
+        scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
+            if !node_matches!(container, NodeValue::Paragraph) {
+                scanners::html_block_start_7(&line[self.first_nonspace..])
+            } else {
+                None
+            }
+        })
     }
 
     fn handle_setext_heading(
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(sc) = self.detect_setext_heading(container, line, indented) else {
+        let Some(sc) = self.detect_setext_heading(container, line) else {
             return false;
         };
 
@@ -2067,12 +2019,8 @@ where
         &self,
         container: &AstNode,
         line: &str,
-        indented: bool,
     ) -> Option<scanners::SetextChar> {
-        if !indented
-            && node_matches!(container, NodeValue::Paragraph)
-            && !self.options.parse.ignore_setext
-        {
+        if node_matches!(container, NodeValue::Paragraph) && !self.options.parse.ignore_setext {
             scanners::setext_heading_line(&line[self.first_nonspace..])
         } else {
             None
@@ -2083,11 +2031,9 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
         all_matched: bool,
     ) -> bool {
-        let Some(_matched) = self.detect_thematic_break(container, line, indented, all_matched)
-        else {
+        let Some(_matched) = self.detect_thematic_break(container, line, all_matched) else {
             return false;
         };
 
@@ -2104,15 +2050,12 @@ where
         &mut self,
         container: &AstNode,
         line: &str,
-        indented: bool,
         all_matched: bool,
     ) -> Option<usize> {
-        if !indented
-            && !matches!(
-                (&container.data.borrow().value, all_matched),
-                (&NodeValue::Paragraph, false)
-            )
-            && self.thematic_break_kill_pos <= self.first_nonspace
+        if !matches!(
+            (&container.data.borrow().value, all_matched),
+            (&NodeValue::Paragraph, false)
+        ) && self.thematic_break_kill_pos <= self.first_nonspace
         {
             let (offset, found) = self.scan_thematic_break_inner(line);
             if !found {
@@ -2166,10 +2109,9 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
         depth: usize,
     ) -> bool {
-        let Some(matched) = self.detect_footnote(line, indented, depth) else {
+        let Some(matched) = self.detect_footnote(line, depth) else {
             return false;
         };
 
@@ -2190,8 +2132,8 @@ where
         true
     }
 
-    fn detect_footnote(&self, line: &str, indented: bool, depth: usize) -> Option<usize> {
-        if !indented && self.options.extension.footnotes && depth < MAX_LIST_DEPTH {
+    fn detect_footnote(&self, line: &str, depth: usize) -> Option<usize> {
+        if self.options.extension.footnotes && depth < MAX_LIST_DEPTH {
             scanners::footnote_definition(&line[self.first_nonspace..])
         } else {
             None
@@ -2202,9 +2144,8 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> bool {
-        let Some(matched) = self.detect_description_list(container, line, indented) else {
+        let Some(matched) = self.detect_description_list(container, line) else {
             return false;
         };
 
@@ -2221,9 +2162,8 @@ where
         &mut self,
         container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
     ) -> Option<usize> {
-        if !indented && self.options.extension.description_lists {
+        if self.options.extension.description_lists {
             if let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..]) {
                 if self.parse_desc_list_details(container, matched) {
                     return Some(matched);
@@ -2446,6 +2386,45 @@ where
 
     fn detect_code_block(&self, indented: bool, maybe_lazy: bool) -> bool {
         indented && !maybe_lazy && !self.blank
+    }
+
+    fn handle_table(
+        &mut self,
+        container: &mut &'a Node<'a, RefCell<Ast>>,
+        line: &str,
+        indented: bool,
+    ) -> bool {
+        let Some((new_container, replace, mark_visited)) =
+            self.detect_table(container, line, indented)
+        else {
+            return false;
+        };
+
+        if replace {
+            container.insert_after(new_container);
+            container.detach();
+            *container = new_container;
+        } else {
+            *container = new_container;
+        }
+        if mark_visited {
+            container.data.borrow_mut().table_visited = true;
+        }
+
+        true
+    }
+
+    fn detect_table(
+        &mut self,
+        container: &'a Node<'a, RefCell<Ast>>,
+        line: &str,
+        indented: bool,
+    ) -> Option<(&'a AstNode<'a>, bool, bool)> {
+        if !indented && self.options.extension.table {
+            table::try_opening_block(self, container, line)
+        } else {
+            None
+        }
     }
 
     //////////
