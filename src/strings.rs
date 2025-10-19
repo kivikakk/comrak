@@ -210,6 +210,13 @@ pub fn trim_slice(i: &str) -> &str {
     rtrim_slice(ltrim_slice(i))
 }
 
+pub fn trim_cow(s: &mut Cow<str>) {
+    match s {
+        Cow::Borrowed(str) => *s = Cow::Borrowed(trim_slice(str)),
+        Cow::Owned(string) => trim(string),
+    }
+}
+
 // HACK: Using this function safely on a buffer obtained from
 // String::as_bytes_mut() requires care when truncating it.
 //

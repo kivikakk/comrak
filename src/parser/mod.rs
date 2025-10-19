@@ -1684,7 +1684,7 @@ where
             // Make sure it's finalized.
             if container.last_child_is_open() {
                 let child = container.last_child().unwrap();
-                let child_ast = &mut *child.data.borrow_mut();
+                let child_ast = &mut child.data.borrow_mut();
 
                 self.finalize_borrowed(child, child_ast).unwrap();
             }
