@@ -1140,6 +1140,7 @@ pub struct RenderPlugins<'p> {
     /// ```
     /// # use comrak::{markdown_to_html, Options, Plugins, markdown_to_html_with_plugins};
     /// # use comrak::adapters::SyntaxHighlighterAdapter;
+    /// use std::borrow::Cow;
     /// use std::collections::HashMap;
     /// use std::fmt::{self, Write};
     /// let options = Options::default();
@@ -1155,11 +1156,11 @@ pub struct RenderPlugins<'p> {
     ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
     ///     }
     ///
-    ///     fn write_pre_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: HashMap<&'static str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: HashMap<&'static str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }

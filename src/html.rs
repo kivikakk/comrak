@@ -530,8 +530,8 @@ fn render_code_block<'a, T>(
             context.cr()?;
 
             let mut first_tag = 0;
-            let mut pre_attributes: HashMap<&str, String> = HashMap::new();
-            let mut code_attributes: HashMap<&str, String> = HashMap::new();
+            let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+            let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
             let code_attr: String;
 
             let literal = &ncb.literal;
@@ -544,27 +544,27 @@ fn render_code_block<'a, T>(
                 }
 
                 let lang_str = &info[..first_tag];
-                let info_str = &info[first_tag..].trim();
+                let info_str = info[first_tag..].trim();
 
                 if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang_str.to_string());
+                    pre_attributes.insert("lang", lang_str.into());
 
                     if context.options.render.full_info_string && !info_str.is_empty() {
-                        pre_attributes.insert("data-meta", info_str.trim().to_string());
+                        pre_attributes.insert("data-meta", info_str.trim().into());
                     }
                 } else {
                     code_attr = format!("language-{}", lang_str);
-                    code_attributes.insert("class", code_attr);
+                    code_attributes.insert("class", code_attr.into());
 
                     if context.options.render.full_info_string && !info_str.is_empty() {
-                        code_attributes.insert("data-meta", info_str.to_string());
+                        code_attributes.insert("data-meta", info_str.into());
                     }
                 }
             }
 
             if context.options.render.sourcepos {
                 let ast = node.data.borrow();
-                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string());
+                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
             }
 
             match context.plugins.render.codefence_syntax_highlighter {
@@ -1314,7 +1314,7 @@ pub fn render_math<'a, T>(
     nm: &NodeMath,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        let mut tag_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
+        let mut tag_attributes: Vec<(&str, Cow<str>)> = Vec::new();
         let style_attr = if nm.display_math { "display" } else { "inline" };
         let tag: &str = if nm.dollar_math { "span" } else { "code" };
 
@@ -1343,8 +1343,8 @@ pub fn render_math_code_block<'a, T>(
 
     // use vectors to ensure attributes always written in the same order,
     // for testing stability
-    let mut pre_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
-    let mut code_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
+    let mut pre_attributes: Vec<(&str, Cow<str>)> = Vec::new();
+    let mut code_attributes: Vec<(&str, Cow<str>)> = Vec::new();
     let lang_str = "math";
 
     if context.options.render.github_pre_lang {

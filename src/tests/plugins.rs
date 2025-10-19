@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     adapters::{HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
     nodes::Sourcepos,
@@ -22,7 +24,7 @@ fn syntax_highlighter_plugin() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, String>,
+            attributes: HashMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -30,7 +32,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, String>,
+            attributes: HashMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
