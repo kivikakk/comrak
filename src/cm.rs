@@ -804,7 +804,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_escaped_tag(&mut self, net: &String) -> fmt::Result {
+    fn format_escaped_tag(&mut self, net: &str) -> fmt::Result {
         self.output(net, false, Escaping::Literal)
     }
 

@@ -228,7 +228,7 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
 }
 
 pub fn www_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_, '_>,
+    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
@@ -382,7 +382,7 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
 }
 
 pub fn url_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_, '_>,
+    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
 ) -> Option<(&'a AstNode<'a>, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 

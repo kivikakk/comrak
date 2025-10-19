@@ -131,11 +131,10 @@ impl FlankingCheckHelper for char {
     }
 }
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'i, 'c, 'p> {
+pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a>>,
     pub options: &'o Options<'c>,
-    pub input: &'i str,
-    pub bytes: &'i [u8],
+    pub input: String,
     line: usize,
     pub pos: usize,
     column_offset: isize,
@@ -261,17 +260,17 @@ struct Bracket<'a> {
     bracket_after: bool,
 }
 
-#[derive(Clone, Copy)]
-struct WikilinkComponents<'i> {
-    url: &'i str,
-    link_label: Option<(&'i str, usize, usize)>,
+#[derive(Clone)]
+struct WikilinkComponents {
+    url: String,
+    link_label: Option<(String, usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
+impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     pub fn new(
         arena: &'a Arena<AstNode<'a>>,
         options: &'o Options<'c>,
-        input: &'i str,
+        input: String,
         line: usize,
         refmap: &'r mut RefMap,
         footnote_defs: &'p FootnoteDefs<'a>,
@@ -281,7 +280,6 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             arena,
             options,
             input,
-            bytes: input.as_bytes(),
             line,
             pos: 0,
             column_offset: 0,
@@ -334,23 +332,22 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         self.brackets.pop().is_some()
     }
 
-    pub fn parse_inline(&mut self, node: &'a AstNode<'a>) -> bool {
+    pub fn parse_inline(&mut self, node: &'a AstNode<'a>, ast: &mut Ast) -> bool {
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
         };
 
-        let node_ast = node.data.borrow();
-        let adjusted_line = self.line - node_ast.sourcepos.start.line;
-        self.line_offset = node_ast.line_offsets[adjusted_line];
+        let adjusted_line = self.line - ast.sourcepos.start.line;
+        self.line_offset = ast.line_offsets[adjusted_line];
 
         let new_inl: Option<&'a AstNode<'a>> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
-            '`' => Some(self.handle_backticks(&node_ast.line_offsets)),
+            '`' => Some(self.handle_backticks(&ast.line_offsets)),
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
-            '<' => Some(self.handle_pointy_brace(&node_ast.line_offsets)),
+            '<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
             ':' => {
                 let mut res = None;
 
@@ -460,7 +457,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                     ))
                 }
             }
-            '$' => Some(self.handle_dollars(&node_ast.line_offsets)),
+            '$' => Some(self.handle_dollars(&ast.line_offsets)),
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
@@ -763,7 +760,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         if self.pos + n >= self.input.len() {
             None
         } else {
-            let c = &self.bytes[self.pos + n];
+            let c = &self.input.as_bytes()[self.pos + n];
             assert!(*c > 0);
             Some(c)
         }
@@ -771,14 +768,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn find_special_char(&self) -> usize {
         for n in self.pos..self.input.len() {
-            if self.special_chars[self.bytes[n] as usize] {
-                if self.bytes[n] == b'^' && self.within_brackets {
+            if self.special_chars[self.input.as_bytes()[n] as usize] {
+                if self.input.as_bytes()[n] == b'^' && self.within_brackets {
                     // NO OP
                 } else {
                     return n;
                 }
             }
-            if self.options.parse.smart && self.smart_chars[self.bytes[n] as usize] {
+            if self.options.parse.smart && self.smart_chars[self.input.as_bytes()[n] as usize] {
                 return n;
             }
         }
@@ -809,13 +806,16 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
 
     fn handle_newline(&mut self) -> &'a AstNode<'a> {
         let nlpos = self.pos;
-        if self.bytes[self.pos] == b'\r' {
+        if self.input.as_bytes()[self.pos] == b'\r' {
             self.pos += 1;
         }
-        if self.bytes[self.pos] == b'\n' {
+        if self.input.as_bytes()[self.pos] == b'\n' {
             self.pos += 1;
         }
-        let inl = if nlpos > 1 && self.bytes[nlpos - 1] == b' ' && self.bytes[nlpos - 2] == b' ' {
+        let inl = if nlpos > 1
+            && self.input.as_bytes()[nlpos - 1] == b' '
+            && self.input.as_bytes()[nlpos - 2] == b' '
+        {
             self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
         } else {
             self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
@@ -923,7 +923,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 return None;
             }
 
-            let c = self.bytes[self.pos - 1];
+            let c = self.input.as_bytes()[self.pos - 1];
 
             // space not allowed before ending $
             if opendollarlength == 1 && isspace(c) {
@@ -961,7 +961,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
                 return None;
             }
 
-            let c = self.bytes[self.pos - 1];
+            let c = self.input.as_bytes()[self.pos - 1];
             self.pos += 1;
             if c == b'`' {
                 return Some(self.pos);
@@ -1124,8 +1124,8 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         }
         let mut before_char_pos = pos - 1;
         while before_char_pos > 0
-            && (self.bytes[before_char_pos] >> 6 == 2
-                || self.skip_chars[self.bytes[before_char_pos] as usize])
+            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
+                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
         {
             before_char_pos -= 1;
         }
@@ -1160,7 +1160,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         } else {
             let mut after_char_pos = self.pos;
             while after_char_pos < self.input.len() - 1
-                && self.skip_chars[self.bytes[after_char_pos] as usize]
+                && self.skip_chars[self.input.as_bytes()[after_char_pos] as usize]
             {
                 after_char_pos += 1;
             }
@@ -1492,7 +1492,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     fn handle_autolink_with(
         &mut self,
         node: &'a AstNode<'a>,
-        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_, '_>) -> Option<(&'a AstNode<'a>, usize, usize)>,
+        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(&'a AstNode<'a>, usize, usize)>,
     ) -> Option<&'a AstNode<'a>> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
@@ -1592,9 +1592,9 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut matchlen: Option<usize> = None;
 
         if self.pos + 2 <= self.input.len() {
-            let c = self.bytes[self.pos];
+            let c = self.input.as_bytes()[self.pos];
             if c == b'!' && !self.flags.skip_html_comment {
-                let c = self.bytes[self.pos + 1];
+                let c = self.input.as_bytes()[self.pos + 1];
                 if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
                     if self.peek_char_n(3) == Some(&b'>') {
                         matchlen = Some(4);
@@ -1757,7 +1757,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             };
             let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
-            if endall < self.input.len() && self.bytes[endall] == b')' {
+            if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
                 self.pos = endall + 1;
                 let url = strings::clean_url(url);
                 let title = strings::clean_title(&self.input[starttitle..endtitle]);
@@ -1944,7 +1944,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut depth = 1;
         let mut endpos = self.pos;
         while endpos < self.input.len() && depth > 0 {
-            match self.bytes[endpos] {
+            match self.input.as_bytes()[endpos] {
                 b'[' => depth += 1,
                 b']' => depth -= 1,
                 b'\\' if endpos + 1 < self.input.len() => {
@@ -2017,14 +2017,14 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         let mut subj = Subject::new(
             self.arena,
             self.options,
-            content,
+            content.into(),
             1, // Use line 1 to match the paragraph's sourcepos
             self.refmap,
             self.footnote_defs,
             &delimiter_arena,
         );
 
-        while subj.parse_inline(para_node) {}
+        while subj.parse_inline(para_node, &mut para_node.data.borrow_mut()) {}
         subj.process_emphasis(0);
         while subj.pop_bracket() {}
 
@@ -2099,12 +2099,12 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
     fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
-        let url_clean = strings::clean_url(component.url);
+        let url_clean = strings::clean_url(&component.url);
         let (link_label, link_label_start_column, _link_label_end_column) =
             match component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(label), sc, ec),
+                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
                 None => (
-                    entity::unescape_html(component.url),
+                    entity::unescape_html(&component.url).to_string(),
                     startpos + 1,
                     self.pos - 3,
                 ),
@@ -2120,7 +2120,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
         Some(inl)
     }
 
-    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents<'i>> {
+    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
         let left_startpos = self.pos;
 
         if self.peek_char() != Some(&(b'[')) {
@@ -2134,7 +2134,7 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             return None;
         }
 
-        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]);
+        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
 
         if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
             self.pos += 2;
@@ -2163,10 +2163,10 @@ impl<'a, 'r, 'o, 'd, 'i, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'i, 'c, 'p> {
             match self.options.extension.wikilinks() {
                 Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
                     url: left,
-                    link_label: Some((right, right_startpos + 1, self.pos - 3)),
+                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
                 }),
                 Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
-                    url: right,
+                    url: right.into(),
                     link_label: Some((left, left_startpos + 1, right_startpos - 1)),
                 }),
                 None => unreachable!(),

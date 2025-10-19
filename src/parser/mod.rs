@@ -1324,7 +1324,7 @@ where
                 }
             } else if eol < end && sb[eol] == b'\0' {
                 linebuf.push_str(&s[buffer..eol]);
-                linebuf.push_str("\u{fffd}");
+                linebuf.push('\u{fffd}');
             } else {
                 linebuf.push_str(&s[buffer..eol]);
             }
@@ -1916,7 +1916,7 @@ where
         }
 
         let mut c = &line[self.first_nonspace + 2..self.first_nonspace + *matched];
-        c = c.split(|e| e == ']').next().unwrap();
+        c = c.split(']').next().unwrap();
         let offset = self.first_nonspace + *matched - self.offset;
         self.advance_offset(line, offset, false);
         *container = self.add_child(
@@ -2626,8 +2626,8 @@ where
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
-                            self.advance_offset(&line, count, false);
-                            self.add_line(container, &line);
+                            self.advance_offset(line, count, false);
+                            self.add_line(container, line);
                         }
                     } else {
                         container = self.add_child(
@@ -2851,9 +2851,12 @@ where
     }
 
     fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
+        let mut node_data = node.data.borrow_mut();
+
+        let mut content = mem::take(&mut node_data.content);
+        strings::rtrim(&mut content);
+
         let delimiter_arena = Arena::new();
-        let node_data = node.data.borrow();
-        let content = strings::rtrim_slice(&node_data.content);
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -2864,7 +2867,7 @@ where
             &delimiter_arena,
         );
 
-        while subj.parse_inline(node) {}
+        while subj.parse_inline(node, &mut node_data) {}
 
         subj.process_emphasis(0);
 
@@ -3186,7 +3189,7 @@ where
         let mut subj = inlines::Subject::new(
             &unused_node_arena,
             self.options,
-            content,
+            content.to_string(),
             0, // XXX -1 in upstream; never used?
             &mut unused_refmap,
             &unused_footnote_defs,
@@ -3205,7 +3208,7 @@ where
         subj.pos += 1;
         subj.spnl();
         let (url, matchlen) = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
-            Some((url, matchlen)) => (url, matchlen),
+            Some((url, matchlen)) => (url.to_string(), matchlen),
             None => return None,
         };
         subj.pos += matchlen;
@@ -3245,7 +3248,7 @@ where
         lab = strings::normalize_label(&lab, Case::Fold);
         if !lab.is_empty() {
             self.refmap.map.entry(lab).or_insert(ResolvedReference {
-                url: strings::clean_url(url).into(),
+                url: strings::clean_url(&url).into(),
                 title: strings::clean_title(&title).into(),
             });
         }

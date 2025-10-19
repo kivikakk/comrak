@@ -1,4 +1,3 @@
-use entities::ENTITIES;
 use std::borrow::Cow;
 use std::char;
 use std::cmp::min;
@@ -8,10 +7,6 @@ use crate::ctype::isdigit;
 
 pub const ENTITY_MIN_LENGTH: usize = 2;
 pub const ENTITY_MAX_LENGTH: usize = 32;
-
-fn isxdigit(ch: u8) -> bool {
-    (ch >= b'0' && ch <= b'9') || (ch >= b'a' && ch <= b'f') || (ch >= b'A' && ch <= b'F')
-}
 
 pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
     let bytes = text.as_bytes();
@@ -29,7 +24,7 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
             i - 1
         } else if bytes[1] == b'x' || bytes[1] == b'X' {
             i = 2;
-            while i < bytes.len() && isxdigit(bytes[i]) {
+            while i < bytes.len() && bytes[i].is_ascii_hexdigit() {
                 codepoint = (codepoint * 16) + ((bytes[i] as u32 | 32) % 39 - 9);
                 codepoint = min(codepoint, 0x11_0000);
                 i += 1;
@@ -71,15 +66,13 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
     None
 }
 
+include!(concat!(env!("OUT_DIR"), "/entitydata.rs"));
+
 fn lookup(text: &str) -> Option<&'static str> {
-    ENTITIES
-        .iter()
-        .find(|e| {
-            e.entity.starts_with("&")
-                && e.entity.ends_with(";")
-                && &e.entity[1..e.entity.len() - 1] == text
-        })
-        .map(|e| e.characters)
+    entitydata::TRANSLATED_ENTITIES
+        .binary_search_by_key(&text, |(entity, _characters)| entity)
+        .ok()
+        .map(|ix| entitydata::TRANSLATED_ENTITIES[ix].1)
 }
 
 pub fn unescape_html(src: &str) -> Cow<'_, str> {
