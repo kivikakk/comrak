@@ -768,7 +768,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
-                    literal: buf,
+                    literal: buf.into(),
                 };
                 let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
                 self.adjust_node_newlines(
@@ -879,12 +879,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let buf = if code_math || opendollars == 1 {
                 strings::normalize_code(buf)
             } else {
-                buf.to_string()
+                buf.into()
             };
             let math = NodeMath {
                 dollar_math: !code_math,
                 display_math: opendollars == 2,
-                literal: buf,
+                literal: buf.into(),
             };
             let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(
@@ -1353,7 +1353,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1 + matchlen;
 
         Some(self.make_inline(
-            NodeValue::ShortCode(nsc),
+            NodeValue::ShortCode(Box::new(nsc)),
             self.pos - 1 - matchlen,
             self.pos - 1,
         ))
@@ -1763,9 +1763,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let nl = NodeLink { url, title };
         let inl = self.make_inline(
             if is_image {
-                NodeValue::Image(nl)
+                NodeValue::Image(Box::new(nl))
             } else {
-                NodeValue::Link(nl)
+                NodeValue::Link(Box::new(nl))
             },
             // Manually set below.
             self.pos,
@@ -2157,11 +2157,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 usize::try_from(end_column).unwrap(),
             )
                 .into(),
-            internal_offset: 0,
             open: false,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::with_capacity(0),
+            line_offsets: Vec::new(),
         };
         self.arena.alloc(ast.into())
     }
@@ -2174,10 +2173,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         end_column: usize,
     ) -> Node<'a> {
         let inl = self.make_inline(
-            NodeValue::Link(NodeLink {
+            NodeValue::Link(Box::new(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
                 title: String::new(),
-            }),
+            })),
             start_column,
             end_column,
         );
@@ -2268,11 +2267,10 @@ pub(crate) fn make_inline<'a>(
         value,
         content: String::new(),
         sourcepos,
-        internal_offset: 0,
         open: false,
         last_line_blank: false,
         table_visited: false,
-        line_offsets: Vec::with_capacity(0),
+        line_offsets: Vec::new(),
     };
     arena.alloc(ast.into())
 }

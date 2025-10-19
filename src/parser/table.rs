@@ -1,12 +1,15 @@
+use std::borrow::Cow;
+use std::cmp::min;
+use std::mem;
+
 use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
+use crate::parser::inlines::count_newlines;
 use crate::parser::Parser;
 use crate::scanners;
-use crate::strings::trim;
-use std::cmp::min;
-
-use super::inlines::count_newlines;
+use crate::strings::trim_cow;
 
 // Limit to prevent a malicious input from causing a denial of service.
+// See get_num_autocompleted_cells.
 const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
 pub fn try_opening_block<'a>(
@@ -14,9 +17,9 @@ pub fn try_opening_block<'a>(
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
-    let aligns = match container.data.borrow().value {
+    let aligns = match &container.data.borrow().value {
         NodeValue::Paragraph => None,
-        NodeValue::Table(NodeTable { ref alignments, .. }) => Some(alignments.clone()),
+        NodeValue::Table(nt) => Some(nt.alignments.clone()),
         _ => return None,
     };
 
@@ -46,17 +49,33 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    let header_row = match row(&container.data.borrow().content, spoiler) {
+    let mut container_content = mem::take(&mut container.data.borrow_mut().content);
+    let mut header_row = match row(&container_content, spoiler) {
         Some(header_row) => header_row,
-        None => return Some((container, false, true)),
+        None => {
+            mem::swap(
+                &mut container.data.borrow_mut().content,
+                &mut container_content,
+            );
+            return Some((container, false, true));
+        }
     };
 
     if header_row.cells.len() != delimiter_row.cells.len() {
+        mem::swap(
+            &mut container.data.borrow_mut().content,
+            &mut container_content,
+        );
         return Some((container, false, true));
     }
 
     if header_row.paragraph_offset > 0 {
-        try_inserting_table_header_paragraph(parser, container, header_row.paragraph_offset);
+        try_inserting_table_header_paragraph(
+            parser,
+            container,
+            &container_content,
+            header_row.paragraph_offset,
+        );
     }
 
     let mut alignments = vec![];
@@ -77,12 +96,12 @@ fn try_opening_header<'a>(
 
     let start = container.data.borrow().sourcepos.start;
     let child = Ast::new(
-        NodeValue::Table(NodeTable {
+        NodeValue::Table(Box::new(NodeTable {
             alignments,
             num_columns: header_row.cells.len(),
             num_rows: 0,
             num_nonempty_cells: 0,
-        }),
+        })),
         start,
     );
     let table = parser.arena.alloc(child.into());
@@ -92,15 +111,14 @@ fn try_opening_header<'a>(
     {
         let header_ast = &mut header.data.borrow_mut();
         header_ast.sourcepos.start.line = start.line;
-        header_ast.sourcepos.end = start.column_add(
-            (container.data.borrow().content.len() - 2 - header_row.paragraph_offset) as isize,
-        );
+        header_ast.sourcepos.end =
+            start.column_add((container_content.len() - 2 - header_row.paragraph_offset) as isize);
     }
 
     let mut i = 0;
 
     while i < header_row.cells.len() {
-        let cell = &header_row.cells[i];
+        let cell = &mut header_row.cells[i];
         let ast_cell = parser.add_child(
             header,
             NodeValue::TableCell,
@@ -110,8 +128,7 @@ fn try_opening_header<'a>(
         ast.sourcepos.start.line = start.line;
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
-        ast.internal_offset = cell.internal_offset;
-        ast.content.clone_from(&cell.content);
+        mem::swap(&mut ast.content, cell.content.to_mut());
         ast.line_offsets.push(
             start.column + cell.start_offset - 1 + cell.internal_offset
                 - header_row.paragraph_offset,
@@ -120,6 +137,10 @@ fn try_opening_header<'a>(
         i += 1;
     }
 
+    mem::swap(
+        &mut container.data.borrow_mut().content,
+        &mut container_content,
+    );
     incr_table_row_count(container, i);
 
     let offset = line.len() - 1 - parser.offset;
@@ -144,7 +165,7 @@ fn try_opening_row<'a>(
 
     let sourcepos = container.data.borrow().sourcepos;
     let spoiler = parser.options.extension.spoiler;
-    let this_row = row(&line[parser.first_nonspace..], spoiler)?;
+    let mut this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
     let new_row = parser.add_child(
         container,
@@ -159,16 +180,15 @@ fn try_opening_row<'a>(
     let mut last_column = sourcepos.start.column;
 
     while i < min(alignments.len(), this_row.cells.len()) {
-        let cell = &this_row.cells[i];
+        let cell = &mut this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
             NodeValue::TableCell,
             sourcepos.start.column + cell.start_offset,
         );
         let cell_ast = &mut cell_node.data.borrow_mut();
-        cell_ast.internal_offset = cell.internal_offset;
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
-        cell_ast.content.clone_from(&cell.content);
+        mem::swap(&mut cell_ast.content, cell.content.to_mut());
         cell_ast
             .line_offsets
             .push(sourcepos.start.column + cell.start_offset - 1 + cell.internal_offset);
@@ -191,19 +211,19 @@ fn try_opening_row<'a>(
     Some((new_row, false, false))
 }
 
-struct Row {
+struct Row<'t> {
     paragraph_offset: usize,
-    cells: Vec<Cell>,
+    cells: Vec<Cell<'t>>,
 }
 
-struct Cell {
+struct Cell<'t> {
     start_offset: usize,
     end_offset: usize,
     internal_offset: usize,
-    content: String,
+    content: Cow<'t, str>,
 }
 
-fn row(string: &str, spoiler: bool) -> Option<Row> {
+fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
     let bytes = string.as_bytes();
     let len = string.len();
     let mut cells: Vec<Cell> = vec![];
@@ -211,16 +231,14 @@ fn row(string: &str, spoiler: bool) -> Option<Row> {
     let mut offset = scanners::table_cell_end(string).unwrap_or(0);
 
     let mut paragraph_offset = 0;
-    let mut expect_more_cells = true;
-    let mut max_columns_abort = false;
 
-    while offset < len && expect_more_cells {
+    while offset < len {
         let cell_matched = scanners::table_cell(&string[offset..], spoiler).unwrap_or(0);
         let pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
             let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
-            trim(&mut cell);
+            trim_cow(&mut cell);
 
             let mut start_offset = offset;
             let mut internal_offset = 0;
@@ -230,10 +248,8 @@ fn row(string: &str, spoiler: bool) -> Option<Row> {
                 internal_offset += 1;
             }
 
-            // set an upper limit on the number of columns
-            if cells.len() == <u16 as Into<usize>>::into(u16::MAX) {
-                max_columns_abort = true;
-                break;
+            if cells.len() == u16::MAX as usize {
+                return None;
             }
 
             cells.push(Cell {
@@ -246,24 +262,21 @@ fn row(string: &str, spoiler: bool) -> Option<Row> {
 
         offset += cell_matched + pipe_matched;
 
-        if pipe_matched > 0 {
-            expect_more_cells = true;
-        } else {
+        if pipe_matched == 0 {
             let row_end_offset = scanners::table_row_end(&string[offset..]).unwrap_or(0);
             offset += row_end_offset;
 
-            if row_end_offset > 0 && offset != len {
-                paragraph_offset = offset;
-                cells.clear();
-                offset += scanners::table_cell_end(&string[offset..]).unwrap_or(0);
-                expect_more_cells = true;
-            } else {
-                expect_more_cells = false;
+            if row_end_offset == 0 || offset == len {
+                break;
             }
+
+            paragraph_offset = offset;
+            cells.clear();
+            offset += scanners::table_cell_end(&string[offset..]).unwrap_or(0);
         }
     }
 
-    if offset != len || cells.is_empty() || max_columns_abort {
+    if offset != len || cells.is_empty() {
         None
     } else {
         Some(Row {
@@ -276,30 +289,28 @@ fn row(string: &str, spoiler: bool) -> Option<Row> {
 fn try_inserting_table_header_paragraph<'a>(
     parser: &mut Parser<'a, '_, '_>,
     container: Node<'a>,
+    container_content: &str,
     paragraph_offset: usize,
 ) {
-    let container_ast = &mut container.data.borrow_mut();
-
-    let preface = &container_ast.content[..paragraph_offset];
-    let mut paragraph_content = unescape_pipes(preface);
-    let (newlines, _since_newline) = count_newlines(&paragraph_content);
-    trim(&mut paragraph_content);
-
-    if container.parent().is_none()
-        || !container
-            .parent()
-            .unwrap()
-            .can_contain_type(&NodeValue::Paragraph)
+    if container
+        .parent()
+        .map_or(false, |p| !p.can_contain_type(&NodeValue::Paragraph))
     {
         return;
     }
 
+    let preface = &container_content[..paragraph_offset];
+    let mut paragraph_content = unescape_pipes(preface);
+    let (newlines, _since_newline) = count_newlines(&paragraph_content);
+    trim_cow(&mut paragraph_content);
+    let paragraph_content = paragraph_content.to_string();
+
+    let container_ast = &mut container.data.borrow_mut();
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
     paragraph.sourcepos.end.line = start.line + newlines - 1;
 
-    // copy over the line offsets related to the paragraph
     for n in 0..newlines {
         paragraph.line_offsets.push(container_ast.line_offsets[n]);
     }
@@ -321,31 +332,29 @@ fn try_inserting_table_header_paragraph<'a>(
     container.insert_before(node);
 }
 
-fn unescape_pipes(string: &str) -> String {
-    let len = string.len();
-    let mut v = String::with_capacity(len);
-
+fn unescape_pipes(string: &str) -> Cow<'_, str> {
+    let mut v = String::new();
+    let mut offset = 0;
     let mut last_was_backslash = false;
 
-    for c in string.chars() {
+    for (i, c) in string.char_indices() {
         if last_was_backslash {
-            if c != '|' {
-                v.push('\\');
+            if c == '|' {
+                v.push_str(&string[offset..i - 1]);
+                offset = i;
             }
-            v.push(c);
             last_was_backslash = false;
         } else if c == '\\' {
             last_was_backslash = true;
-        } else {
-            v.push(c);
         }
     }
 
-    if last_was_backslash {
-        v.push('\\');
+    if offset == 0 {
+        string.into()
+    } else {
+        v.push_str(&string[offset..]);
+        v.into()
     }
-
-    v
 }
 
 // Increment the number of rows in the table. Also update n_nonempty_cells,

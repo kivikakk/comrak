@@ -15,8 +15,7 @@ use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
 use crate::ctype::isspace;
 use crate::nodes::{
-    ListType, Node, NodeCode, NodeFootnoteDefinition, NodeMath, NodeTable, NodeValue,
-    TableAlignment,
+    ListType, Node, NodeCode, NodeFootnoteDefinition, NodeMath, NodeValue, TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::{node_matches, scanners};
@@ -1122,8 +1121,8 @@ fn render_table_cell<'a, T>(
         panic!("rendered a table cell without a containing table");
     };
     let table = &table_node.data.borrow().value;
-    let alignments = match *table {
-        NodeValue::Table(NodeTable { ref alignments, .. }) => alignments,
+    let alignments = match table {
+        NodeValue::Table(nt) => &nt.alignments,
         _ => {
             panic!("rendered a table cell in a table row contained by something other than a table")
         }
