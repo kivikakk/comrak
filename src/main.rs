@@ -15,6 +15,10 @@ use comrak::{adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapte
 use comrak::{Arena, ListStyleType, Options, Plugins};
 use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
 const EXIT_READ_INPUT: i32 = 3;
@@ -240,6 +244,9 @@ fn cli_with_config() -> Cli {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    #[cfg(feature = "dhat-heap")]
+    let profiler = dhat::Profiler::new_heap();
+
     let cli = cli_with_config();
 
     if cli.inplace {
@@ -400,6 +407,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         })?;
         std::io::Write::flush(&mut bw)?;
     };
+
+    #[cfg(feature = "dhat-heap")]
+    drop(profiler);
 
     process::exit(EXIT_SUCCESS);
 }
