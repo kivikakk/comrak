@@ -69,7 +69,7 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::with_capacity(0),
+            line_offsets: Vec::new(),
         }
         .into(),
     );
@@ -3064,7 +3064,7 @@ where
     fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
         // These are totally unused; we should extract the relevant input
         // scanning from Subject so we don't have to make all this.
-        let unused_node_arena = Arena::new();
+        let unused_node_arena = Arena::with_capacity(0);
         let unused_footnote_defs = inlines::FootnoteDefs::new();
         let unused_delimiter_arena = Arena::with_capacity(0);
         let mut unused_refmap = inlines::RefMap::new();

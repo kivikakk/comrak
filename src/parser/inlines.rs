@@ -2161,7 +2161,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             open: false,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::with_capacity(0),
+            line_offsets: Vec::new(),
         };
         self.arena.alloc(ast.into())
     }
@@ -2272,7 +2272,7 @@ pub(crate) fn make_inline<'a>(
         open: false,
         last_line_blank: false,
         table_visited: false,
-        line_offsets: Vec::with_capacity(0),
+        line_offsets: Vec::new(),
     };
     arena.alloc(ast.into())
 }

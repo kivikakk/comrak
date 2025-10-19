@@ -643,7 +643,7 @@ impl Ast {
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::with_capacity(0),
+            line_offsets: Vec::new(),
         }
     }
 
@@ -657,7 +657,7 @@ impl Ast {
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::with_capacity(0),
+            line_offsets: Vec::new(),
         }
     }
 }
