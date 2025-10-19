@@ -64,7 +64,7 @@ pub fn parse_document<'a>(
     md: &str,
     options: &Options,
 ) -> &'a AstNode<'a> {
-    let root: &'a AstNode<'a> = arena.alloc(
+    let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
             content: String::new(),
@@ -1411,12 +1411,7 @@ where
     ///////////////////////
 
     fn check_open_blocks(&mut self, line: &str) -> Option<(&'a AstNode<'a>, bool)> {
-        let (all_matched, mut container, should_continue) =
-            self.check_open_blocks_inner(self.root, line);
-
-        if !should_continue {
-            return None;
-        }
+        let (all_matched, mut container) = self.check_open_blocks_inner(self.root, line)?;
 
         if !all_matched {
             container = container.parent().unwrap();
@@ -1429,90 +1424,79 @@ where
         &mut self,
         mut container: &'a AstNode<'a>,
         line: &str,
-    ) -> (bool, &'a AstNode<'a>, bool) {
-        let mut should_continue = true;
+    ) -> Option<(bool, &'a AstNode<'a>)> {
+        let mut all_matched = false;
 
-        while container.last_child_is_open() {
+        loop {
+            if !container.last_child_is_open() {
+                all_matched = true;
+                break;
+            }
             container = container.last_child().unwrap();
-            let ast = &mut *container.data.borrow_mut();
+            let ast = &mut container.data.borrow_mut();
 
             self.find_first_nonspace(line);
 
             match ast.value {
                 NodeValue::BlockQuote => {
                     if !self.parse_block_quote_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Item(ref nl) => {
                     if !self.parse_node_item_prefix(line, container, nl) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::DescriptionItem(ref di) => {
                     if !self.parse_description_item_prefix(line, container, di) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::CodeBlock(..) => {
-                    if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
-                        return (false, container, should_continue);
+                    if !self.parse_code_block_prefix(line, container, ast)? {
+                        break;
                     }
                 }
                 NodeValue::HtmlBlock(ref nhb) => {
                     if !self.parse_html_block_prefix(nhb.block_type) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Paragraph => {
                     if self.blank {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Table(..) => {
                     if !table::matches(&line[self.first_nonspace..], self.options.extension.spoiler)
                     {
-                        return (false, container, should_continue);
+                        break;
                     }
-                    continue;
                 }
                 NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell => {
-                    return (false, container, should_continue);
+                    break;
                 }
                 NodeValue::FootnoteDefinition(..) => {
                     if !self.parse_footnote_definition_block_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::MultilineBlockQuote(..) => {
-                    if !self.parse_multiline_block_quote_prefix(
-                        line,
-                        container,
-                        ast,
-                        &mut should_continue,
-                    ) {
-                        return (false, container, should_continue);
-                    }
+                    self.parse_multiline_block_quote_prefix(line, container, ast)?;
                 }
                 NodeValue::Alert(ref alert) => {
                     if alert.multiline {
-                        if !self.parse_multiline_block_quote_prefix(
-                            line,
-                            container,
-                            ast,
-                            &mut should_continue,
-                        ) {
-                            return (false, container, should_continue);
-                        }
+                        self.parse_multiline_block_quote_prefix(line, container, ast)?;
                     } else if !self.parse_block_quote_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 _ => {}
             }
         }
 
-        (true, container, should_continue)
+        Some((all_matched, container))
     }
 
     fn find_first_nonspace(&mut self, line: &str) {
@@ -1613,8 +1597,7 @@ where
         line: &str,
         container: &'a AstNode<'a>,
         ast: &mut Ast,
-        should_continue: &mut bool,
-    ) -> bool {
+    ) -> Option<bool> {
         let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
             NodeValue::CodeBlock(ref ncb) => (
                 ncb.fenced,
@@ -1628,13 +1611,13 @@ where
         if !fenced {
             if self.indent >= CODE_INDENT {
                 self.advance_offset(line, CODE_INDENT, true);
-                return true;
+                return Some(true);
             } else if self.blank {
                 let offset = self.first_nonspace - self.offset;
                 self.advance_offset(line, offset, false);
-                return true;
+                return Some(true);
             }
-            return false;
+            return Some(false);
         }
 
         let bytes = line.as_bytes();
@@ -1645,10 +1628,9 @@ where
         };
 
         if matched >= fence_length {
-            *should_continue = false;
             self.advance_offset(line, matched, false);
             self.current = self.finalize_borrowed(container, ast).unwrap();
-            return false;
+            return None;
         }
 
         let mut i = fence_offset;
@@ -1656,7 +1638,7 @@ where
             self.advance_offset(line, 1, true);
             i -= 1;
         }
-        true
+        Some(true)
     }
 
     fn parse_html_block_prefix(&self, t: u8) -> bool {
@@ -1681,8 +1663,11 @@ where
         line: &str,
         container: &'a AstNode<'a>,
         ast: &mut Ast,
-        should_continue: &mut bool,
-    ) -> bool {
+    ) -> Option<()> {
+        // XXX: refactoring revealed that, unlike parse_code_block_prefix, this
+        // function never fails to match without signalling 'should_continue'
+        // (which is a `Some(false)` in that function). Is that odd?
+
         let (fence_length, fence_offset) = match ast.value {
             NodeValue::MultilineBlockQuote(ref node_value) => {
                 (node_value.fence_length, node_value.fence_offset)
@@ -1699,7 +1684,6 @@ where
         };
 
         if matched >= fence_length {
-            *should_continue = false;
             self.advance_offset(line, matched, false);
 
             // The last child, like an indented codeblock, could be left open.
@@ -1712,7 +1696,7 @@ where
             }
 
             self.current = self.finalize_borrowed(container, ast).unwrap();
-            return false;
+            return None;
         }
 
         let mut i = fence_offset;
@@ -1720,7 +1704,7 @@ where
             self.advance_offset(line, 1, true);
             i -= 1;
         }
-        true
+        Some(())
     }
 
     /////////////////////
@@ -1958,7 +1942,7 @@ where
         true
     }
 
-    fn detect_html_block(&self, container: &AstNode, line: &str) -> Option<usize> {
+    fn detect_html_block(&self, container: &'a AstNode<'a>, line: &str) -> Option<usize> {
         scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
             if !node_matches!(container, NodeValue::Paragraph) {
                 scanners::html_block_start_7(&line[self.first_nonspace..])
@@ -1994,7 +1978,7 @@ where
 
     fn detect_setext_heading(
         &self,
-        container: &AstNode,
+        container: &'a AstNode<'a>,
         line: &str,
     ) -> Option<scanners::SetextChar> {
         if node_matches!(container, NodeValue::Paragraph) && !self.options.parse.ignore_setext {
@@ -2025,7 +2009,7 @@ where
 
     fn detect_thematic_break(
         &mut self,
-        container: &AstNode,
+        container: &'a AstNode<'a>,
         line: &str,
         all_matched: bool,
     ) -> Option<usize> {
@@ -2313,7 +2297,7 @@ where
 
     fn detect_list(
         &self,
-        container: &AstNode,
+        container: &'a AstNode<'a>,
         line: &str,
         indented: bool,
         depth: usize,
