@@ -16,8 +16,8 @@ use crate::strings::trim_start_match;
 use crate::{node_matches, Plugins};
 
 /// Formats an AST as CommonMark, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
+pub fn format_document<'a, 'i>(
+    root: Node<'a, 'i>,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
@@ -33,8 +33,8 @@ pub fn format_document<'a>(
 }
 
 /// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins<'a, 'i>(
+    root: Node<'a, 'i>,
     options: &Options,
     output: &mut dyn Write,
     _plugins: &Plugins,
@@ -63,8 +63,8 @@ pub fn format_document_with_plugins<'a>(
     output.write_str(&result)
 }
 
-struct CommonMarkFormatter<'a, 'o, 'c> {
-    node: Node<'a>,
+struct CommonMarkFormatter<'a, 'i, 'o, 'c> {
+    node: Node<'a, 'i>,
     options: &'o Options<'c>,
     output: String,
     prefix: String,
@@ -75,7 +75,7 @@ struct CommonMarkFormatter<'a, 'o, 'c> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
-    custom_escape: Option<fn(Node<'a>, char) -> bool>,
+    custom_escape: Option<fn(Node<'a, 'i>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
 }
@@ -88,14 +88,14 @@ enum Escaping {
     Title,
 }
 
-impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
+impl<'a, 'i, 'o, 'c> Write for CommonMarkFormatter<'a, 'i, 'o, 'c> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.output(s, false, Escaping::Literal)
     }
 }
 
-impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
-    fn new(node: Node<'a>, options: &'o Options<'c>) -> Self {
+impl<'a, 'i, 'o, 'c> CommonMarkFormatter<'a, 'i, 'o, 'c> {
+    fn new(node: Node<'a, 'i>, options: &'o Options<'c>) -> Self {
         CommonMarkFormatter {
             node,
             options,
@@ -280,7 +280,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format(&mut self, node: Node<'a>) -> fmt::Result {
+    fn format(&mut self, node: Node<'a, 'i>) -> fmt::Result {
         enum Phase {
             Pre,
             Post,
@@ -305,7 +305,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn get_in_tight_list_item(&self, node: Node<'a>) -> bool {
+    fn get_in_tight_list_item(&self, node: Node<'a, 'i>) -> bool {
         let tmp = match node.containing_block() {
             Some(tmp) => tmp,
             None => return false,
@@ -338,7 +338,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         false
     }
 
-    fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
+    fn format_node(&mut self, node: Node<'a, 'i>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
@@ -445,7 +445,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_list(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+    fn format_list(&mut self, node: Node<'a, 'i>, entering: bool) -> fmt::Result {
         let ol_start = match node.data.borrow().value {
             NodeValue::List(NodeList {
                 list_type: ListType::Ordered,
@@ -479,7 +479,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_item(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+    fn format_item(&mut self, node: Node<'a, 'i>, entering: bool) -> fmt::Result {
         let parent = match node.parent().unwrap().data.borrow().value {
             NodeValue::List(ref nl) => *nl,
             _ => unreachable!(),
@@ -572,7 +572,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_code_block(
         &mut self,
-        node: Node<'a>,
+        node: Node<'a, 'i>,
         ncb: &NodeCodeBlock,
         entering: bool,
     ) -> fmt::Result {
@@ -744,7 +744,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         write!(self, "**")
     }
 
-    fn format_emph(&mut self, node: Node<'a>) -> fmt::Result {
+    fn format_emph(&mut self, node: Node<'a, 'i>) -> fmt::Result {
         let emph_delim = if match node.parent() {
             Some(parent) => matches!(parent.data.borrow().value, NodeValue::Emph),
             _ => false,
@@ -763,7 +763,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     fn format_task_item(
         &mut self,
         symbol: Option<char>,
-        node: Node<'a>,
+        node: Node<'a, 'i>,
         entering: bool,
     ) -> fmt::Result {
         if node
@@ -810,7 +810,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_link(
         &mut self,
-        node: Node<'a>,
+        node: Node<'a, 'i>,
         nl: &NodeLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
@@ -896,7 +896,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_table_cell(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+    fn format_table_cell(&mut self, node: Node<'a, 'i>, entering: bool) -> fmt::Result {
         if entering {
             write!(self, " ")?;
         } else {
@@ -1050,7 +1050,7 @@ fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
     i
 }
 
-fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
+fn is_autolink<'a, 'i>(node: Node<'a, 'i>, nl: &NodeLink) -> bool {
     if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
@@ -1070,7 +1070,7 @@ fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
     trim_start_match(&nl.url, "mailto:") == link_text
 }
 
-fn table_escape<'a>(node: Node<'a>, c: char) -> bool {
+fn table_escape<'a, 'i>(node: Node<'a, 'i>, c: char) -> bool {
     match node.data.borrow().value {
         NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
         _ => c == '|',

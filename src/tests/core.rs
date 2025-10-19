@@ -320,13 +320,13 @@ fn backticks_num() {
 
     let code1 = NodeValue::Code(NodeCode {
         num_backticks: 1,
-        literal: "code1".to_string(),
+        literal: "code1".into(),
     });
     asssert_node_eq(root, &[0, 1], &code1);
 
     let code2 = NodeValue::Code(NodeCode {
         num_backticks: 3,
-        literal: "code2".to_string(),
+        literal: "code2".into(),
     });
     asssert_node_eq(root, &[0, 3], &code2);
 }

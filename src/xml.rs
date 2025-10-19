@@ -9,8 +9,8 @@ use crate::parser::{Options, Plugins};
 const MAX_INDENT: u32 = 40;
 
 /// Formats an AST as HTML, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
+pub fn format_document<'a, 'i>(
+    root: Node<'a, 'i>,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
@@ -18,8 +18,8 @@ pub fn format_document<'a>(
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins<'a, 'i>(
+    root: Node<'a, 'i>,
     options: &Options,
     output: &mut dyn Write,
     plugins: &Plugins,
@@ -70,7 +70,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format<'a>(&mut self, node: Node<'a>, plain: bool) -> fmt::Result {
+    fn format<'a, 'i>(&mut self, node: Node<'a, 'i>, plain: bool) -> fmt::Result {
         // Traverse the AST iteratively using a work stack, with pre- and
         // post-child-traversal phases. During pre-order traversal render the
         // opening tags, then push the node back onto the stack for the
@@ -88,12 +88,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 Phase::Pre => {
                     let new_plain = if plain {
                         match node.data.borrow().value {
-                            NodeValue::Text(ref literal) => {
+                            NodeValue::Text(ref literal)
+                            | NodeValue::Code(NodeCode { ref literal, .. }) => {
                                 self.escape(literal)?;
                             }
-                            NodeValue::Code(NodeCode { ref literal, .. })
-                            | NodeValue::HtmlInline(ref literal)
-                            | NodeValue::Raw(ref literal) => {
+                            NodeValue::HtmlInline(ref literal) | NodeValue::Raw(ref literal) => {
                                 self.escape(literal)?;
                             }
                             NodeValue::LineBreak | NodeValue::SoftBreak => {
@@ -131,7 +130,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: Node<'a>, entering: bool) -> Result<bool, std::fmt::Error> {
+    fn format_node<'a, 'i>(
+        &mut self,
+        node: Node<'a, 'i>,
+        entering: bool,
+    ) -> Result<bool, std::fmt::Error> {
         if entering {
             self.indent()?;
 
@@ -149,14 +152,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Document => self
                     .output
                     .write_str(" xmlns=\"http://commonmark.org/xml/1.0\"")?,
-                NodeValue::Text(ref literal) => {
+                NodeValue::Text(ref literal) | NodeValue::Code(NodeCode { ref literal, .. }) => {
                     self.output.write_str(" xml:space=\"preserve\">")?;
                     self.escape(literal)?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
-                NodeValue::Code(NodeCode { ref literal, .. })
-                | NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. })
+                NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. })
                 | NodeValue::HtmlInline(ref literal)
                 | NodeValue::Raw(ref literal) => {
                     self.output.write_str(" xml:space=\"preserve\">")?;

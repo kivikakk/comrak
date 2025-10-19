@@ -27,8 +27,8 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+pub struct Subject<'a: 'd, 'i, 'r, 'o, 'd, 'c, 'p> {
+    pub arena: &'a Arena<AstNode<'a, 'i>>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
@@ -37,10 +37,10 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     line_offset: usize,
     flags: Flags,
     pub refmap: &'r mut RefMap,
-    footnote_defs: &'p FootnoteDefs<'a>,
-    delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
-    last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a>>,
+    footnote_defs: &'p FootnoteDefs<'a, 'i>,
+    delimiter_arena: &'d Arena<Delimiter<'a, 'i, 'd>>,
+    last_delimiter: Option<&'d Delimiter<'a, 'i, 'd>>,
+    brackets: Vec<Bracket<'a, 'i>>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -90,12 +90,12 @@ impl RefMap {
     }
 }
 
-pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
+pub struct FootnoteDefs<'a, 'i> {
+    defs: RefCell<Vec<Node<'a, 'i>>>,
     counter: RefCell<usize>,
 }
 
-impl<'a> FootnoteDefs<'a> {
+impl<'a, 'i> FootnoteDefs<'a, 'i> {
     pub fn new() -> Self {
         Self {
             defs: RefCell::new(Vec::new()),
@@ -109,27 +109,27 @@ impl<'a> FootnoteDefs<'a> {
         format!("__inline_{}", *counter)
     }
 
-    pub fn add_definition(&self, def: Node<'a>) {
+    pub fn add_definition(&self, def: Node<'a, 'i>) {
         self.defs.borrow_mut().push(def);
     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a, 'i>>> {
         self.defs.borrow()
     }
 }
 
-pub struct Delimiter<'a: 'd, 'd> {
-    inl: Node<'a>,
+pub struct Delimiter<'a: 'd, 'i, 'd> {
+    inl: Node<'a, 'i>,
     position: usize,
     length: usize,
     delim_char: u8,
     can_open: bool,
     can_close: bool,
-    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
-    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
+    prev: Cell<Option<&'d Delimiter<'a, 'i, 'd>>>,
+    next: Cell<Option<&'d Delimiter<'a, 'i, 'd>>>,
 }
 
-impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
+impl<'a: 'd, 'i, 'd> std::fmt::Debug for Delimiter<'a, 'i, 'd> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -150,8 +150,8 @@ impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
     }
 }
 
-struct Bracket<'a> {
-    inl_text: Node<'a>,
+struct Bracket<'a, 'i> {
+    inl_text: Node<'a, 'i>,
     position: usize,
     image: bool,
     bracket_after: bool,
@@ -163,15 +163,15 @@ struct WikilinkComponents {
     link_label: Option<(String, usize, usize)>,
 }
 
-impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
+impl<'a, 'i, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'i, 'r, 'o, 'd, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
+        arena: &'a Arena<AstNode<'a, 'i>>,
         options: &'o Options<'c>,
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
-        footnote_defs: &'p FootnoteDefs<'a>,
-        delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+        footnote_defs: &'p FootnoteDefs<'a, 'i>,
+        delimiter_arena: &'d Arena<Delimiter<'a, 'i, 'd>>,
     ) -> Self {
         let mut s = Subject {
             arena,
@@ -229,7 +229,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.brackets.pop().is_some()
     }
 
-    pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
+    pub fn parse_inline(&mut self, node: Node<'a, 'i>, ast: &mut Ast) -> bool {
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -238,7 +238,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let adjusted_line = self.line - ast.sourcepos.start.line;
         self.line_offset = ast.line_offsets[adjusted_line];
 
-        let new_inl: Option<Node<'a>> = match c {
+        let new_inl: Option<Node<'a, 'i>> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
             '`' => Some(self.handle_backticks(&ast.line_offsets)),
@@ -385,7 +385,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         true
     }
 
-    fn del_ref_eq(lhs: Option<&'d Delimiter<'a, 'd>>, rhs: Option<&'d Delimiter<'a, 'd>>) -> bool {
+    fn del_ref_eq(
+        lhs: Option<&'d Delimiter<'a, 'i, 'd>>,
+        rhs: Option<&'d Delimiter<'a, 'i, 'd>>,
+    ) -> bool {
         match (lhs, rhs) {
             (None, None) => true,
             (Some(l), Some(r)) => ptr::eq(l, r),
@@ -603,7 +606,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.remove_delimiters(stack_bottom);
     }
 
-    fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'd>) {
+    fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'i, 'd>) {
         if delimiter.next.get().is_none() {
             assert!(ptr::eq(delimiter, self.last_delimiter.unwrap()));
             self.last_delimiter = delimiter.prev.get();
@@ -664,7 +667,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn adjust_node_newlines(
         &mut self,
-        node: Node<'a>,
+        node: Node<'a, 'i>,
         matchlen: usize,
         extra: usize,
         parent_line_offsets: &[usize],
@@ -683,7 +686,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_newline(&mut self) -> Node<'a> {
+    fn handle_newline(&mut self) -> Node<'a, 'i> {
         let nlpos = self.pos;
         if self.input.as_bytes()[self.pos] == b'\r' {
             self.pos += 1;
@@ -750,7 +753,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a, 'i> {
         let startpos = self.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -849,7 +852,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a, 'i> {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
             return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
@@ -917,7 +920,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         skipped
     }
 
-    fn handle_delim(&mut self, c: u8) -> Node<'a> {
+    fn handle_delim(&mut self, c: u8) -> Node<'a, 'i> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
@@ -946,7 +949,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         inl
     }
 
-    fn handle_hyphen(&mut self) -> Node<'a> {
+    fn handle_hyphen(&mut self) -> Node<'a, 'i> {
         let start = self.pos;
         self.pos += 1;
 
@@ -979,7 +982,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
     }
 
-    fn handle_period(&mut self) -> Node<'a> {
+    fn handle_period(&mut self) -> Node<'a, 'i> {
         self.pos += 1;
         if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
@@ -1141,7 +1144,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a>) {
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a, 'i>) {
         let d = self.delimiter_arena.alloc(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
@@ -1165,9 +1168,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // place to be re-matched by `process_emphasis`.
     fn insert_emph(
         &mut self,
-        opener: &'d Delimiter<'a, 'd>,
-        closer: &'d Delimiter<'a, 'd>,
-    ) -> Option<&'d Delimiter<'a, 'd>> {
+        opener: &'d Delimiter<'a, 'i, 'd>,
+        closer: &'d Delimiter<'a, 'i, 'd>,
+    ) -> Option<&'d Delimiter<'a, 'i, 'd>> {
         let opener_char = opener.inl.data.borrow().value.text().unwrap().as_bytes()[0];
         let mut opener_num_chars = opener.inl.data.borrow().value.text().unwrap().len();
         let mut closer_num_chars = closer.inl.data.borrow().value.text().unwrap().len();
@@ -1289,7 +1292,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_backslash(&mut self) -> Node<'a> {
+    fn handle_backslash(&mut self) -> Node<'a, 'i> {
         let startpos = self.pos;
         self.pos += 1;
 
@@ -1332,7 +1335,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos > old_pos || self.eof()
     }
 
-    fn handle_entity(&mut self) -> Node<'a> {
+    fn handle_entity(&mut self) -> Node<'a, 'i> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
@@ -1345,7 +1348,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
+    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a, 'i>> {
         let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
         let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
@@ -1362,9 +1365,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_autolink_with(
         &mut self,
-        node: Node<'a>,
-        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
-    ) -> Option<Node<'a>> {
+        node: Node<'a, 'i>,
+        f: fn(&mut Subject<'a, 'i, '_, '_, '_, '_, '_>) -> Option<(Node<'a, 'i>, usize, usize)>,
+    ) -> Option<Node<'a, 'i>> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
@@ -1427,15 +1430,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         Some(post)
     }
 
-    fn handle_autolink_colon(&mut self, node: Node<'a>) -> Option<Node<'a>> {
+    fn handle_autolink_colon(&mut self, node: Node<'a, 'i>) -> Option<Node<'a, 'i>> {
         self.handle_autolink_with(node, autolink::url_match)
     }
 
-    fn handle_autolink_w(&mut self, node: Node<'a>) -> Option<Node<'a>> {
+    fn handle_autolink_w(&mut self, node: Node<'a, 'i>) -> Option<Node<'a, 'i>> {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a, 'i> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -1536,7 +1539,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
     }
 
-    fn push_bracket(&mut self, image: bool, inl_text: Node<'a>) {
+    fn push_bracket(&mut self, image: bool, inl_text: Node<'a, 'i>) {
         let len = self.brackets.len();
         if len > 0 {
             self.brackets[len - 1].bracket_after = true;
@@ -1552,7 +1555,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
+    fn handle_close_bracket(&mut self) -> Option<Node<'a, 'i>> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -1799,7 +1802,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
+    fn handle_inline_footnote(&mut self) -> Option<Node<'a, 'i>> {
         let startpos = self.pos;
 
         // We're at ^, next should be [
@@ -1965,7 +1968,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
+    fn handle_wikilink(&mut self) -> Option<Node<'a, 'i>> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
@@ -2085,7 +2088,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     // Given a label, handles backslash escaped characters. Appends the resulting
     // nodes to the container
-    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
+    fn label_backslash_escapes(
+        &mut self,
+        container: Node<'a, 'i>,
+        label: &str,
+        start_column: usize,
+    ) {
         let mut startpos = 0;
         let mut offset = 0;
         let bytes = label.as_bytes();
@@ -2145,7 +2153,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
+    fn make_inline(
+        &self,
+        value: NodeValue<'i>,
+        start_column: usize,
+        end_column: usize,
+    ) -> Node<'a, 'i> {
         let start_column =
             start_column as isize + 1 + self.column_offset + self.line_offset as isize;
         let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
@@ -2174,7 +2187,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
-    ) -> Node<'a> {
+    ) -> Node<'a, 'i> {
         let inl = self.make_inline(
             NodeValue::Link(Box::new(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
@@ -2261,11 +2274,11 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
     }
 }
 
-pub(crate) fn make_inline<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    value: NodeValue,
+pub(crate) fn make_inline<'a, 'i>(
+    arena: &'a Arena<AstNode<'a, 'i>>,
+    value: NodeValue<'i>,
     sourcepos: Sourcepos,
-) -> Node<'a> {
+) -> Node<'a, 'i> {
     let ast = Ast {
         value,
         content: String::new(),

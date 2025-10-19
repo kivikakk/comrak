@@ -8,9 +8,9 @@ use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::Subject;
 use crate::parser::{inlines::make_inline, Spx};
 
-pub(crate) fn process_email_autolinks<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    node: Node<'a>,
+pub(crate) fn process_email_autolinks<'a, 'i>(
+    arena: &'a Arena<AstNode<'a, 'i>>,
+    node: Node<'a, 'i>,
     contents: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
@@ -113,12 +113,12 @@ pub(crate) fn process_email_autolinks<'a>(
         }
     }
 }
-fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+fn email_match<'a, 'i>(
+    arena: &'a Arena<AstNode<'a, 'i>>,
     contents: &str,
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(Node<'a>, usize, usize)> {
+) -> Option<(Node<'a, 'i>, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
@@ -227,9 +227,9 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
     size - cursor + rewind >= protocol.len() && &contents[cursor - rewind..cursor] == protocol
 }
 
-pub fn www_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+pub fn www_match<'a, 'i>(
+    subject: &mut Subject<'a, 'i, '_, '_, '_, '_, '_>,
+) -> Option<(Node<'a, 'i>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
@@ -381,9 +381,9 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
     link_end
 }
 
-pub fn url_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+pub fn url_match<'a, 'i>(
+    subject: &mut Subject<'a, 'i, '_, '_, '_, '_, '_>,
+) -> Option<(Node<'a, 'i>, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
     let i = subject.pos;

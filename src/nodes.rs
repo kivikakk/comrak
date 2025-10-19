@@ -18,7 +18,7 @@ pub use crate::parser::shortcodes::NodeShortCode;
     test,
     strum_discriminants(vis(pub(crate)), derive(strum::VariantArray, Hash))
 )]
-pub enum NodeValue {
+pub enum NodeValue<'i> {
     /// The root of every CommonMark document.  Contains **blocks**.
     Document,
 
@@ -128,7 +128,7 @@ pub enum NodeValue {
     LineBreak,
 
     /// **Inline**.  A [code span](https://github.github.com/gfm/#code-spans).
-    Code(NodeCode),
+    Code(NodeCode<'i>),
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
@@ -261,7 +261,7 @@ pub struct NodeTable {
 
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct NodeCode {
+pub struct NodeCode<'i> {
     /// The number of backticks
     pub num_backticks: usize,
 
@@ -269,7 +269,7 @@ pub struct NodeCode {
     /// As the contents are not interpreted as Markdown at all,
     /// they are contained within this structure,
     /// rather than inserted into a child inline of any kind.
-    pub literal: String,
+    pub literal: Cow<'i, str>,
 }
 
 /// The details of a link's destination, or an image's source.
@@ -435,7 +435,7 @@ pub struct NodeFootnoteReference {
     pub ix: u32,
 }
 
-impl NodeValue {
+impl<'i> NodeValue<'i> {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
         matches!(
@@ -552,9 +552,9 @@ impl NodeValue {
 /// The struct contains metadata about the node's position in the original document, and the core
 /// enum, `NodeValue`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ast {
+pub struct Ast<'i> {
     /// The node value itself.
-    pub value: NodeValue,
+    pub value: NodeValue<'i>,
 
     /// The positions in the source document this node comes from.
     pub sourcepos: Sourcepos,
@@ -579,7 +579,7 @@ const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 /// Note that the size adds to Ast:
 /// * 8 bytes for RefCell.
 /// * 40 bytes for arena_tree::Node's 5 pointers.
-const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
+const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_, '_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -643,12 +643,12 @@ impl LineColumn {
     }
 }
 
-impl Ast {
+impl<'i> Ast<'i> {
     /// Create a new AST node with the given value and starting sourcepos. The
     /// end column is set to zero; it is expected this will be set manually
     /// or later in the parse.  Use [`new_with_sourcepos`] if you have full
     /// sourcepos.
-    pub fn new(value: NodeValue, start: LineColumn) -> Self {
+    pub fn new(value: NodeValue<'i>, start: LineColumn) -> Self {
         Ast {
             value,
             content: String::new(),
@@ -661,7 +661,7 @@ impl Ast {
     }
 
     /// Create a new AST node with the given value and sourcepos.
-    pub fn new_with_sourcepos(value: NodeValue, sourcepos: Sourcepos) -> Self {
+    pub fn new_with_sourcepos(value: NodeValue<'i>, sourcepos: Sourcepos) -> Self {
         Ast {
             value,
             content: String::new(),
@@ -706,40 +706,40 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
+pub type AstNode<'a, 'i> = arena_tree::Node<'a, RefCell<Ast<'i>>>;
 
 /// A reference to a node in an arena.  Unless you are manually creating nodes
 /// before the arena, this is the type you will see most often.
-pub type Node<'a> = &'a AstNode<'a>;
+pub type Node<'a, 'i> = &'a AstNode<'a, 'i>;
 
-impl<'a> From<NodeValue> for AstNode<'a> {
+impl<'a, 'i> From<NodeValue<'i>> for AstNode<'a, 'i> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
-    fn from(value: NodeValue) -> Self {
+    fn from(value: NodeValue<'i>) -> Self {
         arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
     }
 }
 
-impl<'a> From<Ast> for AstNode<'a> {
+impl<'a, 'i> From<Ast<'i>> for AstNode<'a, 'i> {
     /// Create a new AST node with the given Ast.
-    fn from(ast: Ast) -> Self {
+    fn from(ast: Ast<'i>) -> Self {
         arena_tree::Node::new(RefCell::new(ast))
     }
 }
 
 /// Validation errors produced by [Node::validate].
 #[derive(Debug, Clone)]
-pub enum ValidationError<'a> {
+pub enum ValidationError<'a, 'i> {
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
         /// The parent node.
-        parent: Node<'a>,
+        parent: Node<'a, 'i>,
         /// The child node.
-        child: Node<'a>,
+        child: Node<'a, 'i>,
     },
 }
 
-impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
+impl<'a, 'i> arena_tree::Node<'a, RefCell<Ast<'i>>> {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {
@@ -862,7 +862,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     ///
     /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
     /// comrak, on the other hand, should always produce a valid tree.
-    pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
+    pub fn validate(&'a self) -> Result<(), ValidationError<'a, 'i>> {
         let mut stack = vec![self];
 
         while let Some(node) = stack.pop() {
@@ -902,7 +902,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
+    pub(crate) fn containing_block(&'a self) -> Option<Node<'a, 'i>> {
         let mut ch = Some(self);
         while let Some(n) = ch {
             if n.data.borrow().value.block() {
