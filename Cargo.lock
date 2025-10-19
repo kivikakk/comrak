@@ -164,7 +164,6 @@ dependencies = [
  "emojis",
  "entities",
  "fmt2io",
- "memchr",
  "ntest",
  "percent-encoding-rfc3986",
  "shell-words",
