@@ -62,7 +62,7 @@ macro_rules! node_matches {
 /// See the documentation of the crate root for an example.
 pub fn parse_document<'a>(
     arena: &'a Arena<AstNode<'a>>,
-    buffer: &str,
+    md: &str,
     options: &Options,
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
@@ -76,8 +76,8 @@ pub fn parse_document<'a>(
         line_offsets: Vec::with_capacity(0),
     })));
     let mut parser = Parser::new(arena, root, options);
-    let mut linebuf = String::with_capacity(buffer.len());
-    parser.feed(&mut linebuf, buffer, true);
+    let mut linebuf = String::with_capacity(1024);
+    parser.feed(&mut linebuf, md, true);
     parser.finish(linebuf)
 }
 
