@@ -1344,52 +1344,6 @@ where
         }
     }
 
-    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
-        let mut i = self.first_nonspace;
-
-        if i >= line.len() {
-            return (i, false);
-        }
-
-        let bytes = line.as_bytes();
-        let c = bytes[i];
-        if c != b'*' && c != b'_' && c != b'-' {
-            return (i, false);
-        }
-
-        let mut count = 1;
-        let mut nextc;
-        loop {
-            i += 1;
-            if i >= line.len() {
-                return (i, false);
-            }
-            nextc = bytes[i];
-
-            if nextc == c {
-                count += 1;
-            } else if nextc != b' ' && nextc != b'\t' {
-                break;
-            }
-        }
-
-        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
-            ((i - self.first_nonspace) + 1, true)
-        } else {
-            (i, false)
-        }
-    }
-
-    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
-        let (offset, found) = self.scan_thematic_break_inner(line);
-        if !found {
-            self.thematic_break_kill_pos = offset;
-            None
-        } else {
-            Some(offset)
-        }
-    }
-
     fn find_first_nonspace(&mut self, line: &str) {
         let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
         let bytes = line.as_bytes();
@@ -1855,6 +1809,52 @@ where
             )
             && self.thematic_break_kill_pos <= self.first_nonspace
             && unwrap_into(self.scan_thematic_break(line), matched)
+    }
+
+    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
+        let mut i = self.first_nonspace;
+
+        if i >= line.len() {
+            return (i, false);
+        }
+
+        let bytes = line.as_bytes();
+        let c = bytes[i];
+        if c != b'*' && c != b'_' && c != b'-' {
+            return (i, false);
+        }
+
+        let mut count = 1;
+        let mut nextc;
+        loop {
+            i += 1;
+            if i >= line.len() {
+                return (i, false);
+            }
+            nextc = bytes[i];
+
+            if nextc == c {
+                count += 1;
+            } else if nextc != b' ' && nextc != b'\t' {
+                break;
+            }
+        }
+
+        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+            ((i - self.first_nonspace) + 1, true)
+        } else {
+            (i, false)
+        }
+    }
+
+    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
+        let (offset, found) = self.scan_thematic_break_inner(line);
+        if !found {
+            self.thematic_break_kill_pos = offset;
+            None
+        } else {
+            Some(offset)
+        }
     }
 
     fn handle_thematic_break(
