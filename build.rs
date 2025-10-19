@@ -23,16 +23,16 @@ fn main() {
 
     let out = std::fs::File::create(out_dir.join("entitydata.rs")).unwrap();
     let mut bw = std::io::BufWriter::new(out);
-    write!(bw, "mod entitydata {{\n").unwrap();
-    write!(
+    writeln!(bw, "mod entitydata {{").unwrap();
+    writeln!(
         bw,
-        "    pub static TRANSLATED_ENTITIES: &[(&'static str, &'static str); {}] = &[\n",
+        "    pub static TRANSLATED_ENTITIES: &[(&str, &str); {}] = &[",
         translated_entities.len()
     )
     .unwrap();
     for (entity, characters) in translated_entities {
-        write!(bw, "        ({:?}, {:?}),\n", entity, characters).unwrap();
+        writeln!(bw, "        ({:?}, {:?}),", entity, characters).unwrap();
     }
-    write!(bw, "    ];\n").unwrap();
-    write!(bw, "}}\n").unwrap();
+    writeln!(bw, "    ];").unwrap();
+    writeln!(bw, "}}").unwrap();
 }

@@ -8,10 +8,6 @@ use crate::ctype::isdigit;
 pub const ENTITY_MIN_LENGTH: usize = 2;
 pub const ENTITY_MAX_LENGTH: usize = 32;
 
-fn isxdigit(ch: u8) -> bool {
-    (ch >= b'0' && ch <= b'9') || (ch >= b'a' && ch <= b'f') || (ch >= b'A' && ch <= b'F')
-}
-
 pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
     let bytes = text.as_bytes();
     if text.len() >= 3 && bytes[0] == b'#' {
@@ -28,7 +24,7 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
             i - 1
         } else if bytes[1] == b'x' || bytes[1] == b'X' {
             i = 2;
-            while i < bytes.len() && isxdigit(bytes[i]) {
+            while i < bytes.len() && bytes[i].is_ascii_hexdigit() {
                 codepoint = (codepoint * 16) + ((bytes[i] as u32 | 32) % 39 - 9);
                 codepoint = min(codepoint, 0x11_0000);
                 i += 1;

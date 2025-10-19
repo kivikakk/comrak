@@ -1324,7 +1324,7 @@ where
                 }
             } else if eol < end && sb[eol] == b'\0' {
                 linebuf.push_str(&s[buffer..eol]);
-                linebuf.push_str("\u{fffd}");
+                linebuf.push('\u{fffd}');
             } else {
                 linebuf.push_str(&s[buffer..eol]);
             }
@@ -1916,7 +1916,7 @@ where
         }
 
         let mut c = &line[self.first_nonspace + 2..self.first_nonspace + *matched];
-        c = c.split(|e| e == ']').next().unwrap();
+        c = c.split(']').next().unwrap();
         let offset = self.first_nonspace + *matched - self.offset;
         self.advance_offset(line, offset, false);
         *container = self.add_child(
@@ -2626,8 +2626,8 @@ where
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
-                            self.advance_offset(&line, count, false);
-                            self.add_line(container, &line);
+                            self.advance_offset(line, count, false);
+                            self.add_line(container, line);
                         }
                     } else {
                         container = self.add_child(

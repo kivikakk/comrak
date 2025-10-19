@@ -227,7 +227,7 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
 pub fn clean_url(url: &str) -> Cow<'static, str> {
     let url = trim_slice(url);
 
-    if url.len() == 0 {
+    if url.is_empty() {
         return "".into();
     }
 

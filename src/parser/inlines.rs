@@ -2139,7 +2139,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
             self.pos += 2;
             return Some(WikilinkComponents {
-                url: left.into(),
+                url: left,
                 link_label: None,
             });
         } else if self.peek_char() != Some(&(b'|')) {
