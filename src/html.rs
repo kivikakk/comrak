@@ -688,7 +688,7 @@ fn render_html_block<'a, T>(
         } else if !context.options.render.unsafe_ {
             context.write_str("<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter {
-            tagfilter_block(literal, context)?;
+            tagfilter_block(context, literal)?;
         } else {
             context.write_str(literal)?;
         }
@@ -1690,34 +1690,21 @@ fn tagfilter(literal: &str) -> bool {
     false
 }
 
-fn tagfilter_block(input: &str, o: &mut dyn Write) -> fmt::Result {
-    let bytes = input.as_bytes();
-    let size = input.len();
-    let mut i = 0;
+fn tagfilter_block(output: &mut dyn Write, buffer: &str) -> fmt::Result {
+    let bytes = buffer.as_bytes();
+    let matcher = jetscii::bytes!(b'<');
 
-    while i < size {
-        let org = i;
-        while i < size && bytes[i] != b'<' {
-            i += 1;
-        }
-
-        if i > org {
-            o.write_str(&input[org..i])?;
-        }
-
-        if i >= size {
-            break;
-        }
-
-        if tagfilter(&input[i..]) {
-            o.write_str("&lt;")?;
+    let mut offset = 0;
+    while let Some(i) = matcher.find(&bytes[offset..]) {
+        output.write_str(&buffer[offset..offset + i])?;
+        if tagfilter(&buffer[offset + i..]) {
+            output.write_str("&lt;")?;
         } else {
-            o.write_str("<")?;
+            output.write_str("<")?;
         }
-
-        i += 1;
+        offset += i + 1;
     }
-
+    output.write_str(&buffer[offset..])?;
     Ok(())
 }
 
@@ -1741,22 +1728,20 @@ pub fn dangerous_url(input: &str) -> bool {
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
     let bytes = buffer.as_bytes();
-    const HTML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
+    let matcher = jetscii::bytes!(b'"', b'&', b'<', b'>');
 
     let mut offset = 0;
-    for (i, &byte) in bytes.iter().enumerate() {
-        if HTML_UNSAFE[byte as usize] {
-            let esc: &str = match byte {
-                b'"' => "&quot;",
-                b'&' => "&amp;",
-                b'<' => "&lt;",
-                b'>' => "&gt;",
-                _ => unreachable!(),
-            };
-            output.write_str(&buffer[offset..i])?;
-            output.write_str(esc)?;
-            offset = i + 1;
-        }
+    while let Some(i) = matcher.find(&bytes[offset..]) {
+        let esc: &str = match bytes[offset + i] {
+            b'"' => "&quot;",
+            b'&' => "&amp;",
+            b'<' => "&lt;",
+            b'>' => "&gt;",
+            _ => unreachable!(),
+        };
+        output.write_str(&buffer[offset..offset + i])?;
+        output.write_str(esc)?;
+        offset += i + 1;
     }
     output.write_str(&buffer[offset..])?;
     Ok(())
