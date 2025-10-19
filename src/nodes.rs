@@ -567,11 +567,13 @@ pub struct Ast {
 }
 
 #[allow(dead_code)]
+#[cfg(target_pointer_width = "64")]
 /// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
 /// bigger.
 const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 
 #[allow(dead_code)]
+#[cfg(target_pointer_width = "64")]
 /// Assert the total size of what we allocate in the Arena, for reference.
 ///
 /// Note that the size adds to Ast:
