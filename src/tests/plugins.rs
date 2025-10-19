@@ -22,7 +22,7 @@ fn syntax_highlighter_plugin() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<String, String>,
+            attributes: HashMap<&'static str, String>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -30,7 +30,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<String, String>,
+            attributes: HashMap<&'static str, String>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }

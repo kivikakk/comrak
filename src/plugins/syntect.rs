@@ -106,7 +106,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
@@ -121,18 +121,18 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
                 let mut pre_attributes = SyntectPreAttributes::new(attributes, &style);
                 html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
             }
-            None => {
-                let mut attributes: HashMap<&str, &str> = HashMap::new();
-                attributes.insert("class", "syntax-highlighting");
-                html::write_opening_tag(output, "pre", attributes)
-            }
+            None => html::write_opening_tag(
+                output,
+                "pre",
+                vec![("class", "syntax-highlighting")],
+            ),
         }
     }
 
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }
@@ -140,11 +140,11 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
 
 struct SyntectPreAttributes {
     syntect_style: String,
-    attributes: HashMap<String, String>,
+    attributes: HashMap<&'static str, String>,
 }
 
 impl SyntectPreAttributes {
-    fn new(attributes: HashMap<String, String>, syntect_style: &str) -> Self {
+    fn new(attributes: HashMap<&'static str, String>, syntect_style: &str) -> Self {
         Self {
             syntect_style: syntect_style.into(),
             attributes,
@@ -161,7 +161,7 @@ impl SyntectPreAttributes {
 }
 
 struct SyntectPreAttributesIter<'a> {
-    iter_mut: hash_map::IterMut<'a, String, String>,
+    iter_mut: hash_map::IterMut<'a, &'static str, String>,
     syntect_style: &'a str,
     style_written: bool,
 }
@@ -171,7 +171,7 @@ impl<'a> Iterator for SyntectPreAttributesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter_mut.next() {
-            Some((k, v)) if k == "style" && !self.style_written => {
+            Some((k, v)) if *k == "style" && !self.style_written => {
                 self.style_written = true;
                 v.insert_str(0, self.syntect_style);
                 Some((k, v))

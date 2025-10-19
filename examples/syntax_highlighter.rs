@@ -35,7 +35,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result {
         if attributes.contains_key("lang") {
             write!(output, "<pre lang=\"{}\">", attributes["lang"])
@@ -47,7 +47,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result {
         if attributes.contains_key("class") {
             write!(output, "<code class=\"{}\">", attributes["class"])

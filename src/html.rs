@@ -7,6 +7,7 @@
 mod anchorizer;
 mod context;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Write};
 use std::str;
@@ -529,8 +530,8 @@ fn render_code_block<'a, T>(
             context.cr()?;
 
             let mut first_tag = 0;
-            let mut pre_attributes: HashMap<String, String> = HashMap::new();
-            let mut code_attributes: HashMap<String, String> = HashMap::new();
+            let mut pre_attributes: HashMap<&str, String> = HashMap::new();
+            let mut code_attributes: HashMap<&str, String> = HashMap::new();
             let code_attr: String;
 
             let literal = &ncb.literal;
@@ -546,31 +547,30 @@ fn render_code_block<'a, T>(
                 let info_str = &info[first_tag..].trim();
 
                 if context.options.render.github_pre_lang {
-                    pre_attributes.insert(String::from("lang"), lang_str.to_string());
+                    pre_attributes.insert("lang", lang_str.to_string());
 
                     if context.options.render.full_info_string && !info_str.is_empty() {
-                        pre_attributes
-                            .insert(String::from("data-meta"), info_str.trim().to_string());
+                        pre_attributes.insert("data-meta", info_str.trim().to_string());
                     }
                 } else {
                     code_attr = format!("language-{}", lang_str);
                     code_attributes.insert("class", code_attr);
 
                     if context.options.render.full_info_string && !info_str.is_empty() {
-                        code_attributes.insert(String::from("data-meta"), info_str.to_string());
+                        code_attributes.insert("data-meta", info_str.to_string());
                     }
                 }
             }
 
             if context.options.render.sourcepos {
                 let ast = node.data.borrow();
-                pre_attributes.insert("data-sourcepos".to_string(), ast.sourcepos.to_string());
+                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string());
             }
 
             match context.plugins.render.codefence_syntax_highlighter {
                 None => {
-                    write_opening_tag(context, "pre", pre_attributes)?;
-                    write_opening_tag(context, "code", code_attributes)?;
+                    write_opening_tag(context, "pre", pre_attributes.into_iter())?;
+                    write_opening_tag(context, "code", code_attributes.into_iter())?;
 
                     context.escape(literal)?;
 
@@ -1314,18 +1314,18 @@ pub fn render_math<'a, T>(
     nm: &NodeMath,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        let mut tag_attributes: Vec<(String, String)> = Vec::new();
+        let mut tag_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
         let style_attr = if nm.display_math { "display" } else { "inline" };
         let tag: &str = if nm.dollar_math { "span" } else { "code" };
 
-        tag_attributes.push((String::from("data-math-style"), String::from(style_attr)));
+        tag_attributes.push(("data-math-style", style_attr.into()));
 
         if context.options.render.sourcepos {
             let ast = node.data.borrow();
-            tag_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+            tag_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
         }
 
-        write_opening_tag(context, tag, tag_attributes)?;
+        write_opening_tag(context, tag, tag_attributes.into_iter())?;
         context.escape(&nm.literal)?;
         write!(context, "</{tag}>")?;
     }
@@ -1343,26 +1343,26 @@ pub fn render_math_code_block<'a, T>(
 
     // use vectors to ensure attributes always written in the same order,
     // for testing stability
-    let mut pre_attributes: Vec<(String, String)> = Vec::new();
-    let mut code_attributes: Vec<(String, String)> = Vec::new();
+    let mut pre_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
+    let mut code_attributes: Vec<(Cow<str>, Cow<str>)> = Vec::new();
     let lang_str = "math";
 
     if context.options.render.github_pre_lang {
-        pre_attributes.push((String::from("lang"), lang_str.to_string()));
-        pre_attributes.push((String::from("data-math-style"), String::from("display")));
+        pre_attributes.push(("lang", lang_str.into()));
+        pre_attributes.push(("data-math-style", "display".into()));
     } else {
         let code_attr = format!("language-{}", lang_str);
-        code_attributes.push((String::from("class"), code_attr));
-        code_attributes.push((String::from("data-math-style"), String::from("display")));
+        code_attributes.push(("class", code_attr.into()));
+        code_attributes.push(("data-math-style", "display".into()));
     }
 
     if context.options.render.sourcepos {
         let ast = node.data.borrow();
-        pre_attributes.push(("data-sourcepos".to_string(), ast.sourcepos.to_string()));
+        pre_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
     }
 
-    write_opening_tag(context, "pre", pre_attributes)?;
-    write_opening_tag(context, "code", code_attributes)?;
+    write_opening_tag(context, "pre", pre_attributes.into_iter())?;
+    write_opening_tag(context, "code", code_attributes.into_iter())?;
 
     context.escape(literal)?;
     context.write_str("</code></pre>\n")?;
@@ -1739,14 +1739,11 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
 
 /// Writes an opening HTML tag, using an iterator to enumerate the attributes.
 /// Note that attribute values are automatically escaped.
-pub fn write_opening_tag<Str>(
+pub fn write_opening_tag<K: AsRef<str>, V: AsRef<str>>(
     output: &mut dyn Write,
     tag: &str,
-    attributes: impl IntoIterator<Item = (Str, Str)>,
-) -> fmt::Result
-where
-    Str: AsRef<str>,
-{
+    attributes: impl IntoIterator<Item = (K, V)>,
+) -> fmt::Result {
     write!(output, "<{tag}")?;
     for (attr, val) in attributes {
         write!(output, " {}=\"", attr.as_ref())?;

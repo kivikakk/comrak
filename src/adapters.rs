@@ -27,7 +27,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_pre_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
@@ -37,7 +37,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_code_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, String>,
     ) -> fmt::Result;
 }
 
