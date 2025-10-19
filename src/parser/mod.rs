@@ -10,6 +10,7 @@ pub mod multiline_block_quote;
 
 #[cfg(feature = "bon")]
 use bon::Builder;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -62,7 +63,7 @@ macro_rules! node_matches {
 /// See the documentation of the crate root for an example.
 pub fn parse_document<'a>(
     arena: &'a Arena<AstNode<'a>>,
-    buffer: &str,
+    md: &str,
     options: &Options,
 ) -> &'a AstNode<'a> {
     let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
@@ -76,8 +77,8 @@ pub fn parse_document<'a>(
         line_offsets: Vec::with_capacity(0),
     })));
     let mut parser = Parser::new(arena, root, options);
-    let mut linebuf = String::with_capacity(buffer.len());
-    parser.feed(&mut linebuf, buffer, true);
+    let linebuf = String::new();
+    let linebuf = parser.feed(linebuf, md, true);
     parser.finish(linebuf)
 }
 
@@ -1236,7 +1237,7 @@ where
         }
     }
 
-    fn feed(&mut self, linebuf: &mut String, mut s: &str, eof: bool) {
+    fn feed(&mut self, mut linebuf: String, mut s: &str, eof: bool) -> String {
         if let (0, Some(delimiter)) = (
             self.total_size,
             &self.options.extension.front_matter_delimiter,
@@ -1295,9 +1296,12 @@ where
         while buffer < end {
             let mut process = false;
             let mut eol = buffer;
+            let mut ate_line_end = false;
             while eol < end {
                 if strings::is_line_end_char(sb[eol]) {
                     process = true;
+                    ate_line_end = true;
+                    eol += 1;
                     break;
                 }
                 if sb[eol] == 0 {
@@ -1313,10 +1317,10 @@ where
             if process {
                 if !linebuf.is_empty() {
                     linebuf.push_str(&s[buffer..eol]);
-                    self.process_line(linebuf);
-                    linebuf.truncate(0);
+                    let line = mem::take(&mut linebuf);
+                    self.process_line(line.into());
                 } else {
-                    self.process_line(&s[buffer..eol]);
+                    self.process_line(s[buffer..eol].into());
                 }
             } else if eol < end && sb[eol] == b'\0' {
                 linebuf.push_str(&s[buffer..eol]);
@@ -1330,6 +1334,9 @@ where
                 if sb[buffer] == b'\0' {
                     buffer += 1;
                 } else {
+                    if ate_line_end {
+                        buffer -= 1;
+                    }
                     if sb[buffer] == b'\r' {
                         buffer += 1;
                         if buffer == end {
@@ -1342,100 +1349,20 @@ where
                 }
             }
         }
+
+        linebuf
     }
 
-    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
-        let mut i = self.first_nonspace;
-
-        if i >= line.len() {
-            return (i, false);
-        }
-
-        let bytes = line.as_bytes();
-        let c = bytes[i];
-        if c != b'*' && c != b'_' && c != b'-' {
-            return (i, false);
-        }
-
-        let mut count = 1;
-        let mut nextc;
-        loop {
-            i += 1;
-            if i >= line.len() {
-                return (i, false);
-            }
-            nextc = bytes[i];
-
-            if nextc == c {
-                count += 1;
-            } else if nextc != b' ' && nextc != b'\t' {
-                break;
-            }
-        }
-
-        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
-            ((i - self.first_nonspace) + 1, true)
-        } else {
-            (i, false)
-        }
-    }
-
-    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
-        let (offset, found) = self.scan_thematic_break_inner(line);
-        if !found {
-            self.thematic_break_kill_pos = offset;
-            None
-        } else {
-            Some(offset)
-        }
-    }
-
-    fn find_first_nonspace(&mut self, line: &str) {
-        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
-        let bytes = line.as_bytes();
-
-        if self.first_nonspace <= self.offset {
-            self.first_nonspace = self.offset;
-            self.first_nonspace_column = self.column;
-
-            loop {
-                if self.first_nonspace >= line.len() {
-                    break;
-                }
-                match bytes[self.first_nonspace] {
-                    32 => {
-                        self.first_nonspace += 1;
-                        self.first_nonspace_column += 1;
-                        chars_to_tab -= 1;
-                        if chars_to_tab == 0 {
-                            chars_to_tab = TAB_STOP;
-                        }
-                    }
-                    9 => {
-                        self.first_nonspace += 1;
-                        self.first_nonspace_column += chars_to_tab;
-                        chars_to_tab = TAB_STOP;
-                    }
-                    _ => break,
-                }
-            }
-        }
-
-        self.indent = self.first_nonspace_column - self.column;
-        self.blank = self.first_nonspace < line.len()
-            && strings::is_line_end_char(bytes[self.first_nonspace]);
-    }
-
-    fn process_line(&mut self, line: &str) {
-        let mut new_line: String;
-        let line =
-            if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
-                new_line = line.into();
-                new_line.push('\n');
-                &new_line
-            } else {
-                line
-            };
+    fn process_line(&mut self, mut line: Cow<str>) {
+        let last_byte = line.as_bytes().last();
+        if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
+            line.to_mut().push('\n');
+        } else if last_byte == Some(&b'\r') {
+            let line_mut = line.to_mut();
+            line_mut.pop();
+            line_mut.push('\n');
+        };
+        let line = line.as_ref();
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -1583,6 +1510,42 @@ where
         }
 
         (true, container, should_continue)
+    }
+
+    fn find_first_nonspace(&mut self, line: &str) {
+        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+        let bytes = line.as_bytes();
+
+        if self.first_nonspace <= self.offset {
+            self.first_nonspace = self.offset;
+            self.first_nonspace_column = self.column;
+
+            loop {
+                if self.first_nonspace >= line.len() {
+                    break;
+                }
+                match bytes[self.first_nonspace] {
+                    32 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += 1;
+                        chars_to_tab -= 1;
+                        if chars_to_tab == 0 {
+                            chars_to_tab = TAB_STOP;
+                        }
+                    }
+                    9 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += chars_to_tab;
+                        chars_to_tab = TAB_STOP;
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        self.indent = self.first_nonspace_column - self.column;
+        self.blank = self.first_nonspace < line.len()
+            && strings::is_line_end_char(bytes[self.first_nonspace]);
     }
 
     fn is_not_greentext(&mut self, line: &str) -> bool {
@@ -1855,6 +1818,52 @@ where
             )
             && self.thematic_break_kill_pos <= self.first_nonspace
             && unwrap_into(self.scan_thematic_break(line), matched)
+    }
+
+    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
+        let mut i = self.first_nonspace;
+
+        if i >= line.len() {
+            return (i, false);
+        }
+
+        let bytes = line.as_bytes();
+        let c = bytes[i];
+        if c != b'*' && c != b'_' && c != b'-' {
+            return (i, false);
+        }
+
+        let mut count = 1;
+        let mut nextc;
+        loop {
+            i += 1;
+            if i >= line.len() {
+                return (i, false);
+            }
+            nextc = bytes[i];
+
+            if nextc == c {
+                count += 1;
+            } else if nextc != b' ' && nextc != b'\t' {
+                break;
+            }
+        }
+
+        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+            ((i - self.first_nonspace) + 1, true)
+        } else {
+            (i, false)
+        }
+    }
+
+    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
+        let (offset, found) = self.scan_thematic_break_inner(line);
+        if !found {
+            self.thematic_break_kill_pos = offset;
+            None
+        } else {
+            Some(offset)
+        }
     }
 
     fn handle_thematic_break(
@@ -2660,7 +2669,7 @@ where
 
     fn finish(&mut self, remaining: String) -> &'a AstNode<'a> {
         if !remaining.is_empty() {
-            self.process_line(&remaining);
+            self.process_line(remaining.into());
         }
 
         self.finalize_document();
