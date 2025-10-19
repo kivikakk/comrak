@@ -891,21 +891,17 @@ fn render_paragraph<'a, T>(
     node: Node<'a>,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let tight = match node
-        .parent()
-        .and_then(|n| n.parent())
-        .map(|n| n.data.borrow().value.clone())
-    {
-        Some(NodeValue::List(nl)) => nl.tight,
-        Some(NodeValue::DescriptionItem(nd)) => nd.tight,
-        _ => false,
-    };
-
-    let tight = tight
-        || matches!(
-            node.parent().map(|n| n.data.borrow().value.clone()),
-            Some(NodeValue::DescriptionTerm)
-        );
+    let tight =
+        node.parent()
+            .and_then(|n| n.parent())
+            .map_or(false, |n| match n.data.borrow().value {
+                NodeValue::List(nl) => nl.tight,
+                NodeValue::DescriptionItem(nd) => nd.tight,
+                _ => false,
+            })
+            || node
+                .parent()
+                .map_or(false, |n| node_matches!(n, NodeValue::DescriptionTerm));
 
     if !tight {
         if entering {
@@ -914,12 +910,12 @@ fn render_paragraph<'a, T>(
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         } else {
-            if let Some(NodeValue::FootnoteDefinition(nfd)) =
-                &node.parent().map(|n| n.data.borrow().value.clone())
-            {
-                if node.next_sibling().is_none() {
-                    context.write_str(" ")?;
-                    put_footnote_backref(context, nfd)?;
+            if let Some(parent) = node.parent() {
+                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data.borrow().value {
+                    if node.next_sibling().is_none() {
+                        context.write_str(" ")?;
+                        put_footnote_backref(context, nfd)?;
+                    }
                 }
             }
             context.write_str("</p>\n")?;
