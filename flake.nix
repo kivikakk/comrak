@@ -93,6 +93,7 @@
               "clippy"
               "rustfmt"
               "rust-src"
+              "llvm-tools-preview"
             ])
           ]
           ++ (with pkgs; [
