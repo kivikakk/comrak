@@ -1344,42 +1344,6 @@ where
         }
     }
 
-    fn find_first_nonspace(&mut self, line: &str) {
-        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
-        let bytes = line.as_bytes();
-
-        if self.first_nonspace <= self.offset {
-            self.first_nonspace = self.offset;
-            self.first_nonspace_column = self.column;
-
-            loop {
-                if self.first_nonspace >= line.len() {
-                    break;
-                }
-                match bytes[self.first_nonspace] {
-                    32 => {
-                        self.first_nonspace += 1;
-                        self.first_nonspace_column += 1;
-                        chars_to_tab -= 1;
-                        if chars_to_tab == 0 {
-                            chars_to_tab = TAB_STOP;
-                        }
-                    }
-                    9 => {
-                        self.first_nonspace += 1;
-                        self.first_nonspace_column += chars_to_tab;
-                        chars_to_tab = TAB_STOP;
-                    }
-                    _ => break,
-                }
-            }
-        }
-
-        self.indent = self.first_nonspace_column - self.column;
-        self.blank = self.first_nonspace < line.len()
-            && strings::is_line_end_char(bytes[self.first_nonspace]);
-    }
-
     fn process_line(&mut self, line: &str) {
         let mut new_line: String;
         let line =
@@ -1537,6 +1501,42 @@ where
         }
 
         (true, container, should_continue)
+    }
+
+    fn find_first_nonspace(&mut self, line: &str) {
+        let mut chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+        let bytes = line.as_bytes();
+
+        if self.first_nonspace <= self.offset {
+            self.first_nonspace = self.offset;
+            self.first_nonspace_column = self.column;
+
+            loop {
+                if self.first_nonspace >= line.len() {
+                    break;
+                }
+                match bytes[self.first_nonspace] {
+                    32 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += 1;
+                        chars_to_tab -= 1;
+                        if chars_to_tab == 0 {
+                            chars_to_tab = TAB_STOP;
+                        }
+                    }
+                    9 => {
+                        self.first_nonspace += 1;
+                        self.first_nonspace_column += chars_to_tab;
+                        chars_to_tab = TAB_STOP;
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        self.indent = self.first_nonspace_column - self.column;
+        self.blank = self.first_nonspace < line.len()
+            && strings::is_line_end_char(bytes[self.first_nonspace]);
     }
 
     fn is_not_greentext(&mut self, line: &str) -> bool {
