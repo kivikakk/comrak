@@ -1333,8 +1333,7 @@ where
             .filter(|b| **b == b'\n')
             .count();
 
-        let mut stripped_front_matter = front_matter.to_string();
-        strings::remove_trailing_blank_lines(&mut stripped_front_matter);
+        let stripped_front_matter = strings::remove_trailing_blank_lines_slice(front_matter);
         let stripped_lines = stripped_front_matter
             .as_bytes()
             .iter()
@@ -2521,7 +2520,7 @@ where
                         let mut line = line;
                         if let NodeValue::Heading(ref nh) = container.data.borrow().value {
                             if !nh.setext {
-                                line = strings::chop_trailing_hashtags(line);
+                                line = strings::chop_trailing_hashes(line);
                             }
                         };
                         let count = self.first_nonspace - self.offset;
