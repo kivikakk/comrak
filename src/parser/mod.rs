@@ -1140,6 +1140,7 @@ pub struct RenderPlugins<'p> {
     /// ```
     /// # use comrak::{markdown_to_html, Options, Plugins, markdown_to_html_with_plugins};
     /// # use comrak::adapters::SyntaxHighlighterAdapter;
+    /// use std::borrow::Cow;
     /// use std::collections::HashMap;
     /// use std::fmt::{self, Write};
     /// let options = Options::default();
@@ -1155,11 +1156,11 @@ pub struct RenderPlugins<'p> {
     ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
     ///     }
     ///
-    ///     fn write_pre_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: HashMap<&'static str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag(&self, output: &mut dyn fmt::Write, _attributes: HashMap<String, String>) -> fmt::Result {
+    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: HashMap<&'static str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }
@@ -2820,7 +2821,6 @@ where
         ixp: &mut u32,
     ) {
         let mut ast = node.data.borrow_mut();
-        let mut replace = None;
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
                 let normalized = strings::normalize_label(&nfr.name, Case::Fold);
@@ -2838,7 +2838,7 @@ where
                     nfr.ix = ix;
                     nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
                 } else {
-                    replace = Some(nfr.name.clone());
+                    ast.value = NodeValue::Text(format!("[^{}]", nfr.name).into());
                 }
             }
             _ => {
@@ -2846,12 +2846,6 @@ where
                     Self::find_footnote_references(n, map, ixp);
                 }
             }
-        }
-
-        if let Some(mut label) = replace {
-            label.insert_str(0, "[^");
-            label.push(']');
-            ast.value = NodeValue::Text(label.into());
         }
     }
 

@@ -61,7 +61,7 @@ struct Flags {
 pub struct RefMap {
     pub map: HashMap<String, ResolvedReference>,
     pub(crate) max_ref_size: usize,
-    ref_size: usize,
+    ref_size: Cell<usize>,
 }
 
 impl RefMap {
@@ -69,19 +69,20 @@ impl RefMap {
         Self {
             map: HashMap::new(),
             max_ref_size: usize::MAX,
-            ref_size: 0,
+            ref_size: Cell::new(0),
         }
     }
 
-    fn lookup(&mut self, lab: &str) -> Option<ResolvedReference> {
+    fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
         match self.map.get(lab) {
             Some(entry) => {
                 let size = entry.url.len() + entry.title.len();
-                if size > self.max_ref_size - self.ref_size {
+                let ref_size = self.ref_size.get();
+                if size > self.max_ref_size - ref_size {
                     None
                 } else {
-                    self.ref_size += size;
-                    Some(entry.clone())
+                    self.ref_size.set(ref_size + size);
+                    Some(entry)
                 }
             }
             None => None,
@@ -1648,8 +1649,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Need to normalize both to lookup in refmap and to call callback
         let unfolded_lab = lab.clone();
         let lab = strings::normalize_label(&lab, Case::Fold);
-        let mut reff = if found_label {
-            self.refmap.lookup(&lab)
+        let mut reff: Option<Cow<ResolvedReference>> = if found_label {
+            self.refmap.lookup(&lab).map(Cow::Borrowed)
         } else {
             None
         };
@@ -1657,15 +1658,17 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         if reff.is_none() {
             if let Some(callback) = &self.options.parse.broken_link_callback {
-                reff = callback.resolve(BrokenLinkReference {
-                    normalized: &lab,
-                    original: &unfolded_lab,
-                });
+                reff = callback
+                    .resolve(BrokenLinkReference {
+                        normalized: &lab,
+                        original: &unfolded_lab,
+                    })
+                    .map(Cow::Owned);
             }
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(is_image, reff.url.clone(), reff.title);
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
             return None;
         }
 

@@ -1,7 +1,6 @@
 //! Adapter for the Syntect syntax highlighter plugin.
 
-use crate::adapters::SyntaxHighlighterAdapter;
-use crate::html;
+use std::borrow::Cow;
 use std::collections::{hash_map, HashMap};
 use std::fmt::{self, Write};
 use syntect::easy::HighlightLines;
@@ -12,6 +11,9 @@ use syntect::html::{
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 use syntect::Error;
+
+use crate::adapters::SyntaxHighlighterAdapter;
+use crate::html;
 
 #[derive(Debug)]
 /// Syntect syntax highlighter plugin.
@@ -103,10 +105,10 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         }
     }
 
-    fn write_pre_tag(
+    fn write_pre_tag<'s>(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<'s, str>>,
     ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
@@ -121,37 +123,33 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
                 let mut pre_attributes = SyntectPreAttributes::new(attributes, &style);
                 html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
             }
-            None => {
-                let mut attributes: HashMap<&str, &str> = HashMap::new();
-                attributes.insert("class", "syntax-highlighting");
-                html::write_opening_tag(output, "pre", attributes)
-            }
+            None => html::write_opening_tag(output, "pre", vec![("class", "syntax-highlighting")]),
         }
     }
 
-    fn write_code_tag(
+    fn write_code_tag<'s>(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<'s, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }
 }
 
-struct SyntectPreAttributes {
+struct SyntectPreAttributes<'s> {
     syntect_style: String,
-    attributes: HashMap<String, String>,
+    attributes: HashMap<&'static str, Cow<'s, str>>,
 }
 
-impl SyntectPreAttributes {
-    fn new(attributes: HashMap<String, String>, syntect_style: &str) -> Self {
+impl<'s> SyntectPreAttributes<'s> {
+    fn new(attributes: HashMap<&'static str, Cow<'s, str>>, syntect_style: &str) -> Self {
         Self {
             syntect_style: syntect_style.into(),
             attributes,
         }
     }
 
-    fn iter_mut(&mut self) -> SyntectPreAttributesIter<'_> {
+    fn iter_mut(&mut self) -> SyntectPreAttributesIter<'_, 's> {
         SyntectPreAttributesIter {
             iter_mut: self.attributes.iter_mut(),
             syntect_style: &self.syntect_style,
@@ -160,20 +158,20 @@ impl SyntectPreAttributes {
     }
 }
 
-struct SyntectPreAttributesIter<'a> {
-    iter_mut: hash_map::IterMut<'a, String, String>,
+struct SyntectPreAttributesIter<'a, 's> {
+    iter_mut: hash_map::IterMut<'a, &'static str, Cow<'s, str>>,
     syntect_style: &'a str,
     style_written: bool,
 }
 
-impl<'a> Iterator for SyntectPreAttributesIter<'a> {
+impl<'a, 's> Iterator for SyntectPreAttributesIter<'a, 's> {
     type Item = (&'a str, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter_mut.next() {
-            Some((k, v)) if k == "style" && !self.style_written => {
+            Some((k, v)) if *k == "style" && !self.style_written => {
                 self.style_written = true;
-                v.insert_str(0, self.syntect_style);
+                v.to_mut().insert_str(0, self.syntect_style);
                 Some((k, v))
             }
             Some((k, v)) => Some((k, v)),

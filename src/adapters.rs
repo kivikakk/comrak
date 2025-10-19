@@ -2,6 +2,7 @@
 //!
 //! Each plugin has to implement one of the traits available in this module.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -24,20 +25,20 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// `<pre>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by comrak.
-    fn write_pre_tag(
+    fn write_pre_tag<'s>(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<'s, str>>,
     ) -> fmt::Result;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
     /// `<code>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by comrak.
-    fn write_code_tag(
+    fn write_code_tag<'s>(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<'s, str>>,
     ) -> fmt::Result;
 }
 

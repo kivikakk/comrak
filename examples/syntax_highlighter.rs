@@ -2,6 +2,7 @@
 
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::{markdown_to_html_with_plugins, Options, Plugins};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Write};
 
@@ -35,7 +36,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
         if attributes.contains_key("lang") {
             write!(output, "<pre lang=\"{}\">", attributes["lang"])
@@ -47,7 +48,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
         if attributes.contains_key("class") {
             write!(output, "<code class=\"{}\">", attributes["class"])
