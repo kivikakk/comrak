@@ -1,7 +1,8 @@
-use crate::nodes::{AstNode, NodeValue, Sourcepos};
-use crate::*;
 use std::collections::HashMap;
 use std::panic;
+
+use crate::nodes::{AstNode, Node, NodeValue, Sourcepos};
+use crate::*;
 
 mod alerts;
 mod autolink;
@@ -226,7 +227,7 @@ where
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
-fn asssert_node_eq<'a>(node: &'a AstNode<'a>, location: &[usize], expected: &NodeValue) {
+fn asssert_node_eq<'a>(node: Node<'a>, location: &[usize], expected: &NodeValue) {
     let node = location
         .iter()
         .fold(node, |node, &n| node.children().nth(n).unwrap());
@@ -345,7 +346,7 @@ enum AstMatchContent {
 
 impl AstMatchTree {
     #[track_caller]
-    fn assert_match<'a>(&self, node: &'a AstNode<'a>) {
+    fn assert_match<'a>(&self, node: Node<'a>) {
         let ast = node.data.borrow();
         assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");
         assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");

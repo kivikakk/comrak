@@ -13,7 +13,7 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
     for node in root.descendants() {
         if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
             // If the node is a text node, replace `orig_string` with `replacement`.
-            *text = text.replace(orig_string, replacement)
+            *text = text.to_mut().replace(orig_string, replacement).into()
         }
     }
 

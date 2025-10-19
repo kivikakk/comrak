@@ -1,15 +1,15 @@
 //! The CommonMark AST.
 
-use crate::arena_tree::Node;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
-#[cfg(feature = "shortcodes")]
-pub use crate::parser::shortcodes::NodeShortCode;
-
+use crate::arena_tree;
 pub use crate::parser::alert::{AlertType, NodeAlert};
 pub use crate::parser::math::NodeMath;
 pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
+#[cfg(feature = "shortcodes")]
+pub use crate::parser::shortcodes::NodeShortCode;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -112,7 +112,7 @@ pub enum NodeValue {
 
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
-    Text(String),
+    Text(Cow<'static, str>),
 
     /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
@@ -474,7 +474,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&String> {
+    pub fn text(&self) -> Option<&Cow<'static, str>> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
@@ -484,7 +484,7 @@ impl NodeValue {
     /// Return a mutable reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&mut String> {
+    pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
         match *self {
             NodeValue::Text(ref mut t) => Some(t),
             _ => None,
@@ -694,19 +694,23 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-pub type AstNode<'a> = Node<'a, RefCell<Ast>>;
+pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
+
+/// A reference to a node in an arena.  Unless you are manually creating nodes
+/// before the arena, this is the type you will see most often.
+pub type Node<'a> = &'a AstNode<'a>;
 
 impl<'a> From<NodeValue> for AstNode<'a> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
     fn from(value: NodeValue) -> Self {
-        Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+        arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
     }
 }
 
 impl<'a> From<Ast> for AstNode<'a> {
     /// Create a new AST node with the given Ast.
     fn from(ast: Ast) -> Self {
-        Node::new(RefCell::new(ast))
+        arena_tree::Node::new(RefCell::new(ast))
     }
 }
 
@@ -717,13 +721,13 @@ pub enum ValidationError<'a> {
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
         /// The parent node.
-        parent: &'a AstNode<'a>,
+        parent: Node<'a>,
         /// The child node.
-        child: &'a AstNode<'a>,
+        child: Node<'a>,
     },
 }
 
-impl<'a> Node<'a, RefCell<Ast>> {
+impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {
@@ -886,7 +890,7 @@ impl<'a> Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<&'a AstNode<'a>> {
+    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
         let mut ch = Some(self);
         while let Some(n) = ch {
             if n.data.borrow().value.block() {

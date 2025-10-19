@@ -1,6 +1,6 @@
 use comrak::{
     arena_tree::NodeEdge,
-    nodes::{AstNode, NodeValue},
+    nodes::{Node, NodeValue},
     parse_document, Arena, ComrakOptions,
 };
 
@@ -18,7 +18,7 @@ use comrak::{
 
 // Note: root can be any AstNode, not just document root.
 
-fn extract_text_traverse<'a>(root: &'a AstNode<'a>) -> String {
+fn extract_text_traverse<'a>(root: Node<'a>) -> String {
     let mut output_text = String::new();
 
     // Use `traverse` to get an iterator of `NodeEdge` and process each.

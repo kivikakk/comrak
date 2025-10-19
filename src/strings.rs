@@ -102,6 +102,14 @@ pub fn normalize_code(v: &str) -> String {
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
+    line.truncate(remove_trailing_blank_lines_ix(line));
+}
+
+pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
+    &line[..remove_trailing_blank_lines_ix(line)]
+}
+
+fn remove_trailing_blank_lines_ix(line: &str) -> usize {
     let line_bytes = line.as_bytes();
     let mut i = line.len() - 1;
     loop {
@@ -112,8 +120,7 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
         }
 
         if i == 0 {
-            line.clear();
-            return;
+            return 0;
         }
 
         i -= 1;
@@ -124,9 +131,10 @@ pub fn remove_trailing_blank_lines(line: &mut String) {
             continue;
         }
 
-        line.truncate(i);
-        break;
+        return i;
     }
+
+    return line.len();
 }
 
 pub fn is_line_end_char(ch: u8) -> bool {
@@ -137,7 +145,7 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     matches!(ch, 9 | 32)
 }
 
-pub fn chop_trailing_hashtags(mut line: &str) -> &str {
+pub fn chop_trailing_hashes(mut line: &str) -> &str {
     line = rtrim_slice(line);
 
     let orig_n = line.len() - 1;

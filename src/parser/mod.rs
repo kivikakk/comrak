@@ -11,7 +11,6 @@ pub mod multiline_block_quote;
 #[cfg(feature = "bon")]
 use bon::Builder;
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{self, Debug, Formatter};
@@ -22,17 +21,16 @@ use std::sync::Arc;
 use typed_arena::Arena;
 
 use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
-use crate::arena_tree::Node;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::nodes::{
-    self, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    self, Ast, AstNode, ListDelimType, ListType, Node, NodeCodeBlock, NodeDescriptionItem,
     NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
 };
 use crate::parser::alert::{AlertType, NodeAlert};
 use crate::parser::inlines::RefMap;
 use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
-use crate::scanners::{self, SetextChar};
+use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
 
 const TAB_STOP: usize = 4;
@@ -61,21 +59,20 @@ macro_rules! node_matches {
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
-pub fn parse_document<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    md: &str,
-    options: &Options,
-) -> &'a AstNode<'a> {
-    let root: &'a AstNode<'a> = arena.alloc(Node::new(RefCell::new(Ast {
-        value: NodeValue::Document,
-        content: String::new(),
-        sourcepos: (1, 1, 1, 1).into(),
-        internal_offset: 0,
-        open: true,
-        last_line_blank: false,
-        table_visited: false,
-        line_offsets: Vec::with_capacity(0),
-    })));
+pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Options) -> Node<'a> {
+    let root = arena.alloc(
+        Ast {
+            value: NodeValue::Document,
+            content: String::new(),
+            sourcepos: (1, 1, 1, 1).into(),
+            internal_offset: 0,
+            open: true,
+            last_line_blank: false,
+            table_visited: false,
+            line_offsets: Vec::with_capacity(0),
+        }
+        .into(),
+    );
     let mut parser = Parser::new(arena, root, options);
     let linebuf = String::new();
     let linebuf = parser.feed(linebuf, md, true);
@@ -127,8 +124,8 @@ pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
-    root: &'a AstNode<'a>,
-    current: &'a AstNode<'a>,
+    root: Node<'a>,
+    current: Node<'a>,
     line_number: usize,
     offset: usize,
     column: usize,
@@ -1203,7 +1200,7 @@ pub struct ResolvedReference {
 
 struct FootnoteDefinition<'a> {
     ix: Option<u32>,
-    node: &'a AstNode<'a>,
+    node: Node<'a>,
     name: String,
     total_references: u32,
 }
@@ -1212,7 +1209,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a Arena<AstNode<'a>>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -1243,36 +1240,8 @@ where
             &self.options.extension.front_matter_delimiter,
         ) {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
-                let lines = front_matter
-                    .as_bytes()
-                    .iter()
-                    .filter(|b| **b == b'\n')
-                    .count();
-
-                let mut stripped_front_matter = front_matter.to_string();
-                strings::remove_trailing_blank_lines(&mut stripped_front_matter);
-                let stripped_lines = stripped_front_matter
-                    .as_bytes()
-                    .iter()
-                    .filter(|b| **b == b'\n')
-                    .count();
-
-                let node = self.add_child(
-                    self.root,
-                    NodeValue::FrontMatter(front_matter.to_string()),
-                    1,
-                );
+                self.handle_front_matter(front_matter, delimiter);
                 s = rest;
-                self.finalize(node).unwrap();
-
-                node.data.borrow_mut().sourcepos = Sourcepos {
-                    start: nodes::LineColumn { line: 1, column: 1 },
-                    end: nodes::LineColumn {
-                        line: 1 + stripped_lines,
-                        column: delimiter.len(),
-                    },
-                };
-                self.line_number += lines;
             }
         }
 
@@ -1353,6 +1322,37 @@ where
         linebuf
     }
 
+    fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
+        let lines = front_matter
+            .as_bytes()
+            .iter()
+            .filter(|b| **b == b'\n')
+            .count();
+
+        let stripped_front_matter = strings::remove_trailing_blank_lines_slice(front_matter);
+        let stripped_lines = stripped_front_matter
+            .as_bytes()
+            .iter()
+            .filter(|b| **b == b'\n')
+            .count();
+
+        let node = self.add_child(
+            self.root,
+            NodeValue::FrontMatter(front_matter.to_string()),
+            1,
+        );
+        self.finalize(node).unwrap();
+
+        node.data.borrow_mut().sourcepos = Sourcepos {
+            start: nodes::LineColumn { line: 1, column: 1 },
+            end: nodes::LineColumn {
+                line: 1 + stripped_lines,
+                column: delimiter.len(),
+            },
+        };
+        self.line_number += lines;
+    }
+
     fn process_line(&mut self, mut line: Cow<str>) {
         let last_byte = line.as_bytes().last();
         if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
@@ -1389,8 +1389,7 @@ where
 
         self.line_number += 1;
 
-        let mut all_matched = true;
-        if let Some(last_matched_container) = self.check_open_blocks(line, &mut all_matched) {
+        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
             let mut container = last_matched_container;
             let current = self.current;
             self.open_new_blocks(&mut container, line, all_matched);
@@ -1406,110 +1405,97 @@ where
         self.curline_end_col = 0;
     }
 
-    fn check_open_blocks(&mut self, line: &str, all_matched: &mut bool) -> Option<&'a AstNode<'a>> {
-        let (new_all_matched, mut container, should_continue) =
-            self.check_open_blocks_inner(self.root, line);
+    ///////////////////////
+    // Check open blocks //
+    ///////////////////////
 
-        *all_matched = new_all_matched;
-        if !*all_matched {
+    fn check_open_blocks(&mut self, line: &str) -> Option<(Node<'a>, bool)> {
+        let (all_matched, mut container) = self.check_open_blocks_inner(self.root, line)?;
+
+        if !all_matched {
             container = container.parent().unwrap();
         }
 
-        if !should_continue {
-            None
-        } else {
-            Some(container)
-        }
+        Some((container, all_matched))
     }
 
     fn check_open_blocks_inner(
         &mut self,
-        mut container: &'a AstNode<'a>,
+        mut container: Node<'a>,
         line: &str,
-    ) -> (bool, &'a AstNode<'a>, bool) {
-        let mut should_continue = true;
+    ) -> Option<(bool, Node<'a>)> {
+        let mut all_matched = false;
 
-        while container.last_child_is_open() {
+        loop {
+            if !container.last_child_is_open() {
+                all_matched = true;
+                break;
+            }
             container = container.last_child().unwrap();
-            let ast = &mut *container.data.borrow_mut();
+            let ast = &mut container.data.borrow_mut();
 
             self.find_first_nonspace(line);
 
             match ast.value {
                 NodeValue::BlockQuote => {
                     if !self.parse_block_quote_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Item(ref nl) => {
                     if !self.parse_node_item_prefix(line, container, nl) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::DescriptionItem(ref di) => {
                     if !self.parse_description_item_prefix(line, container, di) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::CodeBlock(..) => {
-                    if !self.parse_code_block_prefix(line, container, ast, &mut should_continue) {
-                        return (false, container, should_continue);
+                    if !self.parse_code_block_prefix(line, container, ast)? {
+                        break;
                     }
                 }
                 NodeValue::HtmlBlock(ref nhb) => {
                     if !self.parse_html_block_prefix(nhb.block_type) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Paragraph => {
                     if self.blank {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::Table(..) => {
                     if !table::matches(&line[self.first_nonspace..], self.options.extension.spoiler)
                     {
-                        return (false, container, should_continue);
+                        break;
                     }
-                    continue;
                 }
                 NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell => {
-                    return (false, container, should_continue);
+                    break;
                 }
                 NodeValue::FootnoteDefinition(..) => {
                     if !self.parse_footnote_definition_block_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 NodeValue::MultilineBlockQuote(..) => {
-                    if !self.parse_multiline_block_quote_prefix(
-                        line,
-                        container,
-                        ast,
-                        &mut should_continue,
-                    ) {
-                        return (false, container, should_continue);
-                    }
+                    self.parse_multiline_block_quote_prefix(line, container, ast)?;
                 }
                 NodeValue::Alert(ref alert) => {
                     if alert.multiline {
-                        if !self.parse_multiline_block_quote_prefix(
-                            line,
-                            container,
-                            ast,
-                            &mut should_continue,
-                        ) {
-                            return (false, container, should_continue);
-                        }
+                        self.parse_multiline_block_quote_prefix(line, container, ast)?;
                     } else if !self.parse_block_quote_prefix(line) {
-                        return (false, container, should_continue);
+                        break;
                     }
                 }
                 _ => {}
             }
         }
 
-        (true, container, should_continue)
+        Some((all_matched, container))
     }
 
     fn find_first_nonspace(&mut self, line: &str) {
@@ -1548,549 +1534,219 @@ where
             && strings::is_line_end_char(bytes[self.first_nonspace]);
     }
 
-    fn is_not_greentext(&mut self, line: &str) -> bool {
+    fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
+        let bytes = line.as_bytes();
+        let indent = self.indent;
+        if indent <= 3 && bytes[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
+            self.advance_offset(line, indent + 1, true);
+
+            if strings::is_space_or_tab(bytes[self.offset]) {
+                self.advance_offset(line, 1, true);
+            }
+
+            return true;
+        }
+
+        false
+    }
+
+    fn is_not_greentext(&self, line: &str) -> bool {
         !self.options.extension.greentext
             || strings::is_space_or_tab(line.as_bytes()[self.first_nonspace + 1])
     }
 
-    fn setext_heading_line(&mut self, s: &str) -> Option<SetextChar> {
-        match self.options.parse.ignore_setext {
-            false => scanners::setext_heading_line(s),
-            true => None,
+    fn parse_node_item_prefix(&mut self, line: &str, container: Node<'a>, nl: &NodeList) -> bool {
+        if self.indent >= nl.marker_offset + nl.padding {
+            self.advance_offset(line, nl.marker_offset + nl.padding, true);
+            true
+        } else if self.blank && container.first_child().is_some() {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            true
+        } else {
+            false
         }
     }
 
-    fn detect_multiline_blockquote(
+    fn parse_description_item_prefix(
         &mut self,
         line: &str,
-        indented: bool,
-        matched: &mut usize,
+        container: Node<'a>,
+        di: &NodeDescriptionItem,
     ) -> bool {
-        !indented
-            && self.options.extension.multiline_block_quotes
-            && unwrap_into(
-                scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..]),
-                matched,
-            )
+        if self.indent >= di.marker_offset + di.padding {
+            self.advance_offset(line, di.marker_offset + di.padding, true);
+            true
+        } else if self.blank && container.first_child().is_some() {
+            let offset = self.first_nonspace - self.offset;
+            self.advance_offset(line, offset, false);
+            true
+        } else {
+            false
+        }
     }
 
-    fn handle_multiline_blockquote(
+    fn parse_code_block_prefix(
         &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
         line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        if !self.detect_multiline_blockquote(line, indented, matched) {
-            return false;
-        }
-
-        let first_nonspace = self.first_nonspace;
-        let offset = self.offset;
-        let nmbc = NodeMultilineBlockQuote {
-            fence_length: *matched,
-            fence_offset: first_nonspace - offset,
+        container: Node<'a>,
+        ast: &mut Ast,
+    ) -> Option<bool> {
+        let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
+            NodeValue::CodeBlock(ref ncb) => (
+                ncb.fenced,
+                ncb.fence_char,
+                ncb.fence_length,
+                ncb.fence_offset,
+            ),
+            _ => unreachable!(),
         };
 
-        *container = self.add_child(
-            container,
-            NodeValue::MultilineBlockQuote(nmbc),
-            self.first_nonspace + 1,
-        );
-
-        self.advance_offset(line, first_nonspace + *matched - offset, false);
-
-        true
-    }
-
-    fn detect_blockquote(&mut self, line: &str, indented: bool) -> bool {
-        !indented && line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
-    }
-
-    fn handle_blockquote(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-    ) -> bool {
-        if !self.detect_blockquote(line, indented) {
-            return false;
-        }
-
-        let blockquote_startpos = self.first_nonspace;
-
-        let offset = self.first_nonspace + 1 - self.offset;
-        self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
-            self.advance_offset(line, 1, true);
-        }
-        *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
-
-        true
-    }
-
-    fn detect_atx_heading(&mut self, line: &str, indented: bool, matched: &mut usize) -> bool {
-        !indented
-            && unwrap_into(
-                scanners::atx_heading_start(&line[self.first_nonspace..]),
-                matched,
-            )
-    }
-
-    fn handle_atx_heading(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        if !self.detect_atx_heading(line, indented, matched) {
-            return false;
-        }
-
-        let heading_startpos = self.first_nonspace;
-        let offset = self.offset;
-        self.advance_offset(line, heading_startpos + *matched - offset, false);
-        *container = self.add_child(
-            container,
-            NodeValue::Heading(NodeHeading::default()),
-            heading_startpos + 1,
-        );
-
-        let bytes = line.as_bytes();
-        let mut hashpos = bytes[self.first_nonspace..]
-            .iter()
-            .position(|&c| c == b'#')
-            .unwrap()
-            + self.first_nonspace;
-        let mut level = 0;
-        while bytes[hashpos] == b'#' {
-            level += 1;
-            hashpos += 1;
-        }
-
-        let container_ast = &mut container.data.borrow_mut();
-        container_ast.value = NodeValue::Heading(NodeHeading {
-            level,
-            setext: false,
-        });
-        container_ast.internal_offset = *matched;
-
-        true
-    }
-
-    fn detect_code_fence(&mut self, line: &str, indented: bool, matched: &mut usize) -> bool {
-        !indented
-            && unwrap_into(
-                scanners::open_code_fence(&line[self.first_nonspace..]),
-                matched,
-            )
-    }
-
-    fn handle_code_fence(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        if !self.detect_code_fence(line, indented, matched) {
-            return false;
-        }
-
-        let first_nonspace = self.first_nonspace;
-        let offset = self.offset;
-        let ncb = NodeCodeBlock {
-            fenced: true,
-            fence_char: line.as_bytes()[first_nonspace],
-            fence_length: *matched,
-            fence_offset: first_nonspace - offset,
-            info: String::with_capacity(10),
-            literal: String::new(),
-        };
-        *container = self.add_child(
-            container,
-            NodeValue::CodeBlock(ncb),
-            self.first_nonspace + 1,
-        );
-        self.advance_offset(line, first_nonspace + *matched - offset, false);
-
-        true
-    }
-
-    fn detect_html_block(
-        &mut self,
-        container: &AstNode,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        !indented
-            && (unwrap_into(
-                scanners::html_block_start(&line[self.first_nonspace..]),
-                matched,
-            ) || (!node_matches!(container, NodeValue::Paragraph)
-                && unwrap_into(
-                    scanners::html_block_start_7(&line[self.first_nonspace..]),
-                    matched,
-                )))
-    }
-
-    fn handle_html_block(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        if !self.detect_html_block(container, line, indented, matched) {
-            return false;
-        }
-
-        let nhb = NodeHtmlBlock {
-            block_type: *matched as u8,
-            literal: String::new(),
-        };
-
-        *container = self.add_child(
-            container,
-            NodeValue::HtmlBlock(nhb),
-            self.first_nonspace + 1,
-        );
-
-        true
-    }
-
-    fn detect_setext_heading(
-        &mut self,
-        container: &AstNode,
-        line: &str,
-        indented: bool,
-        sc: &mut scanners::SetextChar,
-    ) -> bool {
-        !indented
-            && node_matches!(container, NodeValue::Paragraph)
-            && unwrap_into(self.setext_heading_line(&line[self.first_nonspace..]), sc)
-    }
-
-    fn handle_setext_heading(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        sc: &mut scanners::SetextChar,
-    ) -> bool {
-        if !self.detect_setext_heading(container, line, indented, sc) {
-            return false;
-        }
-
-        let has_content = {
-            let mut ast = container.data.borrow_mut();
-            self.resolve_reference_link_definitions(&mut ast.content)
-        };
-        if has_content {
-            container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
-                level: match sc {
-                    scanners::SetextChar::Equals => 1,
-                    scanners::SetextChar::Hyphen => 2,
-                },
-                setext: true,
-            });
-            let adv = line.len() - 1 - self.offset;
-            self.advance_offset(line, adv, false);
-        }
-
-        true
-    }
-
-    fn detect_thematic_break(
-        &mut self,
-        container: &AstNode,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        all_matched: bool,
-    ) -> bool {
-        !indented
-            && !matches!(
-                (&container.data.borrow().value, all_matched),
-                (&NodeValue::Paragraph, false)
-            )
-            && self.thematic_break_kill_pos <= self.first_nonspace
-            && unwrap_into(self.scan_thematic_break(line), matched)
-    }
-
-    fn scan_thematic_break_inner(&mut self, line: &str) -> (usize, bool) {
-        let mut i = self.first_nonspace;
-
-        if i >= line.len() {
-            return (i, false);
-        }
-
-        let bytes = line.as_bytes();
-        let c = bytes[i];
-        if c != b'*' && c != b'_' && c != b'-' {
-            return (i, false);
-        }
-
-        let mut count = 1;
-        let mut nextc;
-        loop {
-            i += 1;
-            if i >= line.len() {
-                return (i, false);
+        if !fenced {
+            if self.indent >= CODE_INDENT {
+                self.advance_offset(line, CODE_INDENT, true);
+                return Some(true);
+            } else if self.blank {
+                let offset = self.first_nonspace - self.offset;
+                self.advance_offset(line, offset, false);
+                return Some(true);
             }
-            nextc = bytes[i];
+            return Some(false);
+        }
 
-            if nextc == c {
-                count += 1;
-            } else if nextc != b' ' && nextc != b'\t' {
+        let bytes = line.as_bytes();
+        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == fence_char {
+            scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
+        } else {
+            0
+        };
+
+        if matched >= fence_length {
+            self.advance_offset(line, matched, false);
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return None;
+        }
+
+        let mut i = fence_offset;
+        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        Some(true)
+    }
+
+    fn parse_html_block_prefix(&self, t: u8) -> bool {
+        match t {
+            1..=5 => true,
+            6 | 7 => !self.blank,
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_footnote_definition_block_prefix(&mut self, line: &str) -> bool {
+        if self.indent >= 4 {
+            self.advance_offset(line, 4, true);
+            true
+        } else {
+            line == "\n" || line == "\r\n"
+        }
+    }
+
+    fn parse_multiline_block_quote_prefix(
+        &mut self,
+        line: &str,
+        container: Node<'a>,
+        ast: &mut Ast,
+    ) -> Option<()> {
+        // XXX: refactoring revealed that, unlike parse_code_block_prefix, this
+        // function never fails to match without signalling 'should_continue'
+        // (which is a `Some(false)` in that function). Is that odd?
+
+        let (fence_length, fence_offset) = match ast.value {
+            NodeValue::MultilineBlockQuote(ref node_value) => {
+                (node_value.fence_length, node_value.fence_offset)
+            }
+            NodeValue::Alert(ref node_value) => (node_value.fence_length, node_value.fence_offset),
+            _ => unreachable!(),
+        };
+
+        let bytes = line.as_bytes();
+        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == b'>' {
+            scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
+        } else {
+            0
+        };
+
+        if matched >= fence_length {
+            self.advance_offset(line, matched, false);
+
+            // The last child, like an indented codeblock, could be left open.
+            // Make sure it's finalized.
+            if container.last_child_is_open() {
+                let child = container.last_child().unwrap();
+                let child_ast = &mut *child.data.borrow_mut();
+
+                self.finalize_borrowed(child, child_ast).unwrap();
+            }
+
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return None;
+        }
+
+        let mut i = fence_offset;
+        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        Some(())
+    }
+
+    /////////////////////
+    // Open new blocks //
+    /////////////////////
+
+    fn open_new_blocks(&mut self, container: &mut Node<'a>, line: &str, all_matched: bool) {
+        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
+        let mut depth = 0;
+
+        while !node_matches!(
+            container,
+            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
+        ) {
+            depth += 1;
+            self.find_first_nonspace(line);
+            let indented = self.indent >= CODE_INDENT;
+
+            if !((!indented
+                && (self.handle_alert(container, line)
+                    || self.handle_multiline_blockquote(container, line)
+                    || self.handle_blockquote(container, line)
+                    || self.handle_atx_heading(container, line)
+                    || self.handle_code_fence(container, line)
+                    || self.handle_html_block(container, line)
+                    || self.handle_setext_heading(container, line)
+                    || self.handle_thematic_break(container, line, all_matched)
+                    || self.handle_footnote(container, line, depth)
+                    || self.handle_description_list(container, line)))
+                || self.handle_list(container, line, indented, depth)
+                || self.handle_code_block(container, line, indented, maybe_lazy)
+                || self.handle_table(container, line, indented))
+            {
                 break;
             }
-        }
 
-        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
-            ((i - self.first_nonspace) + 1, true)
-        } else {
-            (i, false)
-        }
-    }
-
-    fn scan_thematic_break(&mut self, line: &str) -> Option<usize> {
-        let (offset, found) = self.scan_thematic_break_inner(line);
-        if !found {
-            self.thematic_break_kill_pos = offset;
-            None
-        } else {
-            Some(offset)
-        }
-    }
-
-    fn handle_thematic_break(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        all_matched: bool,
-    ) -> bool {
-        if !self.detect_thematic_break(container, line, indented, matched, all_matched) {
-            return false;
-        }
-
-        *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
-
-        let adv = line.len() - 1 - self.offset;
-        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
-        self.advance_offset(line, adv, false);
-
-        true
-    }
-
-    fn detect_footnote(
-        &mut self,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        depth: usize,
-    ) -> bool {
-        !indented
-            && self.options.extension.footnotes
-            && depth < MAX_LIST_DEPTH
-            && unwrap_into(
-                scanners::footnote_definition(&line[self.first_nonspace..]),
-                matched,
-            )
-    }
-
-    fn handle_footnote(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        depth: usize,
-    ) -> bool {
-        if !self.detect_footnote(line, indented, matched, depth) {
-            return false;
-        }
-
-        let mut c = &line[self.first_nonspace + 2..self.first_nonspace + *matched];
-        c = c.split(']').next().unwrap();
-        let offset = self.first_nonspace + *matched - self.offset;
-        self.advance_offset(line, offset, false);
-        *container = self.add_child(
-            container,
-            NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                name: c.to_string(),
-                total_references: 0,
-            }),
-            self.first_nonspace + 1,
-        );
-        container.data.borrow_mut().internal_offset = *matched;
-
-        true
-    }
-
-    fn detect_description_list(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        !indented
-            && self.options.extension.description_lists
-            && unwrap_into(
-                scanners::description_item_start(&line[self.first_nonspace..]),
-                matched,
-            )
-            && self.parse_desc_list_details(container, *matched)
-    }
-
-    fn handle_description_list(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-    ) -> bool {
-        if !self.detect_description_list(container, line, indented, matched) {
-            return false;
-        }
-
-        let offset = self.first_nonspace + *matched - self.offset;
-        self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
-            self.advance_offset(line, 1, true);
-        }
-
-        true
-    }
-
-    fn detect_list(
-        &mut self,
-        container: &AstNode,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        depth: usize,
-        nl: &mut NodeList,
-    ) -> bool {
-        (!indented || node_matches!(container, NodeValue::List(..)))
-            && self.indent < 4
-            && depth < MAX_LIST_DEPTH
-            && unwrap_into_2(
-                parse_list_marker(
-                    line,
-                    self.first_nonspace,
-                    node_matches!(container, NodeValue::Paragraph),
-                ),
-                matched,
-                nl,
-            )
-    }
-
-    fn handle_list(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        matched: &mut usize,
-        depth: usize,
-        nl: &mut NodeList,
-    ) -> bool {
-        if !self.detect_list(container, line, indented, matched, depth, nl) {
-            return false;
-        }
-
-        let offset = self.first_nonspace + *matched - self.offset;
-        self.advance_offset(line, offset, false);
-        let (save_partially_consumed_tab, save_offset, save_column) =
-            (self.partially_consumed_tab, self.offset, self.column);
-
-        let bytes = line.as_bytes();
-        while self.column - save_column <= 5 && strings::is_space_or_tab(bytes[self.offset]) {
-            self.advance_offset(line, 1, true);
-        }
-
-        let i = self.column - save_column;
-        if !(1..5).contains(&i) || strings::is_line_end_char(bytes[self.offset]) {
-            nl.padding = *matched + 1;
-            self.offset = save_offset;
-            self.column = save_column;
-            self.partially_consumed_tab = save_partially_consumed_tab;
-            if i > 0 {
-                self.advance_offset(line, 1, true);
+            if container.data.borrow().value.accepts_lines() {
+                break;
             }
-        } else {
-            nl.padding = *matched + i;
+
+            maybe_lazy = false;
         }
-
-        nl.marker_offset = self.indent;
-
-        if match container.data.borrow().value {
-            NodeValue::List(ref mnl) => !lists_match(nl, mnl),
-            _ => true,
-        } {
-            *container = self.add_child(container, NodeValue::List(*nl), self.first_nonspace + 1);
-        }
-
-        *container = self.add_child(container, NodeValue::Item(*nl), self.first_nonspace + 1);
-
-        true
     }
 
-    fn detect_code_block(&mut self, indented: bool, maybe_lazy: bool) -> bool {
-        indented && !maybe_lazy && !self.blank
-    }
-
-    fn handle_code_block(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-        maybe_lazy: bool,
-    ) -> bool {
-        if !self.detect_code_block(indented, maybe_lazy) {
+    fn handle_alert(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(alert_type) = self.detect_alert(line) else {
             return false;
-        }
-
-        self.advance_offset(line, CODE_INDENT, true);
-        let ncb = NodeCodeBlock {
-            fenced: false,
-            fence_char: 0,
-            fence_length: 0,
-            fence_offset: 0,
-            info: String::new(),
-            literal: String::new(),
         };
-        *container = self.add_child(container, NodeValue::CodeBlock(ncb), self.offset + 1);
-
-        true
-    }
-
-    fn detect_alert(&mut self, line: &str, indented: bool, alert_type: &mut AlertType) -> bool {
-        !indented
-            && self.options.extension.alerts
-            && line.as_bytes()[self.first_nonspace] == b'>'
-            && unwrap_into(
-                scanners::alert_start(&line[self.first_nonspace..]),
-                alert_type,
-            )
-    }
-
-    fn handle_alert(
-        &mut self,
-        container: &mut &'a Node<'a, RefCell<Ast>>,
-        line: &str,
-        indented: bool,
-    ) -> bool {
-        let mut alert_type: AlertType = Default::default();
-
-        if !self.detect_alert(line, indented, &mut alert_type) {
-            return false;
-        }
 
         let alert_startpos = self.first_nonspace;
         let mut title_startpos = self.first_nonspace;
@@ -2132,217 +1788,334 @@ where
         true
     }
 
-    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &str, all_matched: bool) {
-        let mut matched: usize = 0;
-        let mut nl: NodeList = NodeList::default();
-        let mut sc: scanners::SetextChar = scanners::SetextChar::Equals;
-        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
-        let mut depth = 0;
+    fn detect_alert(&self, line: &str) -> Option<AlertType> {
+        if self.options.extension.alerts && line.as_bytes()[self.first_nonspace] == b'>' {
+            scanners::alert_start(&line[self.first_nonspace..])
+        } else {
+            None
+        }
+    }
 
-        while !node_matches!(
+    fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_multiline_blockquote(line) else {
+            return false;
+        };
+
+        let first_nonspace = self.first_nonspace;
+        let offset = self.offset;
+        let nmbc = NodeMultilineBlockQuote {
+            fence_length: matched,
+            fence_offset: first_nonspace - offset,
+        };
+
+        *container = self.add_child(
             container,
-            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
-        ) {
-            depth += 1;
-            self.find_first_nonspace(line);
-            let indented = self.indent >= CODE_INDENT;
+            NodeValue::MultilineBlockQuote(nmbc),
+            self.first_nonspace + 1,
+        );
 
-            if self.handle_alert(container, line, indented)
-                || self.handle_multiline_blockquote(container, line, indented, &mut matched)
-                || self.handle_blockquote(container, line, indented)
-                || self.handle_atx_heading(container, line, indented, &mut matched)
-                || self.handle_code_fence(container, line, indented, &mut matched)
-                || self.handle_html_block(container, line, indented, &mut matched)
-                || self.handle_setext_heading(container, line, indented, &mut sc)
-                || self.handle_thematic_break(container, line, indented, &mut matched, all_matched)
-                || self.handle_footnote(container, line, indented, &mut matched, depth)
-                || self.handle_description_list(container, line, indented, &mut matched)
-                || self.handle_list(container, line, indented, &mut matched, depth, &mut nl)
-                || self.handle_code_block(container, line, indented, maybe_lazy)
-            {
-                // block handled
-            } else {
-                let new_container = if !indented && self.options.extension.table {
-                    table::try_opening_block(self, container, line)
-                } else {
-                    None
-                };
+        self.advance_offset(line, first_nonspace + matched - offset, false);
 
-                match new_container {
-                    Some((new_container, replace, mark_visited)) => {
-                        if replace {
-                            container.insert_after(new_container);
-                            container.detach();
-                            *container = new_container;
-                        } else {
-                            *container = new_container;
-                        }
-                        if mark_visited {
-                            container.data.borrow_mut().table_visited = true;
-                        }
-                    }
-                    _ => break,
-                }
-            }
-
-            if container.data.borrow().value.accepts_lines() {
-                break;
-            }
-
-            maybe_lazy = false;
-        }
-    }
-
-    fn advance_offset(&mut self, line: &str, mut count: usize, columns: bool) {
-        let bytes = line.as_bytes();
-        while count > 0 {
-            match bytes[self.offset] {
-                9 => {
-                    let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
-                    if columns {
-                        self.partially_consumed_tab = chars_to_tab > count;
-                        let chars_to_advance = min(count, chars_to_tab);
-                        self.column += chars_to_advance;
-                        self.offset += if self.partially_consumed_tab { 0 } else { 1 };
-                        count -= chars_to_advance;
-                    } else {
-                        self.partially_consumed_tab = false;
-                        self.column += chars_to_tab;
-                        self.offset += 1;
-                        count -= 1;
-                    }
-                }
-                _ => {
-                    self.partially_consumed_tab = false;
-                    self.offset += 1;
-                    self.column += 1;
-                    count -= 1;
-                }
-            }
-        }
-    }
-
-    fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
-        let bytes = line.as_bytes();
-        let indent = self.indent;
-        if indent <= 3 && bytes[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
-            self.advance_offset(line, indent + 1, true);
-
-            if strings::is_space_or_tab(bytes[self.offset]) {
-                self.advance_offset(line, 1, true);
-            }
-
-            return true;
-        }
-
-        false
-    }
-
-    fn parse_footnote_definition_block_prefix(&mut self, line: &str) -> bool {
-        if self.indent >= 4 {
-            self.advance_offset(line, 4, true);
-            true
-        } else {
-            line == "\n" || line == "\r\n"
-        }
-    }
-
-    fn parse_node_item_prefix(
-        &mut self,
-        line: &str,
-        container: &'a AstNode<'a>,
-        nl: &NodeList,
-    ) -> bool {
-        if self.indent >= nl.marker_offset + nl.padding {
-            self.advance_offset(line, nl.marker_offset + nl.padding, true);
-            true
-        } else if self.blank && container.first_child().is_some() {
-            let offset = self.first_nonspace - self.offset;
-            self.advance_offset(line, offset, false);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn parse_description_item_prefix(
-        &mut self,
-        line: &str,
-        container: &'a AstNode<'a>,
-        di: &NodeDescriptionItem,
-    ) -> bool {
-        if self.indent >= di.marker_offset + di.padding {
-            self.advance_offset(line, di.marker_offset + di.padding, true);
-            true
-        } else if self.blank && container.first_child().is_some() {
-            let offset = self.first_nonspace - self.offset;
-            self.advance_offset(line, offset, false);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn parse_code_block_prefix(
-        &mut self,
-        line: &str,
-        container: &'a AstNode<'a>,
-        ast: &mut Ast,
-        should_continue: &mut bool,
-    ) -> bool {
-        let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
-            NodeValue::CodeBlock(ref ncb) => (
-                ncb.fenced,
-                ncb.fence_char,
-                ncb.fence_length,
-                ncb.fence_offset,
-            ),
-            _ => unreachable!(),
-        };
-
-        if !fenced {
-            if self.indent >= CODE_INDENT {
-                self.advance_offset(line, CODE_INDENT, true);
-                return true;
-            } else if self.blank {
-                let offset = self.first_nonspace - self.offset;
-                self.advance_offset(line, offset, false);
-                return true;
-            }
-            return false;
-        }
-
-        let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == fence_char {
-            scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
-        } else {
-            0
-        };
-
-        if matched >= fence_length {
-            *should_continue = false;
-            self.advance_offset(line, matched, false);
-            self.current = self.finalize_borrowed(container, ast).unwrap();
-            return false;
-        }
-
-        let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
-            self.advance_offset(line, 1, true);
-            i -= 1;
-        }
         true
     }
 
-    fn parse_html_block_prefix(&mut self, t: u8) -> bool {
-        match t {
-            1..=5 => true,
-            6 | 7 => !self.blank,
-            _ => unreachable!(),
+    fn detect_multiline_blockquote(&self, line: &str) -> Option<usize> {
+        if self.options.extension.multiline_block_quotes {
+            scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..])
+        } else {
+            None
         }
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>, matched: usize) -> bool {
+    fn handle_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !self.detect_blockquote(line) {
+            return false;
+        }
+
+        let blockquote_startpos = self.first_nonspace;
+
+        let offset = self.first_nonspace + 1 - self.offset;
+        self.advance_offset(line, offset, false);
+        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+            self.advance_offset(line, 1, true);
+        }
+        *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
+
+        true
+    }
+
+    fn detect_blockquote(&self, line: &str) -> bool {
+        line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+    }
+
+    fn handle_atx_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_atx_heading(line) else {
+            return false;
+        };
+
+        let heading_startpos = self.first_nonspace;
+        let offset = self.offset;
+        self.advance_offset(line, heading_startpos + matched - offset, false);
+        *container = self.add_child(
+            container,
+            NodeValue::Heading(NodeHeading::default()),
+            heading_startpos + 1,
+        );
+
+        let bytes = line.as_bytes();
+        let mut hashpos = bytes[self.first_nonspace..]
+            .iter()
+            .position(|&c| c == b'#')
+            .unwrap()
+            + self.first_nonspace;
+        let mut level = 0;
+        while bytes[hashpos] == b'#' {
+            level += 1;
+            hashpos += 1;
+        }
+
+        let container_ast = &mut container.data.borrow_mut();
+        container_ast.value = NodeValue::Heading(NodeHeading {
+            level,
+            setext: false,
+        });
+        container_ast.internal_offset = matched;
+
+        true
+    }
+
+    fn detect_atx_heading(&self, line: &str) -> Option<usize> {
+        scanners::atx_heading_start(&line[self.first_nonspace..])
+    }
+
+    fn handle_code_fence(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_code_fence(line) else {
+            return false;
+        };
+
+        let first_nonspace = self.first_nonspace;
+        let offset = self.offset;
+        let ncb = NodeCodeBlock {
+            fenced: true,
+            fence_char: line.as_bytes()[first_nonspace],
+            fence_length: matched,
+            fence_offset: first_nonspace - offset,
+            info: String::with_capacity(10),
+            literal: String::new(),
+        };
+        *container = self.add_child(
+            container,
+            NodeValue::CodeBlock(ncb),
+            self.first_nonspace + 1,
+        );
+        self.advance_offset(line, first_nonspace + matched - offset, false);
+
+        true
+    }
+
+    fn detect_code_fence(&self, line: &str) -> Option<usize> {
+        scanners::open_code_fence(&line[self.first_nonspace..])
+    }
+
+    fn handle_html_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_html_block(container, line) else {
+            return false;
+        };
+
+        let nhb = NodeHtmlBlock {
+            block_type: matched as u8,
+            literal: String::new(),
+        };
+
+        *container = self.add_child(
+            container,
+            NodeValue::HtmlBlock(nhb),
+            self.first_nonspace + 1,
+        );
+
+        true
+    }
+
+    fn detect_html_block(&self, container: Node<'a>, line: &str) -> Option<usize> {
+        scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
+            if !node_matches!(container, NodeValue::Paragraph) {
+                scanners::html_block_start_7(&line[self.first_nonspace..])
+            } else {
+                None
+            }
+        })
+    }
+
+    fn handle_setext_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(sc) = self.detect_setext_heading(container, line) else {
+            return false;
+        };
+
+        let has_content = {
+            let mut ast = container.data.borrow_mut();
+            self.resolve_reference_link_definitions(&mut ast.content)
+        };
+        if has_content {
+            container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+                level: match sc {
+                    scanners::SetextChar::Equals => 1,
+                    scanners::SetextChar::Hyphen => 2,
+                },
+                setext: true,
+            });
+            let adv = line.len() - 1 - self.offset;
+            self.advance_offset(line, adv, false);
+        }
+
+        true
+    }
+
+    fn detect_setext_heading(
+        &self,
+        container: Node<'a>,
+        line: &str,
+    ) -> Option<scanners::SetextChar> {
+        if node_matches!(container, NodeValue::Paragraph) && !self.options.parse.ignore_setext {
+            scanners::setext_heading_line(&line[self.first_nonspace..])
+        } else {
+            None
+        }
+    }
+
+    fn handle_thematic_break(
+        &mut self,
+        container: &mut Node<'a>,
+        line: &str,
+        all_matched: bool,
+    ) -> bool {
+        let Some(_matched) = self.detect_thematic_break(container, line, all_matched) else {
+            return false;
+        };
+
+        *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
+
+        let adv = line.len() - 1 - self.offset;
+        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
+        self.advance_offset(line, adv, false);
+
+        true
+    }
+
+    fn detect_thematic_break(
+        &mut self,
+        container: Node<'a>,
+        line: &str,
+        all_matched: bool,
+    ) -> Option<usize> {
+        if !matches!(
+            (&container.data.borrow().value, all_matched),
+            (&NodeValue::Paragraph, false)
+        ) && self.thematic_break_kill_pos <= self.first_nonspace
+        {
+            let (offset, found) = self.scan_thematic_break_inner(line);
+            if !found {
+                self.thematic_break_kill_pos = offset;
+                None
+            } else {
+                Some(offset)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn scan_thematic_break_inner(&self, line: &str) -> (usize, bool) {
+        let mut i = self.first_nonspace;
+
+        if i >= line.len() {
+            return (i, false);
+        }
+
+        let bytes = line.as_bytes();
+        let c = bytes[i];
+        if c != b'*' && c != b'_' && c != b'-' {
+            return (i, false);
+        }
+
+        let mut count = 1;
+        let mut nextc;
+        loop {
+            i += 1;
+            if i >= line.len() {
+                return (i, false);
+            }
+            nextc = bytes[i];
+
+            if nextc == c {
+                count += 1;
+            } else if nextc != b' ' && nextc != b'\t' {
+                break;
+            }
+        }
+
+        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+            ((i - self.first_nonspace) + 1, true)
+        } else {
+            (i, false)
+        }
+    }
+
+    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str, depth: usize) -> bool {
+        let Some(matched) = self.detect_footnote(line, depth) else {
+            return false;
+        };
+
+        let mut c = &line[self.first_nonspace + 2..self.first_nonspace + matched];
+        c = c.split(']').next().unwrap();
+        let offset = self.first_nonspace + matched - self.offset;
+        self.advance_offset(line, offset, false);
+        *container = self.add_child(
+            container,
+            NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                name: c.to_string(),
+                total_references: 0,
+            }),
+            self.first_nonspace + 1,
+        );
+        container.data.borrow_mut().internal_offset = matched;
+
+        true
+    }
+
+    fn detect_footnote(&self, line: &str, depth: usize) -> Option<usize> {
+        if self.options.extension.footnotes && depth < MAX_LIST_DEPTH {
+            scanners::footnote_definition(&line[self.first_nonspace..])
+        } else {
+            None
+        }
+    }
+
+    fn handle_description_list(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_description_list(container, line) else {
+            return false;
+        };
+
+        let offset = self.first_nonspace + matched - self.offset;
+        self.advance_offset(line, offset, false);
+        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+            self.advance_offset(line, 1, true);
+        }
+
+        true
+    }
+
+    fn detect_description_list(&mut self, container: &mut Node<'a>, line: &str) -> Option<usize> {
+        if self.options.extension.description_lists {
+            if let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..]) {
+                if self.parse_desc_list_details(container, matched) {
+                    return Some(matched);
+                }
+            }
+        }
+        None
+    }
+
+    fn parse_desc_list_details(&mut self, container: &mut Node<'a>, matched: usize) -> bool {
         let mut tight = false;
         let last_child = match container.last_child() {
             Some(lc) => lc,
@@ -2459,59 +2232,177 @@ where
         }
     }
 
-    fn parse_multiline_block_quote_prefix(
+    fn handle_list(
         &mut self,
+        container: &mut Node<'a>,
         line: &str,
-        container: &'a AstNode<'a>,
-        ast: &mut Ast,
-        should_continue: &mut bool,
+        indented: bool,
+        depth: usize,
     ) -> bool {
-        let (fence_length, fence_offset) = match ast.value {
-            NodeValue::MultilineBlockQuote(ref node_value) => {
-                (node_value.fence_length, node_value.fence_offset)
-            }
-            NodeValue::Alert(ref node_value) => (node_value.fence_length, node_value.fence_offset),
-            _ => unreachable!(),
+        let Some((matched, mut nl)) = self.detect_list(container, line, indented, depth) else {
+            return false;
         };
+
+        let offset = self.first_nonspace + matched - self.offset;
+        self.advance_offset(line, offset, false);
+        let (save_partially_consumed_tab, save_offset, save_column) =
+            (self.partially_consumed_tab, self.offset, self.column);
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == b'>' {
-            scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
-        } else {
-            0
-        };
+        while self.column - save_column <= 5 && strings::is_space_or_tab(bytes[self.offset]) {
+            self.advance_offset(line, 1, true);
+        }
 
-        if matched >= fence_length {
-            *should_continue = false;
-            self.advance_offset(line, matched, false);
-
-            // The last child, like an indented codeblock, could be left open.
-            // Make sure it's finalized.
-            if container.last_child_is_open() {
-                let child = container.last_child().unwrap();
-                let child_ast = &mut *child.data.borrow_mut();
-
-                self.finalize_borrowed(child, child_ast).unwrap();
+        let i = self.column - save_column;
+        if !(1..5).contains(&i) || strings::is_line_end_char(bytes[self.offset]) {
+            nl.padding = matched + 1;
+            self.offset = save_offset;
+            self.column = save_column;
+            self.partially_consumed_tab = save_partially_consumed_tab;
+            if i > 0 {
+                self.advance_offset(line, 1, true);
             }
+        } else {
+            nl.padding = matched + i;
+        }
 
-            self.current = self.finalize_borrowed(container, ast).unwrap();
+        nl.marker_offset = self.indent;
+
+        if match container.data.borrow().value {
+            NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
+            _ => true,
+        } {
+            *container = self.add_child(container, NodeValue::List(nl), self.first_nonspace + 1);
+        }
+
+        *container = self.add_child(container, NodeValue::Item(nl), self.first_nonspace + 1);
+
+        true
+    }
+
+    fn detect_list(
+        &self,
+        container: Node<'a>,
+        line: &str,
+        indented: bool,
+        depth: usize,
+    ) -> Option<(usize, NodeList)> {
+        if (!indented || node_matches!(container, NodeValue::List(..)))
+            && self.indent < 4
+            && depth < MAX_LIST_DEPTH
+        {
+            parse_list_marker(
+                line,
+                self.first_nonspace,
+                node_matches!(container, NodeValue::Paragraph),
+            )
+        } else {
+            None
+        }
+    }
+
+    fn handle_code_block(
+        &mut self,
+        container: &mut Node<'a>,
+        line: &str,
+        indented: bool,
+        maybe_lazy: bool,
+    ) -> bool {
+        if !self.detect_code_block(indented, maybe_lazy) {
             return false;
         }
 
-        let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
-            self.advance_offset(line, 1, true);
-            i -= 1;
-        }
+        self.advance_offset(line, CODE_INDENT, true);
+        let ncb = NodeCodeBlock {
+            fenced: false,
+            fence_char: 0,
+            fence_length: 0,
+            fence_offset: 0,
+            info: String::new(),
+            literal: String::new(),
+        };
+        *container = self.add_child(container, NodeValue::CodeBlock(ncb), self.offset + 1);
+
         true
+    }
+
+    fn detect_code_block(&self, indented: bool, maybe_lazy: bool) -> bool {
+        indented && !maybe_lazy && !self.blank
+    }
+
+    fn handle_table(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
+        let Some((new_container, replace, mark_visited)) =
+            self.detect_table(container, line, indented)
+        else {
+            return false;
+        };
+
+        if replace {
+            container.insert_after(new_container);
+            container.detach();
+            *container = new_container;
+        } else {
+            *container = new_container;
+        }
+        if mark_visited {
+            container.data.borrow_mut().table_visited = true;
+        }
+
+        true
+    }
+
+    fn detect_table(
+        &mut self,
+        container: Node<'a>,
+        line: &str,
+        indented: bool,
+    ) -> Option<(Node<'a>, bool, bool)> {
+        if !indented && self.options.extension.table {
+            table::try_opening_block(self, container, line)
+        } else {
+            None
+        }
+    }
+
+    //////////
+    // Core //
+    //////////
+
+    fn advance_offset(&mut self, line: &str, mut count: usize, columns: bool) {
+        let bytes = line.as_bytes();
+        while count > 0 {
+            match bytes[self.offset] {
+                9 => {
+                    let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
+                    if columns {
+                        self.partially_consumed_tab = chars_to_tab > count;
+                        let chars_to_advance = min(count, chars_to_tab);
+                        self.column += chars_to_advance;
+                        self.offset += if self.partially_consumed_tab { 0 } else { 1 };
+                        count -= chars_to_advance;
+                    } else {
+                        self.partially_consumed_tab = false;
+                        self.column += chars_to_tab;
+                        self.offset += 1;
+                        count -= 1;
+                    }
+                }
+                _ => {
+                    self.partially_consumed_tab = false;
+                    self.offset += 1;
+                    self.column += 1;
+                    count -= 1;
+                }
+            }
+        }
     }
 
     fn add_child(
         &mut self,
-        mut parent: &'a AstNode<'a>,
+        mut parent: Node<'a>,
         value: NodeValue,
         start_column: usize,
-    ) -> &'a AstNode<'a> {
+    ) -> Node<'a> {
         while !parent.can_contain_type(&value) {
             parent = self.finalize(parent).unwrap();
         }
@@ -2519,15 +2410,15 @@ where
         assert!(start_column > 0);
 
         let child = Ast::new(value, (self.line_number, start_column).into());
-        let node = self.arena.alloc(Node::new(RefCell::new(child)));
+        let node = self.arena.alloc(child.into());
         parent.append(node);
         node
     }
 
     fn add_text_to_container(
         &mut self,
-        mut container: &'a AstNode<'a>,
-        last_matched_container: &'a AstNode<'a>,
+        mut container: Node<'a>,
+        last_matched_container: Node<'a>,
         line: &str,
     ) {
         self.find_first_nonspace(line);
@@ -2606,7 +2497,7 @@ where
                         let mut line = line;
                         if let NodeValue::Heading(ref nh) = container.data.borrow().value {
                             if !nh.setext {
-                                line = strings::chop_trailing_hashtags(line);
+                                line = strings::chop_trailing_hashes(line);
                             }
                         };
                         let count = self.first_nonspace - self.offset;
@@ -2646,7 +2537,7 @@ where
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &str) {
+    fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
@@ -2667,7 +2558,7 @@ where
         }
     }
 
-    fn finish(&mut self, remaining: String) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: String) -> Node<'a> {
         if !remaining.is_empty() {
             self.process_line(remaining.into());
         }
@@ -2705,20 +2596,20 @@ where
         }
     }
 
-    fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
         self.finalize_borrowed(node, &mut node.data.borrow_mut())
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
         {
-            let mut offset = 0;
             let bytes: &[u8] = content.as_bytes();
-            while seeked < content.len()
-                && bytes[seeked] == b'['
-                && unwrap_into(self.parse_reference_inline(&content[seeked..]), &mut offset)
-            {
-                seeked += offset;
+            while seeked < content.len() && bytes[seeked] == b'[' {
+                if let Some(offset) = self.parse_reference_inline(&content[seeked..]) {
+                    seeked += offset;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -2730,11 +2621,7 @@ where
         !strings::is_blank(content)
     }
 
-    fn finalize_borrowed(
-        &mut self,
-        node: &'a AstNode<'a>,
-        ast: &mut Ast,
-    ) -> Option<&'a AstNode<'a>> {
+    fn finalize_borrowed(&mut self, node: Node<'a>, ast: &mut Ast) -> Option<Node<'a>> {
         assert!(ast.open);
         ast.open = false;
 
@@ -2814,7 +2701,7 @@ where
         parent
     }
 
-    fn determine_list_tight(&self, node: &'a AstNode<'a>) -> bool {
+    fn determine_list_tight(&self, node: Node<'a>) -> bool {
         let mut ch = node.first_child();
 
         while let Some(item) = ch {
@@ -2842,7 +2729,7 @@ where
         self.process_inlines_node(self.root);
     }
 
-    fn process_inlines_node(&mut self, node: &'a AstNode<'a>) {
+    fn process_inlines_node(&mut self, node: Node<'a>) {
         for node in node.descendants() {
             if node.data.borrow().value.contains_inlines() {
                 self.parse_inlines(node);
@@ -2850,7 +2737,7 @@ where
         }
     }
 
-    fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
+    fn parse_inlines(&mut self, node: Node<'a>) {
         let mut node_data = node.data.borrow_mut();
 
         let mut content = mem::take(&mut node_data.content);
@@ -2899,7 +2786,7 @@ where
     }
 
     fn find_footnote_definitions(
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
@@ -2923,7 +2810,7 @@ where
     }
 
     fn find_footnote_references(
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
@@ -2959,19 +2846,15 @@ where
         if let Some(mut label) = replace {
             label.insert_str(0, "[^");
             label.push(']');
-            ast.value = NodeValue::Text(label);
+            ast.value = NodeValue::Text(label.into());
         }
     }
 
-    fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
+    fn postprocess_text_nodes(&mut self, node: Node<'a>) {
         self.postprocess_text_nodes_with_context(node, false);
     }
 
-    fn postprocess_text_nodes_with_context(
-        &mut self,
-        node: &'a AstNode<'a>,
-        in_bracket_context: bool,
-    ) {
+    fn postprocess_text_nodes_with_context(&mut self, node: Node<'a>, in_bracket_context: bool) {
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
@@ -2989,7 +2872,7 @@ where
                         let sourcepos = self.postprocess_text_node_with_context(
                             n,
                             sourcepos,
-                            root,
+                            root.to_mut(),
                             in_bracket_context,
                         );
                         emptied = root.is_empty();
@@ -3022,7 +2905,7 @@ where
 
     fn postprocess_text_node_with_context(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         mut sourcepos: Sourcepos,
         root: &mut String,
         in_bracket_context: bool,
@@ -3059,7 +2942,7 @@ where
 
     fn postprocess_text_node_with_context_inner(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spxv: VecDeque<(Sourcepos, usize)>,
@@ -3091,7 +2974,7 @@ where
     // after the call to `process_tasklist`, it will be properly cleaned up.
     fn process_tasklist(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
@@ -3361,44 +3244,13 @@ fn parse_list_marker(
     None
 }
 
-pub fn unwrap_into<T>(t: Option<T>, out: &mut T) -> bool {
-    match t {
-        Some(v) => {
-            *out = v;
-            true
-        }
-        _ => false,
-    }
-}
-
-pub fn unwrap_into_copy<T: Copy>(t: Option<&T>, out: &mut T) -> bool {
-    match t {
-        Some(v) => {
-            *out = *v;
-            true
-        }
-        _ => false,
-    }
-}
-
-fn unwrap_into_2<T, U>(tu: Option<(T, U)>, out_t: &mut T, out_u: &mut U) -> bool {
-    match tu {
-        Some((t, u)) => {
-            *out_t = t;
-            *out_u = u;
-            true
-        }
-        _ => false,
-    }
-}
-
 fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
     list_data.list_type == item_data.list_type
         && list_data.delimiter == item_data.delimiter
         && list_data.bullet_char == item_data.bullet_char
 }
 
-fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
+fn reopen_ast_nodes<'a>(mut ast: Node<'a>) {
     loop {
         ast.data.borrow_mut().open = true;
         ast = match ast.parent() {
