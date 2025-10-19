@@ -1442,11 +1442,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
             Some((entity, len)) => {
                 self.pos += len;
-                self.make_inline(
-                    NodeValue::Text(entity.into()), // XXX: what if Cow<'static, str>
-                    self.pos - 1 - len,
-                    self.pos - 1,
-                )
+                self.make_inline(NodeValue::Text(entity), self.pos - 1 - len, self.pos - 1)
             }
         }
     }
