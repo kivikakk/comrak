@@ -558,7 +558,6 @@ pub struct Ast {
 
     /// The positions in the source document this node comes from.
     pub sourcepos: Sourcepos,
-    pub(crate) internal_offset: usize,
 
     pub(crate) content: String,
     pub(crate) open: bool,
@@ -639,7 +638,6 @@ impl Ast {
             value,
             content: String::new(),
             sourcepos: (start.line, start.column, start.line, 0).into(),
-            internal_offset: 0,
             open: true,
             last_line_blank: false,
             table_visited: false,
@@ -653,7 +651,6 @@ impl Ast {
             value,
             content: String::new(),
             sourcepos,
-            internal_offset: 0,
             open: true,
             last_line_blank: false,
             table_visited: false,

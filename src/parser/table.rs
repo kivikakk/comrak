@@ -128,7 +128,6 @@ fn try_opening_header<'a>(
         ast.sourcepos.start.line = start.line;
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
-        ast.internal_offset = cell.internal_offset;
         mem::swap(&mut ast.content, cell.content.to_mut());
         ast.line_offsets.push(
             start.column + cell.start_offset - 1 + cell.internal_offset
@@ -188,7 +187,6 @@ fn try_opening_row<'a>(
             sourcepos.start.column + cell.start_offset,
         );
         let cell_ast = &mut cell_node.data.borrow_mut();
-        cell_ast.internal_offset = cell.internal_offset;
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
         mem::swap(&mut cell_ast.content, cell.content.to_mut());
         cell_ast

@@ -2157,7 +2157,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 usize::try_from(end_column).unwrap(),
             )
                 .into(),
-            internal_offset: 0,
             open: false,
             last_line_blank: false,
             table_visited: false,
@@ -2268,7 +2267,6 @@ pub(crate) fn make_inline<'a>(
         value,
         content: String::new(),
         sourcepos,
-        internal_offset: 0,
         open: false,
         last_line_blank: false,
         table_visited: false,

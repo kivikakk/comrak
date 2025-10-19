@@ -65,7 +65,6 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
             value: NodeValue::Document,
             content: String::new(),
             sourcepos: (1, 1, 1, 1).into(),
-            internal_offset: 0,
             open: true,
             last_line_blank: false,
             table_visited: false,
@@ -1879,7 +1878,6 @@ where
             level,
             setext: false,
         });
-        container_ast.internal_offset = matched;
 
         true
     }
@@ -2077,7 +2075,6 @@ where
             }),
             self.first_nonspace + 1,
         );
-        container.data.borrow_mut().internal_offset = matched;
 
         true
     }
