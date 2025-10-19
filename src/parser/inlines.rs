@@ -19,8 +19,7 @@ use crate::parser::inlines::cjk::FlankingCheckHelper;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{
-    autolink, unwrap_into_2, unwrap_into_copy, AutolinkType, BrokenLinkReference, Options,
-    ResolvedReference, WikiLinksMode,
+    autolink, AutolinkType, BrokenLinkReference, Options, ResolvedReference, WikiLinksMode,
 };
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
@@ -1599,37 +1598,33 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Try to find a link destination within parenthesis
 
-        let mut sps = 0;
-        let mut url: &str = "";
-        let mut n: usize = 0;
-        if self.peek_char() == Some(&(b'(')) && {
-            sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
+        if self.peek_char() == Some(&(b'(')) {
+            let sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
             let offset = self.pos + 1 + sps;
-            offset < self.input.len()
-                && unwrap_into_2(
-                    manual_scan_link_url(&self.input[offset..]),
-                    &mut url,
-                    &mut n,
-                )
-        } {
-            let starturl = self.pos + 1 + sps;
-            let endurl = starturl + n;
-            let starttitle = endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
-            let endtitle = if starttitle == endurl {
-                starttitle
-            } else {
-                starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
-            };
-            let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
+            if offset < self.input.len() {
+                if let Some((url, n)) = manual_scan_link_url(&self.input[offset..]) {
+                    let starturl = self.pos + 1 + sps;
+                    let endurl = starturl + n;
+                    let starttitle =
+                        endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
+                    let endtitle = if starttitle == endurl {
+                        starttitle
+                    } else {
+                        starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
+                    };
+                    let endall =
+                        endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
-            if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
-                self.pos = endall + 1;
-                let url = strings::clean_url(url);
-                let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                self.close_bracket_match(is_image, url.into(), title.into());
-                return None;
-            } else {
-                self.pos = after_link_text_pos;
+                    if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
+                        self.pos = endall + 1;
+                        let url = strings::clean_url(url);
+                        let title = strings::clean_title(&self.input[starttitle..endtitle]);
+                        self.close_bracket_match(is_image, url.into(), title.into());
+                        return None;
+                    } else {
+                        self.pos = after_link_text_pos;
+                    }
+                }
             }
         }
 
@@ -1932,8 +1927,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1;
 
         let mut length = 0;
-        let mut c = 0;
-        while unwrap_into_copy(self.peek_char(), &mut c) && c != b'[' && c != b']' {
+        while let Some(&c) = self.peek_char() {
+            if c == b']' {
+                let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
+                self.pos += 1;
+                return Some(raw_label);
+            }
+            if c == b'[' {
+                break;
+            }
             if c == b'\\' {
                 self.pos += 1;
                 length += 1;
@@ -1951,14 +1953,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
         }
 
-        if c == b']' {
-            let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
-            self.pos += 1;
-            Some(raw_label)
-        } else {
-            self.pos = startpos;
-            None
-        }
+        self.pos = startpos;
+        None
     }
 
     // Handles wikilink syntax
@@ -2057,8 +2053,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos += 1;
 
         let mut length = 0;
-        let mut c = 0;
-        while unwrap_into_copy(self.peek_char(), &mut c) && c != b'[' && c != b']' && c != b'|' {
+        while let Some(&c) = self.peek_char() {
+            if c == b'[' || c == b']' || c == b'|' {
+                break;
+            }
+
             if c == b'\\' {
                 self.pos += 1;
                 length += 1;
