@@ -1,12 +1,12 @@
 use std::cmp::max;
 use std::fmt::{self, Write};
 use std::str;
-pub use typed_arena::Arena;
+use typed_arena::Arena;
 
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
-    AstNode, ListDelimType, ListType, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
-    NodeLink, NodeList, NodeMath, NodeTable, NodeValue, NodeWikiLink, TableAlignment,
+    ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
+    NodeList, NodeMath, NodeTable, NodeValue, NodeWikiLink, TableAlignment,
 };
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
@@ -17,7 +17,7 @@ use crate::{node_matches, Plugins};
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
-    root: &'a AstNode<'a>,
+    root: Node<'a>,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
@@ -34,7 +34,7 @@ pub fn format_document<'a>(
 
 /// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
-    root: &'a AstNode<'a>,
+    root: Node<'a>,
     options: &Options,
     output: &mut dyn Write,
     _plugins: &Plugins,
@@ -64,7 +64,7 @@ pub fn format_document_with_plugins<'a>(
 }
 
 struct CommonMarkFormatter<'a, 'o, 'c> {
-    node: &'a AstNode<'a>,
+    node: Node<'a>,
     options: &'o Options<'c>,
     output: String,
     prefix: String,
@@ -75,7 +75,7 @@ struct CommonMarkFormatter<'a, 'o, 'c> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
-    custom_escape: Option<fn(&'a AstNode<'a>, char) -> bool>,
+    custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
 }
@@ -95,7 +95,7 @@ impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
 }
 
 impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
-    fn new(node: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
+    fn new(node: Node<'a>, options: &'o Options<'c>) -> Self {
         CommonMarkFormatter {
             node,
             options,
@@ -280,7 +280,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format(&mut self, node: &'a AstNode<'a>) -> fmt::Result {
+    fn format(&mut self, node: Node<'a>) -> fmt::Result {
         enum Phase {
             Pre,
             Post,
@@ -305,7 +305,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn get_in_tight_list_item(&self, node: &'a AstNode<'a>) -> bool {
+    fn get_in_tight_list_item(&self, node: Node<'a>) -> bool {
         let tmp = match node.containing_block() {
             Some(tmp) => tmp,
             None => return false,
@@ -338,7 +338,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         false
     }
 
-    fn format_node(&mut self, node: &'a AstNode<'a>, entering: bool) -> Result<bool, fmt::Error> {
+    fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
@@ -445,7 +445,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_list(&mut self, node: &'a AstNode<'a>, entering: bool) -> fmt::Result {
+    fn format_list(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         let ol_start = match node.data.borrow().value {
             NodeValue::List(NodeList {
                 list_type: ListType::Ordered,
@@ -479,7 +479,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_item(&mut self, node: &'a AstNode<'a>, entering: bool) -> fmt::Result {
+    fn format_item(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         let parent = match node.parent().unwrap().data.borrow().value {
             NodeValue::List(ref nl) => *nl,
             _ => unreachable!(),
@@ -572,7 +572,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_code_block(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         ncb: &NodeCodeBlock,
         entering: bool,
     ) -> fmt::Result {
@@ -744,7 +744,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         write!(self, "**")
     }
 
-    fn format_emph(&mut self, node: &'a AstNode<'a>) -> fmt::Result {
+    fn format_emph(&mut self, node: Node<'a>) -> fmt::Result {
         let emph_delim = if match node.parent() {
             Some(parent) => matches!(parent.data.borrow().value, NodeValue::Emph),
             _ => false,
@@ -763,7 +763,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     fn format_task_item(
         &mut self,
         symbol: Option<char>,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         entering: bool,
     ) -> fmt::Result {
         if node
@@ -810,7 +810,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_link(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         nl: &NodeLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
@@ -896,7 +896,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_table_cell(&mut self, node: &'a AstNode<'a>, entering: bool) -> fmt::Result {
+    fn format_table_cell(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
             write!(self, " ")?;
         } else {
@@ -1050,7 +1050,7 @@ fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
     i
 }
 
-fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
+fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
     if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
@@ -1070,7 +1070,7 @@ fn is_autolink<'a>(node: &'a AstNode<'a>, nl: &NodeLink) -> bool {
     trim_start_match(&nl.url, "mailto:") == link_text
 }
 
-fn table_escape<'a>(node: &'a AstNode<'a>, c: char) -> bool {
+fn table_escape<'a>(node: Node<'a>, c: char) -> bool {
     match node.data.borrow().value {
         NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
         _ => c == '|',

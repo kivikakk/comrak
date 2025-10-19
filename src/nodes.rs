@@ -696,6 +696,10 @@ impl Ast {
 /// ```
 pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
 
+/// A reference to a node in an arena.  Unless you are manually creating nodes
+/// before the arena, this is the type you will see most often.
+pub type Node<'a> = &'a AstNode<'a>;
+
 impl<'a> From<NodeValue> for AstNode<'a> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
     fn from(value: NodeValue) -> Self {
@@ -717,9 +721,9 @@ pub enum ValidationError<'a> {
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
         /// The parent node.
-        parent: &'a AstNode<'a>,
+        parent: Node<'a>,
         /// The child node.
-        child: &'a AstNode<'a>,
+        child: Node<'a>,
     },
 }
 
@@ -886,7 +890,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<&'a AstNode<'a>> {
+    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
         let mut ch = Some(self);
         while let Some(n) = ch {
             if n.data.borrow().value.block() {

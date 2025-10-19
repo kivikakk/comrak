@@ -4,13 +4,13 @@ use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, NodeLink, NodeValue, Sourcepos};
+use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::Subject;
 use crate::parser::{inlines::make_inline, Spx};
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,
-    node: &'a AstNode<'a>,
+    node: Node<'a>,
     contents: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
@@ -118,7 +118,7 @@ fn email_match<'a>(
     contents: &str,
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(Node<'a>, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
@@ -229,7 +229,7 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
 
 pub fn www_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(Node<'a>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
@@ -383,7 +383,7 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
 
 pub fn url_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(&'a AstNode<'a>, usize, usize)> {
+) -> Option<(Node<'a>, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
     let i = subject.pos;

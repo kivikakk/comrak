@@ -13,18 +13,15 @@ const INDENT: usize = 4;
 /// If true, the close parenthesis is printed in its own line.
 const CLOSE_NEWLINE: bool = false;
 
-use comrak::nodes::{AstNode, NodeValue};
-use comrak::{parse_document, Arena, ExtensionOptions, Options};
 use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufWriter, Read, Write};
 
-fn iter_nodes<'a, W: Write>(
-    node: &'a AstNode<'a>,
-    writer: &mut W,
-    indent: usize,
-) -> io::Result<()> {
+use comrak::nodes::{Node, NodeValue};
+use comrak::{parse_document, Arena, ExtensionOptions, Options};
+
+fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io::Result<()> {
     use NodeValue::*;
 
     macro_rules! try_node_inline {

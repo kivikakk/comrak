@@ -24,7 +24,7 @@ use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::nodes::{
-    self, Ast, AstNode, ListDelimType, ListType, NodeCodeBlock, NodeDescriptionItem,
+    self, Ast, AstNode, ListDelimType, ListType, Node, NodeCodeBlock, NodeDescriptionItem,
     NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
 };
 use crate::parser::alert::{AlertType, NodeAlert};
@@ -59,11 +59,7 @@ macro_rules! node_matches {
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
-pub fn parse_document<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    md: &str,
-    options: &Options,
-) -> &'a AstNode<'a> {
+pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Options) -> Node<'a> {
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
@@ -128,8 +124,8 @@ pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
-    root: &'a AstNode<'a>,
-    current: &'a AstNode<'a>,
+    root: Node<'a>,
+    current: Node<'a>,
     line_number: usize,
     offset: usize,
     column: usize,
@@ -1204,7 +1200,7 @@ pub struct ResolvedReference {
 
 struct FootnoteDefinition<'a> {
     ix: Option<u32>,
-    node: &'a AstNode<'a>,
+    node: Node<'a>,
     name: String,
     total_references: u32,
 }
@@ -1213,7 +1209,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: &'a AstNode<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a Arena<AstNode<'a>>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -1413,7 +1409,7 @@ where
     // Check open blocks //
     ///////////////////////
 
-    fn check_open_blocks(&mut self, line: &str) -> Option<(&'a AstNode<'a>, bool)> {
+    fn check_open_blocks(&mut self, line: &str) -> Option<(Node<'a>, bool)> {
         let (all_matched, mut container) = self.check_open_blocks_inner(self.root, line)?;
 
         if !all_matched {
@@ -1425,9 +1421,9 @@ where
 
     fn check_open_blocks_inner(
         &mut self,
-        mut container: &'a AstNode<'a>,
+        mut container: Node<'a>,
         line: &str,
-    ) -> Option<(bool, &'a AstNode<'a>)> {
+    ) -> Option<(bool, Node<'a>)> {
         let mut all_matched = false;
 
         loop {
@@ -1559,12 +1555,7 @@ where
             || strings::is_space_or_tab(line.as_bytes()[self.first_nonspace + 1])
     }
 
-    fn parse_node_item_prefix(
-        &mut self,
-        line: &str,
-        container: &'a AstNode<'a>,
-        nl: &NodeList,
-    ) -> bool {
+    fn parse_node_item_prefix(&mut self, line: &str, container: Node<'a>, nl: &NodeList) -> bool {
         if self.indent >= nl.marker_offset + nl.padding {
             self.advance_offset(line, nl.marker_offset + nl.padding, true);
             true
@@ -1580,7 +1571,7 @@ where
     fn parse_description_item_prefix(
         &mut self,
         line: &str,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         di: &NodeDescriptionItem,
     ) -> bool {
         if self.indent >= di.marker_offset + di.padding {
@@ -1598,7 +1589,7 @@ where
     fn parse_code_block_prefix(
         &mut self,
         line: &str,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         ast: &mut Ast,
     ) -> Option<bool> {
         let (fenced, fence_char, fence_length, fence_offset) = match ast.value {
@@ -1664,7 +1655,7 @@ where
     fn parse_multiline_block_quote_prefix(
         &mut self,
         line: &str,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         ast: &mut Ast,
     ) -> Option<()> {
         // XXX: refactoring revealed that, unlike parse_code_block_prefix, this
@@ -1714,7 +1705,7 @@ where
     // Open new blocks //
     /////////////////////
 
-    fn open_new_blocks(&mut self, container: &mut &'a AstNode<'a>, line: &str, all_matched: bool) {
+    fn open_new_blocks(&mut self, container: &mut Node<'a>, line: &str, all_matched: bool) {
         let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
         let mut depth = 0;
 
@@ -1752,7 +1743,7 @@ where
         }
     }
 
-    fn handle_alert(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_alert(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(alert_type) = self.detect_alert(line) else {
             return false;
         };
@@ -1805,7 +1796,7 @@ where
         }
     }
 
-    fn handle_multiline_blockquote(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
@@ -1836,7 +1827,7 @@ where
         }
     }
 
-    fn handle_blockquote(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         if !self.detect_blockquote(line) {
             return false;
         }
@@ -1857,7 +1848,7 @@ where
         line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
     }
 
-    fn handle_atx_heading(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_atx_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_atx_heading(line) else {
             return false;
         };
@@ -1897,7 +1888,7 @@ where
         scanners::atx_heading_start(&line[self.first_nonspace..])
     }
 
-    fn handle_code_fence(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_code_fence(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_code_fence(line) else {
             return false;
         };
@@ -1926,7 +1917,7 @@ where
         scanners::open_code_fence(&line[self.first_nonspace..])
     }
 
-    fn handle_html_block(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_html_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_html_block(container, line) else {
             return false;
         };
@@ -1945,7 +1936,7 @@ where
         true
     }
 
-    fn detect_html_block(&self, container: &'a AstNode<'a>, line: &str) -> Option<usize> {
+    fn detect_html_block(&self, container: Node<'a>, line: &str) -> Option<usize> {
         scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
             if !node_matches!(container, NodeValue::Paragraph) {
                 scanners::html_block_start_7(&line[self.first_nonspace..])
@@ -1955,7 +1946,7 @@ where
         })
     }
 
-    fn handle_setext_heading(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_setext_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(sc) = self.detect_setext_heading(container, line) else {
             return false;
         };
@@ -1981,7 +1972,7 @@ where
 
     fn detect_setext_heading(
         &self,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         line: &str,
     ) -> Option<scanners::SetextChar> {
         if node_matches!(container, NodeValue::Paragraph) && !self.options.parse.ignore_setext {
@@ -1993,7 +1984,7 @@ where
 
     fn handle_thematic_break(
         &mut self,
-        container: &mut &'a AstNode<'a>,
+        container: &mut Node<'a>,
         line: &str,
         all_matched: bool,
     ) -> bool {
@@ -2012,7 +2003,7 @@ where
 
     fn detect_thematic_break(
         &mut self,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         line: &str,
         all_matched: bool,
     ) -> Option<usize> {
@@ -2069,12 +2060,7 @@ where
         }
     }
 
-    fn handle_footnote(
-        &mut self,
-        container: &mut &'a AstNode<'a>,
-        line: &str,
-        depth: usize,
-    ) -> bool {
+    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str, depth: usize) -> bool {
         let Some(matched) = self.detect_footnote(line, depth) else {
             return false;
         };
@@ -2104,7 +2090,7 @@ where
         }
     }
 
-    fn handle_description_list(&mut self, container: &mut &'a AstNode<'a>, line: &str) -> bool {
+    fn handle_description_list(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_description_list(container, line) else {
             return false;
         };
@@ -2118,11 +2104,7 @@ where
         true
     }
 
-    fn detect_description_list(
-        &mut self,
-        container: &mut &'a AstNode<'a>,
-        line: &str,
-    ) -> Option<usize> {
+    fn detect_description_list(&mut self, container: &mut Node<'a>, line: &str) -> Option<usize> {
         if self.options.extension.description_lists {
             if let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..]) {
                 if self.parse_desc_list_details(container, matched) {
@@ -2133,7 +2115,7 @@ where
         None
     }
 
-    fn parse_desc_list_details(&mut self, container: &mut &'a AstNode<'a>, matched: usize) -> bool {
+    fn parse_desc_list_details(&mut self, container: &mut Node<'a>, matched: usize) -> bool {
         let mut tight = false;
         let last_child = match container.last_child() {
             Some(lc) => lc,
@@ -2252,7 +2234,7 @@ where
 
     fn handle_list(
         &mut self,
-        container: &mut &'a AstNode<'a>,
+        container: &mut Node<'a>,
         line: &str,
         indented: bool,
         depth: usize,
@@ -2300,7 +2282,7 @@ where
 
     fn detect_list(
         &self,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         line: &str,
         indented: bool,
         depth: usize,
@@ -2321,7 +2303,7 @@ where
 
     fn handle_code_block(
         &mut self,
-        container: &mut &'a AstNode<'a>,
+        container: &mut Node<'a>,
         line: &str,
         indented: bool,
         maybe_lazy: bool,
@@ -2348,12 +2330,7 @@ where
         indented && !maybe_lazy && !self.blank
     }
 
-    fn handle_table(
-        &mut self,
-        container: &mut &'a AstNode<'a>,
-        line: &str,
-        indented: bool,
-    ) -> bool {
+    fn handle_table(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
         let Some((new_container, replace, mark_visited)) =
             self.detect_table(container, line, indented)
         else {
@@ -2376,10 +2353,10 @@ where
 
     fn detect_table(
         &mut self,
-        container: &'a AstNode<'a>,
+        container: Node<'a>,
         line: &str,
         indented: bool,
-    ) -> Option<(&'a AstNode<'a>, bool, bool)> {
+    ) -> Option<(Node<'a>, bool, bool)> {
         if !indented && self.options.extension.table {
             table::try_opening_block(self, container, line)
         } else {
@@ -2422,10 +2399,10 @@ where
 
     fn add_child(
         &mut self,
-        mut parent: &'a AstNode<'a>,
+        mut parent: Node<'a>,
         value: NodeValue,
         start_column: usize,
-    ) -> &'a AstNode<'a> {
+    ) -> Node<'a> {
         while !parent.can_contain_type(&value) {
             parent = self.finalize(parent).unwrap();
         }
@@ -2440,8 +2417,8 @@ where
 
     fn add_text_to_container(
         &mut self,
-        mut container: &'a AstNode<'a>,
-        last_matched_container: &'a AstNode<'a>,
+        mut container: Node<'a>,
+        last_matched_container: Node<'a>,
         line: &str,
     ) {
         self.find_first_nonspace(line);
@@ -2560,7 +2537,7 @@ where
         }
     }
 
-    fn add_line(&mut self, node: &'a AstNode<'a>, line: &str) {
+    fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
@@ -2581,7 +2558,7 @@ where
         }
     }
 
-    fn finish(&mut self, remaining: String) -> &'a AstNode<'a> {
+    fn finish(&mut self, remaining: String) -> Node<'a> {
         if !remaining.is_empty() {
             self.process_line(remaining.into());
         }
@@ -2619,7 +2596,7 @@ where
         }
     }
 
-    fn finalize(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
         self.finalize_borrowed(node, &mut node.data.borrow_mut())
     }
 
@@ -2644,11 +2621,7 @@ where
         !strings::is_blank(content)
     }
 
-    fn finalize_borrowed(
-        &mut self,
-        node: &'a AstNode<'a>,
-        ast: &mut Ast,
-    ) -> Option<&'a AstNode<'a>> {
+    fn finalize_borrowed(&mut self, node: Node<'a>, ast: &mut Ast) -> Option<Node<'a>> {
         assert!(ast.open);
         ast.open = false;
 
@@ -2728,7 +2701,7 @@ where
         parent
     }
 
-    fn determine_list_tight(&self, node: &'a AstNode<'a>) -> bool {
+    fn determine_list_tight(&self, node: Node<'a>) -> bool {
         let mut ch = node.first_child();
 
         while let Some(item) = ch {
@@ -2756,7 +2729,7 @@ where
         self.process_inlines_node(self.root);
     }
 
-    fn process_inlines_node(&mut self, node: &'a AstNode<'a>) {
+    fn process_inlines_node(&mut self, node: Node<'a>) {
         for node in node.descendants() {
             if node.data.borrow().value.contains_inlines() {
                 self.parse_inlines(node);
@@ -2764,7 +2737,7 @@ where
         }
     }
 
-    fn parse_inlines(&mut self, node: &'a AstNode<'a>) {
+    fn parse_inlines(&mut self, node: Node<'a>) {
         let mut node_data = node.data.borrow_mut();
 
         let mut content = mem::take(&mut node_data.content);
@@ -2813,7 +2786,7 @@ where
     }
 
     fn find_footnote_definitions(
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
         match node.data.borrow().value {
@@ -2837,7 +2810,7 @@ where
     }
 
     fn find_footnote_references(
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
@@ -2877,15 +2850,11 @@ where
         }
     }
 
-    fn postprocess_text_nodes(&mut self, node: &'a AstNode<'a>) {
+    fn postprocess_text_nodes(&mut self, node: Node<'a>) {
         self.postprocess_text_nodes_with_context(node, false);
     }
 
-    fn postprocess_text_nodes_with_context(
-        &mut self,
-        node: &'a AstNode<'a>,
-        in_bracket_context: bool,
-    ) {
+    fn postprocess_text_nodes_with_context(&mut self, node: Node<'a>, in_bracket_context: bool) {
         let mut stack = vec![(node, in_bracket_context)];
         let mut children = vec![];
 
@@ -2936,7 +2905,7 @@ where
 
     fn postprocess_text_node_with_context(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         mut sourcepos: Sourcepos,
         root: &mut String,
         in_bracket_context: bool,
@@ -2973,7 +2942,7 @@ where
 
     fn postprocess_text_node_with_context_inner(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spxv: VecDeque<(Sourcepos, usize)>,
@@ -3005,7 +2974,7 @@ where
     // after the call to `process_tasklist`, it will be properly cleaned up.
     fn process_tasklist(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         text: &mut String,
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
@@ -3281,7 +3250,7 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
         && list_data.bullet_char == item_data.bullet_char
 }
 
-fn reopen_ast_nodes<'a>(mut ast: &'a AstNode<'a>) {
+fn reopen_ast_nodes<'a>(mut ast: Node<'a>) {
     loop {
         ast.data.borrow_mut().open = true;
         ast = match ast.parent() {

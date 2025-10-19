@@ -8,12 +8,11 @@ use std::ptr;
 use std::str;
 use typed_arena::Arena;
 
-use crate::arena_tree::Node;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
-    NodeValue, NodeWikiLink, Sourcepos,
+    Ast, AstNode, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
+    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 #[cfg(feature = "shortcodes")]
@@ -91,7 +90,7 @@ impl RefMap {
 }
 
 pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<&'a AstNode<'a>>>,
+    defs: RefCell<Vec<Node<'a>>>,
     counter: RefCell<usize>,
 }
 
@@ -109,17 +108,17 @@ impl<'a> FootnoteDefs<'a> {
         format!("__inline_{}", *counter)
     }
 
-    pub fn add_definition(&self, def: &'a AstNode<'a>) {
+    pub fn add_definition(&self, def: Node<'a>) {
         self.defs.borrow_mut().push(def);
     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<&'a AstNode<'a>>> {
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
         self.defs.borrow()
     }
 }
 
 pub struct Delimiter<'a: 'd, 'd> {
-    inl: &'a AstNode<'a>,
+    inl: Node<'a>,
     position: usize,
     length: usize,
     delim_char: u8,
@@ -151,7 +150,7 @@ impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
 }
 
 struct Bracket<'a> {
-    inl_text: &'a AstNode<'a>,
+    inl_text: Node<'a>,
     position: usize,
     image: bool,
     bracket_after: bool,
@@ -229,7 +228,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.brackets.pop().is_some()
     }
 
-    pub fn parse_inline(&mut self, node: &'a AstNode<'a>, ast: &mut Ast) -> bool {
+    pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -238,7 +237,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let adjusted_line = self.line - ast.sourcepos.start.line;
         self.line_offset = ast.line_offsets[adjusted_line];
 
-        let new_inl: Option<&'a AstNode<'a>> = match c {
+        let new_inl: Option<Node<'a>> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
             '`' => Some(self.handle_backticks(&ast.line_offsets)),
@@ -664,7 +663,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn adjust_node_newlines(
         &mut self,
-        node: &'a AstNode<'a>,
+        node: Node<'a>,
         matchlen: usize,
         extra: usize,
         parent_line_offsets: &[usize],
@@ -683,7 +682,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_newline(&mut self) -> &'a AstNode<'a> {
+    fn handle_newline(&mut self) -> Node<'a> {
         let nlpos = self.pos;
         if self.input.as_bytes()[self.pos] == b'\r' {
             self.pos += 1;
@@ -750,7 +749,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         let startpos = self.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
@@ -849,7 +848,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
             self.pos += 1;
             return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
@@ -917,7 +916,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         skipped
     }
 
-    fn handle_delim(&mut self, c: u8) -> &'a AstNode<'a> {
+    fn handle_delim(&mut self, c: u8) -> Node<'a> {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
@@ -946,7 +945,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         inl
     }
 
-    fn handle_hyphen(&mut self) -> &'a AstNode<'a> {
+    fn handle_hyphen(&mut self) -> Node<'a> {
         let start = self.pos;
         self.pos += 1;
 
@@ -979,7 +978,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
     }
 
-    fn handle_period(&mut self) -> &'a AstNode<'a> {
+    fn handle_period(&mut self) -> Node<'a> {
         self.pos += 1;
         if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
             self.pos += 1;
@@ -1141,7 +1140,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: &'a AstNode<'a>) {
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a>) {
         let d = self.delimiter_arena.alloc(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
@@ -1289,7 +1288,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_backslash(&mut self) -> &'a AstNode<'a> {
+    fn handle_backslash(&mut self) -> Node<'a> {
         let startpos = self.pos;
         self.pos += 1;
 
@@ -1332,7 +1331,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos > old_pos || self.eof()
     }
 
-    fn handle_entity(&mut self) -> &'a AstNode<'a> {
+    fn handle_entity(&mut self) -> Node<'a> {
         self.pos += 1;
 
         match entity::unescape(&self.input[self.pos..]) {
@@ -1345,7 +1344,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
         let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
 
         let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
@@ -1362,9 +1361,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_autolink_with(
         &mut self,
-        node: &'a AstNode<'a>,
-        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(&'a AstNode<'a>, usize, usize)>,
-    ) -> Option<&'a AstNode<'a>> {
+        node: Node<'a>,
+        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
+    ) -> Option<Node<'a>> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
@@ -1427,15 +1426,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         Some(post)
     }
 
-    fn handle_autolink_colon(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_colon(&mut self, node: Node<'a>) -> Option<Node<'a>> {
         self.handle_autolink_with(node, autolink::url_match)
     }
 
-    fn handle_autolink_w(&mut self, node: &'a AstNode<'a>) -> Option<&'a AstNode<'a>> {
+    fn handle_autolink_w(&mut self, node: Node<'a>) -> Option<Node<'a>> {
         self.handle_autolink_with(node, autolink::www_match)
     }
 
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> &'a AstNode<'a> {
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         self.pos += 1;
 
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
@@ -1536,7 +1535,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
     }
 
-    fn push_bracket(&mut self, image: bool, inl_text: &'a AstNode<'a>) {
+    fn push_bracket(&mut self, image: bool, inl_text: Node<'a>) {
         let len = self.brackets.len();
         if len > 0 {
             self.brackets[len - 1].bracket_after = true;
@@ -1552,7 +1551,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -1797,7 +1796,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_inline_footnote(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
         let startpos = self.pos;
 
         // We're at ^, next should be [
@@ -1851,13 +1850,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         );
 
         // Parse the content as inlines
-        let def_node = self.arena.alloc(Node::new(RefCell::new(Ast::new(
-            NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                name: name.clone(),
-                total_references: 0,
-            }),
-            (self.line, 1).into(),
-        ))));
+        let def_node = self.arena.alloc(
+            Ast::new(
+                NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                    name: name.clone(),
+                    total_references: 0,
+                }),
+                (self.line, 1).into(),
+            )
+            .into(),
+        );
 
         // Create a paragraph to hold the inline content
         let mut para_ast = Ast::new(
@@ -1872,7 +1874,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
         }
         para_ast.line_offsets = line_offsets;
-        let para_node = self.arena.alloc(Node::new(RefCell::new(para_ast)));
+        let para_node = self.arena.alloc(para_ast.into());
         def_node.append(para_node);
 
         // Parse the content recursively as inlines
@@ -1960,7 +1962,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<&'a AstNode<'a>> {
+    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
         let startpos = self.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
@@ -2080,12 +2082,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     // Given a label, handles backslash escaped characters. Appends the resulting
     // nodes to the container
-    fn label_backslash_escapes(
-        &mut self,
-        container: &'a AstNode<'a>,
-        label: &str,
-        start_column: usize,
-    ) {
+    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
         let mut startpos = 0;
         let mut offset = 0;
         let bytes = label.as_bytes();
@@ -2145,12 +2142,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn make_inline(
-        &self,
-        value: NodeValue,
-        start_column: usize,
-        end_column: usize,
-    ) -> &'a AstNode<'a> {
+    fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
         let start_column =
             start_column as isize + 1 + self.column_offset + self.line_offset as isize;
         let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
@@ -2171,7 +2163,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             table_visited: false,
             line_offsets: Vec::with_capacity(0),
         };
-        self.arena.alloc(Node::new(RefCell::new(ast)))
+        self.arena.alloc(ast.into())
     }
 
     fn make_autolink(
@@ -2180,7 +2172,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
-    ) -> &'a AstNode<'a> {
+    ) -> Node<'a> {
         let inl = self.make_inline(
             NodeValue::Link(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
@@ -2271,7 +2263,7 @@ pub(crate) fn make_inline<'a>(
     arena: &'a Arena<AstNode<'a>>,
     value: NodeValue,
     sourcepos: Sourcepos,
-) -> &'a AstNode<'a> {
+) -> Node<'a> {
     let ast = Ast {
         value,
         content: String::new(),
@@ -2282,7 +2274,7 @@ pub(crate) fn make_inline<'a>(
         table_visited: false,
         line_offsets: Vec::with_capacity(0),
     };
-    arena.alloc(Node::new(RefCell::new(ast)))
+    arena.alloc(ast.into())
 }
 
 pub(crate) fn count_newlines(input: &str) -> (usize, usize) {
