@@ -2199,7 +2199,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 }
 
-pub fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
+pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
     let bytes = input.as_bytes();
     let len = input.len();
     let mut i = 0;
@@ -2230,7 +2230,7 @@ pub fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
     }
 }
 
-pub fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
+pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
     let bytes = input.as_bytes();
     let len = input.len();
     let mut i = 0;
@@ -2268,7 +2268,7 @@ pub fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
     }
 }
 
-pub fn make_inline<'a>(
+pub(crate) fn make_inline<'a>(
     arena: &'a Arena<AstNode<'a>>,
     value: NodeValue,
     sourcepos: Sourcepos,
@@ -2286,7 +2286,7 @@ pub fn make_inline<'a>(
     arena.alloc(Node::new(RefCell::new(ast)))
 }
 
-pub fn count_newlines(input: &str) -> (usize, usize) {
+pub(crate) fn count_newlines(input: &str) -> (usize, usize) {
     let mut nls = 0;
     let mut since_nl = 0;
 
