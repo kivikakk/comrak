@@ -10,6 +10,7 @@ pub mod multiline_block_quote;
 
 #[cfg(feature = "bon")]
 use bon::Builder;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -76,8 +77,8 @@ pub fn parse_document<'a>(
         line_offsets: Vec::with_capacity(0),
     })));
     let mut parser = Parser::new(arena, root, options);
-    let mut linebuf = String::with_capacity(1024);
-    parser.feed(&mut linebuf, md, true);
+    let linebuf = String::new();
+    let linebuf = parser.feed(linebuf, md, true);
     parser.finish(linebuf)
 }
 
@@ -1236,7 +1237,7 @@ where
         }
     }
 
-    fn feed(&mut self, linebuf: &mut String, mut s: &str, eof: bool) {
+    fn feed(&mut self, mut linebuf: String, mut s: &str, eof: bool) -> String {
         if let (0, Some(delimiter)) = (
             self.total_size,
             &self.options.extension.front_matter_delimiter,
@@ -1295,9 +1296,12 @@ where
         while buffer < end {
             let mut process = false;
             let mut eol = buffer;
+            let mut ate_line_end = false;
             while eol < end {
                 if strings::is_line_end_char(sb[eol]) {
                     process = true;
+                    ate_line_end = true;
+                    eol += 1;
                     break;
                 }
                 if sb[eol] == 0 {
@@ -1313,10 +1317,10 @@ where
             if process {
                 if !linebuf.is_empty() {
                     linebuf.push_str(&s[buffer..eol]);
-                    self.process_line(linebuf);
-                    linebuf.truncate(0);
+                    let line = mem::take(&mut linebuf);
+                    self.process_line(line.into());
                 } else {
-                    self.process_line(&s[buffer..eol]);
+                    self.process_line(s[buffer..eol].into());
                 }
             } else if eol < end && sb[eol] == b'\0' {
                 linebuf.push_str(&s[buffer..eol]);
@@ -1330,6 +1334,9 @@ where
                 if sb[buffer] == b'\0' {
                     buffer += 1;
                 } else {
+                    if ate_line_end {
+                        buffer -= 1;
+                    }
                     if sb[buffer] == b'\r' {
                         buffer += 1;
                         if buffer == end {
@@ -1342,18 +1349,20 @@ where
                 }
             }
         }
+
+        linebuf
     }
 
-    fn process_line(&mut self, line: &str) {
-        let mut new_line: String;
-        let line =
-            if line.is_empty() || !strings::is_line_end_char(*line.as_bytes().last().unwrap()) {
-                new_line = line.into();
-                new_line.push('\n');
-                &new_line
-            } else {
-                line
-            };
+    fn process_line(&mut self, mut line: Cow<str>) {
+        let last_byte = line.as_bytes().last();
+        if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
+            line.to_mut().push('\n');
+        } else if last_byte == Some(&b'\r') {
+            let line_mut = line.to_mut();
+            line_mut.pop();
+            line_mut.push('\n');
+        };
+        let line = line.as_ref();
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -2660,7 +2669,7 @@ where
 
     fn finish(&mut self, remaining: String) -> &'a AstNode<'a> {
         if !remaining.is_empty() {
-            self.process_line(&remaining);
+            self.process_line(remaining.into());
         }
 
         self.finalize_document();
