@@ -14,8 +14,12 @@ use std::str;
 use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
 use crate::ctype::isspace;
+#[cfg(feature = "shortcodes")]
+use crate::nodes::NodeShortCode;
 use crate::nodes::{
-    ListType, Node, NodeCode, NodeFootnoteDefinition, NodeMath, NodeValue, TableAlignment,
+    ListType, Node, NodeAlert, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
+    NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeValue,
+    NodeWikiLink, TableAlignment,
 };
 use crate::parser::{Options, Plugins};
 use crate::{node_matches, scanners};
@@ -408,52 +412,56 @@ pub fn format_node_default<'a, T>(
     match node.data.borrow().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
-        NodeValue::Code(_) => render_code(context, node, entering),
-        NodeValue::CodeBlock(_) => render_code_block(context, node, entering),
-        NodeValue::Document => render_document(context, node, entering),
+        NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
+        NodeValue::CodeBlock(ref ncb) => render_code_block(context, node, entering, ncb),
+        NodeValue::Document => Ok(ChildRendering::HTML),
         NodeValue::Emph => render_emph(context, node, entering),
-        NodeValue::Heading(_) => render_heading(context, node, entering),
-        NodeValue::HtmlBlock(_) => render_html_block(context, node, entering),
-        NodeValue::HtmlInline(_) => render_html_inline(context, node, entering),
-        NodeValue::Image(_) => render_image(context, node, entering),
+        NodeValue::Heading(ref nh) => render_heading(context, node, entering, nh),
+        NodeValue::HtmlBlock(ref nhb) => render_html_block(context, entering, nhb),
+        NodeValue::HtmlInline(ref literal) => render_html_inline(context, entering, literal),
+        NodeValue::Image(ref nl) => render_image(context, node, entering, nl),
         NodeValue::Item(_) => render_item(context, node, entering),
         NodeValue::LineBreak => render_line_break(context, node, entering),
-        NodeValue::Link(_) => render_link(context, node, entering),
-        NodeValue::List(_) => render_list(context, node, entering),
+        NodeValue::Link(ref nl) => render_link(context, node, entering, nl),
+        NodeValue::List(ref nl) => render_list(context, node, entering, nl),
         NodeValue::Paragraph => render_paragraph(context, node, entering),
         NodeValue::SoftBreak => render_soft_break(context, node, entering),
         NodeValue::Strong => render_strong(context, node, entering),
-        NodeValue::Text(_) => render_text(context, node, entering),
+        NodeValue::Text(ref literal) => render_text(context, entering, literal),
         NodeValue::ThematicBreak => render_thematic_break(context, node, entering),
 
         // GFM
-        NodeValue::FootnoteDefinition(_) => render_footnote_definition(context, node, entering),
-        NodeValue::FootnoteReference(_) => render_footnote_reference(context, node, entering),
+        NodeValue::FootnoteDefinition(ref nfd) => {
+            render_footnote_definition(context, node, entering, nfd)
+        }
+        NodeValue::FootnoteReference(ref nfr) => {
+            render_footnote_reference(context, node, entering, nfr)
+        }
         NodeValue::Strikethrough => render_strikethrough(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
-        NodeValue::TableRow(_) => render_table_row(context, node, entering),
-        NodeValue::TaskItem(_) => render_task_item(context, node, entering),
+        NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
+        NodeValue::TaskItem(symbol) => render_task_item(context, node, entering, symbol),
 
         // Extensions
-        NodeValue::Alert(_) => render_alert(context, node, entering),
+        NodeValue::Alert(ref alert) => render_alert(context, node, entering, alert),
         NodeValue::DescriptionDetails => render_description_details(context, node, entering),
-        NodeValue::DescriptionItem(_) => render_description_item(context, node, entering),
+        NodeValue::DescriptionItem(_) => Ok(ChildRendering::HTML),
         NodeValue::DescriptionList => render_description_list(context, node, entering),
         NodeValue::DescriptionTerm => render_description_term(context, node, entering),
         NodeValue::Escaped => render_escaped(context, node, entering),
-        NodeValue::EscapedTag(_) => render_escaped_tag(context, node, entering),
-        NodeValue::FrontMatter(_) => render_frontmatter(context, node, entering),
-        NodeValue::Math(_) => render_math(context, node, entering),
+        NodeValue::EscapedTag(ref net) => render_escaped_tag(context, net),
+        NodeValue::FrontMatter(_) => Ok(ChildRendering::HTML),
+        NodeValue::Math(ref nm) => render_math(context, node, entering, nm),
         NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering),
-        NodeValue::Raw(_) => render_raw(context, node, entering),
+        NodeValue::Raw(ref literal) => render_raw(context, entering, literal),
         #[cfg(feature = "shortcodes")]
-        NodeValue::ShortCode(_) => render_short_code(context, node, entering),
+        NodeValue::ShortCode(ref nsc) => render_short_code(context, entering, nsc),
         NodeValue::SpoileredText => render_spoiler_text(context, node, entering),
         NodeValue::Subscript => render_subscript(context, node, entering),
         NodeValue::Superscript => render_superscript(context, node, entering),
         NodeValue::Underline => render_underline(context, node, entering),
-        NodeValue::WikiLink(_) => render_wiki_link(context, node, entering),
+        NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
     }
 }
 
@@ -495,16 +503,13 @@ fn render_code<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nc: &NodeCode,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Code(NodeCode { ref literal, .. }) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         context.write_str("<code")?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
-        context.escape(literal)?;
+        context.escape(&nc.literal)?;
         context.write_str("</code>")?;
     }
 
@@ -515,11 +520,8 @@ fn render_code_block<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    ncb: &NodeCodeBlock,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::CodeBlock(ref ncb) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         if ncb.info.eq("math") {
             render_math_code_block(context, node, &ncb.literal)?;
@@ -552,7 +554,7 @@ fn render_code_block<'a, T>(
                     }
                 } else {
                     code_attr = format!("language-{}", lang_str);
-                    code_attributes.insert(String::from("class"), code_attr);
+                    code_attributes.insert("class", code_attr);
 
                     if context.options.render.full_info_string && !info_str.is_empty() {
                         code_attributes.insert(String::from("data-meta"), info_str.to_string());
@@ -593,14 +595,6 @@ fn render_code_block<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_document<'a, T>(
-    _context: &mut Context<T>,
-    _node: Node<'a>,
-    _entering: bool,
-) -> Result<ChildRendering, fmt::Error> {
-    Ok(ChildRendering::HTML)
-}
-
 fn render_emph<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
@@ -621,11 +615,8 @@ fn render_heading<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nh: &NodeHeading,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Heading(ref nh) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     match context.plugins.render.heading_adapter {
         None => {
             if entering {
@@ -671,15 +662,11 @@ fn render_heading<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_html_block<'a, T>(
+fn render_html_block<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
     entering: bool,
+    nhb: &NodeHtmlBlock,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::HtmlBlock(ref nhb) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // No sourcepos.
     if entering {
         context.cr()?;
@@ -699,15 +686,11 @@ fn render_html_block<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_html_inline<'a, T>(
+fn render_html_inline<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
     entering: bool,
+    literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::HtmlInline(ref literal) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // No sourcepos.
     if entering {
         if context.options.render.escape {
@@ -729,11 +712,8 @@ fn render_image<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nl: &NodeLink,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Image(ref nl) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         if context.options.render.figure_with_caption {
             context.write_str("<figure>")?;
@@ -805,11 +785,8 @@ fn render_link<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nl: &NodeLink,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Link(ref nl) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     let parent_node = node.parent();
 
     if !context.options.parse.relaxed_autolinks
@@ -848,11 +825,8 @@ fn render_list<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nl: &NodeList,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::List(ref nl) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         context.cr()?;
         match nl.list_type {
@@ -965,15 +939,11 @@ fn render_strong<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_text<'a, T>(
+fn render_text<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
     entering: bool,
+    literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Text(ref literal) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // Nowhere to put sourcepos.
     if entering {
         context.escape(literal)?;
@@ -1003,11 +973,8 @@ fn render_footnote_definition<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nfd: &NodeFootnoteDefinition,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::FootnoteDefinition(ref nfd) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         if context.footnote_ix == 0 {
             context.write_str("<section")?;
@@ -1034,11 +1001,8 @@ fn render_footnote_reference<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nfr: &NodeFootnoteReference,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::FootnoteReference(ref nfr) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         let mut ref_id = format!("fnref-{}", nfr.name);
         if nfr.ref_num > 1 {
@@ -1168,14 +1132,11 @@ fn render_table_row<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    thead: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::TableRow(header) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         context.cr()?;
-        if header {
+        if thead {
             context.write_str("<thead>\n")?;
         } else if let Some(n) = node.previous_sibling() {
             if let NodeValue::TableRow(true) = n.data.borrow().value {
@@ -1188,7 +1149,7 @@ fn render_table_row<'a, T>(
     } else {
         context.cr()?;
         context.write_str("</tr>")?;
-        if header {
+        if thead {
             context.cr()?;
             context.write_str("</thead>")?;
         }
@@ -1201,11 +1162,8 @@ fn render_task_item<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    symbol: Option<char>,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::TaskItem(symbol) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     let write_li = node
         .parent()
         .map(|p| node_matches!(p, NodeValue::List(_)))
@@ -1245,11 +1203,8 @@ fn render_alert<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    alert: &NodeAlert,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Alert(ref alert) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         context.cr()?;
         context.write_str("<div class=\"markdown-alert ")?;
@@ -1286,14 +1241,6 @@ fn render_description_details<'a, T>(
         context.write_str("</dd>\n")?;
     }
 
-    Ok(ChildRendering::HTML)
-}
-
-fn render_description_item<'a, T>(
-    _context: &mut Context<T>,
-    _node: Node<'a>,
-    _entering: bool,
-) -> Result<ChildRendering, fmt::Error> {
     Ok(ChildRendering::HTML)
 }
 
@@ -1348,26 +1295,13 @@ fn render_escaped<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_escaped_tag<'a, T>(
+fn render_escaped_tag<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
-    _entering: bool,
+    net: &str,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::EscapedTag(ref net) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // Nowhere to put sourcepos.
     context.write_str(net)?;
 
-    Ok(ChildRendering::HTML)
-}
-
-fn render_frontmatter<'a, T>(
-    _context: &mut Context<T>,
-    _node: Node<'a>,
-    _entering: bool,
-) -> Result<ChildRendering, fmt::Error> {
     Ok(ChildRendering::HTML)
 }
 
@@ -1377,21 +1311,12 @@ pub fn render_math<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nm: &NodeMath,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Math(NodeMath {
-        ref literal,
-        display_math,
-        dollar_math,
-        ..
-    }) = node.data.borrow().value
-    else {
-        unreachable!()
-    };
-
     if entering {
         let mut tag_attributes: Vec<(String, String)> = Vec::new();
-        let style_attr = if display_math { "display" } else { "inline" };
-        let tag: &str = if dollar_math { "span" } else { "code" };
+        let style_attr = if nm.display_math { "display" } else { "inline" };
+        let tag: &str = if nm.dollar_math { "span" } else { "code" };
 
         tag_attributes.push((String::from("data-math-style"), String::from(style_attr)));
 
@@ -1401,7 +1326,7 @@ pub fn render_math<'a, T>(
         }
 
         write_opening_tag(context, tag, tag_attributes)?;
-        context.escape(literal)?;
+        context.escape(&nm.literal)?;
         write!(context, "</{tag}>")?;
     }
 
@@ -1463,15 +1388,11 @@ fn render_multiline_block_quote<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_raw<'a, T>(
+fn render_raw<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
     entering: bool,
+    literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::Raw(ref literal) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // No sourcepos.
     if entering {
         context.write_str(literal)?;
@@ -1483,13 +1404,9 @@ fn render_raw<'a, T>(
 #[cfg(feature = "shortcodes")]
 fn render_short_code<'a, T>(
     context: &mut Context<T>,
-    node: Node<'a>,
     entering: bool,
+    nsc: &NodeShortCode,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::ShortCode(ref nsc) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     // Nowhere to put sourcepos.
     if entering {
         context.write_str(&nsc.emoji)?;
@@ -1566,16 +1483,13 @@ fn render_wiki_link<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
+    nwl: &NodeWikiLink,
 ) -> Result<ChildRendering, fmt::Error> {
-    let NodeValue::WikiLink(ref nl) = node.data.borrow().value else {
-        unreachable!()
-    };
-
     if entering {
         context.write_str("<a")?;
         render_sourcepos(context, node)?;
         context.write_str(" href=\"")?;
-        let url = &nl.url;
+        let url = &nwl.url;
         if context.options.render.unsafe_ || !dangerous_url(url) {
             context.escape_href(url)?;
         }
