@@ -1,3 +1,25 @@
+# [v0.44.0-rc.1] - 2025-10-20
+
+## What's Changed
+* README: sync to sample (and improve sample quality). by @kivikakk in https://github.com/kivikakk/comrak/pull/621
+* Remove parse_document_with_broken_link_callback (deprecated), and move `ignore_setext` to parse. by @kivikakk in https://github.com/kivikakk/comrak/pull/623
+* tasklist_in_table: parse a tasklist item if it's the only content of a table cell. by @kivikakk in https://github.com/kivikakk/comrak/pull/622
+* syntect optional in cli; disable syntax highlighting in bench. by @kivikakk in https://github.com/kivikakk/comrak/pull/624
+* improvements from #617. by @kivikakk in https://github.com/kivikakk/comrak/pull/625
+* use str internally much more. by @kivikakk in https://github.com/kivikakk/comrak/pull/626
+* Don't copy ~every input string if we can avoid it. by @kivikakk in https://github.com/kivikakk/comrak/pull/629
+* Use jetscii for SIMD searching. by @kivikakk in https://github.com/kivikakk/comrak/pull/630
+* Give content ownership to inline processor; pre-process entity data for binary search. by @kivikakk in https://github.com/kivikakk/comrak/pull/631
+* Refactor, simplify, speed up. by @kivikakk in https://github.com/kivikakk/comrak/pull/627
+* eliminate some shifts in table parser and clarify. by @kivikakk in https://github.com/kivikakk/comrak/pull/632
+* Remove needless clones and reborrows. by @kivikakk in https://github.com/kivikakk/comrak/pull/633
+* move options into their own module. by @kivikakk in https://github.com/kivikakk/comrak/pull/636
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.44.0...v0.44.0-rc.1
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Reverts

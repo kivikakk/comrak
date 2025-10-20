@@ -16,7 +16,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.44"
+comrak = "0.44.0-rc"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
@@ -342,12 +342,12 @@ projects and resources to also consider:
 
 Comrak is used in a few Rust-y places, and more beyond:
 
-* [crates.io](https://crates.io), [docs.rs](https://docs.rs) and [lib.rs](https://lib.rs) use Comrak to render README Markdown faithfully.
-* [GitLab](https://gitlab.com) uses Comrak to render Markdown documents, issues, comments, and more.
-* [Deno](https://deno.com) uses Comrak to render documentation in [`deno_doc`](https://github.com/denoland/deno_doc).
-* [Reddit](https://reddit.com)'s new-style site uses a Comrak fork[^reddit].
-* [Lockbook](https://lockbook.net/) is a Markdown-based secure notebook with native apps. It looks really neat!!
-* [many](https://github.com/kivikakk/comrak/network/dependents) [more!](https://crates.io/crates/comrak/reverse_dependencies)
+- [crates.io](https://crates.io), [docs.rs](https://docs.rs) and [lib.rs](https://lib.rs) use Comrak to render README Markdown faithfully.
+- [GitLab](https://gitlab.com) uses Comrak to render Markdown documents, issues, comments, and more.
+- [Deno](https://deno.com) uses Comrak to render documentation in [`deno_doc`](https://github.com/denoland/deno_doc).
+- [Reddit](https://reddit.com)'s new-style site uses a Comrak fork[^reddit].
+- [Lockbook](https://lockbook.net/) is a Markdown-based secure notebook with native apps. It looks really neat!!
+- [many](https://github.com/kivikakk/comrak/network/dependents) [more!](https://crates.io/crates/comrak/reverse_dependencies)
 
 I'd be really happy to add your site or app here, just open a PR or issue. :)
 
