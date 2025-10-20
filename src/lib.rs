@@ -4,8 +4,6 @@
 //! Source repository and detailed `README` is at
 //! [github.com/kivikakk/comrak](https://github.com/kivikakk/comrak).
 //!
-//! If you're reading this in HTML, you're reading Markdown processed by Comrak.
-//!
 //! You can use `comrak::markdown_to_html` directly:
 //!
 //! ```rust
