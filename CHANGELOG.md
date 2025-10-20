@@ -6,18 +6,97 @@ Categories to use in this document, and the order in which to give them:
 * New APIs
 * Bug fixes
 * Stability
+* Performance
 * Dependency updates
 * Documentation
 * Build changes
 * Behind the scenes
 
 
-# unreleased
+# [v0.45.0-rc.1] - 2025-10-20
+
+This is a release candidate for v0.45.0. I've never made a release candidate for Comrak before, but then I've probably never made a release of this size before either.
+
+Why the big changes?  Quite simply, for the first time in over five years I'm once again working on CommonMark in my [day job](https://about.gitlab.com/company/team/#kivikakk), and for the first time ever _using_ Comrak in it too, and so I find myself thinking about it more, cutting myself on the sharp edges, wishing it were easier to maintain, and wishing it were more efficient.  For a little while now, too, I've been [speculating about calling version 1.0](https://github.com/kivikakk/comrak/pull/601).
+
+So let's get there.  This weekend I found myself profiling and reworking Obviously 2018 Code, and low-hanging fruit, oh my, they are aplenty.
+
+It's awkward to do an apples-to-apples comparison of speed between 0.44.0 and 0.45.0-rc.1, because 0.44.0's Comrak benchmark neglected to turn off syntax highlighting, while the benchmark input has something like 14,000 code blocks in it.  We were kiiiinda benchmarking syntect.  The benchmark also started
+the target process 33 times per run, which adds a lot of undesireable pair.
+
+Anyway, I compared the pair using the new benchmark strategy of running the process just once per run, syntax highlighting disabled.  Here's what we get on aarch64; on x86_64 the improvement is slightly greater thanks to SIMD:
+
+```
+Benchmark 1: ./bench.sh ./comrak-0.44.0
+  Time (mean ± σ):      90.0 ms ±   1.0 ms    [User: 71.9 ms, System: 18.9 ms]
+  Range (min … max):    88.3 ms …  92.9 ms    31 runs
+
+Benchmark 2: ./bench.sh ./comrak-0.45.0-rc.1
+  Time (mean ± σ):      70.4 ms ±   0.9 ms    [User: 53.5 ms, System: 17.9 ms]
+  Range (min … max):    69.1 ms …  73.7 ms    40 runs
+
+Summary
+  ./bench.sh ./comrak-0.45.0-rc.1 ran
+    1.28 ± 0.02 times faster than ./bench.sh ./comrak-0.44.0
+```
+
+LGTM!
 
 Changed APIs:
 
-* `parse_document_with_broken_link_callback` has been removed!  This entrypoint has been deprecated since 0.25.0.
-* `options.render.ignore_setext` was moved to `options.parse.ignore_setext`, as its effect takes place only in the parse stage.
+* `NodeValue::Text` now contains a `Cow<'static, str>` instead of a `String`. This is a pretty major change, but means we can now create text nodes with static content without duplicating the string on the heap. This particularly benefits smart quotes and HTML entity resolution. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
+  * Adapting to this change usually means nothing on the read-only side (you can use it as a `&str` without issues); to write in-place, use `.to_mut()` on the `Cow` to get a `&mut String`. To assign, use `.into()` on a `&str` or `String`, like `NodeValue::Text("moo".into())`.
+  * `NodeValue::text()` now returns a `&str`. It used to return a `&String` (!).
+  * `NodeValue::text_mut()` now returns a `&mut Cow<'static, str>`, instead of a `&mut String`. This permits writing a borrowed reference.
+  * I am experimenting with parameterising the lifetime on the `Cow`; it'd be amazing to refer continuously to the input where possible.
+* `NodeValue`'s `CodeBlock`, `Table`, `Link`, `Image`, `ShortCode` and `Alert` variants' payloads are now boxed. (by @kivikakk in https://github.com/kivikakk/comrak/pull/632)
+  * Adapting to this change usually means adding a `Box::new` call when constructing these nodes, and on matches, pulling the box out and then just dereferencing it directly (e.g. `NodeValue::Table(nt) => &nt.alignments` instead of `NodeValue::Table(NodeTable { ref alignments })`.
+  * These payloads were larger than average, increasing the size of every node considerably. The changes reduce an `Ast` to 128 bytes, and a full `AstNode<'_>` to 176 bytes.
+  * This produces a performance sweet spot: boxing the whole `NodeValue` results in worse performance than doing nothing at all. This change appreciably improves matters.
+  * We now assert the size of a node during build to ensure future payload changes don't increase the total size of an `Ast`.
+* Options now live in `comrak::options`. Structs have been renamed to remove `Options` from their name: `comrak::RenderOptions` is now `comrak::options::Render`, etc. The old names are marked deprecated. (@kivikakk in https://github.com/kivikakk/comrak/pull/636)
+  * Traits cannot be aliased [yet](https://github.com/rust-lang/rust/issues/41517) :( `URLRewriter` and `BrokenLinkCallback` have been moved, without a deprecation period.
+* `SyntaxHighlighterAdapter`'s `attributes` arguments now take `HashMap<&'static str, Cow<'s, str>>`; they used to take `HashMap<String, String>`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/633)
+* `html::write_opening_tag` can now take different `AsRef<str>` types for the attribute key and value.
+* `parse_document_with_broken_link_callback` has been removed!  This entrypoint has been deprecated since 0.25.0. (by @kivikakk in https://github.com/kivikakk/comrak/pull/623)
+* `options.render.ignore_setext` was moved to `options.parse.ignore_setext`, as its effect takes place only in the parse stage. (by @kivikakk in https://github.com/kivikakk/comrak/pull/623)
+* `nodes::can_contain_type` is now `Node::can_contain_type`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/625)
+
+New APIs:
+
+* `comrak::nodes::Node<'a>` is introduced as an alias for `&'a comrak::nodes::AstNode<'a>`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
+* `options.parse.tasklist_in_table` added: parse a tasklist item if it's the only content of a table cell. (by @kivikakk in https://github.com/kivikakk/comrak/pull/622)
+
+Performance:
+
+* Have you looked at your 7 year old code lately? A detail in the C-to-Rust translation meant essentially every line of input was being copied completely unnecessarily at the very beginning of the line processing stage. This no longer happens. We regret the error. (by @kivikakk in https://github.com/kivikakk/comrak/pull/629)
+* Preprocess entity data at build-time so we don't spend time doing a linear search over an unsorted array, some of which we will never match. (by @kivikakk in https://github.com/kivikakk/comrak/pull/631)
+* Inline content is consumed by the inline processor, instead of being borrowed by it and retained in memory indefinitely. (by @kivikakk in https://github.com/kivikakk/comrak/pull/631)
+* Don't try to do better than the stdlib at guessing buffer sizes; it's very good at it. (by @kivikakk in https://github.com/kivikakk/comrak/pull/626)
+* Use `str` internally in block and inline processing, eliminating many UTF-8 rechecks. The `strings` module actually operates on strings now. (by @kivikakk in https://github.com/kivikakk/comrak/pull/626)
+* Many, many needless clones have been removed in almost every subsystem.
+
+Dependency updates:
+
+* `memchr` removed from `Cargo.toml`; it wasn't used directly, though it still is included unconditionally due to `caseless`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/630)
+* `slug` is moved to a development-only dependency; it's only used in an example. (by @kivikakk in https://github.com/kivikakk/comrak/pull/630)
+* `jetscii` is added for faster string searching, including SIMD on x86_64. (by @kivikakk in https://github.com/kivikakk/comrak/pull/630)
+  * I'm [experimenting](https://github.com/kivikakk/comrak/pull/634) with aarch64 SIMD.
+
+Documentation:
+
+* The `README` example code is updated to build with recent API changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/621)
+
+Build changes:
+
+* `syntect` is now optional (but still default) in CLI builds. (by @kivikakk in https://github.com/kivikakk/comrak/pull/624)
+
+Behind the scenes:
+
+* Much of the block parser code has been re-organised, and many C-isms from the original port have been refactored into readable Rust. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
+* All `unsafe` blocks now have a `SAFETY` comment describing why their actions are safe.
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.44.0...v0.45.0-rc.1
 
 
 # [v0.44.0] - 2025-10-14

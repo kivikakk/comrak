@@ -247,6 +247,8 @@ fn shift_buf_left(buf: &mut [u8], n: usize) {
     }
     assert!(n <= buf.len());
     let keep = buf.len() - n;
+    // SAFETY: we can copy `keep` bytes from `dst+n` to `dst`, as the full size
+    // of the `dst` buffer is `keep+n`.
     unsafe {
         let dst = buf.as_mut_ptr();
         let src = dst.add(n);

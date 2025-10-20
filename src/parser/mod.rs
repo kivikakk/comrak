@@ -70,8 +70,7 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
         .into(),
     );
     let mut parser = Parser::new(arena, root, options);
-    let linebuf = String::new();
-    let linebuf = parser.feed(linebuf, md, true);
+    let linebuf = parser.feed(String::new(), md, true);
     parser.finish(linebuf)
 }
 

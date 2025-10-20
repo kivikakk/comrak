@@ -1639,9 +1639,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            // XXX: is there a difference?
-            // lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
-            lab = (&self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]).into();
+            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
             found_label = true;
         }
 
