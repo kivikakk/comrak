@@ -474,7 +474,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&Cow<'static, str>> {
+    pub fn text(&self) -> Option<&str> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
