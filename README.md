@@ -316,16 +316,16 @@ use of `RefCell` in the core node type to provide mutable access with
 parent/sibling/child pointers.  This can produce non-idiomatic-looking code,
 though in practice it has proven very usable.
 
-For whatever reason, Comrak may not meet your requirements. Here are some projects to also consider:
+For whatever reason, Comrak may not meet your requirements. Here are some
+projects and resources to also consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
   want). `cargo doc` uses this, as do many other projects in the ecosystem.
-- [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
+- [markdown-rs](https://github.com/wooorm/markdown-rs) looks really promising.
+- [markdown-it](https://github.com/markdown-it-rust/markdown-it) is a port of JavaScript's [markdown-it.js](https://github.com/markdown-it/markdown-it).
+- [babelmark](https://babelmark.github.io/) lets you compare many implementations at once, including the above.
 - Know of another library? Please open a PR to add it!
-
-As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
-extensions](https://github.github.com/gfm) rigorously.
 
 ### Bindings
 
