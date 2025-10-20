@@ -24,9 +24,9 @@ It is [developed on GitHub] by a community of contributors, and released under t
 * [Custom formatter] support to override the rendering of any node type.
 
 [CommonMark 0.31.2]: https://spec.commonmark.org/0.31.2/
-[extensions]: https://github.com/kivikakk/comrak#extensions
-[parse]: https://docs.rs/comrak/latest/comrak/struct.ParseOptions.html
-[render]: https://docs.rs/comrak/latest/comrak/struct.RenderOptions.html
+[extensions]: https://docs.rs/comrak/latest/comrak/options/struct.Extension.html
+[parse]: https://docs.rs/comrak/latest/comrak/options/struct.Parse.html
+[render]: https://docs.rs/comrak/latest/comrak/options/struct.Render.html
 [Pluggable]: https://github.com/kivikakk/comrak#plugins
 [Custom formatter]: https://docs.rs/comrak/latest/comrak/macro.create_formatter.html
 

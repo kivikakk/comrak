@@ -192,7 +192,7 @@ pub enum NodeValue {
 
     /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     ///
-    /// Enabled with [`escaped_char_spans`](crate::RenderOptionsBuilder::escaped_char_spans).
+    /// Enabled with [`escaped_char_spans`](crate::options::RenderBuilder::escaped_char_spans).
     Escaped,
 
     /// **Inline**.  A wikilink to some URL.
