@@ -559,7 +559,7 @@ pub struct Ast<'i> {
     /// The positions in the source document this node comes from.
     pub sourcepos: Sourcepos,
 
-    pub(crate) content: String,
+    pub(crate) content: Vec<Cow<'i, str>>,
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
     pub(crate) table_visited: bool,
@@ -651,7 +651,7 @@ impl<'i> Ast<'i> {
     pub fn new(value: NodeValue<'i>, start: LineColumn) -> Self {
         Ast {
             value,
-            content: String::new(),
+            content: Vec::new(),
             sourcepos: (start.line, start.column, start.line, 0).into(),
             open: true,
             last_line_blank: false,
@@ -664,7 +664,7 @@ impl<'i> Ast<'i> {
     pub fn new_with_sourcepos(value: NodeValue<'i>, sourcepos: Sourcepos) -> Self {
         Ast {
             value,
-            content: String::new(),
+            content: Vec::new(),
             sourcepos,
             open: true,
             last_line_blank: false,

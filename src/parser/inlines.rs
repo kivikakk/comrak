@@ -30,7 +30,7 @@ const MAX_MATH_DOLLARS: usize = 2;
 pub struct Subject<'a: 'd, 'i, 'r, 'o, 'd, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a, 'i>>,
     pub options: &'o Options<'c>,
-    pub input: String,
+    pub input: Cow<'i, str>,
     line: usize,
     pub pos: usize,
     column_offset: isize,

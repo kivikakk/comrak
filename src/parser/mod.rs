@@ -61,13 +61,13 @@ macro_rules! node_matches {
 /// See the documentation of the crate root for an example.
 pub fn parse_document<'a, 'i>(
     arena: &'a Arena<AstNode<'a, 'i>>,
-    md: &str,
+    md: &'i str,
     options: &Options,
 ) -> Node<'a, 'i> {
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
-            content: String::new(),
+            content: Vec::new(),
             sourcepos: (1, 1, 1, 1).into(),
             open: true,
             last_line_blank: false,
@@ -1242,7 +1242,7 @@ where
         }
     }
 
-    fn feed(&mut self, mut linebuf: String, mut s: &str, eof: bool) -> String {
+    fn feed(&mut self, mut linebuf: String, mut s: &'i str, eof: bool) -> String {
         if let (0, Some(delimiter)) = (
             self.total_size,
             &self.options.extension.front_matter_delimiter,
@@ -1361,7 +1361,7 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, mut line: Cow<str>) {
+    fn process_line(&mut self, mut line: Cow<'i, str>) {
         let last_byte = line.as_bytes().last();
         if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
             line.to_mut().push('\n');
@@ -1370,7 +1370,7 @@ where
             line_mut.pop();
             line_mut.push('\n');
         };
-        let line = line.as_ref();
+        let line = line;
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -1397,10 +1397,10 @@ where
 
         self.line_number += 1;
 
-        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
+        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(&line) {
             let mut container = last_matched_container;
             let current = self.current;
-            self.open_new_blocks(&mut container, line, all_matched);
+            self.open_new_blocks(&mut container, &line, all_matched);
 
             if current.same_node(self.current) {
                 self.add_text_to_container(container, last_matched_container, line);
@@ -1442,16 +1442,16 @@ where
             container = container.last_child().unwrap();
             let ast = &mut container.data.borrow_mut();
 
-            self.find_first_nonspace(line);
+            self.find_first_nonspace(&line);
 
             match ast.value {
                 NodeValue::BlockQuote => {
-                    if !self.parse_block_quote_prefix(line) {
+                    if !self.parse_block_quote_prefix(&line) {
                         break;
                     }
                 }
                 NodeValue::Item(ref nl) => {
-                    if !self.parse_node_item_prefix(line, container, nl) {
+                    if !self.parse_node_item_prefix(&line, container, nl) {
                         break;
                     }
                 }
@@ -2442,9 +2442,9 @@ where
         &mut self,
         mut container: Node<'a, 'i>,
         last_matched_container: Node<'a, 'i>,
-        line: &str,
+        line: Cow<'i, str>,
     ) {
-        self.find_first_nonspace(line);
+        self.find_first_nonspace(&line);
 
         if self.blank {
             if let Some(last_child) = container.last_child() {
@@ -2540,7 +2540,7 @@ where
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
-                            self.advance_offset(line, count, false);
+                            self.advance_offset(&line, count, false);
                             self.add_line(container, line);
                         }
                     } else {
@@ -2550,7 +2550,7 @@ where
                             self.first_nonspace + 1,
                         );
                         let count = self.first_nonspace - self.offset;
-                        self.advance_offset(line, count, false);
+                        self.advance_offset(&line, count, false);
                         self.add_line(container, line);
                     }
                 }
@@ -2580,16 +2580,14 @@ where
         MATCHER.find(buf).is_some()
     }
 
-    fn add_line(&mut self, node: Node<'a, 'i>, line: &str) {
+    fn add_line(&mut self, node: Node<'a, 'i>, line: Cow<'i, str>) {
         let mut ast = node.data.borrow_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
             ast.content.reserve(chars_to_tab);
-            for _ in 0..chars_to_tab {
-                ast.content.push(' ');
-            }
+            ast.content.push(" ".repeat(chars_to_tab).into());
         }
         if self.offset < line.len() {
             // since whitespace is stripped off the beginning of lines, we need to keep
@@ -2597,7 +2595,7 @@ where
             // inline sourcepos during inline processing.
             ast.line_offsets.push(self.offset);
 
-            ast.content.push_str(&line[self.offset..]);
+            ast.content.push(line[self.offset..].into());
         }
     }
 
