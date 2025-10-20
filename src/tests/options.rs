@@ -8,11 +8,11 @@ fn markdown_list_bullets() {
     let plus = concat!("+ a\n");
     let star = concat!("* a\n");
     let mut dash_opts = Options::default();
-    dash_opts.render.list_style = ListStyleType::Dash;
+    dash_opts.render.list_style = options::ListStyleType::Dash;
     let mut plus_opts = Options::default();
-    plus_opts.render.list_style = ListStyleType::Plus;
+    plus_opts.render.list_style = options::ListStyleType::Plus;
     let mut star_opts = Options::default();
-    star_opts.render.list_style = ListStyleType::Star;
+    star_opts.render.list_style = options::ListStyleType::Star;
 
     commonmark(dash, dash, Some(&dash_opts));
     commonmark(plus, dash, Some(&dash_opts));
@@ -67,7 +67,7 @@ fn smart_chars() {
 
 #[test]
 fn broken_link_callback() {
-    let cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
+    let cb = |link_ref: options::BrokenLinkReference| match link_ref.normalized {
         "foo" => Some(ResolvedReference {
             url: "https://www.rust-lang.org/".to_string(),
             title: "The Rust Language".to_string(),

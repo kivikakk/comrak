@@ -1,5 +1,5 @@
 use crate::html::{self, Anchorizer};
-use crate::{Options, Plugins};
+use crate::{options::Plugins, Options};
 
 use std::cell::Cell;
 use std::fmt::{self, Write};

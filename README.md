@@ -270,7 +270,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - [CJK friendly emphasis](https://github.com/tats-u/markdown-cjk-friendly)
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
-[`ExtensionOptions` struct](https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html).
+[`ExtensionOptions` struct](https://docs.rs/comrak/latest/comrak/options/struct.Extension.html).
 
 ## Custom formatting
 

@@ -4,7 +4,7 @@ pub struct NodeAlert {
     /// Type of alert
     pub alert_type: AlertType,
 
-    /// Overridden title. If None, then use the default title.
+    /// Overridden title. If `None`, then use the default title.
     pub title: Option<String>,
 
     /// Originated from a multiline blockquote.

@@ -1,7 +1,7 @@
 //! This example shows how to implement a syntax highlighter plugin.
 
 use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{markdown_to_html_with_plugins, Options, Plugins};
+use comrak::{markdown_to_html_with_plugins, options, Options};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Write};
@@ -61,7 +61,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
 fn main() {
     let adapter = PotatoSyntaxAdapter::new(42);
     let options = Options::default();
-    let mut plugins = Plugins::default();
+    let mut plugins = options::Plugins::default();
 
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 

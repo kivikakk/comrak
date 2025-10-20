@@ -1,6 +1,6 @@
 //! Adapter traits for plugins.
 //!
-//! Each plugin has to implement one of the traits available in this module.
+//! Each plugin implements one or more of the traits available in this module.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -24,7 +24,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// Generates the opening `<pre>` tag. Some syntax highlighter libraries might include their own
     /// `<pre>` tag possibly with some HTML attribute pre-filled.
     ///
-    /// `attributes`: A map of HTML attributes provided by comrak.
+    /// `attributes`: A map of HTML attributes provided by Comrak.
     fn write_pre_tag<'s>(
         &self,
         output: &mut dyn fmt::Write,
@@ -34,7 +34,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
     /// `<code>` tag possibly with some HTML attribute pre-filled.
     ///
-    /// `attributes`: A map of HTML attributes provided by comrak.
+    /// `attributes`: A map of HTML attributes provided by Comrak.
     fn write_code_tag<'s>(
         &self,
         output: &mut dyn fmt::Write,

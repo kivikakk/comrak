@@ -1,10 +1,10 @@
 use comrak::{
     arena_tree::NodeEdge,
     nodes::{Node, NodeValue},
-    parse_document, Arena, ComrakOptions,
+    parse_document, Arena, Options,
 };
 
-// `node.traverse()`` creates an itertor that will traverse
+// `node.traverse()`` creates an iterator that will traverse
 // the current node and all descendants in order.
 // The iterator yields `NodeEdges`. `NodeEdges` can have the
 // following values:
@@ -16,7 +16,7 @@ use comrak::{
 // This example extracts plain text ignoring nested
 // markup.
 
-// Note: root can be any AstNode, not just document root.
+// Note: root can be any Node, not just document root.
 
 fn extract_text_traverse<'a>(root: Node<'a>) -> String {
     let mut output_text = String::new();
@@ -44,7 +44,7 @@ fn main() {
 
     // setup parser
     let arena = Arena::new();
-    let options = ComrakOptions::default();
+    let options = Options::default();
 
     // parse document and return root.
     let root = parse_document(&arena, markdown_input, &options);
@@ -62,7 +62,7 @@ mod tests {
     fn extract_text_traverse_test() {
         let markdown_input = "Hello, *worl[d](https://example.com/)*";
         let arena = Arena::new();
-        let options = ComrakOptions::default();
+        let options = Options::default();
         let root = parse_document(&arena, markdown_input, &options);
         assert_eq!("Hello, world", extract_text_traverse(root));
     }

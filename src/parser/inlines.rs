@@ -15,11 +15,10 @@ use crate::nodes::{
     NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
+use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{
-    autolink, AutolinkType, BrokenLinkReference, Options, ResolvedReference, WikiLinksMode,
-};
+use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
 

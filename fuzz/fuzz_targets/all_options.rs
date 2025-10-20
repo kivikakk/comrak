@@ -2,15 +2,12 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use comrak::{
-    markdown_to_html, BrokenLinkReference, ExtensionOptions, ListStyleType, Options, ParseOptions,
-    RenderOptions, ResolvedReference,
-};
+use comrak::{markdown_to_html, options, Options, ResolvedReference};
 use std::sync::Arc;
 
 fuzz_target!(|s: &str| {
     let url_rewriter = |input: &str| format!("{input}#rewritten");
-    let extension = ExtensionOptions {
+    let extension = options::Extension {
         strikethrough: true,
         tagfilter: true,
         table: true,
@@ -38,13 +35,13 @@ fuzz_target!(|s: &str| {
         cjk_friendly_emphasis: true,
     };
 
-    let cb = |link_ref: BrokenLinkReference| {
+    let cb = |link_ref: options::BrokenLinkReference| {
         Some(ResolvedReference {
             url: link_ref.normalized.to_string(),
             title: link_ref.original.to_string(),
         })
     };
-    let parse = ParseOptions {
+    let parse = options::Parse {
         smart: true,
         default_info_string: Some("rust".to_string()),
         relaxed_tasklist_matching: true,
@@ -54,14 +51,14 @@ fuzz_target!(|s: &str| {
         tasklist_in_table: true,
     };
 
-    let render = RenderOptions {
+    let render = options::Render {
         hardbreaks: true,
         github_pre_lang: true,
         full_info_string: true,
         width: 80,
         unsafe_: true,
         escape: true,
-        list_style: ListStyleType::Star,
+        list_style: options::ListStyleType::Star,
         sourcepos: true,
         escaped_char_spans: true,
         ignore_empty_links: true,

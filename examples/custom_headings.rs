@@ -2,7 +2,8 @@ use comrak::{
     adapters::{HeadingAdapter, HeadingMeta},
     markdown_to_html_with_plugins,
     nodes::Sourcepos,
-    Options, Plugins,
+    options::Plugins,
+    Options,
 };
 use std::fmt::{self, Write};
 
