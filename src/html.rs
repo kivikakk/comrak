@@ -1,8 +1,9 @@
 //! HTML renderering infrastructure for the CommonMark AST, as well as helper
-//! functions. [`format_document`] and [`format_document_with_plugins`]
-//! use the standard formatter. The
-//! [`create_formatter!`][super::create_formatter] macro allows specialisation
-//! of formatting for specific node types.
+//! functions.
+//!
+//! [`format_document`] and [`format_document_with_plugins`] use the standard
+//! formatter. The [`create_formatter!`][super::create_formatter] macro allows
+//! specialisation of formatting for specific node types.
 
 mod anchorizer;
 mod context;
@@ -22,7 +23,7 @@ use crate::nodes::{
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeValue,
     NodeWikiLink, TableAlignment,
 };
-use crate::parser::{Options, Plugins};
+use crate::parser::options::{Options, Plugins};
 use crate::{node_matches, scanners};
 
 #[doc(hidden)]
@@ -82,7 +83,7 @@ pub enum ChildRendering {
 /// * `context`: the <code>[&mut] [Context]</code>, giving access to rendering
 ///   options, plugins, and output appending via its <code>[Write]</code>
 ///   implementation.
-/// * `node`: the <code>[&][&][AstNode]</code> being formatted, when the
+/// * `node`: the <code>[&][&][Node]</code> being formatted, when the
 ///   [`NodeValue`]'s contents aren't enough.
 /// * `entering`: [`true`] when the node is being first descended into,
 ///   [`false`] when being exited.
@@ -98,7 +99,7 @@ pub enum ChildRendering {
 /// is available on the [`Context`] as the `user` property, and becomes the
 /// return value of `format_document`.
 ///
-/// ```
+/// ```rust
 /// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue, html::ChildRendering};
 /// # use std::fmt::Write;
 /// create_formatter!(CustomFormatter<usize>, {
@@ -182,7 +183,7 @@ macro_rules! create_formatter {
                     root,
                     options,
                     output,
-                    &$crate::Plugins::default(),
+                    &$crate::options::Plugins::default(),
                     Self::formatter,
                     ()
                 )
@@ -194,7 +195,7 @@ macro_rules! create_formatter {
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
-                plugins: &'o $crate::Plugins<'o>,
+                plugins: &'o $crate::options::Plugins<'o>,
             ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
                     root,
@@ -246,7 +247,7 @@ macro_rules! create_formatter {
                     root,
                     options,
                     output,
-                    &$crate::Plugins::default(),
+                    &$crate::options::Plugins::default(),
                     Self::formatter,
                     user
                 )
@@ -258,7 +259,7 @@ macro_rules! create_formatter {
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
-                plugins: &'o $crate::Plugins<'o>,
+                plugins: &'o $crate::options::Plugins<'o>,
                 user: $type,
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
@@ -322,7 +323,7 @@ macro_rules! formatter_captures {
 /// Formats the given AST with all options and formatter function specified.
 ///
 /// The default formatter as used by [`format_document`] is
-/// [`format_node_default`]. It is given the [`Context`], [`AstNode`], and a
+/// [`format_node_default`]. It is given the [`Context`], [`Node`], and a
 /// boolean indicating whether the node is being entered into or exited.  The
 /// returned [`ChildRendering`] is used to inform whether and how the node's
 /// children are recursed into automatically.

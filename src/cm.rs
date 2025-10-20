@@ -4,16 +4,16 @@ use std::str;
 use typed_arena::Arena;
 
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
+use crate::node_matches;
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
     NodeList, NodeMath, NodeValue, NodeWikiLink, TableAlignment,
 };
+use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{Options, WikiLinksMode};
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::{node_matches, Plugins};
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(

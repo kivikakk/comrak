@@ -10,10 +10,10 @@ use std::{boxed::Box, io::BufWriter};
 
 use clap::{Parser, ValueEnum};
 
+use comrak::options;
 #[cfg(feature = "syntect")]
 use comrak::{adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter};
-use comrak::{Arena, ListStyleType, Options, Plugins};
-use comrak::{ExtensionOptions, ParseOptions, RenderOptions};
+use comrak::{Arena, Options};
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;
@@ -200,7 +200,7 @@ enum ListStyle {
     Star,
 }
 
-impl From<ListStyle> for ListStyleType {
+impl From<ListStyle> for options::ListStyleType {
     fn from(style: ListStyle) -> Self {
         match style {
             ListStyle::Dash => Self::Dash,
@@ -256,7 +256,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let exts = &cli.extensions;
 
-    let extension = ExtensionOptions::builder()
+    let extension = options::Extension::builder()
         .strikethrough(exts.contains(&Extension::Strikethrough) || cli.gfm)
         .tagfilter(exts.contains(&Extension::Tagfilter) || cli.gfm)
         .table(exts.contains(&Extension::Table) || cli.gfm)
@@ -285,7 +285,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let extension = extension.build();
 
-    let parse = ParseOptions::builder()
+    let parse = options::Parse::builder()
         .smart(cli.smart)
         .maybe_default_info_string(cli.default_info_string)
         .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
@@ -293,7 +293,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ignore_setext(cli.ignore_setext)
         .build();
 
-    let render = RenderOptions::builder()
+    let render = options::Render::builder()
         .hardbreaks(cli.hardbreaks)
         .github_pre_lang(cli.github_pre_lang || cli.gfm)
         .full_info_string(cli.full_info_string)
@@ -321,7 +321,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let adapter: SyntectAdapter;
 
     #[cfg_attr(not(feature = "syntect"), allow(unused_mut))]
-    let mut plugins: Plugins = Plugins::default();
+    let mut plugins = options::Plugins::default();
 
     #[cfg(feature = "syntect")]
     {

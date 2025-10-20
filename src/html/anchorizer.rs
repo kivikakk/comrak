@@ -10,7 +10,7 @@ use unicode_categories::UnicodeCategories;
 ///
 /// ## Example
 ///
-/// ```
+/// ```rust
 /// # use comrak::Anchorizer;
 /// let mut anchorizer = Anchorizer::new();
 /// // First "stuff" is unsuffixed.
@@ -33,7 +33,7 @@ impl Anchorizer {
     /// problem characters and, if needed, adding a suffix to make the
     /// resultant anchor unique.
     ///
-    /// ```
+    /// ```rust
     /// # use comrak::Anchorizer;
     /// let mut anchorizer = Anchorizer::new();
     /// let source = "Ticks aren't in";

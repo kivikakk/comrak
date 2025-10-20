@@ -41,7 +41,7 @@ fn pathological_table_columns_2() {
         "a\n".repeat(n)
     );
 
-    let extension = parser::ExtensionOptions {
+    let extension = parser::options::Extension {
         table: true,
         ..Default::default()
     };
@@ -51,8 +51,7 @@ fn pathological_table_columns_2() {
         &input,
         &Options {
             extension,
-            parse: Default::default(),
-            render: RenderOptions::default(),
+            ..Default::default()
         },
     );
 }

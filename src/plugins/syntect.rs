@@ -26,7 +26,7 @@ pub struct SyntectAdapter {
 
 impl SyntectAdapter {
     /// Construct a new `SyntectAdapter` object and set the syntax highlighting theme.
-    /// If None is specified, apply CSS classes instead.
+    /// If `None` is specified, apply CSS classes instead.
     pub fn new(theme: Option<&str>) -> Self {
         SyntectAdapter {
             theme: theme.map(String::from),

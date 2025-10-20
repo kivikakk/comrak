@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::panic;
 
 use crate::nodes::{AstNode, Node, NodeValue, Sourcepos};
+use crate::options;
 use crate::*;
 
 mod alerts;
@@ -23,7 +24,8 @@ mod html_;
 mod inline_footnotes;
 mod math;
 mod multiline_block_quotes;
-mod options;
+#[path = "tests/options.rs"]
+mod options_;
 mod pathological;
 mod plugins;
 mod raw;
@@ -177,7 +179,7 @@ macro_rules! html_opts {
 pub(crate) use html_opts;
 
 #[track_caller]
-fn html_plugins(input: &str, expected: &str, plugins: &Plugins) {
+fn html_plugins(input: &str, expected: &str, plugins: &options::Plugins) {
     let arena = Arena::new();
     let options = Options::default();
 

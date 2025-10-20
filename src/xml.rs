@@ -4,7 +4,7 @@ use std::fmt::{self, Write};
 use crate::character_set::character_set;
 use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
-use crate::parser::{Options, Plugins};
+use crate::parser::options::{Options, Plugins};
 
 const MAX_INDENT: u32 = 40;
 

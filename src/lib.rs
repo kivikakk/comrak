@@ -1,11 +1,14 @@
 //! A 100% [CommonMark](http://commonmark.org/) and [GFM](https://github.github.com/gfm/)
 //! compatible Markdown parser.
 //!
-//! Source repository and detailed `README` is at <https://github.com/kivikakk/comrak>.
+//! Source repository and detailed `README` is at
+//! [github.com/kivikakk/comrak](https://github.com/kivikakk/comrak).
+//!
+//! If you're reading this in HTML, you're reading Markdown processed by Comrak.
 //!
 //! You can use `comrak::markdown_to_html` directly:
 //!
-//! ```
+//! ```rust
 //! use comrak::{markdown_to_html, Options};
 //! assert_eq!(
 //!     markdown_to_html("Olá, **世界**!", &Options::default()),
@@ -16,9 +19,9 @@
 //! Or you can parse the input into an AST yourself, manipulate it, and then use your desired
 //! formatter:
 //!
-//! ```
+//! ```rust
 //! use comrak::{Arena, parse_document, format_html, Options};
-//! use comrak::nodes::{AstNode, NodeValue};
+//! use comrak::nodes::{NodeValue};
 //!
 //! # fn main() {
 //! let arena = Arena::new();
@@ -67,14 +70,15 @@
 
 pub mod adapters;
 pub mod arena_tree;
+pub mod html;
+pub mod nodes;
+pub mod plugins;
+
 mod character_set;
 mod cm;
 mod ctype;
 mod entity;
-pub mod html;
-pub mod nodes;
 mod parser;
-pub mod plugins;
 mod scanners;
 mod strings;
 #[cfg(test)]
@@ -89,45 +93,113 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
 pub use html::Anchorizer;
-pub use parser::{
-    parse_document, BrokenLinkCallback, BrokenLinkReference, ExtensionOptions, ListStyleType,
-    Options, ParseOptions, Plugins, RenderOptions, RenderPlugins, ResolvedReference, URLRewriter,
-    WikiLinksMode,
-};
+pub use parser::options;
+pub use parser::{parse_document, Options, ResolvedReference};
 pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
-#[cfg(feature = "bon")]
-pub use parser::{
-    ExtensionOptionsBuilder, ParseOptionsBuilder, PluginsBuilder, RenderOptionsBuilder,
-    RenderPluginsBuilder,
-};
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::Extension` instead of `comrak::ExtensionOptions`"
+)]
+/// Deprecated alias: use [`options::Extension`] instead of [`ExtensionOptions`].
+pub type ExtensionOptions<'c> = parser::options::Extension<'c>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::Parse` instead of `comrak::ParseOptions`"
+)]
+/// Deprecated alias: use [`options::Parse`] instead of [`ParseOptions`].
+pub type ParseOptions<'c> = parser::options::Parse<'c>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::Render` instead of `comrak::RenderOptions `"
+)]
+/// Deprecated alias: use [`options::Render`] instead of [`RenderOptions ]`.
+pub type RenderOptions = parser::options::Render;
 
-/// Legacy naming of [`ExtensionOptions`]
-pub type ComrakExtensionOptions<'c> = ExtensionOptions<'c>;
-/// Legacy naming of [`Options`]
-pub type ComrakOptions<'c> = Options<'c>;
-/// Legacy naming of [`ParseOptions`]
-pub type ComrakParseOptions<'c> = ParseOptions<'c>;
-/// Legacy naming of [`Plugins`]
-pub type ComrakPlugins<'a> = Plugins<'a>;
-/// Legacy naming of [`RenderOptions`]
-pub type ComrakRenderOptions = RenderOptions;
-/// Legacy naming of [`RenderPlugins`]
-pub type ComrakRenderPlugins<'a> = RenderPlugins<'a>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::BrokenLinkReference` instead of `comrak::BrokenLinkReference`"
+)]
+/// Deprecated alias: use [`options::BrokenLinkReference`] instead of [`BrokenLinkReference`].
+pub type BrokenLinkReference<'l> = parser::options::BrokenLinkReference<'l>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::ListStyleType` instead of `comrak::ListStyleType `"
+)]
+/// Deprecated alias: use [`options::ListStyleType`] instead of [`ListStyleType ]`.
+pub type ListStyleType = parser::options::ListStyleType;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::Plugins` instead of `comrak::Plugins`"
+)]
+/// Deprecated alias: use [`options::Plugins`] instead of [`Plugins`].
+pub type Plugins<'p> = parser::options::Plugins<'p>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::RenderPlugins` instead of `comrak::RenderPlugins`"
+)]
+/// Deprecated alias: use [`options::RenderPlugins`] instead of [`RenderPlugins`].
+pub type RenderPlugins<'p> = parser::options::RenderPlugins<'p>;
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::WikiLinksMode` instead of `comrak::WikiLinksMode `"
+)]
+/// Deprecated alias: use [`options::WikiLinksMode`] instead of [`WikiLinksMode ]`.
+pub type WikiLinksMode = parser::options::WikiLinksMode;
+
+#[cfg(feature = "bon")]
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::ExtensionBuilder` instead of `comrak::ExtensionOptionsBuilder`"
+)]
+/// Deprecated alias: use [`options::ExtensionBuilder`] instead of [`ExtensionOptionsBuilder`].
+pub type ExtensionOptionsBuilder<'c> = parser::options::ExtensionBuilder<'c>;
+#[cfg(feature = "bon")]
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::ParseBuilder` instead of `comrak::ParseOptionsBuilder`"
+)]
+/// Deprecated alias: use [`options::ParseBuilder`] instead of [`ParseOptionsBuilder`].
+pub type ParseOptionsBuilder<'c> = parser::options::ParseBuilder<'c>;
+#[cfg(feature = "bon")]
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::RenderBuilder` instead of `comrak::RenderOptionsBuilder `"
+)]
+/// Deprecated alias: use [`options::RenderBuilder`] instead of [`RenderOptionsBuilder ]`.
+pub type RenderOptionsBuilder = parser::options::RenderBuilder;
+#[cfg(feature = "bon")]
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::PluginsBuilder` instead of `comrak::PluginsBuilder`"
+)]
+/// Deprecated alias: use [`options::PluginsBuilder`] instead of [`PluginsBuilder`].
+pub type PluginsBuilder<'p> = parser::options::PluginsBuilder<'p>;
+#[cfg(feature = "bon")]
+#[deprecated(
+    since = "0.45.0",
+    note = "use `comrak::options::RenderPluginsBuilder` instead of `comrak::RenderPluginsBuilder`"
+)]
+/// Deprecated alias: use [`options::RenderPluginsBuilder`] instead of [`RenderPluginsBuilder`].
+pub type RenderPluginsBuilder<'p> = parser::options::RenderPluginsBuilder<'p>;
 
 /// Render Markdown to HTML.
 ///
 /// See the documentation of the crate root for an example.
 pub fn markdown_to_html(md: &str, options: &Options) -> String {
-    markdown_to_html_with_plugins(md, options, &Plugins::default())
+    markdown_to_html_with_plugins(md, options, &options::Plugins::default())
 }
 
 /// Render Markdown to HTML using plugins.
 ///
 /// See the documentation of the crate root for an example.
-pub fn markdown_to_html_with_plugins(md: &str, options: &Options, plugins: &Plugins) -> String {
+pub fn markdown_to_html_with_plugins(
+    md: &str,
+    options: &Options,
+    plugins: &options::Plugins,
+) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
     let mut out = String::new();
@@ -150,17 +222,19 @@ pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
 }
 
 /// Render Markdown to CommonMark XML.
+///
 /// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
 pub fn markdown_to_commonmark_xml(md: &str, options: &Options) -> String {
-    markdown_to_commonmark_xml_with_plugins(md, options, &Plugins::default())
+    markdown_to_commonmark_xml_with_plugins(md, options, &options::Plugins::default())
 }
 
 /// Render Markdown to CommonMark XML using plugins.
+///
 /// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
 pub fn markdown_to_commonmark_xml_with_plugins(
     md: &str,
     options: &Options,
-    plugins: &Plugins,
+    plugins: &options::Plugins,
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
