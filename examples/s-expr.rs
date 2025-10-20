@@ -19,7 +19,7 @@ use std::fs::File;
 use std::io::{self, BufWriter, Read, Write};
 
 use comrak::nodes::{Node, NodeValue};
-use comrak::{parse_document, Arena, ExtensionOptions, Options};
+use comrak::{options, parse_document, Arena, Options};
 
 fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io::Result<()> {
     use NodeValue::*;
@@ -71,7 +71,7 @@ fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io
 fn dump(source: &str) -> io::Result<()> {
     let arena = Arena::new();
 
-    let extension = ExtensionOptions::builder()
+    let extension = options::Extension::builder()
         .strikethrough(true)
         .tagfilter(true)
         .table(true)

@@ -16,7 +16,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.44"
+comrak = "0.45.0-rc"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
@@ -270,7 +270,7 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - [CJK friendly emphasis](https://github.com/tats-u/markdown-cjk-friendly)
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
-[`ExtensionOptions` struct](https://docs.rs/comrak/latest/comrak/struct.ExtensionOptions.html).
+[`options::Extension` struct](https://docs.rs/comrak/latest/comrak/options/struct.Extension.html).
 
 ## Custom formatting
 
@@ -300,23 +300,32 @@ a plugin for it. In order to utilize it, create an instance of `plugins::syntect
 
 ## Related projects
 
-Comrak's design goal is to model the upstream [`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible
-in terms of code structure. The upside of this is that a change in `cmark-gfm` has a very predictable change in Comrak.
-Likewise, any bug in `cmark-gfm` is likely to be reproduced in Comrak. This could be considered a pro or a con,
-depending on your use case.
+Comrak's original design goal was to model the upstream
+[`cmark-gfm`](https://github.com/github/cmark-gfm) as closely as possible in
+terms of code structure. Many years have passed since its inception, and the codebases
+have since grown considerably apart. It does remain the case, though, that there
+are bugs in `cmark-gfm` that are likely in Comrak too, as a result.
 
-The downside, of course, is that the code often diverges from idiomatic Rust, especially in the AST's extensive use of `RefCell`, and while
-contributors have made it as fast as possible, it simply won't be as fast as some other CommonMark parsers
-depending on your use-case. Here are some other projects to consider:
+Over the years, we have increasingly opted to fix such bugs, rather than
+maintain upstream compatibility at all costs.  `cmark-gfm` no longer appears to
+be under active maintenance, but Comrak is a living and growing project.
+
+This library offers an AST backed by
+[`typed_arena`](https://github.com/thomcc/rust-typed-arena), with extensive
+use of `RefCell` in the core node type to provide mutable access with
+parent/sibling/child pointers.  This can produce non-idiomatic-looking code,
+though in practice it has proven very usable.
+
+For whatever reason, Comrak may not meet your requirements. Here are some
+projects and resources to also consider:
 
 - [Raph Levien](https://github.com/raphlinus)'s [`pulldown-cmark`](https://github.com/google/pulldown-cmark). It's
   very fast, uses a novel parsing algorithm, and doesn't construct an AST (but you can use it to make one if you
   want). `cargo doc` uses this, as do many other projects in the ecosystem.
-- [markdown-rs](https://github.com/wooorm/markdown-rs) (1.x) looks worth watching.
+- [markdown-rs](https://github.com/wooorm/markdown-rs) looks really promising.
+- [markdown-it](https://github.com/markdown-it-rust/markdown-it) is a port of JavaScript's [markdown-it.js](https://github.com/markdown-it/markdown-it).
+- [babelmark](https://babelmark.github.io/) lets you compare many implementations at once, including the above.
 - Know of another library? Please open a PR to add it!
-
-As far as I know, Comrak is the only library to implement all of the [GitHub Flavored Markdown
-extensions](https://github.github.com/gfm) rigorously.
 
 ### Bindings
 
@@ -328,6 +337,21 @@ extensions](https://github.github.com/gfm) rigorously.
   Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
 - [comrak-wasm](https://github.com/nberlette/comrak-wasm) — TypeScript bindings for this library, built with WebAssembly.
   Available on JSR as [`@nick/comrak`](https://jsr.io/@nick/comrak).
+
+### Users
+
+Comrak is used in a few Rust-y places, and more beyond:
+
+- [crates.io](https://crates.io), [docs.rs](https://docs.rs) and [lib.rs](https://lib.rs) use Comrak to render README Markdown faithfully.
+- [GitLab](https://gitlab.com) uses Comrak to render Markdown documents, issues, comments, and more.
+- [Deno](https://deno.com) uses Comrak to render documentation in [`deno_doc`](https://github.com/denoland/deno_doc).
+- [Reddit](https://reddit.com)'s new-style site uses a Comrak fork[^reddit].
+- [Lockbook](https://lockbook.net/) is a Markdown-based secure notebook with native apps. It looks really neat!!
+- [many](https://github.com/kivikakk/comrak/network/dependents) [more!](https://crates.io/crates/comrak/reverse_dependencies)
+
+I'd be really happy to add your site or app here, just open a PR or issue. :)
+
+[^reddit]: And they contributed some really nice changes, years back. Then management went and sold their user base and all their credibility. What can you do.
 
 ## Benchmarking
 

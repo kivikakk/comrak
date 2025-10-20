@@ -17,7 +17,7 @@ fn large() {
         // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
         let arena = Arena::new();
 
-        // Parse the document into a root `AstNode`
+        // Parse the document into a root `Node`
         let root = parse_document(&arena, document, &Options::default());
 
         // Iterate over all the descendants of root.

@@ -28,7 +28,7 @@ pub enum NodeValue {
     /// **Block**. A [block quote](https://github.github.com/gfm/#block-quotes).  Contains other
     /// **blocks**.
     ///
-    /// ``` md
+    /// ```markdown
     /// > A block quote.
     /// ```
     BlockQuote,
@@ -36,7 +36,7 @@ pub enum NodeValue {
     /// **Block**.  A [list](https://github.github.com/gfm/#lists).  Contains
     /// [list items](https://github.github.com/gfm/#list-items).
     ///
-    /// ``` md
+    /// ```markdown
     /// * An unordered list
     /// * Another item
     ///
@@ -54,7 +54,7 @@ pub enum NodeValue {
     ///
     /// It is required to put a blank line between terms and details.
     ///
-    /// ``` md
+    /// ```markdown
     /// Term 1
     ///
     /// : Details 1
@@ -116,7 +116,7 @@ pub enum NodeValue {
 
     /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
-    /// None if the item is unchecked.
+    /// `None` if the item is unchecked.
     TaskItem(Option<char>),
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
@@ -180,7 +180,7 @@ pub enum NodeValue {
     /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
     /// lines and contains other **blocks**.
     ///
-    /// ``` md
+    /// ```markdown
     /// >>>
     /// A paragraph.
     ///
@@ -192,7 +192,7 @@ pub enum NodeValue {
 
     /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     ///
-    /// Enabled with [`escaped_char_spans`](crate::RenderOptionsBuilder::escaped_char_spans).
+    /// Enabled with [`escaped_char_spans`](crate::options::RenderBuilder::escaped_char_spans).
     Escaped,
 
     /// **Inline**.  A wikilink to some URL.
@@ -474,7 +474,7 @@ impl NodeValue {
     /// Return a reference to the text of a `Text` inline, if this node is one.
     ///
     /// Convenience method.
-    pub fn text(&self) -> Option<&Cow<'static, str>> {
+    pub fn text(&self) -> Option<&str> {
         match *self {
             NodeValue::Text(ref t) => Some(t),
             _ => None,
@@ -646,7 +646,7 @@ impl LineColumn {
 impl Ast {
     /// Create a new AST node with the given value and starting sourcepos. The
     /// end column is set to zero; it is expected this will be set manually
-    /// or later in the parse.  Use [`new_with_sourcepos`] if you have full
+    /// or later in the parse.  Use [`Ast::new_with_sourcepos`] if you have full
     /// sourcepos.
     pub fn new(value: NodeValue, start: LineColumn) -> Self {
         Ast {
@@ -681,7 +681,7 @@ impl Ast {
 ///
 /// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
 ///
-/// ```
+/// ```rust
 /// # use comrak::nodes::{AstNode, NodeValue};
 /// let root = AstNode::from(NodeValue::Document);
 /// ```
@@ -690,7 +690,7 @@ impl Ast {
 /// to assign sourcepos information, use the `From` trait to create an `AstNode`
 /// from an `Ast`:
 ///
-/// ```
+/// ```rust
 /// # use comrak::nodes::{Ast, AstNode, NodeValue};
 /// let root = AstNode::from(Ast::new_with_sourcepos(
 ///     NodeValue::Paragraph,
@@ -701,7 +701,7 @@ impl Ast {
 /// For practical use, you'll probably need it allocated in an `Arena`, in which
 /// case you can use `.into()` to simplify creation:
 ///
-/// ```
+/// ```rust
 /// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
@@ -726,7 +726,7 @@ impl<'a> From<Ast> for AstNode<'a> {
     }
 }
 
-/// Validation errors produced by [Node::validate].
+/// Validation errors produced by [arena_tree::Node::validate].
 #[derive(Debug, Clone)]
 pub enum ValidationError<'a> {
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
@@ -851,17 +851,17 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         }
     }
 
-    /// The comrak representation of a markdown node in Rust isn't strict enough to rule out
+    /// The Comrak representation of a markdown node in Rust isn't strict enough to rule out
     /// invalid trees according to the CommonMark specification. One simple example is that block
     /// containers, such as lists, should only contain blocks, but it's possible to put naked
-    /// inline text in a list item. Such invalid trees can lead comrak to generate incorrect output
+    /// inline text in a list item. Such invalid trees can lead Comrak to generate incorrect output
     /// if rendered.
     ///
     /// This method performs additional structural checks to ensure that a markdown AST is valid
     /// according to the CommonMark specification.
     ///
     /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
-    /// comrak, on the other hand, should always produce a valid tree.
+    /// Comrak, on the other hand, should always produce a valid tree.
     pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
         let mut stack = vec![self];
 

@@ -1,19 +1,16 @@
-/*!
-  Included from <https://github.com/SimonSapin/rust-forest/blob/5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs>.
-  MIT license (per Cargo.toml).
-
-A DOM-like tree data structure based on `&Node` references.
-
-Any non-trivial tree involves reference cycles
-(e.g. if a node has a first child, the parent of the child is that node).
-To enable this, nodes need to live in an arena allocator
-such as `arena::TypedArena` distributed with rustc (which is `#[unstable]` as of this writing)
-or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
-
-If you need mutability in the node’s `data`,
-make it a cell (`Cell` or `RefCell`) or use cells inside of it.
-
-*/
+//! A DOM-like tree data structure based on `&Node` references.
+//!
+//! Included from <https://github.com/SimonSapin/rust-forest/blob/5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs>.
+//! MIT license (per Cargo.toml).
+//!
+//! Any non-trivial tree involves reference cycles
+//! (e.g. if a node has a first child, the parent of the child is that node).
+//! To enable this, nodes need to live in an arena allocator
+//! such as `arena::TypedArena` distributed with rustc (which is `#[unstable]` as of this writing)
+//! or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
+//!
+//! If you need mutability in the node’s `data`,
+//! make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
 use std::cell::Cell;
 use std::fmt;

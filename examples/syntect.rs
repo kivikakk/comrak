@@ -1,7 +1,7 @@
 //! This example shows how to use the bundled syntect plugin.
 
 use comrak::plugins::syntect::SyntectAdapterBuilder;
-use comrak::{markdown_to_html_with_plugins, Options, Plugins};
+use comrak::{markdown_to_html_with_plugins, options, Options};
 
 fn main() {
     run_with(SyntectAdapterBuilder::new().theme("base16-ocean.dark"));
@@ -11,7 +11,7 @@ fn main() {
 fn run_with(builder: SyntectAdapterBuilder) {
     let adapter = builder.build();
     let options = Options::default();
-    let mut plugins = Plugins::default();
+    let mut plugins = options::Plugins::default();
 
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 

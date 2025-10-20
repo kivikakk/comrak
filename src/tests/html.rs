@@ -26,7 +26,7 @@ fn test_paragraph_at_root_crash() {
 #[test]
 fn test_empty_table_crash() {
     let options = Options {
-        extension: ExtensionOptions {
+        extension: options::Extension {
             table: true,
             ..Default::default()
         },
@@ -51,7 +51,7 @@ fn test_empty_table_crash() {
 #[should_panic(expected = "rendered a table cell without a containing table")]
 fn test_table_cell_out_of_water_crash() {
     let options = Options {
-        extension: ExtensionOptions {
+        extension: options::Extension {
             table: true,
             ..Default::default()
         },
@@ -82,7 +82,7 @@ fn test_table_cell_out_of_water_crash() {
 #[should_panic(expected = "rendered a table cell without a containing table row")]
 fn test_table_cell_out_of_school_crash() {
     let options = Options {
-        extension: ExtensionOptions {
+        extension: options::Extension {
             table: true,
             ..Default::default()
         },

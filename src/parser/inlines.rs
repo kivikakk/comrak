@@ -15,11 +15,10 @@ use crate::nodes::{
     NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
+use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{
-    autolink, AutolinkType, BrokenLinkReference, Options, ResolvedReference, WikiLinksMode,
-};
+use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
 
@@ -1649,9 +1648,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            // XXX: is there a difference?
-            // lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
-            lab = (&self.input[self.brackets[brackets_len - 1].position..initial_pos - 1]).into();
+            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
             found_label = true;
         }
 

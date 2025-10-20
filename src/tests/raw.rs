@@ -52,7 +52,8 @@ fn raw_node() {
     );
 
     let mut md = String::new();
-    cm::format_document_with_plugins(root, &options, &mut md, &Plugins::default()).unwrap();
+    cm::format_document_with_plugins(root, &options, &mut md, &options::Plugins::default())
+        .unwrap();
     compare_strs(&md, &input, "cm", &input);
 
     let mut xml = String::new();

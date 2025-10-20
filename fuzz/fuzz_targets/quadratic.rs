@@ -1,8 +1,7 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, ExtensionOptions,
-    ListStyleType, Options, ParseOptions, RenderOptions,
+    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
 use libfuzzer_sys::fuzz_target;
@@ -204,8 +203,8 @@ struct FuzzExtensionOptions {
 }
 
 impl FuzzExtensionOptions {
-    fn to_options(&self) -> ExtensionOptions<'_> {
-        ExtensionOptions {
+    fn to_options(&self) -> options::Extension<'_> {
+        options::Extension {
             strikethrough: self.strikethrough,
             tagfilter: self.tagfilter,
             table: self.table,
@@ -239,8 +238,8 @@ struct FuzzParseOptions {
 }
 
 impl FuzzParseOptions {
-    fn to_options(&self) -> ParseOptions<'_> {
-        ParseOptions {
+    fn to_options(&self) -> options::Parse<'_> {
+        options::Parse {
             smart: self.smart,
             default_info_string: None,
             relaxed_tasklist_matching: self.relaxed_tasklist_matching,
@@ -258,14 +257,14 @@ struct FuzzRenderOptions {
     width: usize,
     unsafe_: bool,
     escape: bool,
-    list_style: ListStyleType,
+    list_style: options::ListStyleType,
     sourcepos: bool,
     escaped_char_spans: bool,
 }
 
 impl FuzzRenderOptions {
-    fn to_options(&self) -> RenderOptions {
-        RenderOptions {
+    fn to_options(&self) -> options::Render {
+        options::Render {
             hardbreaks: self.hardbreaks,
             github_pre_lang: self.github_pre_lang,
             full_info_string: self.full_info_string,
