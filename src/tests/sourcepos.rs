@@ -515,7 +515,7 @@ fn sourcepos() {
         let root = parse_document(&arena, text, &options);
         let asts: Vec<_> = root
             .descendants()
-            .filter(|d| NodeValueDiscriminants::from(&d.data.borrow().value) == kind)
+            .filter(|d| NodeValueDiscriminants::from(&d.data().value) == kind)
             .collect();
 
         if asts.len() != expecteds.len() {
@@ -528,7 +528,7 @@ fn sourcepos() {
         }
 
         for (ast, expected) in asts.into_iter().zip(expecteds) {
-            let actual = ast.data.borrow().sourcepos;
+            let actual = ast.data().sourcepos;
             assert_eq!(
                 *expected, actual,
                 "{} != {} for {:?}",

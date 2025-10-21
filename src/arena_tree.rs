@@ -433,3 +433,20 @@ fn it_works() {
 
     assert_eq!(drop_counter.get(), 10);
 }
+
+impl<'a, T> Node<'a, std::cell::RefCell<T>> {
+    /// Shorthand for `node.data.borrow()`.
+    pub fn data(&self) -> std::cell::Ref<'_, T> {
+        self.data.borrow()
+    }
+
+    /// Shorthand for `node.data.try_borrow()`.
+    pub fn try_data(&self) -> Result<std::cell::Ref<'_, T>, std::cell::BorrowError> {
+        self.data.try_borrow()
+    }
+
+    /// Shorthand for `node.data.borrow_mut()`.
+    pub fn data_mut(&self) -> std::cell::RefMut<'_, T> {
+        self.data.borrow_mut()
+    }
+}

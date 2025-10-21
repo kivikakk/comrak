@@ -239,7 +239,7 @@ where
         );
         self.finalize(node).unwrap();
 
-        node.data.borrow_mut().sourcepos = Sourcepos {
+        node.data_mut().sourcepos = Sourcepos {
             start: nodes::LineColumn { line: 1, column: 1 },
             end: nodes::LineColumn {
                 line: 1 + stripped_lines,
@@ -328,7 +328,7 @@ where
                 break;
             }
             container = container.last_child().unwrap();
-            let ast = &mut container.data.borrow_mut();
+            let ast = &mut container.data_mut();
 
             self.find_first_nonspace(line);
 
@@ -580,7 +580,7 @@ where
             // Make sure it's finalized.
             if container.last_child_is_open() {
                 let child = container.last_child().unwrap();
-                let child_ast = &mut child.data.borrow_mut();
+                let child_ast = &mut child.data_mut();
 
                 self.finalize_borrowed(child, child_ast).unwrap();
             }
@@ -631,7 +631,7 @@ where
                 break;
             }
 
-            if container.data.borrow().value.accepts_lines() {
+            if container.data().value.accepts_lines() {
                 break;
             }
 
@@ -774,7 +774,7 @@ where
             hashpos += 1;
         }
 
-        let container_ast = &mut container.data.borrow_mut();
+        let container_ast = &mut container.data_mut();
         container_ast.value = NodeValue::Heading(NodeHeading {
             level,
             setext: false,
@@ -851,11 +851,11 @@ where
         };
 
         let has_content = {
-            let mut ast = container.data.borrow_mut();
+            let mut ast = container.data_mut();
             self.resolve_reference_link_definitions(&mut ast.content)
         };
         if has_content {
-            container.data.borrow_mut().value = NodeValue::Heading(NodeHeading {
+            container.data_mut().value = NodeValue::Heading(NodeHeading {
                 level: match sc {
                     scanners::SetextChar::Equals => 1,
                     scanners::SetextChar::Hyphen => 2,
@@ -894,7 +894,7 @@ where
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
         let adv = line.len() - 1 - self.offset;
-        container.data.borrow_mut().sourcepos.end = (self.line_number, adv).into();
+        container.data_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -907,7 +907,7 @@ where
         all_matched: bool,
     ) -> Option<usize> {
         if !matches!(
-            (&container.data.borrow().value, all_matched),
+            (&container.data().value, all_matched),
             (&NodeValue::Paragraph, false)
         ) && self.thematic_break_kill_pos <= self.first_nonspace
         {
@@ -1046,7 +1046,7 @@ where
             // is added to it. If not, create a new list.
 
             last_child.detach();
-            let last_child_sourcepos = last_child.data.borrow().sourcepos;
+            let last_child_sourcepos = last_child.data().sourcepos;
 
             // TODO: description list sourcepos has issues.
             //
@@ -1074,7 +1074,7 @@ where
                         NodeValue::DescriptionList,
                         self.first_nonspace + 1,
                     );
-                    list.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+                    list.data_mut().sourcepos.start = last_child_sourcepos.start;
                     list
                 }
             };
@@ -1090,7 +1090,7 @@ where
                 NodeValue::DescriptionItem(metadata),
                 self.first_nonspace + 1,
             );
-            item.data.borrow_mut().sourcepos.start = last_child_sourcepos.start;
+            item.data_mut().sourcepos.start = last_child_sourcepos.start;
             let term = self.add_child(item, NodeValue::DescriptionTerm, self.first_nonspace + 1);
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
@@ -1102,7 +1102,7 @@ where
             true
         } else if node_matches!(last_child, NodeValue::DescriptionItem(..)) {
             let parent = last_child.parent().unwrap();
-            let tight = match last_child.data.borrow().value {
+            let tight = match last_child.data().value {
                 NodeValue::DescriptionItem(ref ndi) => ndi.tight,
                 _ => false,
             };
@@ -1166,7 +1166,7 @@ where
 
         nl.marker_offset = self.indent;
 
-        if match container.data.borrow().value {
+        if match container.data().value {
             NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
             _ => true,
         } {
@@ -1247,7 +1247,7 @@ where
             *container = new_container;
         }
         if mark_visited {
-            container.data.borrow_mut().table_visited = true;
+            container.data_mut().table_visited = true;
         }
 
         true
@@ -1327,17 +1327,17 @@ where
 
         if self.blank {
             if let Some(last_child) = container.last_child() {
-                last_child.data.borrow_mut().last_line_blank = true;
+                last_child.data_mut().last_line_blank = true;
             }
         }
 
-        container.data.borrow_mut().last_line_blank = self.blank
-            && match container.data.borrow().value {
+        container.data_mut().last_line_blank = self.blank
+            && match container.data().value {
                 NodeValue::BlockQuote | NodeValue::Heading(..) | NodeValue::ThematicBreak => false,
                 NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
                 NodeValue::Item(..) => {
                     container.first_child().is_some()
-                        || container.data.borrow().sourcepos.start.line != self.line_number
+                        || container.data().sourcepos.start.line != self.line_number
                 }
                 NodeValue::MultilineBlockQuote(..) => false,
                 NodeValue::Alert(..) => false,
@@ -1346,7 +1346,7 @@ where
 
         let mut tmp = container;
         while let Some(parent) = tmp.parent() {
-            parent.data.borrow_mut().last_line_blank = false;
+            parent.data_mut().last_line_blank = false;
             tmp = parent;
         }
 
@@ -1363,7 +1363,7 @@ where
                 self.current = self.finalize(self.current).unwrap();
             }
 
-            let add_text_result = match container.data.borrow().value {
+            let add_text_result = match container.data().value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 _ => AddTextResult::Otherwise,
@@ -1392,9 +1392,9 @@ where
                 _ => {
                     if self.blank {
                         // do nothing
-                    } else if container.data.borrow().value.accepts_lines() {
+                    } else if container.data().value.accepts_lines() {
                         let mut line = line;
-                        if let NodeValue::Heading(ref nh) = container.data.borrow().value {
+                        if let NodeValue::Heading(ref nh) = container.data().value {
                             if !nh.setext {
                                 line = strings::chop_trailing_hashes(line);
                             }
@@ -1437,7 +1437,7 @@ where
     }
 
     fn add_line(&mut self, node: Node<'a>, line: &str) {
-        let mut ast = node.data.borrow_mut();
+        let mut ast = node.data_mut();
         assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
@@ -1496,7 +1496,7 @@ where
     }
 
     fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
-        self.finalize_borrowed(node, &mut node.data.borrow_mut())
+        self.finalize_borrowed(node, &mut node.data_mut())
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
@@ -1604,7 +1604,7 @@ where
         let mut ch = node.first_child();
 
         while let Some(item) = ch {
-            if item.data.borrow().last_line_blank && item.next_sibling().is_some() {
+            if item.data().last_line_blank && item.next_sibling().is_some() {
                 return false;
             }
 
@@ -1630,14 +1630,14 @@ where
 
     fn process_inlines_node(&mut self, node: Node<'a>) {
         for node in node.descendants() {
-            if node.data.borrow().value.contains_inlines() {
+            if node.data().value.contains_inlines() {
                 self.parse_inlines(node);
             }
         }
     }
 
     fn parse_inlines(&mut self, node: Node<'a>) {
-        let mut node_data = node.data.borrow_mut();
+        let mut node_data = node.data_mut();
 
         let mut content = mem::take(&mut node_data.content);
         strings::rtrim(&mut content);
@@ -1671,8 +1671,7 @@ where
         fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
         for fd in fds {
             if fd.ix.is_some() {
-                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.data.borrow_mut().value
-                else {
+                let NodeValue::FootnoteDefinition(ref mut nfd) = fd.node.data_mut().value else {
                     unreachable!()
                 };
                 nfd.name = fd.name.to_string();
@@ -1688,7 +1687,7 @@ where
         node: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
-        match node.data.borrow().value {
+        match node.data().value {
             NodeValue::FootnoteDefinition(ref nfd) => {
                 map.insert(
                     strings::normalize_label(&nfd.name, Case::Fold),
@@ -1713,7 +1712,7 @@ where
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let mut ast = node.data.borrow_mut();
+        let mut ast = node.data_mut();
         match ast.value {
             NodeValue::FootnoteReference(ref mut nfr) => {
                 let normalized = strings::normalize_label(&nfr.name, Case::Fold);
@@ -1756,7 +1755,7 @@ where
             while let Some(n) = nch {
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
-                let n_ast = &mut n.data.borrow_mut();
+                let n_ast = &mut n.data_mut();
 
                 let sourcepos = n_ast.sourcepos;
                 match n_ast.value {
@@ -1809,10 +1808,10 @@ where
         let mut spxv = VecDeque::new();
         spxv.push_back((sourcepos, root.len()));
         while let Some(ns) = node.next_sibling() {
-            match ns.data.borrow().value {
+            match ns.data().value {
                 NodeValue::Text(ref adj) => {
                     root.push_str(adj);
-                    let sp = ns.data.borrow().sourcepos;
+                    let sp = ns.data().sourcepos;
                     spxv.push_back((sp, adj.len()));
                     sourcepos.end.column = sp.end.column;
                     ns.detach();
@@ -1930,10 +1929,7 @@ where
             text.drain(..end);
 
             let adjust = spx.consume(end) + 1;
-            assert_eq!(
-                sourcepos.start.column,
-                parent.data.borrow().sourcepos.start.column
-            );
+            assert_eq!(sourcepos.start.column, parent.data().sourcepos.start.column);
 
             // See tests::fuzz::echaw9. The paragraph doesn't exist in the source,
             // so we remove it.
@@ -1941,13 +1937,13 @@ where
                 parent.detach();
             } else {
                 sourcepos.start.column = adjust;
-                parent.data.borrow_mut().sourcepos.start.column = adjust;
+                parent.data_mut().sourcepos.start.column = adjust;
             }
 
-            grandparent.data.borrow_mut().value =
+            grandparent.data_mut().value =
                 NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
 
-            if let NodeValue::List(ref mut list) = &mut great_grandparent.data.borrow_mut().value {
+            if let NodeValue::List(ref mut list) = &mut great_grandparent.data_mut().value {
                 list.is_task_list = true;
             }
         }
@@ -2144,7 +2140,7 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
 
 fn reopen_ast_nodes<'a>(mut ast: Node<'a>) {
     loop {
-        ast.data.borrow_mut().open = true;
+        ast.data_mut().open = true;
         ast = match ast.parent() {
             Some(p) => p,
             None => return,

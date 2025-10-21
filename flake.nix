@@ -8,7 +8,6 @@
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
@@ -17,37 +16,65 @@
       nixpkgs,
       crane,
       fenix,
-      flake-utils,
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs { inherit system; };
+    let
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+      eachSystem = nixpkgs.lib.genAttrs systems;
 
-        inherit (pkgs) lib;
+      mkComrak =
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          craneLib = crane.mkLib pkgs;
+          src = craneLib.cleanCargoSource (craneLib.path ./.);
 
-        craneLib = crane.mkLib pkgs;
-        src = craneLib.cleanCargoSource (craneLib.path ./.);
+          commonArgs = {
+            inherit src;
 
-        commonArgs = {
-          inherit src;
+            buildInputs = nixpkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+          };
 
-          buildInputs = lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+          comrak = craneLib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+
+              doCheck = false;
+            }
+          );
+        in
+        {
+          inherit
+            craneLib
+            src
+            commonArgs
+            cargoArtifacts
+            comrak
+            ;
         };
 
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+    in
+    {
 
-        comrak = craneLib.buildPackage (
-          commonArgs
-          // {
-            inherit cargoArtifacts;
-
-            doCheck = false;
-          }
-        );
-      in
-      {
-        checks = {
+      checks = eachSystem (
+        system:
+        let
+          inherit (mkComrak system)
+            craneLib
+            src
+            commonArgs
+            cargoArtifacts
+            comrak
+            ;
+        in
+        {
           inherit comrak;
 
           comrak-clippy = craneLib.cargoClippy (
@@ -72,43 +99,55 @@
               partitionType = "count";
             }
           );
-        };
+        }
+      );
 
-        packages = {
-          default = comrak;
-        };
+      packages = eachSystem (system: rec {
+        default = comrak;
 
-        apps.default = flake-utils.lib.mkApp { drv = comrak; };
+        inherit (mkComrak system) comrak;
+      });
 
-        formatter = pkgs.nixfmt-rfc-style;
+      formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
-        devShells.default = pkgs.mkShell {
-          name = "comrak";
+      devShells = eachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            name = "comrak";
 
-          packages = [
-            (fenix.packages.${system}.complete.withComponents [
-              "cargo"
-              "rustc"
-              "rust-analyzer"
-              "clippy"
-              "rustfmt"
-              "rust-src"
-              "llvm-tools-preview"
-            ])
-          ]
-          ++ (with pkgs; [
-            rust-analyzer
-            clippy
-            cargo-fuzz
-            cargo-nextest
-            cargo-flamegraph
-            samply
-            python3
-            re2c
-            hyperfine
-            bacon
-          ]);
-        };
-      }
-    );
+            packages = [
+              (
+                with fenix.packages.${system};
+                combine [
+                  complete.cargo
+                  complete.rustc
+                  complete.rust-analyzer
+                  complete.clippy
+                  complete.rustfmt
+                  complete.rust-src
+                  complete.llvm-tools-preview
+                  targets.wasm32-unknown-unknown.latest.rust-std
+                ]
+              )
+            ]
+            ++ (with pkgs; [
+              rust-analyzer
+              clippy
+              cargo-fuzz
+              cargo-nextest
+              cargo-flamegraph
+              samply
+              python3
+              re2c
+              hyperfine
+              bacon
+            ]);
+          };
+        }
+      );
+    };
 }

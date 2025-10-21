@@ -17,7 +17,7 @@ pub fn try_opening_block<'a>(
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
-    let aligns = match &container.data.borrow().value {
+    let aligns = match &container.data().value {
         NodeValue::Paragraph => None,
         NodeValue::Table(nt) => Some(nt.alignments.clone()),
         _ => return None,
@@ -34,7 +34,7 @@ fn try_opening_header<'a>(
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
-    if container.data.borrow().table_visited {
+    if container.data().table_visited {
         return Some((container, false, false));
     }
 
@@ -49,23 +49,17 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    let mut container_content = mem::take(&mut container.data.borrow_mut().content);
+    let mut container_content = mem::take(&mut container.data_mut().content);
     let mut header_row = match row(&container_content, spoiler) {
         Some(header_row) => header_row,
         None => {
-            mem::swap(
-                &mut container.data.borrow_mut().content,
-                &mut container_content,
-            );
+            mem::swap(&mut container.data_mut().content, &mut container_content);
             return Some((container, false, true));
         }
     };
 
     if header_row.cells.len() != delimiter_row.cells.len() {
-        mem::swap(
-            &mut container.data.borrow_mut().content,
-            &mut container_content,
-        );
+        mem::swap(&mut container.data_mut().content, &mut container_content);
         return Some((container, false, true));
     }
 
@@ -94,7 +88,7 @@ fn try_opening_header<'a>(
         });
     }
 
-    let start = container.data.borrow().sourcepos.start;
+    let start = container.data().sourcepos.start;
     let child = Ast::new(
         NodeValue::Table(Box::new(NodeTable {
             alignments,
@@ -109,7 +103,7 @@ fn try_opening_header<'a>(
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
     {
-        let header_ast = &mut header.data.borrow_mut();
+        let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
         header_ast.sourcepos.end =
             start.column_add((container_content.len() - 2 - header_row.paragraph_offset) as isize);
@@ -124,7 +118,7 @@ fn try_opening_header<'a>(
             NodeValue::TableCell,
             start.column + cell.start_offset - header_row.paragraph_offset,
         );
-        let ast = &mut ast_cell.data.borrow_mut();
+        let ast = &mut ast_cell.data_mut();
         ast.sourcepos.start.line = start.line;
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
@@ -137,10 +131,7 @@ fn try_opening_header<'a>(
         i += 1;
     }
 
-    mem::swap(
-        &mut container.data.borrow_mut().content,
-        &mut container_content,
-    );
+    mem::swap(&mut container.data_mut().content, &mut container_content);
     incr_table_row_count(container, i);
 
     let offset = line.len() - 1 - parser.offset;
@@ -163,7 +154,7 @@ fn try_opening_row<'a>(
         return None;
     }
 
-    let sourcepos = container.data.borrow().sourcepos;
+    let sourcepos = container.data().sourcepos;
     let spoiler = parser.options.extension.spoiler;
     let mut this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
@@ -173,7 +164,7 @@ fn try_opening_row<'a>(
         sourcepos.start.column,
     );
     {
-        new_row.data.borrow_mut().sourcepos.end.column = sourcepos.end.column;
+        new_row.data_mut().sourcepos.end.column = sourcepos.end.column;
     }
 
     let mut i = 0;
@@ -186,7 +177,7 @@ fn try_opening_row<'a>(
             NodeValue::TableCell,
             sourcepos.start.column + cell.start_offset,
         );
-        let cell_ast = &mut cell_node.data.borrow_mut();
+        let cell_ast = &mut cell_node.data_mut();
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
         mem::swap(&mut cell_ast.content, cell.content.to_mut());
         cell_ast
@@ -305,7 +296,7 @@ fn try_inserting_table_header_paragraph<'a>(
     trim_cow(&mut paragraph_content);
     let paragraph_content = paragraph_content.to_string();
 
-    let container_ast = &mut container.data.borrow_mut();
+    let container_ast = &mut container.data_mut();
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
@@ -365,7 +356,7 @@ fn unescape_pipes(string: &str) -> Cow<'_, str> {
 // large number of autocompleted cells, which could cause a denial of service
 // vulnerability.
 fn incr_table_row_count<'a>(container: Node<'a>, i: usize) -> bool {
-    return match container.data.borrow_mut().value {
+    return match container.data_mut().value {
         NodeValue::Table(ref mut node_table) => {
             node_table.num_rows += 1;
             node_table.num_nonempty_cells += i;
@@ -377,7 +368,7 @@ fn incr_table_row_count<'a>(container: Node<'a>, i: usize) -> bool {
 
 // Calculate the number of autocompleted cells.
 fn get_num_autocompleted_cells<'a>(container: Node<'a>) -> usize {
-    return match container.data.borrow().value {
+    return match container.data().value {
         NodeValue::Table(ref node_table) => {
             let num_cells = node_table.num_columns * node_table.num_rows;
 

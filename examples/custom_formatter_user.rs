@@ -16,7 +16,7 @@ create_formatter!(CustomFormatter<usize>, {
         context.write_str(if entering { "<b>" } else { "</b>" })?;
     },
     NodeValue::Image(ref nl) => |context, node, entering| {
-        assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
+        assert!(node.data().sourcepos == (3, 1, 3, 18).into());
         if entering {
             context.write_str(&nl.url.to_uppercase())?;
         }

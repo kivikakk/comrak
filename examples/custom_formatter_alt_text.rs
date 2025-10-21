@@ -3,16 +3,13 @@
 //
 // Defaults image title text to alt text, if provided.
 
-use std::cell::RefCell;
-
-use comrak::arena_tree::Node;
-use comrak::nodes::{Ast, NodeLink, NodeValue};
+use comrak::nodes::{Node, NodeLink, NodeValue};
 use comrak::{parse_document, Arena};
 
 fn autotitle_images<'a>(
     nl: &mut NodeLink,
     _context: &mut comrak::html::Context,
-    node: &'a Node<'a, RefCell<Ast>>,
+    node: Node<'a>,
     entering: bool,
 ) {
     if !entering || !nl.title.is_empty() {
@@ -22,7 +19,7 @@ fn autotitle_images<'a>(
     let mut s = String::new();
 
     for child in node.children() {
-        if let Some(text) = child.data.borrow().value.text() {
+        if let Some(text) = child.data().value.text() {
             s += text;
         }
     }
@@ -35,11 +32,9 @@ fn formatter<'a>(
     node: &'a comrak::nodes::AstNode<'a>,
     entering: bool,
 ) -> Result<comrak::html::ChildRendering, std::fmt::Error> {
-    let mut borrow = node.data.borrow_mut();
-    if let NodeValue::Image(ref mut nl) = borrow.value {
+    if let NodeValue::Image(ref mut nl) = node.data_mut().value {
         autotitle_images(nl, context, node, entering);
     }
-    drop(borrow);
     comrak::html::format_node_default(context, node, entering)
 }
 

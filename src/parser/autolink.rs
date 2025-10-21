@@ -78,10 +78,10 @@ pub(crate) fn process_email_autolinks<'a>(
                 nsp_end_col,
             )
                 .into();
-            post.data.borrow_mut().sourcepos = nsp;
+            post.data_mut().sourcepos = nsp;
             // Inner text gets same sourcepos as link, since there's nothing but
             // the text.
-            post.first_child().unwrap().data.borrow_mut().sourcepos = nsp;
+            post.first_child().unwrap().data_mut().sourcepos = nsp;
 
             if let Some(remain) = remain {
                 let mut asp: Sourcepos = (
@@ -94,7 +94,7 @@ pub(crate) fn process_email_autolinks<'a>(
                 let after = make_inline(arena, NodeValue::Text(remain.into()), asp);
                 post.insert_after(after);
 
-                let after_ast = &mut after.data.borrow_mut();
+                let after_ast = &mut after.data_mut();
                 process_email_autolinks(
                     arena,
                     after,
