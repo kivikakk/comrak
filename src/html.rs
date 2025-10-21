@@ -116,7 +116,7 @@ pub enum ChildRendering {
 ///         context.write_str(if entering { "<b>" } else { "</b>" })?;
 ///     },
 ///     NodeValue::Image(ref nl) => |context, node, entering| {
-///         assert!(node.data.borrow().sourcepos == (3, 1, 3, 18).into());
+///         assert!(node.data().sourcepos == (3, 1, 3, 18).into());
 ///         if entering {
 ///             context.write_str(&nl.url.to_uppercase())?;
 ///             return Ok(ChildRendering::Skip);
@@ -212,7 +212,7 @@ macro_rules! create_formatter {
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data.borrow().value {
+                match node.data().value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -277,7 +277,7 @@ macro_rules! create_formatter {
                 node: &'a $crate::nodes::AstNode<'a>,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data.borrow().value {
+                match node.data().value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -358,7 +358,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
             Phase::Pre => {
                 let new_cr = match child_rendering {
                     ChildRendering::Plain => {
-                        match node.data.borrow().value {
+                        match node.data().value {
                             NodeValue::Text(ref literal) => {
                                 context.escape(literal)?;
                             }
@@ -411,7 +411,7 @@ pub fn format_node_default<'a, T>(
     node: Node<'a>,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    match node.data.borrow().value {
+    match node.data().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
         NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
@@ -476,7 +476,7 @@ pub fn format_node_default<'a, T>(
 /// immediately before writing a closing `>` in your opening HTML tag.
 pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: Node<'a>) -> fmt::Result {
     if context.options.render.sourcepos {
-        let ast = node.data.borrow();
+        let ast = node.data();
         if ast.sourcepos.start.line > 0 {
             write!(context, " data-sourcepos=\"{}\"", ast.sourcepos)?;
         }
@@ -564,7 +564,7 @@ fn render_code_block<'a, T>(
             }
 
             if context.options.render.sourcepos {
-                let ast = node.data.borrow();
+                let ast = node.data();
                 pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
             }
 
@@ -649,7 +649,7 @@ fn render_heading<'a, T>(
             if entering {
                 context.cr()?;
                 let sp = if context.options.render.sourcepos {
-                    Some(node.data.borrow().sourcepos)
+                    Some(node.data().sourcepos)
                 } else {
                     None
                 };
@@ -862,17 +862,17 @@ fn render_paragraph<'a, T>(
     node: Node<'a>,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let tight =
-        node.parent()
-            .and_then(|n| n.parent())
-            .map_or(false, |n| match n.data.borrow().value {
-                NodeValue::List(nl) => nl.tight,
-                NodeValue::DescriptionItem(nd) => nd.tight,
-                _ => false,
-            })
-            || node
-                .parent()
-                .map_or(false, |n| node_matches!(n, NodeValue::DescriptionTerm));
+    let tight = node
+        .parent()
+        .and_then(|n| n.parent())
+        .map_or(false, |n| match n.data().value {
+            NodeValue::List(nl) => nl.tight,
+            NodeValue::DescriptionItem(nd) => nd.tight,
+            _ => false,
+        })
+        || node
+            .parent()
+            .map_or(false, |n| node_matches!(n, NodeValue::DescriptionTerm));
 
     if !tight {
         if entering {
@@ -882,7 +882,7 @@ fn render_paragraph<'a, T>(
             context.write_str(">")?;
         } else {
             if let Some(parent) = node.parent() {
-                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data.borrow().value {
+                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value {
                     if node.next_sibling().is_none() {
                         context.write_str(" ")?;
                         put_footnote_backref(context, nfd)?;
@@ -1067,7 +1067,7 @@ fn render_table_cell<'a, T>(
     let Some(row_node) = node.parent() else {
         panic!("rendered a table cell without a containing table row");
     };
-    let row = &row_node.data.borrow().value;
+    let row = &row_node.data().value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
         _ => panic!("rendered a table cell contained by something other than a table row"),
@@ -1076,7 +1076,7 @@ fn render_table_cell<'a, T>(
     let Some(table_node) = row_node.parent() else {
         panic!("rendered a table cell without a containing table");
     };
-    let table = &table_node.data.borrow().value;
+    let table = &table_node.data().value;
     let alignments = match table {
         NodeValue::Table(nt) => &nt.alignments,
         _ => {
@@ -1135,7 +1135,7 @@ fn render_table_row<'a, T>(
         if thead {
             context.write_str("<thead>\n")?;
         } else if let Some(n) = node.previous_sibling() {
-            if let NodeValue::TableRow(true) = n.data.borrow().value {
+            if let NodeValue::TableRow(true) = n.data().value {
                 context.write_str("<tbody>\n")?;
             }
         }
@@ -1317,7 +1317,7 @@ pub fn render_math<'a, T>(
         tag_attributes.push(("data-math-style", style_attr.into()));
 
         if context.options.render.sourcepos {
-            let ast = node.data.borrow();
+            let ast = node.data();
             tag_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
         }
 
@@ -1353,7 +1353,7 @@ pub fn render_math_code_block<'a, T>(
     }
 
     if context.options.render.sourcepos {
-        let ast = node.data.borrow();
+        let ast = node.data();
         pre_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
     }
 
@@ -1515,7 +1515,7 @@ pub fn collect_text<'a>(node: Node<'a>) -> String {
 /// an output buffer. Line breaks and soft breaks are represented as a single
 /// whitespace character.
 pub fn collect_text_append<'a>(node: Node<'a>, output: &mut String) {
-    match node.data.borrow().value {
+    match node.data().value {
         NodeValue::Text(ref literal) => output.push_str(literal),
         NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),

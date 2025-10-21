@@ -13,7 +13,7 @@ fn get_document_title(document: &str) -> String {
     let root = parse_document(&arena, document, &Options::default());
 
     for node in root.children() {
-        let header = match node.data.clone().into_inner().value {
+        let header = match node.data().value {
             NodeValue::Heading(c) => c,
             _ => continue,
         };

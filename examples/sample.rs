@@ -22,7 +22,7 @@ fn large() {
 
         // Iterate over all the descendants of root.
         for node in root.descendants() {
-            if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+            if let NodeValue::Text(ref mut text) = node.data_mut().value {
                 // If the node is a text node, perform the string replacement.
                 *text = text.to_mut().replace(orig_string, replacement).into()
             }

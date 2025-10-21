@@ -87,7 +87,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             match phase {
                 Phase::Pre => {
                     let new_plain = if plain {
-                        match node.data.borrow().value {
+                        match node.data().value {
                             NodeValue::Text(ref literal) => {
                                 self.escape(literal)?;
                             }
@@ -135,7 +135,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         if entering {
             self.indent()?;
 
-            let ast = node.data.borrow();
+            let ast = node.data();
 
             write!(self.output, "<{}", ast.value.xml_node_name())?;
 
@@ -233,8 +233,8 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::TableCell => {
                     let mut ancestors = node.ancestors().skip(1);
 
-                    let header_row = &ancestors.next().unwrap().data.borrow().value;
-                    let table = &ancestors.next().unwrap().data.borrow().value;
+                    let header_row = &ancestors.next().unwrap().data().value;
+                    let table = &ancestors.next().unwrap().data().value;
 
                     if let (NodeValue::TableRow(true), NodeValue::Table(nt)) = (header_row, table) {
                         let ix = node.preceding_siblings().count() - 1;
@@ -318,11 +318,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         } else if node.first_child().is_some() {
             self.indent -= 2;
             self.indent()?;
-            writeln!(
-                self.output,
-                "</{}>",
-                node.data.borrow().value.xml_node_name()
-            )?;
+            writeln!(self.output, "</{}>", node.data().value.xml_node_name())?;
         }
         Ok(false)
     }

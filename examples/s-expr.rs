@@ -32,7 +32,7 @@ fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io
         }};
     }
 
-    match &node.data.borrow().value {
+    match &node.data().value {
         Text(t) => write!(writer, "{:?}", t)?,
         value => {
             try_node_inline!(value, FootnoteDefinition);
@@ -43,7 +43,7 @@ fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io
                 return write!(writer, "Code({:?}, {})", code.literal, code.num_backticks);
             }
 
-            let has_blocks = node.children().any(|c| c.data.borrow().value.block());
+            let has_blocks = node.children().any(|c| c.data().value.block());
 
             write!(writer, "({:?}", value)?;
             for child in node.children() {

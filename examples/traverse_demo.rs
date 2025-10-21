@@ -25,7 +25,7 @@ fn extract_text_traverse<'a>(root: Node<'a>) -> String {
     for edge in root.traverse() {
         if let NodeEdge::Start(node) = edge {
             // Handle the Start edge to process the node's value.
-            if let NodeValue::Text(ref text) = node.data.borrow().value {
+            if let NodeValue::Text(ref text) = node.data().value {
                 // If the node is a text node, append its text to `output_text`.
                 output_text.push_str(text);
             }

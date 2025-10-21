@@ -1,4 +1,3 @@
-extern crate comrak;
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
 
@@ -11,7 +10,7 @@ fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String 
 
     // Iterate over all the descendants of root.
     for node in root.descendants() {
-        if let NodeValue::Text(ref mut text) = node.data.borrow_mut().value {
+        if let NodeValue::Text(ref mut text) = node.data_mut().value {
             // If the node is a text node, replace `orig_string` with `replacement`.
             *text = text.to_mut().replace(orig_string, replacement).into()
         }

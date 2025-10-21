@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut next_block_is_help_body = false;
 
     for node in doc.descendants() {
-        match node.data.borrow_mut().value {
+        match node.data_mut().value {
             NodeValue::CodeBlock(ref mut ncb) => {
                 // Look for the Cargo.toml example block.
                 if ncb.info == "toml" && ncb.literal.starts_with(DEPENDENCIES) {
