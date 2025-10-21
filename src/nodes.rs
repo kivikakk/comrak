@@ -169,19 +169,63 @@ pub enum Inline {
 
 impl Inline {
     pub fn children(&self) -> Option<&[Inline]> {
-        match self {
-            Inline::Node { ref children, .. } => Some(children),
-            Inline::Leaf { .. } => None,
-        }
+        let Inline::Node { ref children, .. } = self else {
+            return None;
+        };
+        Some(children)
     }
 
     pub fn children_mut(&mut self) -> Option<&mut Vec<Inline>> {
+        let Inline::Node {
+            ref mut children, ..
+        } = self
+        else {
+            return None;
+        };
+        Some(children)
+    }
+
+    pub fn sourcepos(&mut self) -> &Sourcepos {
+        match self {
+            Inline::Node { ref sourcepos, .. } | Inline::Leaf { ref sourcepos, .. } => sourcepos,
+        }
+    }
+
+    pub fn sourcepos_mut(&mut self) -> &mut Sourcepos {
         match self {
             Inline::Node {
-                ref mut children, ..
-            } => Some(children),
-            Inline::Leaf { .. } => None,
+                ref mut sourcepos, ..
+            }
+            | Inline::Leaf {
+                ref mut sourcepos, ..
+            } => sourcepos,
         }
+    }
+
+    /// Return a reference to the text of a `Text` inline, if this node is one.
+    ///
+    /// Convenience method.
+    pub fn text(&self) -> Option<&str> {
+        let Inline::Leaf { value, .. } = self else {
+            return None;
+        };
+        let LeafValue::Text(ref text) = value else {
+            return None;
+        };
+        Some(text)
+    }
+
+    /// Return a mutable reference to the text of a `Text` inline, if this node is one.
+    ///
+    /// Convenience method.
+    pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
+        let Inline::Leaf { value, .. } = self else {
+            return None;
+        };
+        let LeafValue::Text(ref mut text) = value else {
+            return None;
+        };
+        Some(text)
     }
 }
 
@@ -615,26 +659,6 @@ impl NodeValue {
             _ => None,
         }
     }
-
-    // /// Return a reference to the text of a `Text` inline, if this node is one.
-    // ///
-    // /// Convenience method.
-    // pub fn text(&self) -> Option<&str> {
-    //     match *self {
-    //         NodeValue::Text(ref t) => Some(t),
-    //         _ => None,
-    //     }
-    // }
-
-    // /// Return a mutable reference to the text of a `Text` inline, if this node is one.
-    // ///
-    // /// Convenience method.
-    // pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
-    //     match *self {
-    //         NodeValue::Text(ref mut t) => Some(t),
-    //         _ => None,
-    //     }
-    // }
 
     pub(crate) fn accepts_lines(&self) -> bool {
         matches!(

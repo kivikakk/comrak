@@ -26,7 +26,7 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'r, 'o, 'd, 'c, 'p> {
+pub struct Subject<'r, 'o, 'c, 'p> {
     inlines: Vec<Inline>,
     pub options: &'o Options<'c>,
     pub input: String,
@@ -37,8 +37,8 @@ pub struct Subject<'r, 'o, 'd, 'c, 'p> {
     html_skip_flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     footnote_defs: &'p FootnoteDefs<'a>,
-    delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
-    last_delimiter: Option<&'d Delimiter<'a, 'd>>,
+    delimiters: Vec<Delimiter>,
+    last_delimiter: Option<usize>,
     brackets: Vec<Bracket>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
@@ -56,14 +56,13 @@ struct HtmlSkipFlags {
     pi: bool,
     comment: bool,
 }
-impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
+impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
     pub fn new(
         options: &'o Options<'c>,
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
         footnote_defs: &'p FootnoteDefs<'a>,
-        delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
         let mut s = Subject {
             inlines: vec![],
@@ -76,7 +75,7 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
             html_skip_flags: HtmlSkipFlags::default(),
             refmap,
             footnote_defs,
-            delimiter_arena,
+            delimiters: vec![],
             last_delimiter: None,
             brackets: vec![],
             within_brackets: false,
@@ -214,7 +213,10 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                     Some(self.make_leaf(LeafValue::Text("w".into()), self.pos - 1, self.pos - 1))
                 }
             },
-            '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
+            '*' | '_' | '\'' | '"' => {
+                self.handle_delim(c as u8);
+                None
+            }
             '-' => Some(self.handle_hyphen()),
             '.' => Some(self.handle_period()),
             '[' => {
@@ -258,7 +260,8 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                 }
             }
             '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
-                Some(self.handle_delim(b'~'))
+                self.handle_delim(b'~');
+                None
             }
             '^' => {
                 // Check for inline footnote first
@@ -270,7 +273,8 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                     // self.handle_inline_ootnote()
                     None
                 } else if self.options.extension.superscript && !self.within_brackets {
-                    Some(self.handle_delim(b'^'))
+                    self.handle_delim(b'^');
+                    None
                 } else {
                     // Just regular text
                     self.pos += 1;
@@ -278,7 +282,10 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                 }
             }
             '$' => Some(self.handle_dollars(&ast.line_offsets)),
-            '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
+            '|' if self.options.extension.spoiler => {
+                self.handle_delim(b'|');
+                None
+            }
             _ => {
                 let mut endpos = self.find_special_char();
                 let startpos = self.pos;
@@ -381,15 +388,35 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                     num_backticks: openticks,
                     literal: buf.into(),
                 };
-                let node = self.make_leaf(LeafValue::Code(code), startpos, endpos - 1);
+                let mut inl = self.make_leaf(LeafValue::Code(code), startpos, endpos - 1);
                 self.adjust_node_newlines(
-                    node,
+                    &mut inl,
                     endpos - startpos - openticks,
                     openticks,
                     parent_line_offsets,
                 );
-                node
+                inl
             }
+        }
+    }
+
+    fn adjust_node_newlines(
+        &mut self,
+        inline: &mut Inline,
+        matchlen: usize,
+        extra: usize,
+        parent_line_offsets: &[usize],
+    ) {
+        let (newlines, since_newline) =
+            count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
+
+        if newlines > 0 {
+            self.line += newlines;
+            let sourcepos = inline.sourcepos_mut();
+            sourcepos.end.line += newlines;
+            let adjusted_line = self.line - sourcepos.start.line;
+            sourcepos.end.column = parent_line_offsets[adjusted_line] + since_newline + extra;
+            self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
         }
     }
 
@@ -528,27 +555,27 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         if let Some(matchlen) = matchlen {
             let contents = &self.input[self.pos - 1..self.pos + matchlen];
             self.pos += matchlen;
-            let inl = self.make_leaf(
+            let mut inl = self.make_leaf(
                 LeafValue::HtmlInline(contents.to_string()),
                 self.pos - matchlen - 1,
                 self.pos - 1,
             );
-            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
-            return inl;
+            self.adjust_node_newlines(&mut inl, matchlen, 1, parent_line_offsets);
+            inl
+        } else {
+            self.make_leaf(LeafValue::Text("<".into()), self.pos - 1, self.pos - 1)
         }
-
-        self.make_leaf(LeafValue::Text("<".into()), self.pos - 1, self.pos - 1)
     }
 
     fn handle_autolink_with(
         &mut self,
-        f: fn(&mut Subject<'_, '_, '_, '_, '_>) -> Option<(Inline, usize, usize)>,
+        f: fn(&mut Subject<'_, '_, '_, '_>) -> Option<(Inline, usize, usize)>,
     ) -> Option<Inline> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
         let startpos = self.pos;
-        let (post, need_reverse, skip) = f(self)?;
+        let (mut post, need_reverse, skip) = f(self)?;
 
         self.pos += skip - need_reverse;
 
@@ -565,25 +592,31 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         // Texts to complete the rewind.
         let mut reverse = need_reverse;
         while reverse > 0 {
-            let mut last_child = node.last_child().unwrap().data_mut();
-            match last_child.value {
-                NodeValue::Text(ref mut prev) => {
-                    let prev_len = prev.len();
-                    if reverse < prev.len() {
-                        prev.to_mut().truncate(prev_len - reverse);
-                        last_child.sourcepos.end.column -= reverse;
-                        reverse = 0;
-                    } else {
-                        reverse -= prev_len;
-                        node.last_child().unwrap().detach();
-                    }
-                }
-                _ => panic!("expected text node before autolink colon"),
+            let Inline::Leaf {
+                ref mut value,
+                ref mut sourcepos,
+            } = self.inlines.last_mut().unwrap()
+            else {
+                panic!("expected leaf (text) node before autolink colon")
+            };
+
+            let LeafValue::Text(ref mut prev) = value else {
+                panic!("expected text leaf node before autolink colon");
+            };
+
+            let prev_len = prev.len();
+            if reverse < prev.len() {
+                prev.to_mut().truncate(prev_len - reverse);
+                sourcepos.end.column -= reverse;
+                reverse = 0;
+            } else {
+                reverse -= prev_len;
+                self.inlines.pop();
             }
         }
 
         {
-            let sp = &mut post.data_mut().sourcepos;
+            let sp = post.sourcepos_mut();
             // See [`make_inline`].
             sp.start = (
                 self.line,
@@ -601,7 +634,13 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
 
             // Inner text node gets the same sp, since there are no surrounding
             // characters for autolinks of these kind.
-            post.first_child().unwrap().data_mut().sourcepos = *sp;
+            let sp = *sp;
+            *post
+                .children_mut()
+                .unwrap()
+                .first_mut()
+                .unwrap()
+                .sourcepos_mut() = sp;
         }
 
         Some(post)
@@ -623,7 +662,7 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         ))
     }
 
-    fn handle_delim(&mut self, c: u8) -> Inline {
+    fn handle_delim(&mut self, c: u8) {
         let (numdelims, can_open, can_close) = self.scan_delims(c);
 
         let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
@@ -639,11 +678,13 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                 .to_string()
                 .into()
         };
-        let inl = self.make_leaf(
+        let len = contents.len();
+        let inl = self.inlines.len();
+        self.inlines.push(self.make_leaf(
             LeafValue::Text(contents),
             self.pos - numdelims,
             self.pos - 1,
-        );
+        ));
 
         let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
             numdelims <= 2
@@ -655,10 +696,8 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
             && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
             && is_valid_strikethrough_delim
         {
-            self.push_delimiter(c, can_open, can_close, inl);
+            self.push_delimiter(c, can_open, can_close, inl, len);
         }
-
-        inl
     }
 
     fn handle_hyphen(&mut self) -> Inline {
@@ -963,14 +1002,14 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                 display_math: opendollars == 2,
                 literal: buf.into(),
             };
-            let node = self.make_leaf(LeafValue::Math(math), startpos, endpos - 1);
+            let mut inl = self.make_leaf(LeafValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(
-                node,
+                &mut inl,
                 endpos - startpos - fence_length,
                 fence_length,
                 parent_line_offsets,
             );
-            node
+            inl
         } else if code_math {
             self.pos = startpos + 1;
             self.make_leaf(LeafValue::Text("$".into()), self.pos - 1, self.pos - 1)
@@ -1017,19 +1056,27 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a>) {
-        let d = self.delimiter_arena.alloc(Delimiter {
+    fn push_delimiter(
+        &mut self,
+        c: u8,
+        can_open: bool,
+        can_close: bool,
+        inl: usize,
+        length: usize,
+    ) {
+        let d = self.delimiters.len();
+        self.delimiters.push(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
             inl,
             position: self.pos,
-            length: inl.data().value.text().unwrap().len(),
+            length,
             delim_char: c,
             can_open,
             can_close,
         });
-        if d.prev.get().is_some() {
-            d.prev.get().unwrap().next.set(Some(d));
+        if let Some(prev) = self.last_delimiter {
+            self.delimiters[prev].next.set(Some(d));
         }
         self.last_delimiter = Some(d);
     }
@@ -1039,128 +1086,115 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
     //
     // As a side-effect, handle long "***" and "___" nodes by truncating them in
     // place to be re-matched by `process_emphasis`.
-    fn insert_emph(
-        &mut self,
-        opener: &'d Delimiter<'a, 'd>,
-        closer: &'d Delimiter<'a, 'd>,
-    ) -> Option<&'d Delimiter<'a, 'd>> {
-        let opener_char = opener.inl.data().value.text().unwrap().as_bytes()[0];
-        let mut opener_num_chars = opener.inl.data().value.text().unwrap().len();
-        let mut closer_num_chars = closer.inl.data().value.text().unwrap().len();
-        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
+    fn insert_emph(&mut self, openeri: usize, closer: Delimiter) -> Option<Delimiter> {
+        let opener = self.delimiters[openeri];
+        let opener_byte = self.inlines[opener.inl].text().unwrap().as_bytes()[0];
+        let mut opener_num_bytes = self.inlines[opener.inl].text().unwrap().len();
+        let mut closer_num_bytes = self.inlines[closer.inl].text().unwrap().len();
+        let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
             1
         };
 
-        opener_num_chars -= use_delims;
-        closer_num_chars -= use_delims;
+        opener_num_bytes -= use_delims;
+        closer_num_bytes -= use_delims;
 
         if (self.options.extension.strikethrough || self.options.extension.subscript)
-            && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
+            && opener_byte == b'~'
+            && (opener_num_bytes != closer_num_bytes || opener_num_bytes > 0)
         {
             return None;
         }
 
-        opener
-            .inl
-            .data_mut()
-            .value
+        self.inlines[opener.inl]
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(opener_num_chars);
-        closer
-            .inl
-            .data_mut()
-            .value
+            .truncate(opener_num_bytes);
+        self.inlines[closer.inl]
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(closer_num_chars);
+            .truncate(closer_num_bytes);
 
         // Remove all the candidate delimiters from between the opener and the
         // closer. None of them are matched pairs. They've been scanned already.
         let mut delim = closer.prev.get();
-        while delim.is_some() && !Self::del_ref_eq(delim, Some(opener)) {
-            self.remove_delimiter(delim.unwrap());
-            delim = delim.unwrap().prev.get();
+        while delim.is_some() && delim != Some(openeri) {
+            self.remove_delimiter(self.delimiters[delim.unwrap()]);
+            delim = self.delimiters[delim.unwrap()].prev.get();
         }
 
         let emph = self.make_inline(
-            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
-                NodeValue::Subscript
-            } else if opener_char == b'~' {
+            if self.options.extension.subscript && opener_byte == b'~' && use_delims == 1 {
+                InlineValue::Subscript
+            } else if opener_byte == b'~' {
                 // Not emphasis
                 // Unlike for |, these cases have to be handled because they will match
                 // in the event subscript but not strikethrough is enabled
                 if self.options.extension.strikethrough {
-                    NodeValue::Strikethrough
+                    InlineValue::Strikethrough
                 } else if use_delims == 1 {
-                    NodeValue::EscapedTag("~".to_owned())
+                    InlineValue::EscapedTag("~".to_owned())
                 } else {
-                    NodeValue::EscapedTag("~~".to_owned())
+                    InlineValue::EscapedTag("~~".to_owned())
                 }
-            } else if self.options.extension.superscript && opener_char == b'^' {
-                NodeValue::Superscript
-            } else if self.options.extension.spoiler && opener_char == b'|' {
+            } else if self.options.extension.superscript && opener_byte == b'^' {
+                InlineValue::Superscript
+            } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
-                    NodeValue::SpoileredText
+                    InlineValue::SpoileredText
                 } else {
-                    NodeValue::EscapedTag("|".to_owned())
+                    InlineValue::EscapedTag("|".to_owned())
                 }
-            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
-                NodeValue::Underline
+            } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
+                InlineValue::Underline
             } else if use_delims == 1 {
-                NodeValue::Emph
+                InlineValue::Emph
             } else {
-                NodeValue::Strong
+                InlineValue::Strong
             },
-            // These are overriden immediately below.
+            // These are overriden immediately below. For reasons. XXX
             self.pos,
             self.pos,
+            vec![],
         );
 
-        emph.data_mut().sourcepos = (
-            opener.inl.data().sourcepos.start.line,
-            opener.inl.data().sourcepos.start.column + opener_num_chars,
-            closer.inl.data().sourcepos.end.line,
-            closer.inl.data().sourcepos.end.column - closer_num_chars,
+        *emph.sourcepos_mut() = (
+            self.inlines[opener.inl].sourcepos().start.line,
+            self.inlines[opener.inl].sourcepos().start.column + opener_num_bytes,
+            self.inlines[closer.inl].sourcepos().end.line,
+            self.inlines[closer.inl].sourcepos().end.column - closer_num_bytes,
         )
             .into();
 
-        // Drop all the interior AST nodes into the emphasis node
-        // and then insert the emphasis node
-        let mut tmp = opener.inl.next_sibling().unwrap();
-        while !tmp.same_node(closer.inl) {
-            let next = tmp.next_sibling();
-            emph.append(tmp);
-            if let Some(n) = next {
-                tmp = n;
-            } else {
-                break;
-            }
-        }
-        opener.inl.insert_after(emph);
+        // // Drop all the interior AST nodes into the emphasis node
+        // // and then insert the emphasis node
+        // let mut inline_index = opener.inl + 1;
+        // while inline_index != closer.inl && inline_index < self.inlines.len() {
+        //     emph.append(self.inlines[inline_index]);
+        //     // TODO: *take* and adjust index
+        // }
+        // opener.inl.insert_after(emph);
 
-        // Drop completely "used up" delimiters, adjust sourcepos of those not,
-        // and return the next closest one for processing.
-        if opener_num_chars == 0 {
-            opener.inl.detach();
-            self.remove_delimiter(opener);
-        } else {
-            opener.inl.data_mut().sourcepos.end.column -= use_delims;
-        }
+        // // Drop completely "used up" delimiters, adjust sourcepos of those not,
+        // // and return the next closest one for processing.
+        // if opener_num_bytes == 0 {
+        //     opener.inl.detach();
+        //     self.remove_delimiter(opener);
+        // } else {
+        //     opener.inl.data_mut().sourcepos.end.column -= use_delims;
+        // }
 
-        if closer_num_chars == 0 {
-            closer.inl.detach();
-            self.remove_delimiter(closer);
-            closer.next.get()
-        } else {
-            closer.inl.data_mut().sourcepos.start.column += use_delims;
-            Some(closer)
-        }
+        // if closer_num_bytes == 0 {
+        //     closer.inl.detach();
+        //     self.remove_delimiter(closer);
+        //     closer.next.get()
+        // } else {
+        //     closer.inl.data_mut().sourcepos.start.column += use_delims;
+        //     Some(closer)
+        // }
     }
 
     pub fn skip_line_end(&mut self) -> bool {
@@ -1672,13 +1706,14 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         // emphasis on an entire block, `stack_bottom` is `None`, so `closer` references
         // the very bottom of the stack.
         let mut candidate = self.last_delimiter;
-        let mut closer: Option<&Delimiter> = None;
-        while candidate.map_or(false, |c| c.position >= stack_bottom) {
+        let mut closer: Option<usize> = None;
+        while candidate.map_or(false, |ci| self.delimiters[ci].position >= stack_bottom) {
             closer = candidate;
-            candidate = candidate.unwrap().prev.get();
+            candidate = self.delimiters[candidate.unwrap()].prev.get();
         }
 
-        while let Some(c) = closer {
+        while let Some(ci) = closer {
+            let c = self.delimiters[ci];
             if c.can_close {
                 // Each time through the outer `closer` loop we reset the opener
                 // to the element below the closer, and search down the stack
@@ -1710,8 +1745,11 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                 // This search short-circuits for openers we've previously
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
-                while opener.map_or(false, |o| o.position >= openers_bottom[ix]) {
-                    let o = opener.unwrap();
+                while opener.map_or(false, |oi| {
+                    self.delimiters[oi].position >= openers_bottom[ix]
+                }) {
+                    let oi = opener.unwrap();
+                    let o = self.delimiters[oi];
                     if o.can_open && o.delim_char == c.delim_char {
                         // This is a bit convoluted; see points 9 and 10 here:
                         // http://spec.commonmark.org/0.28/#can-open-emphasis.
@@ -1769,20 +1807,20 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
                         closer = c.next.get();
                     }
                 } else if c.delim_char == b'\'' || c.delim_char == b'"' {
-                    *c.inl.data_mut().value.text_mut().unwrap() =
+                    *self.inlines[c.inl].text_mut().unwrap() =
                         if c.delim_char == b'\'' { "’" } else { "”" }.into();
                     closer = c.next.get();
 
                     if opener_found {
-                        *opener.unwrap().inl.data_mut().value.text_mut().unwrap() =
+                        *self.inlines[opener.unwrap()].text_mut().unwrap() =
                             if old_c.delim_char == b'\'' {
                                 "‘"
                             } else {
                                 "“"
                             }
                             .into();
-                        self.remove_delimiter(opener.unwrap());
-                        self.remove_delimiter(old_c);
+                        self.delimiters[opener.unwrap()].remove(self);
+                        old_c.remove(self);
                     }
                 }
 
@@ -1816,51 +1854,23 @@ impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
         self.remove_delimiters(stack_bottom);
     }
 
-    fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'd>) {
-        if delimiter.next.get().is_none() {
-            assert!(ptr::eq(delimiter, self.last_delimiter.unwrap()));
-            self.last_delimiter = delimiter.prev.get();
-        } else {
-            delimiter.next.get().unwrap().prev.set(delimiter.prev.get());
-        }
-        if delimiter.prev.get().is_some() {
-            delimiter.prev.get().unwrap().next.set(delimiter.next.get());
-        }
+    fn remove_delimiter(&mut self, mut delimiter: Delimiter) {
+        delimiter.remove(self);
     }
 
     fn remove_delimiters(&mut self, stack_bottom: usize) {
         while self
             .last_delimiter
-            .map_or(false, |d| d.position >= stack_bottom)
+            .map_or(false, |d| self.delimiters[d].position >= stack_bottom)
         {
-            self.remove_delimiter(self.last_delimiter.unwrap());
+            let mut delimiter = mem::take(&mut self.delimiters[self.last_delimiter.unwrap()]);
+            delimiter.remove(self);
         }
     }
 
     #[inline]
     fn eof(&self) -> bool {
         self.pos >= self.input.len()
-    }
-
-    fn adjust_node_newlines(
-        &mut self,
-        node: Node<'a>,
-        matchlen: usize,
-        extra: usize,
-        parent_line_offsets: &[usize],
-    ) {
-        let (newlines, since_newline) =
-            count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
-
-        if newlines > 0 {
-            self.line += newlines;
-            let node_ast = &mut node.data_mut();
-            node_ast.sourcepos.end.line += newlines;
-            let adjusted_line = self.line - node_ast.sourcepos.start.line;
-            node_ast.sourcepos.end.column =
-                parent_line_offsets[adjusted_line] + since_newline + extra;
-            self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
-        }
     }
 
     //////////////
@@ -2280,33 +2290,42 @@ impl<'a> FootnoteDefs<'a> {
     }
 }
 
-pub struct Delimiter<'a: 'd, 'd> {
-    inl: Node<'a>,
+#[derive(Default)] // consider Option<Delimiter> in Subject
+pub struct Delimiter {
+    inl: usize,
     position: usize,
     length: usize,
     delim_char: u8,
     can_open: bool,
     can_close: bool,
-    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
-    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
+    prev: Cell<Option<usize>>,
+    next: Cell<Option<usize>>,
 }
 
-impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
+impl Delimiter {
+    fn remove(&mut self, from: &mut Subject) {
+        mem::take(self).remove_consume(from);
+    }
+
+    fn remove_consume(self, from: &mut Subject) {
+        if let Some(next) = self.next.get() {
+            from.delimiters[next].prev.set(self.prev.get());
+        } else {
+            // assert!(ptr::eq(delimiter, self.last_delimiter.unwrap()));
+            from.last_delimiter = self.prev.get();
+        }
+        if let Some(prev) = self.prev.get() {
+            from.delimiters[prev].next.set(self.next.get());
+        }
+    }
+}
+
+impl std::fmt::Debug for Delimiter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
-            self.position,
-            self.length,
-            self.delim_char,
-            self.can_open,
-            self.can_close,
-            self.inl
-                .try_data()
-                .map_or("<couldn't borrow>".to_string(), |d| format!(
-                    "{}",
-                    d.sourcepos
-                ))
+            self.position, self.length, self.delim_char, self.can_open, self.can_close, self.inl
         )
     }
 }
