@@ -674,7 +674,7 @@ fn render_html_block<T>(
         let literal = &nhb.literal;
         if context.options.render.escape {
             context.escape(literal)?;
-        } else if !context.options.render.unsafe_ {
+        } else if !context.options.render.r#unsafe {
             context.write_str("<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter {
             tagfilter_block(context, literal)?;
@@ -696,7 +696,7 @@ fn render_html_inline<T>(
     if entering {
         if context.options.render.escape {
             context.escape(literal)?;
-        } else if !context.options.render.unsafe_ {
+        } else if !context.options.render.r#unsafe {
             context.write_str("<!-- raw HTML omitted -->")?;
         } else if context.options.extension.tagfilter && tagfilter(literal) {
             context.write_str("&lt;")?;
@@ -723,7 +723,7 @@ fn render_image<'a, T>(
         render_sourcepos(context, node)?;
         context.write_str(" src=\"")?;
         let url = &nl.url;
-        if context.options.render.unsafe_ || !dangerous_url(url) {
+        if context.options.render.r#unsafe || !dangerous_url(url) {
             if let Some(rewriter) = &context.options.extension.image_url_rewriter {
                 context.escape_href(&rewriter.to_html(&nl.url))?;
             } else {
@@ -802,7 +802,7 @@ fn render_link<'a, T>(
             render_sourcepos(context, node)?;
             context.write_str(" href=\"")?;
             let url = &nl.url;
-            if context.options.render.unsafe_ || !dangerous_url(url) {
+            if context.options.render.r#unsafe || !dangerous_url(url) {
                 if let Some(rewriter) = &context.options.extension.link_url_rewriter {
                     context.escape_href(&rewriter.to_html(&nl.url))?;
                 } else {
@@ -1491,7 +1491,7 @@ fn render_wiki_link<'a, T>(
         render_sourcepos(context, node)?;
         context.write_str(" href=\"")?;
         let url = &nwl.url;
-        if context.options.render.unsafe_ || !dangerous_url(url) {
+        if context.options.render.r#unsafe || !dangerous_url(url) {
             context.escape_href(url)?;
         }
         context.write_str("\" data-wikilink=\"true")?;

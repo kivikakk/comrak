@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn pointy_brace() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(
             "URI autolink: <https://www.pixiv.net>\n",
             "\n",

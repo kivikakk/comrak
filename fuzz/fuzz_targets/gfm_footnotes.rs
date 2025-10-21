@@ -21,7 +21,7 @@ fuzz_target!(|s: &str| {
     let render = options::Render {
         hardbreaks: true,
         github_pre_lang: true,
-        unsafe_: true,
+        r#unsafe: true,
         ..Default::default()
     };
 

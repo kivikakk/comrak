@@ -86,7 +86,7 @@ struct Cli {
 
     /// Allow raw HTML and dangerous URLs
     #[arg(long = "unsafe")]
-    unsafe_: bool,
+    r#unsafe: bool,
 
     /// Translate gemojis into UTF-8 characters
     #[arg(long)]
@@ -298,7 +298,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .github_pre_lang(cli.github_pre_lang || cli.gfm)
         .full_info_string(cli.full_info_string)
         .width(cli.width)
-        .unsafe_(cli.unsafe_)
+        .r#unsafe(cli.r#unsafe)
         .escape(cli.escape)
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
