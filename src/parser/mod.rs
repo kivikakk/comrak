@@ -5,10 +5,6 @@ pub mod options;
 pub mod shortcodes;
 mod table;
 
-pub mod alert;
-pub mod math;
-pub mod multiline_block_quote;
-
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -21,12 +17,11 @@ use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
 use crate::nodes::{
-    self, Ast, AstNode, ListDelimType, ListType, Node, NodeCodeBlock, NodeDescriptionItem,
-    NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
+    self, AlertType, Ast, AstNode, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
+    NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
+    NodeMultilineBlockQuote, NodeValue, Sourcepos,
 };
-use crate::parser::alert::{AlertType, NodeAlert};
 use crate::parser::inlines::RefMap;
-use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
@@ -358,7 +353,7 @@ where
                         break;
                     }
                 }
-                NodeValue::Paragraph => {
+                NodeValue::Paragraph(_) => {
                     if self.blank {
                         break;
                     }
@@ -369,7 +364,7 @@ where
                         break;
                     }
                 }
-                NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell => {
+                NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell(_) => {
                     break;
                 }
                 NodeValue::FootnoteDefinition(..) => {
@@ -602,7 +597,7 @@ where
     /////////////////////
 
     fn open_new_blocks(&mut self, container: &mut Node<'a>, line: &str, all_matched: bool) {
-        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
+        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph(_));
         let mut depth = 0;
 
         while !node_matches!(
@@ -778,6 +773,7 @@ where
         container_ast.value = NodeValue::Heading(NodeHeading {
             level,
             setext: false,
+            inlines: vec![],
         });
 
         true
@@ -837,7 +833,7 @@ where
 
     fn detect_html_block(&self, container: Node<'a>, line: &str) -> Option<usize> {
         scanners::html_block_start(&line[self.first_nonspace..]).or_else(|| {
-            if !node_matches!(container, NodeValue::Paragraph) {
+            if !node_matches!(container, NodeValue::Paragraph(_)) {
                 scanners::html_block_start_7(&line[self.first_nonspace..])
             } else {
                 None
@@ -861,6 +857,7 @@ where
                     scanners::SetextChar::Hyphen => 2,
                 },
                 setext: true,
+                inlines: vec![],
             });
             let adv = line.len() - 1 - self.offset;
             self.advance_offset(line, adv, false);
@@ -874,7 +871,7 @@ where
         container: Node<'a>,
         line: &str,
     ) -> Option<scanners::SetextChar> {
-        if node_matches!(container, NodeValue::Paragraph) && !self.options.parse.ignore_setext {
+        if node_matches!(container, NodeValue::Paragraph(_)) && !self.options.parse.ignore_setext {
             scanners::setext_heading_line(&line[self.first_nonspace..])
         } else {
             None
@@ -908,7 +905,7 @@ where
     ) -> Option<usize> {
         if !matches!(
             (&container.data().value, all_matched),
-            (&NodeValue::Paragraph, false)
+            (&NodeValue::Paragraph(_), false)
         ) && self.thematic_break_kill_pos <= self.first_nonspace
         {
             let (offset, found) = self.scan_thematic_break_inner(line);
@@ -1020,7 +1017,7 @@ where
             None => {
                 // Happens when the detail line is directly after the term,
                 // without a blank line between.
-                if !node_matches!(container, NodeValue::Paragraph) {
+                if !node_matches!(container, NodeValue::Paragraph(_)) {
                     // If the container is not a paragraph, then this can't
                     // be a description list item.
                     return false;
@@ -1037,7 +1034,7 @@ where
             }
         };
 
-        if node_matches!(last_child, NodeValue::Paragraph) {
+        if node_matches!(last_child, NodeValue::Paragraph(_)) {
             // We have found the details after the paragraph for the term.
             //
             // This paragraph is moved as a child of a new DescriptionTerm node.
@@ -1192,7 +1189,7 @@ where
             parse_list_marker(
                 line,
                 self.first_nonspace,
-                node_matches!(container, NodeValue::Paragraph),
+                node_matches!(container, NodeValue::Paragraph(_)),
             )
         } else {
             None
@@ -1355,7 +1352,7 @@ where
             && !self.blank
             && (!self.options.extension.greentext
                 || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
-            && node_matches!(self.current, NodeValue::Paragraph)
+            && node_matches!(self.current, NodeValue::Paragraph(_))
         {
             self.add_line(self.current, line);
         } else {
@@ -1422,7 +1419,7 @@ where
                     } else {
                         container = self.add_child(
                             container,
-                            NodeValue::Paragraph,
+                            NodeValue::Paragraph(vec![]),
                             self.first_nonspace + 1,
                         );
                         let count = self.first_nonspace - self.offset;
@@ -1543,7 +1540,7 @@ where
         }
 
         match ast.value {
-            NodeValue::Paragraph => {
+            NodeValue::Paragraph(_) => {
                 let has_content = self.resolve_reference_link_definitions(content);
                 if !has_content {
                     node.detach();
@@ -1644,7 +1641,6 @@ where
 
         let delimiter_arena = Arena::new();
         let mut subj = inlines::Subject::new(
-            self.arena,
             self.options,
             content,
             node_data.sourcepos.start.line,
@@ -1653,11 +1649,13 @@ where
             &delimiter_arena,
         );
 
-        while subj.parse_inline(node, &mut node_data) {}
+        while subj.parse_inline(&mut node_data) {}
 
         subj.process_emphasis(0);
 
         while subj.pop_bracket() {}
+
+        *node_data.value.inlines_mut().unwrap() = subj.thanks_for_the_inlines();
     }
 
     fn process_footnotes(&mut self) {
@@ -1883,7 +1881,7 @@ where
 
         let parent = node.parent().unwrap();
 
-        if node_matches!(parent, NodeValue::TableCell) {
+        if node_matches!(parent, NodeValue::TableCell(_)) {
             if !self.options.parse.tasklist_in_table {
                 return;
             }
@@ -1908,7 +1906,7 @@ where
                     .into(),
                 ),
             );
-        } else if node_matches!(parent, NodeValue::Paragraph) {
+        } else if node_matches!(parent, NodeValue::Paragraph(_)) {
             if node.previous_sibling().is_some() || parent.previous_sibling().is_some() {
                 return;
             }

@@ -5,9 +5,6 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::arena_tree;
-pub use crate::parser::alert::{AlertType, NodeAlert};
-pub use crate::parser::math::NodeMath;
-pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
@@ -25,7 +22,7 @@ macro_rules! node_matches {
     }};
 }
 
-/// The core AST node enum.
+/// The core AST block node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(strum::EnumDiscriminants))]
 #[cfg_attr(
@@ -39,16 +36,15 @@ pub enum NodeValue {
     /// Non-Markdown front matter.  Treated as an opaque blob.
     FrontMatter(String),
 
-    /// **Block**. A [block quote](https://github.github.com/gfm/#block-quotes).  Contains other
-    /// **blocks**.
+    /// A [block quote](https://github.github.com/gfm/#block-quotes).
     ///
     /// ```markdown
     /// > A block quote.
     /// ```
     BlockQuote,
 
-    /// **Block**.  A [list](https://github.github.com/gfm/#lists).  Contains
-    /// [list items](https://github.github.com/gfm/#list-items).
+    /// A [list](https://github.github.com/gfm/#lists).  Contains [list
+    /// items](https://github.github.com/gfm/#list-items).
     ///
     /// ```markdown
     /// * An unordered list
@@ -59,12 +55,11 @@ pub enum NodeValue {
     /// ```
     List(NodeList),
 
-    /// **Block**.  A [list item](https://github.github.com/gfm/#list-items).  Contains other
-    /// **blocks**.
+    /// A [list item](https://github.github.com/gfm/#list-items).
     Item(NodeList),
 
-    /// **Block**. A description list, enabled with `ext_description_lists` option.  Contains
-    /// description items.
+    /// A description list, enabled by the `description_lists` extension.
+    /// Contains description items.
     ///
     /// It is required to put a blank line between terms and details.
     ///
@@ -79,120 +74,63 @@ pub enum NodeValue {
     /// ```
     DescriptionList,
 
-    /// *Block**. An item of a description list.  Contains a term and one details block.
+    /// An item of a description list.  Contains one `DescriptionTerm` and `DescriptionDetails`.
     DescriptionItem(NodeDescriptionItem),
 
-    /// **Block**. Term of an item in a definition list.
+    /// Term of an item in a definition list.
     DescriptionTerm,
 
-    /// **Block**. Details of an item in a definition list.
+    /// Details of an item in a definition list.
     DescriptionDetails,
 
-    /// **Block**. A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
+    /// A code block; may be [fenced](https://github.github.com/gfm/#fenced-code-blocks)
     /// or [indented](https://github.github.com/gfm/#indented-code-blocks).  Contains raw text
     /// which is not parsed as Markdown, although is HTML escaped.
     CodeBlock(Box<NodeCodeBlock>),
 
-    /// **Block**. A [HTML block](https://github.github.com/gfm/#html-blocks).  Contains raw text
+    /// A [HTML block](https://github.github.com/gfm/#html-blocks).  Contains raw text
     /// which is neither parsed as Markdown nor HTML escaped.
     HtmlBlock(NodeHtmlBlock),
 
-    /// **Block**. A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains **inlines**.
-    Paragraph,
+    /// A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains inlines.
+    Paragraph(Vec<Inline>),
 
-    /// **Block**. A heading; may be an [ATX heading](https://github.github.com/gfm/#atx-headings)
+    /// A heading; may be an [ATX heading](https://github.github.com/gfm/#atx-headings)
     /// or a [setext heading](https://github.github.com/gfm/#setext-headings). Contains
-    /// **inlines**.
+    /// inlines.
     Heading(NodeHeading),
 
-    /// **Block**. A [thematic break](https://github.github.com/gfm/#thematic-breaks).  Has no
+    /// A [thematic break](https://github.github.com/gfm/#thematic-breaks).  Has no
     /// children.
     ThematicBreak,
 
-    /// **Block**. A footnote definition.  The `String` is the footnote's name.
-    /// Contains other **blocks**.
+    /// A footnote definition.  The `String` is the footnote's name.
+    /// Contains other blocks.
     FootnoteDefinition(NodeFootnoteDefinition),
 
-    /// **Block**. A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
+    /// A [table](https://github.github.com/gfm/#tables-extension-) per the GFM spec.
     /// Contains table rows.
     Table(Box<NodeTable>),
 
-    /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
+    /// A table row.  The `bool` represents whether the row is the header row or not.
     /// Contains table cells.
     TableRow(bool),
 
-    /// **Block**.  A table cell.  Contains **inlines**.
-    TableCell,
+    /// A table cell.  Contains inlines.
+    TableCell(Vec<Inline>),
 
-    /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
-    /// in a document will be contained in a `Text` node.
-    Text(Cow<'static, str>),
-
-    /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
+    /// [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
-    /// `None` if the item is unchecked.
+    /// `None` if the item is unchecked.  Contains blocks.
     TaskItem(Option<char>),
 
-    /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
-    /// the `hardbreaks` option is set in `Options` during formatting, it will be formatted
-    /// as a `LineBreak`.
-    SoftBreak,
-
-    /// **Inline**.  A [hard line break](https://github.github.com/gfm/#hard-line-breaks).
-    LineBreak,
-
-    /// **Inline**.  A [code span](https://github.github.com/gfm/#code-spans).
-    Code(NodeCode),
-
-    /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
-    HtmlInline(String),
-
-    /// **Block/Inline**.  A Raw output node. This will be inserted verbatim into CommonMark and
-    /// HTML output. It can only be created programmatically, and is never parsed from input.
+    /// A Raw output node. This will be inserted verbatim into CommonMark and
+    /// HTML output. It can only be created programmatically, and is never
+    /// parsed from input.
     Raw(String),
 
-    /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
-    /// text.
-    Emph,
-
-    /// **Inline**.  [Strong](https://github.github.com/gfm/#emphasis-and-strong-emphasis) text.
-    Strong,
-
-    /// **Inline**.  [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-) text
-    /// per the GFM spec.
-    Strikethrough,
-
-    /// **Inline**.  Superscript.  Enabled with `ext_superscript` option.
-    Superscript,
-
-    /// **Inline**.  A [link](https://github.github.com/gfm/#links) to some URL, with possible
-    /// title.
-    Link(Box<NodeLink>),
-
-    /// **Inline**.  An [image](https://github.github.com/gfm/#images).
-    Image(Box<NodeLink>),
-
-    /// **Inline**.  A footnote reference.
-    FootnoteReference(NodeFootnoteReference),
-
-    #[cfg(feature = "shortcodes")]
-    /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
-    ShortCode(Box<NodeShortCode>),
-
-    /// **Inline**. A math span. Contains raw text which is not parsed as Markdown.
-    /// Dollar math or code math
-    ///
-    /// Inline math $1 + 2$ and $`1 + 2`$
-    ///
-    /// Display math $$1 + 2$$ and
-    /// $$
-    /// 1 + 2
-    /// $$
-    ///
-    Math(NodeMath),
-
-    /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
-    /// lines and contains other **blocks**.
+    /// Multiline block quote.  Enabled with the `multiline_block_quote`
+    /// extension.  Contains other blocks.
     ///
     /// ```markdown
     /// >>>
@@ -204,12 +142,84 @@ pub enum NodeValue {
     /// ```
     MultilineBlockQuote(NodeMultilineBlockQuote),
 
-    /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
+    /// Block. GitHub style alert boxes which uses a modified blockquote syntax.
+    /// Enabled with the `alerts` extension.  Contains blocks.
+    Alert(Box<NodeAlert>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(strum::EnumDiscriminants))]
+#[cfg_attr(
+    test,
+    strum_discriminants(vis(pub(crate)), derive(strum::VariantArray, Hash))
+)]
+pub enum Inline {
+    Node {
+        value: InlineValue,
+        children: Vec<Inline>,
+        /// The positions in the source document this node comes from.
+        sourcepos: Sourcepos,
+    },
+    Leaf {
+        value: LeafValue,
+        /// The positions in the source document this node comes from.
+        sourcepos: Sourcepos,
+    },
+}
+
+impl Inline {
+    pub fn children(&self) -> Option<&[Inline]> {
+        match self {
+            Inline::Node { ref children, .. } => Some(children),
+            Inline::Leaf { .. } => None,
+        }
+    }
+
+    pub fn children_mut(&mut self) -> Option<&mut Vec<Inline>> {
+        match self {
+            Inline::Node {
+                ref mut children, ..
+            } => Some(children),
+            Inline::Leaf { .. } => None,
+        }
+    }
+}
+
+/// The core AST inline node enum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(strum::EnumDiscriminants))]
+#[cfg_attr(
+    test,
+    strum_discriminants(vis(pub(crate)), derive(strum::VariantArray, Hash))
+)]
+pub enum InlineValue {
+    /// [Emphasised](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
+    /// text.
+    Emph,
+
+    /// [Strong](https://github.github.com/gfm/#emphasis-and-strong-emphasis) text.
+    Strong,
+
+    /// [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-) text
+    /// per the GFM spec.
+    Strikethrough,
+
+    /// Superscript.  Enabled with `superscript` extension.
+    Superscript,
+
+    /// A [link](https://github.github.com/gfm/#links) to some URL, with
+    /// possible title.
+    Link(Box<NodeLink>),
+
+    /// An [image](https://github.github.com/gfm/#images).
+    Image(Box<NodeLink>),
+
+    /// A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     ///
     /// Enabled with [`escaped_char_spans`](crate::options::RenderBuilder::escaped_char_spans).
     Escaped,
 
-    /// **Inline**.  A wikilink to some URL.
+    /// A wikilink to some URL.
     WikiLink(NodeWikiLink),
 
     /// **Inline**.  Underline. Enabled with `underline` option.
@@ -224,10 +234,56 @@ pub enum NodeValue {
     /// **Inline**. Text surrounded by escaped markup. Enabled with `spoiler` option.
     /// The `String` is the tag to be escaped.
     EscapedTag(String),
+}
 
-    /// **Block**. GitHub style alert boxes which uses a modified blockquote syntax.
-    /// Enabled with the `alerts` option.
-    Alert(Box<NodeAlert>),
+/// The core AST inline leaf node enum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(strum::EnumDiscriminants))]
+#[cfg_attr(
+    test,
+    strum_discriminants(vis(pub(crate)), derive(strum::VariantArray, Hash))
+)]
+pub enum LeafValue {
+    /// [Textual content](https://github.github.com/gfm/#textual-content).  All text
+    /// in a document will be contained in a `Text` node.
+    Text(Cow<'static, str>),
+
+    /// A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
+    /// the `hardbreaks` option is set in `Options` during formatting, it will be formatted
+    /// as a `LineBreak`.
+    SoftBreak,
+
+    /// A [hard line break](https://github.github.com/gfm/#hard-line-breaks).
+    LineBreak,
+
+    /// A [code span](https://github.github.com/gfm/#code-spans).
+    Code(NodeCode),
+
+    /// [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
+    HtmlInline(String),
+
+    /// A raw output node. This will be inserted verbatim into CommonMark and
+    /// HTML output. It can only be created programmatically, and is never parsed from input.
+    Raw(String),
+
+    /// A footnote reference.
+    FootnoteReference(NodeFootnoteReference),
+
+    #[cfg(feature = "shortcodes")]
+    /// An emoji character generated from a shortcode. Enable with feature "shortcodes".
+    ShortCode(Box<NodeShortCode>),
+
+    /// A math span. Contains raw text which is not parsed as Markdown.
+    /// Dollar math or code math
+    ///
+    /// Inline math $1 + 2$ and $`1 + 2`$
+    ///
+    /// Display math $$1 + 2$$ and
+    /// $$
+    /// 1 + 2
+    /// $$
+    ///
+    Math(NodeMath),
 }
 
 /// Alignment of a single table cell.
@@ -406,13 +462,15 @@ pub struct NodeCodeBlock {
 }
 
 /// The metadata of a heading.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeHeading {
     /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
     pub level: u8,
 
     /// Whether the heading is setext (if not, ATX).
     pub setext: bool,
+
+    pub inlines: Vec<Inline>,
 }
 
 /// The metadata of an included HTML block.
@@ -449,66 +507,139 @@ pub struct NodeFootnoteReference {
     pub ix: u32,
 }
 
-impl NodeValue {
-    /// Indicates whether this node is a block node or inline node.
-    pub fn block(&self) -> bool {
-        matches!(
-            *self,
-            NodeValue::Document
-                | NodeValue::BlockQuote
-                | NodeValue::FootnoteDefinition(_)
-                | NodeValue::List(..)
-                | NodeValue::DescriptionList
-                | NodeValue::DescriptionItem(_)
-                | NodeValue::DescriptionTerm
-                | NodeValue::DescriptionDetails
-                | NodeValue::Item(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::HtmlBlock(..)
-                | NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::ThematicBreak
-                | NodeValue::Table(..)
-                | NodeValue::TableRow(..)
-                | NodeValue::TableCell
-                | NodeValue::TaskItem(..)
-                | NodeValue::MultilineBlockQuote(_)
-                | NodeValue::Alert(_)
-        )
+/// The metadata of a multiline blockquote.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NodeMultilineBlockQuote {
+    /// The length of the fence.
+    pub fence_length: usize,
+
+    /// The indentation level of the fence marker.
+    pub fence_offset: usize,
+}
+
+/// An inline math span
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeMath {
+    /// Whether this is dollar math (`$` or `$$`).
+    /// `false` indicates it is code math
+    pub dollar_math: bool,
+
+    /// Whether this is display math (using `$$`)
+    pub display_math: bool,
+
+    /// The literal contents of the math span.
+    /// As the contents are not interpreted as Markdown at all,
+    /// they are contained within this structure,
+    /// rather than inserted into a child inline of any kind.
+    pub literal: String,
+}
+
+/// The metadata of an Alert node.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeAlert {
+    /// Type of alert
+    pub alert_type: AlertType,
+
+    /// Overridden title. If `None`, then use the default title.
+    pub title: Option<String>,
+
+    /// Originated from a multiline blockquote.
+    pub multiline: bool,
+
+    /// The length of the fence (multiline only).
+    pub fence_length: usize,
+
+    /// The indentation level of the fence marker (multiline only)
+    pub fence_offset: usize,
+}
+
+/// The type of alert.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AlertType {
+    /// Useful information that users should know, even when skimming content
+    #[default]
+    Note,
+
+    /// Helpful advice for doing things better or more easily
+    Tip,
+
+    /// Key information users need to know to achieve their goal
+    Important,
+
+    /// Urgent info that needs immediate user attention to avoid problems
+    Warning,
+
+    /// Advises about risks or negative outcomes of certain actions
+    Caution,
+}
+
+impl AlertType {
+    /// Returns the default title for an alert type
+    pub fn default_title(&self) -> String {
+        match *self {
+            AlertType::Note => String::from("Note"),
+            AlertType::Tip => String::from("Tip"),
+            AlertType::Important => String::from("Important"),
+            AlertType::Warning => String::from("Warning"),
+            AlertType::Caution => String::from("Caution"),
+        }
     }
 
+    /// Returns the CSS class to use for an alert type
+    pub fn css_class(&self) -> String {
+        match *self {
+            AlertType::Note => String::from("markdown-alert-note"),
+            AlertType::Tip => String::from("markdown-alert-tip"),
+            AlertType::Important => String::from("markdown-alert-important"),
+            AlertType::Warning => String::from("markdown-alert-warning"),
+            AlertType::Caution => String::from("markdown-alert-caution"),
+        }
+    }
+}
+
+impl NodeValue {
     /// Whether the type the node is of can contain inline nodes.
     pub fn contains_inlines(&self) -> bool {
         matches!(
             *self,
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::TableCell
+            NodeValue::Paragraph(..) | NodeValue::Heading(..) | NodeValue::TableCell(..)
         )
     }
 
-    /// Return a reference to the text of a `Text` inline, if this node is one.
-    ///
-    /// Convenience method.
-    pub fn text(&self) -> Option<&str> {
+    pub fn inlines_mut(&mut self) -> Option<&mut Vec<Inline>> {
         match *self {
-            NodeValue::Text(ref t) => Some(t),
+            NodeValue::Paragraph(ref mut inls) => Some(inls),
+
+            NodeValue::Heading(ref mut nh) => Some(&mut nh.inlines),
+            NodeValue::TableCell(ref mut inls) => Some(inls),
             _ => None,
         }
     }
 
-    /// Return a mutable reference to the text of a `Text` inline, if this node is one.
-    ///
-    /// Convenience method.
-    pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
-        match *self {
-            NodeValue::Text(ref mut t) => Some(t),
-            _ => None,
-        }
-    }
+    // /// Return a reference to the text of a `Text` inline, if this node is one.
+    // ///
+    // /// Convenience method.
+    // pub fn text(&self) -> Option<&str> {
+    //     match *self {
+    //         NodeValue::Text(ref t) => Some(t),
+    //         _ => None,
+    //     }
+    // }
+
+    // /// Return a mutable reference to the text of a `Text` inline, if this node is one.
+    // ///
+    // /// Convenience method.
+    // pub fn text_mut(&mut self) -> Option<&mut Cow<'static, str>> {
+    //     match *self {
+    //         NodeValue::Text(ref mut t) => Some(t),
+    //         _ => None,
+    //     }
+    // }
 
     pub(crate) fn accepts_lines(&self) -> bool {
         matches!(
             *self,
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
+            NodeValue::Paragraph(..) | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
         )
     }
 
@@ -525,46 +656,61 @@ impl NodeValue {
             NodeValue::Item(..) => "item",
             NodeValue::CodeBlock(..) => "code_block",
             NodeValue::HtmlBlock(..) => "html_block",
-            NodeValue::Paragraph => "paragraph",
+            NodeValue::Paragraph(..) => "paragraph",
             NodeValue::Heading(..) => "heading",
             NodeValue::ThematicBreak => "thematic_break",
             NodeValue::Table(..) => "table",
             NodeValue::TableRow(..) => "table_row",
-            NodeValue::TableCell => "table_cell",
-            NodeValue::Text(..) => "text",
-            NodeValue::SoftBreak => "softbreak",
-            NodeValue::LineBreak => "linebreak",
-            NodeValue::Image(..) => "image",
-            NodeValue::Link(..) => "link",
-            NodeValue::Emph => "emph",
-            NodeValue::Strong => "strong",
-            NodeValue::Code(..) => "code",
-            NodeValue::HtmlInline(..) => "html_inline",
+            NodeValue::TableCell(..) => "table_cell",
             NodeValue::Raw(..) => "raw",
-            NodeValue::Strikethrough => "strikethrough",
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",
-            NodeValue::Superscript => "superscript",
-            NodeValue::FootnoteReference(..) => "footnote_reference",
-            #[cfg(feature = "shortcodes")]
-            NodeValue::ShortCode(_) => "shortcode",
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
-            NodeValue::Escaped => "escaped",
-            NodeValue::Math(..) => "math",
-            NodeValue::WikiLink(..) => "wikilink",
-            NodeValue::Underline => "underline",
-            NodeValue::Subscript => "subscript",
-            NodeValue::SpoileredText => "spoiler",
-            NodeValue::EscapedTag(_) => "escaped_tag",
             NodeValue::Alert(_) => "alert",
         }
     }
 }
 
-/// A single node in the CommonMark AST.
+impl InlineValue {
+    pub(crate) fn xml_node_name(&self) -> &'static str {
+        match *self {
+            InlineValue::Image(..) => "image",
+            InlineValue::Link(..) => "link",
+            InlineValue::Emph => "emph",
+            InlineValue::Strong => "strong",
+            InlineValue::Strikethrough => "strikethrough",
+            InlineValue::Superscript => "superscript",
+            InlineValue::Escaped => "escaped",
+            InlineValue::WikiLink(..) => "wikilink",
+            InlineValue::Underline => "underline",
+            InlineValue::Subscript => "subscript",
+            InlineValue::SpoileredText => "spoiler",
+            InlineValue::EscapedTag(_) => "escaped_tag",
+        }
+    }
+}
+
+impl LeafValue {
+    pub(crate) fn xml_node_name(&self) -> &'static str {
+        match *self {
+            LeafValue::Text(..) => "text",
+            LeafValue::SoftBreak => "softbreak",
+            LeafValue::LineBreak => "linebreak",
+            LeafValue::Code(..) => "code",
+            LeafValue::HtmlInline(..) => "html_inline",
+            LeafValue::FootnoteReference(..) => "footnote_reference",
+            #[cfg(feature = "shortcodes")]
+            LeafValue::ShortCode(_) => "shortcode",
+            LeafValue::Math(..) => "math",
+            LeafValue::Raw(..) => "raw",
+        }
+    }
+}
+
+/// A block node in the CommonMark AST.
 ///
 /// The struct contains metadata about the node's position in the original document, and the core
-/// enum, `NodeValue`.
+/// block enum, `NodeValue`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ast {
     /// The node value itself.

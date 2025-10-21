@@ -11,8 +11,8 @@ use typed_arena::Arena;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
-    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
+    Ast, AstNode, Inline, InlineValue, LeafValue, Node, NodeCode, NodeFootnoteDefinition,
+    NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
@@ -26,20 +26,20 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+pub struct Subject<'r, 'o, 'd, 'c, 'p> {
+    inlines: Vec<Inline>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
     pub pos: usize,
     column_offset: isize,
     line_offset: usize,
-    flags: Flags,
+    html_skip_flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     footnote_defs: &'p FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a>>,
+    brackets: Vec<Bracket>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -50,120 +50,14 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
 }
 
 #[derive(Default)]
-struct Flags {
-    skip_html_cdata: bool,
-    skip_html_declaration: bool,
-    skip_html_pi: bool,
-    skip_html_comment: bool,
+struct HtmlSkipFlags {
+    cdata: bool,
+    declaration: bool,
+    pi: bool,
+    comment: bool,
 }
-
-pub struct RefMap {
-    pub map: HashMap<String, ResolvedReference>,
-    pub(crate) max_ref_size: usize,
-    ref_size: Cell<usize>,
-}
-
-impl RefMap {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-            max_ref_size: usize::MAX,
-            ref_size: Cell::new(0),
-        }
-    }
-
-    fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
-        match self.map.get(lab) {
-            Some(entry) => {
-                let size = entry.url.len() + entry.title.len();
-                let ref_size = self.ref_size.get();
-                if size > self.max_ref_size - ref_size {
-                    None
-                } else {
-                    self.ref_size.set(ref_size + size);
-                    Some(entry)
-                }
-            }
-            None => None,
-        }
-    }
-}
-
-pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
-    counter: RefCell<usize>,
-}
-
-impl<'a> FootnoteDefs<'a> {
-    pub fn new() -> Self {
-        Self {
-            defs: RefCell::new(Vec::new()),
-            counter: RefCell::new(0),
-        }
-    }
-
-    pub fn next_name(&self) -> String {
-        let mut counter = self.counter.borrow_mut();
-        *counter += 1;
-        format!("__inline_{}", *counter)
-    }
-
-    pub fn add_definition(&self, def: Node<'a>) {
-        self.defs.borrow_mut().push(def);
-    }
-
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
-        self.defs.borrow()
-    }
-}
-
-pub struct Delimiter<'a: 'd, 'd> {
-    inl: Node<'a>,
-    position: usize,
-    length: usize,
-    delim_char: u8,
-    can_open: bool,
-    can_close: bool,
-    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
-    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
-}
-
-impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
-            self.position,
-            self.length,
-            self.delim_char,
-            self.can_open,
-            self.can_close,
-            self.inl
-                .try_data()
-                .map_or("<couldn't borrow>".to_string(), |d| format!(
-                    "{}",
-                    d.sourcepos
-                ))
-        )
-    }
-}
-
-struct Bracket<'a> {
-    inl_text: Node<'a>,
-    position: usize,
-    image: bool,
-    bracket_after: bool,
-}
-
-#[derive(Clone)]
-struct WikilinkComponents {
-    url: String,
-    link_label: Option<(String, usize, usize)>,
-}
-
-impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
+impl<'r, 'o, 'd, 'c, 'p> Subject<'r, 'o, 'd, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
         options: &'o Options<'c>,
         input: String,
         line: usize,
@@ -172,14 +66,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
         let mut s = Subject {
-            arena,
+            inlines: vec![],
             options,
             input,
             line,
             pos: 0,
             column_offset: 0,
             line_offset: 0,
-            flags: Flags::default(),
+            html_skip_flags: HtmlSkipFlags::default(),
             refmap,
             footnote_defs,
             delimiter_arena,
@@ -223,11 +117,56 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         s
     }
 
-    pub fn pop_bracket(&mut self) -> bool {
-        self.brackets.pop().is_some()
+    //////////////////
+    // Constructors //
+    //////////////////
+
+    fn make_leaf(&self, value: LeafValue, start_column: usize, end_column: usize) -> Inline {
+        let start_column =
+            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
+        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
+
+        Inline::Leaf {
+            value,
+            sourcepos: (
+                self.line,
+                usize::try_from(start_column).unwrap(),
+                self.line,
+                usize::try_from(end_column).unwrap(),
+            )
+                .into(),
+        }
     }
 
-    pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
+    fn make_inline(
+        &self,
+        value: InlineValue,
+        start_column: usize,
+        end_column: usize,
+        children: Vec<Inline>,
+    ) -> Inline {
+        let start_column =
+            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
+        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
+
+        Inline::Node {
+            value,
+            sourcepos: (
+                self.line,
+                usize::try_from(start_column).unwrap(),
+                self.line,
+                usize::try_from(end_column).unwrap(),
+            )
+                .into(),
+            children: children,
+        }
+    }
+
+    /////////////
+    // Parsers //
+    /////////////
+
+    pub fn parse_inline(&mut self, ast: &mut Ast) -> bool {
         let c = match self.peek_char() {
             None => return false,
             Some(ch) => *ch as char,
@@ -236,7 +175,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let adjusted_line = self.line - ast.sourcepos.start.line;
         self.line_offset = ast.line_offsets[adjusted_line];
 
-        let new_inl: Option<Node<'a>> = match c {
+        let new_inl: Option<Inline> = match c {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
             '`' => Some(self.handle_backticks(&ast.line_offsets)),
@@ -247,7 +186,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let mut res = None;
 
                 if self.options.extension.autolink {
-                    res = self.handle_autolink_colon(node);
+                    res = self.handle_autolink_with(autolink::url_match);
                 }
 
                 #[cfg(feature = "shortcodes")]
@@ -257,8 +196,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 if res.is_none() {
                     self.pos += 1;
-                    res = Some(self.make_inline(
-                        NodeValue::Text(":".into()),
+                    res = Some(self.make_leaf(
+                        LeafValue::Text(":".into()),
                         self.pos - 1,
                         self.pos - 1,
                     ));
@@ -266,11 +205,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 res
             }
-            'w' if self.options.extension.autolink => match self.handle_autolink_w(node) {
+            'w' if self.options.extension.autolink => match self
+                .handle_autolink_with(autolink::www_match)
+            {
                 Some(inl) => Some(inl),
                 None => {
                     self.pos += 1;
-                    Some(self.make_inline(NodeValue::Text("w".into()), self.pos - 1, self.pos - 1))
+                    Some(self.make_leaf(LeafValue::Text("w".into()), self.pos - 1, self.pos - 1))
                 }
             },
             '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
@@ -290,7 +231,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 if wikilink_inl.is_none() {
                     let inl =
-                        self.make_inline(NodeValue::Text("[".into()), self.pos - 1, self.pos - 1);
+                        self.make_leaf(LeafValue::Text("[".into()), self.pos - 1, self.pos - 1);
                     self.push_bracket(false, inl);
                     self.within_brackets = true;
 
@@ -308,12 +249,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
                     self.pos += 1;
                     let inl =
-                        self.make_inline(NodeValue::Text("![".into()), self.pos - 2, self.pos - 1);
+                        self.make_leaf(LeafValue::Text("![".into()), self.pos - 2, self.pos - 1);
                     self.push_bracket(true, inl);
                     self.within_brackets = true;
                     Some(inl)
                 } else {
-                    Some(self.make_inline(NodeValue::Text("!".into()), self.pos - 1, self.pos - 1))
+                    Some(self.make_leaf(LeafValue::Text("!".into()), self.pos - 1, self.pos - 1))
                 }
             }
             '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
@@ -325,13 +266,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.options.extension.inline_footnotes
                     && self.peek_char_n(1) == Some(&(b'['))
                 {
-                    self.handle_inline_footnote()
+                    // XXX
+                    // self.handle_inline_ootnote()
+                    None
                 } else if self.options.extension.superscript && !self.within_brackets {
                     Some(self.handle_delim(b'^'))
                 } else {
                     // Just regular text
                     self.pos += 1;
-                    Some(self.make_inline(NodeValue::Text("^".into()), self.pos - 1, self.pos - 1))
+                    Some(self.make_leaf(LeafValue::Text("^".into()), self.pos - 1, self.pos - 1))
                 }
             }
             '$' => Some(self.handle_dollars(&ast.line_offsets)),
@@ -361,8 +304,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // Don't create empty text nodes - this can happen after trimming trailing
                 // whitespace, is useless, and would cause sourcepos underflow in endpos - 1.
                 if !contents.is_empty() {
-                    Some(self.make_inline(
-                        NodeValue::Text(contents.into_owned().into()),
+                    Some(self.make_leaf(
+                        LeafValue::Text(contents.into_owned().into()),
                         startpos,
                         endpos - 1,
                     ))
@@ -373,10 +316,1292 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         };
 
         if let Some(inl) = new_inl {
-            node.append(inl);
+            self.inlines.append(inl);
         }
 
         true
+    }
+
+    #[inline]
+    pub fn peek_char(&self) -> Option<&u8> {
+        self.peek_char_n(0)
+    }
+
+    #[inline]
+    fn peek_char_n(&self, n: usize) -> Option<&u8> {
+        if self.pos + n >= self.input.len() {
+            None
+        } else {
+            let c = &self.input.as_bytes()[self.pos + n];
+            assert!(*c > 0);
+            Some(c)
+        }
+    }
+
+    fn handle_newline(&mut self) -> Inline {
+        let nlpos = self.pos;
+        if self.input.as_bytes()[self.pos] == b'\r' {
+            self.pos += 1;
+        }
+        if self.input.as_bytes()[self.pos] == b'\n' {
+            self.pos += 1;
+        }
+        let inl = if nlpos > 1
+            && self.input.as_bytes()[nlpos - 1] == b' '
+            && self.input.as_bytes()[nlpos - 2] == b' '
+        {
+            self.make_leaf(LeafValue::LineBreak, nlpos - 2, self.pos - 1)
+        } else {
+            self.make_leaf(LeafValue::SoftBreak, nlpos, self.pos - 1)
+        };
+        self.line += 1;
+        self.column_offset = -(self.pos as isize);
+        self.skip_spaces();
+        inl
+    }
+
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Inline {
+        let startpos = self.pos;
+        let openticks = self.take_while(b'`');
+        let endpos = self.scan_to_closing_backtick(openticks);
+
+        match endpos {
+            None => {
+                self.pos = startpos + openticks;
+                self.make_leaf(
+                    LeafValue::Text("`".repeat(openticks).into()),
+                    startpos,
+                    self.pos - 1,
+                )
+            }
+            Some(endpos) => {
+                let buf = &self.input[startpos + openticks..endpos - openticks];
+                let buf = strings::normalize_code(buf);
+                let code = NodeCode {
+                    num_backticks: openticks,
+                    literal: buf.into(),
+                };
+                let node = self.make_leaf(LeafValue::Code(code), startpos, endpos - 1);
+                self.adjust_node_newlines(
+                    node,
+                    endpos - startpos - openticks,
+                    openticks,
+                    parent_line_offsets,
+                );
+                node
+            }
+        }
+    }
+
+    fn handle_backslash(&mut self) -> Inline {
+        let startpos = self.pos;
+        self.pos += 1;
+
+        if self.peek_char().map_or(false, |&c| ispunct(c)) {
+            self.pos += 1;
+
+            let inline_text = self.make_leaf(
+                LeafValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
+                self.pos - 2,
+                self.pos - 1,
+            );
+
+            if self.options.render.escaped_char_spans {
+                self.make_inline(
+                    InlineValue::Escaped,
+                    self.pos - 2,
+                    self.pos - 1,
+                    vec![inline_text],
+                )
+            } else {
+                inline_text
+            }
+        } else if !self.eof() && self.skip_line_end() {
+            let inl = self.make_leaf(LeafValue::LineBreak, startpos, self.pos - 1);
+            self.line += 1;
+            self.column_offset = -(self.pos as isize);
+            self.skip_spaces();
+            inl
+        } else {
+            self.make_leaf(LeafValue::Text("\\".into()), self.pos - 1, self.pos - 1)
+        }
+    }
+
+    fn handle_entity(&mut self) -> Inline {
+        self.pos += 1;
+
+        match entity::unescape(&self.input[self.pos..]) {
+            None => self.make_leaf(LeafValue::Text("&".into()), self.pos - 1, self.pos - 1),
+            Some((entity, len)) => {
+                self.pos += len;
+                self.make_leaf(LeafValue::Text(entity), self.pos - 1 - len, self.pos - 1)
+            }
+        }
+    }
+
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Inline {
+        self.pos += 1;
+
+        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
+            self.pos += matchlen;
+            let inl = self.make_autolink(
+                &self.input[self.pos - matchlen..self.pos - 1],
+                AutolinkType::Uri,
+                self.pos - 1 - matchlen,
+                self.pos - 1,
+            );
+            return inl;
+        }
+
+        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
+            self.pos += matchlen;
+            let inl = self.make_autolink(
+                &self.input[self.pos - matchlen..self.pos - 1],
+                AutolinkType::Email,
+                self.pos - 1 - matchlen,
+                self.pos - 1,
+            );
+            return inl;
+        }
+
+        // Most comments below are verbatim from cmark upstream.
+        let mut matchlen: Option<usize> = None;
+
+        if self.pos + 2 <= self.input.len() {
+            let c = self.input.as_bytes()[self.pos];
+            if c == b'!' && !self.html_skip_flags.comment {
+                let c = self.input.as_bytes()[self.pos + 1];
+                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
+                    if self.peek_char_n(3) == Some(&b'>') {
+                        matchlen = Some(4);
+                    } else if self.peek_char_n(3) == Some(&b'-')
+                        && self.peek_char_n(4) == Some(&b'>')
+                    {
+                        matchlen = Some(5);
+                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
+                        matchlen = Some(m + 1);
+                    } else {
+                        self.html_skip_flags.comment = true;
+                    }
+                } else if c == b'[' {
+                    if !self.html_skip_flags.cdata && self.pos + 3 <= self.input.len() {
+                        if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
+                            // The regex doesn't require the final "]]>". But if we're not at
+                            // the end of input, it must come after the match. Otherwise,
+                            // disable subsequent scans to avoid quadratic behavior.
+
+                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
+                            if self.pos + m + 5 > self.input.len() {
+                                self.html_skip_flags.cdata = true;
+                            } else {
+                                matchlen = Some(m + 5);
+                            }
+                        }
+                    }
+                } else if !self.html_skip_flags.declaration {
+                    if let Some(m) = scanners::html_declaration(&self.input[self.pos + 1..]) {
+                        // Adding 2 to matchlen for prefix "!", suffix ">"
+                        if self.pos + m + 2 > self.input.len() {
+                            self.html_skip_flags.declaration = true;
+                        } else {
+                            matchlen = Some(m + 2);
+                        }
+                    }
+                }
+            } else if c == b'?' {
+                if !self.html_skip_flags.pi {
+                    // Note that we allow an empty match.
+                    let m = scanners::html_processing_instruction(&self.input[self.pos + 1..])
+                        .unwrap_or(0);
+                    // Adding 3 to matchlen fro prefix "?", suffix "?>"
+                    if self.pos + m + 3 > self.input.len() {
+                        self.html_skip_flags.pi = true;
+                    } else {
+                        matchlen = Some(m + 3);
+                    }
+                }
+            } else {
+                matchlen = scanners::html_tag(&self.input[self.pos..]);
+            }
+        }
+
+        if let Some(matchlen) = matchlen {
+            let contents = &self.input[self.pos - 1..self.pos + matchlen];
+            self.pos += matchlen;
+            let inl = self.make_leaf(
+                LeafValue::HtmlInline(contents.to_string()),
+                self.pos - matchlen - 1,
+                self.pos - 1,
+            );
+            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
+            return inl;
+        }
+
+        self.make_leaf(LeafValue::Text("<".into()), self.pos - 1, self.pos - 1)
+    }
+
+    fn handle_autolink_with(
+        &mut self,
+        f: fn(&mut Subject<'_, '_, '_, '_, '_>) -> Option<(Inline, usize, usize)>,
+    ) -> Option<Inline> {
+        if !self.options.parse.relaxed_autolinks && self.within_brackets {
+            return None;
+        }
+        let startpos = self.pos;
+        let (post, need_reverse, skip) = f(self)?;
+
+        self.pos += skip - need_reverse;
+
+        // We need to "rewind" by `need_reverse` chars, which should be in one
+        // or more Text nodes beforehand. Typically the chars will *all* be in
+        // a single Text node, containing whatever text came before the ":" that
+        // triggered this method, eg. "See our website at http" ("://blah.com").
+        //
+        // relaxed_autolinks allows some slightly pathological cases. First,
+        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
+        // a scheme including the letter "w", which will split Text inlines due
+        // to them being their own trigger (for handling autolinks with
+        // autolink::www_match), meaning "wa://…" will need to traverse two
+        // Texts to complete the rewind.
+        let mut reverse = need_reverse;
+        while reverse > 0 {
+            let mut last_child = node.last_child().unwrap().data_mut();
+            match last_child.value {
+                NodeValue::Text(ref mut prev) => {
+                    let prev_len = prev.len();
+                    if reverse < prev.len() {
+                        prev.to_mut().truncate(prev_len - reverse);
+                        last_child.sourcepos.end.column -= reverse;
+                        reverse = 0;
+                    } else {
+                        reverse -= prev_len;
+                        node.last_child().unwrap().detach();
+                    }
+                }
+                _ => panic!("expected text node before autolink colon"),
+            }
+        }
+
+        {
+            let sp = &mut post.data_mut().sourcepos;
+            // See [`make_inline`].
+            sp.start = (
+                self.line,
+                (startpos as isize - need_reverse as isize
+                    + 1
+                    + self.column_offset
+                    + self.line_offset as isize) as usize,
+            )
+                .into();
+            sp.end = (
+                self.line,
+                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
+            )
+                .into();
+
+            // Inner text node gets the same sp, since there are no surrounding
+            // characters for autolinks of these kind.
+            post.first_child().unwrap().data_mut().sourcepos = *sp;
+        }
+
+        Some(post)
+    }
+
+    #[cfg(feature = "shortcodes")]
+    fn handle_shortcodes_colon(&mut self) -> Option<Inline> {
+        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
+
+        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
+
+        let nsc = NodeShortCode::resolve(shortcode)?;
+        self.pos += 1 + matchlen;
+
+        Some(self.make_leaf(
+            LeafValue::ShortCode(Box::new(nsc)),
+            self.pos - 1 - matchlen,
+            self.pos - 1,
+        ))
+    }
+
+    fn handle_delim(&mut self, c: u8) -> Inline {
+        let (numdelims, can_open, can_close) = self.scan_delims(c);
+
+        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
+            "’".into()
+        } else if c == b'"' && self.options.parse.smart {
+            if can_close {
+                "”".into()
+            } else {
+                "“".into()
+            }
+        } else {
+            self.input[self.pos - numdelims..self.pos]
+                .to_string()
+                .into()
+        };
+        let inl = self.make_leaf(
+            LeafValue::Text(contents),
+            self.pos - numdelims,
+            self.pos - 1,
+        );
+
+        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
+            numdelims <= 2
+        } else {
+            true
+        };
+
+        if (can_open || can_close)
+            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
+            && is_valid_strikethrough_delim
+        {
+            self.push_delimiter(c, can_open, can_close, inl);
+        }
+
+        inl
+    }
+
+    fn handle_hyphen(&mut self) -> Inline {
+        let start = self.pos;
+        self.pos += 1;
+
+        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
+            return self.make_leaf(LeafValue::Text("-".into()), self.pos - 1, self.pos - 1);
+        }
+
+        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
+            self.pos += 1;
+        }
+
+        let numhyphens = (self.pos - start) as i32;
+
+        let (ens, ems) = if numhyphens % 3 == 0 {
+            (0, numhyphens / 3)
+        } else if numhyphens % 2 == 0 {
+            (numhyphens / 2, 0)
+        } else if numhyphens % 3 == 2 {
+            (1, (numhyphens - 2) / 3)
+        } else {
+            (2, (numhyphens - 4) / 3)
+        };
+
+        let ens = if ens > 0 { ens as usize } else { 0 };
+        let ems = if ems > 0 { ems as usize } else { 0 };
+
+        let mut buf = String::with_capacity(3 * (ems + ens));
+        buf.push_str(&"—".repeat(ems));
+        buf.push_str(&"–".repeat(ens));
+        self.make_leaf(LeafValue::Text(buf.into()), start, self.pos - 1)
+    }
+
+    fn handle_period(&mut self) -> Inline {
+        self.pos += 1;
+        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
+            self.pos += 1;
+            if self.peek_char().map_or(false, |&c| c == b'.') {
+                self.pos += 1;
+                self.make_leaf(LeafValue::Text("…".into()), self.pos - 3, self.pos - 1)
+            } else {
+                self.make_leaf(LeafValue::Text("..".into()), self.pos - 2, self.pos - 1)
+            }
+        } else {
+            self.make_leaf(LeafValue::Text(".".into()), self.pos - 1, self.pos - 1)
+        }
+    }
+
+    // Handles wikilink syntax
+    //   [[link text|url]]
+    //   [[url|link text]]
+    fn handle_wikilink(&mut self) -> Option<Inline> {
+        let startpos = self.pos;
+        let component = self.wikilink_url_link_label()?;
+        let url_clean = strings::clean_url(&component.url);
+        let (link_label, link_label_start_column, _link_label_end_column) =
+            match component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
+                None => (
+                    entity::unescape_html(&component.url).to_string(),
+                    startpos + 1,
+                    self.pos - 3,
+                ),
+            };
+
+        let nl = NodeWikiLink {
+            url: url_clean.into(),
+        };
+
+        let contents = self.label_backslash_escapes(&link_label, link_label_start_column);
+
+        let inl = self.make_inline(
+            InlineValue::WikiLink(nl),
+            startpos - 1,
+            self.pos - 1,
+            contents,
+        );
+
+        Some(inl)
+    }
+
+    // Given a label, handles backslash escaped characters. Appends the resulting
+    // nodes to the container
+    fn label_backslash_escapes(&mut self, label: &str, start_column: usize) -> Vec<Inline> {
+        let mut startpos = 0;
+        let mut offset = 0;
+        let bytes = label.as_bytes();
+        let len = label.len();
+        let mut contents = vec![];
+
+        while offset < len {
+            let c = bytes[offset];
+
+            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
+                let preceding_text = self.make_leaf(
+                    LeafValue::Text(label[startpos..offset].to_string().into()),
+                    start_column + startpos,
+                    start_column + offset - 1,
+                );
+
+                contents.push(preceding_text);
+
+                let inline_text = self.make_leaf(
+                    LeafValue::Text(label[offset + 1..offset + 2].to_string().into()),
+                    start_column + offset,
+                    start_column + offset + 1,
+                );
+
+                if self.options.render.escaped_char_spans {
+                    contents.push(self.make_inline(
+                        InlineValue::Escaped,
+                        start_column + offset,
+                        start_column + offset + 1,
+                        vec![inline_text],
+                    ));
+                } else {
+                    contents.push(inline_text);
+                }
+
+                offset += 2;
+                startpos = offset;
+            } else {
+                offset += 1;
+            }
+        }
+
+        if startpos != offset {
+            contents.push(self.make_leaf(
+                LeafValue::Text(label[startpos..offset].to_string().into()),
+                start_column + startpos,
+                start_column + offset - 1,
+            ));
+        }
+
+        contents
+    }
+
+    // XXX: This creates a block from the inline parser.
+    // We need to figure out how to get this bubbled up.
+    //
+    // fn handle_inline_footnote(&mut self) -> Option<Inline> {
+    //     let startpos = self.pos;
+
+    //     // We're at ^, next should be [
+    //     self.pos += 2; // Skip ^[
+
+    //     // Find the closing ]
+    //     let mut depth = 1;
+    //     let mut endpos = self.pos;
+    //     while endpos < self.input.len() && depth > 0 {
+    //         match self.input.as_bytes()[endpos] {
+    //             b'[' => depth += 1,
+    //             b']' => depth -= 1,
+    //             b'\\' if endpos + 1 < self.input.len() => {
+    //                 endpos += 1; // Skip escaped character
+    //             }
+    //             _ => {}
+    //         }
+    //         endpos += 1;
+    //     }
+
+    //     if depth != 0 {
+    //         // No matching closing bracket, treat as regular text
+    //         self.pos = startpos + 1;
+    //         return Some(self.make_leaf(LeafValue::Text("^".into()), startpos, startpos));
+    //     }
+
+    //     // endpos is now one past the ], so adjust
+    //     endpos -= 1;
+
+    //     // Extract the content
+    //     let content = &self.input[self.pos..endpos];
+
+    //     // Empty inline footnote should not parse
+    //     if content.is_empty() {
+    //         self.pos = startpos + 1;
+    //         return Some(self.make_leaf(LeafValue::Text("^".into()), startpos, startpos));
+    //     }
+
+    //     // Generate unique name
+    //     let name = self.footnote_defs.next_name();
+
+    //     // Create the footnote reference node
+    //     let ref_node = self.make_leaf(
+    //         LeafValue::FootnoteReference(NodeFootnoteReference {
+    //             name: name.clone(),
+    //             ref_num: 0,
+    //             ix: 0,
+    //         }),
+    //         startpos,
+    //         endpos,
+    //     );
+
+    //     // Parse the content as inlines
+    //     let def_node = self.arena.alloc(
+    //         Ast::new(
+    //             NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+    //                 name: name.clone(),
+    //                 total_references: 0,
+    //             }),
+    //             (self.line, 1).into(),
+    //         )
+    //         .into(),
+    //     );
+
+    //     // Create a paragraph to hold the inline content
+    //     let mut para_ast = Ast::new(
+    //         NodeValue::Paragraph,
+    //         (1, 1).into(), // Use line 1 as base
+    //     );
+    //     // Build line_offsets by scanning for newlines in the content
+    //     let mut line_offsets = vec![0];
+    //     for (i, &byte) in content.as_bytes().iter().enumerate() {
+    //         if byte == b'\n' {
+    //             line_offsets.push(i + 1);
+    //         }
+    //     }
+    //     para_ast.line_offsets = line_offsets;
+    //     let para_node = self.arena.alloc(para_ast.into());
+    //     def_node.append(para_node);
+
+    //     // Parse the content recursively as inlines
+    //     let delimiter_arena = Arena::new();
+    //     let mut subj = Subject::new(
+    //         self.arena,
+    //         self.options,
+    //         content.into(),
+    //         1, // Use line 1 to match the paragraph's sourcepos
+    //         self.refmap,
+    //         self.footnote_defs,
+    //         &delimiter_arena,
+    //     );
+
+    //     while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
+    //     subj.process_emphasis(0);
+    //     while subj.pop_bracket() {}
+
+    //     // Check if the parsed content is empty or contains only whitespace
+    //     // This handles whitespace-only content, null bytes, etc. generically
+    //     let has_non_whitespace_content = para_node.children().any(|child| {
+    //         let child_data = child.data();
+    //         match &child_data.value {
+    //             NodeValue::Text(text) => !text.trim().is_empty(),
+    //             NodeValue::SoftBreak | NodeValue::LineBreak => false,
+    //             _ => true, // Any other node type (link, emphasis, etc.) counts as content
+    //         }
+    //     });
+
+    //     if !has_non_whitespace_content {
+    //         // Content is empty or whitespace-only after parsing, treat as literal text
+    //         self.pos = startpos + 1;
+    //         return Some(self.make_leaf(LeafValue::Text("^".into()), startpos, startpos));
+    //     }
+
+    //     // Store the footnote definition
+    //     self.footnote_defs.add_definition(def_node);
+
+    //     // Move position past the closing ]
+    //     self.pos = endpos + 1;
+
+    //     Some(ref_node)
+    // }
+
+    // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Inline {
+        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
+            self.pos += 1;
+            return self.make_leaf(LeafValue::Text("$".into()), self.pos - 1, self.pos - 1);
+        }
+        let startpos = self.pos;
+        let opendollars = self.take_while(b'$');
+        let mut code_math = false;
+
+        // check for code math
+        if opendollars == 1
+            && self.options.extension.math_code
+            && self.peek_char().map_or(false, |&c| c == b'`')
+        {
+            code_math = true;
+            self.pos += 1;
+        }
+        let fence_length = if code_math { 2 } else { opendollars };
+
+        let endpos: Option<usize> = if code_math {
+            self.scan_to_closing_code_dollar()
+        } else {
+            self.scan_to_closing_dollar(opendollars)
+        }
+        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
+
+        if let Some(endpos) = endpos {
+            let buf = &self.input[startpos + fence_length..endpos - fence_length];
+            let buf = if code_math || opendollars == 1 {
+                strings::normalize_code(buf)
+            } else {
+                buf.into()
+            };
+            let math = NodeMath {
+                dollar_math: !code_math,
+                display_math: opendollars == 2,
+                literal: buf.into(),
+            };
+            let node = self.make_leaf(LeafValue::Math(math), startpos, endpos - 1);
+            self.adjust_node_newlines(
+                node,
+                endpos - startpos - fence_length,
+                fence_length,
+                parent_line_offsets,
+            );
+            node
+        } else if code_math {
+            self.pos = startpos + 1;
+            self.make_leaf(LeafValue::Text("$".into()), self.pos - 1, self.pos - 1)
+        } else {
+            self.pos = startpos + fence_length;
+            self.make_leaf(
+                LeafValue::Text("$".repeat(opendollars).into()),
+                self.pos - fence_length,
+                self.pos - 1,
+            )
+        }
+    }
+
+    pub fn skip_spaces(&mut self) -> bool {
+        let mut skipped = false;
+        while self.peek_char().map_or(false, |&c| c == b' ' || c == b'\t') {
+            self.pos += 1;
+            skipped = true;
+        }
+        skipped
+    }
+
+    #[inline]
+    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
+        if pos == 0 {
+            return ('\n', None);
+        }
+        let mut before_char_pos = pos - 1;
+        while before_char_pos > 0
+            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
+                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
+        {
+            before_char_pos -= 1;
+        }
+        match self.input[before_char_pos..pos].chars().next() {
+            Some(x) => {
+                if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    ('\n', None)
+                } else {
+                    (x, Some(before_char_pos))
+                }
+            }
+            None => ('\n', None),
+        }
+    }
+
+    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a>) {
+        let d = self.delimiter_arena.alloc(Delimiter {
+            prev: Cell::new(self.last_delimiter),
+            next: Cell::new(None),
+            inl,
+            position: self.pos,
+            length: inl.data().value.text().unwrap().len(),
+            delim_char: c,
+            can_open,
+            can_close,
+        });
+        if d.prev.get().is_some() {
+            d.prev.get().unwrap().next.set(Some(d));
+        }
+        self.last_delimiter = Some(d);
+    }
+
+    // Create a new emphasis node, move all the nodes between `opener`
+    // and `closer` into it, and insert it into the AST.
+    //
+    // As a side-effect, handle long "***" and "___" nodes by truncating them in
+    // place to be re-matched by `process_emphasis`.
+    fn insert_emph(
+        &mut self,
+        opener: &'d Delimiter<'a, 'd>,
+        closer: &'d Delimiter<'a, 'd>,
+    ) -> Option<&'d Delimiter<'a, 'd>> {
+        let opener_char = opener.inl.data().value.text().unwrap().as_bytes()[0];
+        let mut opener_num_chars = opener.inl.data().value.text().unwrap().len();
+        let mut closer_num_chars = closer.inl.data().value.text().unwrap().len();
+        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
+            2
+        } else {
+            1
+        };
+
+        opener_num_chars -= use_delims;
+        closer_num_chars -= use_delims;
+
+        if (self.options.extension.strikethrough || self.options.extension.subscript)
+            && opener_char == b'~'
+            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
+        {
+            return None;
+        }
+
+        opener
+            .inl
+            .data_mut()
+            .value
+            .text_mut()
+            .unwrap()
+            .to_mut()
+            .truncate(opener_num_chars);
+        closer
+            .inl
+            .data_mut()
+            .value
+            .text_mut()
+            .unwrap()
+            .to_mut()
+            .truncate(closer_num_chars);
+
+        // Remove all the candidate delimiters from between the opener and the
+        // closer. None of them are matched pairs. They've been scanned already.
+        let mut delim = closer.prev.get();
+        while delim.is_some() && !Self::del_ref_eq(delim, Some(opener)) {
+            self.remove_delimiter(delim.unwrap());
+            delim = delim.unwrap().prev.get();
+        }
+
+        let emph = self.make_inline(
+            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
+                NodeValue::Subscript
+            } else if opener_char == b'~' {
+                // Not emphasis
+                // Unlike for |, these cases have to be handled because they will match
+                // in the event subscript but not strikethrough is enabled
+                if self.options.extension.strikethrough {
+                    NodeValue::Strikethrough
+                } else if use_delims == 1 {
+                    NodeValue::EscapedTag("~".to_owned())
+                } else {
+                    NodeValue::EscapedTag("~~".to_owned())
+                }
+            } else if self.options.extension.superscript && opener_char == b'^' {
+                NodeValue::Superscript
+            } else if self.options.extension.spoiler && opener_char == b'|' {
+                if use_delims == 2 {
+                    NodeValue::SpoileredText
+                } else {
+                    NodeValue::EscapedTag("|".to_owned())
+                }
+            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
+                NodeValue::Underline
+            } else if use_delims == 1 {
+                NodeValue::Emph
+            } else {
+                NodeValue::Strong
+            },
+            // These are overriden immediately below.
+            self.pos,
+            self.pos,
+        );
+
+        emph.data_mut().sourcepos = (
+            opener.inl.data().sourcepos.start.line,
+            opener.inl.data().sourcepos.start.column + opener_num_chars,
+            closer.inl.data().sourcepos.end.line,
+            closer.inl.data().sourcepos.end.column - closer_num_chars,
+        )
+            .into();
+
+        // Drop all the interior AST nodes into the emphasis node
+        // and then insert the emphasis node
+        let mut tmp = opener.inl.next_sibling().unwrap();
+        while !tmp.same_node(closer.inl) {
+            let next = tmp.next_sibling();
+            emph.append(tmp);
+            if let Some(n) = next {
+                tmp = n;
+            } else {
+                break;
+            }
+        }
+        opener.inl.insert_after(emph);
+
+        // Drop completely "used up" delimiters, adjust sourcepos of those not,
+        // and return the next closest one for processing.
+        if opener_num_chars == 0 {
+            opener.inl.detach();
+            self.remove_delimiter(opener);
+        } else {
+            opener.inl.data_mut().sourcepos.end.column -= use_delims;
+        }
+
+        if closer_num_chars == 0 {
+            closer.inl.detach();
+            self.remove_delimiter(closer);
+            closer.next.get()
+        } else {
+            closer.inl.data_mut().sourcepos.start.column += use_delims;
+            Some(closer)
+        }
+    }
+
+    pub fn skip_line_end(&mut self) -> bool {
+        let old_pos = self.pos;
+        if self.peek_char() == Some(&(b'\r')) {
+            self.pos += 1;
+        }
+        if self.peek_char() == Some(&(b'\n')) {
+            self.pos += 1;
+        }
+        self.pos > old_pos || self.eof()
+    }
+
+    //////////////
+    // Brackets //
+    //////////////
+
+    fn push_bracket(&mut self, image: bool, inl_text: Inline) {
+        let len = self.brackets.len();
+        if len > 0 {
+            self.brackets[len - 1].bracket_after = true;
+        }
+        self.brackets.push(Bracket {
+            inl_text,
+            position: self.pos,
+            image,
+            bracket_after: false,
+        });
+        if !image {
+            self.no_link_openers = false;
+        }
+    }
+
+    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
+        self.pos += 1;
+        let initial_pos = self.pos;
+
+        let brackets_len = self.brackets.len();
+        if brackets_len == 0 {
+            return Some(self.make_leaf(LeafValue::Text("]".into()), self.pos - 1, self.pos - 1));
+        }
+
+        let is_image = self.brackets[brackets_len - 1].image;
+
+        if !is_image && self.no_link_openers {
+            self.brackets.pop();
+            return Some(self.make_leaf(LeafValue::Text("]".into()), self.pos - 1, self.pos - 1));
+        }
+
+        // Ensure there was text if this was a link and not an image link
+        if self.options.render.ignore_empty_links && !is_image {
+            let mut non_blank_found = false;
+            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            while let Some(tmp) = tmpch {
+                match tmp.data().value {
+                    NodeValue::Text(ref s) if is_blank(s) => (),
+                    _ => {
+                        non_blank_found = true;
+                        break;
+                    }
+                }
+
+                tmpch = tmp.next_sibling();
+            }
+
+            if !non_blank_found {
+                self.brackets.pop();
+                return Some(self.make_inline(
+                    NodeValue::Text("]".into()),
+                    self.pos - 1,
+                    self.pos - 1,
+                ));
+            }
+        }
+
+        let after_link_text_pos = self.pos;
+
+        // Try to find a link destination within parenthesis
+
+        if self.peek_char() == Some(&(b'(')) {
+            let sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
+            let offset = self.pos + 1 + sps;
+            if offset < self.input.len() {
+                if let Some((url, n)) = manual_scan_link_url(&self.input[offset..]) {
+                    let starturl = self.pos + 1 + sps;
+                    let endurl = starturl + n;
+                    let starttitle =
+                        endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
+                    let endtitle = if starttitle == endurl {
+                        starttitle
+                    } else {
+                        starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
+                    };
+                    let endall =
+                        endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
+
+                    if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
+                        self.pos = endall + 1;
+                        let url = strings::clean_url(url);
+                        let title = strings::clean_title(&self.input[starttitle..endtitle]);
+                        self.close_bracket_match(is_image, url.into(), title.into());
+                        return None;
+                    } else {
+                        self.pos = after_link_text_pos;
+                    }
+                }
+            }
+        }
+
+        // Try to see if this is a reference link
+
+        let (mut lab, mut found_label): (Cow<str>, bool) = match self.link_label() {
+            Some(lab) => (lab.to_string().into(), true),
+            None => ("".into(), false),
+        };
+
+        if !found_label {
+            self.pos = initial_pos;
+        }
+
+        if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
+            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
+            found_label = true;
+        }
+
+        // Need to normalize both to lookup in refmap and to call callback
+        let unfolded_lab = lab.clone();
+        let lab = strings::normalize_label(&lab, Case::Fold);
+        let mut reff: Option<Cow<ResolvedReference>> = if found_label {
+            self.refmap.lookup(&lab).map(Cow::Borrowed)
+        } else {
+            None
+        };
+
+        // Attempt to use the provided broken link callback if a reference cannot be resolved
+        if reff.is_none() {
+            if let Some(callback) = &self.options.parse.broken_link_callback {
+                reff = callback
+                    .resolve(BrokenLinkReference {
+                        normalized: &lab,
+                        original: &unfolded_lab,
+                    })
+                    .map(Cow::Owned);
+            }
+        }
+
+        if let Some(reff) = reff {
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
+            return None;
+        }
+
+        let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
+
+        if self.options.extension.footnotes
+            && match bracket_inl_text.next_sibling() {
+                Some(n) => {
+                    if n.data().value.text().is_some() {
+                        n.data().value.text().unwrap().as_bytes().starts_with(b"^")
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
+            }
+        {
+            let mut text = String::new();
+            let mut sibling_iterator = bracket_inl_text.following_siblings();
+
+            self.pos = initial_pos;
+
+            // Skip the initial node, which holds the `[`
+            sibling_iterator.next().unwrap();
+
+            // The footnote name could have been parsed into multiple text/htmlinline nodes.
+            // For example `[^_foo]` gives `^`, `_`, and `foo`. So pull them together.
+            // Since we're handling the closing bracket, the only siblings at this point are
+            // related to the footnote name.
+            for sibling in sibling_iterator {
+                match sibling.data().value {
+                    NodeValue::Text(ref literal) => {
+                        text.push_str(literal);
+                    }
+                    NodeValue::HtmlInline(ref literal) => {
+                        text.push_str(literal);
+                    }
+                    _ => {}
+                };
+            }
+
+            if text.len() > 1 {
+                let inl = self.make_inline(
+                    NodeValue::FootnoteReference(NodeFootnoteReference {
+                        name: text[1..].to_string(),
+                        ref_num: 0,
+                        ix: 0,
+                    }),
+                    // Overridden immediately below.
+                    self.pos,
+                    self.pos,
+                );
+                inl.data_mut().sourcepos.start.column =
+                    bracket_inl_text.data().sourcepos.start.column;
+                inl.data_mut().sourcepos.end.column = usize::try_from(
+                    self.pos as isize + self.column_offset + self.line_offset as isize,
+                )
+                .unwrap();
+                bracket_inl_text.insert_before(inl);
+
+                // detach all the nodes, including bracket_inl_text
+                sibling_iterator = bracket_inl_text.following_siblings();
+                for sibling in sibling_iterator {
+                    match sibling.data().value {
+                        NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
+                            sibling.detach();
+                        }
+                        _ => {}
+                    };
+                }
+
+                // We don't need to process emphasis for footnote names, so cleanup
+                // any outstanding delimiters
+                self.remove_delimiters(self.brackets[brackets_len - 1].position);
+
+                self.brackets.pop();
+                return None;
+            }
+        }
+
+        self.brackets.pop();
+        self.pos = initial_pos;
+        Some(self.make_leaf(LeafValue::Text("]".into()), self.pos - 1, self.pos - 1))
+    }
+
+    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
+        let brackets_len = self.brackets.len();
+
+        let nl = NodeLink { url, title };
+        let inl = self.make_inline(
+            if is_image {
+                NodeValue::Image(Box::new(nl))
+            } else {
+                NodeValue::Link(Box::new(nl))
+            },
+            // Manually set below.
+            self.pos,
+            self.pos,
+        );
+        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
+            .inl_text
+            .data()
+            .sourcepos
+            .start;
+        inl.data_mut().sourcepos.end.column =
+            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
+                .unwrap();
+
+        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
+        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        while let Some(tmp) = tmpch {
+            tmpch = tmp.next_sibling();
+            inl.append(tmp);
+        }
+        self.brackets[brackets_len - 1].inl_text.detach();
+        self.process_emphasis(self.brackets[brackets_len - 1].position);
+        self.brackets.pop();
+
+        if !is_image {
+            self.no_link_openers = true;
+        }
+    }
+
+    pub fn link_label(&mut self) -> Option<&str> {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) {
+            return None;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        while let Some(&c) = self.peek_char() {
+            if c == b']' {
+                let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
+                self.pos += 1;
+                return Some(raw_label);
+            }
+            if c == b'[' {
+                break;
+            }
+            if c == b'\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, |&c| ispunct(c)) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return None;
+            }
+        }
+
+        self.pos = startpos;
+        None
+    }
+
+    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
+        let left_startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) {
+            return None;
+        }
+
+        let found_left = self.wikilink_component();
+
+        if !found_left {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+            return Some(WikilinkComponents {
+                url: left,
+                link_label: None,
+            });
+        } else if self.peek_char() != Some(&(b'|')) {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right_startpos = self.pos;
+        let found_right = self.wikilink_component();
+
+        if !found_right {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+
+            match self.options.extension.wikilinks() {
+                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
+                    url: left,
+                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
+                }),
+                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
+                    url: right.into(),
+                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
+                }),
+                None => unreachable!(),
+            }
+        } else {
+            self.pos = left_startpos;
+            None
+        }
+    }
+
+    // Locates the edge of a wikilink component (link label or url), and sets the
+    // self.pos to it's end if it's found.
+    fn wikilink_component(&mut self) -> bool {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
+            return false;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        while let Some(&c) = self.peek_char() {
+            if c == b'[' || c == b']' || c == b'|' {
+                break;
+            }
+
+            if c == b'\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, |&c| ispunct(c)) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn spnl(&mut self) {
+        self.skip_spaces();
+        if self.skip_line_end() {
+            self.skip_spaces();
+        }
+    }
+
+    fn make_autolink(
+        &self,
+        url: &str,
+        kind: AutolinkType,
+        start_column: usize,
+        end_column: usize,
+    ) -> Node<'a> {
+        let inl = self.make_inline(
+            NodeValue::Link(Box::new(NodeLink {
+                url: strings::clean_autolink(url, kind).into(),
+                title: String::new(),
+            })),
+            start_column,
+            end_column,
+        );
+        inl.append(self.make_inline(
+            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
+            start_column + 1,
+            end_column - 1,
+        ));
+        inl
+    }
+
+    pub fn thanks_for_the_inlines(self) -> Vec<Inline> {
+        self.inlines
+    }
+
+    pub fn pop_bracket(&mut self) -> bool {
+        self.brackets.pop().is_some()
     }
 
     fn del_ref_eq(lhs: Option<&'d Delimiter<'a, 'd>>, rhs: Option<&'d Delimiter<'a, 'd>>) -> bool {
@@ -617,39 +1842,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.pos >= self.input.len()
     }
 
-    #[inline]
-    pub fn peek_char(&self) -> Option<&u8> {
-        self.peek_char_n(0)
-    }
-
-    #[inline]
-    fn peek_char_n(&self, n: usize) -> Option<&u8> {
-        if self.pos + n >= self.input.len() {
-            None
-        } else {
-            let c = &self.input.as_bytes()[self.pos + n];
-            assert!(*c > 0);
-            Some(c)
-        }
-    }
-
-    fn find_special_char(&self) -> usize {
-        for n in self.pos..self.input.len() {
-            if self.special_chars[self.input.as_bytes()[n] as usize] {
-                if self.input.as_bytes()[n] == b'^' && self.within_brackets {
-                    // NO OP
-                } else {
-                    return n;
-                }
-            }
-            if self.options.parse.smart && self.smart_chars[self.input.as_bytes()[n] as usize] {
-                return n;
-            }
-        }
-
-        self.input.len()
-    }
-
     fn adjust_node_newlines(
         &mut self,
         node: Node<'a>,
@@ -671,27 +1863,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_newline(&mut self) -> Node<'a> {
-        let nlpos = self.pos;
-        if self.input.as_bytes()[self.pos] == b'\r' {
-            self.pos += 1;
-        }
-        if self.input.as_bytes()[self.pos] == b'\n' {
-            self.pos += 1;
-        }
-        let inl = if nlpos > 1
-            && self.input.as_bytes()[nlpos - 1] == b' '
-            && self.input.as_bytes()[nlpos - 2] == b' '
-        {
-            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
-        } else {
-            self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
-        };
-        self.line += 1;
-        self.column_offset = -(self.pos as isize);
-        self.skip_spaces();
-        inl
-    }
+    //////////////
+    // Scanners //
+    //////////////
 
     fn take_while(&mut self, c: u8) -> usize {
         let start_pos = self.pos;
@@ -734,39 +1908,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
             if numticks == openticklength {
                 return Some(self.pos);
-            }
-        }
-    }
-
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        let startpos = self.pos;
-        let openticks = self.take_while(b'`');
-        let endpos = self.scan_to_closing_backtick(openticks);
-
-        match endpos {
-            None => {
-                self.pos = startpos + openticks;
-                self.make_inline(
-                    NodeValue::Text("`".repeat(openticks).into()),
-                    startpos,
-                    self.pos - 1,
-                )
-            }
-            Some(endpos) => {
-                let buf = &self.input[startpos + openticks..endpos - openticks];
-                let buf = strings::normalize_code(buf);
-                let code = NodeCode {
-                    num_backticks: openticks,
-                    literal: buf.into(),
-                };
-                let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
-                self.adjust_node_newlines(
-                    node,
-                    endpos - startpos - openticks,
-                    openticks,
-                    parent_line_offsets,
-                );
-                node
             }
         }
     }
@@ -833,185 +1974,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             if c == b'`' {
                 return Some(self.pos);
             }
-        }
-    }
-
-    // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
-            self.pos += 1;
-            return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
-        }
-        let startpos = self.pos;
-        let opendollars = self.take_while(b'$');
-        let mut code_math = false;
-
-        // check for code math
-        if opendollars == 1
-            && self.options.extension.math_code
-            && self.peek_char().map_or(false, |&c| c == b'`')
-        {
-            code_math = true;
-            self.pos += 1;
-        }
-        let fence_length = if code_math { 2 } else { opendollars };
-
-        let endpos: Option<usize> = if code_math {
-            self.scan_to_closing_code_dollar()
-        } else {
-            self.scan_to_closing_dollar(opendollars)
-        }
-        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
-
-        if let Some(endpos) = endpos {
-            let buf = &self.input[startpos + fence_length..endpos - fence_length];
-            let buf = if code_math || opendollars == 1 {
-                strings::normalize_code(buf)
-            } else {
-                buf.into()
-            };
-            let math = NodeMath {
-                dollar_math: !code_math,
-                display_math: opendollars == 2,
-                literal: buf.into(),
-            };
-            let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
-            self.adjust_node_newlines(
-                node,
-                endpos - startpos - fence_length,
-                fence_length,
-                parent_line_offsets,
-            );
-            node
-        } else if code_math {
-            self.pos = startpos + 1;
-            self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1)
-        } else {
-            self.pos = startpos + fence_length;
-            self.make_inline(
-                NodeValue::Text("$".repeat(opendollars).into()),
-                self.pos - fence_length,
-                self.pos - 1,
-            )
-        }
-    }
-
-    pub fn skip_spaces(&mut self) -> bool {
-        let mut skipped = false;
-        while self.peek_char().map_or(false, |&c| c == b' ' || c == b'\t') {
-            self.pos += 1;
-            skipped = true;
-        }
-        skipped
-    }
-
-    fn handle_delim(&mut self, c: u8) -> Node<'a> {
-        let (numdelims, can_open, can_close) = self.scan_delims(c);
-
-        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
-            "’".into()
-        } else if c == b'"' && self.options.parse.smart {
-            if can_close {
-                "”".into()
-            } else {
-                "“".into()
-            }
-        } else {
-            self.input[self.pos - numdelims..self.pos]
-                .to_string()
-                .into()
-        };
-        let inl = self.make_inline(
-            NodeValue::Text(contents),
-            self.pos - numdelims,
-            self.pos - 1,
-        );
-
-        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
-            numdelims <= 2
-        } else {
-            true
-        };
-
-        if (can_open || can_close)
-            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
-            && is_valid_strikethrough_delim
-        {
-            self.push_delimiter(c, can_open, can_close, inl);
-        }
-
-        inl
-    }
-
-    fn handle_hyphen(&mut self) -> Node<'a> {
-        let start = self.pos;
-        self.pos += 1;
-
-        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
-            return self.make_inline(NodeValue::Text("-".into()), self.pos - 1, self.pos - 1);
-        }
-
-        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
-            self.pos += 1;
-        }
-
-        let numhyphens = (self.pos - start) as i32;
-
-        let (ens, ems) = if numhyphens % 3 == 0 {
-            (0, numhyphens / 3)
-        } else if numhyphens % 2 == 0 {
-            (numhyphens / 2, 0)
-        } else if numhyphens % 3 == 2 {
-            (1, (numhyphens - 2) / 3)
-        } else {
-            (2, (numhyphens - 4) / 3)
-        };
-
-        let ens = if ens > 0 { ens as usize } else { 0 };
-        let ems = if ems > 0 { ems as usize } else { 0 };
-
-        let mut buf = String::with_capacity(3 * (ems + ens));
-        buf.push_str(&"—".repeat(ems));
-        buf.push_str(&"–".repeat(ens));
-        self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
-    }
-
-    fn handle_period(&mut self) -> Node<'a> {
-        self.pos += 1;
-        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
-            self.pos += 1;
-            if self.peek_char().map_or(false, |&c| c == b'.') {
-                self.pos += 1;
-                self.make_inline(NodeValue::Text("…".into()), self.pos - 3, self.pos - 1)
-            } else {
-                self.make_inline(NodeValue::Text("..".into()), self.pos - 2, self.pos - 1)
-            }
-        } else {
-            self.make_inline(NodeValue::Text(".".into()), self.pos - 1, self.pos - 1)
-        }
-    }
-
-    #[inline]
-    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
-        if pos == 0 {
-            return ('\n', None);
-        }
-        let mut before_char_pos = pos - 1;
-        while before_char_pos > 0
-            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
-        {
-            before_char_pos -= 1;
-        }
-        match self.input[before_char_pos..pos].chars().next() {
-            Some(x) => {
-                if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    ('\n', None)
-                } else {
-                    (x, Some(before_char_pos))
-                }
-            }
-            None => ('\n', None),
         }
     }
 
@@ -1138,1043 +2100,21 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn push_delimiter(&mut self, c: u8, can_open: bool, can_close: bool, inl: Node<'a>) {
-        let d = self.delimiter_arena.alloc(Delimiter {
-            prev: Cell::new(self.last_delimiter),
-            next: Cell::new(None),
-            inl,
-            position: self.pos,
-            length: inl.data().value.text().unwrap().len(),
-            delim_char: c,
-            can_open,
-            can_close,
-        });
-        if d.prev.get().is_some() {
-            d.prev.get().unwrap().next.set(Some(d));
-        }
-        self.last_delimiter = Some(d);
-    }
-
-    // Create a new emphasis node, move all the nodes between `opener`
-    // and `closer` into it, and insert it into the AST.
-    //
-    // As a side-effect, handle long "***" and "___" nodes by truncating them in
-    // place to be re-matched by `process_emphasis`.
-    fn insert_emph(
-        &mut self,
-        opener: &'d Delimiter<'a, 'd>,
-        closer: &'d Delimiter<'a, 'd>,
-    ) -> Option<&'d Delimiter<'a, 'd>> {
-        let opener_char = opener.inl.data().value.text().unwrap().as_bytes()[0];
-        let mut opener_num_chars = opener.inl.data().value.text().unwrap().len();
-        let mut closer_num_chars = closer.inl.data().value.text().unwrap().len();
-        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
-            2
-        } else {
-            1
-        };
-
-        opener_num_chars -= use_delims;
-        closer_num_chars -= use_delims;
-
-        if (self.options.extension.strikethrough || self.options.extension.subscript)
-            && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
-        {
-            return None;
-        }
-
-        opener
-            .inl
-            .data_mut()
-            .value
-            .text_mut()
-            .unwrap()
-            .to_mut()
-            .truncate(opener_num_chars);
-        closer
-            .inl
-            .data_mut()
-            .value
-            .text_mut()
-            .unwrap()
-            .to_mut()
-            .truncate(closer_num_chars);
-
-        // Remove all the candidate delimiters from between the opener and the
-        // closer. None of them are matched pairs. They've been scanned already.
-        let mut delim = closer.prev.get();
-        while delim.is_some() && !Self::del_ref_eq(delim, Some(opener)) {
-            self.remove_delimiter(delim.unwrap());
-            delim = delim.unwrap().prev.get();
-        }
-
-        let emph = self.make_inline(
-            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
-                NodeValue::Subscript
-            } else if opener_char == b'~' {
-                // Not emphasis
-                // Unlike for |, these cases have to be handled because they will match
-                // in the event subscript but not strikethrough is enabled
-                if self.options.extension.strikethrough {
-                    NodeValue::Strikethrough
-                } else if use_delims == 1 {
-                    NodeValue::EscapedTag("~".to_owned())
+    fn find_special_char(&self) -> usize {
+        for (n, &c) in self.input.as_bytes()[self.pos..].iter().enumerate() {
+            if self.special_chars[c as usize] {
+                if c == b'^' && self.within_brackets {
+                    // leave it.
                 } else {
-                    NodeValue::EscapedTag("~~".to_owned())
-                }
-            } else if self.options.extension.superscript && opener_char == b'^' {
-                NodeValue::Superscript
-            } else if self.options.extension.spoiler && opener_char == b'|' {
-                if use_delims == 2 {
-                    NodeValue::SpoileredText
-                } else {
-                    NodeValue::EscapedTag("|".to_owned())
-                }
-            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
-                NodeValue::Underline
-            } else if use_delims == 1 {
-                NodeValue::Emph
-            } else {
-                NodeValue::Strong
-            },
-            // These are overriden immediately below.
-            self.pos,
-            self.pos,
-        );
-
-        emph.data_mut().sourcepos = (
-            opener.inl.data().sourcepos.start.line,
-            opener.inl.data().sourcepos.start.column + opener_num_chars,
-            closer.inl.data().sourcepos.end.line,
-            closer.inl.data().sourcepos.end.column - closer_num_chars,
-        )
-            .into();
-
-        // Drop all the interior AST nodes into the emphasis node
-        // and then insert the emphasis node
-        let mut tmp = opener.inl.next_sibling().unwrap();
-        while !tmp.same_node(closer.inl) {
-            let next = tmp.next_sibling();
-            emph.append(tmp);
-            if let Some(n) = next {
-                tmp = n;
-            } else {
-                break;
-            }
-        }
-        opener.inl.insert_after(emph);
-
-        // Drop completely "used up" delimiters, adjust sourcepos of those not,
-        // and return the next closest one for processing.
-        if opener_num_chars == 0 {
-            opener.inl.detach();
-            self.remove_delimiter(opener);
-        } else {
-            opener.inl.data_mut().sourcepos.end.column -= use_delims;
-        }
-
-        if closer_num_chars == 0 {
-            closer.inl.detach();
-            self.remove_delimiter(closer);
-            closer.next.get()
-        } else {
-            closer.inl.data_mut().sourcepos.start.column += use_delims;
-            Some(closer)
-        }
-    }
-
-    fn handle_backslash(&mut self) -> Node<'a> {
-        let startpos = self.pos;
-        self.pos += 1;
-
-        if self.peek_char().map_or(false, |&c| ispunct(c)) {
-            let inl;
-            self.pos += 1;
-
-            let inline_text = self.make_inline(
-                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
-                self.pos - 2,
-                self.pos - 1,
-            );
-
-            if self.options.render.escaped_char_spans {
-                inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
-                inl.append(inline_text);
-                inl
-            } else {
-                inline_text
-            }
-        } else if !self.eof() && self.skip_line_end() {
-            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1);
-            self.line += 1;
-            self.column_offset = -(self.pos as isize);
-            self.skip_spaces();
-            inl
-        } else {
-            self.make_inline(NodeValue::Text("\\".into()), self.pos - 1, self.pos - 1)
-        }
-    }
-
-    pub fn skip_line_end(&mut self) -> bool {
-        let old_pos = self.pos;
-        if self.peek_char() == Some(&(b'\r')) {
-            self.pos += 1;
-        }
-        if self.peek_char() == Some(&(b'\n')) {
-            self.pos += 1;
-        }
-        self.pos > old_pos || self.eof()
-    }
-
-    fn handle_entity(&mut self) -> Node<'a> {
-        self.pos += 1;
-
-        match entity::unescape(&self.input[self.pos..]) {
-            None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
-            Some((entity, len)) => {
-                self.pos += len;
-                self.make_inline(NodeValue::Text(entity), self.pos - 1 - len, self.pos - 1)
-            }
-        }
-    }
-
-    #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
-        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
-
-        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
-
-        let nsc = NodeShortCode::resolve(shortcode)?;
-        self.pos += 1 + matchlen;
-
-        Some(self.make_inline(
-            NodeValue::ShortCode(Box::new(nsc)),
-            self.pos - 1 - matchlen,
-            self.pos - 1,
-        ))
-    }
-
-    fn handle_autolink_with(
-        &mut self,
-        node: Node<'a>,
-        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
-    ) -> Option<Node<'a>> {
-        if !self.options.parse.relaxed_autolinks && self.within_brackets {
-            return None;
-        }
-        let startpos = self.pos;
-        let (post, need_reverse, skip) = f(self)?;
-
-        self.pos += skip - need_reverse;
-
-        // We need to "rewind" by `need_reverse` chars, which should be in one
-        // or more Text nodes beforehand. Typically the chars will *all* be in
-        // a single Text node, containing whatever text came before the ":" that
-        // triggered this method, eg. "See our website at http" ("://blah.com").
-        //
-        // relaxed_autolinks allows some slightly pathological cases. First,
-        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
-        // a scheme including the letter "w", which will split Text inlines due
-        // to them being their own trigger (for handle_autolink_w), meaning
-        // "wa://…" will need to traverse two Texts to complete the rewind.
-        let mut reverse = need_reverse;
-        while reverse > 0 {
-            let mut last_child = node.last_child().unwrap().data_mut();
-            match last_child.value {
-                NodeValue::Text(ref mut prev) => {
-                    let prev_len = prev.len();
-                    if reverse < prev.len() {
-                        prev.to_mut().truncate(prev_len - reverse);
-                        last_child.sourcepos.end.column -= reverse;
-                        reverse = 0;
-                    } else {
-                        reverse -= prev_len;
-                        node.last_child().unwrap().detach();
-                    }
-                }
-                _ => panic!("expected text node before autolink colon"),
-            }
-        }
-
-        {
-            let sp = &mut post.data_mut().sourcepos;
-            // See [`make_inline`].
-            sp.start = (
-                self.line,
-                (startpos as isize - need_reverse as isize
-                    + 1
-                    + self.column_offset
-                    + self.line_offset as isize) as usize,
-            )
-                .into();
-            sp.end = (
-                self.line,
-                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
-            )
-                .into();
-
-            // Inner text node gets the same sp, since there are no surrounding
-            // characters for autolinks of these kind.
-            post.first_child().unwrap().data_mut().sourcepos = *sp;
-        }
-
-        Some(post)
-    }
-
-    fn handle_autolink_colon(&mut self, node: Node<'a>) -> Option<Node<'a>> {
-        self.handle_autolink_with(node, autolink::url_match)
-    }
-
-    fn handle_autolink_w(&mut self, node: Node<'a>) -> Option<Node<'a>> {
-        self.handle_autolink_with(node, autolink::www_match)
-    }
-
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        self.pos += 1;
-
-        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
-            self.pos += matchlen;
-            let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
-                AutolinkType::Uri,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
-            );
-            return inl;
-        }
-
-        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
-            self.pos += matchlen;
-            let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
-                AutolinkType::Email,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
-            );
-            return inl;
-        }
-
-        // Most comments below are verbatim from cmark upstream.
-        let mut matchlen: Option<usize> = None;
-
-        if self.pos + 2 <= self.input.len() {
-            let c = self.input.as_bytes()[self.pos];
-            if c == b'!' && !self.flags.skip_html_comment {
-                let c = self.input.as_bytes()[self.pos + 1];
-                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
-                    if self.peek_char_n(3) == Some(&b'>') {
-                        matchlen = Some(4);
-                    } else if self.peek_char_n(3) == Some(&b'-')
-                        && self.peek_char_n(4) == Some(&b'>')
-                    {
-                        matchlen = Some(5);
-                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
-                        matchlen = Some(m + 1);
-                    } else {
-                        self.flags.skip_html_comment = true;
-                    }
-                } else if c == b'[' {
-                    if !self.flags.skip_html_cdata && self.pos + 3 <= self.input.len() {
-                        if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
-                            // The regex doesn't require the final "]]>". But if we're not at
-                            // the end of input, it must come after the match. Otherwise,
-                            // disable subsequent scans to avoid quadratic behavior.
-
-                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
-                            if self.pos + m + 5 > self.input.len() {
-                                self.flags.skip_html_cdata = true;
-                            } else {
-                                matchlen = Some(m + 5);
-                            }
-                        }
-                    }
-                } else if !self.flags.skip_html_declaration {
-                    if let Some(m) = scanners::html_declaration(&self.input[self.pos + 1..]) {
-                        // Adding 2 to matchlen for prefix "!", suffix ">"
-                        if self.pos + m + 2 > self.input.len() {
-                            self.flags.skip_html_declaration = true;
-                        } else {
-                            matchlen = Some(m + 2);
-                        }
-                    }
-                }
-            } else if c == b'?' {
-                if !self.flags.skip_html_pi {
-                    // Note that we allow an empty match.
-                    let m = scanners::html_processing_instruction(&self.input[self.pos + 1..])
-                        .unwrap_or(0);
-                    // Adding 3 to matchlen fro prefix "?", suffix "?>"
-                    if self.pos + m + 3 > self.input.len() {
-                        self.flags.skip_html_pi = true;
-                    } else {
-                        matchlen = Some(m + 3);
-                    }
-                }
-            } else {
-                matchlen = scanners::html_tag(&self.input[self.pos..]);
-            }
-        }
-
-        if let Some(matchlen) = matchlen {
-            let contents = &self.input[self.pos - 1..self.pos + matchlen];
-            self.pos += matchlen;
-            let inl = self.make_inline(
-                NodeValue::HtmlInline(contents.to_string()),
-                self.pos - matchlen - 1,
-                self.pos - 1,
-            );
-            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
-            return inl;
-        }
-
-        self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
-    }
-
-    fn push_bracket(&mut self, image: bool, inl_text: Node<'a>) {
-        let len = self.brackets.len();
-        if len > 0 {
-            self.brackets[len - 1].bracket_after = true;
-        }
-        self.brackets.push(Bracket {
-            inl_text,
-            position: self.pos,
-            image,
-            bracket_after: false,
-        });
-        if !image {
-            self.no_link_openers = false;
-        }
-    }
-
-    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
-        self.pos += 1;
-        let initial_pos = self.pos;
-
-        let brackets_len = self.brackets.len();
-        if brackets_len == 0 {
-            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
-        }
-
-        let is_image = self.brackets[brackets_len - 1].image;
-
-        if !is_image && self.no_link_openers {
-            self.brackets.pop();
-            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
-        }
-
-        // Ensure there was text if this was a link and not an image link
-        if self.options.render.ignore_empty_links && !is_image {
-            let mut non_blank_found = false;
-            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
-            while let Some(tmp) = tmpch {
-                match tmp.data().value {
-                    NodeValue::Text(ref s) if is_blank(s) => (),
-                    _ => {
-                        non_blank_found = true;
-                        break;
-                    }
-                }
-
-                tmpch = tmp.next_sibling();
-            }
-
-            if !non_blank_found {
-                self.brackets.pop();
-                return Some(self.make_inline(
-                    NodeValue::Text("]".into()),
-                    self.pos - 1,
-                    self.pos - 1,
-                ));
-            }
-        }
-
-        let after_link_text_pos = self.pos;
-
-        // Try to find a link destination within parenthesis
-
-        if self.peek_char() == Some(&(b'(')) {
-            let sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            let offset = self.pos + 1 + sps;
-            if offset < self.input.len() {
-                if let Some((url, n)) = manual_scan_link_url(&self.input[offset..]) {
-                    let starturl = self.pos + 1 + sps;
-                    let endurl = starturl + n;
-                    let starttitle =
-                        endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
-                    let endtitle = if starttitle == endurl {
-                        starttitle
-                    } else {
-                        starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
-                    };
-                    let endall =
-                        endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
-
-                    if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
-                        self.pos = endall + 1;
-                        let url = strings::clean_url(url);
-                        let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                        self.close_bracket_match(is_image, url.into(), title.into());
-                        return None;
-                    } else {
-                        self.pos = after_link_text_pos;
-                    }
+                    return self.pos + n;
                 }
             }
-        }
-
-        // Try to see if this is a reference link
-
-        let (mut lab, mut found_label): (Cow<str>, bool) = match self.link_label() {
-            Some(lab) => (lab.to_string().into(), true),
-            None => ("".into(), false),
-        };
-
-        if !found_label {
-            self.pos = initial_pos;
-        }
-
-        if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
-            found_label = true;
-        }
-
-        // Need to normalize both to lookup in refmap and to call callback
-        let unfolded_lab = lab.clone();
-        let lab = strings::normalize_label(&lab, Case::Fold);
-        let mut reff: Option<Cow<ResolvedReference>> = if found_label {
-            self.refmap.lookup(&lab).map(Cow::Borrowed)
-        } else {
-            None
-        };
-
-        // Attempt to use the provided broken link callback if a reference cannot be resolved
-        if reff.is_none() {
-            if let Some(callback) = &self.options.parse.broken_link_callback {
-                reff = callback
-                    .resolve(BrokenLinkReference {
-                        normalized: &lab,
-                        original: &unfolded_lab,
-                    })
-                    .map(Cow::Owned);
+            if self.options.parse.smart && self.smart_chars[c as usize] {
+                return self.pos + n;
             }
         }
 
-        if let Some(reff) = reff {
-            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
-            return None;
-        }
-
-        let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
-
-        if self.options.extension.footnotes
-            && match bracket_inl_text.next_sibling() {
-                Some(n) => {
-                    if n.data().value.text().is_some() {
-                        n.data().value.text().unwrap().as_bytes().starts_with(b"^")
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            }
-        {
-            let mut text = String::new();
-            let mut sibling_iterator = bracket_inl_text.following_siblings();
-
-            self.pos = initial_pos;
-
-            // Skip the initial node, which holds the `[`
-            sibling_iterator.next().unwrap();
-
-            // The footnote name could have been parsed into multiple text/htmlinline nodes.
-            // For example `[^_foo]` gives `^`, `_`, and `foo`. So pull them together.
-            // Since we're handling the closing bracket, the only siblings at this point are
-            // related to the footnote name.
-            for sibling in sibling_iterator {
-                match sibling.data().value {
-                    NodeValue::Text(ref literal) => {
-                        text.push_str(literal);
-                    }
-                    NodeValue::HtmlInline(ref literal) => {
-                        text.push_str(literal);
-                    }
-                    _ => {}
-                };
-            }
-
-            if text.len() > 1 {
-                let inl = self.make_inline(
-                    NodeValue::FootnoteReference(NodeFootnoteReference {
-                        name: text[1..].to_string(),
-                        ref_num: 0,
-                        ix: 0,
-                    }),
-                    // Overridden immediately below.
-                    self.pos,
-                    self.pos,
-                );
-                inl.data_mut().sourcepos.start.column =
-                    bracket_inl_text.data().sourcepos.start.column;
-                inl.data_mut().sourcepos.end.column = usize::try_from(
-                    self.pos as isize + self.column_offset + self.line_offset as isize,
-                )
-                .unwrap();
-                bracket_inl_text.insert_before(inl);
-
-                // detach all the nodes, including bracket_inl_text
-                sibling_iterator = bracket_inl_text.following_siblings();
-                for sibling in sibling_iterator {
-                    match sibling.data().value {
-                        NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
-                            sibling.detach();
-                        }
-                        _ => {}
-                    };
-                }
-
-                // We don't need to process emphasis for footnote names, so cleanup
-                // any outstanding delimiters
-                self.remove_delimiters(self.brackets[brackets_len - 1].position);
-
-                self.brackets.pop();
-                return None;
-            }
-        }
-
-        self.brackets.pop();
-        self.pos = initial_pos;
-        Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1))
-    }
-
-    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
-        let brackets_len = self.brackets.len();
-
-        let nl = NodeLink { url, title };
-        let inl = self.make_inline(
-            if is_image {
-                NodeValue::Image(Box::new(nl))
-            } else {
-                NodeValue::Link(Box::new(nl))
-            },
-            // Manually set below.
-            self.pos,
-            self.pos,
-        );
-        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
-            .inl_text
-            .data()
-            .sourcepos
-            .start;
-        inl.data_mut().sourcepos.end.column =
-            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
-                .unwrap();
-
-        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
-        while let Some(tmp) = tmpch {
-            tmpch = tmp.next_sibling();
-            inl.append(tmp);
-        }
-        self.brackets[brackets_len - 1].inl_text.detach();
-        self.process_emphasis(self.brackets[brackets_len - 1].position);
-        self.brackets.pop();
-
-        if !is_image {
-            self.no_link_openers = true;
-        }
-    }
-
-    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
-
-        // We're at ^, next should be [
-        self.pos += 2; // Skip ^[
-
-        // Find the closing ]
-        let mut depth = 1;
-        let mut endpos = self.pos;
-        while endpos < self.input.len() && depth > 0 {
-            match self.input.as_bytes()[endpos] {
-                b'[' => depth += 1,
-                b']' => depth -= 1,
-                b'\\' if endpos + 1 < self.input.len() => {
-                    endpos += 1; // Skip escaped character
-                }
-                _ => {}
-            }
-            endpos += 1;
-        }
-
-        if depth != 0 {
-            // No matching closing bracket, treat as regular text
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // endpos is now one past the ], so adjust
-        endpos -= 1;
-
-        // Extract the content
-        let content = &self.input[self.pos..endpos];
-
-        // Empty inline footnote should not parse
-        if content.is_empty() {
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // Generate unique name
-        let name = self.footnote_defs.next_name();
-
-        // Create the footnote reference node
-        let ref_node = self.make_inline(
-            NodeValue::FootnoteReference(NodeFootnoteReference {
-                name: name.clone(),
-                ref_num: 0,
-                ix: 0,
-            }),
-            startpos,
-            endpos,
-        );
-
-        // Parse the content as inlines
-        let def_node = self.arena.alloc(
-            Ast::new(
-                NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                    name: name.clone(),
-                    total_references: 0,
-                }),
-                (self.line, 1).into(),
-            )
-            .into(),
-        );
-
-        // Create a paragraph to hold the inline content
-        let mut para_ast = Ast::new(
-            NodeValue::Paragraph,
-            (1, 1).into(), // Use line 1 as base
-        );
-        // Build line_offsets by scanning for newlines in the content
-        let mut line_offsets = vec![0];
-        for (i, &byte) in content.as_bytes().iter().enumerate() {
-            if byte == b'\n' {
-                line_offsets.push(i + 1);
-            }
-        }
-        para_ast.line_offsets = line_offsets;
-        let para_node = self.arena.alloc(para_ast.into());
-        def_node.append(para_node);
-
-        // Parse the content recursively as inlines
-        let delimiter_arena = Arena::new();
-        let mut subj = Subject::new(
-            self.arena,
-            self.options,
-            content.into(),
-            1, // Use line 1 to match the paragraph's sourcepos
-            self.refmap,
-            self.footnote_defs,
-            &delimiter_arena,
-        );
-
-        while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
-        subj.process_emphasis(0);
-        while subj.pop_bracket() {}
-
-        // Check if the parsed content is empty or contains only whitespace
-        // This handles whitespace-only content, null bytes, etc. generically
-        let has_non_whitespace_content = para_node.children().any(|child| {
-            let child_data = child.data();
-            match &child_data.value {
-                NodeValue::Text(text) => !text.trim().is_empty(),
-                NodeValue::SoftBreak | NodeValue::LineBreak => false,
-                _ => true, // Any other node type (link, emphasis, etc.) counts as content
-            }
-        });
-
-        if !has_non_whitespace_content {
-            // Content is empty or whitespace-only after parsing, treat as literal text
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // Store the footnote definition
-        self.footnote_defs.add_definition(def_node);
-
-        // Move position past the closing ]
-        self.pos = endpos + 1;
-
-        Some(ref_node)
-    }
-
-    pub fn link_label(&mut self) -> Option<&str> {
-        let startpos = self.pos;
-
-        if self.peek_char() != Some(&(b'[')) {
-            return None;
-        }
-
-        self.pos += 1;
-
-        let mut length = 0;
-        while let Some(&c) = self.peek_char() {
-            if c == b']' {
-                let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
-                self.pos += 1;
-                return Some(raw_label);
-            }
-            if c == b'[' {
-                break;
-            }
-            if c == b'\\' {
-                self.pos += 1;
-                length += 1;
-                if self.peek_char().map_or(false, |&c| ispunct(c)) {
-                    self.pos += 1;
-                    length += 1;
-                }
-            } else {
-                self.pos += 1;
-                length += 1;
-            }
-            if length > MAX_LINK_LABEL_LENGTH {
-                self.pos = startpos;
-                return None;
-            }
-        }
-
-        self.pos = startpos;
-        None
-    }
-
-    // Handles wikilink syntax
-    //   [[link text|url]]
-    //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
-        let component = self.wikilink_url_link_label()?;
-        let url_clean = strings::clean_url(&component.url);
-        let (link_label, link_label_start_column, _link_label_end_column) =
-            match component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
-                None => (
-                    entity::unescape_html(&component.url).to_string(),
-                    startpos + 1,
-                    self.pos - 3,
-                ),
-            };
-
-        let nl = NodeWikiLink {
-            url: url_clean.into(),
-        };
-        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
-
-        self.label_backslash_escapes(inl, &link_label, link_label_start_column);
-
-        Some(inl)
-    }
-
-    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
-        let left_startpos = self.pos;
-
-        if self.peek_char() != Some(&(b'[')) {
-            return None;
-        }
-
-        let found_left = self.wikilink_component();
-
-        if !found_left {
-            self.pos = left_startpos;
-            return None;
-        }
-
-        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
-
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
-            return Some(WikilinkComponents {
-                url: left,
-                link_label: None,
-            });
-        } else if self.peek_char() != Some(&(b'|')) {
-            self.pos = left_startpos;
-            return None;
-        }
-
-        let right_startpos = self.pos;
-        let found_right = self.wikilink_component();
-
-        if !found_right {
-            self.pos = left_startpos;
-            return None;
-        }
-
-        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
-
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
-
-            match self.options.extension.wikilinks() {
-                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
-                    url: left,
-                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
-                }),
-                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
-                    url: right.into(),
-                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
-                }),
-                None => unreachable!(),
-            }
-        } else {
-            self.pos = left_startpos;
-            None
-        }
-    }
-
-    // Locates the edge of a wikilink component (link label or url), and sets the
-    // self.pos to it's end if it's found.
-    fn wikilink_component(&mut self) -> bool {
-        let startpos = self.pos;
-
-        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
-            return false;
-        }
-
-        self.pos += 1;
-
-        let mut length = 0;
-        while let Some(&c) = self.peek_char() {
-            if c == b'[' || c == b']' || c == b'|' {
-                break;
-            }
-
-            if c == b'\\' {
-                self.pos += 1;
-                length += 1;
-                if self.peek_char().map_or(false, |&c| ispunct(c)) {
-                    self.pos += 1;
-                    length += 1;
-                }
-            } else {
-                self.pos += 1;
-                length += 1;
-            }
-            if length > MAX_LINK_LABEL_LENGTH {
-                self.pos = startpos;
-                return false;
-            }
-        }
-
-        true
-    }
-
-    // Given a label, handles backslash escaped characters. Appends the resulting
-    // nodes to the container
-    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
-        let mut startpos = 0;
-        let mut offset = 0;
-        let bytes = label.as_bytes();
-        let len = label.len();
-
-        while offset < len {
-            let c = bytes[offset];
-
-            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
-                let preceding_text = self.make_inline(
-                    NodeValue::Text(label[startpos..offset].to_string().into()),
-                    start_column + startpos,
-                    start_column + offset - 1,
-                );
-
-                container.append(preceding_text);
-
-                let inline_text = self.make_inline(
-                    NodeValue::Text(label[offset + 1..offset + 2].to_string().into()),
-                    start_column + offset,
-                    start_column + offset + 1,
-                );
-
-                if self.options.render.escaped_char_spans {
-                    let span = self.make_inline(
-                        NodeValue::Escaped,
-                        start_column + offset,
-                        start_column + offset + 1,
-                    );
-
-                    span.append(inline_text);
-                    container.append(span);
-                } else {
-                    container.append(inline_text);
-                }
-
-                offset += 2;
-                startpos = offset;
-            } else {
-                offset += 1;
-            }
-        }
-
-        if startpos != offset {
-            container.append(self.make_inline(
-                NodeValue::Text(label[startpos..offset].to_string().into()),
-                start_column + startpos,
-                start_column + offset - 1,
-            ));
-        }
-    }
-
-    pub fn spnl(&mut self) {
-        self.skip_spaces();
-        if self.skip_line_end() {
-            self.skip_spaces();
-        }
-    }
-
-    fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
-        let start_column =
-            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
-        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
-
-        let ast = Ast {
-            value,
-            content: String::new(),
-            sourcepos: (
-                self.line,
-                usize::try_from(start_column).unwrap(),
-                self.line,
-                usize::try_from(end_column).unwrap(),
-            )
-                .into(),
-            open: false,
-            last_line_blank: false,
-            table_visited: false,
-            line_offsets: Vec::new(),
-        };
-        self.arena.alloc(ast.into())
-    }
-
-    fn make_autolink(
-        &self,
-        url: &str,
-        kind: AutolinkType,
-        start_column: usize,
-        end_column: usize,
-    ) -> Node<'a> {
-        let inl = self.make_inline(
-            NodeValue::Link(Box::new(NodeLink {
-                url: strings::clean_autolink(url, kind).into(),
-                title: String::new(),
-            })),
-            start_column,
-            end_column,
-        );
-        inl.append(self.make_inline(
-            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
-            start_column + 1,
-            end_column - 1,
-        ));
-        inl
+        self.input.len()
     }
 }
 
@@ -2278,4 +2218,108 @@ pub(crate) fn count_newlines(input: &str) -> (usize, usize) {
     }
 
     (nls, since_nl)
+}
+
+pub struct RefMap {
+    pub map: HashMap<String, ResolvedReference>,
+    pub(crate) max_ref_size: usize,
+    ref_size: Cell<usize>,
+}
+
+impl RefMap {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+            max_ref_size: usize::MAX,
+            ref_size: Cell::new(0),
+        }
+    }
+
+    fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
+        match self.map.get(lab) {
+            Some(entry) => {
+                let size = entry.url.len() + entry.title.len();
+                let ref_size = self.ref_size.get();
+                if size > self.max_ref_size - ref_size {
+                    None
+                } else {
+                    self.ref_size.set(ref_size + size);
+                    Some(entry)
+                }
+            }
+            None => None,
+        }
+    }
+}
+
+pub struct FootnoteDefs<'a> {
+    defs: RefCell<Vec<Node<'a>>>,
+    counter: RefCell<usize>,
+}
+
+impl<'a> FootnoteDefs<'a> {
+    pub fn new() -> Self {
+        Self {
+            defs: RefCell::new(Vec::new()),
+            counter: RefCell::new(0),
+        }
+    }
+
+    pub fn next_name(&self) -> String {
+        let mut counter = self.counter.borrow_mut();
+        *counter += 1;
+        format!("__inline_{}", *counter)
+    }
+
+    pub fn add_definition(&self, def: Node<'a>) {
+        self.defs.borrow_mut().push(def);
+    }
+
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
+        self.defs.borrow()
+    }
+}
+
+pub struct Delimiter<'a: 'd, 'd> {
+    inl: Node<'a>,
+    position: usize,
+    length: usize,
+    delim_char: u8,
+    can_open: bool,
+    can_close: bool,
+    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
+    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
+}
+
+impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
+            self.position,
+            self.length,
+            self.delim_char,
+            self.can_open,
+            self.can_close,
+            self.inl
+                .try_data()
+                .map_or("<couldn't borrow>".to_string(), |d| format!(
+                    "{}",
+                    d.sourcepos
+                ))
+        )
+    }
+}
+
+struct Bracket {
+    inl_text: Inline,
+    position: usize,
+    image: bool,
+    bracket_after: bool,
+}
+
+#[derive(Clone)]
+struct WikilinkComponents {
+    url: String,
+    link_label: Option<(String, usize, usize)>,
 }

@@ -227,9 +227,7 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
     size - cursor + rewind >= protocol.len() && &contents[cursor - rewind..cursor] == protocol
 }
 
-pub fn www_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+pub fn www_match<'a>(subject: &mut Subject<'_, '_, '_, '_, '_>) -> Option<(Inline, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
@@ -383,7 +381,7 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
 
 pub fn url_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+) -> Option<(Inline, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
     let i = subject.pos;
