@@ -593,7 +593,7 @@ const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 /// Note that the size adds to Ast:
 /// * 8 bytes for RefCell.
 /// * 40 bytes for arena_tree::Node's 5 pointers.
-// const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
+const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
