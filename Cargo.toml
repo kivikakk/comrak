@@ -57,7 +57,7 @@ entities = "1.0.1"
 
 [features]
 default = ["cli", "syntect", "bon"]
-cli = ["clap", "bon", "shell-words", "xdg", "fmt2io"]
+cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes"]
 shortcodes = ["emojis"]
 bon = ["dep:bon"]
 

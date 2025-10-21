@@ -15,9 +15,25 @@ Categories to use in this document, and the order in which to give them:
 
 # [v0.45.0-rc.2] - unreleased
 
+Parser changes:
+
+* Runs of more than two `~` are no longer recognised as valid delimiters, meaning they will not prevent strikethrough recognition when they occur within correct delimiters. See the PR for discussion.
+  * This does not impact spec compatibility, matches `cmark-gfm`, and follows the intent of the original implementation and implementor (hi!).
+
 Changed APIs:
 
 * `r#unsafe` is used instead of `unsafe_`.
+* `--gemojis` is renamed to `--gemoji`.
+
+Documentation:
+
+* The CLI help text has been copy-edited to a consistent style.
+
+Build changes:
+
+* `shortcodes` is enabled by default (but still optional) for CLI builds.
+
+Diff: TBC
 
 
 # [v0.45.0-rc.1] - 2025-10-20
