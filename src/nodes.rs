@@ -11,6 +11,20 @@ pub use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
+/// Shorthand for checking if a node's value matches the given expression.
+///
+/// Note this will `borrow()` the provided node's data attribute while doing the
+/// check, which will fail if the node is already mutably borrowed.
+#[macro_export]
+macro_rules! node_matches {
+    ($node:expr, $( $pat:pat )|+) => {{
+        matches!(
+            $node.data.borrow().value,
+            $( $pat )|+
+        )
+    }};
+}
+
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(strum::EnumDiscriminants))]
@@ -747,7 +761,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 return false;
             }
             NodeValue::FrontMatter(_) => {
-                return matches!(self.data.borrow().value, NodeValue::Document);
+                return node_matches!(self, NodeValue::Document);
             }
             _ => {}
         }

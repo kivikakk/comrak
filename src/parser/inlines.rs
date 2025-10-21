@@ -4,8 +4,8 @@ use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::ptr;
 use std::str;
+use std::{mem, ptr};
 use typed_arena::Arena;
 
 use crate::ctype::{isdigit, ispunct, isspace};
@@ -339,35 +339,31 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
-                let mut contents = &self.input[self.pos..endpos];
-                let mut startpos = self.pos;
+                let startpos = self.pos;
                 self.pos = endpos;
+
+                let mut contents: Cow<str> = if endpos == self.input.len() {
+                    let mut contents = mem::take(&mut self.input);
+                    strings::remove_from_start(&mut contents, startpos);
+                    contents.into()
+                } else {
+                    self.input[startpos..endpos].into()
+                };
 
                 if self
                     .peek_char()
                     .map_or(false, |&c| strings::is_line_end_char(c))
                 {
                     let size_before = contents.len();
-                    contents = strings::rtrim_slice(contents);
+                    strings::rtrim_cow(&mut contents);
                     endpos -= size_before - contents.len();
                 }
 
-                // if we've just produced a LineBreak, then we should consume any leading
-                // space on this line
-                if node.last_child().map_or(false, |n| {
-                    matches!(n.data.borrow().value, NodeValue::LineBreak)
-                }) {
-                    // TODO: test this more explicitly.
-                    let size_before = contents.len();
-                    contents = strings::ltrim_slice(contents);
-                    startpos += size_before - contents.len();
-                }
-
                 // Don't create empty text nodes - this can happen after trimming trailing
-                // whitespace and would cause sourcepos underflow in endpos - 1
+                // whitespace, is useless, and would cause sourcepos underflow in endpos - 1.
                 if !contents.is_empty() {
                     Some(self.make_inline(
-                        NodeValue::Text(contents.to_string().into()),
+                        NodeValue::Text(contents.into_owned().into()),
                         startpos,
                         endpos - 1,
                     ))

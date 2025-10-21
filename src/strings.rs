@@ -194,17 +194,33 @@ pub fn rtrim(line: &mut String) -> usize {
 }
 
 pub fn ltrim(line: &mut String) -> usize {
-    // SAFETY: we only shift over spaces, and truncate any duplicated continuation characters.
-    let bytes = unsafe { line.as_bytes_mut() };
-    let spaces = bytes.iter().take_while(|&&b| isspace(b)).count();
-    if spaces > 0 {
-        shift_buf_left(bytes, spaces);
-        let new_len = bytes.len() - spaces;
-        // HACK: see shift_buf_left.
-        bytes[new_len] = b'\0';
-        line.truncate(new_len);
-    }
+    let spaces = ltrim_count(line);
+    remove_from_start(line, spaces);
     spaces
+}
+
+#[inline]
+pub fn ltrim_count(line: &str) -> usize {
+    line.as_bytes().iter().take_while(|&&c| isspace(c)).count()
+}
+
+pub fn remove_from_start(s: &mut String, n: usize) {
+    if n == 0 {
+        return;
+    }
+
+    if !s.is_char_boundary(n) {
+        panic!("remove_from_start results in non UTF-8 string");
+    }
+
+    // SAFETY: we've asserted s[n] is a valid UTF-8 boundary, and we truncate
+    // any duplicated continuation characters.
+    let bytes = unsafe { s.as_bytes_mut() };
+    shift_buf_left(bytes, n);
+    let new_len = bytes.len() - n;
+    // HACK: see shift_buf_left.
+    bytes[new_len] = b'\0';
+    s.truncate(new_len);
 }
 
 pub fn trim(line: &mut String) {
@@ -221,13 +237,22 @@ pub fn rtrim_slice(i: &str) -> &str {
     i.trim_end_matches(isspace_char)
 }
 
+pub fn rtrim_cow(s: &mut Cow<str>) {
+    match s {
+        Cow::Borrowed(ref mut str) => *str = rtrim_slice(str),
+        Cow::Owned(string) => {
+            rtrim(string);
+        }
+    }
+}
+
 pub fn trim_slice(i: &str) -> &str {
     rtrim_slice(ltrim_slice(i))
 }
 
 pub fn trim_cow(s: &mut Cow<str>) {
     match s {
-        Cow::Borrowed(str) => *s = Cow::Borrowed(trim_slice(str)),
+        Cow::Borrowed(ref mut str) => *str = trim_slice(str),
         Cow::Owned(string) => trim(string),
     }
 }
@@ -388,7 +413,7 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
 
 #[cfg(test)]
 pub mod tests {
-    use super::{normalize_code, normalize_label, split_off_front_matter};
+    use super::{ltrim, normalize_code, normalize_label, shift_buf_left, split_off_front_matter};
     use crate::strings::Case;
 
     #[test]
@@ -436,5 +461,30 @@ pub mod tests {
             "Foo BAR"
         );
         assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
+    }
+
+    #[test]
+    fn shift_buf_left_ok() {
+        let mut b: Vec<u8>;
+
+        b = vec![1, 2, 3, 4, 5, 6];
+        shift_buf_left(&mut b, 1);
+        assert_eq!(b, vec![2, 3, 4, 5, 6, 6]);
+
+        shift_buf_left(&mut b, 2);
+        assert_eq!(b, vec![4, 5, 6, 6, 6, 6]);
+    }
+
+    #[test]
+    fn ltrim_ok() {
+        let mut s: String;
+
+        s = "okay".to_string();
+        ltrim(&mut s);
+        assert_eq!(s, "okay");
+
+        s = "   okay".to_string();
+        ltrim(&mut s);
+        assert_eq!(s, "okay");
     }
 }

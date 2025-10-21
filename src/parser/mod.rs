@@ -19,6 +19,7 @@ use typed_arena::Arena;
 
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
+use crate::node_matches;
 use crate::nodes::{
     self, Ast, AstNode, ListDelimType, ListType, Node, NodeCodeBlock, NodeDescriptionItem,
     NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
@@ -38,20 +39,6 @@ const CODE_INDENT: usize = 4;
 // depth. It is unlikely that a non-contrived markdown document will
 // be nested this deeply.
 const MAX_LIST_DEPTH: usize = 100;
-
-/// Shorthand for checking if a node's value matches the given expression.
-///
-/// Note this will `borrow()` the provided node's data attribute while doing the
-/// check, which will fail if the node is already mutably borrowed.
-#[macro_export]
-macro_rules! node_matches {
-    ($node:expr, $( $pat:pat )|+) => {{
-        matches!(
-            $node.data.borrow().value,
-            $( $pat )|+
-        )
-    }};
-}
 
 /// Parse a Markdown document to an AST.
 ///
@@ -1367,10 +1354,7 @@ where
             && container.same_node(last_matched_container)
             && !self.blank
             && (!self.options.extension.greentext
-                || !matches!(
-                    container.data.borrow().value,
-                    NodeValue::BlockQuote | NodeValue::Document
-                ))
+                || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
             && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);
