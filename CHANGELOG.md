@@ -18,6 +18,11 @@ Categories to use in this document, and the order in which to give them:
 Changed APIs:
 
 * `r#unsafe` is used instead of `unsafe_`.
+* `--gemojis` is renamed to `--gemoji`.
+
+Build changes:
+
+* `shortcodes` is enabled by default (but still optional) for CLI builds.
 
 
 # [v0.45.0-rc.1] - 2025-10-20

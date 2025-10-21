@@ -36,7 +36,7 @@ struct Cli {
     #[arg(short, long, value_name = "PATH", default_value = get_default_config_path())]
     config_file: String,
 
-    /// To perform an in-place formatting
+    /// Reformat a CommonMark file in-place
     #[arg(short, long, conflicts_with_all(["format", "output"]))]
     inplace: bool,
 
@@ -44,15 +44,15 @@ struct Cli {
     #[arg(long)]
     hardbreaks: bool,
 
-    /// Use smart punctuation
+    /// Replace punctuation like "this" with smart punctuation like “this”
     #[arg(long)]
     smart: bool,
 
-    /// Use GitHub-style <pre lang> for code blocks
+    /// Use GitHub-style "<pre lang>" for code blocks
     #[arg(long)]
     github_pre_lang: bool,
 
-    /// Enable full info strings for code blocks
+    /// Include words following the code block info string in a data-meta attribute
     #[arg(long)]
     full_info_string: bool,
 
@@ -62,21 +62,22 @@ struct Cli {
     #[arg(long)]
     gfm: bool,
 
-    /// Enables GFM-style quirks in output HTML, such as not nesting <strong>
+    /// Use GFM-style quirks in output HTML, such as not nesting <strong>
     /// tags, which otherwise breaks CommonMark compatibility.
     #[arg(long)]
     gfm_quirks: bool,
 
-    /// Enable relaxing which character is allowed in a tasklists.
+    /// Permit any character inside a tasklist item, not just " ", "x" or "X"
     #[arg(long)]
     relaxed_tasklist_character: bool,
 
-    /// Enable relaxing of autolink parsing, allow links to be recognized when in brackets
-    /// and allow all url schemes
+    /// Relax autolink parsing: allows links to be recognised when in brackets,
+    /// permits all URL schemes, and permits domains without a TLD (like "http://localhost")
     #[arg(long)]
     relaxed_autolinks: bool,
 
-    /// Output classes on tasklist elements so that they can be styled with CSS
+    /// Include "task-list-item" and "task-list-item-checkbox" classes on
+    // tasklist "<li>" and "<input>" elements respectively
     #[arg(long)]
     tasklist_classes: bool,
 
@@ -84,26 +85,28 @@ struct Cli {
     #[arg(long, value_name = "INFO")]
     default_info_string: Option<String>,
 
-    /// Allow raw HTML and dangerous URLs
+    /// Allow inline and block HTML (unless --escape is given), and permit
+    // dangerous URLs (like "javascript:" and non-image "data:" URLs)
     #[arg(long = "unsafe")]
     r#unsafe: bool,
 
-    /// Translate gemojis into UTF-8 characters
+    /// Translate gemoji like ":thumbsup:" into Unicode emoji like "👍"
     #[arg(long)]
     #[cfg(feature = "shortcodes")]
-    gemojis: bool,
+    gemoji: bool,
 
-    /// Escape raw HTML instead of clobbering it
+    /// Escape raw HTML, instead of clobbering it; takes precedence over --unsafe
     #[arg(long)]
     escape: bool,
 
-    /// Wrap escaped characters in span tags
+    /// Wrap escaped Markdown characters in "<span data-escaped-char>" in HTML
     #[arg(long)]
     escaped_char_spans: bool,
 
-    /// Specify extension name(s) to use
+    /// Specify extensions to use
     ///
-    /// Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
+    /// Multiple extensions can be delimited with ",", e.g. '--extension
+    /// strikethrough,table', or you can pass --extension/-e multiple times
     #[arg(
         short,
         long = "extension",
@@ -121,7 +124,7 @@ struct Cli {
     #[arg(short, long, value_name = "FILE")]
     output: Option<PathBuf>,
 
-    /// Specify wrap width (0 = nowrap)
+    /// Specify wrap width for output CommonMark, or '0' to disable wrapping
     #[arg(long, default_value_t = 0)]
     width: usize,
 
@@ -129,32 +132,33 @@ struct Cli {
     #[arg(long, value_name = "PREFIX", required = false)]
     header_ids: Option<String>,
 
-    /// Ignore front-matter that starts and ends with the given string
+    /// Detect frontmatter that starts and ends with the given string, and do
+    /// not include it in the resulting document
     #[arg(long, value_name = "DELIMITER", allow_hyphen_values = true)]
     front_matter_delimiter: Option<String>,
 
-    /// Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling.
+    /// Syntax highlighting theme for fenced code blocks; specify a theme, or 'none' to disable
     #[arg(long, value_name = "THEME", default_value = "base16-ocean.dark")]
     #[cfg(feature = "syntect")]
     syntax_highlighting: String,
 
-    /// Specify bullet character for lists (-, +, *) in CommonMark output
+    /// Specify bullet character for lists ("-", "+", "*") in CommonMark output
     #[arg(long, value_enum, default_value_t = ListStyle::Dash)]
     list_style: ListStyle,
 
-    /// Include source position attribute in HTML and XML output
+    /// Include source position attributes in HTML and XML output
     #[arg(long)]
     sourcepos: bool,
 
-    /// Ignore setext headers
+    /// Do not parse setext headers
     #[arg(long)]
     ignore_setext: bool,
 
-    /// Ignore empty links
+    /// Do not parse empty links
     #[arg(long)]
     ignore_empty_links: bool,
 
-    /// Minimize escapes in CommonMark output using a trial-and-error algorithm.
+    /// Minimise escapes in CommonMark output using a trial-and-error algorithm
     #[arg(long)]
     experimental_minimize_commonmark: bool,
 }
@@ -281,7 +285,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis));
 
     #[cfg(feature = "shortcodes")]
-    let extension = extension.shortcodes(cli.gemojis);
+    let extension = extension.shortcodes(cli.gemoji);
 
     let extension = extension.build();
 
