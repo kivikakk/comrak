@@ -791,11 +791,7 @@ fn render_link<'a, T>(
     let parent_node = node.parent();
 
     if !context.options.parse.relaxed_autolinks
-        || (parent_node.is_none()
-            || !matches!(
-                parent_node.unwrap().data.borrow().value,
-                NodeValue::Link(..)
-            ))
+        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Link(..)))
     {
         if entering {
             context.write_str("<a")?;
@@ -925,8 +921,7 @@ fn render_strong<'a, T>(
 ) -> Result<ChildRendering, fmt::Error> {
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
-        || (parent_node.is_none()
-            || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong))
+        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
     {
         if entering {
             context.write_str("<strong")?;

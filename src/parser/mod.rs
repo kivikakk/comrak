@@ -1367,10 +1367,7 @@ where
             && container.same_node(last_matched_container)
             && !self.blank
             && (!self.options.extension.greentext
-                || !matches!(
-                    container.data.borrow().value,
-                    NodeValue::BlockQuote | NodeValue::Document
-                ))
+                || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
             && node_matches!(self.current, NodeValue::Paragraph)
         {
             self.add_line(self.current, line);

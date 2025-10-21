@@ -10,6 +10,7 @@ use typed_arena::Arena;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
+use crate::node_matches;
 use crate::nodes::{
     Ast, AstNode, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
     NodeMath, NodeValue, NodeWikiLink, Sourcepos,
@@ -354,9 +355,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 // if we've just produced a LineBreak, then we should consume any leading
                 // space on this line
-                if node.last_child().map_or(false, |n| {
-                    matches!(n.data.borrow().value, NodeValue::LineBreak)
-                }) {
+                let leading_space = node
+                    .last_child()
+                    .map_or(false, |n| node_matches!(n, NodeValue::LineBreak));
+
+                if leading_space {
                     // TODO: test this more explicitly.
                     let size_before = contents.len();
                     contents = strings::ltrim_slice(contents);

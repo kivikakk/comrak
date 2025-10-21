@@ -345,17 +345,17 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         let parent_node = node.parent();
         if entering {
             if parent_node.is_some()
-                && matches!(
-                    parent_node.unwrap().data.borrow().value,
+                && node_matches!(
+                    parent_node.unwrap(),
                     NodeValue::Item(..) | NodeValue::TaskItem(..)
                 )
             {
                 self.in_tight_list_item = self.get_in_tight_list_item(node);
             }
-        } else if matches!(node.data.borrow().value, NodeValue::List(..)) {
+        } else if node_matches!(node, NodeValue::List(..)) {
             self.in_tight_list_item = parent_node.is_some()
-                && matches!(
-                    parent_node.unwrap().data.borrow().value,
+                && node_matches!(
+                    parent_node.unwrap(),
                     NodeValue::Item(..) | NodeValue::TaskItem(..)
                 )
                 && self.get_in_tight_list_item(node);
@@ -386,8 +386,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
             NodeValue::Strong => {
-                if parent_node.is_none()
-                    || !matches!(parent_node.unwrap().data.borrow().value, NodeValue::Strong)
+                if parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong)
                 {
                     self.format_strong()?;
                 }
@@ -465,10 +464,9 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             }
 
             if match node.next_sibling() {
-                Some(next_sibling) => matches!(
-                    next_sibling.data.borrow().value,
-                    NodeValue::CodeBlock(..) | NodeValue::List(..)
-                ),
+                Some(next_sibling) => {
+                    node_matches!(next_sibling, NodeValue::CodeBlock(..) | NodeValue::List(..))
+                }
                 _ => false,
             } {
                 self.cr();
@@ -583,10 +581,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         let first_in_list_item = node.previous_sibling().is_none()
             && match node.parent() {
                 Some(parent) => {
-                    matches!(
-                        parent.data.borrow().value,
-                        NodeValue::Item(..) | NodeValue::TaskItem(..)
-                    )
+                    node_matches!(parent, NodeValue::Item(..) | NodeValue::TaskItem(..))
                 }
                 _ => false,
             };

@@ -747,7 +747,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 return false;
             }
             NodeValue::FrontMatter(_) => {
-                return matches!(self.data.borrow().value, NodeValue::Document);
+                return node_matches!(self, NodeValue::Document);
             }
             _ => {}
         }
