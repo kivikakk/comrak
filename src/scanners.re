@@ -82,46 +82,6 @@ pub fn html_block_end_1(s: &str) -> bool {
 */
 }
 
-pub fn html_block_end_2(s: &str) -> bool {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let len = s.len();
-/*!re2c
-    [^\n\x00]* '-->' { return true; }
-    * { return false; }
-*/
-}
-
-pub fn html_block_end_3(s: &str) -> bool {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let len = s.len();
-/*!re2c
-    [^\n\x00]* '?>' { return true; }
-    * { return false; }
-*/
-}
-
-pub fn html_block_end_4(s: &str) -> bool {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let len = s.len();
-/*!re2c
-    [^\n\x00]* '>' { return true; }
-    * { return false; }
-*/
-}
-
-pub fn html_block_end_5(s: &str) -> bool {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let len = s.len();
-/*!re2c
-    [^\n\x00]* ']]>' { return true; }
-    * { return false; }
-*/
-}
-
 pub fn alert_start(s: &str) -> Option<AlertType> {
     let mut cursor = 0;
     let mut marker = 0;
