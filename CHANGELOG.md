@@ -27,7 +27,7 @@ Changed APIs:
 
 New APIs:
 
-* `node.data()` and `node.data_mut()` are added as short-hand for `node.data.borrow()` and `node.data.borrow_mut()` respectively.
+* `node.data()` and `node.data_mut()` are added as short-hand for `node.data.borrow()` and `node.data.borrow_mut()` respectively. (by @kivikakk in https://github.com/kivikakk/comrak/pull/643)
 
 Performance:
 
