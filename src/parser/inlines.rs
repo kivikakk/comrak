@@ -938,7 +938,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.pos - 1,
         );
 
-        if (can_open || can_close) && (!(c == b'\'' || c == b'"') || self.options.parse.smart) {
+        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
+            numdelims <= 2
+        } else {
+            true
+        };
+
+        if (can_open || can_close)
+            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
+            && is_valid_strikethrough_delim
+        {
             self.push_delimiter(c, can_open, can_close, inl);
         }
 
