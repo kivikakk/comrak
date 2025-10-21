@@ -238,7 +238,7 @@ As with [`cmark`](https://github.com/commonmark/cmark) and [`cmark-gfm`](https:/
 Comrak will scrub raw HTML and potentially dangerous links. This change was introduced in Comrak 0.4.0 in support of a
 safe-by-default posture, and later adopted by our contemporaries. :)
 
-To allow these, use the `unsafe_` option (or `--unsafe` with the command line program). If doing so, we recommend the
+To allow these, use the `r#unsafe` option (or `--unsafe` with the command line program). If doing so, we recommend the
 use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammonia) configured specific to your needs.
 
 ## Extensions

@@ -4,7 +4,7 @@ use super::*;
 fn tasklist() {
     html_opts!(
         [
-            render.unsafe_,
+            render.r#unsafe,
             extension.tasklist,
             parse.relaxed_tasklist_matching
         ],
@@ -55,7 +55,7 @@ fn tasklist() {
 fn tasklist_with_classes() {
     html_opts!(
         [
-            render.unsafe_,
+            render.r#unsafe,
             extension.tasklist,
             render.tasklist_classes,
             parse.relaxed_tasklist_matching
@@ -164,7 +164,7 @@ fn tasklist_with_classes_relaxed_regression() {
 #[test]
 fn tasklist_32() {
     html_opts!(
-        [render.unsafe_, extension.tasklist],
+        [render.r#unsafe, extension.tasklist],
         concat!(
             "- [ ] List item 1\n",
             "- [ ] This list item is **bold**\n",
@@ -183,7 +183,7 @@ fn tasklist_32() {
 #[test]
 fn tasklist_32_with_classes() {
     html_opts!(
-        [render.unsafe_, extension.tasklist, render.tasklist_classes],
+        [render.r#unsafe, extension.tasklist, render.tasklist_classes],
         concat!(
             "- [ ] List item 1\n",
             "- [ ] This list item is **bold**\n",

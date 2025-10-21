@@ -56,7 +56,7 @@ fuzz_target!(|s: &str| {
         github_pre_lang: true,
         full_info_string: true,
         width: 80,
-        unsafe_: true,
+        r#unsafe: true,
         escape: true,
         list_style: options::ListStyleType::Star,
         sourcepos: true,

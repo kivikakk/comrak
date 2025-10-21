@@ -151,7 +151,7 @@ fn figure_with_caption_without_title() {
 #[test]
 fn html_block_1() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(
             "<script>\n",
             "*ok* </script> *ok*\n",
@@ -190,7 +190,7 @@ fn html_block_1() {
 #[test]
 fn html_block_2() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!("   <!-- abc\n", "\n", "ok --> *hi*\n", "*hi*\n"),
         concat!(
             "   <!-- abc\n",
@@ -204,7 +204,7 @@ fn html_block_2() {
 #[test]
 fn html_block_3() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(" <? o\n", "k ?> *a*\n", "*a*\n"),
         concat!(" <? o\n", "k ?> *a*\n", "<p><em>a</em></p>\n"),
     );
@@ -213,7 +213,7 @@ fn html_block_3() {
 #[test]
 fn html_block_4() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!("<!X >\n", "ok\n", "<!X\n", "um > h\n", "ok\n"),
         concat!("<!X >\n", "<p>ok</p>\n", "<!X\n", "um > h\n", "<p>ok</p>\n"),
     );
@@ -222,7 +222,7 @@ fn html_block_4() {
 #[test]
 fn html_block_5() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(
             "<![CDATA[\n",
             "\n",
@@ -245,7 +245,7 @@ fn html_block_5() {
 #[test]
 fn html_block_6() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(" </table>\n", "*x*\n", "\n", "ok\n", "\n", "<li\n", "*x*\n"),
         concat!(" </table>\n", "*x*\n", "<p>ok</p>\n", "<li\n", "*x*\n"),
     );
@@ -254,7 +254,7 @@ fn html_block_6() {
 #[test]
 fn html_block_7() {
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!(
             "<a b >\n",
             "ok\n",
@@ -278,7 +278,7 @@ fn html_block_7() {
     );
 
     html_opts!(
-        [render.unsafe_],
+        [render.r#unsafe],
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "\n", "ok\n"),
         concat!("<a b c=x d='y' z=\"f\" >\n", "ok\n", "<p>ok</p>\n"),
     );

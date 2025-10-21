@@ -16,7 +16,7 @@ fn raw_node() {
 
     let mut options = Options::default();
     options.render.escape = true;
-    options.render.unsafe_ = false;
+    options.render.r#unsafe = false;
     options.extension.tagfilter = true;
 
     let arena = Arena::new();

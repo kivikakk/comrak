@@ -13,6 +13,13 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
+# [v0.45.0-rc.2] - unreleased
+
+Changed APIs:
+
+* `r#unsafe` is used instead of `unsafe_`.
+
+
 # [v0.45.0-rc.1] - 2025-10-20
 
 This is a release candidate for v0.45.0. I've never made a release candidate for Comrak before, but then I've probably never made a release of this size before either.

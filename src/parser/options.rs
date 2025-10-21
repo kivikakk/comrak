@@ -51,7 +51,7 @@ pub struct Extension<'c> {
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.tagfilter = true;
-    /// options.render.unsafe_ = true;
+    /// options.render.r#unsafe = true;
     /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
@@ -96,7 +96,7 @@ pub struct Extension<'c> {
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.tasklist = true;
-    /// options.render.unsafe_ = true;
+    /// options.render.r#unsafe = true;
     /// assert_eq!(markdown_to_html("* [x] Done\n* [ ] Not done\n", &options),
     ///            "<ul>\n<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> Done</li>\n\
     ///            <li><input type=\"checkbox\" disabled=\"\" /> Not done</li>\n</ul>\n");
@@ -815,7 +815,7 @@ pub struct Render {
     ///             <p><a href=\"\">Dangerous</a>.</p>\n\
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     ///
-    /// options.render.unsafe_ = true;
+    /// options.render.r#unsafe = true;
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<script>\nalert(\'xyz\');\n</script>\n\
     ///             <p>Possibly <marquee>annoying</marquee>.</p>\n\
@@ -823,7 +823,7 @@ pub struct Render {
     ///             <p><a href=\"http://commonmark.org\">Safe</a>.</p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
-    pub unsafe_: bool,
+    pub r#unsafe: bool,
 
     /// Escape raw HTML instead of clobbering it.
     /// ```rust
