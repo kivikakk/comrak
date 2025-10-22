@@ -1,9 +1,4 @@
-use std::cell::RefCell;
-
-use crate::{
-    arena_tree::Node,
-    nodes::{Ast, NodeValue},
-};
+use crate::nodes::{Ast, NodeValue};
 
 use super::*;
 
@@ -19,13 +14,13 @@ fn raw_node() {
     options.render.r#unsafe = false;
     options.extension.tagfilter = true;
 
-    let arena = Arena::new();
+    let arena = Arena::<AstNode>::new();
     let root = parse_document(&arena, user_input, &options);
     let raw_ast_inline = Ast::new(
         NodeValue::Raw(system_input_inline.to_string()),
         (0, 0).into(),
     );
-    let raw_node_inline = arena.alloc(Node::new(RefCell::new(raw_ast_inline)));
+    let raw_node_inline = arena.alloc(raw_ast_inline.into());
     root.first_child()
         .unwrap()
         .last_child()
@@ -35,7 +30,7 @@ fn raw_node() {
         NodeValue::Raw(system_input_block.to_string()),
         (0, 0).into(),
     );
-    let raw_node_block = arena.alloc(Node::new(RefCell::new(raw_ast_block)));
+    let raw_node_block = arena.alloc(raw_ast_block.into());
     root.first_child().unwrap().insert_after(raw_node_block);
 
     let mut output = String::new();

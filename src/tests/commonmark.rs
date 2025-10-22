@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use self::nodes::{Ast, LineColumn, ListType, NodeList};
 
 use super::*;
@@ -14,11 +12,11 @@ fn commonmark_removes_redundant_strong() {
 
 #[test]
 fn commonmark_avoids_spurious_backslash() {
-    let arena = Arena::new();
+    let arena = Arena::<AstNode>::new();
     let options = Options::default();
     let empty = LineColumn { line: 0, column: 0 };
 
-    let ast = |val: NodeValue| arena.alloc(AstNode::new(RefCell::new(Ast::new(val, empty))));
+    let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());
     let root = ast(NodeValue::Document);
 
     let p1 = ast(NodeValue::Paragraph);
@@ -38,10 +36,10 @@ fn commonmark_avoids_spurious_backslash() {
 
 #[test]
 fn commonmark_renders_single_list_item() {
-    let arena = Arena::new();
+    let arena = Arena::<AstNode>::new();
     let options = Options::default();
     let empty = LineColumn { line: 0, column: 0 };
-    let ast = |val: NodeValue| arena.alloc(AstNode::new(RefCell::new(Ast::new(val, empty))));
+    let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());
     let list_options = NodeList {
         list_type: ListType::Ordered,
         start: 1,
