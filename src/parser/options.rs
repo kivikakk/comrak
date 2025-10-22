@@ -543,6 +543,20 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub highlight: bool,
+
+    #[cfg(feature = "phoenix_heex")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "phoenix_heex")))]
+    /// Enables Phoenix HEEx template syntax support.
+    ///
+    /// Recognizes Phoenix HEEx directives, tags, and inline expressions.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.phoenix_heex = true;
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub phoenix_heex: bool,
 }
 
 impl<'c> Extension<'c> {

@@ -22,6 +22,9 @@ macro_rules! node_matches {
     }};
 }
 
+#[cfg(feature = "phoenix_heex")]
+pub use crate::parser::phoenix_heex::NodeHeexBlock;
+
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(strum::EnumDiscriminants))]
@@ -94,6 +97,11 @@ pub enum NodeValue {
     /// which is neither parsed as Markdown nor HTML escaped.
     HtmlBlock(NodeHtmlBlock),
 
+    #[cfg(feature = "phoenix_heex")]
+    /// **Block**. A [Phoenix HEEx](https://hexdocs.pm/phoenix/components.html) template block.  Contains raw Phoenix HEEx text
+    /// which is neither parsed as Markdown nor HTML escaped.
+    HeexBlock(NodeHeexBlock),
+
     /// **Block**. A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains **inlines**.
     Paragraph,
 
@@ -143,6 +151,11 @@ pub enum NodeValue {
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
+
+    #[cfg(feature = "phoenix_heex")]
+    /// **Inline**. A [Phoenix HEEx](https://hexdocs.pm/phoenix/components.html) inline template element.  Contains raw Phoenix HEEx text
+    /// which is neither parsed as Markdown nor HTML escaped.
+    HeexInline(String),
 
     /// **Block/Inline**.  A Raw output node. This will be inserted verbatim into CommonMark and
     /// HTML output. It can only be created programmatically, and is never parsed from input.
@@ -562,30 +575,32 @@ impl AlertType {
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
-        matches!(
-            *self,
+        match *self {
             NodeValue::Document
-                | NodeValue::BlockQuote
-                | NodeValue::FootnoteDefinition(_)
-                | NodeValue::List(..)
-                | NodeValue::DescriptionList
-                | NodeValue::DescriptionItem(_)
-                | NodeValue::DescriptionTerm
-                | NodeValue::DescriptionDetails
-                | NodeValue::Item(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::HtmlBlock(..)
-                | NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::ThematicBreak
-                | NodeValue::Table(..)
-                | NodeValue::TableRow(..)
-                | NodeValue::TableCell
-                | NodeValue::TaskItem(..)
-                | NodeValue::MultilineBlockQuote(_)
-                | NodeValue::Alert(_)
-                | NodeValue::Subtext
-        )
+            | NodeValue::BlockQuote
+            | NodeValue::FootnoteDefinition(_)
+            | NodeValue::List(..)
+            | NodeValue::DescriptionList
+            | NodeValue::DescriptionItem(_)
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
+            | NodeValue::Item(..)
+            | NodeValue::CodeBlock(..)
+            | NodeValue::HtmlBlock(..)
+            | NodeValue::Paragraph
+            | NodeValue::Heading(..)
+            | NodeValue::ThematicBreak
+            | NodeValue::Table(..)
+            | NodeValue::TableRow(..)
+            | NodeValue::TableCell
+            | NodeValue::TaskItem(..)
+            | NodeValue::MultilineBlockQuote(_)
+            | NodeValue::Alert(_)
+            | NodeValue::Subtext => true,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => true,
+            _ => false,
+        }
     }
 
     /// Whether the type the node is of can contain inline nodes.
@@ -635,6 +650,8 @@ impl NodeValue {
             NodeValue::Item(..) => "item",
             NodeValue::CodeBlock(..) => "code_block",
             NodeValue::HtmlBlock(..) => "html_block",
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => "heex_block",
             NodeValue::Paragraph => "paragraph",
             NodeValue::Heading(..) => "heading",
             NodeValue::ThematicBreak => "thematic_break",
@@ -650,6 +667,8 @@ impl NodeValue {
             NodeValue::Strong => "strong",
             NodeValue::Code(..) => "code",
             NodeValue::HtmlInline(..) => "html_inline",
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexInline(..) => "heex_inline",
             NodeValue::Raw(..) => "raw",
             NodeValue::Strikethrough => "strikethrough",
             NodeValue::Highlight => "highlight",
@@ -709,13 +728,13 @@ impl std::fmt::Debug for Ast {
 }
 
 #[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(target_pointer_width = "64", not(feature = "phoenix_heex")))]
 /// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
 /// bigger.
 const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 
 #[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(target_pointer_width = "64", not(feature = "phoenix_heex")))]
 /// Assert the total size of what we allocate in the Arena, for reference.
 ///
 /// Note that the size adds to Ast:
@@ -1013,6 +1032,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::Raw(_)
             | NodeValue::FootnoteReference(_)
             | NodeValue::Math(_) => false,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) => false,
         }
     }
 

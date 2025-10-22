@@ -140,6 +140,24 @@ const HTML_INLINE: TestCase = (
 "#,
 );
 
+#[cfg(feature = "phoenix_heex")]
+const HEEX_BLOCK: TestCase = (
+    &[sourcepos!((1:1-3:11))],
+    r#"<.header>
+hello
+</.header>
+
+hello world
+"#,
+);
+
+#[cfg(feature = "phoenix_heex")]
+const HEEX_INLINE: TestCase = (
+    &[sourcepos!((1:7-1:12))],
+    r#"hello {some} world
+"#,
+);
+
 const PARAGRAPH: TestCase = (
     &[sourcepos!((1:1-1:11)), sourcepos!((4:1-4:11))],
     r#"hello world
@@ -442,10 +460,14 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     NodeValueDiscriminants::VARIANTS
         .iter()
         .filter(|v| {
-            !matches!(
-                v,
-                Raw // unparsable
-            )
+            #[cfg(feature = "phoenix_heex")]
+            {
+                !matches!(v, Raw | HeexBlock)
+            }
+            #[cfg(not(feature = "phoenix_heex"))]
+            {
+                !matches!(v, Raw)
+            }
         })
         .filter_map(|v| {
             let text = match v {
@@ -494,6 +516,10 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Alert => ALERT,
                 Subtext => SUBTEXT,
                 Raw => unreachable!(),
+                #[cfg(feature = "phoenix_heex")]
+                HeexBlock => unreachable!(),
+                #[cfg(feature = "phoenix_heex")]
+                HeexInline => HEEX_INLINE,
             };
             Some((*v, text))
         })
@@ -528,6 +554,10 @@ fn sourcepos() {
     options.extension.spoiler = true;
     options.extension.alerts = true;
     options.extension.subtext = true;
+    #[cfg(feature = "phoenix_heex")]
+    {
+        options.extension.phoenix_heex = true;
+    }
 
     for (kind, (expecteds, text)) in node_values {
         let arena = Arena::new();
