@@ -27,7 +27,7 @@ const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+    pub arena: &'a sync_arena::TypedArena<AstNode<'a>>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
@@ -59,7 +59,7 @@ struct HtmlSkipFlags {
 
 impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
+        arena: &'a sync_arena::TypedArena<AstNode<'a>>,
         options: &'o Options<'c>,
         input: String,
         line: usize,

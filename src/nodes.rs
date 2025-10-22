@@ -1,8 +1,8 @@
 //! The CommonMark AST.
 
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::sync::RwLock;
 
 use crate::arena_tree;
 #[cfg(feature = "shortcodes")]
@@ -23,7 +23,7 @@ macro_rules! node_matches {
 }
 
 /// The core AST node enum.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(test, derive(strum::EnumDiscriminants))]
 #[cfg_attr(
     test,
@@ -31,6 +31,7 @@ macro_rules! node_matches {
 )]
 pub enum NodeValue {
     /// The root of every CommonMark document.  Contains **blocks**.
+    #[default]
     Document,
 
     /// Non-Markdown front matter.  Treated as an opaque blob.
@@ -652,7 +653,7 @@ impl NodeValue {
 ///
 /// The struct contains metadata about the node's position in the original document, and the core
 /// enum, `NodeValue`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Ast {
     /// The node value itself.
     pub value: NodeValue,
@@ -678,12 +679,12 @@ const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 /// Assert the total size of what we allocate in the Arena, for reference.
 ///
 /// Note that the size adds to Ast:
-/// * 8 bytes for RefCell.
+/// * 16 bytes for RwLock.
 /// * 40 bytes for arena_tree::Node's 5 pointers.
-const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
+const AST_NODE_SIZE_ASSERTION: [u8; 184] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Sourcepos {
     /// The line and column of the first character of this node.
     pub start: LineColumn,
@@ -777,8 +778,9 @@ impl Ast {
 
 /// The type of a node within the document.
 ///
-/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
-/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
+/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes
+/// are allocated in. Child `Ast`s are wrapped in `RwLock` for multithreaded
+/// interior mutability.
 ///
 /// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
 ///
@@ -807,7 +809,7 @@ impl Ast {
 /// # let arena = Arena::<AstNode>::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
-pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
+pub type AstNode<'a> = arena_tree::Node<'a, RwLock<Ast>>;
 
 /// A reference to a node in an arena.  Unless you are manually creating nodes
 /// before the arena, this is the type you will see most often.
@@ -816,14 +818,14 @@ pub type Node<'a> = &'a AstNode<'a>;
 impl<'a> From<NodeValue> for AstNode<'a> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
     fn from(value: NodeValue) -> Self {
-        arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
+        arena_tree::Node::new(RwLock::new(Ast::new(value, LineColumn::default())))
     }
 }
 
 impl<'a> From<Ast> for AstNode<'a> {
     /// Create a new AST node with the given Ast.
     fn from(ast: Ast) -> Self {
-        arena_tree::Node::new(RefCell::new(ast))
+        arena_tree::Node::new(RwLock::new(ast))
     }
 }
 
@@ -840,7 +842,7 @@ pub enum ValidationError<'a> {
     },
 }
 
-impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
+impl<'a> arena_tree::Node<'a, RwLock<Ast>> {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {

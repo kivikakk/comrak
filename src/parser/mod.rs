@@ -5,14 +5,16 @@ pub mod options;
 pub mod shortcodes;
 mod table;
 
+use rayon::prelude::*;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::mem;
 use std::str;
-use typed_arena::Arena;
+use sync_arena::TypedArena;
 
+use crate::arena_tree::ExtractedNode;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
@@ -21,7 +23,7 @@ use crate::nodes::{
     NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
     NodeMultilineBlockQuote, NodeValue, Sourcepos,
 };
-use crate::parser::inlines::RefMap;
+use crate::parser::inlines::{FootnoteDefs, RefMap};
 pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
@@ -38,7 +40,11 @@ const MAX_LIST_DEPTH: usize = 100;
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
-pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Options) -> Node<'a> {
+pub fn parse_document<'a>(
+    arena: &'a TypedArena<AstNode<'a>>,
+    md: &str,
+    options: &Options,
+) -> Node<'a> {
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
@@ -57,7 +63,7 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
 }
 
 pub struct Parser<'a, 'o, 'c> {
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a TypedArena<AstNode<'a>>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
@@ -100,7 +106,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: Node<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a TypedArena<AstNode<'a>>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -1624,33 +1630,54 @@ where
     }
 
     fn process_inlines_node(&mut self, node: Node<'a>) {
-        for node in node.descendants() {
-            if node.data().value.contains_inlines() {
-                self.parse_inlines(node);
-            }
+        let arena = self.arena;
+        let options = self.options.clone();
+        let candidates = node
+            .descendants()
+            .filter(|n| n.data().value.contains_inlines())
+            .collect::<Vec<_>>();
+
+        let mut extracted = vec![];
+        candidates
+            .iter()
+            .map(|n| &n.data)
+            .collect::<Vec<_>>()
+            .par_iter_mut()
+            .map(|n| Self::parse_inlines(&options, arena, &mut *n.write().unwrap()))
+            .collect_into_vec(&mut extracted);
+
+        for (children, node) in extracted.into_iter().zip(candidates) {
+            node.transplant(self.arena, children);
         }
     }
 
-    fn parse_inlines(&mut self, node: Node<'a>) {
-        let mut node_data = node.data_mut();
-
+    fn parse_inlines<'a>(
+        options: &Options,
+        arena: &'a TypedArena<AstNode<'a>>,
+        ast: &mut Ast,
+    ) -> Vec<ExtractedNode<Ast>> {
+        let mut node_data = ast;
         let mut content = mem::take(&mut node_data.content);
         strings::rtrim(&mut content);
 
+        let node = arena.alloc(Ast::new(NodeValue::Document, (0, 0).into()).into());
+        let mut refmap = RefMap::new();
         let delimiter_arena = Arena::new();
+        let footnote_defs = FootnoteDefs::new();
         let mut subj = inlines::Subject::new(
-            self.arena,
-            self.options,
+            &arena,
+            options,
             content,
             node_data.sourcepos.start.line,
-            &mut self.refmap,
-            &self.footnote_defs,
+            &mut refmap,
+            &footnote_defs,
             &delimiter_arena,
         );
 
         while subj.parse_inline(node, &mut node_data) {}
         subj.process_emphasis(0);
         subj.clear_brackets();
+        node.extract().children
     }
 
     fn process_footnotes(&mut self) {

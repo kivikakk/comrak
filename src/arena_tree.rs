@@ -450,3 +450,56 @@ impl<'a, T> Node<'a, std::cell::RefCell<T>> {
         self.data.borrow_mut()
     }
 }
+
+impl<'a, T> Node<'a, std::sync::RwLock<T>> {
+    /// Shorthand for `node.data.read().unwrap()`.
+    pub fn data(&self) -> std::sync::RwLockReadGuard<'_, T> {
+        self.data.read().unwrap()
+    }
+
+    /// Shorthand for `node.data.try_read()`.
+    pub fn try_data(&self) -> std::sync::TryLockResult<std::sync::RwLockReadGuard<'_, T>> {
+        self.data.try_read()
+    }
+
+    /// Shorthand for `node.data.write().unwrap()`.
+    pub fn data_mut(&self) -> std::sync::RwLockWriteGuard<'_, T> {
+        self.data.write().unwrap()
+    }
+}
+
+#[derive(Debug)]
+/// Awra
+pub struct ExtractedNode<T> {
+    /// Awiwi
+    pub data: T,
+
+    /// Awiwi
+    pub children: Vec<ExtractedNode<T>>,
+}
+
+impl<'a, T> Node<'a, std::sync::RwLock<T>>
+where
+    T: std::default::Default,
+{
+    /// Awiwiwi
+    pub fn extract(&'a self) -> ExtractedNode<T> {
+        ExtractedNode {
+            data: std::mem::take(&mut self.data.write().unwrap()),
+            children: self.children().map(|c| c.extract()).collect(),
+        }
+    }
+
+    /// Awreawriawruawra
+    pub fn transplant(
+        &'a self,
+        arena: &'a sync_arena::TypedArena<Node<'a, std::sync::RwLock<T>>>,
+        children: Vec<ExtractedNode<T>>,
+    ) {
+        for c in children {
+            let n = arena.alloc(Node::new(std::sync::RwLock::new(c.data)));
+            self.append(n);
+            n.transplant(arena, c.children);
+        }
+    }
+}
