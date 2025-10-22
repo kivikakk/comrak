@@ -73,6 +73,7 @@ pub mod nodes;
 pub mod plugins;
 
 mod character_set;
+#[cfg(feature = "format-commonmark")]
 mod cm;
 mod ctype;
 mod entity;
@@ -81,12 +82,16 @@ mod scanners;
 mod strings;
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "format-xml")]
 mod xml;
 
-pub use cm::escape_inline as escape_commonmark_inline;
-pub use cm::escape_link_destination as escape_commonmark_link_destination;
-pub use cm::format_document as format_commonmark;
-pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
+#[cfg(feature = "format-commonmark")]
+pub use cm::{
+    escape_inline as escape_commonmark_inline,
+    escape_link_destination as escape_commonmark_link_destination,
+    format_document as format_commonmark,
+    format_document_with_plugins as format_commonmark_with_plugins,
+};
 pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
@@ -94,8 +99,10 @@ pub use html::Anchorizer;
 pub use parser::options;
 pub use parser::{parse_document, Options, ResolvedReference};
 pub use typed_arena::Arena;
-pub use xml::format_document as format_xml;
-pub use xml::format_document_with_plugins as format_xml_with_plugins;
+#[cfg(feature = "format-xml")]
+pub use xml::{
+    format_document as format_xml, format_document_with_plugins as format_xml_with_plugins,
+};
 
 #[deprecated(
     since = "0.45.0",
@@ -211,6 +218,7 @@ pub fn version() -> &'static str {
 }
 
 /// Render Markdown back to CommonMark.
+#[cfg(feature = "format-commonmark")]
 pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
@@ -222,6 +230,7 @@ pub fn markdown_to_commonmark(md: &str, options: &Options) -> String {
 /// Render Markdown to CommonMark XML.
 ///
 /// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
+#[cfg(feature = "format-xml")]
 pub fn markdown_to_commonmark_xml(md: &str, options: &Options) -> String {
     markdown_to_commonmark_xml_with_plugins(md, options, &options::Plugins::default())
 }
@@ -229,6 +238,7 @@ pub fn markdown_to_commonmark_xml(md: &str, options: &Options) -> String {
 /// Render Markdown to CommonMark XML using plugins.
 ///
 /// See <https://github.com/commonmark/commonmark-spec/blob/master/CommonMark.dtd>.
+#[cfg(feature = "format-xml")]
 pub fn markdown_to_commonmark_xml_with_plugins(
     md: &str,
     options: &Options,

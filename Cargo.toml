@@ -61,6 +61,10 @@ cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes"]
 shortcodes = ["emojis"]
 bon = ["dep:bon"]
 
+disabled-autolink = []
+disabled-format-commonmark = []
+disabled-format-xml = []
+
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
 xdg = { version = "^2.5", optional = true }
 

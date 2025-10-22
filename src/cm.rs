@@ -378,7 +378,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
-            NodeValue::Paragraph => self.format_paragraph(entering),
+            NodeValue::Paragraph(..) => self.format_paragraph(entering),
             NodeValue::Text(ref literal) => self.format_text(literal, allow_wrap, entering)?,
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
             NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering)?,
@@ -401,7 +401,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering)?,
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering)?,
-            NodeValue::TableCell => self.format_table_cell(node, entering)?,
+            NodeValue::TableCell(..) => self.format_table_cell(node, entering)?,
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)?
             }
@@ -1067,7 +1067,7 @@ fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
 
 fn table_escape<'a>(node: Node<'a>, c: char) -> bool {
     match node.data().value {
-        NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
+        NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell(..) => false,
         _ => c == '|',
     }
 }

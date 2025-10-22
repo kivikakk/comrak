@@ -60,8 +60,6 @@
     scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
 */
 
-use crate::parser::alert::AlertType;
-
 pub fn atx_heading_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
@@ -122,17 +120,17 @@ pub fn html_block_end_5(s: &str) -> bool {
 */
 }
 
-pub fn alert_start(s: &str) -> Option<AlertType> {
+pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
 
 /*!re2c
-    [>]{1,} ' [!note]' { return Some(AlertType::Note); }
-    [>]{1,} ' [!tip]' { return Some(AlertType::Tip); }
-    [>]{1,} ' [!important]' { return Some(AlertType::Important); }
-    [>]{1,} ' [!warning]' { return Some(AlertType::Warning); }
-    [>]{1,} ' [!caution]' { return Some(AlertType::Caution); }
+    [>]{1,} ' [!note]' { return Some(crate::nodes::AlertType::Note); }
+    [>]{1,} ' [!tip]' { return Some(crate::nodes::AlertType::Tip); }
+    [>]{1,} ' [!important]' { return Some(crate::nodes::AlertType::Important); }
+    [>]{1,} ' [!warning]' { return Some(crate::nodes::AlertType::Warning); }
+    [>]{1,} ' [!caution]' { return Some(crate::nodes::AlertType::Caution); }
     * { return None; }
 */
 }

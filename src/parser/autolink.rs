@@ -4,12 +4,11 @@ use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::Subject;
-use crate::parser::{inlines::make_inline, Spx};
+use crate::nodes::{AstNode, Inline, InlineValue, LeafValue, Node, NodeLink, NodeValue, Sourcepos};
+use crate::parser::inlines::{make_inline, make_leaf, Subject};
+use crate::parser::Spx;
 
 pub(crate) fn process_email_autolinks<'a>(
-    arena: &'a Arena<AstNode<'a>>,
     node: Node<'a>,
     contents: &mut String,
     relaxed_autolinks: bool,
@@ -44,7 +43,7 @@ pub(crate) fn process_email_autolinks<'a>(
             }
 
             if bytes[i] == b'@' {
-                post_org = email_match(arena, contents, i, relaxed_autolinks);
+                post_org = email_match(contents, i, relaxed_autolinks);
                 if post_org.is_some() {
                     break;
                 }
@@ -91,12 +90,11 @@ pub(crate) fn process_email_autolinks<'a>(
                     initial_end_col,
                 )
                     .into();
-                let after = make_inline(arena, NodeValue::Text(remain.into()), asp);
+                let after = make_leaf(LeafValue::Text(remain.into()), asp);
                 post.insert_after(after);
 
                 let after_ast = &mut after.data_mut();
                 process_email_autolinks(
-                    arena,
                     after,
                     match after_ast.value {
                         NodeValue::Text(ref mut t) => t.to_mut(),
@@ -113,12 +111,12 @@ pub(crate) fn process_email_autolinks<'a>(
         }
     }
 }
-fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+
+fn email_match(
     contents: &str,
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(Node<'a>, usize, usize)> {
+) -> Option<(Inline, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
@@ -199,19 +197,17 @@ fn email_match<'a>(
     };
 
     let inl = make_inline(
-        arena,
-        NodeValue::Link(Box::new(NodeLink {
+        InlineValue::Link(Box::new(NodeLink {
             url,
             title: String::new(),
         })),
         (0, 1, 0, 1).into(),
+        vec![make_leaf(
+            LeafValue::Text(text.to_string().into()),
+            (0, 1, 0, 1).into(),
+        )],
     );
 
-    inl.append(make_inline(
-        arena,
-        NodeValue::Text(text.to_string().into()),
-        (0, 1, 0, 1).into(),
-    ));
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -227,7 +223,7 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
     size - cursor + rewind >= protocol.len() && &contents[cursor - rewind..cursor] == protocol
 }
 
-pub fn www_match<'a>(subject: &mut Subject<'_, '_, '_, '_, '_>) -> Option<(Inline, usize, usize)> {
+pub fn www_match<'a>(subject: &mut Subject<'_, '_, '_, '_>) -> Option<(Inline, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
     let i = subject.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
@@ -379,9 +375,7 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
     link_end
 }
 
-pub fn url_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Inline, usize, usize)> {
+pub fn url_match(subject: &mut Subject<'_, '_, '_, '_>) -> Option<(Inline, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
     let i = subject.pos;

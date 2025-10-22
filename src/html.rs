@@ -19,7 +19,7 @@ use crate::ctype::isspace;
 #[cfg(feature = "shortcodes")]
 use crate::nodes::NodeShortCode;
 use crate::nodes::{
-    ListType, Node, NodeAlert, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
+    Inline, ListType, Node, NodeAlert, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeValue,
     NodeWikiLink, TableAlignment,
 };
@@ -41,7 +41,7 @@ pub fn format_document<'a>(
         options,
         output,
         &Plugins::default(),
-        format_node_default,
+        format_block_default,
         (),
     )
 }
@@ -53,7 +53,7 @@ pub fn format_document_with_plugins<'a>(
     output: &mut dyn fmt::Write,
     plugins: &Plugins,
 ) -> fmt::Result {
-    format_document_with_formatter(root, options, output, plugins, format_node_default, ())
+    format_document_with_formatter(root, options, output, plugins, format_block_default, ())
 }
 
 /// Returned by the [`format_document_with_formatter`] callback to indicate
@@ -358,22 +358,22 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
             Phase::Pre => {
                 let new_cr = match child_rendering {
                     ChildRendering::Plain => {
-                        match node.data().value {
-                            NodeValue::Text(ref literal) => {
-                                context.escape(literal)?;
-                            }
-                            NodeValue::Code(NodeCode { ref literal, .. })
-                            | NodeValue::HtmlInline(ref literal) => {
-                                context.escape(literal)?;
-                            }
-                            NodeValue::LineBreak | NodeValue::SoftBreak => {
-                                fmt::Write::write_str(&mut context, " ")?;
-                            }
-                            NodeValue::Math(NodeMath { ref literal, .. }) => {
-                                context.escape(literal)?;
-                            }
-                            _ => (),
-                        }
+                        // match node.data().value {
+                        //     NodeValue::Text(ref literal) => {
+                        //         context.escape(literal)?;
+                        //     }
+                        //     NodeValue::Code(NodeCode { ref literal, .. })
+                        //     | NodeValue::HtmlInline(ref literal) => {
+                        //         context.escape(literal)?;
+                        //     }
+                        //     NodeValue::LineBreak | NodeValue::SoftBreak => {
+                        //         fmt::Write::write_str(&mut context, " ")?;
+                        //     }
+                        //     NodeValue::Math(NodeMath { ref literal, .. }) => {
+                        //         context.escape(literal)?;
+                        //     }
+                        //     _ => (),
+                        // }
                         ChildRendering::Plain
                     }
                     ChildRendering::HTML => {
@@ -402,11 +402,11 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
     context.finish()
 }
 
-/// Default node formatting function, used by [`format_document`],
+/// Default block node formatting function, used by [`format_document`],
 /// [`format_document_with_plugins`] and as the fallback for any node types not
 /// handled in custom formatters created by [`create_formatter!`].
 #[inline]
-pub fn format_node_default<'a, T>(
+pub fn format_block_default<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
     entering: bool,
@@ -414,34 +414,21 @@ pub fn format_node_default<'a, T>(
     match node.data().value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
-        NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
         NodeValue::CodeBlock(ref ncb) => render_code_block(context, node, entering, ncb),
         NodeValue::Document => Ok(ChildRendering::HTML),
-        NodeValue::Emph => render_emph(context, node, entering),
         NodeValue::Heading(ref nh) => render_heading(context, node, entering, nh),
         NodeValue::HtmlBlock(ref nhb) => render_html_block(context, entering, nhb),
-        NodeValue::HtmlInline(ref literal) => render_html_inline(context, entering, literal),
-        NodeValue::Image(ref nl) => render_image(context, node, entering, nl),
         NodeValue::Item(_) => render_item(context, node, entering),
-        NodeValue::LineBreak => render_line_break(context, node, entering),
-        NodeValue::Link(ref nl) => render_link(context, node, entering, nl),
         NodeValue::List(ref nl) => render_list(context, node, entering, nl),
-        NodeValue::Paragraph => render_paragraph(context, node, entering),
-        NodeValue::SoftBreak => render_soft_break(context, node, entering),
-        NodeValue::Strong => render_strong(context, node, entering),
-        NodeValue::Text(ref literal) => render_text(context, entering, literal),
+        NodeValue::Paragraph(..) => render_paragraph(context, node, entering),
         NodeValue::ThematicBreak => render_thematic_break(context, node, entering),
 
         // GFM
         NodeValue::FootnoteDefinition(ref nfd) => {
             render_footnote_definition(context, node, entering, nfd)
         }
-        NodeValue::FootnoteReference(ref nfr) => {
-            render_footnote_reference(context, node, entering, nfr)
-        }
-        NodeValue::Strikethrough => render_strikethrough(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
-        NodeValue::TableCell => render_table_cell(context, node, entering),
+        NodeValue::TableCell(..) => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
         NodeValue::TaskItem(symbol) => render_task_item(context, node, entering, symbol),
 
@@ -451,21 +438,39 @@ pub fn format_node_default<'a, T>(
         NodeValue::DescriptionItem(_) => Ok(ChildRendering::HTML),
         NodeValue::DescriptionList => render_description_list(context, node, entering),
         NodeValue::DescriptionTerm => render_description_term(context, node, entering),
-        NodeValue::Escaped => render_escaped(context, node, entering),
-        NodeValue::EscapedTag(ref net) => render_escaped_tag(context, net),
         NodeValue::FrontMatter(_) => Ok(ChildRendering::HTML),
-        NodeValue::Math(ref nm) => render_math(context, node, entering, nm),
         NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering),
         NodeValue::Raw(ref literal) => render_raw(context, entering, literal),
-        #[cfg(feature = "shortcodes")]
-        NodeValue::ShortCode(ref nsc) => render_short_code(context, entering, nsc),
-        NodeValue::SpoileredText => render_spoiler_text(context, node, entering),
-        NodeValue::Subscript => render_subscript(context, node, entering),
-        NodeValue::Superscript => render_superscript(context, node, entering),
-        NodeValue::Underline => render_underline(context, node, entering),
-        NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
     }
 }
+
+// pub fn format_inline_default(inl: &Inline) {
+//     match inl {
+//         NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
+//         NodeValue::Emph => render_emph(context, node, entering),
+//         NodeValue::HtmlInline(ref literal) => render_html_inline(context, entering, literal),
+//         NodeValue::Image(ref nl) => render_image(context, node, entering, nl),
+//         NodeValue::LineBreak => render_line_break(context, node, entering),
+//         NodeValue::Link(ref nl) => render_link(context, node, entering, nl),
+//         NodeValue::SoftBreak => render_soft_break(context, node, entering),
+//         NodeValue::Strong => render_strong(context, node, entering),
+//         NodeValue::Text(ref literal) => render_text(context, entering, literal),
+//         NodeValue::FootnoteReference(ref nfr) => {
+//             render_footnote_reference(context, node, entering, nfr)
+//         }
+//         NodeValue::Strikethrough => render_strikethrough(context, node, entering),
+//         NodeValue::Escaped => render_escaped(context, node, entering),
+//         NodeValue::EscapedTag(ref net) => render_escaped_tag(context, net),
+//         NodeValue::Math(ref nm) => render_math(context, node, entering, nm),
+//         #[cfg(feature = "shortcodes")]
+//         NodeValue::ShortCode(ref nsc) => render_short_code(context, entering, nsc),
+//         NodeValue::SpoileredText => render_spoiler_text(context, node, entering),
+//         NodeValue::Subscript => render_subscript(context, node, entering),
+//         NodeValue::Superscript => render_superscript(context, node, entering),
+//         NodeValue::Underline => render_underline(context, node, entering),
+//         NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
+//     }
+// }
 
 // Commonmark
 
@@ -626,37 +631,37 @@ fn render_heading<'a, T>(
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
 
-                if let Some(ref prefix) = context.options.extension.header_ids {
-                    let text_content = collect_text(node);
-                    let id = context.anchorizer.anchorize(&text_content);
-                    write!(
-                        context,
-                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                        id, prefix, id
-                    )?;
-                }
+                // if let Some(ref prefix) = context.options.extension.header_ids {
+                //     let text_content = collect_text(node);
+                //     let id = context.anchorizer.anchorize(&text_content);
+                //     write!(
+                //         context,
+                //         "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                //         id, prefix, id
+                //     )?;
+                // }
             } else {
                 writeln!(context, "</h{}>", nh.level)?;
             }
         }
         Some(adapter) => {
-            let text_content = collect_text(node);
-            let heading = HeadingMeta {
-                level: nh.level,
-                content: text_content,
-            };
+            // let text_content = collect_text(node);
+            // let heading = HeadingMeta {
+            //     level: nh.level,
+            //     content: text_content,
+            // };
 
-            if entering {
-                context.cr()?;
-                let sp = if context.options.render.sourcepos {
-                    Some(node.data().sourcepos)
-                } else {
-                    None
-                };
-                adapter.enter(context, &heading, sp)?;
-            } else {
-                adapter.exit(context, &heading)?;
-            }
+            // if entering {
+            //     context.cr()?;
+            //     let sp = if context.options.render.sourcepos {
+            //         Some(node.data().sourcepos)
+            //     } else {
+            //         None
+            //     };
+            //     adapter.enter(context, &heading, sp)?;
+            // } else {
+            //     adapter.exit(context, &heading)?;
+            // }
         }
     }
 
@@ -782,41 +787,41 @@ fn render_line_break<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_link<'a, T>(
-    context: &mut Context<T>,
-    node: Node<'a>,
-    entering: bool,
-    nl: &NodeLink,
-) -> Result<ChildRendering, fmt::Error> {
-    let parent_node = node.parent();
+// fn render_link<'a, T>(
+//     context: &mut Context<T>,
+//     node: Node<'a>,
+//     entering: bool,
+//     nl: &NodeLink,
+// ) -> Result<ChildRendering, fmt::Error> {
+//     let parent_node = node.parent();
 
-    if !context.options.parse.relaxed_autolinks
-        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Link(..)))
-    {
-        if entering {
-            context.write_str("<a")?;
-            render_sourcepos(context, node)?;
-            context.write_str(" href=\"")?;
-            let url = &nl.url;
-            if context.options.render.r#unsafe || !dangerous_url(url) {
-                if let Some(rewriter) = &context.options.extension.link_url_rewriter {
-                    context.escape_href(&rewriter.to_html(&nl.url))?;
-                } else {
-                    context.escape_href(url)?;
-                }
-            }
-            if !nl.title.is_empty() {
-                context.write_str("\" title=\"")?;
-                context.escape(&nl.title)?;
-            }
-            context.write_str("\">")?;
-        } else {
-            context.write_str("</a>")?;
-        }
-    }
+//     if !context.options.parse.relaxed_autolinks
+//         || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Link(..)))
+//     {
+//         if entering {
+//             context.write_str("<a")?;
+//             render_sourcepos(context, node)?;
+//             context.write_str(" href=\"")?;
+//             let url = &nl.url;
+//             if context.options.render.r#unsafe || !dangerous_url(url) {
+//                 if let Some(rewriter) = &context.options.extension.link_url_rewriter {
+//                     context.escape_href(&rewriter.to_html(&nl.url))?;
+//                 } else {
+//                     context.escape_href(url)?;
+//                 }
+//             }
+//             if !nl.title.is_empty() {
+//                 context.write_str("\" title=\"")?;
+//                 context.escape(&nl.title)?;
+//             }
+//             context.write_str("\">")?;
+//         } else {
+//             context.write_str("</a>")?;
+//         }
+//     }
 
-    Ok(ChildRendering::HTML)
-}
+//     Ok(ChildRendering::HTML)
+// }
 
 fn render_list<'a, T>(
     context: &mut Context<T>,
@@ -914,26 +919,26 @@ fn render_soft_break<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_strong<'a, T>(
-    context: &mut Context<T>,
-    node: Node<'a>,
-    entering: bool,
-) -> Result<ChildRendering, fmt::Error> {
-    let parent_node = node.parent();
-    if !context.options.render.gfm_quirks
-        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
-    {
-        if entering {
-            context.write_str("<strong")?;
-            render_sourcepos(context, node)?;
-            context.write_str(">")?;
-        } else {
-            context.write_str("</strong>")?;
-        }
-    }
+// fn render_strong<'a, T>(
+//     context: &mut Context<T>,
+//     node: Node<'a>,
+//     entering: bool,
+// ) -> Result<ChildRendering, fmt::Error> {
+//     let parent_node = node.parent();
+//     if !context.options.render.gfm_quirks
+//         || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
+//     {
+//         if entering {
+//             context.write_str("<strong")?;
+//             render_sourcepos(context, node)?;
+//             context.write_str(">")?;
+//         } else {
+//             context.write_str("</strong>")?;
+//         }
+//     }
 
-    Ok(ChildRendering::HTML)
-}
+//     Ok(ChildRendering::HTML)
+// }
 
 fn render_text<T>(
     context: &mut Context<T>,
@@ -1504,29 +1509,29 @@ fn render_wiki_link<'a, T>(
 /// order, returning the concatenated literal contents of text, code and math
 /// blocks. Line breaks and soft breaks are represented as a single whitespace
 /// character.
-pub fn collect_text<'a>(node: Node<'a>) -> String {
-    let mut text = String::with_capacity(20);
-    collect_text_append(node, &mut text);
-    text
-}
+// pub fn collect_text<'a>(node: Node<'a>) -> String {
+//     let mut text = String::with_capacity(20);
+//     collect_text_append(node, &mut text);
+//     text
+// }
 
 /// Recurses through a node and all of its children in depth-first (document)
 /// order, appending the literal contents of text, code and math blocks to
 /// an output buffer. Line breaks and soft breaks are represented as a single
 /// whitespace character.
-pub fn collect_text_append<'a>(node: Node<'a>, output: &mut String) {
-    match node.data().value {
-        NodeValue::Text(ref literal) => output.push_str(literal),
-        NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
-        NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
-        NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
-        _ => {
-            for n in node.children() {
-                collect_text_append(n, output);
-            }
-        }
-    }
-}
+// pub fn collect_text_append<'a>(node: Node<'a>, output: &mut String) {
+//     match node.data().value {
+//         NodeValue::Text(ref literal) => output.push_str(literal),
+//         NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
+//         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
+//         NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
+//         _ => {
+//             for n in node.children() {
+//                 collect_text_append(n, output);
+//             }
+//         }
+//     }
+// }
 
 fn put_footnote_backref<T>(
     context: &mut Context<T>,

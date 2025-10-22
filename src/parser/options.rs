@@ -83,6 +83,7 @@ pub struct Extension<'c> {
     ///            "<p>Hello <a href=\"http://www.github.com\">www.github.com</a>.</p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
+    #[cfg(feature = "autolink")]
     pub autolink: bool,
 
     /// Enables the
@@ -632,6 +633,7 @@ pub struct Parse<'c> {
     ///            "<p>[<a href=\"https://foo.com\">https://foo.com</a>]</p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
+    #[cfg(feature = "autolink")]
     pub relaxed_autolinks: bool,
 
     /// Ignore setext headings in input.

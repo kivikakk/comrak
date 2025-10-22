@@ -1,3 +1,4 @@
+#[cfg(feature = "autolink")]
 mod autolink;
 mod inlines;
 pub mod options;
@@ -59,7 +60,7 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<AstNode<'a>>,
     refmap: RefMap,
-    footnote_defs: inlines::FootnoteDefs<'a>,
+    // footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
     current: Node<'a>,
     line_number: usize,
@@ -104,7 +105,7 @@ where
         Parser {
             arena,
             refmap: RefMap::new(),
-            footnote_defs: inlines::FootnoteDefs::new(),
+            // footnote_defs: inlines::FootnoteDefs::new(),
             root,
             current: root,
             line_number: 0,
@@ -1481,10 +1482,11 @@ where
 
         // Append auto-generated inline footnote definitions
         if self.options.extension.footnotes && self.options.extension.inline_footnotes {
-            let inline_defs = self.footnote_defs.definitions();
-            for def in inline_defs.iter() {
-                self.root.append(*def);
-            }
+            // XXX: TODO
+            // let inline_defs = self.footnote_defs.definitions();
+            // for def in inline_defs.iter() {
+            //     self.root.append(*def);
+            // }
         }
 
         if self.options.extension.footnotes {
@@ -1645,8 +1647,7 @@ where
             content,
             node_data.sourcepos.start.line,
             &mut self.refmap,
-            &self.footnote_defs,
-            &delimiter_arena,
+            // &self.footnote_defs,
         );
 
         while subj.parse_inline(&mut node_data) {}
@@ -1842,9 +1843,9 @@ where
             self.process_tasklist(node, text, sourcepos, &mut spx);
         }
 
+        #[cfg(feature = "autolink")]
         if self.options.extension.autolink && !in_bracket_context {
             autolink::process_email_autolinks(
-                self.arena,
                 node,
                 text,
                 self.options.parse.relaxed_autolinks,
@@ -1950,19 +1951,16 @@ where
     fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
         // These are totally unused; we should extract the relevant input
         // scanning from Subject so we don't have to make all this.
-        let unused_node_arena = Arena::with_capacity(0);
-        let unused_footnote_defs = inlines::FootnoteDefs::new();
+        // let unused_footnote_defs = inlines::FootnoteDefs::new();
         let unused_delimiter_arena = Arena::with_capacity(0);
         let mut unused_refmap = inlines::RefMap::new();
 
         let mut subj = inlines::Subject::new(
-            &unused_node_arena,
             self.options,
             content.to_string(),
             0, // XXX -1 in upstream; never used?
             &mut unused_refmap,
-            &unused_footnote_defs,
-            &unused_delimiter_arena,
+            // &unused_footnote_defs,
         );
 
         let mut lab: String = match subj.link_label() {

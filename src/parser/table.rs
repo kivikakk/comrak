@@ -18,7 +18,7 @@ pub fn try_opening_block<'a>(
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
     let aligns = match &container.data().value {
-        NodeValue::Paragraph => None,
+        NodeValue::Paragraph(..) => None,
         NodeValue::Table(nt) => Some(nt.alignments.clone()),
         _ => return None,
     };
@@ -283,9 +283,10 @@ fn try_inserting_table_header_paragraph<'a>(
     container_content: &str,
     paragraph_offset: usize,
 ) {
+    let para = NodeValue::Paragraph(vec![]);
     if container
         .parent()
-        .map_or(false, |p| !p.can_contain_type(&NodeValue::Paragraph))
+        .map_or(false, |p| !p.can_contain_type(&para))
     {
         return;
     }
@@ -299,7 +300,7 @@ fn try_inserting_table_header_paragraph<'a>(
     let container_ast = &mut container.data_mut();
     let start = container_ast.sourcepos.start;
 
-    let mut paragraph = Ast::new(NodeValue::Paragraph, start);
+    let mut paragraph = Ast::new(para, start);
     paragraph.sourcepos.end.line = start.line + newlines - 1;
 
     for n in 0..newlines {

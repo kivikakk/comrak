@@ -4,6 +4,8 @@ use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::marker::PhantomData;
+use std::ops::{Index, IndexMut};
 use std::str;
 use std::{mem, ptr};
 use typed_arena::Arena;
@@ -14,11 +16,13 @@ use crate::nodes::{
     Ast, AstNode, Inline, InlineValue, LeafValue, Node, NodeCode, NodeFootnoteDefinition,
     NodeFootnoteReference, NodeLink, NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
+#[cfg(feature = "autolink")]
+use crate::parser::autolink;
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
+use crate::parser::{AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
 
@@ -26,8 +30,8 @@ const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 
-pub struct Subject<'r, 'o, 'c, 'p> {
-    inlines: Vec<Inline>,
+pub struct Subject<'a, 'r, 'o, 'd, 'c, 'p> {
+    inlines: VecTree<Inline>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
@@ -36,9 +40,10 @@ pub struct Subject<'r, 'o, 'c, 'p> {
     line_offset: usize,
     html_skip_flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
-    footnote_defs: &'p FootnoteDefs<'a>,
+    // footnote_defs: &'p FootnoteDefs<'a>,
+    footnote_defs_phantom: PhantomData<&'p ()>,
     delimiters: Vec<Delimiter>,
-    last_delimiter: Option<usize>,
+    last_delimiter: Option<DelimiterIx>,
     brackets: Vec<Bracket>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
@@ -56,13 +61,14 @@ struct HtmlSkipFlags {
     pi: bool,
     comment: bool,
 }
+
 impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
     pub fn new(
         options: &'o Options<'c>,
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
-        footnote_defs: &'p FootnoteDefs<'a>,
+        // footnote_defs: &'p FootnoteDefs<'a>,
     ) -> Self {
         let mut s = Subject {
             inlines: vec![],
@@ -74,7 +80,8 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
             line_offset: 0,
             html_skip_flags: HtmlSkipFlags::default(),
             refmap,
-            footnote_defs,
+            // footnote_defs,
+            footnote_defs_phantom: PhantomData,
             delimiters: vec![],
             last_delimiter: None,
             brackets: vec![],
@@ -89,6 +96,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         for &c in b"\n\r_*\"`\\&<[]!$" {
             s.special_chars[c as usize] = true;
         }
+        #[cfg(feature = "autolink")]
         if options.extension.autolink {
             s.special_chars[b':' as usize] = true;
             s.special_chars[b'w' as usize] = true;
@@ -157,7 +165,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
                 usize::try_from(end_column).unwrap(),
             )
                 .into(),
-            children: children,
+            children,
         }
     }
 
@@ -184,6 +192,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
             ':' => {
                 let mut res = None;
 
+                #[cfg(feature = "autolink")]
                 if self.options.extension.autolink {
                     res = self.handle_autolink_with(autolink::url_match);
                 }
@@ -204,6 +213,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
 
                 res
             }
+            #[cfg(feature = "autolink")]
             'w' if self.options.extension.autolink => match self
                 .handle_autolink_with(autolink::www_match)
             {
@@ -270,7 +280,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
                     && self.peek_char_n(1) == Some(&(b'['))
                 {
                     // XXX
-                    // self.handle_inline_ootnote()
+                    // self.handle_inline_footnote()
                     None
                 } else if self.options.extension.superscript && !self.within_brackets {
                     self.handle_delim(b'^');
@@ -323,7 +333,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         };
 
         if let Some(inl) = new_inl {
-            self.inlines.append(inl);
+            self.inlines.push(inl);
         }
 
         true
@@ -567,6 +577,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         }
     }
 
+    #[cfg(feature = "autolink")]
     fn handle_autolink_with(
         &mut self,
         f: fn(&mut Subject<'_, '_, '_, '_>) -> Option<(Inline, usize, usize)>,
@@ -679,7 +690,8 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
                 .into()
         };
         let len = contents.len();
-        let inl = self.inlines.len();
+
+        let inl = InlineIx(self.inlines.len());
         self.inlines.push(self.make_leaf(
             LeafValue::Text(contents),
             self.pos - numdelims,
@@ -1061,10 +1073,10 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         c: u8,
         can_open: bool,
         can_close: bool,
-        inl: usize,
+        inl: InlineIx,
         length: usize,
     ) {
-        let d = self.delimiters.len();
+        let d = DelimiterIx(self.delimiters.len());
         self.delimiters.push(Delimiter {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
@@ -1076,7 +1088,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
             can_close,
         });
         if let Some(prev) = self.last_delimiter {
-            self.delimiters[prev].next.set(Some(d));
+            self[prev].next.set(Some(d));
         }
         self.last_delimiter = Some(d);
     }
@@ -1086,11 +1098,14 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
     //
     // As a side-effect, handle long "***" and "___" nodes by truncating them in
     // place to be re-matched by `process_emphasis`.
-    fn insert_emph(&mut self, openeri: usize, closer: Delimiter) -> Option<Delimiter> {
-        let opener = self.delimiters[openeri];
-        let opener_byte = self.inlines[opener.inl].text().unwrap().as_bytes()[0];
-        let mut opener_num_bytes = self.inlines[opener.inl].text().unwrap().len();
-        let mut closer_num_bytes = self.inlines[closer.inl].text().unwrap().len();
+    //
+    // Has a single call-site in the middle of process_emphasis.
+    fn insert_emph(&mut self, openeri: DelimiterIx, closeri: DelimiterIx) -> Option<DelimiterIx> {
+        let opener = self[openeri];
+        let closer = self[closeri];
+        let opener_byte = self[opener.inl].text().unwrap().as_bytes()[0];
+        let mut opener_num_bytes = self[opener.inl].text().unwrap().len();
+        let mut closer_num_bytes = self[closer.inl].text().unwrap().len();
         let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
@@ -1107,12 +1122,12 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
             return None;
         }
 
-        self.inlines[opener.inl]
+        self[opener.inl]
             .text_mut()
             .unwrap()
             .to_mut()
             .truncate(opener_num_bytes);
-        self.inlines[closer.inl]
+        self[closer.inl]
             .text_mut()
             .unwrap()
             .to_mut()
@@ -1122,8 +1137,8 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         // closer. None of them are matched pairs. They've been scanned already.
         let mut delim = closer.prev.get();
         while delim.is_some() && delim != Some(openeri) {
-            self.remove_delimiter(self.delimiters[delim.unwrap()]);
-            delim = self.delimiters[delim.unwrap()].prev.get();
+            self.remove_delimiter(delim.unwrap());
+            delim = self[delim.unwrap()].prev.get();
         }
 
         let emph = self.make_inline(
@@ -1162,39 +1177,41 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         );
 
         *emph.sourcepos_mut() = (
-            self.inlines[opener.inl].sourcepos().start.line,
-            self.inlines[opener.inl].sourcepos().start.column + opener_num_bytes,
-            self.inlines[closer.inl].sourcepos().end.line,
-            self.inlines[closer.inl].sourcepos().end.column - closer_num_bytes,
+            self[opener.inl].sourcepos().start.line,
+            self[opener.inl].sourcepos().start.column + opener_num_bytes,
+            self[closer.inl].sourcepos().end.line,
+            self[closer.inl].sourcepos().end.column - closer_num_bytes,
         )
             .into();
 
-        // // Drop all the interior AST nodes into the emphasis node
-        // // and then insert the emphasis node
-        // let mut inline_index = opener.inl + 1;
-        // while inline_index != closer.inl && inline_index < self.inlines.len() {
-        //     emph.append(self.inlines[inline_index]);
-        //     // TODO: *take* and adjust index
-        // }
-        // opener.inl.insert_after(emph);
+        let interior = self[opener.inl.next_sibling()..closer.inl];
 
-        // // Drop completely "used up" delimiters, adjust sourcepos of those not,
-        // // and return the next closest one for processing.
-        // if opener_num_bytes == 0 {
-        //     opener.inl.detach();
-        //     self.remove_delimiter(opener);
-        // } else {
-        //     opener.inl.data_mut().sourcepos.end.column -= use_delims;
-        // }
+        // Drop all the interior AST nodes into the emphasis node
+        // and then insert the emphasis node
+        let mut inline_index = opener.inl + 1;
+        while inline_index != closer.inl && inline_index < self.inlines.len() {
+            emph.append(self.inlines[inline_index]);
+            // TODO: *take* and adjust index
+        }
+        opener.inl.insert_after(emph);
 
-        // if closer_num_bytes == 0 {
-        //     closer.inl.detach();
-        //     self.remove_delimiter(closer);
-        //     closer.next.get()
-        // } else {
-        //     closer.inl.data_mut().sourcepos.start.column += use_delims;
-        //     Some(closer)
-        // }
+        // Drop completely "used up" delimiters, adjust sourcepos of those not,
+        // and return the next closest one for processing.
+        if opener_num_bytes == 0 {
+            opener.inl.detach();
+            self.remove_delimiter(opener);
+        } else {
+            opener.inl.data_mut().sourcepos.end.column -= use_delims;
+        }
+
+        if closer_num_bytes == 0 {
+            closer.inl.detach();
+            self.remove_delimiter(closer);
+            closer.next.get()
+        } else {
+            closer.inl.data_mut().sourcepos.start.column += use_delims;
+            Some(closer)
+        }
     }
 
     pub fn skip_line_end(&mut self) -> bool {
@@ -1228,7 +1245,7 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
+    fn handle_close_bracket(&mut self) -> Option<Inline> {
         self.pos += 1;
         let initial_pos = self.pos;
 
@@ -1262,8 +1279,8 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
 
             if !non_blank_found {
                 self.brackets.pop();
-                return Some(self.make_inline(
-                    NodeValue::Text("]".into()),
+                return Some(self.make_leaf(
+                    LeafValue::Text("]".into()),
                     self.pos - 1,
                     self.pos - 1,
                 ));
@@ -1385,8 +1402,8 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
             }
 
             if text.len() > 1 {
-                let inl = self.make_inline(
-                    NodeValue::FootnoteReference(NodeFootnoteReference {
+                let inl = self.make_leaf(
+                    LeafValue::FootnoteReference(NodeFootnoteReference {
                         name: text[1..].to_string(),
                         ref_num: 0,
                         ix: 0,
@@ -1429,36 +1446,35 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
     }
 
     fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
-        let brackets_len = self.brackets.len();
+        let bracket = self.brackets.pop().unwrap();
 
         let nl = NodeLink { url, title };
-        let inl = self.make_inline(
+        let mut inl = self.make_inline(
             if is_image {
-                NodeValue::Image(Box::new(nl))
+                InlineValue::Image(Box::new(nl))
             } else {
-                NodeValue::Link(Box::new(nl))
+                InlineValue::Link(Box::new(nl))
             },
             // Manually set below.
             self.pos,
             self.pos,
+            vec![], // XXX: appends happen below
+                    // We want to take *all* the siblings to the right of bracket.inl_text and put them as a child of inl.
+                    // Then we replace bracket.inl_text with inl.
         );
-        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
-            .inl_text
-            .data()
-            .sourcepos
-            .start;
-        inl.data_mut().sourcepos.end.column =
+        inl.sourcepos_mut().start = bracket.inl_text.sourcepos().start;
+        inl.sourcepos_mut().end.column =
             usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
                 .unwrap();
 
-        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
-        while let Some(tmp) = tmpch {
-            tmpch = tmp.next_sibling();
-            inl.append(tmp);
-        }
-        self.brackets[brackets_len - 1].inl_text.detach();
-        self.process_emphasis(self.brackets[brackets_len - 1].position);
+        // bracket.inl_text.insert_before(inl);
+        // let mut tmpch = bracket.inl_text.next_sibling();
+        // while let Some(tmp) = tmpch {
+        //     tmpch = tmp.next_sibling();
+        //     inl.append(tmp);
+        // }
+        // bracket.inl_text.detach();
+        self.process_emphasis(bracket.position);
         self.brackets.pop();
 
         if !is_image {
@@ -1613,37 +1629,24 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         kind: AutolinkType,
         start_column: usize,
         end_column: usize,
-    ) -> Node<'a> {
-        let inl = self.make_inline(
+    ) -> Inline {
+        self.make_inline(
             NodeValue::Link(Box::new(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
                 title: String::new(),
             })),
             start_column,
             end_column,
-        );
-        inl.append(self.make_inline(
-            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
-            start_column + 1,
-            end_column - 1,
-        ));
-        inl
-    }
-
-    pub fn thanks_for_the_inlines(self) -> Vec<Inline> {
-        self.inlines
+            vec![self.make_leaf(
+                LeafValue::Text(entity::unescape_html(url).into_owned().into()),
+                start_column + 1,
+                end_column - 1,
+            )],
+        )
     }
 
     pub fn pop_bracket(&mut self) -> bool {
         self.brackets.pop().is_some()
-    }
-
-    fn del_ref_eq(lhs: Option<&'d Delimiter<'a, 'd>>, rhs: Option<&'d Delimiter<'a, 'd>>) -> bool {
-        match (lhs, rhs) {
-            (None, None) => true,
-            (Some(l), Some(r)) => ptr::eq(l, r),
-            _ => false,
-        }
     }
 
     // After parsing a block (and sometimes during), this function traverses the
@@ -1854,17 +1857,25 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
         self.remove_delimiters(stack_bottom);
     }
 
-    fn remove_delimiter(&mut self, mut delimiter: Delimiter) {
-        delimiter.remove(self);
+    fn remove_delimiter(&mut self, mut ix: DelimiterIx) {
+        let delimiter = self[ix];
+        if let Some(next) = delimiter.next.get() {
+            self[next].prev.set(delimiter.prev.get());
+        } else {
+            assert!(Some(ix) == self.last_delimiter);
+            self.last_delimiter = delimiter.prev.get();
+        }
+        if let Some(prev) = delimiter.prev.get() {
+            self[prev].next.set(delimiter.next.get());
+        }
     }
 
     fn remove_delimiters(&mut self, stack_bottom: usize) {
         while self
             .last_delimiter
-            .map_or(false, |d| self.delimiters[d].position >= stack_bottom)
+            .map_or(false, |d| self[d].position >= stack_bottom)
         {
-            let mut delimiter = mem::take(&mut self.delimiters[self.last_delimiter.unwrap()]);
-            delimiter.remove(self);
+            self.remove_delimiter(self.last_delimiter.unwrap());
         }
     }
 
@@ -2126,6 +2137,14 @@ impl<'r, 'o, 'c, 'p> Subject<'r, 'o, 'c, 'p> {
 
         self.input.len()
     }
+
+    ////////////
+    // Goobai //
+    ////////////
+
+    pub fn thanks_for_the_inlines(self) -> Vec<Inline> {
+        self.inlines
+    }
 }
 
 pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
@@ -2197,21 +2216,20 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
     }
 }
 
-pub(crate) fn make_inline<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    value: NodeValue,
+pub(crate) fn make_inline(
+    value: InlineValue,
     sourcepos: Sourcepos,
-) -> Node<'a> {
-    let ast = Ast {
+    children: Vec<Inline>,
+) -> Inline {
+    Inline::Node {
         value,
-        content: String::new(),
         sourcepos,
-        open: false,
-        last_line_blank: false,
-        table_visited: false,
-        line_offsets: Vec::new(),
-    };
-    arena.alloc(ast.into())
+        children,
+    }
+}
+
+pub(crate) fn make_leaf(value: LeafValue, sourcepos: Sourcepos) -> Inline {
+    Inline::Leaf { value, sourcepos }
 }
 
 pub(crate) fn count_newlines(input: &str) -> (usize, usize) {
@@ -2262,62 +2280,65 @@ impl RefMap {
     }
 }
 
-pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
-    counter: RefCell<usize>,
-}
+// pub struct FootnoteDefs<'a> {
+//     defs: RefCell<Vec<Node<'a>>>,
+//     counter: RefCell<usize>,
+// }
 
-impl<'a> FootnoteDefs<'a> {
-    pub fn new() -> Self {
-        Self {
-            defs: RefCell::new(Vec::new()),
-            counter: RefCell::new(0),
-        }
-    }
+// impl<'a> FootnoteDefs<'a> {
+//     pub fn new() -> Self {
+//         Self {
+//             defs: RefCell::new(Vec::new()),
+//             counter: RefCell::new(0),
+//         }
+//     }
 
-    pub fn next_name(&self) -> String {
-        let mut counter = self.counter.borrow_mut();
-        *counter += 1;
-        format!("__inline_{}", *counter)
-    }
+//     pub fn next_name(&self) -> String {
+//         let mut counter = self.counter.borrow_mut();
+//         *counter += 1;
+//         format!("__inline_{}", *counter)
+//     }
 
-    pub fn add_definition(&self, def: Node<'a>) {
-        self.defs.borrow_mut().push(def);
-    }
+//     pub fn add_definition(&self, def: Node<'a>) {
+//         self.defs.borrow_mut().push(def);
+//     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
-        self.defs.borrow()
-    }
-}
+//     pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
+//         self.defs.borrow()
+//     }
+// }
 
-#[derive(Default)] // consider Option<Delimiter> in Subject
+/*
+I AM SO INDECISIVE ABOUT THE STRUCTURE OF THIS. LET'S PLEASE TAKE A MOMENT TO SKETCH IT OUT.
+
+
+We sketch out Vec<Inline> which are Node or Leaf.  Node unilaterally contains children, Leaf doesn't.
+
+We somehow need to draw out this tree bit-by-bit: how do we do it cleanly while allowing the semi-random
+access needed by our emphasis/bracket/autolink algorithms?
+
+Ideally we actually do have a semi-tree type thing. I kind of want to pull in indextree just for this.
+
+
+OK, if we don't do an arena, what do we do?  We need indices that
+
+
+
+
+
+
+
+*/
+
 pub struct Delimiter {
-    inl: usize,
+    inl: InlineIx,
     position: usize,
     length: usize,
     delim_char: u8,
     can_open: bool,
     can_close: bool,
-    prev: Cell<Option<usize>>,
-    next: Cell<Option<usize>>,
-}
-
-impl Delimiter {
-    fn remove(&mut self, from: &mut Subject) {
-        mem::take(self).remove_consume(from);
-    }
-
-    fn remove_consume(self, from: &mut Subject) {
-        if let Some(next) = self.next.get() {
-            from.delimiters[next].prev.set(self.prev.get());
-        } else {
-            // assert!(ptr::eq(delimiter, self.last_delimiter.unwrap()));
-            from.last_delimiter = self.prev.get();
-        }
-        if let Some(prev) = self.prev.get() {
-            from.delimiters[prev].next.set(self.next.get());
-        }
-    }
+    prev: Cell<Option<DelimiterIx>>,
+    next: Cell<Option<DelimiterIx>>,
 }
 
 impl std::fmt::Debug for Delimiter {
@@ -2329,7 +2350,6 @@ impl std::fmt::Debug for Delimiter {
         )
     }
 }
-
 struct Bracket {
     inl_text: Inline,
     position: usize,

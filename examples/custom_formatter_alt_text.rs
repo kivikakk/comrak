@@ -35,7 +35,7 @@ fn formatter<'a>(
     if let NodeValue::Image(ref mut nl) = node.data_mut().value {
         autotitle_images(nl, context, node, entering);
     }
-    comrak::html::format_node_default(context, node, entering)
+    comrak::html::format_block_default(context, node, entering)
 }
 
 fn main() {

@@ -185,7 +185,7 @@ impl Inline {
         Some(children)
     }
 
-    pub fn sourcepos(&mut self) -> &Sourcepos {
+    pub fn sourcepos(&self) -> &Sourcepos {
         match self {
             Inline::Node { ref sourcepos, .. } | Inline::Leaf { ref sourcepos, .. } => sourcepos,
         }
@@ -944,7 +944,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::DescriptionDetails
             | NodeValue::Item(..)
             | NodeValue::TaskItem(..) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+                !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
 
             NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
@@ -956,81 +956,15 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
             ),
 
-            #[cfg(feature = "shortcodes")]
-            NodeValue::ShortCode(..) => !child.block(),
-
-            NodeValue::Paragraph
-            | NodeValue::Heading(..)
-            | NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Link(..)
-            | NodeValue::Image(..)
-            | NodeValue::WikiLink(..)
-            | NodeValue::Strikethrough
-            | NodeValue::Superscript
-            | NodeValue::SpoileredText
-            | NodeValue::Underline
-            | NodeValue::Subscript
-            // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
-            // possibly going to fall into the spoiler. This should be fixed in
-            // inlines.
-            | NodeValue::EscapedTag(_)
-            => !child.block(),
-
             NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
 
-            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-
-            #[cfg(not(feature = "shortcodes"))]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
-                    | NodeValue::Code(..)
-                    | NodeValue::Emph
-                    | NodeValue::Strong
-                    | NodeValue::Link(..)
-                    | NodeValue::Image(..)
-                    | NodeValue::Strikethrough
-                    | NodeValue::HtmlInline(..)
-                    | NodeValue::Math(..)
-                    | NodeValue::WikiLink(..)
-                    | NodeValue::FootnoteReference(..)
-                    | NodeValue::Superscript
-                    | NodeValue::SpoileredText
-                    | NodeValue::Underline
-                    | NodeValue::Subscript
-                    | NodeValue::TaskItem(_)
-            ),
-
-            #[cfg(feature = "shortcodes")]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::Strikethrough
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
-                | NodeValue::FootnoteReference(..)
-                | NodeValue::Superscript
-                | NodeValue::SpoileredText
-                | NodeValue::Underline
-                | NodeValue::Subscript
-                | NodeValue::ShortCode(..)
-                | NodeValue::TaskItem(_)
-            ),
+            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell(..)),
 
             NodeValue::MultilineBlockQuote(_) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+                !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
 
-            NodeValue::Alert(_) => {
-                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
-            }
+            NodeValue::Alert(_) => !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
             _ => false,
         }
     }
@@ -1086,14 +1020,14 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
-        let mut ch = Some(self);
-        while let Some(n) = ch {
-            if n.data().value.block() {
-                return Some(n);
-            }
-            ch = n.parent();
-        }
-        None
-    }
+    // pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
+    //     let mut ch = Some(self);
+    //     while let Some(n) = ch {
+    //         if n.data().value.block() {
+    //             return Some(n);
+    //         }
+    //         ch = n.parent();
+    //     }
+    //     None
+    // }
 }
