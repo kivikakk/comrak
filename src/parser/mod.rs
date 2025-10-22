@@ -5,10 +5,6 @@ pub mod options;
 pub mod shortcodes;
 mod table;
 
-pub mod alert;
-pub mod math;
-pub mod multiline_block_quote;
-
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::{HashMap, VecDeque};
@@ -21,12 +17,11 @@ use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
 use crate::nodes::{
-    self, Ast, AstNode, ListDelimType, ListType, Node, NodeCodeBlock, NodeDescriptionItem,
-    NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList, NodeValue, Sourcepos,
+    self, AlertType, Ast, AstNode, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
+    NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
+    NodeMultilineBlockQuote, NodeValue, Sourcepos,
 };
-use crate::parser::alert::{AlertType, NodeAlert};
 use crate::parser::inlines::RefMap;
-use crate::parser::multiline_block_quote::NodeMultilineBlockQuote;
 pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
@@ -1654,10 +1649,8 @@ where
         );
 
         while subj.parse_inline(node, &mut node_data) {}
-
         subj.process_emphasis(0);
-
-        while subj.pop_bracket() {}
+        subj.clear_brackets();
     }
 
     fn process_footnotes(&mut self) {
