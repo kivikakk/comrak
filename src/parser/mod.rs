@@ -1,6 +1,8 @@
 mod autolink;
 mod inlines;
 pub mod options;
+#[cfg(feature = "phoenix_heex")]
+pub mod phoenix_heex;
 #[cfg(feature = "shortcodes")]
 pub mod shortcodes;
 mod table;
