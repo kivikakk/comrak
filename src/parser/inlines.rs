@@ -34,7 +34,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub pos: usize,
     column_offset: isize,
     line_offset: usize,
-    flags: Flags,
+    flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     footnote_defs: &'p FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
@@ -50,115 +50,11 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
 }
 
 #[derive(Default)]
-struct Flags {
-    skip_html_cdata: bool,
-    skip_html_declaration: bool,
-    skip_html_pi: bool,
-    skip_html_comment: bool,
-}
-
-pub struct RefMap {
-    pub map: HashMap<String, ResolvedReference>,
-    pub(crate) max_ref_size: usize,
-    ref_size: Cell<usize>,
-}
-
-impl RefMap {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-            max_ref_size: usize::MAX,
-            ref_size: Cell::new(0),
-        }
-    }
-
-    fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
-        match self.map.get(lab) {
-            Some(entry) => {
-                let size = entry.url.len() + entry.title.len();
-                let ref_size = self.ref_size.get();
-                if size > self.max_ref_size - ref_size {
-                    None
-                } else {
-                    self.ref_size.set(ref_size + size);
-                    Some(entry)
-                }
-            }
-            None => None,
-        }
-    }
-}
-
-pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
-    counter: RefCell<usize>,
-}
-
-impl<'a> FootnoteDefs<'a> {
-    pub fn new() -> Self {
-        Self {
-            defs: RefCell::new(Vec::new()),
-            counter: RefCell::new(0),
-        }
-    }
-
-    pub fn next_name(&self) -> String {
-        let mut counter = self.counter.borrow_mut();
-        *counter += 1;
-        format!("__inline_{}", *counter)
-    }
-
-    pub fn add_definition(&self, def: Node<'a>) {
-        self.defs.borrow_mut().push(def);
-    }
-
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
-        self.defs.borrow()
-    }
-}
-
-pub struct Delimiter<'a: 'd, 'd> {
-    inl: Node<'a>,
-    position: usize,
-    length: usize,
-    delim_char: u8,
-    can_open: bool,
-    can_close: bool,
-    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
-    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
-}
-
-impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
-            self.position,
-            self.length,
-            self.delim_char,
-            self.can_open,
-            self.can_close,
-            self.inl
-                .try_data()
-                .map_or("<couldn't borrow>".to_string(), |d| format!(
-                    "{}",
-                    d.sourcepos
-                ))
-        )
-    }
-}
-
-struct Bracket<'a> {
-    inl_text: Node<'a>,
-    position: usize,
-    image: bool,
-    bracket_after: bool,
-}
-
-#[derive(Clone)]
-struct WikilinkComponents {
-    url: String,
-    link_label: Option<(String, usize, usize)>,
+struct HtmlSkipFlags {
+    cdata: bool,
+    declaration: bool,
+    pi: bool,
+    comment: bool,
 }
 
 impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
@@ -179,7 +75,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             pos: 0,
             column_offset: 0,
             line_offset: 0,
-            flags: Flags::default(),
+            flags: HtmlSkipFlags::default(),
             refmap,
             footnote_defs,
             delimiter_arena,
@@ -223,9 +119,59 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         s
     }
 
-    pub fn pop_bracket(&mut self) -> bool {
-        self.brackets.pop().is_some()
+    //////////////////
+    // Constructors //
+    //////////////////
+
+    fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
+        let start_column =
+            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
+        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
+
+        let ast = Ast {
+            value,
+            content: String::new(),
+            sourcepos: (
+                self.line,
+                usize::try_from(start_column).unwrap(),
+                self.line,
+                usize::try_from(end_column).unwrap(),
+            )
+                .into(),
+            open: false,
+            last_line_blank: false,
+            table_visited: false,
+            line_offsets: Vec::new(),
+        };
+        self.arena.alloc(ast.into())
     }
+
+    fn make_autolink(
+        &self,
+        url: &str,
+        kind: AutolinkType,
+        start_column: usize,
+        end_column: usize,
+    ) -> Node<'a> {
+        let inl = self.make_inline(
+            NodeValue::Link(Box::new(NodeLink {
+                url: strings::clean_autolink(url, kind).into(),
+                title: String::new(),
+            })),
+            start_column,
+            end_column,
+        );
+        inl.append(self.make_inline(
+            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
+            start_column + 1,
+            end_column - 1,
+        ));
+        inl
+    }
+
+    /////////////
+    // Parsers //
+    /////////////
 
     pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
         let c = match self.peek_char() {
@@ -247,7 +193,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let mut res = None;
 
                 if self.options.extension.autolink {
-                    res = self.handle_autolink_colon(node);
+                    res = self.handle_autolink_with(node, autolink::url_match);
                 }
 
                 #[cfg(feature = "shortcodes")]
@@ -266,7 +212,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 res
             }
-            'w' if self.options.extension.autolink => match self.handle_autolink_w(node) {
+            'w' if self.options.extension.autolink => match self
+                .handle_autolink_with(node, autolink::www_match)
+            {
                 Some(inl) => Some(inl),
                 None => {
                     self.pos += 1;
@@ -379,13 +327,735 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         true
     }
 
-    fn del_ref_eq(lhs: Option<&'d Delimiter<'a, 'd>>, rhs: Option<&'d Delimiter<'a, 'd>>) -> bool {
-        match (lhs, rhs) {
-            (None, None) => true,
-            (Some(l), Some(r)) => ptr::eq(l, r),
-            _ => false,
+    fn handle_newline(&mut self) -> Node<'a> {
+        let nlpos = self.pos;
+        if self.input.as_bytes()[self.pos] == b'\r' {
+            self.pos += 1;
+        }
+        if self.input.as_bytes()[self.pos] == b'\n' {
+            self.pos += 1;
+        }
+        let inl = if nlpos > 1
+            && self.input.as_bytes()[nlpos - 1] == b' '
+            && self.input.as_bytes()[nlpos - 2] == b' '
+        {
+            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
+        } else {
+            self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
+        };
+        self.line += 1;
+        self.column_offset = -(self.pos as isize);
+        self.skip_spaces();
+        inl
+    }
+
+    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+        let startpos = self.pos;
+        let openticks = self.take_while(b'`');
+        let endpos = self.scan_to_closing_backtick(openticks);
+
+        match endpos {
+            None => {
+                self.pos = startpos + openticks;
+                self.make_inline(
+                    NodeValue::Text("`".repeat(openticks).into()),
+                    startpos,
+                    self.pos - 1,
+                )
+            }
+            Some(endpos) => {
+                let buf = &self.input[startpos + openticks..endpos - openticks];
+                let buf = strings::normalize_code(buf);
+                let code = NodeCode {
+                    num_backticks: openticks,
+                    literal: buf.into(),
+                };
+                let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
+                self.adjust_node_newlines(
+                    node,
+                    endpos - startpos - openticks,
+                    openticks,
+                    parent_line_offsets,
+                );
+                node
+            }
         }
     }
+
+    fn handle_backslash(&mut self) -> Node<'a> {
+        let startpos = self.pos;
+        self.pos += 1;
+
+        if self.peek_char().map_or(false, |&c| ispunct(c)) {
+            let inl;
+            self.pos += 1;
+
+            let inline_text = self.make_inline(
+                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
+                self.pos - 2,
+                self.pos - 1,
+            );
+
+            if self.options.render.escaped_char_spans {
+                inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
+                inl.append(inline_text);
+                inl
+            } else {
+                inline_text
+            }
+        } else if !self.eof() && self.skip_line_end() {
+            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1);
+            self.line += 1;
+            self.column_offset = -(self.pos as isize);
+            self.skip_spaces();
+            inl
+        } else {
+            self.make_inline(NodeValue::Text("\\".into()), self.pos - 1, self.pos - 1)
+        }
+    }
+
+    fn handle_entity(&mut self) -> Node<'a> {
+        self.pos += 1;
+
+        match entity::unescape(&self.input[self.pos..]) {
+            None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
+            Some((entity, len)) => {
+                self.pos += len;
+                self.make_inline(NodeValue::Text(entity), self.pos - 1 - len, self.pos - 1)
+            }
+        }
+    }
+
+    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+        self.pos += 1;
+
+        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
+            self.pos += matchlen;
+            let inl = self.make_autolink(
+                &self.input[self.pos - matchlen..self.pos - 1],
+                AutolinkType::Uri,
+                self.pos - 1 - matchlen,
+                self.pos - 1,
+            );
+            return inl;
+        }
+
+        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
+            self.pos += matchlen;
+            let inl = self.make_autolink(
+                &self.input[self.pos - matchlen..self.pos - 1],
+                AutolinkType::Email,
+                self.pos - 1 - matchlen,
+                self.pos - 1,
+            );
+            return inl;
+        }
+
+        // Most comments below are verbatim from cmark upstream.
+        let mut matchlen: Option<usize> = None;
+
+        if self.pos + 2 <= self.input.len() {
+            let c = self.input.as_bytes()[self.pos];
+            if c == b'!' && !self.flags.comment {
+                let c = self.input.as_bytes()[self.pos + 1];
+                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
+                    if self.peek_char_n(3) == Some(&b'>') {
+                        matchlen = Some(4);
+                    } else if self.peek_char_n(3) == Some(&b'-')
+                        && self.peek_char_n(4) == Some(&b'>')
+                    {
+                        matchlen = Some(5);
+                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
+                        matchlen = Some(m + 1);
+                    } else {
+                        self.flags.comment = true;
+                    }
+                } else if c == b'[' {
+                    if !self.flags.cdata && self.pos + 3 <= self.input.len() {
+                        if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
+                            // The regex doesn't require the final "]]>". But if we're not at
+                            // the end of input, it must come after the match. Otherwise,
+                            // disable subsequent scans to avoid quadratic behavior.
+
+                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
+                            if self.pos + m + 5 > self.input.len() {
+                                self.flags.cdata = true;
+                            } else {
+                                matchlen = Some(m + 5);
+                            }
+                        }
+                    }
+                } else if !self.flags.declaration {
+                    if let Some(m) = scanners::html_declaration(&self.input[self.pos + 1..]) {
+                        // Adding 2 to matchlen for prefix "!", suffix ">"
+                        if self.pos + m + 2 > self.input.len() {
+                            self.flags.declaration = true;
+                        } else {
+                            matchlen = Some(m + 2);
+                        }
+                    }
+                }
+            } else if c == b'?' {
+                if !self.flags.pi {
+                    // Note that we allow an empty match.
+                    let m = scanners::html_processing_instruction(&self.input[self.pos + 1..])
+                        .unwrap_or(0);
+                    // Adding 3 to matchlen fro prefix "?", suffix "?>"
+                    if self.pos + m + 3 > self.input.len() {
+                        self.flags.pi = true;
+                    } else {
+                        matchlen = Some(m + 3);
+                    }
+                }
+            } else {
+                matchlen = scanners::html_tag(&self.input[self.pos..]);
+            }
+        }
+
+        if let Some(matchlen) = matchlen {
+            let contents = &self.input[self.pos - 1..self.pos + matchlen];
+            self.pos += matchlen;
+            let inl = self.make_inline(
+                NodeValue::HtmlInline(contents.to_string()),
+                self.pos - matchlen - 1,
+                self.pos - 1,
+            );
+            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
+            return inl;
+        }
+
+        self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
+    }
+
+    fn handle_autolink_with(
+        &mut self,
+        node: Node<'a>,
+        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
+    ) -> Option<Node<'a>> {
+        if !self.options.parse.relaxed_autolinks && self.within_brackets {
+            return None;
+        }
+        let startpos = self.pos;
+        let (post, need_reverse, skip) = f(self)?;
+
+        self.pos += skip - need_reverse;
+
+        // We need to "rewind" by `need_reverse` chars, which should be in one
+        // or more Text nodes beforehand. Typically the chars will *all* be in
+        // a single Text node, containing whatever text came before the ":" that
+        // triggered this method, eg. "See our website at http" ("://blah.com").
+        //
+        // relaxed_autolinks allows some slightly pathological cases. First,
+        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
+        // a scheme including the letter "w", which will split Text inlines due
+        // to them being their own trigger (for handle_autolink_w), meaning
+        // "wa://…" will need to traverse two Texts to complete the rewind.
+        let mut reverse = need_reverse;
+        while reverse > 0 {
+            let mut last_child = node.last_child().unwrap().data_mut();
+            let NodeValue::Text(ref mut prev) = last_child.value else {
+                panic!("expected text node before autolink colon");
+            };
+            let prev_len = prev.len();
+            if reverse < prev.len() {
+                prev.to_mut().truncate(prev_len - reverse);
+                last_child.sourcepos.end.column -= reverse;
+                reverse = 0;
+            } else {
+                reverse -= prev_len;
+                node.last_child().unwrap().detach();
+            }
+        }
+
+        {
+            let sp = &mut post.data_mut().sourcepos;
+            // See [`make_inline`].
+            sp.start = (
+                self.line,
+                (startpos as isize - need_reverse as isize
+                    + 1
+                    + self.column_offset
+                    + self.line_offset as isize) as usize,
+            )
+                .into();
+            sp.end = (
+                self.line,
+                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
+            )
+                .into();
+
+            // Inner text node gets the same sp, since there are no surrounding
+            // characters for autolinks of these kind.
+            post.first_child().unwrap().data_mut().sourcepos = *sp;
+        }
+
+        Some(post)
+    }
+
+    #[cfg(feature = "shortcodes")]
+    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
+        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
+
+        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
+
+        let nsc = NodeShortCode::resolve(shortcode)?;
+        self.pos += 1 + matchlen;
+
+        Some(self.make_inline(
+            NodeValue::ShortCode(Box::new(nsc)),
+            self.pos - 1 - matchlen,
+            self.pos - 1,
+        ))
+    }
+
+    fn handle_delim(&mut self, c: u8) -> Node<'a> {
+        let (numdelims, can_open, can_close) = self.scan_delims(c);
+
+        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
+            "’".into()
+        } else if c == b'"' && self.options.parse.smart {
+            if can_close {
+                "”".into()
+            } else {
+                "“".into()
+            }
+        } else {
+            self.input[self.pos - numdelims..self.pos]
+                .to_string()
+                .into()
+        };
+        let inl = self.make_inline(
+            NodeValue::Text(contents),
+            self.pos - numdelims,
+            self.pos - 1,
+        );
+
+        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
+            numdelims <= 2
+        } else {
+            true
+        };
+
+        if (can_open || can_close)
+            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
+            && is_valid_strikethrough_delim
+        {
+            self.push_delimiter(c, can_open, can_close, inl);
+        }
+
+        inl
+    }
+
+    fn handle_hyphen(&mut self) -> Node<'a> {
+        let start = self.pos;
+        self.pos += 1;
+
+        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
+            return self.make_inline(NodeValue::Text("-".into()), self.pos - 1, self.pos - 1);
+        }
+
+        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
+            self.pos += 1;
+        }
+
+        let numhyphens = (self.pos - start) as i32;
+
+        let (ens, ems) = if numhyphens % 3 == 0 {
+            (0, numhyphens / 3)
+        } else if numhyphens % 2 == 0 {
+            (numhyphens / 2, 0)
+        } else if numhyphens % 3 == 2 {
+            (1, (numhyphens - 2) / 3)
+        } else {
+            (2, (numhyphens - 4) / 3)
+        };
+
+        let ens = if ens > 0 { ens as usize } else { 0 };
+        let ems = if ems > 0 { ems as usize } else { 0 };
+
+        let mut buf = String::with_capacity(3 * (ems + ens));
+        buf.push_str(&"—".repeat(ems));
+        buf.push_str(&"–".repeat(ens));
+        self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
+    }
+
+    fn handle_period(&mut self) -> Node<'a> {
+        self.pos += 1;
+        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
+            self.pos += 1;
+            if self.peek_char().map_or(false, |&c| c == b'.') {
+                self.pos += 1;
+                self.make_inline(NodeValue::Text("…".into()), self.pos - 3, self.pos - 1)
+            } else {
+                self.make_inline(NodeValue::Text("..".into()), self.pos - 2, self.pos - 1)
+            }
+        } else {
+            self.make_inline(NodeValue::Text(".".into()), self.pos - 1, self.pos - 1)
+        }
+    }
+
+    // Handles wikilink syntax
+    //   [[link text|url]]
+    //   [[url|link text]]
+    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
+        let startpos = self.pos;
+        let component = self.wikilink_url_link_label()?;
+        let url_clean = strings::clean_url(&component.url);
+        let (link_label, link_label_start_column, _link_label_end_column) =
+            match component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
+                None => (
+                    entity::unescape_html(&component.url).to_string(),
+                    startpos + 1,
+                    self.pos - 3,
+                ),
+            };
+
+        let nl = NodeWikiLink {
+            url: url_clean.into(),
+        };
+        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
+
+        self.label_backslash_escapes(inl, &link_label, link_label_start_column);
+
+        Some(inl)
+    }
+
+    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
+        let left_startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) {
+            return None;
+        }
+
+        let found_left = self.wikilink_component();
+
+        if !found_left {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+            return Some(WikilinkComponents {
+                url: left,
+                link_label: None,
+            });
+        } else if self.peek_char() != Some(&(b'|')) {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right_startpos = self.pos;
+        let found_right = self.wikilink_component();
+
+        if !found_right {
+            self.pos = left_startpos;
+            return None;
+        }
+
+        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
+
+        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
+            self.pos += 2;
+
+            match self.options.extension.wikilinks() {
+                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
+                    url: left,
+                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
+                }),
+                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
+                    url: right.into(),
+                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
+                }),
+                None => unreachable!(),
+            }
+        } else {
+            self.pos = left_startpos;
+            None
+        }
+    }
+
+    // Locates the edge of a wikilink component (link label or url), and sets the
+    // self.pos to it's end if it's found.
+    fn wikilink_component(&mut self) -> bool {
+        let startpos = self.pos;
+
+        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
+            return false;
+        }
+
+        self.pos += 1;
+
+        let mut length = 0;
+        while let Some(&c) = self.peek_char() {
+            if c == b'[' || c == b']' || c == b'|' {
+                break;
+            }
+
+            if c == b'\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_char().map_or(false, |&c| ispunct(c)) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return false;
+            }
+        }
+
+        true
+    }
+
+    // Given a label, handles backslash escaped characters. Appends the resulting
+    // nodes to the container
+    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
+        let mut startpos = 0;
+        let mut offset = 0;
+        let bytes = label.as_bytes();
+        let len = label.len();
+
+        while offset < len {
+            let c = bytes[offset];
+
+            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
+                let preceding_text = self.make_inline(
+                    NodeValue::Text(label[startpos..offset].to_string().into()),
+                    start_column + startpos,
+                    start_column + offset - 1,
+                );
+
+                container.append(preceding_text);
+
+                let inline_text = self.make_inline(
+                    NodeValue::Text(label[offset + 1..offset + 2].to_string().into()),
+                    start_column + offset,
+                    start_column + offset + 1,
+                );
+
+                if self.options.render.escaped_char_spans {
+                    let span = self.make_inline(
+                        NodeValue::Escaped,
+                        start_column + offset,
+                        start_column + offset + 1,
+                    );
+
+                    span.append(inline_text);
+                    container.append(span);
+                } else {
+                    container.append(inline_text);
+                }
+
+                offset += 2;
+                startpos = offset;
+            } else {
+                offset += 1;
+            }
+        }
+
+        if startpos != offset {
+            container.append(self.make_inline(
+                NodeValue::Text(label[startpos..offset].to_string().into()),
+                start_column + startpos,
+                start_column + offset - 1,
+            ));
+        }
+    }
+
+    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
+        let startpos = self.pos;
+
+        // We're at ^, next should be [
+        self.pos += 2; // Skip ^[
+
+        // Find the closing ]
+        let mut depth = 1;
+        let mut endpos = self.pos;
+        while endpos < self.input.len() && depth > 0 {
+            match self.input.as_bytes()[endpos] {
+                b'[' => depth += 1,
+                b']' => depth -= 1,
+                b'\\' if endpos + 1 < self.input.len() => {
+                    endpos += 1; // Skip escaped character
+                }
+                _ => {}
+            }
+            endpos += 1;
+        }
+
+        if depth != 0 {
+            // No matching closing bracket, treat as regular text
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
+        }
+
+        // endpos is now one past the ], so adjust
+        endpos -= 1;
+
+        // Extract the content
+        let content = &self.input[self.pos..endpos];
+
+        // Empty inline footnote should not parse
+        if content.is_empty() {
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
+        }
+
+        // Generate unique name
+        let name = self.footnote_defs.next_name();
+
+        // Create the footnote reference node
+        let ref_node = self.make_inline(
+            NodeValue::FootnoteReference(NodeFootnoteReference {
+                name: name.clone(),
+                ref_num: 0,
+                ix: 0,
+            }),
+            startpos,
+            endpos,
+        );
+
+        // Parse the content as inlines
+        let def_node = self.arena.alloc(
+            Ast::new(
+                NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
+                    name: name.clone(),
+                    total_references: 0,
+                }),
+                (self.line, 1).into(),
+            )
+            .into(),
+        );
+
+        // Create a paragraph to hold the inline content
+        let mut para_ast = Ast::new(
+            NodeValue::Paragraph,
+            (1, 1).into(), // Use line 1 as base
+        );
+        // Build line_offsets by scanning for newlines in the content
+        let mut line_offsets = vec![0];
+        for (i, &byte) in content.as_bytes().iter().enumerate() {
+            if byte == b'\n' {
+                line_offsets.push(i + 1);
+            }
+        }
+        para_ast.line_offsets = line_offsets;
+        let para_node = self.arena.alloc(para_ast.into());
+        def_node.append(para_node);
+
+        // Parse the content recursively as inlines
+        let delimiter_arena = Arena::new();
+        let mut subj = Subject::new(
+            self.arena,
+            self.options,
+            content.into(),
+            1, // Use line 1 to match the paragraph's sourcepos
+            self.refmap,
+            self.footnote_defs,
+            &delimiter_arena,
+        );
+
+        while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
+        subj.process_emphasis(0);
+        subj.clear_brackets();
+
+        // Check if the parsed content is empty or contains only whitespace
+        // This handles whitespace-only content, null bytes, etc. generically
+        let has_non_whitespace_content = para_node.children().any(|child| {
+            let child_data = child.data();
+            match &child_data.value {
+                NodeValue::Text(text) => !text.trim().is_empty(),
+                NodeValue::SoftBreak | NodeValue::LineBreak => false,
+                _ => true, // Any other node type (link, emphasis, etc.) counts as content
+            }
+        });
+
+        if !has_non_whitespace_content {
+            // Content is empty or whitespace-only after parsing, treat as literal text
+            self.pos = startpos + 1;
+            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
+        }
+
+        // Store the footnote definition
+        self.footnote_defs.add_definition(def_node);
+
+        // Move position past the closing ]
+        self.pos = endpos + 1;
+
+        Some(ref_node)
+    }
+
+    // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
+    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
+        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
+            self.pos += 1;
+            return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
+        }
+        let startpos = self.pos;
+        let opendollars = self.take_while(b'$');
+        let mut code_math = false;
+
+        // check for code math
+        if opendollars == 1
+            && self.options.extension.math_code
+            && self.peek_char().map_or(false, |&c| c == b'`')
+        {
+            code_math = true;
+            self.pos += 1;
+        }
+        let fence_length = if code_math { 2 } else { opendollars };
+
+        let endpos: Option<usize> = if code_math {
+            self.scan_to_closing_code_dollar()
+        } else {
+            self.scan_to_closing_dollar(opendollars)
+        }
+        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
+
+        if let Some(endpos) = endpos {
+            let buf = &self.input[startpos + fence_length..endpos - fence_length];
+            let buf = if code_math || opendollars == 1 {
+                strings::normalize_code(buf)
+            } else {
+                buf.into()
+            };
+            let math = NodeMath {
+                dollar_math: !code_math,
+                display_math: opendollars == 2,
+                literal: buf.into(),
+            };
+            let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
+            self.adjust_node_newlines(
+                node,
+                endpos - startpos - fence_length,
+                fence_length,
+                parent_line_offsets,
+            );
+            node
+        } else if code_math {
+            self.pos = startpos + 1;
+            self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1)
+        } else {
+            self.pos = startpos + fence_length;
+            self.make_inline(
+                NodeValue::Text("$".repeat(opendollars).into()),
+                self.pos - fence_length,
+                self.pos - 1,
+            )
+        }
+    }
+
+    /////////////////////////////////////
+    // Emphasis and bracket processing //
+    /////////////////////////////////////
 
     // After parsing a block (and sometimes during), this function traverses the
     // stack of `Delimiters`, tokens ("*", "_", etc.) that may delimit regions
@@ -593,7 +1263,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'd>) {
         if delimiter.next.get().is_none() {
-            assert!(ptr::eq(delimiter, self.last_delimiter.unwrap()));
+            assert!(Some(delimiter) == self.last_delimiter);
             self.last_delimiter = delimiter.prev.get();
         } else {
             delimiter.next.get().unwrap().prev.set(delimiter.prev.get());
@@ -609,532 +1279,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .map_or(false, |d| d.position >= stack_bottom)
         {
             self.remove_delimiter(self.last_delimiter.unwrap());
-        }
-    }
-
-    #[inline]
-    fn eof(&self) -> bool {
-        self.pos >= self.input.len()
-    }
-
-    #[inline]
-    pub fn peek_char(&self) -> Option<&u8> {
-        self.peek_char_n(0)
-    }
-
-    #[inline]
-    fn peek_char_n(&self, n: usize) -> Option<&u8> {
-        if self.pos + n >= self.input.len() {
-            None
-        } else {
-            let c = &self.input.as_bytes()[self.pos + n];
-            assert!(*c > 0);
-            Some(c)
-        }
-    }
-
-    fn find_special_char(&self) -> usize {
-        for n in self.pos..self.input.len() {
-            if self.special_chars[self.input.as_bytes()[n] as usize] {
-                if self.input.as_bytes()[n] == b'^' && self.within_brackets {
-                    // NO OP
-                } else {
-                    return n;
-                }
-            }
-            if self.options.parse.smart && self.smart_chars[self.input.as_bytes()[n] as usize] {
-                return n;
-            }
-        }
-
-        self.input.len()
-    }
-
-    fn adjust_node_newlines(
-        &mut self,
-        node: Node<'a>,
-        matchlen: usize,
-        extra: usize,
-        parent_line_offsets: &[usize],
-    ) {
-        let (newlines, since_newline) =
-            count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
-
-        if newlines > 0 {
-            self.line += newlines;
-            let node_ast = &mut node.data_mut();
-            node_ast.sourcepos.end.line += newlines;
-            let adjusted_line = self.line - node_ast.sourcepos.start.line;
-            node_ast.sourcepos.end.column =
-                parent_line_offsets[adjusted_line] + since_newline + extra;
-            self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
-        }
-    }
-
-    fn handle_newline(&mut self) -> Node<'a> {
-        let nlpos = self.pos;
-        if self.input.as_bytes()[self.pos] == b'\r' {
-            self.pos += 1;
-        }
-        if self.input.as_bytes()[self.pos] == b'\n' {
-            self.pos += 1;
-        }
-        let inl = if nlpos > 1
-            && self.input.as_bytes()[nlpos - 1] == b' '
-            && self.input.as_bytes()[nlpos - 2] == b' '
-        {
-            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
-        } else {
-            self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
-        };
-        self.line += 1;
-        self.column_offset = -(self.pos as isize);
-        self.skip_spaces();
-        inl
-    }
-
-    fn take_while(&mut self, c: u8) -> usize {
-        let start_pos = self.pos;
-        while self.peek_char() == Some(&c) {
-            self.pos += 1;
-        }
-        self.pos - start_pos
-    }
-
-    fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
-        let start_pos = self.pos;
-        let mut count = 0;
-        while count < limit && self.peek_char() == Some(&c) {
-            self.pos += 1;
-            count += 1;
-        }
-        self.pos - start_pos
-    }
-
-    fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
-        if openticklength > MAXBACKTICKS {
-            return None;
-        }
-
-        if self.scanned_for_backticks && self.backticks[openticklength] <= self.pos {
-            return None;
-        }
-
-        loop {
-            while self.peek_char().map_or(false, |&c| c != b'`') {
-                self.pos += 1;
-            }
-            if self.pos >= self.input.len() {
-                self.scanned_for_backticks = true;
-                return None;
-            }
-            let numticks = self.take_while(b'`');
-            if numticks <= MAXBACKTICKS {
-                self.backticks[numticks] = self.pos - numticks;
-            }
-            if numticks == openticklength {
-                return Some(self.pos);
-            }
-        }
-    }
-
-    fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        let startpos = self.pos;
-        let openticks = self.take_while(b'`');
-        let endpos = self.scan_to_closing_backtick(openticks);
-
-        match endpos {
-            None => {
-                self.pos = startpos + openticks;
-                self.make_inline(
-                    NodeValue::Text("`".repeat(openticks).into()),
-                    startpos,
-                    self.pos - 1,
-                )
-            }
-            Some(endpos) => {
-                let buf = &self.input[startpos + openticks..endpos - openticks];
-                let buf = strings::normalize_code(buf);
-                let code = NodeCode {
-                    num_backticks: openticks,
-                    literal: buf.into(),
-                };
-                let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
-                self.adjust_node_newlines(
-                    node,
-                    endpos - startpos - openticks,
-                    openticks,
-                    parent_line_offsets,
-                );
-                node
-            }
-        }
-    }
-
-    fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
-        if !self.options.extension.math_dollars || opendollarlength > MAX_MATH_DOLLARS {
-            return None;
-        }
-
-        // space not allowed after initial $
-        if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isspace(c)) {
-            return None;
-        }
-
-        loop {
-            while self.peek_char().map_or(false, |&c| c != b'$') {
-                self.pos += 1;
-            }
-
-            if self.pos >= self.input.len() {
-                return None;
-            }
-
-            let c = self.input.as_bytes()[self.pos - 1];
-
-            // space not allowed before ending $
-            if opendollarlength == 1 && isspace(c) {
-                return None;
-            }
-
-            // dollar signs must also be backslash-escaped if they occur within math
-            if opendollarlength == 1 && c == b'\\' {
-                self.pos += 1;
-                continue;
-            }
-
-            let numdollars = self.take_while_with_limit(b'$', opendollarlength);
-
-            // ending $ can't be followed by a digit
-            if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
-                return None;
-            }
-
-            if numdollars == opendollarlength {
-                return Some(self.pos);
-            }
-        }
-    }
-
-    fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
-        assert!(self.options.extension.math_code);
-
-        loop {
-            while self.peek_char().map_or(false, |&c| c != b'$') {
-                self.pos += 1;
-            }
-
-            if self.pos >= self.input.len() {
-                return None;
-            }
-
-            let c = self.input.as_bytes()[self.pos - 1];
-            self.pos += 1;
-            if c == b'`' {
-                return Some(self.pos);
-            }
-        }
-    }
-
-    // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
-    fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        if !(self.options.extension.math_dollars || self.options.extension.math_code) {
-            self.pos += 1;
-            return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
-        }
-        let startpos = self.pos;
-        let opendollars = self.take_while(b'$');
-        let mut code_math = false;
-
-        // check for code math
-        if opendollars == 1
-            && self.options.extension.math_code
-            && self.peek_char().map_or(false, |&c| c == b'`')
-        {
-            code_math = true;
-            self.pos += 1;
-        }
-        let fence_length = if code_math { 2 } else { opendollars };
-
-        let endpos: Option<usize> = if code_math {
-            self.scan_to_closing_code_dollar()
-        } else {
-            self.scan_to_closing_dollar(opendollars)
-        }
-        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
-
-        if let Some(endpos) = endpos {
-            let buf = &self.input[startpos + fence_length..endpos - fence_length];
-            let buf = if code_math || opendollars == 1 {
-                strings::normalize_code(buf)
-            } else {
-                buf.into()
-            };
-            let math = NodeMath {
-                dollar_math: !code_math,
-                display_math: opendollars == 2,
-                literal: buf.into(),
-            };
-            let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
-            self.adjust_node_newlines(
-                node,
-                endpos - startpos - fence_length,
-                fence_length,
-                parent_line_offsets,
-            );
-            node
-        } else if code_math {
-            self.pos = startpos + 1;
-            self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1)
-        } else {
-            self.pos = startpos + fence_length;
-            self.make_inline(
-                NodeValue::Text("$".repeat(opendollars).into()),
-                self.pos - fence_length,
-                self.pos - 1,
-            )
-        }
-    }
-
-    pub fn skip_spaces(&mut self) -> bool {
-        let mut skipped = false;
-        while self.peek_char().map_or(false, |&c| c == b' ' || c == b'\t') {
-            self.pos += 1;
-            skipped = true;
-        }
-        skipped
-    }
-
-    fn handle_delim(&mut self, c: u8) -> Node<'a> {
-        let (numdelims, can_open, can_close) = self.scan_delims(c);
-
-        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
-            "’".into()
-        } else if c == b'"' && self.options.parse.smart {
-            if can_close {
-                "”".into()
-            } else {
-                "“".into()
-            }
-        } else {
-            self.input[self.pos - numdelims..self.pos]
-                .to_string()
-                .into()
-        };
-        let inl = self.make_inline(
-            NodeValue::Text(contents),
-            self.pos - numdelims,
-            self.pos - 1,
-        );
-
-        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
-            numdelims <= 2
-        } else {
-            true
-        };
-
-        if (can_open || can_close)
-            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
-            && is_valid_strikethrough_delim
-        {
-            self.push_delimiter(c, can_open, can_close, inl);
-        }
-
-        inl
-    }
-
-    fn handle_hyphen(&mut self) -> Node<'a> {
-        let start = self.pos;
-        self.pos += 1;
-
-        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
-            return self.make_inline(NodeValue::Text("-".into()), self.pos - 1, self.pos - 1);
-        }
-
-        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
-            self.pos += 1;
-        }
-
-        let numhyphens = (self.pos - start) as i32;
-
-        let (ens, ems) = if numhyphens % 3 == 0 {
-            (0, numhyphens / 3)
-        } else if numhyphens % 2 == 0 {
-            (numhyphens / 2, 0)
-        } else if numhyphens % 3 == 2 {
-            (1, (numhyphens - 2) / 3)
-        } else {
-            (2, (numhyphens - 4) / 3)
-        };
-
-        let ens = if ens > 0 { ens as usize } else { 0 };
-        let ems = if ems > 0 { ems as usize } else { 0 };
-
-        let mut buf = String::with_capacity(3 * (ems + ens));
-        buf.push_str(&"—".repeat(ems));
-        buf.push_str(&"–".repeat(ens));
-        self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
-    }
-
-    fn handle_period(&mut self) -> Node<'a> {
-        self.pos += 1;
-        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
-            self.pos += 1;
-            if self.peek_char().map_or(false, |&c| c == b'.') {
-                self.pos += 1;
-                self.make_inline(NodeValue::Text("…".into()), self.pos - 3, self.pos - 1)
-            } else {
-                self.make_inline(NodeValue::Text("..".into()), self.pos - 2, self.pos - 1)
-            }
-        } else {
-            self.make_inline(NodeValue::Text(".".into()), self.pos - 1, self.pos - 1)
-        }
-    }
-
-    #[inline]
-    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
-        if pos == 0 {
-            return ('\n', None);
-        }
-        let mut before_char_pos = pos - 1;
-        while before_char_pos > 0
-            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
-        {
-            before_char_pos -= 1;
-        }
-        match self.input[before_char_pos..pos].chars().next() {
-            Some(x) => {
-                if (x as usize) < 256 && self.skip_chars[x as usize] {
-                    ('\n', None)
-                } else {
-                    (x, Some(before_char_pos))
-                }
-            }
-            None => ('\n', None),
-        }
-    }
-
-    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
-        let (before_char, before_char_pos) = self.get_before_char(self.pos);
-
-        let mut numdelims = 0;
-        if c == b'\'' || c == b'"' {
-            numdelims += 1;
-            self.pos += 1;
-        } else {
-            while self.peek_char() == Some(&c) {
-                numdelims += 1;
-                self.pos += 1;
-            }
-        }
-
-        let after_char = if self.eof() {
-            '\n'
-        } else {
-            let mut after_char_pos = self.pos;
-            while after_char_pos < self.input.len() - 1
-                && self.skip_chars[self.input.as_bytes()[after_char_pos] as usize]
-            {
-                after_char_pos += 1;
-            }
-            match self.input[after_char_pos..].chars().next() {
-                Some(x) => {
-                    if (x as usize) < 256 && self.skip_chars[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    }
-                }
-                None => '\n',
-            }
-        };
-
-        let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
-        let mut two_before_char: Option<char> = None;
-
-        let left_flanking = numdelims > 0
-            && !after_char.is_whitespace()
-            && (!after_char.is_cmark_punctuation()
-                || (self.options.extension.superscript && c == b'^')
-                || (self.options.extension.subscript && c == b'~')
-                || before_char.is_whitespace()
-                || if !cjk_friendly {
-                    before_char.is_cmark_punctuation()
-                } else {
-                    after_char.is_cjk()
-                        || if before_char.is_non_emoji_general_purpose_vs() {
-                            if let Some(before_char_pos) = before_char_pos {
-                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
-                                two_before_char = Some(two_before_char_);
-                                two_before_char_.is_cjk()
-                                    || two_before_char_.is_cmark_punctuation()
-                                    || two_before_char_.is_cjk_ambiguous_punctuation_candidate()
-                                        && before_char == '\u{fe01}'
-                            } else {
-                                false
-                            }
-                        } else {
-                            before_char.is_cjk_or_ideographic_vs()
-                                || before_char.is_cmark_punctuation()
-                        }
-                });
-        let right_flanking = numdelims > 0
-            && !before_char.is_whitespace()
-            && (!if !cjk_friendly {
-                before_char.is_cmark_punctuation()
-            } else {
-                !after_char.is_cjk()
-                    && if before_char.is_non_emoji_general_purpose_vs() {
-                        let two_before_char = if let Some(two_before_char_) = two_before_char {
-                            two_before_char_
-                        } else if let Some(before_char_pos) = before_char_pos {
-                            let (two_before_char_, _) = self.get_before_char(before_char_pos);
-                            two_before_char = Some(two_before_char_);
-                            two_before_char_
-                        } else {
-                            '\n'
-                        };
-                        !two_before_char.is_cjk()
-                            && two_before_char.is_cmark_punctuation()
-                            && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
-                                && before_char == '\u{fe01}')
-                    } else {
-                        !before_char.is_cjk() && before_char.is_cmark_punctuation()
-                    }
-            } || after_char.is_whitespace()
-                || after_char.is_cmark_punctuation());
-
-        if c == b'_' {
-            (
-                numdelims,
-                left_flanking
-                    && (!right_flanking
-                        || if !(cjk_friendly && before_char.is_non_emoji_general_purpose_vs()) {
-                            before_char.is_cmark_punctuation()
-                        } else {
-                            let two_before_char = if let Some(two_before_char_) = two_before_char {
-                                two_before_char_
-                            } else if let Some(before_char_pos) = before_char_pos {
-                                self.get_before_char(before_char_pos).0
-                            } else {
-                                '\n'
-                            };
-                            two_before_char.is_cmark_punctuation()
-                        }),
-                right_flanking && (!left_flanking || after_char.is_cmark_punctuation()),
-            )
-        } else if c == b'\'' || c == b'"' {
-            (
-                numdelims,
-                left_flanking
-                    && (!right_flanking || before_char == '(' || before_char == '[')
-                    && before_char != ']'
-                    && before_char != ')',
-                right_flanking,
-            )
-        } else {
-            (numdelims, left_flanking, right_flanking)
         }
     }
 
@@ -1204,7 +1348,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Remove all the candidate delimiters from between the opener and the
         // closer. None of them are matched pairs. They've been scanned already.
         let mut delim = closer.prev.get();
-        while delim.is_some() && !Self::del_ref_eq(delim, Some(opener)) {
+        while delim.is_some() && delim != Some(opener) {
             self.remove_delimiter(delim.unwrap());
             delim = delim.unwrap().prev.get();
         }
@@ -1253,12 +1397,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Drop all the interior AST nodes into the emphasis node
         // and then insert the emphasis node
-        let mut tmp = opener.inl.next_sibling().unwrap();
-        while !tmp.same_node(closer.inl) {
-            let next = tmp.next_sibling();
-            emph.append(tmp);
+        let mut it = opener.inl.next_sibling().unwrap();
+        while !it.same_node(closer.inl) {
+            let next = it.next_sibling();
+            emph.append(it);
             if let Some(n) = next {
-                tmp = n;
+                it = n;
             } else {
                 break;
             }
@@ -1282,253 +1426,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             closer.inl.data_mut().sourcepos.start.column += use_delims;
             Some(closer)
         }
-    }
-
-    fn handle_backslash(&mut self) -> Node<'a> {
-        let startpos = self.pos;
-        self.pos += 1;
-
-        if self.peek_char().map_or(false, |&c| ispunct(c)) {
-            let inl;
-            self.pos += 1;
-
-            let inline_text = self.make_inline(
-                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
-                self.pos - 2,
-                self.pos - 1,
-            );
-
-            if self.options.render.escaped_char_spans {
-                inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
-                inl.append(inline_text);
-                inl
-            } else {
-                inline_text
-            }
-        } else if !self.eof() && self.skip_line_end() {
-            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1);
-            self.line += 1;
-            self.column_offset = -(self.pos as isize);
-            self.skip_spaces();
-            inl
-        } else {
-            self.make_inline(NodeValue::Text("\\".into()), self.pos - 1, self.pos - 1)
-        }
-    }
-
-    pub fn skip_line_end(&mut self) -> bool {
-        let old_pos = self.pos;
-        if self.peek_char() == Some(&(b'\r')) {
-            self.pos += 1;
-        }
-        if self.peek_char() == Some(&(b'\n')) {
-            self.pos += 1;
-        }
-        self.pos > old_pos || self.eof()
-    }
-
-    fn handle_entity(&mut self) -> Node<'a> {
-        self.pos += 1;
-
-        match entity::unescape(&self.input[self.pos..]) {
-            None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
-            Some((entity, len)) => {
-                self.pos += len;
-                self.make_inline(NodeValue::Text(entity), self.pos - 1 - len, self.pos - 1)
-            }
-        }
-    }
-
-    #[cfg(feature = "shortcodes")]
-    fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
-        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
-
-        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
-
-        let nsc = NodeShortCode::resolve(shortcode)?;
-        self.pos += 1 + matchlen;
-
-        Some(self.make_inline(
-            NodeValue::ShortCode(Box::new(nsc)),
-            self.pos - 1 - matchlen,
-            self.pos - 1,
-        ))
-    }
-
-    fn handle_autolink_with(
-        &mut self,
-        node: Node<'a>,
-        f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
-    ) -> Option<Node<'a>> {
-        if !self.options.parse.relaxed_autolinks && self.within_brackets {
-            return None;
-        }
-        let startpos = self.pos;
-        let (post, need_reverse, skip) = f(self)?;
-
-        self.pos += skip - need_reverse;
-
-        // We need to "rewind" by `need_reverse` chars, which should be in one
-        // or more Text nodes beforehand. Typically the chars will *all* be in
-        // a single Text node, containing whatever text came before the ":" that
-        // triggered this method, eg. "See our website at http" ("://blah.com").
-        //
-        // relaxed_autolinks allows some slightly pathological cases. First,
-        // "://…" is a possible parse, meaning `reverse == 0`. There may also be
-        // a scheme including the letter "w", which will split Text inlines due
-        // to them being their own trigger (for handle_autolink_w), meaning
-        // "wa://…" will need to traverse two Texts to complete the rewind.
-        let mut reverse = need_reverse;
-        while reverse > 0 {
-            let mut last_child = node.last_child().unwrap().data_mut();
-            match last_child.value {
-                NodeValue::Text(ref mut prev) => {
-                    let prev_len = prev.len();
-                    if reverse < prev.len() {
-                        prev.to_mut().truncate(prev_len - reverse);
-                        last_child.sourcepos.end.column -= reverse;
-                        reverse = 0;
-                    } else {
-                        reverse -= prev_len;
-                        node.last_child().unwrap().detach();
-                    }
-                }
-                _ => panic!("expected text node before autolink colon"),
-            }
-        }
-
-        {
-            let sp = &mut post.data_mut().sourcepos;
-            // See [`make_inline`].
-            sp.start = (
-                self.line,
-                (startpos as isize - need_reverse as isize
-                    + 1
-                    + self.column_offset
-                    + self.line_offset as isize) as usize,
-            )
-                .into();
-            sp.end = (
-                self.line,
-                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
-            )
-                .into();
-
-            // Inner text node gets the same sp, since there are no surrounding
-            // characters for autolinks of these kind.
-            post.first_child().unwrap().data_mut().sourcepos = *sp;
-        }
-
-        Some(post)
-    }
-
-    fn handle_autolink_colon(&mut self, node: Node<'a>) -> Option<Node<'a>> {
-        self.handle_autolink_with(node, autolink::url_match)
-    }
-
-    fn handle_autolink_w(&mut self, node: Node<'a>) -> Option<Node<'a>> {
-        self.handle_autolink_with(node, autolink::www_match)
-    }
-
-    fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        self.pos += 1;
-
-        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
-            self.pos += matchlen;
-            let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
-                AutolinkType::Uri,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
-            );
-            return inl;
-        }
-
-        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
-            self.pos += matchlen;
-            let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
-                AutolinkType::Email,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
-            );
-            return inl;
-        }
-
-        // Most comments below are verbatim from cmark upstream.
-        let mut matchlen: Option<usize> = None;
-
-        if self.pos + 2 <= self.input.len() {
-            let c = self.input.as_bytes()[self.pos];
-            if c == b'!' && !self.flags.skip_html_comment {
-                let c = self.input.as_bytes()[self.pos + 1];
-                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
-                    if self.peek_char_n(3) == Some(&b'>') {
-                        matchlen = Some(4);
-                    } else if self.peek_char_n(3) == Some(&b'-')
-                        && self.peek_char_n(4) == Some(&b'>')
-                    {
-                        matchlen = Some(5);
-                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
-                        matchlen = Some(m + 1);
-                    } else {
-                        self.flags.skip_html_comment = true;
-                    }
-                } else if c == b'[' {
-                    if !self.flags.skip_html_cdata && self.pos + 3 <= self.input.len() {
-                        if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
-                            // The regex doesn't require the final "]]>". But if we're not at
-                            // the end of input, it must come after the match. Otherwise,
-                            // disable subsequent scans to avoid quadratic behavior.
-
-                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
-                            if self.pos + m + 5 > self.input.len() {
-                                self.flags.skip_html_cdata = true;
-                            } else {
-                                matchlen = Some(m + 5);
-                            }
-                        }
-                    }
-                } else if !self.flags.skip_html_declaration {
-                    if let Some(m) = scanners::html_declaration(&self.input[self.pos + 1..]) {
-                        // Adding 2 to matchlen for prefix "!", suffix ">"
-                        if self.pos + m + 2 > self.input.len() {
-                            self.flags.skip_html_declaration = true;
-                        } else {
-                            matchlen = Some(m + 2);
-                        }
-                    }
-                }
-            } else if c == b'?' {
-                if !self.flags.skip_html_pi {
-                    // Note that we allow an empty match.
-                    let m = scanners::html_processing_instruction(&self.input[self.pos + 1..])
-                        .unwrap_or(0);
-                    // Adding 3 to matchlen fro prefix "?", suffix "?>"
-                    if self.pos + m + 3 > self.input.len() {
-                        self.flags.skip_html_pi = true;
-                    } else {
-                        matchlen = Some(m + 3);
-                    }
-                }
-            } else {
-                matchlen = scanners::html_tag(&self.input[self.pos..]);
-            }
-        }
-
-        if let Some(matchlen) = matchlen {
-            let contents = &self.input[self.pos - 1..self.pos + matchlen];
-            self.pos += matchlen;
-            let inl = self.make_inline(
-                NodeValue::HtmlInline(contents.to_string()),
-                self.pos - matchlen - 1,
-                self.pos - 1,
-            );
-            self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
-            return inl;
-        }
-
-        self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
     }
 
     fn push_bracket(&mut self, image: bool, inl_text: Node<'a>) {
@@ -1566,9 +1463,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Ensure there was text if this was a link and not an image link
         if self.options.render.ignore_empty_links && !is_image {
             let mut non_blank_found = false;
-            let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
-            while let Some(tmp) = tmpch {
-                match tmp.data().value {
+            let mut itm = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            while let Some(it) = itm {
+                match it.data().value {
                     NodeValue::Text(ref s) if is_blank(s) => (),
                     _ => {
                         non_blank_found = true;
@@ -1576,7 +1473,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     }
                 }
 
-                tmpch = tmp.next_sibling();
+                itm = it.next_sibling();
             }
 
             if !non_blank_found {
@@ -1747,167 +1644,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1))
     }
 
-    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
-        let brackets_len = self.brackets.len();
-
-        let nl = NodeLink { url, title };
-        let inl = self.make_inline(
-            if is_image {
-                NodeValue::Image(Box::new(nl))
-            } else {
-                NodeValue::Link(Box::new(nl))
-            },
-            // Manually set below.
-            self.pos,
-            self.pos,
-        );
-        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
-            .inl_text
-            .data()
-            .sourcepos
-            .start;
-        inl.data_mut().sourcepos.end.column =
-            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
-                .unwrap();
-
-        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-        let mut tmpch = self.brackets[brackets_len - 1].inl_text.next_sibling();
-        while let Some(tmp) = tmpch {
-            tmpch = tmp.next_sibling();
-            inl.append(tmp);
-        }
-        self.brackets[brackets_len - 1].inl_text.detach();
-        self.process_emphasis(self.brackets[brackets_len - 1].position);
-        self.brackets.pop();
-
-        if !is_image {
-            self.no_link_openers = true;
-        }
-    }
-
-    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
-
-        // We're at ^, next should be [
-        self.pos += 2; // Skip ^[
-
-        // Find the closing ]
-        let mut depth = 1;
-        let mut endpos = self.pos;
-        while endpos < self.input.len() && depth > 0 {
-            match self.input.as_bytes()[endpos] {
-                b'[' => depth += 1,
-                b']' => depth -= 1,
-                b'\\' if endpos + 1 < self.input.len() => {
-                    endpos += 1; // Skip escaped character
-                }
-                _ => {}
-            }
-            endpos += 1;
-        }
-
-        if depth != 0 {
-            // No matching closing bracket, treat as regular text
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // endpos is now one past the ], so adjust
-        endpos -= 1;
-
-        // Extract the content
-        let content = &self.input[self.pos..endpos];
-
-        // Empty inline footnote should not parse
-        if content.is_empty() {
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // Generate unique name
-        let name = self.footnote_defs.next_name();
-
-        // Create the footnote reference node
-        let ref_node = self.make_inline(
-            NodeValue::FootnoteReference(NodeFootnoteReference {
-                name: name.clone(),
-                ref_num: 0,
-                ix: 0,
-            }),
-            startpos,
-            endpos,
-        );
-
-        // Parse the content as inlines
-        let def_node = self.arena.alloc(
-            Ast::new(
-                NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                    name: name.clone(),
-                    total_references: 0,
-                }),
-                (self.line, 1).into(),
-            )
-            .into(),
-        );
-
-        // Create a paragraph to hold the inline content
-        let mut para_ast = Ast::new(
-            NodeValue::Paragraph,
-            (1, 1).into(), // Use line 1 as base
-        );
-        // Build line_offsets by scanning for newlines in the content
-        let mut line_offsets = vec![0];
-        for (i, &byte) in content.as_bytes().iter().enumerate() {
-            if byte == b'\n' {
-                line_offsets.push(i + 1);
-            }
-        }
-        para_ast.line_offsets = line_offsets;
-        let para_node = self.arena.alloc(para_ast.into());
-        def_node.append(para_node);
-
-        // Parse the content recursively as inlines
-        let delimiter_arena = Arena::new();
-        let mut subj = Subject::new(
-            self.arena,
-            self.options,
-            content.into(),
-            1, // Use line 1 to match the paragraph's sourcepos
-            self.refmap,
-            self.footnote_defs,
-            &delimiter_arena,
-        );
-
-        while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
-        subj.process_emphasis(0);
-        while subj.pop_bracket() {}
-
-        // Check if the parsed content is empty or contains only whitespace
-        // This handles whitespace-only content, null bytes, etc. generically
-        let has_non_whitespace_content = para_node.children().any(|child| {
-            let child_data = child.data();
-            match &child_data.value {
-                NodeValue::Text(text) => !text.trim().is_empty(),
-                NodeValue::SoftBreak | NodeValue::LineBreak => false,
-                _ => true, // Any other node type (link, emphasis, etc.) counts as content
-            }
-        });
-
-        if !has_non_whitespace_content {
-            // Content is empty or whitespace-only after parsing, treat as literal text
-            self.pos = startpos + 1;
-            return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // Store the footnote definition
-        self.footnote_defs.add_definition(def_node);
-
-        // Move position past the closing ]
-        self.pos = endpos + 1;
-
-        Some(ref_node)
-    }
-
     pub fn link_label(&mut self) -> Option<&str> {
         let startpos = self.pos;
 
@@ -1948,179 +1684,70 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         None
     }
 
-    // Handles wikilink syntax
-    //   [[link text|url]]
-    //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
-        let component = self.wikilink_url_link_label()?;
-        let url_clean = strings::clean_url(&component.url);
-        let (link_label, link_label_start_column, _link_label_end_column) =
-            match component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
-                None => (
-                    entity::unescape_html(&component.url).to_string(),
-                    startpos + 1,
-                    self.pos - 3,
-                ),
-            };
+    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
+        let brackets_len = self.brackets.len();
 
-        let nl = NodeWikiLink {
-            url: url_clean.into(),
-        };
-        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
+        let nl = NodeLink { url, title };
+        let inl = self.make_inline(
+            if is_image {
+                NodeValue::Image(Box::new(nl))
+            } else {
+                NodeValue::Link(Box::new(nl))
+            },
+            // Manually set below.
+            self.pos,
+            self.pos,
+        );
+        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
+            .inl_text
+            .data()
+            .sourcepos
+            .start;
+        inl.data_mut().sourcepos.end.column =
+            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
+                .unwrap();
 
-        self.label_backslash_escapes(inl, &link_label, link_label_start_column);
+        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
+        let mut itm = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        while let Some(it) = itm {
+            itm = it.next_sibling();
+            inl.append(it);
+        }
+        self.brackets[brackets_len - 1].inl_text.detach();
+        self.process_emphasis(self.brackets[brackets_len - 1].position);
+        self.brackets.pop();
 
-        Some(inl)
+        if !is_image {
+            self.no_link_openers = true;
+        }
     }
 
-    fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
-        let left_startpos = self.pos;
+    pub fn clear_brackets(&mut self) {
+        self.brackets.clear();
+    }
 
-        if self.peek_char() != Some(&(b'[')) {
-            return None;
-        }
+    ////////////////////
+    // Input scanning //
+    ////////////////////
 
-        let found_left = self.wikilink_component();
+    #[inline]
+    fn eof(&self) -> bool {
+        self.pos >= self.input.len()
+    }
 
-        if !found_left {
-            self.pos = left_startpos;
-            return None;
-        }
+    #[inline]
+    pub fn peek_char(&self) -> Option<&u8> {
+        self.peek_char_n(0)
+    }
 
-        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
-
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
-            return Some(WikilinkComponents {
-                url: left,
-                link_label: None,
-            });
-        } else if self.peek_char() != Some(&(b'|')) {
-            self.pos = left_startpos;
-            return None;
-        }
-
-        let right_startpos = self.pos;
-        let found_right = self.wikilink_component();
-
-        if !found_right {
-            self.pos = left_startpos;
-            return None;
-        }
-
-        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
-
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
-
-            match self.options.extension.wikilinks() {
-                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
-                    url: left,
-                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
-                }),
-                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
-                    url: right.into(),
-                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
-                }),
-                None => unreachable!(),
-            }
-        } else {
-            self.pos = left_startpos;
+    #[inline]
+    fn peek_char_n(&self, n: usize) -> Option<&u8> {
+        if self.pos + n >= self.input.len() {
             None
-        }
-    }
-
-    // Locates the edge of a wikilink component (link label or url), and sets the
-    // self.pos to it's end if it's found.
-    fn wikilink_component(&mut self) -> bool {
-        let startpos = self.pos;
-
-        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
-            return false;
-        }
-
-        self.pos += 1;
-
-        let mut length = 0;
-        while let Some(&c) = self.peek_char() {
-            if c == b'[' || c == b']' || c == b'|' {
-                break;
-            }
-
-            if c == b'\\' {
-                self.pos += 1;
-                length += 1;
-                if self.peek_char().map_or(false, |&c| ispunct(c)) {
-                    self.pos += 1;
-                    length += 1;
-                }
-            } else {
-                self.pos += 1;
-                length += 1;
-            }
-            if length > MAX_LINK_LABEL_LENGTH {
-                self.pos = startpos;
-                return false;
-            }
-        }
-
-        true
-    }
-
-    // Given a label, handles backslash escaped characters. Appends the resulting
-    // nodes to the container
-    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
-        let mut startpos = 0;
-        let mut offset = 0;
-        let bytes = label.as_bytes();
-        let len = label.len();
-
-        while offset < len {
-            let c = bytes[offset];
-
-            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
-                let preceding_text = self.make_inline(
-                    NodeValue::Text(label[startpos..offset].to_string().into()),
-                    start_column + startpos,
-                    start_column + offset - 1,
-                );
-
-                container.append(preceding_text);
-
-                let inline_text = self.make_inline(
-                    NodeValue::Text(label[offset + 1..offset + 2].to_string().into()),
-                    start_column + offset,
-                    start_column + offset + 1,
-                );
-
-                if self.options.render.escaped_char_spans {
-                    let span = self.make_inline(
-                        NodeValue::Escaped,
-                        start_column + offset,
-                        start_column + offset + 1,
-                    );
-
-                    span.append(inline_text);
-                    container.append(span);
-                } else {
-                    container.append(inline_text);
-                }
-
-                offset += 2;
-                startpos = offset;
-            } else {
-                offset += 1;
-            }
-        }
-
-        if startpos != offset {
-            container.append(self.make_inline(
-                NodeValue::Text(label[startpos..offset].to_string().into()),
-                start_column + startpos,
-                start_column + offset - 1,
-            ));
+        } else {
+            let c = &self.input.as_bytes()[self.pos + n];
+            assert!(*c > 0);
+            Some(c)
         }
     }
 
@@ -2131,51 +1758,434 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
-        let start_column =
-            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
-        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
+    fn find_special_char(&self) -> usize {
+        for n in self.pos..self.input.len() {
+            if self.special_chars[self.input.as_bytes()[n] as usize] {
+                if self.input.as_bytes()[n] == b'^' && self.within_brackets {
+                    // NO OP
+                } else {
+                    return n;
+                }
+            }
+            if self.options.parse.smart && self.smart_chars[self.input.as_bytes()[n] as usize] {
+                return n;
+            }
+        }
 
-        let ast = Ast {
-            value,
-            content: String::new(),
-            sourcepos: (
-                self.line,
-                usize::try_from(start_column).unwrap(),
-                self.line,
-                usize::try_from(end_column).unwrap(),
-            )
-                .into(),
-            open: false,
-            last_line_blank: false,
-            table_visited: false,
-            line_offsets: Vec::new(),
+        self.input.len()
+    }
+
+    fn take_while(&mut self, c: u8) -> usize {
+        let start_pos = self.pos;
+        while self.peek_char() == Some(&c) {
+            self.pos += 1;
+        }
+        self.pos - start_pos
+    }
+
+    fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
+        let start_pos = self.pos;
+        let mut count = 0;
+        while count < limit && self.peek_char() == Some(&c) {
+            self.pos += 1;
+            count += 1;
+        }
+        self.pos - start_pos
+    }
+
+    fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
+        if openticklength > MAXBACKTICKS {
+            return None;
+        }
+
+        if self.scanned_for_backticks && self.backticks[openticklength] <= self.pos {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'`') {
+                self.pos += 1;
+            }
+            if self.pos >= self.input.len() {
+                self.scanned_for_backticks = true;
+                return None;
+            }
+            let numticks = self.take_while(b'`');
+            if numticks <= MAXBACKTICKS {
+                self.backticks[numticks] = self.pos - numticks;
+            }
+            if numticks == openticklength {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    fn scan_to_closing_dollar(&mut self, opendollarlength: usize) -> Option<usize> {
+        if !self.options.extension.math_dollars || opendollarlength > MAX_MATH_DOLLARS {
+            return None;
+        }
+
+        // space not allowed after initial $
+        if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isspace(c)) {
+            return None;
+        }
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'$') {
+                self.pos += 1;
+            }
+
+            if self.pos >= self.input.len() {
+                return None;
+            }
+
+            let c = self.input.as_bytes()[self.pos - 1];
+
+            // space not allowed before ending $
+            if opendollarlength == 1 && isspace(c) {
+                return None;
+            }
+
+            // dollar signs must also be backslash-escaped if they occur within math
+            if opendollarlength == 1 && c == b'\\' {
+                self.pos += 1;
+                continue;
+            }
+
+            let numdollars = self.take_while_with_limit(b'$', opendollarlength);
+
+            // ending $ can't be followed by a digit
+            if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
+                return None;
+            }
+
+            if numdollars == opendollarlength {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
+        assert!(self.options.extension.math_code);
+
+        loop {
+            while self.peek_char().map_or(false, |&c| c != b'$') {
+                self.pos += 1;
+            }
+
+            if self.pos >= self.input.len() {
+                return None;
+            }
+
+            let c = self.input.as_bytes()[self.pos - 1];
+            self.pos += 1;
+            if c == b'`' {
+                return Some(self.pos);
+            }
+        }
+    }
+
+    pub fn skip_spaces(&mut self) -> bool {
+        let mut skipped = false;
+        while self.peek_char().map_or(false, |&c| c == b' ' || c == b'\t') {
+            self.pos += 1;
+            skipped = true;
+        }
+        skipped
+    }
+
+    #[inline]
+    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
+        if pos == 0 {
+            return ('\n', None);
+        }
+        let mut before_char_pos = pos - 1;
+        while before_char_pos > 0
+            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
+                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
+        {
+            before_char_pos -= 1;
+        }
+        match self.input[before_char_pos..pos].chars().next() {
+            Some(x) => {
+                if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    ('\n', None)
+                } else {
+                    (x, Some(before_char_pos))
+                }
+            }
+            None => ('\n', None),
+        }
+    }
+
+    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
+        let (before_char, before_char_pos) = self.get_before_char(self.pos);
+
+        let mut numdelims = 0;
+        if c == b'\'' || c == b'"' {
+            numdelims += 1;
+            self.pos += 1;
+        } else {
+            while self.peek_char() == Some(&c) {
+                numdelims += 1;
+                self.pos += 1;
+            }
+        }
+
+        let after_char = if self.eof() {
+            '\n'
+        } else {
+            let mut after_char_pos = self.pos;
+            while after_char_pos < self.input.len() - 1
+                && self.skip_chars[self.input.as_bytes()[after_char_pos] as usize]
+            {
+                after_char_pos += 1;
+            }
+            match self.input[after_char_pos..].chars().next() {
+                Some(x) => {
+                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                        '\n'
+                    } else {
+                        x
+                    }
+                }
+                None => '\n',
+            }
         };
-        self.arena.alloc(ast.into())
+
+        let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
+        let mut two_before_char: Option<char> = None;
+
+        let left_flanking = numdelims > 0
+            && !after_char.is_whitespace()
+            && (!after_char.is_cmark_punctuation()
+                || (self.options.extension.superscript && c == b'^')
+                || (self.options.extension.subscript && c == b'~')
+                || before_char.is_whitespace()
+                || if !cjk_friendly {
+                    before_char.is_cmark_punctuation()
+                } else {
+                    after_char.is_cjk()
+                        || if before_char.is_non_emoji_general_purpose_vs() {
+                            if let Some(before_char_pos) = before_char_pos {
+                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                two_before_char = Some(two_before_char_);
+                                two_before_char_.is_cjk()
+                                    || two_before_char_.is_cmark_punctuation()
+                                    || two_before_char_.is_cjk_ambiguous_punctuation_candidate()
+                                        && before_char == '\u{fe01}'
+                            } else {
+                                false
+                            }
+                        } else {
+                            before_char.is_cjk_or_ideographic_vs()
+                                || before_char.is_cmark_punctuation()
+                        }
+                });
+        let right_flanking = numdelims > 0
+            && !before_char.is_whitespace()
+            && (!if !cjk_friendly {
+                before_char.is_cmark_punctuation()
+            } else {
+                !after_char.is_cjk()
+                    && if before_char.is_non_emoji_general_purpose_vs() {
+                        let two_before_char = if let Some(two_before_char_) = two_before_char {
+                            two_before_char_
+                        } else if let Some(before_char_pos) = before_char_pos {
+                            let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                            two_before_char = Some(two_before_char_);
+                            two_before_char_
+                        } else {
+                            '\n'
+                        };
+                        !two_before_char.is_cjk()
+                            && two_before_char.is_cmark_punctuation()
+                            && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
+                                && before_char == '\u{fe01}')
+                    } else {
+                        !before_char.is_cjk() && before_char.is_cmark_punctuation()
+                    }
+            } || after_char.is_whitespace()
+                || after_char.is_cmark_punctuation());
+
+        if c == b'_' {
+            (
+                numdelims,
+                left_flanking
+                    && (!right_flanking
+                        || if !(cjk_friendly && before_char.is_non_emoji_general_purpose_vs()) {
+                            before_char.is_cmark_punctuation()
+                        } else {
+                            let two_before_char = if let Some(two_before_char_) = two_before_char {
+                                two_before_char_
+                            } else if let Some(before_char_pos) = before_char_pos {
+                                self.get_before_char(before_char_pos).0
+                            } else {
+                                '\n'
+                            };
+                            two_before_char.is_cmark_punctuation()
+                        }),
+                right_flanking && (!left_flanking || after_char.is_cmark_punctuation()),
+            )
+        } else if c == b'\'' || c == b'"' {
+            (
+                numdelims,
+                left_flanking
+                    && (!right_flanking || before_char == '(' || before_char == '[')
+                    && before_char != ']'
+                    && before_char != ')',
+                right_flanking,
+            )
+        } else {
+            (numdelims, left_flanking, right_flanking)
+        }
     }
 
-    fn make_autolink(
-        &self,
-        url: &str,
-        kind: AutolinkType,
-        start_column: usize,
-        end_column: usize,
-    ) -> Node<'a> {
-        let inl = self.make_inline(
-            NodeValue::Link(Box::new(NodeLink {
-                url: strings::clean_autolink(url, kind).into(),
-                title: String::new(),
-            })),
-            start_column,
-            end_column,
-        );
-        inl.append(self.make_inline(
-            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
-            start_column + 1,
-            end_column - 1,
-        ));
-        inl
+    pub fn skip_line_end(&mut self) -> bool {
+        let old_pos = self.pos;
+        if self.peek_char() == Some(&(b'\r')) {
+            self.pos += 1;
+        }
+        if self.peek_char() == Some(&(b'\n')) {
+            self.pos += 1;
+        }
+        self.pos > old_pos || self.eof()
     }
+
+    /////////////
+    // Utility //
+    /////////////
+
+    fn adjust_node_newlines(
+        &mut self,
+        node: Node<'a>,
+        matchlen: usize,
+        extra: usize,
+        parent_line_offsets: &[usize],
+    ) {
+        let (newlines, since_newline) =
+            count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
+
+        if newlines > 0 {
+            self.line += newlines;
+            let node_ast = &mut node.data_mut();
+            node_ast.sourcepos.end.line += newlines;
+            let adjusted_line = self.line - node_ast.sourcepos.start.line;
+            node_ast.sourcepos.end.column =
+                parent_line_offsets[adjusted_line] + since_newline + extra;
+            self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
+        }
+    }
+}
+
+pub struct RefMap {
+    pub map: HashMap<String, ResolvedReference>,
+    pub(crate) max_ref_size: usize,
+    ref_size: Cell<usize>,
+}
+
+impl RefMap {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+            max_ref_size: usize::MAX,
+            ref_size: Cell::new(0),
+        }
+    }
+
+    fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
+        match self.map.get(lab) {
+            Some(entry) => {
+                let size = entry.url.len() + entry.title.len();
+                let ref_size = self.ref_size.get();
+                if size > self.max_ref_size - ref_size {
+                    None
+                } else {
+                    self.ref_size.set(ref_size + size);
+                    Some(entry)
+                }
+            }
+            None => None,
+        }
+    }
+}
+
+pub struct FootnoteDefs<'a> {
+    defs: RefCell<Vec<Node<'a>>>,
+    counter: RefCell<usize>,
+}
+
+impl<'a> FootnoteDefs<'a> {
+    pub fn new() -> Self {
+        Self {
+            defs: RefCell::new(Vec::new()),
+            counter: RefCell::new(0),
+        }
+    }
+
+    pub fn next_name(&self) -> String {
+        let mut counter = self.counter.borrow_mut();
+        *counter += 1;
+        format!("__inline_{}", *counter)
+    }
+
+    pub fn add_definition(&self, def: Node<'a>) {
+        self.defs.borrow_mut().push(def);
+    }
+
+    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
+        self.defs.borrow()
+    }
+}
+
+pub struct Delimiter<'a: 'd, 'd> {
+    inl: Node<'a>,
+    position: usize,
+    length: usize,
+    delim_char: u8,
+    can_open: bool,
+    can_close: bool,
+    prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
+    next: Cell<Option<&'d Delimiter<'a, 'd>>>,
+}
+
+impl<'a, 'd> PartialEq for &'d Delimiter<'a, 'd> {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(*self, *other)
+    }
+}
+
+impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
+            self.position,
+            self.length,
+            self.delim_char,
+            self.can_open,
+            self.can_close,
+            self.inl
+                .try_data()
+                .map_or("<couldn't borrow>".to_string(), |d| format!(
+                    "{}",
+                    d.sourcepos
+                ))
+        )
+    }
+}
+
+struct Bracket<'a> {
+    inl_text: Node<'a>,
+    position: usize,
+    image: bool,
+    bracket_after: bool,
+}
+
+#[derive(Clone)]
+struct WikilinkComponents {
+    url: String,
+    link_label: Option<(String, usize, usize)>,
 }
 
 pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
