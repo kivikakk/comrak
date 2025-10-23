@@ -392,7 +392,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
             let inline_text = self.make_inline(
                 NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
-                self.pos - 2,
+                self.pos - 1,
                 self.pos - 1,
             );
 
