@@ -16,7 +16,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ``` toml
 [dependencies]
-comrak = "0.45.0-rc"
+comrak = "0.45"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.65</span>+.
@@ -62,57 +62,58 @@ Options:
           [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
-          To perform an in-place formatting
+          Reformat a CommonMark file in-place
 
       --hardbreaks
           Treat newlines as hard line breaks
 
       --smart
-          Use smart punctuation
+          Replace punctuation like "this" with smart punctuation like “this”
 
       --github-pre-lang
-          Use GitHub-style <pre lang> for code blocks
+          Use GitHub-style "<pre lang>" for code blocks
 
       --full-info-string
-          Enable full info strings for code blocks
+          Include words following the code block info string in a data-meta attribute
 
       --gfm
           Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
           tasklist. Also enables --github-pre-lang and --gfm-quirks
 
       --gfm-quirks
-          Enables GFM-style quirks in output HTML, such as not nesting <strong> tags, which
-          otherwise breaks CommonMark compatibility
+          Use GFM-style quirks in output HTML, such as not nesting <strong> tags, which otherwise
+          breaks CommonMark compatibility
 
       --relaxed-tasklist-character
-          Enable relaxing which character is allowed in a tasklists
+          Permit any character inside a tasklist item, not just " ", "x" or "X"
 
       --relaxed-autolinks
-          Enable relaxing of autolink parsing, allow links to be recognized when in brackets and
-          allow all url schemes
+          Relax autolink parsing: allows links to be recognised when in brackets, permits all URL
+          schemes, and permits domains without a TLD (like "http://localhost")
 
       --tasklist-classes
-          Output classes on tasklist elements so that they can be styled with CSS
+          Include "task-list-item" and "task-list-item-checkbox" classes on
 
       --default-info-string <INFO>
           Default value for fenced code block's info strings if none is given
 
       --unsafe
-          Allow raw HTML and dangerous URLs
+          Allow inline and block HTML (unless --escape is given), and permit
 
-      --gemojis
-          Translate gemojis into UTF-8 characters
+      --gemoji
+          Translate gemoji like ":thumbsup:" into Unicode emoji like "👍"
 
       --escape
-          Escape raw HTML instead of clobbering it
+          Escape raw HTML, instead of clobbering it; takes precedence over --unsafe
 
       --escaped-char-spans
-          Wrap escaped characters in span tags
+          Wrap escaped Markdown characters in "<span data-escaped-char>" in HTML
 
   -e, --extension <EXTENSION>
-          Specify extension name(s) to use
+          Specify extensions to use
           
-          Multiple extensions can be delimited with ",", e.g. --extension strikethrough,table
+          Multiple extensions can be delimited with ",", e.g. '--extension strikethrough,table', or
+          you can pass --extension/-e multiple times
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
@@ -129,7 +130,7 @@ Options:
           Write output to FILE instead of stdout
 
       --width <WIDTH>
-          Specify wrap width (0 = nowrap)
+          Specify wrap width for output CommonMark, or '0' to disable wrapping
           
           [default: 0]
 
@@ -137,30 +138,31 @@ Options:
           Use the Comrak header IDs extension, with the given ID prefix
 
       --front-matter-delimiter <DELIMITER>
-          Ignore front-matter that starts and ends with the given string
+          Detect frontmatter that starts and ends with the given string, and do not include it in
+          the resulting document
 
       --syntax-highlighting <THEME>
-          Syntax highlighting for codefence blocks. Choose a theme or 'none' for disabling
+          Syntax highlighting theme for fenced code blocks; specify a theme, or 'none' to disable
           
           [default: base16-ocean.dark]
 
       --list-style <LIST_STYLE>
-          Specify bullet character for lists (-, +, *) in CommonMark output
+          Specify bullet character for lists ("-", "+", "*") in CommonMark output
           
           [default: dash]
           [possible values: dash, plus, star]
 
       --sourcepos
-          Include source position attribute in HTML and XML output
+          Include source position attributes in HTML and XML output
 
       --ignore-setext
-          Ignore setext headers
+          Do not parse setext headers
 
       --ignore-empty-links
-          Ignore empty links
+          Do not parse empty links
 
       --experimental-minimize-commonmark
-          Minimize escapes in CommonMark output using a trial-and-error algorithm
+          Minimise escapes in CommonMark output using a trial-and-error algorithm
 
   -h, --help
           Print help information (use `-h` for a summary)
