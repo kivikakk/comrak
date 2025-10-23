@@ -246,7 +246,12 @@ const TEXT: TestCase = (
         sourcepos!((11:3-11:8)),
         sourcepos!((12:3-12:9)),
         sourcepos!((12:12-12:15)),
-        sourcepos!((14:7-14:14)),
+        sourcepos!((14:1-14:5)),
+        sourcepos!((14:7-14:7)),
+        sourcepos!((14:8-14:18)),
+        sourcepos!((14:20-14:20)),
+        sourcepos!((14:21-14:26)),
+        sourcepos!((16:7-16:14)),
     ],
     r#"stuff before
 
@@ -260,6 +265,8 @@ hello world
 
 - item 1[^1]
 - item 2 **bold**
+
+Test \`hello world\` here.
 
 [^1]: The end.
 "#,

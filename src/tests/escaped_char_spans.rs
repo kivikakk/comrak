@@ -12,3 +12,24 @@ fn escaped_char_spans(markdown: &str, html: &str) {
 fn disabled_escaped_char_spans(markdown: &str, expected: &str) {
     html(markdown, expected);
 }
+
+#[test]
+fn escaped_char_span_sourcepos() {
+    assert_ast_match!(
+        [render.escaped_char_spans],
+        "Test \\`hello world\\` here.",
+        (document (1:1-1:26) [
+            (paragraph (1:1-1:26) [
+                (text (1:1-1:5) "Test ")
+                (escaped (1:6-1:7) [
+                    (text (1:7-1:7) "`")
+                ])
+                (text (1:8-1:18) "hello world")
+                (escaped (1:19-1:20) [
+                    (text (1:20-1:20) "`")
+                ])
+                (text (1:21-1:26) " here.")
+            ])
+        ])
+    );
+}
