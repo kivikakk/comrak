@@ -1,34 +1,3 @@
-# [v0.45.0] - 2025-10-23
-
-## What's Changed
-* README: sync to sample (and improve sample quality). by @kivikakk in https://github.com/kivikakk/comrak/pull/621
-* Remove parse_document_with_broken_link_callback (deprecated), and move `ignore_setext` to parse. by @kivikakk in https://github.com/kivikakk/comrak/pull/623
-* tasklist_in_table: parse a tasklist item if it's the only content of a table cell. by @kivikakk in https://github.com/kivikakk/comrak/pull/622
-* syntect optional in cli; disable syntax highlighting in bench. by @kivikakk in https://github.com/kivikakk/comrak/pull/624
-* improvements from #617. by @kivikakk in https://github.com/kivikakk/comrak/pull/625
-* use str internally much more. by @kivikakk in https://github.com/kivikakk/comrak/pull/626
-* Don't copy ~every input string if we can avoid it. by @kivikakk in https://github.com/kivikakk/comrak/pull/629
-* Use jetscii for SIMD searching. by @kivikakk in https://github.com/kivikakk/comrak/pull/630
-* Give content ownership to inline processor; pre-process entity data for binary search. by @kivikakk in https://github.com/kivikakk/comrak/pull/631
-* Refactor, simplify, speed up. by @kivikakk in https://github.com/kivikakk/comrak/pull/627
-* eliminate some shifts in table parser and clarify. by @kivikakk in https://github.com/kivikakk/comrak/pull/632
-* Remove needless clones and reborrows. by @kivikakk in https://github.com/kivikakk/comrak/pull/633
-* move options into their own module. by @kivikakk in https://github.com/kivikakk/comrak/pull/636
-* Release v0.45.0-rc.1. by @github-actions[bot] in https://github.com/kivikakk/comrak/pull/638
-* test: add complex tilde behavior by @miketheman in https://github.com/kivikakk/comrak/pull/635
-* unsafe_ -> r#unsafe. by @kivikakk in https://github.com/kivikakk/comrak/pull/640
-* rename --gemojis to --gemoji, include shortcodes by default in CLI, freshen --help text. by @kivikakk in https://github.com/kivikakk/comrak/pull/641
-* Give last inline content to final text node. by @kivikakk in https://github.com/kivikakk/comrak/pull/642
-* add node.data() and node.data_mut() shorthand. by @kivikakk in https://github.com/kivikakk/comrak/pull/643
-* clean up a little more. by @kivikakk in https://github.com/kivikakk/comrak/pull/644
-
-## New Contributors
-* @miketheman made their first contribution in https://github.com/kivikakk/comrak/pull/635
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.44.0...v0.45.0
-
----snip---
-
 Categories to use in this document, and the order in which to give them:
 
 * Reverts
@@ -44,7 +13,31 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
-# [v0.45.0-rc.2] - unreleased
+# [v0.45.0] - 2025-10-23
+
+Welcome to v0.45.0! This is a big update, much of them part of from [rc.1 from last week](https://github.com/kivikakk/comrak/releases/tag/v0.45.0-rc.1).  More context on the size of the update in the changelog there.
+
+The biggest library user-facing changes are ergonomic: `Node<'a>` instead of `&'a AstNode<'a>`, is nice, and so likewise `node.data()` instead of `node.data.borrow()`.  They're small, but I appreciate them a lot in my own work.
+
+You'll also notice more bovine creatures in the Comrak pasture: there's a few `Cow<str>` instead of `String`, such as in `NodeValue::Text`.  At most an extra `.into()` will be required; take note if you use any `'static str`, as they'll no longer need to be heap-allocated.  Some `Box`es have been added, too, to reduce the size of every `NodeValue`.  Let the types guide you.
+
+Other than this, the options have been put in their own module (`comrak::options`), and a lot of things generally cleaned up. Read below for all the deets!  Here's the final performance comparison to v0.44.0 on aarch64:
+
+```
+Benchmark 1: ./bench.sh ./comrak-0.44.0
+  Time (mean ± σ):      88.1 ms ±   1.9 ms    [User: 71.2 ms, System: 17.8 ms]
+  Range (min … max):    86.2 ms …  93.2 ms    31 runs
+
+Benchmark 2: ./bench.sh ./comrak-0.45.0
+  Time (mean ± σ):      67.0 ms ±   1.2 ms    [User: 51.2 ms, System: 17.0 ms]
+  Range (min … max):    65.2 ms …  70.0 ms    42 runs
+
+Summary
+  ./bench.sh ./comrak-0.45.0 ran
+    1.32 ± 0.04 times faster than ./bench.sh ./comrak-0.44.0
+```
+
+Be well!
 
 Parser changes:
 
@@ -55,57 +48,6 @@ Changed APIs:
 
 * `r#unsafe` is used instead of `unsafe_`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/640)
 * `--gemojis` is renamed to `--gemoji`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/641)
-
-New APIs:
-
-* `node.data()` and `node.data_mut()` are added as short-hand for `node.data.borrow()` and `node.data.borrow_mut()` respectively. (by @kivikakk in https://github.com/kivikakk/comrak/pull/643)
-
-Performance:
-
-* Inline content is transferred to Text nodes without copying where possible. (by @kivikakk in https://github.com/kivikakk/comrak/pull/642).
-
-Documentation:
-
-* The CLI help text has been copy-edited to a consistent style. (by @kivikakk in https://github.com/kivikakk/comrak/pull/641)
-
-Build changes:
-
-* `shortcodes` is enabled by default (but still optional) for CLI builds. (by @kivikakk in https://github.com/kivikakk/comrak/pull/641)
-
-Diff: TBC
-
-
-# [v0.45.0-rc.1] - 2025-10-20
-
-This is a release candidate for v0.45.0. I've never made a release candidate for Comrak before, but then I've probably never made a release of this size before either.
-
-Why the big changes?  Quite simply, for the first time in over five years I'm once again working on CommonMark in my [day job](https://about.gitlab.com/company/team/#kivikakk), and for the first time ever _using_ Comrak in it too, and so I find myself thinking about it more, cutting myself on the sharp edges, wishing it were easier to maintain, and wishing it were more efficient.  For a little while now, too, I've been [speculating about calling version 1.0](https://github.com/kivikakk/comrak/pull/601).
-
-So let's get there.  This weekend I found myself profiling and reworking Obviously 2018 Code, and low-hanging fruit, oh my, they are aplenty.
-
-It's awkward to do an apples-to-apples comparison of speed between 0.44.0 and 0.45.0-rc.1, because 0.44.0's Comrak benchmark neglected to turn off syntax highlighting, while the benchmark input has something like 14,000 code blocks in it.  We were kiiiinda benchmarking syntect.  The benchmark also started
-the target process 33 times per run, which adds a lot of undesireable pair.
-
-Anyway, I compared the pair using the new benchmark strategy of running the process just once per run, syntax highlighting disabled.  Here's what we get on aarch64; on x86_64 the improvement is slightly greater thanks to SIMD:
-
-```
-Benchmark 1: ./bench.sh ./comrak-0.44.0
-  Time (mean ± σ):      90.0 ms ±   1.0 ms    [User: 71.9 ms, System: 18.9 ms]
-  Range (min … max):    88.3 ms …  92.9 ms    31 runs
-
-Benchmark 2: ./bench.sh ./comrak-0.45.0-rc.1
-  Time (mean ± σ):      70.4 ms ±   0.9 ms    [User: 53.5 ms, System: 17.9 ms]
-  Range (min … max):    69.1 ms …  73.7 ms    40 runs
-
-Summary
-  ./bench.sh ./comrak-0.45.0-rc.1 ran
-    1.28 ± 0.02 times faster than ./bench.sh ./comrak-0.44.0
-```
-
-LGTM!
-
-Changed APIs:
-
 * `NodeValue::Text` now contains a `Cow<'static, str>` instead of a `String`. This is a pretty major change, but means we can now create text nodes with static content without duplicating the string on the heap. This particularly benefits smart quotes and HTML entity resolution. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
   * Adapting to this change usually means nothing on the read-only side (you can use it as a `&str` without issues); to write in-place, use `.to_mut()` on the `Cow` to get a `&mut String`. To assign, use `.into()` on a `&str` or `String`, like `NodeValue::Text("moo".into())`.
   * `NodeValue::text()` now returns a `&str`. It used to return a `&String` (!).
@@ -124,13 +66,16 @@ Changed APIs:
 * `options.render.ignore_setext` was moved to `options.parse.ignore_setext`, as its effect takes place only in the parse stage. (by @kivikakk in https://github.com/kivikakk/comrak/pull/623)
 * `nodes::can_contain_type` is now `Node::can_contain_type`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/625)
 
+
 New APIs:
 
+* `node.data()` and `node.data_mut()` are added as short-hand for `node.data.borrow()` and `node.data.borrow_mut()` respectively. (by @kivikakk in https://github.com/kivikakk/comrak/pull/643)
 * `comrak::nodes::Node<'a>` is introduced as an alias for `&'a comrak::nodes::AstNode<'a>`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
 * `options.parse.tasklist_in_table` added: parse a tasklist item if it's the only content of a table cell. (by @kivikakk in https://github.com/kivikakk/comrak/pull/622)
 
 Performance:
 
+* Inline content is transferred to Text nodes without copying where possible. (by @kivikakk in https://github.com/kivikakk/comrak/pull/642).
 * Have you looked at your 7 year old code lately? A detail in the C-to-Rust translation meant essentially every line of input was being copied completely unnecessarily at the very beginning of the line processing stage. This no longer happens. We regret the error. (by @kivikakk in https://github.com/kivikakk/comrak/pull/629)
 * Preprocess entity data at build-time so we don't spend time doing a linear search over an unsorted array, some of which we will never match. (by @kivikakk in https://github.com/kivikakk/comrak/pull/631)
 * Inline content is consumed by the inline processor, instead of being borrowed by it and retained in memory indefinitely. (by @kivikakk in https://github.com/kivikakk/comrak/pull/631)
@@ -147,18 +92,25 @@ Dependency updates:
 
 Documentation:
 
+* The CLI help text has been copy-edited to a consistent style. (by @kivikakk in https://github.com/kivikakk/comrak/pull/641)
 * The `README` example code is updated to build with recent API changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/621)
 
 Build changes:
 
+* `shortcodes` is enabled by default (but still optional) for CLI builds. (by @kivikakk in https://github.com/kivikakk/comrak/pull/641)
 * `syntect` is now optional (but still default) in CLI builds. (by @kivikakk in https://github.com/kivikakk/comrak/pull/624)
 
 Behind the scenes:
 
 * Much of the block parser code has been re-organised, and many C-isms from the original port have been refactored into readable Rust. (by @kivikakk in https://github.com/kivikakk/comrak/pull/627)
+* Likewise the inline parser has been re-organised. (by @kivikakk in https://github.com/kivikakk/comrak/pull/644)
 * All `unsafe` blocks now have a `SAFETY` comment describing why their actions are safe.
 
-Diff: https://github.com/kivikakk/comrak/compare/v0.44.0...v0.45.0-rc.1
+## New Contributors
+
+* @miketheman made their first contribution in https://github.com/kivikakk/comrak/pull/635
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.44.0...v0.45.0
 
 
 # [v0.44.0] - 2025-10-14
