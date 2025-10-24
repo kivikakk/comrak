@@ -114,38 +114,56 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          fenixPkgs = fenix.packages.${system};
+
+          mkShell =
+            { name, toolchain }:
+            pkgs.mkShell {
+              inherit name;
+
+              packages = [
+                (fenixPkgs.combine (
+                  with toolchain;
+                  [
+                    cargo
+                    rustc
+                    rust-analyzer
+                    clippy
+                    rustfmt
+                    rust-src
+                    llvm-tools-preview
+                  ]
+                  ++ [
+                    fenixPkgs.targets.wasm32-unknown-unknown.latest.rust-std
+                  ]
+                ))
+              ]
+              ++ (with pkgs; [
+                rust-analyzer
+                clippy
+                cargo-fuzz
+                cargo-nextest
+                cargo-flamegraph
+                samply
+                python3
+                re2c
+                hyperfine
+                bacon
+              ]);
+            };
         in
         {
-          default = pkgs.mkShell {
+          default = mkShell {
             name = "comrak";
+            toolchain = fenixPkgs.complete;
+          };
 
-            packages = [
-              (
-                with fenix.packages.${system};
-                combine [
-                  complete.cargo
-                  complete.rustc
-                  complete.rust-analyzer
-                  complete.clippy
-                  complete.rustfmt
-                  complete.rust-src
-                  complete.llvm-tools-preview
-                  targets.wasm32-unknown-unknown.latest.rust-std
-                ]
-              )
-            ]
-            ++ (with pkgs; [
-              rust-analyzer
-              clippy
-              cargo-fuzz
-              cargo-nextest
-              cargo-flamegraph
-              samply
-              python3
-              re2c
-              hyperfine
-              bacon
-            ]);
+          msrv = mkShell {
+            name = "comrak-msrv";
+            toolchain = fenixPkgs.toolchainOf {
+              channel = "1.70.0";
+              sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
+            };
           };
         }
       );
