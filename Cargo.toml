@@ -2,7 +2,7 @@
 name = "comrak"
 version = "0.45.0"
 authors = ["Asherah Connor <ashe@kivikakk.ee>", "Brett Walker <github@digitalmoksha.com>", "gjtorikian"]
-rust-version = "1.65"
+rust-version = "1.70"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
 homepage = "https://github.com/kivikakk/comrak"

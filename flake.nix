@@ -161,9 +161,8 @@
           msrv = mkShell {
             name = "comrak-msrv";
             toolchain = fenixPkgs.toolchainOf {
-              channel = "1.65.0";
-              sha256 = "sha256-DzNEaW724O8/B8844tt5AVHmSjSQ3cmzlU4BP90oRlY=";
-
+              channel = "1.70.0";
+              sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
             };
           };
         }

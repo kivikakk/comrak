@@ -3,7 +3,7 @@ name: Rust
 on: [push, pull_request]
 
 env:
-  MSRV: 1.65
+  MSRV: 1.70
 
 jobs:
   build_lib_test:
