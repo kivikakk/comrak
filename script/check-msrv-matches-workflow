@@ -5,11 +5,11 @@ CI_FILE=".github/workflows/rust.yml"
 MSRV=$(
   grep -E '^rust-version = "[^"]+"$' Cargo.toml |
   head -n 1 |
-  cut -d\" -f2
+  awk '{ print $3 }'
 )
 
 TESTED=$(
-  grep -E '^\s*MSRV: \S+$' $CI_FILE |
+  grep -E '^\s*MSRV: "[^"]+"$' $CI_FILE |
   awk '{ print $2 }'
 )
 
