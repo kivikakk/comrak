@@ -226,7 +226,8 @@ pub enum NodeValue {
     /// Enabled with the `alerts` option.
     Alert(Box<NodeAlert>),
 
-    ///
+    /// **Block**. Block scoped subscript that acts similar to a header.
+    /// Enabled with `subtext` option.
     Subtext,
 }
 
