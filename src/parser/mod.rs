@@ -803,7 +803,11 @@ where
     }
 
     fn detect_atx_subtext(&self, line: &str) -> Option<usize> {
-        scanners::atx_subtext_start(&line[self.first_nonspace..])
+        if self.options.extension.subtext {
+            scanners::atx_subtext_start(&line[self.first_nonspace..])
+        } else {
+            None
+        }
     }
 
     fn handle_code_fence(&mut self, container: &mut Node<'a>, line: &str) -> bool {

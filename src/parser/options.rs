@@ -519,11 +519,12 @@ pub struct Extension<'c> {
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
-    /// options.extension.subscript = true;
+    /// options.extension.subtext = true;
     ///
     /// assert_eq!(markdown_to_html("-# subtext", &options),
     ///           "<p><sub>subtext</sub></p>\n");
     /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
     pub subtext: bool,
 }
 
