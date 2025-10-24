@@ -464,6 +464,7 @@ pub fn format_node_default<'a, T>(
         NodeValue::Superscript => render_superscript(context, node, entering),
         NodeValue::Underline => render_underline(context, node, entering),
         NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
+        NodeValue::Subtext => render_subtext(context, node, entering),
     }
 }
 
@@ -1438,6 +1439,23 @@ fn render_subscript<'a, T>(
         context.write_str(">")?;
     } else {
         context.write_str("</sub>")?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+fn render_subtext<'a, T>(
+    context: &mut Context<T>,
+    node: Node<'a>,
+    entering: bool,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.cr()?;
+        context.write_str("<p><sub")?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+    } else {
+        writeln!(context, "</sub></p>")?;
     }
 
     Ok(ChildRendering::HTML)

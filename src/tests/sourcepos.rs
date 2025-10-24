@@ -419,6 +419,15 @@ const ALERT: TestCase = (
 after"#,
 );
 
+const SUBTEXT: TestCase = (
+    &[sourcepos!((2:1-2:14))],
+    r#"before
+-# Hello World
+
+hello world
+"#,
+);
+
 fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     use NodeValueDiscriminants::*;
 
@@ -481,6 +490,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 SpoileredText => SPOILERED_TEXT,
                 EscapedTag => ESCAPED_TAG,
                 Alert => ALERT,
+                Subtext => SUBTEXT,
                 Raw => unreachable!(),
             };
             Some((*v, text))
@@ -516,6 +526,7 @@ fn sourcepos() {
     options.extension.underline = true;
     options.extension.spoiler = true;
     options.extension.alerts = true;
+    options.extension.subtext = true;
 
     for (kind, (expecteds, text)) in node_values {
         let arena = Arena::new();

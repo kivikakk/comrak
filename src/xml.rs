@@ -307,6 +307,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         self.output.write_str(" multiline=\"true\"")?;
                     }
                 }
+                NodeValue::Subtext => {}
             }
 
             if node.first_child().is_some() {

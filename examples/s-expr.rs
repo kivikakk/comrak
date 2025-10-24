@@ -85,6 +85,7 @@ fn dump(source: &str) -> io::Result<()> {
         .math_code(true)
         .wikilinks_title_after_pipe(true)
         .wikilinks_title_before_pipe(true)
+        .subtext(true)
         .build();
 
     let opts = Options {
