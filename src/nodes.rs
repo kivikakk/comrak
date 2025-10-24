@@ -225,6 +225,9 @@ pub enum NodeValue {
     /// **Block**. GitHub style alert boxes which uses a modified blockquote syntax.
     /// Enabled with the `alerts` option.
     Alert(Box<NodeAlert>),
+
+    ///
+    Subtext,
 }
 
 /// Alignment of a single table cell.
@@ -561,6 +564,7 @@ impl NodeValue {
                 | NodeValue::TaskItem(..)
                 | NodeValue::MultilineBlockQuote(_)
                 | NodeValue::Alert(_)
+                | NodeValue::Subtext
         )
     }
 
@@ -568,7 +572,10 @@ impl NodeValue {
     pub fn contains_inlines(&self) -> bool {
         matches!(
             *self,
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::TableCell
+            NodeValue::Paragraph
+                | NodeValue::Heading(..)
+                | NodeValue::TableCell
+                | NodeValue::Subtext
         )
     }
 
@@ -595,7 +602,10 @@ impl NodeValue {
     pub(crate) fn accepts_lines(&self) -> bool {
         matches!(
             *self,
-            NodeValue::Paragraph | NodeValue::Heading(..) | NodeValue::CodeBlock(..)
+            NodeValue::Paragraph
+                | NodeValue::Heading(..)
+                | NodeValue::CodeBlock(..)
+                | NodeValue::Subtext
         )
     }
 
@@ -644,6 +654,7 @@ impl NodeValue {
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
             NodeValue::Alert(_) => "alert",
+            NodeValue::Subtext => "subtext",
         }
     }
 }
@@ -888,6 +899,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::SpoileredText
             | NodeValue::Underline
             | NodeValue::Subscript
+            | NodeValue::Subtext
             // XXX: this is quite a hack: the EscapedTag _contains_ whatever was
             // possibly going to fall into the spoiler. This should be fixed in
             // inlines.

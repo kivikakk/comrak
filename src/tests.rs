@@ -37,6 +37,7 @@ mod sourcepos_;
 mod spoiler;
 mod strikethrough;
 mod subscript;
+mod subtext;
 mod supersubscript;
 mod table;
 mod tagfilter;

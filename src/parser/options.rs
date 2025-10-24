@@ -509,6 +509,9 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub cjk_friendly_emphasis: bool,
+
+    ///
+    pub subtext: bool,
 }
 
 impl<'c> Extension<'c> {

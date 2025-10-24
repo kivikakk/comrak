@@ -420,6 +420,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::SpoileredText => self.format_spoiler()?,
             NodeValue::EscapedTag(ref net) => self.format_escaped_tag(net)?,
             NodeValue::Alert(ref alert) => self.format_alert(alert, entering)?,
+            NodeValue::Subtext => self.format_subtext(entering)?,
         };
         Ok(true)
     }
@@ -994,6 +995,18 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         } else {
             let new_len = self.prefix.len() - 2;
             self.prefix.truncate(new_len);
+            self.blankline();
+        }
+        Ok(())
+    }
+
+    fn format_subtext(&mut self, entering: bool) -> fmt::Result {
+        if entering {
+            write!(self, "-# ")?;
+            self.begin_content = true;
+            self.no_linebreaks = true;
+        } else {
+            self.no_linebreaks = false;
             self.blankline();
         }
         Ok(())

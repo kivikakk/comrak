@@ -364,7 +364,10 @@ where
                         break;
                     }
                 }
-                NodeValue::Heading(..) | NodeValue::TableRow(..) | NodeValue::TableCell => {
+                NodeValue::Heading(..)
+                | NodeValue::TableRow(..)
+                | NodeValue::TableCell
+                | NodeValue::Subtext => {
                     break;
                 }
                 NodeValue::FootnoteDefinition(..) => {
@@ -613,6 +616,7 @@ where
                     || self.handle_multiline_blockquote(container, line)
                     || self.handle_blockquote(container, line)
                     || self.handle_atx_heading(container, line)
+                    || self.handle_atx_subtext(container, line)
                     || self.handle_code_fence(container, line)
                     || self.handle_html_block(container, line)
                     || self.handle_setext_heading(container, line)
@@ -780,6 +784,26 @@ where
 
     fn detect_atx_heading(&self, line: &str) -> Option<usize> {
         scanners::atx_heading_start(&line[self.first_nonspace..])
+    }
+
+    fn handle_atx_subtext(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_atx_subtext(line) else {
+            return false;
+        };
+
+        let heading_startpos = self.first_nonspace;
+        let offset = self.offset;
+        self.advance_offset(line, heading_startpos + matched - offset, false);
+        *container = self.add_child(container, NodeValue::Subtext, heading_startpos + 1);
+
+        let container_ast = &mut container.data_mut();
+        container_ast.value = NodeValue::Subtext;
+
+        true
+    }
+
+    fn detect_atx_subtext(&self, line: &str) -> Option<usize> {
+        scanners::atx_subtext_start(&line[self.first_nonspace..])
     }
 
     fn handle_code_fence(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1328,7 +1352,10 @@ where
 
         container.data_mut().last_line_blank = self.blank
             && match container.data().value {
-                NodeValue::BlockQuote | NodeValue::Heading(..) | NodeValue::ThematicBreak => false,
+                NodeValue::BlockQuote
+                | NodeValue::Heading(..)
+                | NodeValue::ThematicBreak
+                | NodeValue::Subtext => false,
                 NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
                 NodeValue::Item(..) => {
                     container.first_child().is_some()

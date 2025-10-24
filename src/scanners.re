@@ -70,6 +70,16 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
 */
 }
 
+pub fn atx_subtext_start(s: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    [-][#] ([ \t]+|[\r\n])  { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 pub fn html_block_end_1(s: &str) -> bool {
     let mut cursor = 0;
     let mut marker = 0;
