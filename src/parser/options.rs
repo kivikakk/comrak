@@ -524,6 +524,7 @@ pub struct Extension<'c> {
     /// assert_eq!(markdown_to_html("-# subtext", &options),
     ///           "<p><sub>subtext</sub></p>\n");
     /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
     pub subtext: bool,
 }
 
