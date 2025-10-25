@@ -317,6 +317,7 @@ fn try_inserting_table_header_paragraph<'a>(
             .count();
 
     container_ast.sourcepos.start.line += newlines;
+    container_ast.sourcepos.start.column = container_ast.line_offsets[newlines] + 1;
 
     paragraph.content = paragraph_content;
     let node = parser.arena.alloc(paragraph.into());
