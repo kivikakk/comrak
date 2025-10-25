@@ -164,6 +164,7 @@ dependencies = [
  "emojis",
  "entities",
  "fmt2io",
+ "id-arena",
  "jetscii",
  "ntest",
  "percent-encoding-rfc3986",
@@ -172,7 +173,6 @@ dependencies = [
  "strum",
  "syntect",
  "toml 0.7.3",
- "typed-arena",
  "unicode_categories",
  "xdg",
 ]
@@ -327,6 +327,12 @@ name = "hermit-abi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
+
+[[package]]
+name = "id-arena"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25a2bc672d1148e28034f176e01fffebb08b35768468cc954630da77a1449005"
 
 [[package]]
 name = "ident_case"
@@ -940,12 +946,6 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
-
-[[package]]
-name = "typed-arena"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "unicode-ident"

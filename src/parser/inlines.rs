@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
 use std::{mem, ptr};
-use typed_arena::Arena;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
@@ -21,6 +20,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, is_blank, Case};
+use crate::Arena;
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;

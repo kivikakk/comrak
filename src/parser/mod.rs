@@ -11,7 +11,6 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::mem;
 use std::str;
-use typed_arena::Arena;
 
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
@@ -25,6 +24,7 @@ use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
+use crate::Arena;
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;

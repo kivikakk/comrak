@@ -1,27 +1,21 @@
-//! A DOM-like tree data structure based on `&Node` references.
+//! A DOM-like tree data structure based on XXX.
 //!
-//! Included from <https://github.com/SimonSapin/rust-forest/blob/5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs>.
+//! Based on <https://github.com/SimonSapin/rust-forest/blob/5783c8be8680b84c0438638bdee07d4e4aca40ac/arena-tree/lib.rs>.
 //! MIT license (per Cargo.toml).
-//!
-//! Any non-trivial tree involves reference cycles
-//! (e.g. if a node has a first child, the parent of the child is that node).
-//! To enable this, nodes need to live in an arena allocator
-//! such as `arena::TypedArena` distributed with rustc (which is `#[unstable]` as of this writing)
-//! or [`typed_arena::Arena`](https://crates.io/crates/typed-arena).
-//!
-//! If you need mutability in the node’s `data`,
-//! make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
 use std::cell::Cell;
 use std::fmt;
 
+type Arena<T> = id_arena::Arena<T>;
+type Id<T> = id_arena::Id<T>;
+
 /// A node inside a DOM-like tree.
-pub struct Node<'a, T: 'a> {
-    parent: Cell<Option<&'a Node<'a, T>>>,
-    previous_sibling: Cell<Option<&'a Node<'a, T>>>,
-    next_sibling: Cell<Option<&'a Node<'a, T>>>,
-    first_child: Cell<Option<&'a Node<'a, T>>>,
-    last_child: Cell<Option<&'a Node<'a, T>>>,
+pub struct Node<T> {
+    parent: Cell<Option<Id<T>>>,
+    previous_sibling: Cell<Option<Id<T>>>,
+    next_sibling: Cell<Option<Id<T>>>,
+    first_child: Cell<Option<Id<T>>>,
+    last_child: Cell<Option<Id<T>>>,
 
     /// The data held by the node.
     pub data: T,
@@ -29,12 +23,12 @@ pub struct Node<'a, T: 'a> {
 
 /// A simple Debug implementation that prints the children as a tree, without
 /// looping through the various interior pointer cycles.
-impl<'a, T: 'a> fmt::Debug for Node<'a, T>
+impl<T> fmt::Debug for Node<T>
 where
     T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        struct Children<'a, T>(Option<&'a Node<'a, T>>);
+        struct Children<'a, T>(Option<Node<T>>);
         impl<T: fmt::Debug> fmt::Debug for Children<'_, T> {
             fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
                 f.debug_list()
@@ -54,12 +48,12 @@ where
     }
 }
 
-impl<'a, T> Node<'a, T> {
+impl<T> Node<T> {
     /// Create a new node from its associated data.
     ///
     /// Typically, this node needs to be moved into an arena allocator
     /// before it can be used in a tree.
-    pub fn new(data: T) -> Node<'a, T> {
+    pub fn new(data: T) -> Node<T> {
         Node {
             parent: Cell::new(None),
             first_child: Cell::new(None),
@@ -71,63 +65,63 @@ impl<'a, T> Node<'a, T> {
     }
 
     /// Return a reference to the parent node, unless this node is the root of the tree.
-    pub fn parent(&self) -> Option<&'a Node<'a, T>> {
+    pub fn parent(&self) -> Option<Id<T>> {
         self.parent.get()
     }
 
     /// Return a reference to the first child of this node, unless it has no child.
-    pub fn first_child(&self) -> Option<&'a Node<'a, T>> {
+    pub fn first_child(&self) -> Option<Id<T>> {
         self.first_child.get()
     }
 
     /// Return a reference to the last child of this node, unless it has no child.
-    pub fn last_child(&self) -> Option<&'a Node<'a, T>> {
+    pub fn last_child(&self) -> Option<Id<T>> {
         self.last_child.get()
     }
 
     /// Return a reference to the previous sibling of this node, unless it is a first child.
-    pub fn previous_sibling(&self) -> Option<&'a Node<'a, T>> {
+    pub fn previous_sibling(&self) -> Option<Id<T>> {
         self.previous_sibling.get()
     }
 
     /// Return a reference to the next sibling of this node, unless it is a last child.
-    pub fn next_sibling(&self) -> Option<&'a Node<'a, T>> {
+    pub fn next_sibling(&self) -> Option<Id<T>> {
         self.next_sibling.get()
     }
 
     /// Returns whether two references point to the same node.
-    pub fn same_node(&self, other: &Node<'a, T>) -> bool {
-        std::ptr::eq(self, other)
-    }
+    // pub fn same_node(&self, other: &Node<T>) -> bool {
+    //     std::ptr::eq(self, other)
+    // }
 
     /// Return an iterator of references to this node and its ancestors.
     ///
     /// Call `.next().unwrap()` once on the iterator to skip the node itself.
-    pub fn ancestors(&'a self) -> Ancestors<'a, T> {
-        Ancestors(Some(self))
+    pub fn ancestors<'a>(&self, arena: &'a Arena<T>) -> Ancestors<'a, T> {
+        Ancestors(Some((arena, self)))
     }
 
     /// Return an iterator of references to this node and the siblings before it.
     ///
     /// Call `.next().unwrap()` once on the iterator to skip the node itself.
-    pub fn preceding_siblings(&'a self) -> PrecedingSiblings<'a, T> {
-        PrecedingSiblings(Some(self))
+    pub fn preceding_siblings<'a>(&self, arena: &'a Arena<T>) -> PrecedingSiblings<'a, T> {
+        PrecedingSiblings(Some((arena, self)))
     }
 
     /// Return an iterator of references to this node and the siblings after it.
     ///
     /// Call `.next().unwrap()` once on the iterator to skip the node itself.
-    pub fn following_siblings(&'a self) -> FollowingSiblings<'a, T> {
-        FollowingSiblings(Some(self))
+    pub fn following_siblings<'a>(&self, arena: &'a Arena<T>) -> FollowingSiblings<'a, T> {
+        FollowingSiblings(Some((arena, self)))
     }
 
     /// Return an iterator of references to this node’s children.
-    pub fn children(&'a self) -> Children<'a, T> {
+    pub fn children<'a>(&self, arena: &'a Arena<T>) -> Children<'a, T> {
         Children(self.first_child.get())
     }
 
     /// Return an iterator of references to this node’s children, in reverse order.
-    pub fn reverse_children(&'a self) -> ReverseChildren<'a, T> {
+    pub fn reverse_children<'a>(&self, arena: &'a Arena<T>) -> ReverseChildren<'a, T> {
         ReverseChildren(self.last_child.get())
     }
 
@@ -138,7 +132,7 @@ impl<'a, T> Node<'a, T> {
     ///
     /// *Similar Functions:* Use `traverse()` or `reverse_traverse` if you need
     /// references to the `NodeEdge` structs associated with each `Node`
-    pub fn descendants(&'a self) -> Descendants<'a, T> {
+    pub fn descendants<'a>(&self) -> Descendants<'_, T> {
         Descendants(self.traverse())
     }
 
@@ -148,7 +142,7 @@ impl<'a, T> Node<'a, T> {
     /// `NodeEdge` enums represent the `Start` or `End` of each node.
     ///
     /// *Similar Functions:* Use `descendants()` if you don't need `Start` and `End`.
-    pub fn traverse(&'a self) -> Traverse<'a, T> {
+    pub fn traverse<'a>(&self) -> Traverse<'_, T> {
         Traverse {
             root: self,
             next: Some(NodeEdge::Start(self)),
@@ -161,7 +155,7 @@ impl<'a, T> Node<'a, T> {
     /// `NodeEdge` enums represent the `Start` or `End` of each node.
     ///
     /// *Similar Functions:* Use `descendants()` if you don't need `Start` and `End`.
-    pub fn reverse_traverse(&'a self) -> ReverseTraverse<'a, T> {
+    pub fn reverse_traverse(&self) -> ReverseTraverse<'_, T> {
         ReverseTraverse {
             root: self,
             next: Some(NodeEdge::End(self)),
@@ -188,7 +182,7 @@ impl<'a, T> Node<'a, T> {
     }
 
     /// Append a new child to this node, after existing children.
-    pub fn append(&'a self, new_child: &'a Node<'a, T>) {
+    pub fn append(&self, new_child: &Node<T>) {
         new_child.detach();
         new_child.parent.set(Some(self));
         if let Some(last_child) = self.last_child.take() {
@@ -203,7 +197,7 @@ impl<'a, T> Node<'a, T> {
     }
 
     /// Prepend a new child to this node, before existing children.
-    pub fn prepend(&'a self, new_child: &'a Node<'a, T>) {
+    pub fn prepend(&self, new_child: &Node<T>) {
         new_child.detach();
         new_child.parent.set(Some(self));
         if let Some(first_child) = self.first_child.take() {
@@ -218,7 +212,7 @@ impl<'a, T> Node<'a, T> {
     }
 
     /// Insert a new sibling after this node.
-    pub fn insert_after(&'a self, new_sibling: &'a Node<'a, T>) {
+    pub fn insert_after(&self, new_sibling: &Node<T>) {
         new_sibling.detach();
         new_sibling.parent.set(self.parent.get());
         new_sibling.previous_sibling.set(Some(self));
@@ -237,7 +231,7 @@ impl<'a, T> Node<'a, T> {
     }
 
     /// Insert a new sibling before this node.
-    pub fn insert_before(&'a self, new_sibling: &'a Node<'a, T>) {
+    pub fn insert_before(&self, new_sibling: &Node<T>) {
         new_sibling.detach();
         new_sibling.parent.set(self.parent.get());
         new_sibling.next_sibling.set(Some(self));
@@ -260,12 +254,12 @@ macro_rules! axis_iterator {
     (#[$attr:meta] $name:ident : $next:ident) => {
         #[$attr]
         #[derive(Debug)]
-        pub struct $name<'a, T: 'a>(Option<&'a Node<'a, T>>);
+        pub struct $name<'a, T>(Option<(&'a Arena<T>, &'a Node<T>)>);
 
         impl<'a, T> Iterator for $name<'a, T> {
-            type Item = &'a Node<'a, T>;
+            type Item = &'a Node<T>;
 
-            fn next(&mut self) -> Option<&'a Node<'a, T>> {
+            fn next(&mut self) -> Option<&Node<T>> {
                 match self.0.take() {
                     Some(node) => {
                         self.0 = node.$next.get();
@@ -308,9 +302,9 @@ axis_iterator! {
 pub struct Descendants<'a, T: 'a>(Traverse<'a, T>);
 
 impl<'a, T> Iterator for Descendants<'a, T> {
-    type Item = &'a Node<'a, T>;
+    type Item = &Node<T>;
 
-    fn next(&mut self) -> Option<&'a Node<'a, T>> {
+    fn next(&mut self) -> Option<&Node<T>> {
         loop {
             match self.0.next() {
                 Some(NodeEdge::Start(node)) => return Some(node),
@@ -340,14 +334,14 @@ macro_rules! traverse_iterator {
         #[$attr]
         #[derive(Debug)]
         pub struct $name<'a, T: 'a> {
-            root: &'a Node<'a, T>,
-            next: Option<NodeEdge<&'a Node<'a, T>>>,
+            root: &Node<T>,
+            next: Option<NodeEdge<&Node<T>>>,
         }
 
         impl<'a, T> Iterator for $name<'a, T> {
-            type Item = NodeEdge<&'a Node<'a, T>>;
+            type Item = NodeEdge<&Node<T>>;
 
-            fn next(&mut self) -> Option<NodeEdge<&'a Node<'a, T>>> {
+            fn next(&mut self) -> Option<NodeEdge<&Node<T>>> {
                 match self.next.take() {
                     Some(item) => {
                         self.next = match item {
@@ -402,7 +396,7 @@ fn it_works() {
     let drop_counter = Cell::new(0);
     {
         let mut new_counter = 0;
-        let arena = typed_arena::Arena::new();
+        let arena = id_arena::Arena::new();
         let mut new = || {
             new_counter += 1;
             arena.alloc(Node::new((new_counter, DropTracker(&drop_counter))))

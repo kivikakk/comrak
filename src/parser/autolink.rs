@@ -1,5 +1,4 @@
 use std::str;
-use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
@@ -7,6 +6,7 @@ use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
 use crate::parser::inlines::Subject;
 use crate::parser::{inlines::make_inline, Spx};
+use crate::Arena;
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<AstNode<'a>>,

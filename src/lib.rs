@@ -19,7 +19,7 @@
 //!
 //! ```rust
 //! use comrak::{Arena, parse_document, format_html, Options};
-//! use comrak::nodes::{NodeValue};
+//! use comrak::nodes::NodeValue;
 //!
 //! # fn main() {
 //! let arena = Arena::new();
@@ -91,9 +91,9 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
 pub use html::Anchorizer;
+pub use id_arena::Arena;
 pub use parser::options;
 pub use parser::{parse_document, Options, ResolvedReference};
-pub use typed_arena::Arena;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
