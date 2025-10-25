@@ -73,3 +73,173 @@ fn sourcepos() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_with_block_quote() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "> a\n"
+        ">>>\n",
+        (document (1:1-3:3) [
+            (multiline_block_quote (1:1-3:3) [
+                (block_quote (2:1-2:3) [
+                    (paragraph (2:3-2:3) [
+                        (text (2:3-2:3) "a")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_block_quote_and_para() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "> a\n"
+        "\n"
+        "b\n"
+        ">>>\n",
+        (document (1:1-5:3) [
+            (multiline_block_quote (1:1-5:3) [
+                (block_quote (2:1-2:3) [
+                    (paragraph (2:3-2:3) [
+                        (text (2:3-2:3) "a")
+                    ])
+                ])
+                (paragraph (4:1-4:1) [
+                    (text (4:1-4:1) "b")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_list() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "* a\n"
+        ">>>\n",
+        (document (1:1-3:3) [
+            (multiline_block_quote (1:1-3:3) [
+                (list (2:1-2:3) [
+                    (item (2:1-2:3) [
+                        (paragraph (2:3-2:3) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_list_and_para() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "* a\n"
+        "\n"
+        "b\n"
+        ">>>\n",
+        (document (1:1-5:3) [
+            (multiline_block_quote (1:1-5:3) [
+                (list (2:1-2:3) [
+                    (item (2:1-2:3) [
+                        (paragraph (2:3-2:3) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+                (paragraph (4:1-4:1) [
+                    (text (4:1-4:1) "b")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_block_quote_with_list() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "> * a\n"
+        ">>>\n",
+        (document (1:1-3:3) [
+            (multiline_block_quote (1:1-3:3) [
+                (block_quote (2:1-2:5) [
+                    (list (2:3-2:5) [
+                        (item (2:3-2:5) [
+                            (paragraph (2:5-2:5) [
+                                (text (2:5-2:5) "a")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_block_quote_with_list_and_para() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "> * a\n"
+        "\n"
+        "b\n"
+        ">>>\n",
+        (document (1:1-5:3) [
+            (multiline_block_quote (1:1-5:3) [
+                (block_quote (2:1-2:5) [
+                    (list (2:3-2:5) [
+                        (item (2:3-2:5) [
+                            (paragraph (2:5-2:5) [
+                                (text (2:5-2:5) "a")
+                            ])
+                        ])
+                    ])
+                ])
+                (paragraph (4:1-4:1) [
+                    (text (4:1-4:1) "b")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_block_quote_with_block_quote_and_list() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        ">> a\n"
+        ">> * b\n"
+        ">>>\n",
+        (document (1:1-4:3) [
+            (multiline_block_quote (1:1-4:3) [
+                (block_quote (2:1-3:6) [
+                    (block_quote (2:2-3:6) [
+                        (paragraph (2:4-2:4) [
+                            (text (2:4-2:4) "a")
+                        ])
+                        (list (3:4-3:6) [
+                            (item (3:4-3:6) [
+                                (paragraph (3:6-3:6) [
+                                    (text (3:6-3:6) "b")
+                                ])
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
