@@ -583,6 +583,8 @@ where
                 self.finalize_borrowed(child, child_ast).unwrap();
             }
 
+            self.fix_zero_end_columns(container);
+
             self.current = self.finalize_borrowed(container, ast).unwrap();
             return None;
         }
@@ -593,6 +595,44 @@ where
             i -= 1;
         }
         Some(())
+    }
+
+    // Walk the subtree rooted at each child of `container` in post-order
+    // and, where a node's end column is zero, attempt to adopt a
+    // non-zero end column from its deepest-last descendant; otherwise
+    // fall back to the node's start position.
+    fn fix_zero_end_columns(&mut self, container: Node<'a>) {
+        for ch in container.children() {
+            // explicit stack for post-order traversal: (node, visited)
+            let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
+            stack.push((ch, false));
+
+            while let Some((node, visited)) = stack.pop() {
+                if !visited {
+                    stack.push((node, true));
+                    for c in node.children() {
+                        stack.push((c, false));
+                    }
+                } else {
+                    let end_col = node.data().sourcepos.end.column;
+                    if end_col == 0 {
+                        if let Some(mut last_desc) = node.last_child() {
+                            while let Some(ld) = last_desc.last_child() {
+                                last_desc = ld;
+                            }
+                            let pos = last_desc.data().sourcepos.end;
+                            if pos.column != 0 {
+                                node.data_mut().sourcepos.end = pos;
+                                continue;
+                            }
+                        }
+                        // fallback to start position (better than column 0)
+                        let sp = node.data().sourcepos.start;
+                        node.data_mut().sourcepos.end = sp;
+                    }
+                }
+            }
+        }
     }
 
     /////////////////////
