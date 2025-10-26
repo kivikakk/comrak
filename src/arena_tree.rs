@@ -22,12 +22,14 @@ impl<T> Clone for Id<T> {
 impl<T> Eq for Id<T> {}
 
 impl<T> PartialEq for Id<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
 impl<T> From<id_arena::Id<Node<T>>> for Id<T> {
+    #[inline]
     fn from(value: id_arena::Id<Node<T>>) -> Self {
         Self(value)
     }
@@ -92,26 +94,31 @@ impl<T> Node<T> {
     }
 
     /// Return a reference to the parent node, unless this node is the root of the tree.
+    #[inline]
     pub fn parent(&self) -> Option<Id<T>> {
         self.parent.get()
     }
 
     /// Return a reference to the first child of this node, unless it has no child.
+    #[inline]
     pub fn first_child(&self) -> Option<Id<T>> {
         self.first_child.get()
     }
 
     /// Return a reference to the last child of this node, unless it has no child.
+    #[inline]
     pub fn last_child(&self) -> Option<Id<T>> {
         self.last_child.get()
     }
 
     /// Return a reference to the previous sibling of this node, unless it is a first child.
+    #[inline]
     pub fn previous_sibling(&self) -> Option<Id<T>> {
         self.previous_sibling.get()
     }
 
     /// Return a reference to the next sibling of this node, unless it is a last child.
+    #[inline]
     pub fn next_sibling(&self) -> Option<Id<T>> {
         self.next_sibling.get()
     }
@@ -138,27 +145,27 @@ impl<T> Node<T> {
 
 impl<T> Id<T> {
     /// Return a reference to the parent node, unless this node is the root of the tree.
-    pub fn parent(self, arena: &Arena<T>) -> Option<Id<T>> {
+    pub fn parent(&self, arena: &Arena<T>) -> Option<Id<T>> {
         arena[self.0].parent.get()
     }
 
     /// Return a reference to the first child of this node, unless it has no child.
-    pub fn first_child(self, arena: &Arena<T>) -> Option<Id<T>> {
+    pub fn first_child(&self, arena: &Arena<T>) -> Option<Id<T>> {
         arena[self.0].first_child.get()
     }
 
     /// Return a reference to the last child of this node, unless it has no child.
-    pub fn last_child(self, arena: &Arena<T>) -> Option<Id<T>> {
+    pub fn last_child(&self, arena: &Arena<T>) -> Option<Id<T>> {
         arena[self.0].last_child.get()
     }
 
     /// Return a reference to the previous sibling of this node, unless it is a first child.
-    pub fn previous_sibling(self, arena: &Arena<T>) -> Option<Id<T>> {
+    pub fn previous_sibling(&self, arena: &Arena<T>) -> Option<Id<T>> {
         arena[self.0].previous_sibling.get()
     }
 
     /// Return a reference to the next sibling of this node, unless it is a last child.
-    pub fn next_sibling(self, arena: &Arena<T>) -> Option<Id<T>> {
+    pub fn next_sibling(&self, arena: &Arena<T>) -> Option<Id<T>> {
         arena[self.0].next_sibling.get()
     }
 
