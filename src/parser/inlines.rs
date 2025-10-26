@@ -1764,42 +1764,38 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
-        let brackets_len = self.brackets.len();
+        let last = self.brackets.pop().unwrap();
 
         let nl = NodeLink { url, title };
-        let inl = self.make_inline(
+        let inl = make_inline(
+            self.arena,
             if is_image {
                 NodeValue::Image(Box::new(nl))
             } else {
                 NodeValue::Link(Box::new(nl))
             },
-            // Manually set below.
-            self.scanner.pos,
-            self.scanner.pos,
+            (
+                last.inl_text.data(self.arena).sourcepos.start,
+                (
+                    self.line,
+                    usize::try_from(
+                        self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
+                    )
+                    .unwrap(),
+                )
+                    .into(),
+            )
+                .into(),
         );
-        inl.data_mut(self.arena).sourcepos.start = self.brackets[brackets_len - 1]
-            .inl_text
-            .data(self.arena)
-            .sourcepos
-            .start;
-        inl.data_mut(self.arena).sourcepos.end.column = usize::try_from(
-            self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
-        )
-        .unwrap();
 
-        self.brackets[brackets_len - 1]
-            .inl_text
-            .insert_before(self.arena, inl);
-        let mut itm = self.brackets[brackets_len - 1]
-            .inl_text
-            .next_sibling(self.arena);
+        last.inl_text.insert_before(self.arena, inl);
+        let mut itm = last.inl_text.next_sibling(self.arena);
         while let Some(it) = itm {
             itm = it.next_sibling(self.arena);
             inl.append(self.arena, it);
         }
-        self.brackets[brackets_len - 1].inl_text.detach(self.arena);
-        self.process_emphasis(self.brackets[brackets_len - 1].position);
-        self.brackets.pop();
+        last.inl_text.detach(self.arena);
+        self.process_emphasis(last.position);
 
         if !is_image {
             self.no_link_openers = true;
@@ -1959,7 +1955,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    #[inline]
     fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
         if pos == 0 {
             return ('\n', None);
