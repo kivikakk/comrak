@@ -6,10 +6,10 @@
 use comrak::nodes::{Node, NodeLink, NodeValue};
 use comrak::{parse_document, Arena};
 
-fn autotitle_images<'a>(
+fn autotitle_images(
     nl: &mut NodeLink,
-    _context: &mut comrak::html::Context,
-    node: Node<'a>,
+    context: &mut comrak::html::Context,
+    node: Node,
     entering: bool,
 ) {
     if !entering || !nl.title.is_empty() {
@@ -18,8 +18,8 @@ fn autotitle_images<'a>(
 
     let mut s = String::new();
 
-    for child in node.children() {
-        if let Some(text) = child.data().value.text() {
+    for child in node.children(context.arena) {
+        if let Some(text) = child.data(context.arena).value.text() {
             s += text;
         }
     }
@@ -27,23 +27,28 @@ fn autotitle_images<'a>(
     nl.title = s;
 }
 
-fn formatter<'a>(
+fn formatter(
     context: &mut comrak::html::Context,
-    node: &'a comrak::nodes::AstNode<'a>,
+    node: comrak::nodes::Node,
     entering: bool,
 ) -> Result<comrak::html::ChildRendering, std::fmt::Error> {
-    if let NodeValue::Image(ref mut nl) = node.data_mut().value {
+    if let NodeValue::Image(ref mut nl) = node.data_mut(context.arena).value {
         autotitle_images(nl, context, node, entering);
     }
     comrak::html::format_node_default(context, node, entering)
 }
 
 fn main() {
-    let arena = Arena::new();
-    let parsed = parse_document(&arena, "![my epic image](/img.png)", &Default::default());
+    let mut arena = Arena::new();
+    let parsed = parse_document(
+        &mut arena,
+        "![my epic image](/img.png)",
+        &Default::default(),
+    );
 
     let mut out = String::new();
     comrak::html::format_document_with_formatter(
+        &arena,
         parsed,
         &Default::default(),
         &mut out,

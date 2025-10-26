@@ -15,21 +15,22 @@ fn large() {
 
     fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
         // The returned nodes are created in the supplied Arena, and are bound by its lifetime.
-        let arena = Arena::new();
+        let mut arena = Arena::new();
 
         // Parse the document into a root `Node`
-        let root = parse_document(&arena, document, &Options::default());
+        let root = parse_document(&mut arena, document, &Options::default());
 
         // Iterate over all the descendants of root.
-        for node in root.descendants() {
-            if let NodeValue::Text(ref mut text) = node.data_mut().value {
+        let mut it = root.descendants_free();
+        while let Some(node) = it.next(&arena) {
+            if let NodeValue::Text(ref mut text) = node.data_mut(&mut arena).value {
                 // If the node is a text node, perform the string replacement.
                 *text = text.to_mut().replace(orig_string, replacement).into()
             }
         }
 
         let mut html = String::new();
-        format_html(root, &Options::default(), &mut html).unwrap();
+        format_html(&arena, root, &Options::default(), &mut html).unwrap();
 
         html
     }

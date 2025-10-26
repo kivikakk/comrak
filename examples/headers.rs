@@ -9,11 +9,11 @@ fn main() {
 }
 
 fn get_document_title(document: &str) -> String {
-    let arena = Arena::new();
-    let root = parse_document(&arena, document, &Options::default());
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, document, &Options::default());
 
-    for node in root.children() {
-        let header = match node.data().value {
+    for node in root.children(&arena) {
+        let header = match node.data(&arena).value {
             NodeValue::Heading(c) => c,
             _ => continue,
         };
@@ -22,7 +22,7 @@ fn get_document_title(document: &str) -> String {
             continue;
         }
 
-        return collect_text(node);
+        return collect_text(&arena, node);
     }
 
     "Untitled Document".to_string()

@@ -186,11 +186,13 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
             pub fn format_document(
-                root: &'a $crate::nodes::AstNode,
+                arena: &$crate::Arena,
+                root: $crate::nodes::Node,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
             ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -202,13 +204,15 @@ macro_rules! create_formatter {
 
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
-            pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode,
+            pub fn format_document_with_plugins<'o, 'c: 'o>(
+                arena: &$crate::Arena,
+                root: $crate::nodes::Node,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
             ) -> ::std::fmt::Result {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -220,10 +224,10 @@ macro_rules! create_formatter {
 
             fn formatter(
                 context: &mut $crate::html::Context<()>,
-                node: &'a $crate::nodes::AstNode,
+                node: $crate::nodes::Node,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data().value {
+                match node.data(context.arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
@@ -249,12 +253,14 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
             pub fn format_document(
-                root: &'a $crate::nodes::AstNode,
+                arena: &$crate::Arena,
+                root: $crate::nodes::Node,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
                 user: $type,
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -266,14 +272,16 @@ macro_rules! create_formatter {
 
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
-            pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode,
+            pub fn format_document_with_plugins<'o, 'c: 'o>(
+                arena: &$crate::Arena,
+                root: $crate::nodes::Node,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
                 user: $type,
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 $crate::html::format_document_with_formatter(
+                    arena,
                     root,
                     options,
                     output,
@@ -285,10 +293,10 @@ macro_rules! create_formatter {
 
             fn formatter(
                 context: &mut $crate::html::Context<$type>,
-                node: &'a $crate::nodes::AstNode,
+                node: $crate::nodes::Node,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data().value {
+                match node.data(context.arena).value {
                     $(
                         $pat => {
                             $crate::formatter_captures!((context, node, entering), ($( $capture ),*));

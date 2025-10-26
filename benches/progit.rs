@@ -14,9 +14,9 @@ fn bench_progit(b: &mut Bencher) {
     let mut s = String::with_capacity(524288);
     file.read_to_string(&mut s).unwrap();
     b.iter(|| {
-        let arena = Arena::new();
-        let root = parse_document(&arena, &s, &Options::default());
+        let mut arena = Arena::new();
+        let root = parse_document(&mut arena, &s, &Options::default());
         let mut output = String::new();
-        format_html(root, &Options::default(), &mut output).unwrap()
+        format_html(&arena, root, &Options::default(), &mut output).unwrap()
     });
 }

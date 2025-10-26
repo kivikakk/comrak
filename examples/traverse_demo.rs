@@ -18,14 +18,14 @@ use comrak::{
 
 // Note: root can be any Node, not just document root.
 
-fn extract_text_traverse<'a>(root: Node<'a>) -> String {
+fn extract_text_traverse(arena: &Arena, root: Node) -> String {
     let mut output_text = String::new();
 
     // Use `traverse` to get an iterator of `NodeEdge` and process each.
-    for edge in root.traverse() {
+    for edge in root.traverse(&arena) {
         if let NodeEdge::Start(node) = edge {
             // Handle the Start edge to process the node's value.
-            if let NodeValue::Text(ref text) = node.data().value {
+            if let NodeValue::Text(ref text) = node.data(arena).value {
                 // If the node is a text node, append its text to `output_text`.
                 output_text.push_str(text);
             }
@@ -43,14 +43,14 @@ fn main() {
     println!("INPUT:  {}", markdown_input);
 
     // setup parser
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let options = Options::default();
 
     // parse document and return root.
-    let root = parse_document(&arena, markdown_input, &options);
+    let root = parse_document(&mut arena, markdown_input, &options);
 
     // extract text and print
-    println!("OUTPUT: {}", extract_text_traverse(root).as_str())
+    println!("OUTPUT: {}", extract_text_traverse(&arena, root).as_str())
 }
 
 #[cfg(test)]
@@ -61,9 +61,9 @@ mod tests {
     #[test]
     fn extract_text_traverse_test() {
         let markdown_input = "Hello, *worl[d](https://example.com/)*";
-        let arena = Arena::new();
+        let mut arena = Arena::new();
         let options = Options::default();
-        let root = parse_document(&arena, markdown_input, &options);
-        assert_eq!("Hello, world", extract_text_traverse(root));
+        let root = parse_document(&mut arena, markdown_input, &options);
+        assert_eq!("Hello, world", extract_text_traverse(&arena, root));
     }
 }
