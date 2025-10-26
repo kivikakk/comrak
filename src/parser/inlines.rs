@@ -1508,10 +1508,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
                     if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
+                        let source_end_pos = if endurl < endall
+                            && self.input.as_bytes()[endurl..endall]
+                                .iter()
+                                .any(|&c| strings::is_line_end_char(c))
+                        {
+                            endurl
+                        } else {
+                            endall + 1
+                        };
+
                         self.pos = endall + 1;
                         let url = strings::clean_url(url);
                         let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                        self.close_bracket_match(is_image, url.into(), title.into());
+                        self.close_bracket_match(
+                            is_image,
+                            url.into(),
+                            title.into(),
+                            source_end_pos,
+                        );
                         return None;
                     } else {
                         self.pos = after_link_text_pos;
@@ -1558,7 +1573,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone());
+            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone(), self.pos);
             return None;
         }
 
@@ -1684,7 +1699,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         None
     }
 
-    fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {
+    fn close_bracket_match(
+        &mut self,
+        is_image: bool,
+        url: String,
+        title: String,
+        source_end_pos: usize,
+    ) {
         let brackets_len = self.brackets.len();
 
         let nl = NodeLink { url, title };
@@ -1703,9 +1724,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .data()
             .sourcepos
             .start;
-        inl.data_mut().sourcepos.end.column =
-            usize::try_from(self.pos as isize + self.column_offset + self.line_offset as isize)
-                .unwrap();
+        inl.data_mut().sourcepos.end.column = usize::try_from(
+            source_end_pos as isize + self.column_offset + self.line_offset as isize,
+        )
+        .unwrap();
 
         self.brackets[brackets_len - 1].inl_text.insert_before(inl);
         let mut itm = self.brackets[brackets_len - 1].inl_text.next_sibling();

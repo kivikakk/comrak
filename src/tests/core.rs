@@ -549,6 +549,52 @@ fn link_sourcepos_newline() {
     );
 }
 
+// https://github.com/kivikakk/comrak/issues/572
+#[test]
+fn link_sourcepos_newline_n_between_dest_and_title() {
+    assert_ast_match!(
+        [],
+        "[link](   /uri\n  \"title\"  )\n",
+        (document (1:1-2:12) [
+            (paragraph (1:1-2:12) [
+                (link (1:1-1:14) "/uri" [
+                    (text (1:2-1:5) "link")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_newline_r_between_dest_and_title() {
+    assert_ast_match!(
+        [],
+        "[link](   /uri\r  \"title\"  )\r",
+        (document (1:1-2:12) [
+            (paragraph (1:1-2:12) [
+                (link (1:1-1:14) "/uri" [
+                    (text (1:2-1:5) "link")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_sourcepos_newline_rn_between_dest_and_title() {
+    assert_ast_match!(
+        [],
+        "[link](   /uri\r\n  \"title\"  )\r\n",
+        (document (1:1-2:12) [
+            (paragraph (1:1-2:12) [
+                (link (1:1-1:14) "/uri" [
+                    (text (1:2-1:5) "link")
+                ])
+            ])
+        ])
+    );
+}
+
 #[test]
 fn link_sourcepos_truffle() {
     assert_ast_match!(
