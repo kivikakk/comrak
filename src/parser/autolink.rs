@@ -376,12 +376,14 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
 
             link_end -= 1;
         } else if cclose == LINK_END_UNICODE[2] {
-            let slice = &bytes[link_end - LINK_END_UNICODE.len() .. link_end];
+            let slice = &bytes[link_end - LINK_END_UNICODE.len()..link_end];
 
             if slice == LINK_END_UNICODE {
                 link_end -= LINK_END_UNICODE.len();
                 break;
             }
+
+            break;
         } else {
             break;
         }
