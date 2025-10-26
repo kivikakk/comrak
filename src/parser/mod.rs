@@ -1765,38 +1765,35 @@ where
         }
     }
 
-    fn postprocess_text_nodes(&mut self, node: Node) {
-        self.postprocess_text_nodes_with_context(node, false);
-    }
-
-    fn postprocess_text_nodes_with_context(&mut self, node: Node, in_bracket_context: bool) {
-        let mut stack = vec![(node, in_bracket_context)];
+    fn postprocess_text_nodes(&mut self, root: Node) {
+        let mut stack = vec![(root, false)];
         let mut children = vec![];
 
-        while let Some((node, in_bracket_context)) = stack.pop() {
-            let mut nch = node.first_child(self.arena);
+        while let Some((parent, in_bracket_context)) = stack.pop() {
+            let mut it = parent.first_child(self.arena);
 
-            while let Some(n) = nch {
+            while let Some(node) = it {
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
-                let n_ast = n.data_mut(self.arena);
-                let sourcepos = n_ast.sourcepos;
-                match n_ast.value {
-                    NodeValue::Text(ref mut n_root) => {
-                        let mut root = mem::take(n_root);
+                let ast = node.data_mut(self.arena);
+                let sourcepos = ast.sourcepos;
+                match ast.value {
+                    NodeValue::Text(ref mut text) => {
+                        let mut subject = mem::take(text);
                         let sourcepos = self.postprocess_text_node_with_context(
-                            n,
+                            node,
                             sourcepos,
-                            root.to_mut(),
+                            subject.to_mut(),
                             in_bracket_context,
                         );
-                        let n_ast = n.data_mut(self.arena);
-                        n_ast.sourcepos = sourcepos;
-                        let NodeValue::Text(ref mut n_root) = n_ast.value else {
+                        let ast = node.data_mut(self.arena);
+                        ast.sourcepos = sourcepos;
+
+                        let NodeValue::Text(ref mut text) = ast.value else {
                             unreachable!()
                         };
-                        mem::swap(&mut root, n_root);
-                        emptied = root.is_empty();
+                        mem::swap(&mut subject, text);
+                        emptied = text.is_empty();
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -1807,13 +1804,13 @@ where
                 }
 
                 if !emptied {
-                    children.push((n, child_in_bracket_context));
+                    children.push((node, child_in_bracket_context));
                 }
 
-                nch = n.next_sibling(self.arena);
+                it = node.next_sibling(self.arena);
 
                 if emptied {
-                    n.detach(self.arena);
+                    node.detach(self.arena);
                 }
             }
 
@@ -1887,7 +1884,7 @@ where
 
     // Processes tasklist items in a text node.  This function
     // must not detach `node`, as we iterate through siblings in
-    // `postprocess_text_nodes_with_context` and may end up relying on it
+    // `postprocess_text_nodes` and may end up relying on it
     // remaining in place.
     //
     // `text` is the mutably borrowed textual content of `node`.  If it is empty

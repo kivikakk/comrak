@@ -973,7 +973,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         endpos -= 1;
 
         // Extract the content
-        let content = self.input[self.scanner.pos..endpos].to_string(); // XXX
+        let content = self.input[self.scanner.pos..endpos].to_string();
 
         // Empty inline footnote should not parse
         if content.is_empty() {
@@ -1001,7 +1001,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .alloc(
                 Ast::new(
                     NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                        name: name.clone(),
+                        name: name,
                         total_references: 0,
                     }),
                     (self.line, 1).into(),
@@ -1030,7 +1030,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut subj = Subject::new(
             self.arena,
             self.options,
-            content.into(),
+            content,
             1, // Use line 1 to match the paragraph's sourcepos
             self.refmap,
             self.footnote_defs,
@@ -1924,11 +1924,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     #[inline]
     fn peek_byte_n(&self, n: usize) -> Option<u8> {
         self.scanner.peek_byte_n(&self.input, n)
-    }
-
-    #[inline]
-    fn spnl(&mut self) {
-        self.scanner.spnl(&self.input)
     }
 
     #[inline]

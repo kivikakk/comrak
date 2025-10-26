@@ -116,10 +116,24 @@ impl<T> Node<T> {
         self.next_sibling.get()
     }
 
-    // /// Returns whether two references point to the same node.
-    // pub fn same_node(&self, other: &Node<T>) -> bool {
-    //     std::ptr::eq(self, other)
-    // }
+    /// Detach a node from its parent and siblings. Children are not affected.
+    pub fn detach(&self, arena: &Arena<T>) {
+        let parent = self.parent.take().map(|i| &arena[i.0]);
+        let previous_sibling = self.previous_sibling.take();
+        let next_sibling = self.next_sibling.take();
+
+        if let Some(next_sibling) = next_sibling {
+            arena[next_sibling.0].previous_sibling.set(previous_sibling);
+        } else if let Some(parent) = parent {
+            parent.last_child.set(previous_sibling);
+        }
+
+        if let Some(previous_sibling) = previous_sibling {
+            arena[previous_sibling.0].next_sibling.set(next_sibling);
+        } else if let Some(parent) = parent {
+            parent.first_child.set(next_sibling);
+        }
+    }
 }
 
 impl<T> Id<T> {
@@ -237,96 +251,91 @@ impl<T> Id<T> {
     }
 
     /// Detach a node from its parent and siblings. Children are not affected.
+    #[inline]
     pub fn detach(self, arena: &Arena<T>) {
-        let parent = arena[self.0].parent.take();
-        let previous_sibling = arena[self.0].previous_sibling.take();
-        let next_sibling = arena[self.0].next_sibling.take();
-
-        if let Some(next_sibling) = next_sibling {
-            arena[next_sibling.0].previous_sibling.set(previous_sibling);
-        } else if let Some(parent) = parent {
-            arena[parent.0].last_child.set(previous_sibling);
-        }
-
-        if let Some(previous_sibling) = previous_sibling {
-            arena[previous_sibling.0].next_sibling.set(next_sibling);
-        } else if let Some(parent) = parent {
-            arena[parent.0].first_child.set(next_sibling);
-        }
+        arena[self.0].detach(arena);
     }
 
     /// Append a new child to this node, after existing children.
     pub fn append(self, arena: &Arena<T>, new_child: Id<T>) {
-        new_child.detach(arena);
-        arena[new_child.0].parent.set(Some(self));
-        if let Some(last_child) = arena[self.0].last_child.take() {
-            arena[new_child.0].previous_sibling.set(Some(last_child));
-            debug_assert!(arena[last_child.0].next_sibling.get().is_none());
-            arena[last_child.0].next_sibling.set(Some(new_child));
+        let node = &arena[self.0];
+        let new_child_node = &arena[new_child.0];
+        new_child_node.detach(arena);
+
+        new_child_node.parent.set(Some(self));
+        if let Some(last_child) = node.last_child.take() {
+            let last_child_node = &arena[last_child.0];
+            debug_assert!(last_child_node.next_sibling.get().is_none());
+            new_child_node.previous_sibling.set(Some(last_child));
+            last_child_node.next_sibling.set(Some(new_child));
         } else {
-            debug_assert!(arena[self.0].first_child.get().is_none());
-            arena[self.0].first_child.set(Some(new_child));
+            debug_assert!(node.first_child.get().is_none());
+            node.first_child.set(Some(new_child));
         }
-        arena[self.0].last_child.set(Some(new_child));
+        node.last_child.set(Some(new_child));
     }
 
     /// Prepend a new child to this node, before existing children.
     pub fn prepend(self, arena: &Arena<T>, new_child: Id<T>) {
-        new_child.detach(arena);
-        arena[new_child.0].parent.set(Some(self));
-        if let Some(first_child) = arena[self.0].first_child.take() {
-            debug_assert!(arena[first_child.0].previous_sibling.get().is_none());
-            arena[first_child.0].previous_sibling.set(Some(new_child));
-            arena[new_child.0].next_sibling.set(Some(first_child));
+        let node = &arena[self.0];
+        let new_child_node = &arena[new_child.0];
+        new_child_node.detach(arena);
+
+        new_child_node.parent.set(Some(self));
+        if let Some(first_child) = node.first_child.take() {
+            let first_child_node = &arena[first_child.0];
+            debug_assert!(first_child_node.previous_sibling.get().is_none());
+            first_child_node.previous_sibling.set(Some(new_child));
+            new_child_node.next_sibling.set(Some(first_child));
         } else {
-            debug_assert!(arena[self.0].first_child.get().is_none());
-            arena[self.0].last_child.set(Some(new_child));
+            debug_assert!(node.first_child.get().is_none());
+            node.last_child.set(Some(new_child));
         }
-        arena[self.0].first_child.set(Some(new_child));
+        node.first_child.set(Some(new_child));
     }
 
     /// Insert a new sibling after this node.
     pub fn insert_after(self, arena: &Arena<T>, new_sibling: Id<T>) {
-        new_sibling.detach(arena);
-        arena[new_sibling.0].parent.set(arena[self.0].parent.get());
-        arena[new_sibling.0].previous_sibling.set(Some(self));
-        if let Some(next_sibling) = arena[self.0].next_sibling.take() {
-            // debug_assert!(std::ptr::eq(
-            //     next_sibling.previous_sibling.get().unwrap(),
-            //     self
-            // ));
-            arena[next_sibling.0]
-                .previous_sibling
-                .set(Some(new_sibling));
-            arena[new_sibling.0].next_sibling.set(Some(next_sibling));
-        } else if let Some(parent) = arena[self.0].parent.get() {
-            // debug_assert!(std::ptr::eq(parent.last_child.get().unwrap(), self));
-            arena[parent.0].last_child.set(Some(new_sibling));
+        let node = &arena[self.0];
+        let new_sibling_node = &arena[new_sibling.0];
+        new_sibling_node.detach(arena);
+
+        new_sibling_node.parent.set(node.parent.get());
+        new_sibling_node.previous_sibling.set(Some(self));
+        if let Some(next_sibling) = node.next_sibling.take() {
+            let next_sibling_node = &arena[next_sibling.0];
+            debug_assert!(next_sibling_node.previous_sibling.get().unwrap() == self);
+            next_sibling_node.previous_sibling.set(Some(new_sibling));
+            new_sibling_node.next_sibling.set(Some(next_sibling));
+        } else if let Some(parent) = node.parent.get() {
+            let parent_node = &arena[parent.0];
+            debug_assert!(parent_node.last_child.get().unwrap() == self);
+            parent_node.last_child.set(Some(new_sibling));
         }
-        arena[self.0].next_sibling.set(Some(new_sibling));
+        node.next_sibling.set(Some(new_sibling));
     }
 
     /// Insert a new sibling before this node.
     pub fn insert_before(self, arena: &Arena<T>, new_sibling: Id<T>) {
-        new_sibling.detach(arena);
-        arena[new_sibling.0].parent.set(arena[self.0].parent.get());
-        arena[new_sibling.0].next_sibling.set(Some(self));
-        if let Some(previous_sibling) = arena[self.0].previous_sibling.take() {
-            arena[new_sibling.0]
+        let node = &arena[self.0];
+        let new_sibling_node = &arena[new_sibling.0];
+        new_sibling_node.detach(arena);
+
+        new_sibling_node.parent.set(node.parent.get());
+        new_sibling_node.next_sibling.set(Some(self));
+        if let Some(previous_sibling) = node.previous_sibling.take() {
+            let previous_sibling_node = &arena[previous_sibling.0];
+            debug_assert!(previous_sibling_node.next_sibling.get().unwrap() == self);
+            new_sibling_node
                 .previous_sibling
                 .set(Some(previous_sibling));
-            // debug_assert!(std::ptr::eq(
-            //     previous_sibling.next_sibling.get().unwrap(),
-            //     self
-            // ));
-            arena[previous_sibling.0]
-                .next_sibling
-                .set(Some(new_sibling));
-        } else if let Some(parent) = arena[self.0].parent.get() {
-            // debug_assert!(std::ptr::eq(parent.first_child.get().unwrap(), self));
-            arena[parent.0].first_child.set(Some(new_sibling));
+            previous_sibling_node.next_sibling.set(Some(new_sibling));
+        } else if let Some(parent) = node.parent.get() {
+            let parent_node = &arena[parent.0];
+            debug_assert!(parent_node.first_child.get().unwrap() == self);
+            parent_node.first_child.set(Some(new_sibling));
         }
-        arena[self.0].previous_sibling.set(Some(new_sibling));
+        node.previous_sibling.set(Some(new_sibling));
     }
 }
 
