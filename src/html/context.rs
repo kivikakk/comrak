@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::fmt::{self, Write};
 
 use crate::html::{self, Anchorizer};
@@ -10,7 +9,7 @@ use crate::{options::Plugins, Options};
 /// this struct's [`Write`] interface.
 pub struct Context<'a, 'o, 'c, T = ()> {
     output: &'o mut dyn Write,
-    last_was_lf: Cell<bool>,
+    last_was_lf: bool,
 
     /// [`Arena`] nodes are found in.
     pub arena: &'a Arena,
@@ -37,7 +36,7 @@ impl<'a, 'o, 'c, T> Context<'a, 'o, 'c, T> {
     ) -> Self {
         Context {
             output,
-            last_was_lf: Cell::new(true),
+            last_was_lf: true,
             arena,
             options,
             plugins,
@@ -60,7 +59,7 @@ impl<'a, 'o, 'c, T> Context<'a, 'o, 'c, T> {
     ///
     /// (In other words, ensures the output is at a new line.)
     pub fn cr(&mut self) -> fmt::Result {
-        if !self.last_was_lf.get() {
+        if !self.last_was_lf {
             self.write_str("\n")?;
         }
         Ok(())
@@ -82,7 +81,7 @@ impl<'a, 'o, 'c, T> Write for Context<'a, 'o, 'c, T> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let l = s.len();
         if l > 0 {
-            self.last_was_lf.set(s.as_bytes()[l - 1] == 10);
+            self.last_was_lf = s.as_bytes()[l - 1] == 10;
         }
         self.output.write_str(s)
     }
