@@ -314,21 +314,21 @@ fn blockquote_hard_linebreak_nonlazy_space() {
 fn backticks_num() {
     let input = "Some `code1`. More ``` code2 ```.\n";
 
-    let arena = Arena::new();
+    let mut arena = Arena::new();
     let options = Options::default();
-    let root = parse_document(&arena, input, &options);
+    let root = parse_document(&mut arena, input, &options);
 
     let code1 = NodeValue::Code(NodeCode {
         num_backticks: 1,
         literal: "code1".to_string(),
     });
-    asssert_node_eq(root, &[0, 1], &code1);
+    assert_node_eq(&arena, root, &[0, 1], &code1);
 
     let code2 = NodeValue::Code(NodeCode {
         num_backticks: 3,
         literal: "code2".to_string(),
     });
-    asssert_node_eq(root, &[0, 3], &code2);
+    assert_node_eq(&arena, root, &[0, 3], &code2);
 }
 
 #[test]

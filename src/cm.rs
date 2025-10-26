@@ -16,8 +16,9 @@ use crate::strings::trim_start_match;
 use crate::Arena;
 
 /// Formats an AST as CommonMark, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
+pub fn format_document(
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
@@ -25,21 +26,22 @@ pub fn format_document<'a>(
     // validation in normal workflow. As a middleground, we validate the AST in debug builds. See
     // https://github.com/kivikakk/comrak/issues/371.
     #[cfg(debug_assertions)]
-    root.validate().unwrap_or_else(|e| {
+    root.validate(arena).unwrap_or_else(|e| {
         panic!("The document to format is ill-formed: {:?}", e);
     });
 
-    format_document_with_plugins(root, options, output, &Plugins::default())
+    format_document_with_plugins(arena, root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
 pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn Write,
     _plugins: &Plugins,
 ) -> fmt::Result {
-    let mut f = CommonMarkFormatter::new(root, options);
+    let mut f = CommonMarkFormatter::new(arena, root, options);
     f.format(root)?;
 
     // TODO:
@@ -64,7 +66,8 @@ pub fn format_document_with_plugins<'a>(
 }
 
 struct CommonMarkFormatter<'a, 'o, 'c> {
-    node: Node<'a>,
+    arena: &'a Arena,
+    node: Node,
     options: &'o Options<'c>,
     output: String,
     prefix: String,
@@ -75,7 +78,7 @@ struct CommonMarkFormatter<'a, 'o, 'c> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
-    custom_escape: Option<fn(Node<'a>, char) -> bool>,
+    custom_escape: Option<fn(&'a Arena, Node, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
 }
@@ -95,8 +98,9 @@ impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
 }
 
 impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
-    fn new(node: Node<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a Arena, node: Node, options: &'o Options<'c>) -> Self {
         CommonMarkFormatter {
+            arena,
             node,
             options,
             output: String::new(),
@@ -148,7 +152,10 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 self.column = self.prefix.len();
             }
 
-            if self.custom_escape.map_or(false, |f| f(self.node, c)) {
+            if self
+                .custom_escape
+                .map_or(false, |f| f(self.arena, self.node, c))
+            {
                 self.output.push('\\');
             }
 
@@ -280,7 +287,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format(&mut self, node: Node<'a>) -> fmt::Result {
+    fn format(&mut self, node: Node) -> fmt::Result {
         enum Phase {
             Pre,
             Post,
@@ -292,7 +299,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 Phase::Pre => {
                     if self.format_node(node, true)? {
                         stack.push((node, Phase::Post));
-                        for ch in node.reverse_children() {
+                        for ch in node.reverse_children(self.arena) {
                             stack.push((ch, Phase::Pre));
                         }
                     }
@@ -305,15 +312,17 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn get_in_tight_list_item(&self, node: Node<'a>) -> bool {
-        let tmp = match node.containing_block() {
+    fn get_in_tight_list_item(&self, node: Node) -> bool {
+        let tmp = match node.containing_block(self.arena) {
             Some(tmp) => tmp,
             None => return false,
         };
 
-        match tmp.data().value {
+        match tmp.data(self.arena).value {
             NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = tmp.parent().unwrap().data().value {
+                if let NodeValue::List(ref nl) =
+                    tmp.parent(self.arena).unwrap().data(self.arena).value
+                {
                     return nl.tight;
                 }
                 return false;
@@ -321,14 +330,16 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             _ => {}
         }
 
-        let parent = match tmp.parent() {
+        let parent = match tmp.parent(self.arena) {
             Some(parent) => parent,
             None => return false,
         };
 
-        match parent.data().value {
+        match parent.data(self.arena).value {
             NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = parent.parent().unwrap().data().value {
+                if let NodeValue::List(ref nl) =
+                    parent.parent(self.arena).unwrap().data(self.arena).value
+                {
                     return nl.tight;
                 }
             }
@@ -338,33 +349,35 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         false
     }
 
-    fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
+    fn format_node(&mut self, node: Node, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
         let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
-        let parent_node = node.parent();
+        let parent_node = node.parent(self.arena);
         if entering {
             if parent_node.is_some()
                 && node_matches!(
+                    self.arena,
                     parent_node.unwrap(),
                     NodeValue::Item(..) | NodeValue::TaskItem(..)
                 )
             {
                 self.in_tight_list_item = self.get_in_tight_list_item(node);
             }
-        } else if node_matches!(node, NodeValue::List(..)) {
+        } else if node_matches!(self.arena, node, NodeValue::List(..)) {
             self.in_tight_list_item = parent_node.is_some()
                 && node_matches!(
+                    self.arena,
                     parent_node.unwrap(),
                     NodeValue::Item(..) | NodeValue::TaskItem(..)
                 )
                 && self.get_in_tight_list_item(node);
         }
         let next_is_block = node
-            .next_sibling()
-            .map_or(true, |next| next.data().value.block());
+            .next_sibling(self.arena)
+            .map_or(true, |next| next.data(self.arena).value.block());
 
-        match node.data().value {
+        match node.data(self.arena).value {
             NodeValue::Document => (),
             NodeValue::FrontMatter(ref fm) => self.format_front_matter(fm, entering)?,
             NodeValue::BlockQuote => self.format_block_quote(entering)?,
@@ -386,7 +399,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
             NodeValue::Strong => {
-                if parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong)
+                if parent_node.is_none()
+                    || !node_matches!(self.arena, parent_node.unwrap(), NodeValue::Strong)
                 {
                     self.format_strong()?;
                 }
@@ -445,8 +459,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_list(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
-        let ol_start = match node.data().value {
+    fn format_list(&mut self, node: Node, entering: bool) -> fmt::Result {
+        let ol_start = match node.data(self.arena).value {
             NodeValue::List(NodeList {
                 list_type: ListType::Ordered,
                 start,
@@ -464,9 +478,13 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 self.ol_stack.pop();
             }
 
-            if match node.next_sibling() {
+            if match node.next_sibling(self.arena) {
                 Some(next_sibling) => {
-                    node_matches!(next_sibling, NodeValue::CodeBlock(..) | NodeValue::List(..))
+                    node_matches!(
+                        self.arena,
+                        next_sibling,
+                        NodeValue::CodeBlock(..) | NodeValue::List(..)
+                    )
                 }
                 _ => false,
             } {
@@ -478,8 +496,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_item(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
-        let parent = match node.parent().unwrap().data().value {
+    fn format_item(&mut self, node: Node, entering: bool) -> fmt::Result {
+        let parent = match node.parent(self.arena).unwrap().data(self.arena).value {
             NodeValue::List(ref nl) => *nl,
             _ => unreachable!(),
         };
@@ -496,7 +514,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 };
                 list_number
             } else {
-                match node.data().value {
+                match node.data(self.arena).value {
                     NodeValue::Item(ref ni) => ni.start,
                     NodeValue::TaskItem(_) => parent.start,
                     _ => unreachable!(),
@@ -571,7 +589,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_code_block(
         &mut self,
-        node: Node<'a>,
+        node: Node,
         ncb: &NodeCodeBlock,
         entering: bool,
     ) -> fmt::Result {
@@ -579,10 +597,14 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             return Ok(());
         }
 
-        let first_in_list_item = node.previous_sibling().is_none()
-            && match node.parent() {
+        let first_in_list_item = node.previous_sibling(self.arena).is_none()
+            && match node.parent(self.arena) {
                 Some(parent) => {
-                    node_matches!(parent, NodeValue::Item(..) | NodeValue::TaskItem(..))
+                    node_matches!(
+                        self.arena,
+                        parent,
+                        NodeValue::Item(..) | NodeValue::TaskItem(..)
+                    )
                 }
                 _ => false,
             };
@@ -740,12 +762,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         write!(self, "**")
     }
 
-    fn format_emph(&mut self, node: Node<'a>) -> fmt::Result {
-        let emph_delim = if match node.parent() {
-            Some(parent) => matches!(parent.data().value, NodeValue::Emph),
+    fn format_emph(&mut self, node: Node) -> fmt::Result {
+        let emph_delim = if match node.parent(self.arena) {
+            Some(parent) => matches!(parent.data(self.arena,).value, NodeValue::Emph),
             _ => false,
-        } && node.next_sibling().is_none()
-            && node.previous_sibling().is_none()
+        } && node.next_sibling(self.arena).is_none()
+            && node.previous_sibling(self.arena).is_none()
         {
             "_"
         } else {
@@ -759,12 +781,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
     fn format_task_item(
         &mut self,
         symbol: Option<char>,
-        node: Node<'a>,
+        node: Node,
         entering: bool,
     ) -> fmt::Result {
         if node
-            .parent()
-            .map(|p| node_matches!(p, NodeValue::List(_)))
+            .parent(self.arena)
+            .map(|p| node_matches!(self.arena, p, NodeValue::List(_)))
             .unwrap_or_default()
         {
             self.format_item(node, entering)?;
@@ -806,11 +828,11 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_link(
         &mut self,
-        node: Node<'a>,
+        node: Node,
         nl: &NodeLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
-        if is_autolink(node, nl) {
+        if is_autolink(self.arena, node, nl) {
             if entering {
                 write!(self, "<{}>", trim_start_match(&nl.url, "mailto:"))?;
                 return Ok(false);
@@ -892,20 +914,26 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_table_cell(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+    fn format_table_cell(&mut self, node: Node, entering: bool) -> fmt::Result {
         if entering {
             write!(self, " ")?;
         } else {
             write!(self, " |")?;
 
-            let row = &node.parent().unwrap().data().value;
+            let row = &node.parent(self.arena).unwrap().data(self.arena).value;
             let in_header = match *row {
                 NodeValue::TableRow(header) => header,
                 _ => panic!(),
             };
 
-            if in_header && node.next_sibling().is_none() {
-                let table = &node.parent().unwrap().parent().unwrap().data().value;
+            if in_header && node.next_sibling(self.arena).is_none() {
+                let table = &node
+                    .parent(self.arena)
+                    .unwrap()
+                    .parent(self.arena)
+                    .unwrap()
+                    .data(self.arena)
+                    .value;
                 let alignments = match table {
                     NodeValue::Table(nt) => &nt.alignments,
                     _ => panic!(),
@@ -1058,7 +1086,7 @@ fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
     i
 }
 
-fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
+fn is_autolink(arena: &Arena, node: Node, nl: &NodeLink) -> bool {
     if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
@@ -1067,9 +1095,9 @@ fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
         return false;
     }
 
-    let link_text = match node.first_child() {
+    let link_text = match node.first_child(arena) {
         None => return false,
-        Some(child) => match child.data().value {
+        Some(child) => match child.data(arena).value {
             NodeValue::Text(ref t) => t.clone(),
             _ => return false,
         },
@@ -1078,8 +1106,8 @@ fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
     trim_start_match(&nl.url, "mailto:") == link_text
 }
 
-fn table_escape<'a>(node: Node<'a>, c: char) -> bool {
-    match node.data().value {
+fn table_escape(arena: &Arena, node: Node, c: char) -> bool {
+    match node.data(arena).value {
         NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
         _ => c == '|',
     }
@@ -1101,11 +1129,11 @@ fn minimize_commonmark(text: &mut String, original_options: &Options) {
     for ix in ixs {
         text.remove(ix - adjust);
 
-        let arena = Arena::new();
-        let root = crate::parse_document(&arena, text, &options_without);
+        let mut arena = Arena::new();
+        let root = crate::parse_document(&mut arena, text, &options_without);
 
         let mut out = String::new();
-        format_document(root, &options_without, &mut out).unwrap();
+        format_document(&arena, root, &options_without, &mut out).unwrap();
 
         if original == out {
             // Removed character is guaranteed to be 1 byte wide, since it's

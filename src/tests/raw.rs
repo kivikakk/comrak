@@ -14,27 +14,29 @@ fn raw_node() {
     options.render.r#unsafe = false;
     options.extension.tagfilter = true;
 
-    let arena = Arena::<AstNode>::new();
-    let root = parse_document(&arena, user_input, &options);
+    let mut arena = Arena::new();
+    let root = parse_document(&mut arena, user_input, &options);
     let raw_ast_inline = Ast::new(
         NodeValue::Raw(system_input_inline.to_string()),
         (0, 0).into(),
     );
-    let raw_node_inline = arena.alloc(raw_ast_inline.into());
-    root.first_child()
+    let raw_node_inline = arena.alloc(raw_ast_inline.into()).into();
+    root.first_child(&arena)
         .unwrap()
-        .last_child()
+        .last_child(&arena)
         .unwrap()
-        .insert_after(raw_node_inline);
+        .insert_after(&mut arena, raw_node_inline);
     let raw_ast_block = Ast::new(
         NodeValue::Raw(system_input_block.to_string()),
         (0, 0).into(),
     );
-    let raw_node_block = arena.alloc(raw_ast_block.into());
-    root.first_child().unwrap().insert_after(raw_node_block);
+    let raw_node_block = arena.alloc(raw_ast_block.into()).into();
+    root.first_child(&arena)
+        .unwrap()
+        .insert_after(&mut arena, raw_node_block);
 
     let mut output = String::new();
-    html::format_document(root, &options, &mut output).unwrap();
+    html::format_document(&arena, root, &options, &mut output).unwrap();
     compare_strs(
         &output,
         concat!(
@@ -47,12 +49,18 @@ fn raw_node() {
     );
 
     let mut md = String::new();
-    cm::format_document_with_plugins(root, &options, &mut md, &options::Plugins::default())
-        .unwrap();
+    cm::format_document_with_plugins(
+        &arena,
+        root,
+        &options,
+        &mut md,
+        &options::Plugins::default(),
+    )
+    .unwrap();
     compare_strs(&md, &input, "cm", &input);
 
     let mut xml = String::new();
-    crate::xml::format_document(root, &options, &mut xml).unwrap();
+    crate::xml::format_document(&arena, root, &options, &mut xml).unwrap();
     compare_strs(
         &xml,
         concat!(

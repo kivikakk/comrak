@@ -1,7 +1,6 @@
 //! The CommonMark AST.
 
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::arena_tree;
@@ -14,12 +13,108 @@ pub use crate::parser::shortcodes::NodeShortCode;
 /// mutably borrowed.
 #[macro_export]
 macro_rules! node_matches {
-    ($node:expr, $( $pat:pat )|+) => {{
+    ($node:expr, $( $pat:pat )|+) => { compile_error!("missing arena argument in node_matches!") };
+    ($arena:expr, $node:expr, $( $pat:pat )|+) => {{
         matches!(
-            $node.data().value,
+            $node.data($arena).value,
             $( $pat )|+
         )
     }};
+}
+
+/// A single node in the CommonMark AST.
+///
+/// The struct contains metadata about the node's position in the original document, and the core
+/// enum, `NodeValue`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ast {
+    /// The node value itself.
+    pub value: NodeValue,
+
+    /// The positions in the source document this node comes from.
+    pub sourcepos: Sourcepos,
+
+    pub(crate) content: String,
+    pub(crate) open: bool,
+    pub(crate) last_line_blank: bool,
+    pub(crate) table_visited: bool,
+    pub(crate) line_offsets: Vec<usize>,
+}
+
+/// XXX
+pub type Arena = arena_tree::Arena<Ast>;
+
+#[allow(dead_code)]
+#[cfg(target_pointer_width = "64")]
+/// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
+/// bigger.
+const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
+
+#[allow(dead_code)]
+#[cfg(target_pointer_width = "64")]
+/// Assert the total size of what we allocate in the Arena, for reference.
+///
+/// Note that the size adds to Ast:
+/// * 120 bytes for arena_tree::Node's 5 `Id<T>`s: 3*8? Is PhantomData taking up space?? Why so big
+const AST_NODE_SIZE_ASSERTION: [u8; 248] = [0; std::mem::size_of::<AstNode>()];
+
+/// The type of a node within the document.
+///
+/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
+/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
+///
+/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
+///
+/// ```rust
+/// # use comrak::nodes::{AstNode, NodeValue};
+/// let root = AstNode::from(NodeValue::Document);
+/// ```
+///
+/// Note that no sourcepos information is given to the created node. If you wish
+/// to assign sourcepos information, use the `From` trait to create an `AstNode`
+/// from an `Ast`:
+///
+/// ```rust
+/// # use comrak::nodes::{Ast, AstNode, NodeValue};
+/// let root = AstNode::from(Ast::new_with_sourcepos(
+///     NodeValue::Paragraph,
+///     (4, 1, 4, 10).into(),
+/// ));
+/// ```
+///
+/// For practical use, you'll probably need it allocated in an `Arena`, in which
+/// case you can use `.into()` to simplify creation:
+///
+/// ```rust
+/// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
+/// # let arena = Arena::<AstNode>::new();
+/// let node_in_arena = arena.alloc(NodeValue::Document.into());
+/// ```
+pub type AstNode = arena_tree::Node<Ast>;
+
+/// A reference to a node in an arena.  Unless you are manually creating nodes
+/// before the arena, this is the type you will see most often.
+pub type Node = arena_tree::Id<Ast>;
+
+impl Node {
+    /// XXX
+    pub fn with_value(arena: &mut Arena, value: NodeValue) -> Self {
+        arena.alloc(value.into()).into()
+    }
+}
+
+impl From<NodeValue> for AstNode {
+    /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
+    fn from(value: NodeValue) -> Self {
+        arena_tree::Node::new(Ast::new(value, LineColumn::default()))
+    }
+}
+
+impl From<Ast> for AstNode {
+    /// Create a new AST node with the given Ast.
+    fn from(ast: Ast) -> Self {
+        arena_tree::Node::new(ast)
+    }
 }
 
 /// The core AST node enum.
@@ -660,40 +755,6 @@ impl NodeValue {
     }
 }
 
-/// A single node in the CommonMark AST.
-///
-/// The struct contains metadata about the node's position in the original document, and the core
-/// enum, `NodeValue`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ast {
-    /// The node value itself.
-    pub value: NodeValue,
-
-    /// The positions in the source document this node comes from.
-    pub sourcepos: Sourcepos,
-
-    pub(crate) content: String,
-    pub(crate) open: bool,
-    pub(crate) last_line_blank: bool,
-    pub(crate) table_visited: bool,
-    pub(crate) line_offsets: Vec<usize>,
-}
-
-#[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
-/// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
-/// bigger.
-const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
-
-#[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
-/// Assert the total size of what we allocate in the Arena, for reference.
-///
-/// Note that the size adds to Ast:
-/// * 8 bytes for RefCell.
-/// * 40 bytes for arena_tree::Node's 5 pointers.
-const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
-
 /// Represents the position in the source Markdown this node was rendered from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sourcepos {
@@ -787,72 +848,20 @@ impl Ast {
     }
 }
 
-/// The type of a node within the document.
-///
-/// It is bound by the lifetime `'a`, which corresponds to the `Arena` nodes are
-/// allocated in. Child `Ast`s are wrapped in `RefCell` for interior mutability.
-///
-/// You can construct a new `AstNode` from a `NodeValue` using the `From` trait:
-///
-/// ```rust
-/// # use comrak::nodes::{AstNode, NodeValue};
-/// let root = AstNode::from(NodeValue::Document);
-/// ```
-///
-/// Note that no sourcepos information is given to the created node. If you wish
-/// to assign sourcepos information, use the `From` trait to create an `AstNode`
-/// from an `Ast`:
-///
-/// ```rust
-/// # use comrak::nodes::{Ast, AstNode, NodeValue};
-/// let root = AstNode::from(Ast::new_with_sourcepos(
-///     NodeValue::Paragraph,
-///     (4, 1, 4, 10).into(),
-/// ));
-/// ```
-///
-/// For practical use, you'll probably need it allocated in an `Arena`, in which
-/// case you can use `.into()` to simplify creation:
-///
-/// ```rust
-/// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
-/// # let arena = Arena::<AstNode>::new();
-/// let node_in_arena = arena.alloc(NodeValue::Document.into());
-/// ```
-pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
-
-/// A reference to a node in an arena.  Unless you are manually creating nodes
-/// before the arena, this is the type you will see most often.
-pub type Node<'a> = &'a AstNode<'a>;
-
-impl<'a> From<NodeValue> for AstNode<'a> {
-    /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
-    fn from(value: NodeValue) -> Self {
-        arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
-    }
-}
-
-impl<'a> From<Ast> for AstNode<'a> {
-    /// Create a new AST node with the given Ast.
-    fn from(ast: Ast) -> Self {
-        arena_tree::Node::new(RefCell::new(ast))
-    }
-}
-
 /// Validation errors produced by [arena_tree::Node::validate].
-#[derive(Debug, Clone)]
-pub enum ValidationError<'a> {
+#[derive(Debug, Clone, Copy)]
+pub enum ValidationError {
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
     /// node is found in a block container, a block is found in an inline node, etc.
     InvalidChildType {
         /// The parent node.
-        parent: Node<'a>,
+        parent: Node,
         /// The child node.
-        child: Node<'a>,
+        child: Node,
     },
 }
 
-impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
+impl AstNode {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {
@@ -860,12 +869,12 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 return false;
             }
             NodeValue::FrontMatter(_) => {
-                return node_matches!(self, NodeValue::Document);
+                return matches!(self.data.value, NodeValue::Document);
             }
             _ => {}
         }
 
-        match self.data().value {
+        match self.data.value {
             NodeValue::Document
             | NodeValue::BlockQuote
             | NodeValue::FootnoteDefinition(_)
@@ -964,7 +973,9 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             _ => false,
         }
     }
+}
 
+impl Node {
     /// The Comrak representation of a markdown node in Rust isn't strict enough to rule out
     /// invalid trees according to the CommonMark specification. One simple example is that block
     /// containers, such as lists, should only contain blocks, but it's possible to put naked
@@ -976,39 +987,37 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     ///
     /// Note that those invalid trees can only be generated programmatically. Parsing markdown with
     /// Comrak, on the other hand, should always produce a valid tree.
-    pub fn validate(&'a self) -> Result<(), ValidationError<'a>> {
+    pub fn validate(self, arena: &Arena) -> Result<(), ValidationError> {
         let mut stack = vec![self];
 
-        while let Some(node) = stack.pop() {
+        while let Some(id) = stack.pop() {
             // Check that this node type is valid wrt to the type of its parent.
+            let node = &arena[id.0];
             if let Some(parent) = node.parent() {
-                if !parent.can_contain_type(&node.data().value) {
-                    return Err(ValidationError::InvalidChildType {
-                        parent,
-                        child: node,
-                    });
+                if !arena[parent.0].can_contain_type(&node.data.value) {
+                    return Err(ValidationError::InvalidChildType { parent, child: id });
                 }
             }
 
-            stack.extend(node.children());
+            stack.extend(id.children(arena));
         }
 
         Ok(())
     }
 
-    pub(crate) fn last_child_is_open(&self) -> bool {
-        self.last_child().map_or(false, |n| n.data().open)
+    pub(crate) fn last_child_is_open(self, arena: &Arena) -> bool {
+        self.last_child(arena).map_or(false, |n| n.data(arena).open)
     }
 
-    pub(crate) fn ends_with_blank_line(&self) -> bool {
+    pub(crate) fn ends_with_blank_line(self, arena: &Arena) -> bool {
         let mut it = Some(self);
         while let Some(cur) = it {
-            if cur.data().last_line_blank {
+            if cur.data(arena).last_line_blank {
                 return true;
             }
-            match cur.data().value {
+            match cur.data(arena).value {
                 NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                    it = cur.last_child()
+                    it = cur.last_child(arena)
                 }
                 _ => it = None,
             };
@@ -1016,13 +1025,13 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         false
     }
 
-    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
+    pub(crate) fn containing_block(self, arena: &Arena) -> Option<Node> {
         let mut ch = Some(self);
         while let Some(n) = ch {
-            if n.data().value.block() {
+            if n.data(arena).value.block() {
                 return Some(n);
             }
-            ch = n.parent();
+            ch = n.parent(arena);
         }
         None
     }

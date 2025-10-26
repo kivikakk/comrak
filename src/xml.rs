@@ -5,21 +5,24 @@ use crate::character_set::character_set;
 use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::options::{Options, Plugins};
+use crate::Arena;
 
 const MAX_INDENT: u32 = 40;
 
 /// Formats an AST as HTML, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
+pub fn format_document(
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
-    format_document_with_plugins(root, options, output, &Plugins::default())
+    format_document_with_plugins(arena, root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins(
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn Write,
     plugins: &Plugins,
@@ -27,19 +30,26 @@ pub fn format_document_with_plugins<'a>(
     output.write_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")?;
     output.write_str("<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n")?;
 
-    XmlFormatter::new(options, output, plugins).format(root, false)
+    XmlFormatter::new(arena, options, output, plugins).format(root, false)
 }
 
-struct XmlFormatter<'o, 'c> {
+struct XmlFormatter<'a, 'o, 'c> {
+    arena: &'a Arena,
     output: &'o mut dyn Write,
     options: &'o Options<'c>,
     _plugins: &'o Plugins<'o>,
     indent: u32,
 }
 
-impl<'o, 'c> XmlFormatter<'o, 'c> {
-    fn new(options: &'o Options<'c>, output: &'o mut dyn Write, plugins: &'o Plugins) -> Self {
+impl<'a, 'o, 'c> XmlFormatter<'a, 'o, 'c> {
+    fn new(
+        arena: &'a Arena,
+        options: &'o Options<'c>,
+        output: &'o mut dyn Write,
+        plugins: &'o Plugins,
+    ) -> Self {
         XmlFormatter {
+            arena,
             options,
             output,
             _plugins: plugins,
@@ -70,7 +80,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format<'a>(&mut self, node: Node<'a>, plain: bool) -> fmt::Result {
+    fn format(&mut self, node: Node, plain: bool) -> fmt::Result {
         // Traverse the AST iteratively using a work stack, with pre- and
         // post-child-traversal phases. During pre-order traversal render the
         // opening tags, then push the node back onto the stack for the
@@ -87,7 +97,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             match phase {
                 Phase::Pre => {
                     let new_plain = if plain {
-                        match node.data().value {
+                        match node.data(self.arena).value {
                             NodeValue::Text(ref literal) => {
                                 self.escape(literal)?;
                             }
@@ -110,7 +120,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         self.format_node(node, true)?
                     };
 
-                    for ch in node.reverse_children() {
+                    for ch in node.reverse_children(self.arena) {
                         stack.push((ch, new_plain, Phase::Pre));
                     }
                 }
@@ -131,11 +141,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: Node<'a>, entering: bool) -> Result<bool, std::fmt::Error> {
+    fn format_node(&mut self, node: Node, entering: bool) -> Result<bool, std::fmt::Error> {
         if entering {
             self.indent()?;
 
-            let ast = node.data();
+            let ast = node.data(self.arena);
 
             write!(self.output, "<{}", ast.value.xml_node_name())?;
 
@@ -231,13 +241,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     // noop
                 }
                 NodeValue::TableCell => {
-                    let mut ancestors = node.ancestors().skip(1);
+                    let mut ancestors = node.ancestors(self.arena).skip(1);
 
-                    let header_row = &ancestors.next().unwrap().data().value;
-                    let table = &ancestors.next().unwrap().data().value;
+                    let header_row = &ancestors.next().unwrap().data(self.arena).value;
+                    let table = &ancestors.next().unwrap().data(self.arena).value;
 
                     if let (NodeValue::TableRow(true), NodeValue::Table(nt)) = (header_row, table) {
-                        let ix = node.preceding_siblings().count() - 1;
+                        let ix = node.preceding_siblings(self.arena).count() - 1;
                         if let Some(xml_align) = nt.alignments[ix].xml_name() {
                             write!(self.output, " align=\"{}\"", xml_align)?;
                         }
@@ -310,16 +320,20 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Subtext => {}
             }
 
-            if node.first_child().is_some() {
+            if node.first_child(self.arena).is_some() {
                 self.indent += 2;
             } else if !was_literal {
                 self.output.write_str(" /")?;
             }
             self.output.write_str(">\n")?;
-        } else if node.first_child().is_some() {
+        } else if node.first_child(self.arena).is_some() {
             self.indent -= 2;
             self.indent()?;
-            writeln!(self.output, "</{}>", node.data().value.xml_node_name())?;
+            writeln!(
+                self.output,
+                "</{}>",
+                node.data(self.arena).value.xml_node_name()
+            )?;
         }
         Ok(false)
     }

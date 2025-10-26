@@ -1,16 +1,16 @@
-use std::str;
+use std::{mem, str};
 use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::Subject;
-use crate::parser::{inlines::make_inline, Spx};
+use crate::nodes::{Node, NodeLink, NodeValue, Sourcepos};
+use crate::parser::inlines::{make_inline, Subject};
+use crate::parser::Spx;
 use crate::Arena;
 
-pub(crate) fn process_email_autolinks<'a>(
-    arena: &'a Arena<AstNode<'a>>,
-    node: Node<'a>,
+pub(crate) fn process_email_autolinks(
+    arena: &mut Arena,
+    node: Node,
     contents: &mut String,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
@@ -54,7 +54,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
         if let Some((post, reverse, skip)) = post_org {
             i -= reverse;
-            node.insert_after(post);
+            node.insert_after(arena, post);
 
             let remain = if i + skip < len {
                 let remain = &contents[i + skip..];
@@ -78,10 +78,10 @@ pub(crate) fn process_email_autolinks<'a>(
                 nsp_end_col,
             )
                 .into();
-            post.data_mut().sourcepos = nsp;
+            post.data_mut(arena).sourcepos = nsp;
             // Inner text gets same sourcepos as link, since there's nothing but
             // the text.
-            post.first_child().unwrap().data_mut().sourcepos = nsp;
+            post.first_child(arena).unwrap().data_mut(arena).sourcepos = nsp;
 
             if let Some(remain) = remain {
                 let mut asp: Sourcepos = (
@@ -92,20 +92,19 @@ pub(crate) fn process_email_autolinks<'a>(
                 )
                     .into();
                 let after = make_inline(arena, NodeValue::Text(remain.into()), asp);
-                post.insert_after(after);
+                post.insert_after(arena, after);
 
-                let after_ast = &mut after.data_mut();
+                let mut remainder = mem::take(after.data_mut(arena).value.text_mut().unwrap());
                 process_email_autolinks(
                     arena,
                     after,
-                    match after_ast.value {
-                        NodeValue::Text(ref mut t) => t.to_mut(),
-                        _ => unreachable!(),
-                    },
+                    remainder.to_mut(),
                     relaxed_autolinks,
                     &mut asp,
                     spx,
                 );
+                let after_ast = after.data_mut(arena);
+                mem::swap(&mut remainder, after_ast.value.text_mut().unwrap());
                 after_ast.sourcepos = asp;
             }
 
@@ -113,12 +112,12 @@ pub(crate) fn process_email_autolinks<'a>(
         }
     }
 }
-fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+fn email_match(
+    arena: &mut Arena,
     contents: &str,
     i: usize,
     relaxed_autolinks: bool,
-) -> Option<(Node<'a>, usize, usize)> {
+) -> Option<(Node, usize, usize)> {
     const EMAIL_OK_SET: [bool; 256] = character_set!(b".+-_");
 
     let size = contents.len();
@@ -207,11 +206,12 @@ fn email_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
+    let text = make_inline(
         arena,
         NodeValue::Text(text.to_string().into()),
         (0, 1, 0, 1).into(),
-    ));
+    );
+    inl.append(arena, text);
     Some((inl, rewind, rewind + link_end))
 }
 
@@ -227,11 +227,9 @@ fn validate_protocol(protocol: &str, contents: &str, cursor: usize) -> bool {
     size - cursor + rewind >= protocol.len() && &contents[cursor - rewind..cursor] == protocol
 }
 
-pub fn www_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+pub fn www_match(subject: &mut Subject<'_, '_, '_, '_, '_, '_>) -> Option<(Node, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
 
@@ -268,11 +266,12 @@ pub fn www_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
+    let text = make_inline(
         subject.arena,
         NodeValue::Text(subject.input[i..link_end + i].to_string().into()),
         (0, 1, 0, 1).into(),
-    ));
+    );
+    inl.append(subject.arena, text);
     Some((inl, 0, link_end))
 }
 
@@ -381,12 +380,10 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
     link_end
 }
 
-pub fn url_match<'a>(
-    subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
-) -> Option<(Node<'a>, usize, usize)> {
+pub fn url_match(subject: &mut Subject<'_, '_, '_, '_, '_, '_>) -> Option<(Node, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
     let size = subject.input.len();
@@ -434,10 +431,11 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     );
 
-    inl.append(make_inline(
+    let text = make_inline(
         subject.arena,
         NodeValue::Text(url.to_string().into()),
         (0, 1, 0, 1).into(),
-    ));
+    );
+    inl.append(subject.arena, text);
     Some((inl, rewind, rewind + link_end))
 }

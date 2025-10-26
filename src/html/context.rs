@@ -1,16 +1,19 @@
-use crate::html::{self, Anchorizer};
-use crate::{options::Plugins, Options};
-
 use std::cell::Cell;
 use std::fmt::{self, Write};
+
+use crate::html::{self, Anchorizer};
+use crate::Arena;
+use crate::{options::Plugins, Options};
 
 /// Context struct given to formatter functions as taken by
 /// [`html::format_document_with_formatter`].  Output can be appended to through
 /// this struct's [`Write`] interface.
-pub struct Context<'o, 'c, T = ()> {
+pub struct Context<'a, 'o, 'c, T = ()> {
     output: &'o mut dyn Write,
     last_was_lf: Cell<bool>,
 
+    /// [`Arena`] nodes are found in.
+    pub arena: &'a Arena,
     /// [`Options`] in use in this render.
     pub options: &'o Options<'c>,
     /// [`Plugins`] in use in this render.
@@ -24,8 +27,9 @@ pub struct Context<'o, 'c, T = ()> {
     pub(super) written_footnote_ix: u32,
 }
 
-impl<'o, 'c, T> Context<'o, 'c, T> {
+impl<'a, 'o, 'c, T> Context<'a, 'o, 'c, T> {
     pub(super) fn new(
+        arena: &'a Arena,
         output: &'o mut dyn Write,
         options: &'o Options<'c>,
         plugins: &'o Plugins<'o>,
@@ -34,6 +38,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
         Context {
             output,
             last_was_lf: Cell::new(true),
+            arena,
             options,
             plugins,
             anchorizer: Anchorizer::new(),
@@ -73,7 +78,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
     }
 }
 
-impl<'o, 'c, T> Write for Context<'o, 'c, T> {
+impl<'a, 'o, 'c, T> Write for Context<'a, 'o, 'c, T> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let l = s.len();
         if l > 0 {
@@ -83,7 +88,7 @@ impl<'o, 'c, T> Write for Context<'o, 'c, T> {
     }
 }
 
-impl<'o, 'c, T> fmt::Debug for Context<'o, 'c, T> {
+impl<'a, 'o, 'c, T> fmt::Debug for Context<'a, 'o, 'c, T> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         formatter.write_str("<comrak::html::Context>")
     }

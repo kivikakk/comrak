@@ -24,19 +24,21 @@ use crate::nodes::{
     NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{Options, Plugins};
-use crate::{node_matches, scanners};
+use crate::{node_matches, scanners, Arena};
 
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;
 pub use context::Context;
 
 /// Formats an AST as HTML, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
+pub fn format_document(
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn Write,
 ) -> fmt::Result {
     format_document_with_formatter(
+        arena,
         root,
         options,
         output,
@@ -47,13 +49,22 @@ pub fn format_document<'a>(
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins(
+    arena: &Arena,
+    root: Node,
     options: &Options,
     output: &mut dyn fmt::Write,
     plugins: &Plugins,
 ) -> fmt::Result {
-    format_document_with_formatter(root, options, output, plugins, format_node_default, ())
+    format_document_with_formatter(
+        arena,
+        root,
+        options,
+        output,
+        plugins,
+        format_node_default,
+        (),
+    )
 }
 
 /// Returned by the [`format_document_with_formatter`] callback to indicate
@@ -174,8 +185,8 @@ macro_rules! create_formatter {
         impl $name {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
-            pub fn format_document<'a>(
-                root: &'a $crate::nodes::AstNode<'a>,
+            pub fn format_document(
+                root: &'a $crate::nodes::AstNode,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
             ) -> ::std::fmt::Result {
@@ -192,7 +203,7 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                root: &'a $crate::nodes::AstNode,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
@@ -207,9 +218,9 @@ macro_rules! create_formatter {
                 )
             }
 
-            fn formatter<'a>(
+            fn formatter(
                 context: &mut $crate::html::Context<()>,
-                node: &'a $crate::nodes::AstNode<'a>,
+                node: &'a $crate::nodes::AstNode,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
                 match node.data().value {
@@ -237,8 +248,8 @@ macro_rules! create_formatter {
         impl $name {
             /// Formats an AST as HTML, modified by the given options.
             #[inline]
-            pub fn format_document<'a>(
-                root: &'a $crate::nodes::AstNode<'a>,
+            pub fn format_document(
+                root: &'a $crate::nodes::AstNode,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
                 user: $type,
@@ -256,7 +267,7 @@ macro_rules! create_formatter {
             /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
             #[inline]
             pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode<'a>,
+                root: &'a $crate::nodes::AstNode,
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
@@ -272,9 +283,9 @@ macro_rules! create_formatter {
                 )
             }
 
-            fn formatter<'a>(
+            fn formatter(
                 context: &mut $crate::html::Context<$type>,
-                node: &'a $crate::nodes::AstNode<'a>,
+                node: &'a $crate::nodes::AstNode,
                 entering: bool,
             ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
                 match node.data().value {
@@ -327,14 +338,15 @@ macro_rules! formatter_captures {
 /// boolean indicating whether the node is being entered into or exited.  The
 /// returned [`ChildRendering`] is used to inform whether and how the node's
 /// children are recursed into automatically.
-pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
-    root: Node<'a>,
+pub fn format_document_with_formatter<'o, 'c: 'o, T>(
+    arena: &Arena,
+    root: Node,
     options: &'o Options<'c>,
     output: &'o mut dyn Write,
     plugins: &'o Plugins<'o>,
     formatter: fn(
         context: &mut Context<T>,
-        node: Node<'a>,
+        node: Node,
         entering: bool,
     ) -> Result<ChildRendering, fmt::Error>,
     user: T,
@@ -345,7 +357,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
     // post-order traversal phase, then push the children in reverse order
     // onto the stack and begin rendering first child.
 
-    let mut context = Context::new(output, options, plugins, user);
+    let mut context = Context::new(arena, output, options, plugins, user);
 
     enum Phase {
         Pre,
@@ -358,7 +370,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
             Phase::Pre => {
                 let new_cr = match child_rendering {
                     ChildRendering::Plain => {
-                        match node.data().value {
+                        match node.data(arena).value {
                             NodeValue::Text(ref literal) => {
                                 context.escape(literal)?;
                             }
@@ -387,7 +399,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
                 };
 
                 if !matches!(new_cr, ChildRendering::Skip) {
-                    for ch in node.reverse_children() {
+                    for ch in node.reverse_children(arena) {
                         stack.push((ch, new_cr, Phase::Pre));
                     }
                 }
@@ -408,10 +420,10 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
 #[inline]
 pub fn format_node_default<'a, T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    match node.data().value {
+    match node.data(context.arena).value {
         // Commonmark
         NodeValue::BlockQuote => render_block_quote(context, node, entering),
         NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
@@ -475,9 +487,9 @@ pub fn format_node_default<'a, T>(
 /// This function renders anything iff `context.options.render.sourcepos` is
 /// true, and includes a leading space if so, so you can use it  unconditionally
 /// immediately before writing a closing `>` in your opening HTML tag.
-pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: Node<'a>) -> fmt::Result {
+pub fn render_sourcepos<T>(context: &mut Context<T>, node: Node) -> fmt::Result {
     if context.options.render.sourcepos {
-        let ast = node.data();
+        let ast = node.data(context.arena);
         if ast.sourcepos.start.line > 0 {
             write!(context, " data-sourcepos=\"{}\"", ast.sourcepos)?;
         }
@@ -485,9 +497,9 @@ pub fn render_sourcepos<'a, T>(context: &mut Context<T>, node: Node<'a>) -> fmt:
     Ok(())
 }
 
-fn render_block_quote<'a, T>(
+fn render_block_quote<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -502,9 +514,9 @@ fn render_block_quote<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_code<'a, T>(
+fn render_code<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nc: &NodeCode,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -519,9 +531,9 @@ fn render_code<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_code_block<'a, T>(
+fn render_code_block<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     ncb: &NodeCodeBlock,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -565,7 +577,7 @@ fn render_code_block<'a, T>(
             }
 
             if context.options.render.sourcepos {
-                let ast = node.data();
+                let ast = node.data(context.arena);
                 pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
             }
 
@@ -597,9 +609,9 @@ fn render_code_block<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_emph<'a, T>(
+fn render_emph<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -613,9 +625,9 @@ fn render_emph<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_heading<'a, T>(
+fn render_heading<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nh: &NodeHeading,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -628,7 +640,7 @@ fn render_heading<'a, T>(
                 context.write_str(">")?;
 
                 if let Some(ref prefix) = context.options.extension.header_ids {
-                    let text_content = collect_text(node);
+                    let text_content = collect_text(context.arena, node);
                     let id = context.anchorizer.anchorize(&text_content);
                     write!(
                         context,
@@ -641,7 +653,7 @@ fn render_heading<'a, T>(
             }
         }
         Some(adapter) => {
-            let text_content = collect_text(node);
+            let text_content = collect_text(context.arena, node);
             let heading = HeadingMeta {
                 level: nh.level,
                 content: text_content,
@@ -650,7 +662,7 @@ fn render_heading<'a, T>(
             if entering {
                 context.cr()?;
                 let sp = if context.options.render.sourcepos {
-                    Some(node.data().sourcepos)
+                    Some(node.data(context.arena).sourcepos)
                 } else {
                     None
                 };
@@ -710,9 +722,9 @@ fn render_html_inline<T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_image<'a, T>(
+fn render_image<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nl: &NodeLink,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -752,9 +764,9 @@ fn render_image<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_item<'a, T>(
+fn render_item<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -769,9 +781,9 @@ fn render_item<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_line_break<'a, T>(
+fn render_line_break<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -783,16 +795,17 @@ fn render_line_break<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_link<'a, T>(
+fn render_link<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nl: &NodeLink,
 ) -> Result<ChildRendering, fmt::Error> {
-    let parent_node = node.parent();
+    let parent_node = node.parent(context.arena);
 
     if !context.options.parse.relaxed_autolinks
-        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Link(..)))
+        || (parent_node.is_none()
+            || !node_matches!(context.arena, parent_node.unwrap(), NodeValue::Link(..)))
     {
         if entering {
             context.write_str("<a")?;
@@ -819,9 +832,9 @@ fn render_link<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_list<'a, T>(
+fn render_list<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nl: &NodeList,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -858,22 +871,22 @@ fn render_list<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_paragraph<'a, T>(
+fn render_paragraph<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     let tight = node
-        .parent()
-        .and_then(|n| n.parent())
-        .map_or(false, |n| match n.data().value {
+        .parent(context.arena)
+        .and_then(|n| n.parent(context.arena))
+        .map_or(false, |n| match n.data(context.arena).value {
             NodeValue::List(nl) => nl.tight,
             NodeValue::DescriptionItem(nd) => nd.tight,
             _ => false,
         })
-        || node
-            .parent()
-            .map_or(false, |n| node_matches!(n, NodeValue::DescriptionTerm));
+        || node.parent(context.arena).map_or(false, |n| {
+            node_matches!(context.arena, n, NodeValue::DescriptionTerm)
+        });
 
     if !tight {
         if entering {
@@ -882,9 +895,9 @@ fn render_paragraph<'a, T>(
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         } else {
-            if let Some(parent) = node.parent() {
-                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value {
-                    if node.next_sibling().is_none() {
+            if let Some(parent) = node.parent(context.arena) {
+                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data(context.arena).value {
+                    if node.next_sibling(context.arena).is_none() {
                         context.write_str(" ")?;
                         put_footnote_backref(context, nfd)?;
                     }
@@ -897,9 +910,9 @@ fn render_paragraph<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_soft_break<'a, T>(
+fn render_soft_break<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -915,14 +928,15 @@ fn render_soft_break<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_strong<'a, T>(
+fn render_strong<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let parent_node = node.parent();
+    let parent_node = node.parent(context.arena);
     if !context.options.render.gfm_quirks
-        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
+        || (parent_node.is_none()
+            || !node_matches!(context.arena, parent_node.unwrap(), NodeValue::Strong))
     {
         if entering {
             context.write_str("<strong")?;
@@ -949,9 +963,9 @@ fn render_text<T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_thematic_break<'a, T>(
+fn render_thematic_break<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -966,9 +980,9 @@ fn render_thematic_break<'a, T>(
 
 // GFM
 
-fn render_footnote_definition<'a, T>(
+fn render_footnote_definition<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nfd: &NodeFootnoteDefinition,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -994,9 +1008,9 @@ fn render_footnote_definition<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_footnote_reference<'a, T>(
+fn render_footnote_reference<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nfr: &NodeFootnoteReference,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -1018,9 +1032,9 @@ fn render_footnote_reference<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_strikethrough<'a, T>(
+fn render_strikethrough<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1034,9 +1048,9 @@ fn render_strikethrough<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_table<'a, T>(
+fn render_table<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1046,8 +1060,8 @@ fn render_table<'a, T>(
         context.write_str(">\n")?;
     } else {
         if let Some(true) = node
-            .last_child()
-            .map(|n| !n.same_node(node.first_child().unwrap()))
+            .last_child(context.arena)
+            .map(|n| n != node.first_child(context.arena).unwrap())
         // node.first_child() guaranteed to exist in block since last_child does!
         {
             context.cr()?;
@@ -1060,24 +1074,24 @@ fn render_table<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_table_cell<'a, T>(
+fn render_table_cell<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
-    let Some(row_node) = node.parent() else {
+    let Some(row_node) = node.parent(context.arena) else {
         panic!("rendered a table cell without a containing table row");
     };
-    let row = &row_node.data().value;
+    let row = &row_node.data(context.arena).value;
     let in_header = match *row {
         NodeValue::TableRow(header) => header,
         _ => panic!("rendered a table cell contained by something other than a table row"),
     };
 
-    let Some(table_node) = row_node.parent() else {
+    let Some(table_node) = row_node.parent(context.arena) else {
         panic!("rendered a table cell without a containing table");
     };
-    let table = &table_node.data().value;
+    let table = &table_node.data(context.arena).value;
     let alignments = match table {
         NodeValue::Table(nt) => &nt.alignments,
         _ => {
@@ -1095,11 +1109,11 @@ fn render_table_cell<'a, T>(
             render_sourcepos(context, node)?;
         }
 
-        let mut start = row_node.first_child().unwrap(); // guaranteed to exist because `node' itself does!
+        let mut start = row_node.first_child(context.arena).unwrap(); // guaranteed to exist because `node' itself does!
         let mut i = 0;
-        while !start.same_node(node) {
+        while start != node {
             i += 1;
-            start = start.next_sibling().unwrap();
+            start = start.next_sibling(context.arena).unwrap();
         }
 
         match alignments[i] {
@@ -1125,9 +1139,9 @@ fn render_table_cell<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_table_row<'a, T>(
+fn render_table_row<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     thead: bool,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -1135,8 +1149,8 @@ fn render_table_row<'a, T>(
         context.cr()?;
         if thead {
             context.write_str("<thead>\n")?;
-        } else if let Some(n) = node.previous_sibling() {
-            if let NodeValue::TableRow(true) = n.data().value {
+        } else if let Some(n) = node.previous_sibling(context.arena) {
+            if let NodeValue::TableRow(true) = n.data(context.arena).value {
                 context.write_str("<tbody>\n")?;
             }
         }
@@ -1155,15 +1169,15 @@ fn render_table_row<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_task_item<'a, T>(
+fn render_task_item<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     symbol: Option<char>,
 ) -> Result<ChildRendering, fmt::Error> {
     let write_li = node
-        .parent()
-        .map(|p| node_matches!(p, NodeValue::List(_)))
+        .parent(context.arena)
+        .map(|p| node_matches!(context.arena, p, NodeValue::List(_)))
         .unwrap_or_default();
 
     if entering {
@@ -1196,9 +1210,9 @@ fn render_task_item<'a, T>(
 
 // Extensions
 
-fn render_alert<'a, T>(
+fn render_alert<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     alert: &NodeAlert,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -1225,9 +1239,9 @@ fn render_alert<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_description_details<'a, T>(
+fn render_description_details<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1241,9 +1255,9 @@ fn render_description_details<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_description_list<'a, T>(
+fn render_description_list<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1258,9 +1272,9 @@ fn render_description_list<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_description_term<'a, T>(
+fn render_description_term<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1274,9 +1288,9 @@ fn render_description_term<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_escaped<'a, T>(
+fn render_escaped<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if context.options.render.escaped_char_spans {
@@ -1304,9 +1318,9 @@ fn render_escaped_tag<T>(
 
 /// Renders a math dollar inline, `$...$` and `$$...$$` using `<span>` to be
 /// similar to other renderers.
-pub fn render_math<'a, T>(
+pub fn render_math<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nm: &NodeMath,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -1318,7 +1332,7 @@ pub fn render_math<'a, T>(
         tag_attributes.push(("data-math-style", style_attr.into()));
 
         if context.options.render.sourcepos {
-            let ast = node.data();
+            let ast = node.data(context.arena);
             tag_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
         }
 
@@ -1331,9 +1345,9 @@ pub fn render_math<'a, T>(
 }
 
 /// Renders a math code block, ```` ```math ```` using `<pre><code>`.
-pub fn render_math_code_block<'a, T>(
+pub fn render_math_code_block<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
     context.cr()?;
@@ -1354,7 +1368,7 @@ pub fn render_math_code_block<'a, T>(
     }
 
     if context.options.render.sourcepos {
-        let ast = node.data();
+        let ast = node.data(context.arena);
         pre_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
     }
 
@@ -1367,9 +1381,9 @@ pub fn render_math_code_block<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_multiline_block_quote<'a, T>(
+fn render_multiline_block_quote<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1399,7 +1413,7 @@ fn render_raw<T>(
 }
 
 #[cfg(feature = "shortcodes")]
-fn render_short_code<'a, T>(
+fn render_short_code<T>(
     context: &mut Context<T>,
     entering: bool,
     nsc: &NodeShortCode,
@@ -1412,9 +1426,9 @@ fn render_short_code<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_spoiler_text<'a, T>(
+fn render_spoiler_text<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1428,9 +1442,9 @@ fn render_spoiler_text<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_subscript<'a, T>(
+fn render_subscript<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1444,9 +1458,9 @@ fn render_subscript<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_subtext<'a, T>(
+fn render_subtext<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1461,9 +1475,9 @@ fn render_subtext<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_superscript<'a, T>(
+fn render_superscript<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1477,9 +1491,9 @@ fn render_superscript<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_underline<'a, T>(
+fn render_underline<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
@@ -1493,9 +1507,9 @@ fn render_underline<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
-fn render_wiki_link<'a, T>(
+fn render_wiki_link<T>(
     context: &mut Context<T>,
-    node: Node<'a>,
+    node: Node,
     entering: bool,
     nwl: &NodeWikiLink,
 ) -> Result<ChildRendering, fmt::Error> {
@@ -1522,9 +1536,9 @@ fn render_wiki_link<'a, T>(
 /// order, returning the concatenated literal contents of text, code and math
 /// blocks. Line breaks and soft breaks are represented as a single whitespace
 /// character.
-pub fn collect_text<'a>(node: Node<'a>) -> String {
+pub fn collect_text(arena: &Arena, node: Node) -> String {
     let mut text = String::with_capacity(20);
-    collect_text_append(node, &mut text);
+    collect_text_append(arena, node, &mut text);
     text
 }
 
@@ -1532,15 +1546,15 @@ pub fn collect_text<'a>(node: Node<'a>) -> String {
 /// order, appending the literal contents of text, code and math blocks to
 /// an output buffer. Line breaks and soft breaks are represented as a single
 /// whitespace character.
-pub fn collect_text_append<'a>(node: Node<'a>, output: &mut String) {
-    match node.data().value {
+pub fn collect_text_append(arena: &Arena, node: Node, output: &mut String) {
+    match node.data(arena).value {
         NodeValue::Text(ref literal) => output.push_str(literal),
         NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
         NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
         NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
         _ => {
-            for n in node.children() {
-                collect_text_append(n, output);
+            for n in node.children(arena) {
+                collect_text_append(arena, n, output);
             }
         }
     }
@@ -1570,9 +1584,9 @@ fn put_footnote_backref<T>(
         context.escape_href(&nfd.name)?;
         let fnix = context.footnote_ix;
         write!(
-            context,
-            "{ref_suffix}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{fnix}{ref_suffix}\" aria-label=\"Back to reference {fnix}{ref_suffix}\">↩{superscript}</a>",
-        )?;
+        context,
+        "{ref_suffix}\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"{fnix}{ref_suffix}\" aria-label=\"Back to reference {fnix}{ref_suffix}\">↩{superscript}</a>",
+    )?;
     }
     Ok(true)
 }

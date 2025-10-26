@@ -5,19 +5,19 @@ use std::mem;
 use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::inlines::count_newlines;
 use crate::parser::Parser;
-use crate::scanners;
 use crate::strings::trim_cow;
+use crate::{scanners, Arena};
 
 // Limit to prevent a malicious input from causing a denial of service.
 // See get_num_autocompleted_cells.
 const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
-pub fn try_opening_block<'a>(
-    parser: &mut Parser<'a, '_, '_>,
-    container: Node<'a>,
+pub fn try_opening_block(
+    parser: &mut Parser,
+    container: Node,
     line: &str,
-) -> Option<(Node<'a>, bool, bool)> {
-    let aligns = match &container.data().value {
+) -> Option<(Node, bool, bool)> {
+    let aligns = match &container.data(parser.arena).value {
         NodeValue::Paragraph => None,
         NodeValue::Table(nt) => Some(nt.alignments.clone()),
         _ => return None,
@@ -29,12 +29,12 @@ pub fn try_opening_block<'a>(
     }
 }
 
-fn try_opening_header<'a>(
-    parser: &mut Parser<'a, '_, '_>,
-    container: Node<'a>,
+fn try_opening_header(
+    parser: &mut Parser,
+    container: Node,
     line: &str,
-) -> Option<(Node<'a>, bool, bool)> {
-    if container.data().table_visited {
+) -> Option<(Node, bool, bool)> {
+    if container.data(parser.arena).table_visited {
         return Some((container, false, false));
     }
 
@@ -49,17 +49,23 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    let mut container_content = mem::take(&mut container.data_mut().content);
+    let mut container_content = mem::take(&mut container.data_mut(parser.arena).content);
     let mut header_row = match row(&container_content, spoiler) {
         Some(header_row) => header_row,
         None => {
-            mem::swap(&mut container.data_mut().content, &mut container_content);
+            mem::swap(
+                &mut container.data_mut(parser.arena).content,
+                &mut container_content,
+            );
             return Some((container, false, true));
         }
     };
 
     if header_row.cells.len() != delimiter_row.cells.len() {
-        mem::swap(&mut container.data_mut().content, &mut container_content);
+        mem::swap(
+            &mut container.data_mut(parser.arena).content,
+            &mut container_content,
+        );
         return Some((container, false, true));
     }
 
@@ -88,7 +94,7 @@ fn try_opening_header<'a>(
         });
     }
 
-    let start = container.data().sourcepos.start;
+    let start = container.data(parser.arena).sourcepos.start;
     let child = Ast::new(
         NodeValue::Table(Box::new(NodeTable {
             alignments,
@@ -98,12 +104,12 @@ fn try_opening_header<'a>(
         })),
         start,
     );
-    let table = parser.arena.alloc(child.into());
-    container.append(table);
+    let table = parser.arena.alloc(child.into()).into();
+    container.append(parser.arena, table);
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
     {
-        let header_ast = &mut header.data_mut();
+        let header_ast = &mut header.data_mut(parser.arena);
         header_ast.sourcepos.start.line = start.line;
         header_ast.sourcepos.end =
             start.column_add((container_content.len() - 2 - header_row.paragraph_offset) as isize);
@@ -118,7 +124,7 @@ fn try_opening_header<'a>(
             NodeValue::TableCell,
             start.column + cell.start_offset - header_row.paragraph_offset,
         );
-        let ast = &mut ast_cell.data_mut();
+        let ast = &mut ast_cell.data_mut(parser.arena);
         ast.sourcepos.start.line = start.line;
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
@@ -131,8 +137,11 @@ fn try_opening_header<'a>(
         i += 1;
     }
 
-    mem::swap(&mut container.data_mut().content, &mut container_content);
-    incr_table_row_count(container, i);
+    mem::swap(
+        &mut container.data_mut(parser.arena).content,
+        &mut container_content,
+    );
+    incr_table_row_count(parser.arena, container, i);
 
     let offset = line.len() - 1 - parser.offset;
     parser.advance_offset(line, offset, false);
@@ -140,21 +149,21 @@ fn try_opening_header<'a>(
     Some((table, true, false))
 }
 
-fn try_opening_row<'a>(
-    parser: &mut Parser<'a, '_, '_>,
-    container: Node<'a>,
+fn try_opening_row(
+    parser: &mut Parser,
+    container: Node,
     alignments: &[TableAlignment],
     line: &str,
-) -> Option<(Node<'a>, bool, bool)> {
+) -> Option<(Node, bool, bool)> {
     if parser.blank {
         return None;
     }
 
-    if get_num_autocompleted_cells(container) > MAX_AUTOCOMPLETED_CELLS {
+    if get_num_autocompleted_cells(parser.arena, container) > MAX_AUTOCOMPLETED_CELLS {
         return None;
     }
 
-    let sourcepos = container.data().sourcepos;
+    let sourcepos = container.data(parser.arena).sourcepos;
     let spoiler = parser.options.extension.spoiler;
     let mut this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
@@ -164,7 +173,7 @@ fn try_opening_row<'a>(
         sourcepos.start.column,
     );
     {
-        new_row.data_mut().sourcepos.end.column = sourcepos.end.column;
+        new_row.data_mut(parser.arena).sourcepos.end.column = sourcepos.end.column;
     }
 
     let mut i = 0;
@@ -177,7 +186,7 @@ fn try_opening_row<'a>(
             NodeValue::TableCell,
             sourcepos.start.column + cell.start_offset,
         );
-        let cell_ast = &mut cell_node.data_mut();
+        let cell_ast = &mut cell_node.data_mut(parser.arena);
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
         mem::swap(&mut cell_ast.content, cell.content.to_mut());
         cell_ast
@@ -189,7 +198,7 @@ fn try_opening_row<'a>(
         i += 1;
     }
 
-    incr_table_row_count(container, i);
+    incr_table_row_count(parser.arena, container, i);
 
     while i < alignments.len() {
         parser.add_child(new_row, NodeValue::TableCell, last_column);
@@ -277,16 +286,15 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
     }
 }
 
-fn try_inserting_table_header_paragraph<'a>(
-    parser: &mut Parser<'a, '_, '_>,
-    container: Node<'a>,
+fn try_inserting_table_header_paragraph(
+    parser: &mut Parser,
+    container: Node,
     container_content: &str,
     paragraph_offset: usize,
 ) {
-    if container
-        .parent()
-        .map_or(false, |p| !p.can_contain_type(&NodeValue::Paragraph))
-    {
+    if container.parent(parser.arena).map_or(false, |p| {
+        !parser.arena[p.0].can_contain_type(&NodeValue::Paragraph)
+    }) {
         return;
     }
 
@@ -296,7 +304,7 @@ fn try_inserting_table_header_paragraph<'a>(
     trim_cow(&mut paragraph_content);
     let paragraph_content = paragraph_content.to_string();
 
-    let container_ast = &mut container.data_mut();
+    let container_ast = container.data_mut(parser.arena);
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
@@ -320,8 +328,8 @@ fn try_inserting_table_header_paragraph<'a>(
     container_ast.sourcepos.start.column = container_ast.line_offsets[newlines] + 1;
 
     paragraph.content = paragraph_content;
-    let node = parser.arena.alloc(paragraph.into());
-    container.insert_before(node);
+    let node = parser.arena.alloc(paragraph.into()).into();
+    container.insert_before(parser.arena, node);
 }
 
 fn unescape_pipes(string: &str) -> Cow<'_, str> {
@@ -356,8 +364,8 @@ fn unescape_pipes(string: &str) -> Cow<'_, str> {
 // The purpose of this is to prevent a malicious input from generating a very
 // large number of autocompleted cells, which could cause a denial of service
 // vulnerability.
-fn incr_table_row_count<'a>(container: Node<'a>, i: usize) -> bool {
-    return match container.data_mut().value {
+fn incr_table_row_count(arena: &mut Arena, container: Node, i: usize) -> bool {
+    return match container.data_mut(arena).value {
         NodeValue::Table(ref mut node_table) => {
             node_table.num_rows += 1;
             node_table.num_nonempty_cells += i;
@@ -368,8 +376,8 @@ fn incr_table_row_count<'a>(container: Node<'a>, i: usize) -> bool {
 }
 
 // Calculate the number of autocompleted cells.
-fn get_num_autocompleted_cells<'a>(container: Node<'a>) -> usize {
-    return match container.data().value {
+fn get_num_autocompleted_cells(arena: &Arena, container: Node) -> usize {
+    return match container.data(arena).value {
         NodeValue::Table(ref node_table) => {
             let num_cells = node_table.num_columns * node_table.num_rows;
 
