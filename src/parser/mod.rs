@@ -1603,7 +1603,7 @@ where
                         pos += 1;
                     }
 
-                    content.drain(..pos);
+                    strings::remove_from_start(content, pos);
                 }
                 mem::swap(&mut ncb.literal, content);
             }
@@ -1783,7 +1783,7 @@ where
                         let sourcepos = self.postprocess_text_node_with_context(
                             node,
                             sourcepos,
-                            subject.to_mut(),
+                            &mut subject,
                             in_bracket_context,
                         );
                         let ast = node.data_mut(self.arena);
@@ -1824,7 +1824,7 @@ where
         &mut self,
         node: Node,
         mut sourcepos: Sourcepos,
-        root: &mut String,
+        root: &mut Cow<'static, str>,
         in_bracket_context: bool,
     ) -> Sourcepos {
         // Join adjacent text nodes together, then post-process.
@@ -1836,7 +1836,7 @@ where
         while let Some(ns) = node.next_sibling(self.arena) {
             match ns.data(self.arena).value {
                 NodeValue::Text(ref adj) => {
-                    root.push_str(adj);
+                    root.to_mut().push_str(adj);
                     let sp = ns.data(self.arena).sourcepos;
                     spxv.push_back((sp, adj.len()));
                     sourcepos.end.column = sp.end.column;
@@ -1860,7 +1860,7 @@ where
     fn postprocess_text_node_with_context_inner(
         &mut self,
         node: Node,
-        text: &mut String,
+        text: &mut Cow<'static, str>,
         sourcepos: &mut Sourcepos,
         spxv: VecDeque<(Sourcepos, usize)>,
         in_bracket_context: bool,
@@ -1892,7 +1892,7 @@ where
     fn process_tasklist(
         &mut self,
         node: Node,
-        text: &mut String,
+        text: &mut Cow<'static, str>,
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
     ) {
@@ -1926,7 +1926,7 @@ where
                 return;
             }
 
-            text.drain(..end);
+            strings::remove_from_start(text.to_mut(), end);
             let sym = self
                 .arena
                 .alloc(
@@ -1958,7 +1958,7 @@ where
             // These are sound only because the exact text that we've matched and
             // the count thereof (i.e. "end") will precisely map to characters in
             // the source document.
-            text.drain(..end);
+            strings::remove_from_start(text.to_mut(), end);
 
             let adjust = spx.consume(end) + 1;
             assert_eq!(

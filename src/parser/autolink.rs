@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::{mem, str};
 use unicode_categories::UnicodeCategories;
 
@@ -11,7 +12,7 @@ use crate::Arena;
 pub(crate) fn process_email_autolinks(
     arena: &mut Arena,
     node: Node,
-    contents: &mut String,
+    contents: &mut Cow<'static, str>,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
     spx: &mut Spx,
@@ -69,7 +70,7 @@ pub(crate) fn process_email_autolinks(
 
             let nsp_end_col = spx.consume(skip);
 
-            contents.truncate(i);
+            contents.to_mut().truncate(i);
 
             let nsp: Sourcepos = (
                 sourcepos.end.line,
@@ -98,7 +99,7 @@ pub(crate) fn process_email_autolinks(
                 process_email_autolinks(
                     arena,
                     after,
-                    remainder.to_mut(),
+                    &mut remainder,
                     relaxed_autolinks,
                     &mut asp,
                     spx,
