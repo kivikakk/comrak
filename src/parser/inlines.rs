@@ -47,6 +47,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     special_char_bytes: [bool; 256],
     skip_char_bytes: [bool; 256],
     smart_char_bytes: [bool; 256],
+    emph_delim_bytes: [bool; 256],
 }
 
 #[derive(Default)]
@@ -88,6 +89,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             special_char_bytes: [false; 256],
             skip_char_bytes: [false; 256],
             smart_char_bytes: [false; 256],
+            emph_delim_bytes: [false; 256],
         };
         for &b in b"\n\r_*\"`\\&<[]!$" {
             s.special_char_bytes[b as usize] = true;
@@ -99,9 +101,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if options.extension.strikethrough || options.extension.subscript {
             s.special_char_bytes[b'~' as usize] = true;
             s.skip_char_bytes[b'~' as usize] = true;
+            s.emph_delim_bytes[b'~' as usize] = true;
         }
         if options.extension.superscript || options.extension.inline_footnotes {
             s.special_char_bytes[b'^' as usize] = true;
+        }
+        if options.extension.superscript {
+            s.emph_delim_bytes[b'^' as usize] = true;
         }
         #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
@@ -112,9 +118,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
         if options.extension.spoiler {
             s.special_char_bytes[b'|' as usize] = true;
+            s.emph_delim_bytes[b'|' as usize] = true;
         }
         for &b in b"\"'.-" {
             s.smart_char_bytes[b as usize] = true;
+        }
+        for &b in b"*_" {
+            s.emph_delim_bytes[b as usize] = true;
         }
         s
     }
@@ -1200,32 +1210,34 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // the very bottom of the stack.
         let mut candidate = self.last_delimiter;
         let mut closer: Option<DelimiterId> = None;
-        while candidate.map_or(false, |c| self.delimiters[c].position >= stack_bottom) {
+        while let Some(ci) = candidate {
+            let c = &self.delimiters[ci];
+            if c.position < stack_bottom {
+                break;
+            }
             closer = candidate;
-            candidate = self.delimiters[candidate.unwrap()].prev.get();
+            candidate = c.prev.get();
         }
 
-        while let Some(c) = closer {
-            if self.delimiters[c].can_close {
+        while let Some(ci) = closer {
+            let c = &self.delimiters[ci];
+            if c.can_close {
                 // Each time through the outer `closer` loop we reset the opener
                 // to the element below the closer, and search down the stack
                 // for a matching opener.
 
-                let mut opener = self.delimiters[c].prev.get();
+                let mut opener = c.prev.get();
                 let mut opener_found = false;
                 let mut mod_three_rule_invoked = false;
 
-                let ix = match self.delimiters[c].delim_byte {
+                let ix = match c.delim_byte {
                     b'|' => 0,
                     b'~' => 1,
                     b'^' => 2,
                     b'"' => 3,
                     b'\'' => 4,
                     b'_' => 5,
-                    b'*' => {
-                        6 + (if self.delimiters[c].can_open { 3 } else { 0 })
-                            + (self.delimiters[c].length % 3)
-                    }
+                    b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
                     _ => unreachable!(),
                 };
 
@@ -1241,10 +1253,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
                 while opener.map_or(false, |o| self.delimiters[o].position >= openers_bottom[ix]) {
-                    let o = opener.unwrap();
-                    if self.delimiters[o].can_open
-                        && self.delimiters[o].delim_byte == self.delimiters[c].delim_byte
-                    {
+                    let oi = opener.unwrap();
+                    let o = &self.delimiters[oi];
+                    if o.can_open && o.delim_byte == c.delim_byte {
                         // This is a bit convoluted; see points 9 and 10 here:
                         // http://spec.commonmark.org/0.28/#can-open-emphasis.
                         // This is to aid processing of runs like this:
@@ -1254,11 +1265,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         // that matches the last ** or *, we need to skip it,
                         // and this algorithm ensures we do. (The sum of the
                         // lengths are a multiple of 3.)
-                        let odd_match = (self.delimiters[c].can_open
-                            || self.delimiters[o].can_close)
-                            && ((self.delimiters[o].length + self.delimiters[c].length) % 3 == 0)
-                            && !(self.delimiters[o].length % 3 == 0
-                                && self.delimiters[c].length % 3 == 0);
+                        let odd_match = (c.can_open || o.can_close)
+                            && ((o.length + c.length) % 3 == 0)
+                            && !(o.length % 3 == 0 && c.length % 3 == 0);
                         if !odd_match {
                             opener_found = true;
                             break;
@@ -1266,21 +1275,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             mod_three_rule_invoked = true;
                         }
                     }
-                    opener = self.delimiters[o].prev.get();
+                    opener = o.prev.get();
                 }
-
-                let old_c = c;
 
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if self.delimiters[c].delim_byte == b'*'
-                    || self.delimiters[c].delim_byte == b'_'
-                    || ((self.options.extension.strikethrough || self.options.extension.subscript)
-                        && self.delimiters[c].delim_byte == b'~')
-                    || (self.options.extension.superscript && self.delimiters[c].delim_byte == b'^')
-                    || (self.options.extension.spoiler && self.delimiters[c].delim_byte == b'|')
-                {
+                if self.emph_delim_bytes[c.delim_byte as usize] {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
                         // match and they are inserted. We get a new closer
@@ -1295,28 +1296,17 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         //
                         // In general though the closer will be the next
                         // delimiter up the stack.
-                        closer = self.insert_emph(opener.unwrap(), c);
+                        closer = self.insert_emph(opener.unwrap(), ci);
                     } else {
                         // When no matching opener is found we move the closer
                         // up the stack, do some bookkeeping with old_closer
                         // (below), try again.
-                        closer = self.delimiters[c].next.get();
+                        closer = c.next.get();
                     }
-                } else if self.delimiters[c].delim_byte == b'\''
-                    || self.delimiters[c].delim_byte == b'"'
-                {
-                    *self.delimiters[c]
-                        .inl
-                        .data_mut(self.arena)
-                        .value
-                        .text_mut()
-                        .unwrap() = if self.delimiters[c].delim_byte == b'\'' {
-                        "’"
-                    } else {
-                        "”"
-                    }
-                    .into();
-                    closer = self.delimiters[c].next.get();
+                } else if c.delim_byte == b'\'' || c.delim_byte == b'"' {
+                    *c.inl.data_mut(self.arena).value.text_mut().unwrap() =
+                        if c.delim_byte == b'\'' { "’" } else { "”" }.into();
+                    closer = c.next.get();
 
                     if opener_found {
                         *self.delimiters[opener.unwrap()]
@@ -1324,14 +1314,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             .data_mut(self.arena)
                             .value
                             .text_mut()
-                            .unwrap() = if self.delimiters[old_c].delim_byte == b'\'' {
-                            "‘"
-                        } else {
-                            "“"
-                        }
-                        .into();
+                            .unwrap() = if c.delim_byte == b'\'' { "‘" } else { "“" }.into();
                         self.remove_delimiter(opener.unwrap());
-                        self.remove_delimiter(old_c);
+                        self.remove_delimiter(ci);
                     }
                 }
 
@@ -1340,8 +1325,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // so that the `opener` search can avoid looking for this
                 // same opener at the bottom of the stack later.
                 if !opener_found {
+                    let c = &self.delimiters[ci];
                     if !mod_three_rule_invoked {
-                        openers_bottom[ix] = self.delimiters[old_c].position;
+                        openers_bottom[ix] = c.position;
                     }
 
                     // Now that we've failed the `opener` search starting from
@@ -1349,13 +1335,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     // for openers - if `old_closer` can't be used as an opener
                     // then we know it's just text - remove it from the
                     // delimiter stack, leaving it in the AST as text
-                    if !self.delimiters[old_c].can_open {
-                        self.remove_delimiter(old_c);
+                    if !c.can_open {
+                        self.remove_delimiter(ci);
                     }
                 }
             } else {
                 // Closer is !can_close. Move up the stack
-                closer = self.delimiters[c].next.get();
+                closer = c.next.get();
             }
         }
 
@@ -1365,28 +1351,26 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.remove_delimiters(stack_bottom);
     }
 
-    fn remove_delimiter(&mut self, delimiter: DelimiterId) {
-        if self.delimiters[delimiter].next.get().is_none() {
-            assert!(Some(delimiter) == self.last_delimiter);
-            self.last_delimiter = self.delimiters[delimiter].prev.get();
+    fn remove_delimiter(&mut self, id: DelimiterId) {
+        let delimiter = &self.delimiters[id];
+        if let Some(next_id) = delimiter.next.get() {
+            self.delimiters[next_id].prev.set(delimiter.prev.get());
         } else {
-            self.delimiters[self.delimiters[delimiter].next.get().unwrap()]
-                .prev
-                .set(self.delimiters[delimiter].prev.get());
+            assert!(Some(id) == self.last_delimiter);
+            self.last_delimiter = delimiter.prev.get();
         }
-        if self.delimiters[delimiter].prev.get().is_some() {
-            self.delimiters[self.delimiters[delimiter].prev.get().unwrap()]
-                .next
-                .set(self.delimiters[delimiter].next.get());
+
+        if let Some(prev_id) = delimiter.prev.get() {
+            self.delimiters[prev_id].next.set(delimiter.next.get());
         }
     }
 
     fn remove_delimiters(&mut self, stack_bottom: usize) {
-        while self
-            .last_delimiter
-            .map_or(false, |d| self.delimiters[d].position >= stack_bottom)
-        {
-            self.remove_delimiter(self.last_delimiter.unwrap());
+        while let Some(id) = self.last_delimiter {
+            if self.delimiters[id].position < stack_bottom {
+                break;
+            }
+            self.remove_delimiter(id);
         }
     }
 
@@ -1412,73 +1396,63 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     //
     // As a side-effect, handle long "***" and "___" nodes by truncating them in
     // place to be re-matched by `process_emphasis`.
-    fn insert_emph(&mut self, opener: DelimiterId, closer: DelimiterId) -> Option<DelimiterId> {
-        let opener_char = self.delimiters[opener]
-            .inl
-            .data(self.arena)
-            .value
-            .text()
-            .unwrap()
-            .as_bytes()[0];
-        let mut opener_num_chars = self.delimiters[opener]
-            .inl
-            .data(self.arena)
-            .value
-            .text()
-            .unwrap()
-            .len();
-        let mut closer_num_chars = self.delimiters[closer]
-            .inl
-            .data(self.arena)
-            .value
-            .text()
-            .unwrap()
-            .len();
-        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
+    fn insert_emph(
+        &mut self,
+        opener_id: DelimiterId,
+        closer_id: DelimiterId,
+    ) -> Option<DelimiterId> {
+        let opener_inl = self.delimiters[opener_id].inl;
+        let closer_inl = self.delimiters[closer_id].inl;
+
+        let opener_text = opener_inl.data(self.arena).value.text().unwrap();
+        let opener_byte = opener_text.as_bytes()[0];
+        let mut opener_num_bytes = opener_text.len();
+        let mut closer_num_bytes = closer_inl.data(self.arena).value.text().unwrap().len();
+
+        let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
             1
         };
 
-        opener_num_chars -= use_delims;
-        closer_num_chars -= use_delims;
+        opener_num_bytes -= use_delims;
+        closer_num_bytes -= use_delims;
 
         if (self.options.extension.strikethrough || self.options.extension.subscript)
-            && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
+            && opener_byte == b'~'
+            && (opener_num_bytes != closer_num_bytes || opener_num_bytes > 0)
         {
             return None;
         }
 
-        self.delimiters[opener]
-            .inl
+        opener_inl
             .data_mut(self.arena)
             .value
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(opener_num_chars);
-        self.delimiters[closer]
-            .inl
+            .truncate(opener_num_bytes);
+        closer_inl
             .data_mut(self.arena)
             .value
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(closer_num_chars);
+            .truncate(closer_num_bytes);
 
         // Remove all the candidate delimiters from between the opener and the
         // closer. None of them are matched pairs. They've been scanned already.
-        let mut delim = self.delimiters[closer].prev.get();
-        while delim.is_some() && delim != Some(opener) {
-            self.remove_delimiter(delim.unwrap());
-            delim = self.delimiters[delim.unwrap()].prev.get();
+        let mut prev_id = self.delimiters[closer_id].prev.get();
+        while prev_id.is_some() && prev_id != Some(opener_id) {
+            self.remove_delimiter(prev_id.unwrap());
+            prev_id = self.delimiters[prev_id.unwrap()].prev.get();
         }
 
-        let emph = self.make_inline(
-            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
+        let emph = make_inline(
+            self.arena,
+            if self.options.extension.subscript && opener_byte == b'~' && use_delims == 1 {
                 NodeValue::Subscript
-            } else if opener_char == b'~' {
+            } else if opener_byte == b'~' {
                 // Not emphasis
                 // Unlike for |, these cases have to be handled because they will match
                 // in the event subscript but not strikethrough is enabled
@@ -1489,15 +1463,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 } else {
                     NodeValue::EscapedTag("~~".to_owned())
                 }
-            } else if self.options.extension.superscript && opener_char == b'^' {
+            } else if self.options.extension.superscript && opener_byte == b'^' {
                 NodeValue::Superscript
-            } else if self.options.extension.spoiler && opener_char == b'|' {
+            } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
                     NodeValue::SpoileredText
                 } else {
                     NodeValue::EscapedTag("|".to_owned())
                 }
-            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
+            } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
                 NodeValue::Underline
             } else if use_delims == 1 {
                 NodeValue::Emph
@@ -1505,47 +1479,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 NodeValue::Strong
             },
             // These are overriden immediately below.
-            self.scanner.pos,
-            self.scanner.pos,
+            (
+                opener_inl
+                    .data(self.arena)
+                    .sourcepos
+                    .start
+                    .column_add(opener_num_bytes as isize),
+                closer_inl
+                    .data(self.arena)
+                    .sourcepos
+                    .end
+                    .column_add(-(closer_num_bytes as isize)),
+            )
+                .into(),
         );
-
-        emph.data_mut(self.arena).sourcepos = (
-            self.delimiters[opener]
-                .inl
-                .data(self.arena)
-                .sourcepos
-                .start
-                .line,
-            self.delimiters[opener]
-                .inl
-                .data(self.arena)
-                .sourcepos
-                .start
-                .column
-                + opener_num_chars,
-            self.delimiters[closer]
-                .inl
-                .data(self.arena)
-                .sourcepos
-                .end
-                .line,
-            self.delimiters[closer]
-                .inl
-                .data(self.arena)
-                .sourcepos
-                .end
-                .column
-                - closer_num_chars,
-        )
-            .into();
 
         // Drop all the interior AST nodes into the emphasis node
         // and then insert the emphasis node
-        let mut it = self.delimiters[opener]
-            .inl
-            .next_sibling(self.arena)
-            .unwrap();
-        while it != self.delimiters[closer].inl {
+        let mut it = opener_inl.next_sibling(self.arena).unwrap();
+        while it != closer_inl {
             let next = it.next_sibling(self.arena);
             emph.append(self.arena, it);
             if let Some(n) = next {
@@ -1554,41 +1506,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 break;
             }
         }
-        self.delimiters[opener].inl.insert_after(self.arena, emph);
+        opener_inl.insert_after(self.arena, emph);
 
         // Drop completely "used up" delimiters, adjust sourcepos of those not,
         // and return the next closest one for processing.
-        if opener_num_chars == 0 {
-            self.delimiters[opener].inl.detach(self.arena);
-            self.remove_delimiter(opener);
+        if opener_num_bytes == 0 {
+            opener_inl.detach(self.arena);
+            self.remove_delimiter(opener_id);
         } else {
-            self.delimiters[opener]
-                .inl
-                .data_mut(self.arena)
-                .sourcepos
-                .end
-                .column -= use_delims;
+            opener_inl.data_mut(self.arena).sourcepos.end.column -= use_delims;
         }
 
-        if closer_num_chars == 0 {
-            self.delimiters[closer].inl.detach(self.arena);
-            self.remove_delimiter(closer);
-            self.delimiters[closer].next.get()
+        if closer_num_bytes == 0 {
+            closer_inl.detach(self.arena);
+            self.remove_delimiter(closer_id);
+            self.delimiters[closer_id].next.get()
         } else {
-            self.delimiters[closer]
-                .inl
-                .data_mut(self.arena)
-                .sourcepos
-                .start
-                .column += use_delims;
-            Some(closer)
+            closer_inl.data_mut(self.arena).sourcepos.start.column += use_delims;
+            Some(closer_id)
         }
     }
 
     fn push_bracket(&mut self, image: bool, inl_text: Node) {
-        let len = self.brackets.len();
-        if len > 0 {
-            self.brackets[len - 1].bracket_after = true;
+        if let Some(last) = self.brackets.last_mut() {
+            last.bracket_after = true;
         }
         self.brackets.push(Bracket {
             inl_text,
@@ -1605,16 +1546,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.scanner.pos += 1;
         let initial_pos = self.scanner.pos;
 
-        let brackets_len = self.brackets.len();
-        if brackets_len == 0 {
+        let Some(last) = self.brackets.last() else {
             return Some(self.make_inline(
                 NodeValue::Text("]".into()),
                 self.scanner.pos - 1,
                 self.scanner.pos - 1,
             ));
-        }
+        };
 
-        let is_image = self.brackets[brackets_len - 1].image;
+        let is_image = last.image;
 
         if !is_image && self.no_link_openers {
             self.brackets.pop();
@@ -1628,9 +1568,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Ensure there was text if this was a link and not an image link
         if self.options.render.ignore_empty_links && !is_image {
             let mut non_blank_found = false;
-            let mut itm = self.brackets[brackets_len - 1]
-                .inl_text
-                .next_sibling(self.arena);
+            let mut itm = last.inl_text.next_sibling(self.arena);
             while let Some(it) = itm {
                 match it.data(self.arena).value {
                     NodeValue::Text(ref s) if is_blank(s) => (),
@@ -1689,17 +1627,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Try to see if this is a reference link
 
-        let (mut lab, mut found_label): (Cow<str>, bool) = match self.link_label() {
-            Some(lab) => (lab.to_string().into(), true),
-            None => ("".into(), false),
-        };
+        let (mut lab, mut found_label): (Cow<str>, bool) =
+            match self.scanner.link_label(&self.input) {
+                Some(lab) => (lab.to_string().into(), true),
+                None => ("".into(), false),
+            };
 
         if !found_label {
             self.scanner.pos = initial_pos;
         }
 
-        if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
+        if (!found_label || lab.is_empty()) && !last.bracket_after {
+            lab = self.input[last.position..initial_pos - 1].into();
             found_label = true;
         }
 
@@ -1729,7 +1668,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
-        let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
+        let bracket_inl_text = last.inl_text;
 
         if self.options.extension.footnotes
             && match bracket_inl_text.next_sibling(self.arena) {
@@ -1773,22 +1712,26 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
 
             if text.len() > 1 {
-                let inl = self.make_inline(
+                let inl = make_inline(
+                    self.arena,
                     NodeValue::FootnoteReference(NodeFootnoteReference {
                         name: text[1..].to_string(),
                         ref_num: 0,
                         ix: 0,
                     }),
-                    // Overridden immediately below.
-                    self.scanner.pos,
-                    self.scanner.pos,
+                    (
+                        self.line,
+                        bracket_inl_text.data(self.arena).sourcepos.start.column,
+                        self.line,
+                        usize::try_from(
+                            self.scanner.pos as isize
+                                + self.column_offset
+                                + self.line_offset as isize,
+                        )
+                        .unwrap(),
+                    )
+                        .into(),
                 );
-                inl.data_mut(self.arena).sourcepos.start.column =
-                    bracket_inl_text.data(self.arena).sourcepos.start.column;
-                inl.data_mut(self.arena).sourcepos.end.column = usize::try_from(
-                    self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
-                )
-                .unwrap();
                 bracket_inl_text.insert_before(self.arena, inl);
 
                 // detach all the nodes, including bracket_inl_text
@@ -1804,7 +1747,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 // We don't need to process emphasis for footnote names, so cleanup
                 // any outstanding delimiters
-                self.remove_delimiters(self.brackets[brackets_len - 1].position);
+                self.remove_delimiters(last.position);
 
                 self.brackets.pop();
                 return None;
@@ -1818,46 +1761,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.scanner.pos - 1,
             self.scanner.pos - 1,
         ))
-    }
-
-    pub fn link_label(&mut self) -> Option<&str> {
-        let startpos = self.scanner.pos;
-
-        if self.peek_byte() != Some(b'[') {
-            return None;
-        }
-
-        self.scanner.pos += 1;
-
-        let mut length = 0;
-        while let Some(b) = self.peek_byte() {
-            if b == b']' {
-                let raw_label = strings::trim_slice(&self.input[startpos + 1..self.scanner.pos]);
-                self.scanner.pos += 1;
-                return Some(raw_label);
-            }
-            if b == b'[' {
-                break;
-            }
-            if b == b'\\' {
-                self.scanner.pos += 1;
-                length += 1;
-                if self.peek_byte().map_or(false, ispunct) {
-                    self.scanner.pos += 1;
-                    length += 1;
-                }
-            } else {
-                self.scanner.pos += 1;
-                length += 1;
-            }
-            if length > MAX_LINK_LABEL_LENGTH {
-                self.scanner.pos = startpos;
-                return None;
-            }
-        }
-
-        self.scanner.pos = startpos;
-        None
     }
 
     fn close_bracket_match(&mut self, is_image: bool, url: String, title: String) {

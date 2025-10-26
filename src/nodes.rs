@@ -789,6 +789,12 @@ impl From<(usize, usize, usize, usize)> for Sourcepos {
     }
 }
 
+impl From<(LineColumn, LineColumn)> for Sourcepos {
+    fn from((start, end): (LineColumn, LineColumn)) -> Sourcepos {
+        Sourcepos { start, end }
+    }
+}
+
 /// Represents the 1-based line and column positions of a given character.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LineColumn {
