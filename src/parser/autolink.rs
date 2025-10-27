@@ -314,6 +314,8 @@ fn is_valid_hostchar(ch: char) -> bool {
 
 fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> usize {
     const LINK_END_ASSORTMENT: [bool; 256] = character_set!(b"?!.,:*_~'\"");
+    // \u{2069} (Pop Directional Isolate)
+    const LINK_END_UNICODE: [u8; 3] = [0xe2, 0x81, 0xa9];
 
     let bytes = data.as_bytes();
     for (i, &b) in bytes.iter().enumerate().take(link_end) {
@@ -373,6 +375,15 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
             }
 
             link_end -= 1;
+        } else if cclose == LINK_END_UNICODE[2] {
+            let slice = &bytes[link_end - LINK_END_UNICODE.len()..link_end];
+
+            if slice == LINK_END_UNICODE {
+                link_end -= LINK_END_UNICODE.len();
+                break;
+            }
+
+            break;
         } else {
             break;
         }

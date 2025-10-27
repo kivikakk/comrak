@@ -564,3 +564,18 @@ fn autolink_bare_scheme() {
         "<p>foo <a href=\"http://\">http://</a> foo</p>\n",
     );
 }
+
+#[test]
+fn autolink_with_unicode_isolation() {
+    html_opts!(
+        [extension.autolink],
+        "https://www.example.com/",
+        "<p><a href=\"https://www.example.com/\">https://www.example.com/</a></p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "\u{2068}https://www.example.com/\u{2069}",
+        "<p>\u{2068}<a href=\"https://www.example.com/\">https://www.example.com/</a>\u{2069}</p>\n",
+    );
+}
