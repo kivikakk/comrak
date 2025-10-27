@@ -1111,21 +1111,6 @@ where
             last_child.detach();
             let last_child_sourcepos = last_child.data().sourcepos;
 
-            // TODO: description list sourcepos has issues.
-            //
-            // DescriptionItem:
-            //   For all but the last, the end line/col is wrong.
-            //   Where it should be l:c, it gives (l+1):0.
-            //
-            // DescriptionTerm:
-            //   All are incorrect; they all give the start line/col of
-            //   the DescriptionDetails, and the end line/col is completely off.
-            //
-            // DescriptionDetails:
-            //   Same as the DescriptionItem.  All but last, the end line/col
-            //   is (l+1):0.
-            //
-            // See crate::tests::description_lists::sourcepos.
             let list = match container.last_child() {
                 Some(lc) if node_matches!(lc, NodeValue::DescriptionList) => {
                     reopen_ast_nodes(lc);
@@ -1157,6 +1142,8 @@ where
             let term = self.add_child(item, NodeValue::DescriptionTerm, self.first_nonspace + 1);
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
+
+            term.data_mut().sourcepos.start = last_child_sourcepos.start;
 
             term.append(last_child);
 
@@ -1609,6 +1596,12 @@ where
         }
 
         match ast.value {
+            NodeValue::DescriptionList
+            | NodeValue::DescriptionItem(..)
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails => {
+                self.fix_zero_end_columns(node);
+            }
             NodeValue::Paragraph => {
                 let has_content = self.resolve_reference_link_definitions(content);
                 if !has_content {

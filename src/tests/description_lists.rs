@@ -140,11 +140,9 @@ fn description_lists_edge_cases() {
         ),
     );
 }
+
 #[test]
 fn sourcepos() {
-    // TODO There's plenty of work to do here still.  The test currently represents
-    // how things *are* -- see comments for what should be different.
-    // See partner comment in crate::parser::Parser::parse_desc_list_details.
     assert_ast_match!(
         [extension.description_lists],
         "ta\n"
@@ -159,21 +157,21 @@ fn sourcepos() {
         "\n"
         ": dc\n",
         (document (1:1-11:4) [
-            (description_list (1:1-11:4) [
-                (description_item (1:1-4:0) [      // (description_item (1:1-3:4) [
-                    (description_term (3:1-3:0) [      // (description_term (1:1-1:2) [
+        (description_list (1:1-11:4) [
+            (description_item (1:1-3:4) [
+                (description_term (1:1-1:2) [
                         (paragraph (1:1-1:2) [
                             (text (1:1-1:2) "ta")
                         ])
                     ])
-                    (description_details (3:1-4:0) [   // (description_details (3:1-3:4) [
+                    (description_details (3:1-3:4) [
                         (paragraph (3:3-3:4) [
                             (text (3:3-3:4) "da")
                         ])
                     ])
                 ])
-                (description_item (5:1-8:0) [      // (description_item (5:1-7:6) [
-                    (description_term (7:1-7:0) [      // (description_term (5:1-5:4) [
+                (description_item (5:1-7:6) [
+                    (description_term (5:1-5:4) [
                         (paragraph (5:1-5:4) [
                             (text (5:1-5:1) "t")
                             (emph (5:2-5:4) [
@@ -181,7 +179,7 @@ fn sourcepos() {
                             ])
                         ])
                     ])
-                    (description_details (7:1-8:0) [   // (description_details (7:1-7:6) [
+                    (description_details (7:1-7:6) [
                         (paragraph (7:3-7:6) [
                             (text (7:3-7:3) "d")
                             (emph (7:4-7:6) [
@@ -191,7 +189,7 @@ fn sourcepos() {
                     ])
                 ])
                 (description_item (9:1-11:4) [
-                    (description_term (11:1-11:0) [    // (description_term (9:1-11:4) [
+                    (description_term (9:1-9:2) [
                         (paragraph (9:1-9:2) [
                             (text (9:1-9:2) "tc")
                         ])
