@@ -14,14 +14,14 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
-# unreleased
+# [v0.46.0] - 2025-10-28
 
 Please note the MSRV has been bumped from 1.65 to 1.70; see [the pull request](https://github.com/kivikakk/comrak/pull/649) for more details. It's a kind of sticky and awkward situation — thanks to the inevitability of Progress — with no particularly clean solution. (wherein telling GCC 15 users "sorry it just won't build from source for you without messing with dependencies" is not a solution.)
 
 Security:
 
-* Footnote resolution no longer recurses over the document tree; on documents with deeply nested elements, this could cause a stack overflow, with resultant denial of service.
-* Inline footnotes are restricted to a depth of 5 for similar reasons. An iterative rewrite here to avoid a limit is possible, but for now I'm hoping we can all pretend to be responsible adult human beings and limit our recursive inline footnote usage accordingly. (PRs welcome tho, non-human users are very welcome!)
+* Footnote resolution no longer recurses over the document tree; on documents with deeply nested elements, this could cause a stack overflow, with resultant denial of service. (by @kivikakk in https://github.com/kivikakk/comrak/pull/659)
+* Inline footnotes are restricted to a depth of 5 for similar reasons. An iterative rewrite here to avoid a limit is possible, but for now I'm hoping we can all pretend to be responsible adult human beings and limit our recursive inline footnote usage accordingly. (PRs welcome tho, non-human users are very welcome!) (by @kivikakk in https://github.com/kivikakk/comrak/pull/659)
 
 Parser changes:
 
@@ -35,11 +35,19 @@ New APIs:
 Bug fixes:
 
 * Source position information is corrected for description lists, HTML blocks, multiline block quotes, links with newlines following the destination, tables with leading indentation, and escaped character spans. (by @Martin005 in https://github.com/kivikakk/comrak/pull/646, https://github.com/kivikakk/comrak/pull/651, https://github.com/kivikakk/comrak/pull/652, https://github.com/kivikakk/comrak/pull/653, https://github.com/kivikakk/comrak/pull/656, https://github.com/kivikakk/comrak/pull/657)
-* `escaped_char_span` users can now successfully format to CommonMark with debug assertions enabled. These ASTs previously did not validate, which currently is enabled experimentally only in CommonMark output in debug.
+* `escaped_char_span` users can now successfully format to CommonMark with debug assertions enabled. These ASTs previously did not validate, which currently is enabled experimentally only in CommonMark output in debug. (by @kivikakk in https://github.com/kivikakk/comrak/pull/659)
 
 Build changes:
 
 * Comrak's MSRV is bumped from 1.65 to 1.70. (by @kivikakk in https://github.com/kivikakk/comrak/pull/649)
+
+## New Contributors
+
+* @Martin005 made their first contribution in https://github.com/kivikakk/comrak/pull/646
+* @Kuuuube made their first contribution in https://github.com/kivikakk/comrak/pull/648
+* @SethFalco made their first contribution in https://github.com/kivikakk/comrak/pull/654
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.45.0...v0.46.0
 
 
 # [v0.45.0] - 2025-10-23
