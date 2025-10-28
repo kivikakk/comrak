@@ -77,5 +77,20 @@ fn pathological_recursion() {
         " a</strong> a</em>".repeat(n)
     );
 
+    // The footnote code happened to be the cause of the pathological recursion, but it didn't
+    // actually depend on any footnotes being present; it was the search that caused it.
     html_opts!([extension.footnotes], &input, &exp);
+}
+
+#[test]
+fn pathological_recursion_inline_footnotes() {
+    let n = 5_000;
+    let input = format!("{}{}", "^[a ".repeat(n), " b]".repeat(n));
+    let exp = format!(
+        "<p>{}{}</p>\n",
+        "<em>a <strong>a ".repeat(n),
+        " a</strong> a</em>".repeat(n)
+    );
+
+    html_opts!([extension.footnotes, extension.inline_footnotes], &input, &exp);
 }
