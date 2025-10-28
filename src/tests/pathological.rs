@@ -71,7 +71,11 @@ fn pathological_footnotes() {
 fn pathological_recursion() {
     let n = 5_000;
     let input = format!("{}{}", "*a **a ".repeat(n), " a** a*".repeat(n));
-    let exp = format!("<p>{}{}</p>\n", "<em>a <strong>a ".repeat(n), " a</strong> a</em>".repeat(n));
+    let exp = format!(
+        "<p>{}{}</p>\n",
+        "<em>a <strong>a ".repeat(n),
+        " a</strong> a</em>".repeat(n)
+    );
 
     html_opts!([extension.footnotes], &input, &exp);
 }

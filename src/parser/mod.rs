@@ -1535,15 +1535,15 @@ where
 
         self.process_inlines();
 
-        // Append auto-generated inline footnote definitions
-        if self.options.extension.footnotes && self.options.extension.inline_footnotes {
-            let inline_defs = self.footnote_defs.definitions();
-            for def in inline_defs.iter() {
-                self.root.append(*def);
-            }
-        }
-
         if self.options.extension.footnotes {
+            // Append auto-generated inline footnote definitions
+            if self.options.extension.inline_footnotes {
+                let inline_defs = self.footnote_defs.definitions();
+                for def in inline_defs.into_iter() {
+                    self.root.append(def);
+                }
+            }
+
             self.process_footnotes();
         }
     }
@@ -1723,6 +1723,7 @@ where
     }
 
     fn process_footnotes(&mut self) {
+        // TODO: combine find_footnote_definitions and find_footnote_references into one pass!
         let mut fd_map = HashMap::new();
         Self::find_footnote_definitions(self.root, &mut fd_map);
 

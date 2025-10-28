@@ -2155,8 +2155,8 @@ impl<'a> FootnoteDefs<'a> {
         self.defs.borrow_mut().push(def);
     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
-        self.defs.borrow()
+    pub fn definitions(&self) -> Vec<Node<'a>> {
+        self.defs.take()
     }
 }
 
