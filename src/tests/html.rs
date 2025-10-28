@@ -138,6 +138,19 @@ fn sourcepos_kind_1() {
 
     assert_ast_match!(
         [],
+        "<SCRIPT>A html\n\n**block** </Script>\n\n**parsed**",
+        (document (1:1-5:10) [
+            (html_block (1:1-3:19) "<SCRIPT>A html\n\n**block** </Script>\n")
+            (paragraph (5:1-5:10) [
+                (strong (5:1-5:10) [
+                    (text (5:3-5:8) "parsed")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
         "<style>A html block</style>",
         (document (1:1-1:27) [
             (html_block (1:1-1:27) "<style>A html block</style>\n")
@@ -307,15 +320,13 @@ fn sourcepos_kind_3() {
 
 #[test]
 fn sourcepos_kind_4() {
-    // Should produce HTML block according to CommonMark spec even with lowercase ASCII letter, but produces paragraph with text instead.
-    // See: https://github.com/kivikakk/comrak/issues/655
-    // assert_ast_match!(
-    //     [],
-    //     "<!a>",
-    //     (document (1:1-1:4) [
-    //         (html_block (1:1-1:4) "<!a>\n")
-    //     ])
-    // );
+    assert_ast_match!(
+        [],
+        "<!a>",
+        (document (1:1-1:4) [
+            (html_block (1:1-1:4) "<!a>\n")
+        ])
+    );
 
     assert_ast_match!(
         [],
