@@ -1588,7 +1588,7 @@ where
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
             NodeValue::Document => true,
-            NodeValue::CodeBlock(ref ncb) => ncb.fenced,
+            NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
             NodeValue::MultilineBlockQuote(..) => true,
             _ => false,
         } {

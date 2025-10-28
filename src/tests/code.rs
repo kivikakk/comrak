@@ -75,3 +75,96 @@ fn fenced_codeblock_closed_and_unclosed_in_blockquote() {
     }
     assert!(found2, "expected a code block node");
 }
+
+#[test]
+fn fenced_codeblock_closed_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\ncode\n```",
+        (document (1:1-3:3) [
+            (code_block (1:1-3:3) "code\n")
+        ])
+    );
+}
+
+#[test]
+fn fenced_codeblock_unclosed_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\ncode\n",
+        (document (1:1-2:4) [
+            (code_block (1:1-2:4) "code\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "```\n> code\n",
+        (document (1:1-2:6) [
+            (code_block (1:1-2:6) "> code\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> ```\nparagraph\n",
+        (document (1:1-2:9) [
+            (block_quote (1:1-1:5) [
+                (code_block (1:3-1:5) "")
+            ])
+            (paragraph (2:1-2:9) [
+                (text (2:1-2:9) "paragraph")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> ```\n> code\n",
+        (document (1:1-2:6) [
+            (block_quote (1:1-2:6) [
+                (code_block (1:3-2:6) "code\n")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* ```\nparagraph\n",
+        (document (1:1-2:9) [
+            (list (1:1-1:5) [
+                (item (1:1-1:5) [
+                    (code_block (1:3-1:5) "")
+                ])
+            ])
+            (paragraph (2:1-2:9) [
+                (text (2:1-2:9) "paragraph")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "```\n* code\n",
+        (document (1:1-2:6) [
+            (code_block (1:1-2:6) "* code\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* ```\n* paragraph\n",
+        (document (1:1-2:11) [
+            (list (1:1-2:11) [
+                (item (1:1-1:5) [
+                    (code_block (1:3-1:5) "")
+                ])
+                (item (2:1-2:11) [
+                    (paragraph (2:3-2:11) [
+                        (text (2:3-2:11) "paragraph")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
