@@ -516,6 +516,9 @@ where
         };
 
         if matched >= fence_length {
+            if let NodeValue::CodeBlock(ref mut ncb) = ast.value {
+                ncb.closed = true;
+            }
             self.advance_offset(line, matched, false);
             self.current = self.finalize_borrowed(container, ast).unwrap();
             return None;
@@ -864,6 +867,7 @@ where
             fence_offset: first_nonspace - offset,
             info: String::with_capacity(10),
             literal: String::new(),
+            closed: false,
         };
         *container = self.add_child(
             container,
@@ -1268,6 +1272,7 @@ where
             fence_offset: 0,
             info: String::new(),
             literal: String::new(),
+            closed: true,
         };
         *container = self.add_child(
             container,

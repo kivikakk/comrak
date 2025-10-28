@@ -9,6 +9,7 @@ use crate::*;
 mod alerts;
 mod autolink;
 mod cjk_friendly_emphasis;
+mod code;
 mod commonmark;
 mod core;
 mod description_lists;

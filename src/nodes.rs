@@ -404,6 +404,10 @@ pub struct NodeCodeBlock {
     /// all, they are contained within this structure, rather than inserted into a child inline of
     /// any kind.
     pub literal: String,
+
+    /// Whether the code block was explicitly closed by a closing fence. This is only meaningful
+    /// for fenced code blocks; indented code blocks are treated as closed (true).
+    pub closed: bool,
 }
 
 /// The metadata of a heading.
