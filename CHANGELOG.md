@@ -1,3 +1,28 @@
+# [v0.46.0] - 2025-10-28
+
+## What's Changed
+* fix: Incorrect `sourcepos` for escaped character spans by @Martin005 in https://github.com/kivikakk/comrak/pull/646
+* Add support for Discord style subtext by @Kuuuube in https://github.com/kivikakk/comrak/pull/648
+* Update onig_sys dependency; bump MSRV to 1.70. by @kivikakk in https://github.com/kivikakk/comrak/pull/649
+* Fix subtext having subscript option in doc example and add cfg_attr by @Kuuuube in https://github.com/kivikakk/comrak/pull/650
+* fix: Incorrect table `sourcepos` affected by spaces in preceding paragraph by @Martin005 in https://github.com/kivikakk/comrak/pull/651
+* fix: Incorrect `sourcepos` for link with newline after dest by @Martin005 in https://github.com/kivikakk/comrak/pull/652
+* fix: Incorrect `sourcepos` for children of multiline block quote by @Martin005 in https://github.com/kivikakk/comrak/pull/653
+* fix: unicode isolation should terminate links by @SethFalco in https://github.com/kivikakk/comrak/pull/654
+* fix: Incorrect `sourcepos` for HTML blocks by @Martin005 in https://github.com/kivikakk/comrak/pull/656
+* fix: Incorrect `sourcepos` for description lists by @Martin005 in https://github.com/kivikakk/comrak/pull/657
+* Fix HTML start condition 4 case sensitivity. by @kivikakk in https://github.com/kivikakk/comrak/pull/658
+* (Inline) footnote recursion stability and misc cleanups. by @kivikakk in https://github.com/kivikakk/comrak/pull/659
+
+## New Contributors
+* @Martin005 made their first contribution in https://github.com/kivikakk/comrak/pull/646
+* @Kuuuube made their first contribution in https://github.com/kivikakk/comrak/pull/648
+* @SethFalco made their first contribution in https://github.com/kivikakk/comrak/pull/654
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.45.0...v0.46.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
