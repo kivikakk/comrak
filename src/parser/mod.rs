@@ -1538,7 +1538,7 @@ where
         if self.options.extension.footnotes {
             // Append auto-generated inline footnote definitions
             if self.options.extension.inline_footnotes {
-                let inline_defs = self.footnote_defs.definitions();
+                let inline_defs = self.footnote_defs.take();
                 for def in inline_defs.into_iter() {
                     self.root.append(def);
                 }
@@ -1566,8 +1566,7 @@ where
         }
 
         if seeked != 0 {
-            // TODO: shift buf left, check UTF-8 boundary
-            *content = content[seeked..].to_string();
+            strings::remove_from_start(content, seeked);
         }
 
         !strings::is_blank(content)
@@ -1713,7 +1712,7 @@ where
             content,
             node_data.sourcepos.start.line,
             &mut self.refmap,
-            &self.footnote_defs,
+            &mut self.footnote_defs,
             &delimiter_arena,
         );
 
@@ -2014,7 +2013,7 @@ where
         // These are totally unused; we should extract the relevant input
         // scanning from Subject so we don't have to make all this.
         let unused_node_arena = Arena::with_capacity(0);
-        let unused_footnote_defs = inlines::FootnoteDefs::new();
+        let mut unused_footnote_defs = inlines::FootnoteDefs::new();
         let unused_delimiter_arena = Arena::with_capacity(0);
         let mut unused_refmap = inlines::RefMap::new();
 
@@ -2024,7 +2023,7 @@ where
             content.to_string(),
             0, // XXX -1 in upstream; never used?
             &mut unused_refmap,
-            &unused_footnote_defs,
+            &mut unused_footnote_defs,
             &unused_delimiter_arena,
         );
 

@@ -1,7 +1,7 @@
 mod cjk;
 
 use std::borrow::Cow;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
@@ -36,7 +36,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     line_offset: usize,
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
-    footnote_defs: &'p FootnoteDefs<'a>,
+    footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
@@ -64,7 +64,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
-        footnote_defs: &'p FootnoteDefs<'a>,
+        footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     ) -> Self {
         let mut s = Subject {
@@ -2133,30 +2133,30 @@ impl RefMap {
 }
 
 pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
-    counter: RefCell<usize>,
+    defs: Vec<Node<'a>>,
+    next: usize,
 }
 
 impl<'a> FootnoteDefs<'a> {
     pub fn new() -> Self {
         Self {
-            defs: RefCell::new(Vec::new()),
-            counter: RefCell::new(0),
+            defs: Vec::new(),
+            next: 1,
         }
     }
 
-    pub fn next_name(&self) -> String {
-        let mut counter = self.counter.borrow_mut();
-        *counter += 1;
-        format!("__inline_{}", *counter)
+    pub fn next_name(&mut self) -> String {
+        let counter = self.next;
+        self.next += 1;
+        format!("__inline_{}", counter)
     }
 
-    pub fn add_definition(&self, def: Node<'a>) {
-        self.defs.borrow_mut().push(def);
+    pub fn add_definition(&mut self, def: Node<'a>) {
+        self.defs.push(def);
     }
 
-    pub fn definitions(&self) -> Vec<Node<'a>> {
-        self.defs.take()
+    pub fn take(&mut self) -> Vec<Node<'a>> {
+        mem::take(&mut self.defs)
     }
 }
 
