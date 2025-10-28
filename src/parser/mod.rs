@@ -1714,6 +1714,7 @@ where
             &mut self.refmap,
             &mut self.footnote_defs,
             &delimiter_arena,
+            0,
         );
 
         while subj.parse_inline(node, &mut node_data) {}
@@ -2025,6 +2026,7 @@ where
             &mut unused_refmap,
             &mut unused_footnote_defs,
             &unused_delimiter_arena,
+            0,
         );
 
         let mut lab: String = match subj.link_label() {
