@@ -33,3 +33,10 @@ fn escaped_char_span_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn to_cm_ok() {
+    let mut options = Options::default();
+    options.render.escaped_char_spans = true;
+    markdown_to_commonmark("\\]", &options);
+}
