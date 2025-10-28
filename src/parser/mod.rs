@@ -602,9 +602,9 @@ where
     // non-zero end column from its deepest-last descendant; otherwise
     // fall back to the node's start position.
     fn fix_zero_end_columns(&mut self, container: Node<'a>) {
+        // explicit stack for post-order traversal: (node, visited)
+        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
         for ch in container.children() {
-            // explicit stack for post-order traversal: (node, visited)
-            let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
             stack.push((ch, false));
 
             while let Some((node, visited)) = stack.pop() {
@@ -1746,69 +1746,67 @@ where
     }
 
     fn find_footnote_definitions(
-        node: Node<'a>,
+        root: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
     ) {
-        match node.data().value {
-            NodeValue::FootnoteDefinition(ref nfd) => {
-                map.insert(
-                    strings::normalize_label(&nfd.name, Case::Fold),
-                    FootnoteDefinition {
-                        ix: None,
-                        node,
-                        name: strings::normalize_label(&nfd.name, Case::Preserve),
-                        total_references: 0,
-                    },
-                );
-            }
-            _ => {
-                for n in node.children() {
-                    Self::find_footnote_definitions(n, map);
+        let mut stack = vec![root];
+        while let Some(node) = stack.pop() {
+            match node.data().value {
+                NodeValue::FootnoteDefinition(ref nfd) => {
+                    map.insert(
+                        strings::normalize_label(&nfd.name, Case::Fold),
+                        FootnoteDefinition {
+                            ix: None,
+                            node,
+                            name: strings::normalize_label(&nfd.name, Case::Preserve),
+                            total_references: 0,
+                        },
+                    );
+                }
+                _ => {
+                    stack.extend(node.reverse_children());
                 }
             }
         }
     }
 
     fn find_footnote_references(
-        node: Node<'a>,
+        root: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let mut ast = node.data_mut();
-        match ast.value {
-            NodeValue::FootnoteReference(ref mut nfr) => {
-                let normalized = strings::normalize_label(&nfr.name, Case::Fold);
-                if let Some(ref mut footnote) = map.get_mut(&normalized) {
-                    let ix = match footnote.ix {
-                        Some(ix) => ix,
-                        None => {
-                            *ixp += 1;
-                            footnote.ix = Some(*ixp);
-                            *ixp
-                        }
-                    };
-                    footnote.total_references += 1;
-                    nfr.ref_num = footnote.total_references;
-                    nfr.ix = ix;
-                    nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
-                } else {
-                    ast.value = NodeValue::Text(format!("[^{}]", nfr.name).into());
+        let mut stack = vec![root];
+        while let Some(node) = stack.pop() {
+            let mut ast = node.data_mut();
+            match ast.value {
+                NodeValue::FootnoteReference(ref mut nfr) => {
+                    let normalized = strings::normalize_label(&nfr.name, Case::Fold);
+                    if let Some(ref mut footnote) = map.get_mut(&normalized) {
+                        let ix = match footnote.ix {
+                            Some(ix) => ix,
+                            None => {
+                                *ixp += 1;
+                                footnote.ix = Some(*ixp);
+                                *ixp
+                            }
+                        };
+                        footnote.total_references += 1;
+                        nfr.ref_num = footnote.total_references;
+                        nfr.ix = ix;
+                        nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
+                    } else {
+                        ast.value = NodeValue::Text(format!("[^{}]", nfr.name).into());
+                    }
                 }
-            }
-            _ => {
-                for n in node.children() {
-                    Self::find_footnote_references(n, map, ixp);
+                _ => {
+                    stack.extend(node.reverse_children());
                 }
             }
         }
     }
 
     fn postprocess_text_nodes(&mut self, node: Node<'a>) {
-        self.postprocess_text_nodes_with_context(node, false);
-    }
-
-    fn postprocess_text_nodes_with_context(&mut self, node: Node<'a>, in_bracket_context: bool) {
-        let mut stack = vec![(node, in_bracket_context)];
+        let mut stack = vec![(node, false)];
         let mut children = vec![];
 
         while let Some((node, in_bracket_context)) = stack.pop() {
