@@ -1,3 +1,5 @@
+use pretty_assertions::assert_eq;
+
 use crate::{format_commonmark, parse_document, Arena, Options};
 
 use super::*;

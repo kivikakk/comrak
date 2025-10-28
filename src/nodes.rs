@@ -875,19 +875,14 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::TaskItem(..) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
-
             NodeValue::List(..) => matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..)),
-
             NodeValue::DescriptionList => matches!(*child, NodeValue::DescriptionItem(_)),
-
             NodeValue::DescriptionItem(_) => matches!(
                 *child,
                 NodeValue::DescriptionTerm | NodeValue::DescriptionDetails
             ),
-
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(..) => !child.block(),
-
             NodeValue::Paragraph
             | NodeValue::Heading(..)
             | NodeValue::Emph
@@ -906,11 +901,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             // inlines.
             | NodeValue::EscapedTag(_)
             => !child.block(),
-
             NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
-
             NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-
             #[cfg(not(feature = "shortcodes"))]
             NodeValue::TableCell => matches!(
                 *child,
@@ -931,7 +923,6 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::Subscript
                     | NodeValue::TaskItem(_)
             ),
-
             #[cfg(feature = "shortcodes")]
             NodeValue::TableCell => matches!(
                 *child,
@@ -953,15 +944,27 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 | NodeValue::ShortCode(..)
                 | NodeValue::TaskItem(_)
             ),
-
             NodeValue::MultilineBlockQuote(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
-
             NodeValue::Alert(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
-            _ => false,
+
+            NodeValue::Escaped => matches!(*child, NodeValue::Text(_)),
+
+            NodeValue::FrontMatter(_)
+            | NodeValue::CodeBlock(_)
+            | NodeValue::HtmlBlock(_)
+            | NodeValue::ThematicBreak
+            | NodeValue::Text(_)
+            | NodeValue::SoftBreak
+            | NodeValue::LineBreak
+            | NodeValue::Code(_)
+            | NodeValue::HtmlInline(_)
+            | NodeValue::Raw(_)
+            | NodeValue::FootnoteReference(_)
+            | NodeValue::Math(_) => false,
         }
     }
 

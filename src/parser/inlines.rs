@@ -1,7 +1,7 @@
 mod cjk;
 
 use std::borrow::Cow;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
@@ -25,6 +25,7 @@ use crate::strings::{self, count_newlines, is_blank, Case};
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
+const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub arena: &'a Arena<AstNode<'a>>,
@@ -34,9 +35,10 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub pos: usize,
     column_offset: isize,
     line_offset: usize,
+    inline_footnote_depth: usize,
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
-    footnote_defs: &'p FootnoteDefs<'a>,
+    footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
@@ -64,8 +66,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
-        footnote_defs: &'p FootnoteDefs<'a>,
+        footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+        inline_footnote_depth: usize,
     ) -> Self {
         let mut s = Subject {
             arena,
@@ -75,6 +78,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             pos: 0,
             column_offset: 0,
             line_offset: 0,
+            inline_footnote_depth,
             flags: HtmlSkipFlags::default(),
             refmap,
             footnote_defs,
@@ -271,6 +275,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // Check for inline footnote first
                 if self.options.extension.footnotes
                     && self.options.extension.inline_footnotes
+                    && self.inline_footnote_depth < MAX_INLINE_FOOTNOTE_DEPTH
                     && self.peek_char_n(1) == Some(&(b'['))
                 {
                     self.handle_inline_footnote()
@@ -961,6 +966,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.refmap,
             self.footnote_defs,
             &delimiter_arena,
+            self.inline_footnote_depth + 1,
         );
 
         while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
@@ -2133,30 +2139,30 @@ impl RefMap {
 }
 
 pub struct FootnoteDefs<'a> {
-    defs: RefCell<Vec<Node<'a>>>,
-    counter: RefCell<usize>,
+    defs: Vec<Node<'a>>,
+    next: usize,
 }
 
 impl<'a> FootnoteDefs<'a> {
     pub fn new() -> Self {
         Self {
-            defs: RefCell::new(Vec::new()),
-            counter: RefCell::new(0),
+            defs: Vec::new(),
+            next: 1,
         }
     }
 
-    pub fn next_name(&self) -> String {
-        let mut counter = self.counter.borrow_mut();
-        *counter += 1;
-        format!("__inline_{}", *counter)
+    pub fn next_name(&mut self) -> String {
+        let counter = self.next;
+        self.next += 1;
+        format!("__inline_{}", counter)
     }
 
-    pub fn add_definition(&self, def: Node<'a>) {
-        self.defs.borrow_mut().push(def);
+    pub fn add_definition(&mut self, def: Node<'a>) {
+        self.defs.push(def);
     }
 
-    pub fn definitions(&self) -> std::cell::Ref<'_, Vec<Node<'a>>> {
-        self.defs.borrow()
+    pub fn take(&mut self) -> Vec<Node<'a>> {
+        mem::take(&mut self.defs)
     }
 }
 
