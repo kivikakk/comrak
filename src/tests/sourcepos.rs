@@ -440,9 +440,6 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 List // end is 3:0
                     | Item // end is 3:0
                     | TaskItem // end is 4:0
-                    | DescriptionItem // end is 4:0
-                    | DescriptionTerm // end is 3:0
-                    | DescriptionDetails // end is 4:0
                     | Raw // unparseable
             )
         })
