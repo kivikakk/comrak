@@ -200,6 +200,7 @@ struct FuzzExtensionOptions {
     spoiler: bool,
     greentext: bool,
     alerts: bool,
+    inline_footnotes: bool,
 }
 
 impl FuzzExtensionOptions {
@@ -212,6 +213,7 @@ impl FuzzExtensionOptions {
             tasklist: self.tasklist,
             superscript: self.superscript,
             footnotes: self.footnotes,
+            inline_footnotes: self.inline_footnotes,
             description_lists: self.description_lists,
             multiline_block_quotes: self.multiline_block_quotes,
             math_dollars: self.math_dollars,
