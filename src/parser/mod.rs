@@ -1656,15 +1656,7 @@ where
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
-                let mut num_lines = 0;
-                let mut last_line_start = 0;
-                for (i, &c) in trimmed.as_bytes().iter().enumerate() {
-                    if strings::is_line_end_char(c) {
-                        num_lines += 1;
-                        last_line_start = i + 1;
-                    }
-                }
-                let last_line_len = trimmed.len() - last_line_start;
+                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
                 ast.sourcepos.end = (end_line, last_line_len).into();
 

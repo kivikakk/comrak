@@ -20,7 +20,7 @@ use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
-use crate::strings::{self, is_blank, Case};
+use crate::strings::{self, count_newlines, is_blank, Case};
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -2294,20 +2294,4 @@ pub(crate) fn make_inline<'a>(
         line_offsets: Vec::new(),
     };
     arena.alloc(ast.into())
-}
-
-pub(crate) fn count_newlines(input: &str) -> (usize, usize) {
-    let mut nls = 0;
-    let mut since_nl = 0;
-
-    for &c in input.as_bytes() {
-        if c == b'\n' {
-            nls += 1;
-            since_nl = 0;
-        } else {
-            since_nl += 1;
-        }
-    }
-
-    (nls, since_nl)
 }
