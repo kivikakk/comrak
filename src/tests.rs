@@ -368,6 +368,14 @@ impl AstMatchTree {
                         assert_eq!(text, &ncb.literal, "CodeBlock literal should match");
                         asserted_text = true;
                     }
+                    NodeValue::HtmlBlock(ref nhb) => {
+                        assert_eq!(text, &nhb.literal, "HtmlBlock literal should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::HtmlInline(ref nhi) => {
+                        assert_eq!(text, nhi, "HtmlInline content should match");
+                        asserted_text = true;
+                    }
                     NodeValue::Text(ref nt) => {
                         assert_eq!(text, nt, "Text content should match");
                         asserted_text = true;
@@ -417,6 +425,8 @@ impl AstMatchTree {
                         | NodeValue::Link(_)
                         | NodeValue::Image(_)
                         | NodeValue::FrontMatter(_)
+                        | NodeValue::HtmlBlock(_)
+                        | NodeValue::HtmlInline(_)
                 ),
             "text wasn't asserted"
         );

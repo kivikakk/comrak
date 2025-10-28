@@ -1655,6 +1655,11 @@ where
                 mem::swap(&mut ncb.literal, content);
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
+                let trimmed = strings::remove_trailing_blank_lines_slice(content);
+                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
+                let end_line = ast.sourcepos.start.line + num_lines;
+                ast.sourcepos.end = (end_line, last_line_len).into();
+
                 mem::swap(&mut nhb.literal, content);
             }
             NodeValue::List(ref mut nl) => {

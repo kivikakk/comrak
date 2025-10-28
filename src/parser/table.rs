@@ -3,10 +3,9 @@ use std::cmp::min;
 use std::mem;
 
 use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
-use crate::parser::inlines::count_newlines;
 use crate::parser::Parser;
 use crate::scanners;
-use crate::strings::trim_cow;
+use crate::strings::{count_newlines, trim_cow};
 
 // Limit to prevent a malicious input from causing a denial of service.
 // See get_num_autocompleted_cells.

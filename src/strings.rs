@@ -411,9 +411,25 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
     s.strip_prefix(pat).unwrap_or(s)
 }
 
+pub fn count_newlines(input: &str) -> (usize, usize) {
+    let mut num_lines = 0;
+    let mut last_line_start = 0;
+    for (i, &c) in input.as_bytes().iter().enumerate() {
+        if is_line_end_char(c) {
+            num_lines += 1;
+            last_line_start = i + 1;
+        }
+    }
+    let last_line_len = input.len() - last_line_start;
+    (num_lines, last_line_len)
+}
+
 #[cfg(test)]
 pub mod tests {
-    use super::{ltrim, normalize_code, normalize_label, shift_buf_left, split_off_front_matter};
+    use super::{
+        count_newlines, ltrim, normalize_code, normalize_label, shift_buf_left,
+        split_off_front_matter,
+    };
     use crate::strings::Case;
 
     #[test]
@@ -486,5 +502,12 @@ pub mod tests {
         s = "   okay".to_string();
         ltrim(&mut s);
         assert_eq!(s, "okay");
+    }
+
+    #[test]
+    fn count_newlines_ok() {
+        assert_eq!((0, 7), count_newlines("abcdefg"));
+        assert_eq!((2, 0), count_newlines("abc\ndefg\n"));
+        assert_eq!((3, 2), count_newlines("abc\rde\nfg\nhi"));
     }
 }
