@@ -177,7 +177,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
     [<] ('script'|'pre'|'textarea'|'style') (spacechar | [>]) { return Some(1); }
     '<!--' { return Some(2); }
     '<?' { return Some(3); }
-    '<!' [A-Z] { return Some(4); }
+    '<!' [A-Za-z] { return Some(4); }
     '<![CDATA[' { return Some(5); }
     [<] [/]? blocktagname (spacechar | [/]? [>])  { return Some(6); }
     * { return None; }
