@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::collections::HashSet;
 use std::fmt::{self, Write};
 use std::str;
 use typed_arena::Arena;
@@ -1033,26 +1034,25 @@ fn longest_byte_sequence(buffer: &[u8], ch: u8) -> usize {
 }
 
 fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
-    let mut used = 1;
+    let mut used = HashSet::<usize>::new();
     let mut current = 0;
     for c in buffer {
         if *c == f {
             current += 1;
         } else {
             if current > 0 {
-                used |= 1 << current;
+                used.insert(current);
             }
             current = 0;
         }
     }
 
     if current > 0 {
-        used |= 1 << current;
+        used.insert(current);
     }
 
-    let mut i = 0;
-    while used & 1 != 0 {
-        used >>= 1;
+    let mut i = 1;
+    while used.contains(&i) {
         i += 1;
     }
     i

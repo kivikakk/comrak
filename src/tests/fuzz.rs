@@ -382,3 +382,12 @@ fn truncate() {
 fn truncate2() {
     html("~~~ ú", "<pre><code class=\"language-ú\"></code></pre>\n");
 }
+
+#[test]
+fn commonmark_big_backtick_inline_code() {
+    commonmark(
+        "\0` ```````````````````````````````` <`",
+        "�`  ```````````````````````````````` < `\n",
+        None,
+    );
+}
