@@ -2,7 +2,10 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use comrak::{markdown_to_html, options, Options, ResolvedReference};
+use comrak::{
+    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
+    ResolvedReference,
+};
 use std::sync::Arc;
 
 fuzz_target!(|s: &str| {
@@ -71,12 +74,13 @@ fuzz_target!(|s: &str| {
         experimental_minimize_commonmark: true,
     };
 
-    markdown_to_html(
-        s,
-        &Options {
-            extension,
-            parse,
-            render,
-        },
-    );
+    let options = Options {
+        extension,
+        parse,
+        render,
+    };
+
+    let _ = markdown_to_html(s, &options);
+    let _ = markdown_to_commonmark(s, &options);
+    let _ = markdown_to_commonmark_xml(s, &options);
 });
