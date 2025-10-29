@@ -338,6 +338,133 @@ fn sourcepos() {
         ])
     );
 
+    // https://github.github.com/gfm/#example-279
+    assert_ast_match!(
+        [extension.tasklist],
+        "- [ ] item\n",
+        (document (1:1-1:10) [
+            (list (1:1-1:10) [
+                (taskitem (1:1-1:10) [
+                    (paragraph (1:7-1:10) [
+                        (text (1:7-1:10) "item")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist],
+        "- [ ] item\n"
+        "- [x] item2\n",
+        (document (1:1-2:11) [
+            (list (1:1-2:11) [
+                (taskitem (1:1-1:10) [
+                    (paragraph (1:7-1:10) [
+                        (text (1:7-1:10) "item")
+                    ])
+                ])
+                (taskitem (2:1-2:11) [
+                    (paragraph (2:7-2:11) [
+                        (text (2:7-2:11) "item2")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    // https://github.github.com/gfm/#example-280
+    assert_ast_match!(
+        [extension.tasklist],
+        "- [x] item\n"
+        "  - [ ] item2\n"
+        "  - [x] item3\n"
+        "- [ ] item4\n",
+        (document (1:1-4:11) [
+            (list (1:1-4:11) [
+                (taskitem (1:1-3:13) [
+                    (paragraph (1:7-1:10) [
+                        (text (1:7-1:10) "item")
+                    ])
+                    (list (2:3-3:13) [
+                        (taskitem (2:3-2:13) [
+                            (paragraph (2:9-2:13) [
+                                (text (2:9-2:13) "item2")
+                            ])
+                        ])
+                        (taskitem (3:3-3:13) [
+                            (paragraph (3:9-3:13) [
+                                (text (3:9-3:13) "item3")
+                            ])
+                        ])
+                    ])
+                ])
+                (taskitem (4:1-4:11) [
+                    (paragraph (4:7-4:11) [
+                        (text (4:7-4:11) "item4")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist],
+        "- [ ] bullet point one\n"
+        "- bullet point two and some extra text\n"
+        "- [x] bullet point three\n",
+        (document (1:1-3:24) [
+            (list (1:1-3:24) [
+                (taskitem (1:1-1:22) [
+                    (paragraph (1:7-1:22) [
+                        (text (1:7-1:22) "bullet point one")
+                    ])
+                ])
+                (item (2:1-2:38) [
+                    (paragraph (2:3-2:38) [
+                        (text (2:3-2:38) "bullet point two and some extra text")
+                    ])
+                ])
+                (taskitem (3:1-3:24) [
+                    (paragraph (3:7-3:24) [
+                        (text (3:7-3:24) "bullet point three")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist],
+        "- [ ] bullet point one\n"
+        "- bullet point two and some extra text\n"
+        "- [x] bullet point three\n"
+        "\n"
+        "hello world\n",
+        (document (1:1-5:11) [
+            (list (1:1-3:24) [
+                (taskitem (1:1-1:22) [
+                    (paragraph (1:7-1:22) [
+                        (text (1:7-1:22) "bullet point one")
+                    ])
+                ])
+                (item (2:1-2:38) [
+                    (paragraph (2:3-2:38) [
+                        (text (2:3-2:38) "bullet point two and some extra text")
+                    ])
+                ])
+                (taskitem (3:1-3:24) [
+                    (paragraph (3:7-3:24) [
+                        (text (3:7-3:24) "bullet point three")
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:11) [
+                (text (5:1-5:11) "hello world")
+            ])
+        ])
+    );
+
     assert_ast_match!(
         [extension.tasklist],
         "h\n"

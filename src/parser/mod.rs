@@ -604,10 +604,15 @@ where
     // and, where a node's end column is zero, attempt to adopt a
     // non-zero end column from its deepest-last descendant; otherwise
     // fall back to the node's start position.
-    fn fix_zero_end_columns(&mut self, container: Node<'a>) {
+    // Returns a candidate end position for `container` if found.
+    fn fix_zero_end_columns(&mut self, container: Node<'a>) -> Option<nodes::LineColumn> {
         // explicit stack for post-order traversal: (node, visited)
         let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
-        for ch in container.children() {
+
+        // Collect children first to avoid holding an iterator borrow on
+        // the container while we later may need to mutably borrow it.
+        let children: Vec<_> = container.children().collect();
+        for ch in children {
             stack.push((ch, false));
 
             while let Some((node, visited)) = stack.pop() {
@@ -636,6 +641,21 @@ where
                 }
             }
         }
+
+        // Compute a candidate end position for the container by looking
+        // at its deepest-last descendant. Return it only if it has a
+        // non-zero column; the caller can fall back to the container's
+        // start position if desired.
+        if let Some(mut last_desc) = container.last_child() {
+            while let Some(ld) = last_desc.last_child() {
+                last_desc = ld;
+            }
+            let last_end = last_desc.data().sourcepos.end;
+            if last_end.column != 0 {
+                return Some(last_end);
+            }
+        }
+        None
     }
 
     /////////////////////
@@ -1664,6 +1684,9 @@ where
                 mem::swap(&mut nhb.literal, content);
             }
             NodeValue::List(ref mut nl) => {
+                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
+                    ast.sourcepos.end = candidate_end;
+                }
                 nl.tight = self.determine_list_tight(node);
             }
             _ => (),
