@@ -927,6 +927,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::Subscript
                     | NodeValue::TaskItem(_)
                     | NodeValue::Escaped
+                    | NodeValue::EscapedTag(_)
             ),
             #[cfg(feature = "shortcodes")]
             NodeValue::TableCell => matches!(
@@ -949,6 +950,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 | NodeValue::ShortCode(..)
                 | NodeValue::TaskItem(_)
                 | NodeValue::Escaped
+                | NodeValue::EscapedTag(_)
             ),
             NodeValue::MultilineBlockQuote(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
