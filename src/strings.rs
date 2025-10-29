@@ -160,7 +160,11 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     matches!(ch, 9 | 32)
 }
 
-pub fn chop_trailing_hashes(mut line: &str) -> &str {
+/// Chop any trailing sequence of `#` characters from an ATX heading line.
+///
+/// Returns the possibly-chopped line and a boolean indicating whether
+/// trailing hashes were removed (i.e. the heading had a closing sequence).
+pub fn chop_trailing_hashes(mut line: &str) -> (&str, bool) {
     line = rtrim_slice(line);
 
     let orig_n = line.len() - 1;
@@ -169,15 +173,15 @@ pub fn chop_trailing_hashes(mut line: &str) -> &str {
     let bytes = line.as_bytes();
     while bytes[n] == b'#' {
         if n == 0 {
-            return line;
+            return (line, false);
         }
         n -= 1;
     }
 
     if n != orig_n && is_space_or_tab(bytes[n]) {
-        rtrim_slice(&line[..n])
+        (rtrim_slice(&line[..n]), true)
     } else {
-        line
+        (line, false)
     }
 }
 

@@ -820,6 +820,7 @@ where
         container_ast.value = NodeValue::Heading(NodeHeading {
             level,
             setext: false,
+            closed: false,
         });
 
         true
@@ -928,6 +929,7 @@ where
                     scanners::SetextChar::Hyphen => 2,
                 },
                 setext: true,
+                closed: false,
             });
             let adv = line.len() - 1 - self.offset;
             self.advance_offset(line, adv, false);
@@ -1452,9 +1454,11 @@ where
                         // do nothing
                     } else if container.data().value.accepts_lines() {
                         let mut line = line;
-                        if let NodeValue::Heading(ref nh) = container.data().value {
+                        if let NodeValue::Heading(ref mut nh) = container.data_mut().value {
                             if !nh.setext {
-                                line = strings::chop_trailing_hashes(line);
+                                let (new_line, closed) = strings::chop_trailing_hashes(line);
+                                line = new_line;
+                                nh.closed = closed;
                             }
                         };
                         let count = self.first_nonspace - self.offset;
