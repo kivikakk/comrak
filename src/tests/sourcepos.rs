@@ -439,11 +439,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
         .filter(|v| {
             !matches!(
                 v,
-                // Remove buggy variants.
-                List // end is 3:0
-                    | Item // end is 3:0
-                    | TaskItem // end is 4:0
-                    | Raw // unparseable
+                Raw // unparseable
             )
         })
         .filter_map(|v| {
