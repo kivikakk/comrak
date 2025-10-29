@@ -418,6 +418,10 @@ pub struct NodeHeading {
 
     /// Whether the heading is setext (if not, ATX).
     pub setext: bool,
+
+    /// Whether this ATX heading had a closing sequence of trailing hashes.
+    /// Only meaningful for ATX headings (i.e. when `setext` is false).
+    pub closed: bool,
 }
 
 /// The metadata of an included HTML block.

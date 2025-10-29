@@ -150,12 +150,14 @@ hello world
 );
 
 const HEADING: TestCase = (
-    &[sourcepos!((5:1-5:13))],
+    &[sourcepos!((5:1-5:13)), sourcepos!((7:1-7:16))],
     r#"---
 a: b
 ---
 
 # Hello World
+
+# Test heading #
 
 hello world
 "#,

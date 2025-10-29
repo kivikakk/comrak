@@ -67,8 +67,13 @@ fn thematic_breaks() {
 #[test]
 fn atx_heading() {
     html(
-        concat!("# h1\n", "foo\n", "## h2\n"),
-        concat!("<h1>h1</h1>\n", "<p>foo</p>\n", "<h2>h2</h2>\n"),
+        concat!("# h1\n", "foo\n", "## h2\n", "####### foo\n"),
+        concat!(
+            "<h1>h1</h1>\n",
+            "<p>foo</p>\n",
+            "<h2>h2</h2>\n",
+            "<p>####### foo</p>\n"
+        ),
     );
 }
 
@@ -78,8 +83,10 @@ fn atx_heading_sourcepos() {
         [],
         "# h1\n"
         "foo\n"
-        "## h2\n",
-        (document (1:1-3:5) [
+        "## h2\n"
+        // https://spec.commonmark.org/0.31.2/#example-63
+        "####### foo\n",
+        (document (1:1-4:11) [
             (heading (1:1-1:4) [
                 (text (1:3-1:4) "h1")
             ])
@@ -88,6 +95,135 @@ fn atx_heading_sourcepos() {
             ])
             (heading (3:1-3:5) [
                 (text (3:4-3:5) "h2")
+            ])
+            (paragraph (4:1-4:11) [
+                (text (4:1-4:11) "####### foo")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn atx_heading_closed() {
+    let input = concat!(
+        // https://spec.commonmark.org/0.31.2/#example-71
+        "## Heading ##\n",
+        "   ## Heading ##\n",
+        // https://spec.commonmark.org/0.31.2/#example-72
+        "## Heading #########\n",
+        "#### Heading ##\n",
+        // https://spec.commonmark.org/0.31.2/#example-73
+        "## Heading ###   \n",
+    );
+
+    let arena = Arena::<AstNode>::new();
+    let options = Options::default();
+    let root = parse_document(&arena, input, &options);
+
+    let headings = root
+        .descendants()
+        .filter(|n| matches!(n.data().value, NodeValue::Heading(_)));
+
+    for heading in headings {
+        if let NodeValue::Heading(ref nh) = heading.data().value {
+            assert!(
+                nh.closed,
+                "Expected all ATX headings to be closed: {:?}",
+                heading
+            );
+        }
+    }
+}
+
+#[test]
+fn atx_heading_not_closed() {
+    let input = concat!(
+        // https://spec.commonmark.org/0.31.2/#example-62
+        "# Heading\n",
+        // https://spec.commonmark.org/0.31.2/#example-74
+        "### Heading ### b\n",
+        // https://spec.commonmark.org/0.31.2/#example-75
+        "# Heading#\n",
+        // https://spec.commonmark.org/0.31.2/#example-76
+        "### Heading \\###\n",
+        "## Heading #\\##\n",
+        "# Heading \\#\n",
+    );
+
+    let arena = Arena::<AstNode>::new();
+    let options = Options::default();
+    let root = parse_document(&arena, input, &options);
+
+    let headings = root
+        .descendants()
+        .filter(|n| matches!(n.data().value, NodeValue::Heading(_)));
+
+    for heading in headings {
+        if let NodeValue::Heading(ref nh) = heading.data().value {
+            assert!(
+                !nh.closed,
+                "Expected all ATX headings to be not closed: {:?}",
+                heading
+            );
+        }
+    }
+}
+
+#[test]
+fn atx_heading_closed_sourcepos() {
+    assert_ast_match!(
+        [],
+        // https://spec.commonmark.org/0.31.2/#example-71
+        "## Heading ##\n"
+        "   ## Heading ##\n"
+        // https://spec.commonmark.org/0.31.2/#example-72
+        "## Heading #########\n"
+        "#### Heading ##\n"
+        // Not part of the spec, but for completeness
+        "######### Not heading ##\n"
+        // https://spec.commonmark.org/0.31.2/#example-73
+        "## Heading ###   \n"
+        // https://spec.commonmark.org/0.31.2/#example-74
+        "### Heading ### b\n"
+        // https://spec.commonmark.org/0.31.2/#example-75
+        "# Heading#\n"
+        // https://spec.commonmark.org/0.31.2/#example-76
+        "### Heading \\###\n"
+        "## Heading #\\##\n"
+        "# Heading \\#\n",
+        (document (1:1-11:12) [
+            (heading (1:1-1:13) [
+                (text (1:4-1:10) "Heading")
+            ])
+            (heading (2:4-2:16) [
+                (text (2:7-2:13) "Heading")
+            ])
+            (heading (3:1-3:20) [
+                (text (3:4-3:10) "Heading")
+            ])
+            (heading (4:1-4:15) [
+                (text (4:6-4:12) "Heading")
+            ])
+            (paragraph (5:1-5:24) [
+                (text (5:1-5:24) "######### Not heading ##")
+            ])
+            (heading (6:1-6:17) [
+                (text (6:4-6:10) "Heading")
+            ])
+            (heading (7:1-7:17) [
+                (text (7:5-7:17) "Heading ### b")
+            ])
+            (heading (8:1-8:10) [
+                (text (8:3-8:10) "Heading#")
+            ])
+            (heading (9:1-9:16) [
+                (text (9:5-9:16) "Heading ###")
+            ])
+            (heading (10:1-10:15) [
+                (text (10:4-10:15) "Heading ###")
+            ])
+            (heading (11:1-11:12) [
+                (text (11:3-11:12) "Heading #")
             ])
         ])
     );
