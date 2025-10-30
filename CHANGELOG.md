@@ -33,7 +33,7 @@ Build changes:
 
 * The fuzzer now also runs on CommonMark and XML output formats. (by @kivikakk in https://github.com/kivikakk/comrak/pull/663)
 
-Diff: https://github.com/kivikakk/comrak/compare/v0.46.0...v0.46.1
+Diff: https://github.com/kivikakk/comrak/compare/v0.46.0...v0.47.0
 
 
 # [v0.46.0] - 2025-10-28
