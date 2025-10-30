@@ -1,19 +1,3 @@
-# [v0.46.1] - 2025-10-30
-
-## What's Changed
-* feat: Add `closed` property to NodeCodeBlock by @Martin005 in https://github.com/kivikakk/comrak/pull/661
-* TableCell can contain Escaped too. by @kivikakk in https://github.com/kivikakk/comrak/pull/662
-* Let's fuzz CommonMark and XML output with mama. by @kivikakk in https://github.com/kivikakk/comrak/pull/663
-* EscapedTag likes to pop up too. by @kivikakk in https://github.com/kivikakk/comrak/pull/664
-* feat: Add `closed` property to NodeHeading by @Martin005 in https://github.com/kivikakk/comrak/pull/665
-* fix: Incorrect `sourcepos` for lists and its children by @Martin005 in https://github.com/kivikakk/comrak/pull/666
-* Cargo.toml: v0.46.1. by @kivikakk in https://github.com/kivikakk/comrak/pull/667
-
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.46.0...v0.46.1
-
----snip---
-
 Categories to use in this document, and the order in which to give them:
 
 * Security
@@ -28,6 +12,28 @@ Categories to use in this document, and the order in which to give them:
 * Documentation
 * Build changes
 * Behind the scenes
+
+
+# [v0.46.1] - 2025-10-30
+
+Martin Chrástek has fixed _all known sourcepos issues_ in Comrak, while closing a number of other bugs at the same time! I'm so happy.
+
+New APIs:
+
+* `NodeCodeBlock` now has a `closed` property. (by @Martin005 in https://github.com/kivikakk/comrak/pull/661)
+* `NodeHeading` now has a `closed` property, for closed ATX-style headings. (by @Martin005 in https://github.com/kivikakk/comrak/pull/665)
+
+Bug fixes:
+
+* Source position information for lists and their children is fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/666)
+* Source position information for unclosed fenced code blocks is fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/661)
+* `Escaped` and `EscapedTag` no longer fail AST validation when formatting as CommonMark with debug assertions. (by @kivikakk in https://github.com/kivikakk/comrak/pull/662, https://github.com/kivikakk/comrak/pull/664)
+
+Build changes:
+
+* The fuzzer now also runs on CommonMark and XML output formats. (by @kivikakk in https://github.com/kivikakk/comrak/pull/663)
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.46.0...v0.46.1
 
 
 # [v0.46.0] - 2025-10-28
