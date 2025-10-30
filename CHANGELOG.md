@@ -14,6 +14,28 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
+# [v0.47.0] - 2025-10-30
+
+Martin Chrástek has fixed _all known sourcepos issues_ in Comrak, while closing a number of other bugs at the same time! I'm so happy.
+
+New APIs:
+
+* `NodeCodeBlock` now has a `closed` property. (by @Martin005 in https://github.com/kivikakk/comrak/pull/661)
+* `NodeHeading` now has a `closed` property, for closed ATX-style headings. (by @Martin005 in https://github.com/kivikakk/comrak/pull/665)
+
+Bug fixes:
+
+* Source position information for lists and their children is fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/666)
+* Source position information for unclosed fenced code blocks is fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/661)
+* `Escaped` and `EscapedTag` no longer fail AST validation when formatting as CommonMark with debug assertions. (by @kivikakk in https://github.com/kivikakk/comrak/pull/662, https://github.com/kivikakk/comrak/pull/664)
+
+Build changes:
+
+* The fuzzer now also runs on CommonMark and XML output formats. (by @kivikakk in https://github.com/kivikakk/comrak/pull/663)
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.46.0...v0.46.1
+
+
 # [v0.46.0] - 2025-10-28
 
 Please note the MSRV has been bumped from 1.65 to 1.70; see [the pull request](https://github.com/kivikakk/comrak/pull/649) for more details. It's a kind of sticky and awkward situation — thanks to the inevitability of Progress — with no particularly clean solution. (wherein telling GCC 15 users "sorry it just won't build from source for you without messing with dependencies" is not a solution.)
