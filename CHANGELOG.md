@@ -14,7 +14,7 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
-# [v0.46.1] - 2025-10-30
+# [v0.47.0] - 2025-10-30
 
 Martin Chrástek has fixed _all known sourcepos issues_ in Comrak, while closing a number of other bugs at the same time! I'm so happy.
 
