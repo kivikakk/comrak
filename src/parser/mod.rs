@@ -609,10 +609,7 @@ where
         // explicit stack for post-order traversal: (node, visited)
         let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
 
-        // Collect children first to avoid holding an iterator borrow on
-        // the container while we later may need to mutably borrow it.
-        let children: Vec<_> = container.children().collect();
-        for ch in children {
+        for ch in container.children() {
             stack.push((ch, false));
 
             while let Some((node, visited)) = stack.pop() {
