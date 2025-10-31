@@ -104,6 +104,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.special_chars[b'~' as usize] = true;
             s.skip_chars[b'~' as usize] = true;
         }
+        if options.extension.highlight {
+            s.special_chars[b'=' as usize] = true;
+            s.skip_chars[b'=' as usize] = true;
+        }
         if options.extension.superscript || options.extension.inline_footnotes {
             s.special_chars[b'^' as usize] = true;
         }
@@ -190,6 +194,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             '\0' => return false,
             '\r' | '\n' => Some(self.handle_newline()),
             '`' => Some(self.handle_backticks(&ast.line_offsets)),
+            '=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             '\\' => Some(self.handle_backslash()),
             '&' => Some(self.handle_entity()),
             '<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
@@ -635,7 +640,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.pos - 1,
         );
 
-        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
+        let is_valid_double_delim_if_required = if (c == b'~'
+            && self.options.extension.strikethrough)
+            || (c == b'=' && self.options.extension.highlight)
+        {
             numdelims <= 2
         } else {
             true
@@ -643,7 +651,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         if (can_open || can_close)
             && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
-            && is_valid_strikethrough_delim
+            && is_valid_double_delim_if_required
         {
             self.push_delimiter(c, can_open, can_close, inl);
         }
@@ -1116,7 +1124,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 12] = [stack_bottom; 12];
+        let mut openers_bottom: [usize; 13] = [stack_bottom; 13];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -1146,7 +1154,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     b'"' => 3,
                     b'\'' => 4,
                     b'_' => 5,
-                    b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
+                    b'*' => 7 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
+                    b'=' => 12,
                     _ => unreachable!(),
                 };
 
@@ -1197,6 +1206,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         && c.delim_char == b'~')
                     || (self.options.extension.superscript && c.delim_char == b'^')
                     || (self.options.extension.spoiler && c.delim_char == b'|')
+                    || (self.options.extension.highlight && c.delim_char == b'=')
                 {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
@@ -1372,6 +1382,17 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     NodeValue::EscapedTag("~".to_owned())
                 } else {
                     NodeValue::EscapedTag("~~".to_owned())
+                }
+            } else if opener_char == b'=' {
+                // Not emphasis
+                // Unlike for |, these cases have to be handled because they will match
+                // in the event subscript but not strikethrough is enabled
+                if self.options.extension.highlight {
+                    NodeValue::Highlight
+                } else if use_delims == 1 {
+                    NodeValue::EscapedTag("=".to_owned())
+                } else {
+                    NodeValue::EscapedTag("==".to_owned())
                 }
             } else if self.options.extension.superscript && opener_char == b'^' {
                 NodeValue::Superscript

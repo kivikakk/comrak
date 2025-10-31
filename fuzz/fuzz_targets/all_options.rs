@@ -37,6 +37,7 @@ fuzz_target!(|s: &str| {
         link_url_rewriter: Some(Arc::new(url_rewriter)),
         cjk_friendly_emphasis: true,
         subtext: true,
+        highlight: true,
     };
 
     let cb = |link_ref: options::BrokenLinkReference| {

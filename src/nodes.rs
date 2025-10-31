@@ -159,6 +159,9 @@ pub enum NodeValue {
     /// per the GFM spec.
     Strikethrough,
 
+    /// ***Inline**. [Highlight](https://www.markdownlang.com/extended/highlight.html) / mark text
+    Highlight,
+
     /// **Inline**.  Superscript.  Enabled with `ext_superscript` option.
     Superscript,
 
@@ -648,6 +651,7 @@ impl NodeValue {
             NodeValue::HtmlInline(..) => "html_inline",
             NodeValue::Raw(..) => "raw",
             NodeValue::Strikethrough => "strikethrough",
+            NodeValue::Highlight => "highlight",
             NodeValue::FrontMatter(_) => "frontmatter",
             NodeValue::TaskItem { .. } => "taskitem",
             NodeValue::Superscript => "superscript",
@@ -899,6 +903,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::Image(..)
             | NodeValue::WikiLink(..)
             | NodeValue::Strikethrough
+            | NodeValue::Highlight
             | NodeValue::Superscript
             | NodeValue::SpoileredText
             | NodeValue::Underline
@@ -921,6 +926,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::Link(..)
                     | NodeValue::Image(..)
                     | NodeValue::Strikethrough
+                    | NodeValue::Highlight
                     | NodeValue::HtmlInline(..)
                     | NodeValue::Math(..)
                     | NodeValue::WikiLink(..)
@@ -943,6 +949,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 | NodeValue::Link(..)
                 | NodeValue::Image(..)
                 | NodeValue::Strikethrough
+                | NodeValue::Highlight
                 | NodeValue::HtmlInline(..)
                 | NodeValue::Math(..)
                 | NodeValue::WikiLink(..)
