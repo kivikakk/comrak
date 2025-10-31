@@ -21,6 +21,7 @@ mod front_matter;
 mod fuzz;
 mod greentext;
 mod header_ids;
+mod highlight;
 #[path = "tests/html.rs"]
 mod html_;
 mod inline_footnotes;

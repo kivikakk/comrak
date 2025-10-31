@@ -107,6 +107,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.skip_char_bytes[b'~' as usize] = true;
             s.emph_delim_bytes[b'~' as usize] = true;
         }
+        if options.extension.highlight {
+            s.special_char_bytes[b'=' as usize] = true;
+            s.skip_char_bytes[b'=' as usize] = true;
+            s.emph_delim_bytes[b'=' as usize] = true;
+        }
         if options.extension.superscript || options.extension.inline_footnotes {
             s.special_char_bytes[b'^' as usize] = true;
         }
@@ -198,6 +203,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let new_inl: Option<Node<'a>> = match b {
             b'\r' | b'\n' => Some(self.handle_newline()),
             b'`' => Some(self.handle_backticks(&ast.line_offsets)),
+            b'=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             b'\\' => Some(self.handle_backslash()),
             b'&' => Some(self.handle_entity()),
             b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
@@ -684,15 +690,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.scanner.pos - 1,
         );
 
-        let is_valid_strikethrough_delim = if b == b'~' && self.options.extension.strikethrough {
+        let is_valid_double_delim_if_required = if b == b'~' && self.options.extension.strikethrough
+        {
             numdelims <= 2
+        } else if b == b'=' && self.options.extension.highlight {
+            numdelims == 2
         } else {
             true
         };
 
         if (can_open || can_close)
             && (!(b == b'\'' || b == b'"') || self.options.parse.smart)
-            && is_valid_strikethrough_delim
+            && is_valid_double_delim_if_required
         {
             self.push_delimiter(b, can_open, can_close, inl);
         }
@@ -1202,7 +1211,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 12] = [stack_bottom; 12];
+        let mut openers_bottom: [usize; 13] = [stack_bottom; 13];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -1233,6 +1242,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     b'\'' => 4,
                     b'_' => 5,
                     b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
+                    b'=' => 12,
                     _ => unreachable!(),
                 };
 
@@ -1459,6 +1469,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
             } else if self.options.extension.superscript && opener_byte == b'^' {
                 NodeValue::Superscript
+            } else if opener_byte == b'=' {
+                if self.options.extension.highlight {
+                    NodeValue::Highlight
+                } else {
+                    NodeValue::EscapedTag("==".to_owned())
+                }
             } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
                     NodeValue::SpoileredText
