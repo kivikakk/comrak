@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    crane.url = "github:ipetkov/crane";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -12,10 +11,9 @@
 
   outputs =
     {
-      self,
       nixpkgs,
-      crane,
       fenix,
+      ...
     }:
     let
       systems = [
@@ -25,88 +23,34 @@
         "x86_64-linux"
       ];
       eachSystem = nixpkgs.lib.genAttrs systems;
-
-      mkComrak =
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-          craneLib = crane.mkLib pkgs;
-          src = craneLib.cleanCargoSource (craneLib.path ./.);
-
-          commonArgs = {
-            inherit src;
-
-            buildInputs = nixpkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
-          };
-
-          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-          comrak = craneLib.buildPackage (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-
-              doCheck = false;
-            }
-          );
-        in
-        {
-          inherit
-            craneLib
-            src
-            commonArgs
-            cargoArtifacts
-            comrak
-            ;
-        };
-
     in
     {
 
-      checks = eachSystem (
+      packages = eachSystem (
         system:
         let
-          inherit (mkComrak system)
-            craneLib
-            src
-            commonArgs
-            cargoArtifacts
-            comrak
-            ;
+          pkgs = nixpkgs.legacyPackages.${system};
+          cargoToml = pkgs.lib.importTOML ./Cargo.toml;
+
+          mkComrak =
+            pkgs:
+            pkgs.rustPlatform.buildRustPackage {
+              pname = "comrak";
+              inherit (cargoToml.package) version;
+
+              src = ./.;
+              cargoLock.lockFile = ./Cargo.lock;
+
+              doCheck = false;
+            };
         in
-        {
-          inherit comrak;
+        rec {
+          default = comrak;
 
-          comrak-clippy = craneLib.cargoClippy (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              # cargoClippyExtraArgs = "--lib --bins --examples --tests -- --deny warnings";
-              # XXX Not sure if we can fix all these and retain our current MSRV.
-              cargoClippyExtraArgs = "--lib --bins --examples --tests";
-            }
-          );
-
-          comrak-doc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
-
-          comrak-fmt = craneLib.cargoFmt { inherit src; };
-
-          comrak-nextest = craneLib.cargoNextest (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              partitions = 1;
-              partitionType = "count";
-            }
-          );
+          comrak = mkComrak pkgs;
+          comrak-musl = mkComrak pkgs.pkgsStatic;
         }
       );
-
-      packages = eachSystem (system: rec {
-        default = comrak;
-
-        inherit (mkComrak system) comrak;
-      });
 
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 

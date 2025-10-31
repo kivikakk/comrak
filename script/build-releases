@@ -10,14 +10,24 @@ function build {
     local rust_ver="$1"
     local flake_ref="$2"
 
-    echo "--- building $flake_ref"
-    nix build ".#$flake_ref" &&
-        cp result/bin/comrak "comrak-$version-$rust_ver"
+    local target="comrak-$version-$rust_ver"
+    local nix="nix"
+    if command -v nom &>/dev/null; then
+        nix="nom"
+    fi
+
+    if ! test -f "$target"; then
+        echo "--- building $flake_ref"
+        "$nix" build ".#$flake_ref" &&
+            cp result/bin/comrak "$target"
+    else
+        echo "--- skipping $flake_ref, $target already exists"
+    fi
 }
 
 build aarch64-apple-darwin packages.aarch64-darwin.default
 build x86_64-apple-darwin packages.x86_64-darwin.default
-build aarch64-unknown-linux-gnu packages.aarch64-linux.default
-build x86_64-unknown-linux-gnu packages.x86_64-linux.default
+build aarch64-unknown-linux-musl packages.aarch64-linux.comrak-musl
+build x86_64-unknown-linux-musl packages.x86_64-linux.comrak-musl
 
 file "comrak-$version-"*
