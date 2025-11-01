@@ -6,13 +6,12 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
 use std::{mem, ptr};
-use typed_arena::Arena;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
-    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
+    Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
+    NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
@@ -21,6 +20,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, count_newlines, is_blank, Case};
+use crate::Arena;
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -28,7 +28,7 @@ const MAX_MATH_DOLLARS: usize = 2;
 const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+    pub arena: &'a Arena<'a>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
@@ -39,7 +39,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     footnote_defs: &'p mut FootnoteDefs<'a>,
-    delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+    delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
     within_brackets: bool,
@@ -61,13 +61,13 @@ struct HtmlSkipFlags {
 
 impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
+        arena: &'a Arena<'a>,
         options: &'o Options<'c>,
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
         footnote_defs: &'p mut FootnoteDefs<'a>,
-        delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+        delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
         inline_footnote_depth: usize,
     ) -> Self {
         let mut s = Subject {
@@ -957,7 +957,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         def_node.append(para_node);
 
         // Parse the content recursively as inlines
-        let delimiter_arena = Arena::new();
+        let delimiter_arena = typed_arena::Arena::new();
         let mut subj = Subject::new(
             self.arena,
             self.options,
@@ -2286,7 +2286,7 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
 }
 
 pub(crate) fn make_inline<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a Arena<'a>,
     value: NodeValue,
     sourcepos: Sourcepos,
 ) -> Node<'a> {

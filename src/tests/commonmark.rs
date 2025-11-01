@@ -12,7 +12,7 @@ fn commonmark_removes_redundant_strong() {
 
 #[test]
 fn commonmark_avoids_spurious_backslash() {
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let empty = LineColumn { line: 0, column: 0 };
 
@@ -36,7 +36,7 @@ fn commonmark_avoids_spurious_backslash() {
 
 #[test]
 fn commonmark_renders_single_list_item() {
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let empty = LineColumn { line: 0, column: 0 };
     let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());

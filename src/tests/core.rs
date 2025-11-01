@@ -116,7 +116,7 @@ fn atx_heading_closed() {
         "## Heading ###   \n",
     );
 
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let root = parse_document(&arena, input, &options);
 
@@ -150,7 +150,7 @@ fn atx_heading_not_closed() {
         "# Heading \\#\n",
     );
 
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let root = parse_document(&arena, input, &options);
 

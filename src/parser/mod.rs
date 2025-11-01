@@ -11,13 +11,12 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::mem;
 use std::str;
-use typed_arena::Arena;
 
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
 use crate::nodes::{
-    self, AlertType, Ast, AstNode, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
+    self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
     NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
     NodeMultilineBlockQuote, NodeValue, Sourcepos,
 };
@@ -25,6 +24,7 @@ use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, split_off_front_matter, Case};
+use crate::Arena;
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
@@ -38,7 +38,7 @@ const MAX_LIST_DEPTH: usize = 100;
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
-pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Options) -> Node<'a> {
+pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> Node<'a> {
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
@@ -57,7 +57,7 @@ pub fn parse_document<'a>(arena: &'a Arena<AstNode<'a>>, md: &str, options: &Opt
 }
 
 pub struct Parser<'a, 'o, 'c> {
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a Arena<'a>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
@@ -100,7 +100,7 @@ impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<AstNode<'a>>, root: Node<'a>, options: &'o Options<'c>) -> Self {
+    fn new(arena: &'a Arena<'a>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
             refmap: RefMap::new(),
@@ -1739,7 +1739,7 @@ where
         let mut content = mem::take(&mut node_data.content);
         strings::rtrim(&mut content);
 
-        let delimiter_arena = Arena::new();
+        let delimiter_arena = typed_arena::Arena::new();
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -2051,7 +2051,7 @@ where
         // scanning from Subject so we don't have to make all this.
         let unused_node_arena = Arena::with_capacity(0);
         let mut unused_footnote_defs = inlines::FootnoteDefs::new();
-        let unused_delimiter_arena = Arena::with_capacity(0);
+        let unused_delimiter_arena = typed_arena::Arena::with_capacity(0);
         let mut unused_refmap = inlines::RefMap::new();
 
         let mut subj = inlines::Subject::new(

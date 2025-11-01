@@ -2,7 +2,7 @@ use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::panic;
 
-use crate::nodes::{AstNode, Node, NodeValue, Sourcepos};
+use crate::nodes::{Node, NodeValue, Sourcepos};
 use crate::options;
 use crate::*;
 

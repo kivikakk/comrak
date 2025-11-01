@@ -2,7 +2,6 @@ use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt::{self, Write};
 use std::str;
-use typed_arena::Arena;
 
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::node_matches;
@@ -15,6 +14,7 @@ use crate::parser::options::{Options, Plugins, WikiLinksMode};
 use crate::parser::shortcodes::NodeShortCode;
 use crate::scanners;
 use crate::strings::trim_start_match;
+use crate::Arena;
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
