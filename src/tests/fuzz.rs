@@ -357,8 +357,6 @@ fn echaw9() {
 }
 
 #[test]
-// FIXME
-#[should_panic = "assertion failed: (sp.end.column - sp.start.column + 1 == x) || rem == 0"]
 fn relaxed_autolink_email_in_footnote() {
     assert_ast_match!(
         [
@@ -367,8 +365,15 @@ fn relaxed_autolink_email_in_footnote() {
             parse.relaxed_autolinks
         ],
         "[^a@b.c\nA]:\n",
-        (document (1:1-1:1234) [
-            // TODO: what should this be parsed as?
+        (document (1:1-2:3) [
+            (paragraph (1:1-2:3) [
+                (text (1:1-1:2) "[^")
+                (link (1:3-1:7) "mailto:a@b.c" [
+                    (text (1:3-1:7) "a@b.c")
+                ])
+                (softbreak (1:8-1:8))
+                (text (2:1-2:3) "A]:")
+            ])
         ]),
     );
 }

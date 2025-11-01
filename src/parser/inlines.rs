@@ -1681,16 +1681,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let bracket_inl_text = last.inl_text;
 
         if self.options.extension.footnotes
-            && match bracket_inl_text.next_sibling() {
-                Some(n) => {
-                    if n.data().value.text().is_some() {
-                        n.data().value.text().unwrap().as_bytes().starts_with(b"^")
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            }
+            && bracket_inl_text.next_sibling().map_or(false, |n| {
+                n.data()
+                    .value
+                    .text()
+                    .map_or(false, |t| t.as_bytes().starts_with(b"^"))
+            })
         {
             let mut text = String::new();
             let mut sibling_iterator = bracket_inl_text.following_siblings();
@@ -1704,6 +1700,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             // For example `[^_foo]` gives `^`, `_`, and `foo`. So pull them together.
             // Since we're handling the closing bracket, the only siblings at this point are
             // related to the footnote name.
+            //
+            // This re-construction of the original text value is an awful HACK
+            // we should reconsider.  Can't we go back to the subject and pull
+            // it from there?
+
+            // If there's a non-Text/HtmlInline, such as SoftBreak, don't try to
+            // do anything fancy here at all.
+            let mut sussy = false;
+
             for sibling in sibling_iterator {
                 match sibling.data().value {
                     NodeValue::Text(ref literal) => {
@@ -1712,11 +1717,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     NodeValue::HtmlInline(ref literal) => {
                         text.push_str(literal);
                     }
-                    _ => {}
+                    _ => {
+                        sussy = true;
+                        break;
+                    }
                 };
             }
 
-            if text.len() > 1 {
+            if !sussy && text.len() > 1 {
                 let inl = self.make_inline(
                     NodeValue::FootnoteReference(NodeFootnoteReference {
                         name: text[1..].to_string(),
