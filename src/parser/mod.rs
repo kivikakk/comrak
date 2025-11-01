@@ -1686,6 +1686,11 @@ where
                 }
                 nl.tight = self.determine_list_tight(node);
             }
+            NodeValue::FootnoteDefinition(_) => {
+                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
+                    ast.sourcepos.end = candidate_end;
+                }
+            }
             _ => (),
         }
 

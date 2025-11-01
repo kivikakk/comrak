@@ -269,7 +269,7 @@ fn sourcepos() {
                 (text (5:1-5:36) "Here is a longer footnote reference.")
                 (footnote_reference (5:37-5:42))
             ])
-            (footnote_definition (3:1-4:0) [ // XXX :(
+            (footnote_definition (3:1-3:27) [
                 (paragraph (3:7-3:27) [
                     (text (3:7-3:27) "Here is the footnote.")
                 ])
@@ -299,7 +299,7 @@ fn leave_footnote_definitions() {
                 (text (1:1-1:29) "Here is a footnote reference.")
                 (footnote_reference (1:30-1:33))
             ])
-            (footnote_definition (3:1-4:0) [ // XXX :(
+            (footnote_definition (3:1-3:27) [
                 (paragraph (3:7-3:27) [
                     (text (3:7-3:27) "Here is the footnote.")
                 ])
