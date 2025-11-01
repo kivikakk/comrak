@@ -1686,6 +1686,11 @@ where
                 }
                 nl.tight = self.determine_list_tight(node);
             }
+            NodeValue::FootnoteDefinition(_) => {
+                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
+                    ast.sourcepos.end = candidate_end;
+                }
+            }
             _ => (),
         }
 
@@ -1768,8 +1773,10 @@ where
                 };
                 nfd.name = fd.name.to_string();
                 nfd.total_references = fd.total_references;
-                self.root.append(fd.node);
-            } else {
+                if !self.options.parse.leave_footnote_definitions {
+                    self.root.append(fd.node);
+                }
+            } else if !self.options.parse.leave_footnote_definitions {
                 fd.node.detach();
             }
         }

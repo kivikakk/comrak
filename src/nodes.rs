@@ -608,17 +608,10 @@ impl NodeValue {
         }
     }
 
-    pub(crate) fn accepts_lines(&self) -> bool {
-        matches!(
-            *self,
-            NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::Subtext
-        )
-    }
-
-    pub(crate) fn xml_node_name(&self) -> &'static str {
+    /// Returns the name this kind of node gets in an XML document.  Follows
+    /// the CommonMark DTD for nodes from the spec, otherwise we just vibe in a
+    /// stable way.
+    pub fn xml_node_name(&self) -> &'static str {
         match *self {
             NodeValue::Document => "document",
             NodeValue::BlockQuote => "block_quote",
@@ -665,6 +658,16 @@ impl NodeValue {
             NodeValue::Alert(_) => "alert",
             NodeValue::Subtext => "subtext",
         }
+    }
+
+    pub(crate) fn accepts_lines(&self) -> bool {
+        matches!(
+            *self,
+            NodeValue::Paragraph
+                | NodeValue::Heading(..)
+                | NodeValue::CodeBlock(..)
+                | NodeValue::Subtext
+        )
     }
 }
 
