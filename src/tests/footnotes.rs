@@ -255,27 +255,62 @@ fn sourcepos() {
         [extension.footnotes],
         "Here is a footnote reference.[^1]\n"
         "\n"
+        "[^1]: Here is the footnote.\n"
+        "\n"
         "Here is a longer footnote reference.[^ref]\n"
         "\n"
-        "[^1]: Here is the footnote.\n"
         "[^ref]: Here is another footnote.\n",
-        (document (1:1-6:33) [
+        (document (1:1-7:33) [
             (paragraph (1:1-1:33) [
                 (text (1:1-1:29) "Here is a footnote reference.")
                 (footnote_reference (1:30-1:33))
             ])
-            (paragraph (3:1-3:42) [
-                (text (3:1-3:36) "Here is a longer footnote reference.")
-                (footnote_reference (3:37-3:42))
+            (paragraph (5:1-5:42) [
+                (text (5:1-5:36) "Here is a longer footnote reference.")
+                (footnote_reference (5:37-5:42))
             ])
-            (footnote_definition (5:1-5:27) [
-                (paragraph (5:7-5:27) [
-                    (text (5:7-5:27) "Here is the footnote.")
+            (footnote_definition (3:1-4:0) [ // XXX :(
+                (paragraph (3:7-3:27) [
+                    (text (3:7-3:27) "Here is the footnote.")
                 ])
             ])
-            (footnote_definition (6:1-6:33) [
-                (paragraph (6:9-6:33) [
-                    (text (6:9-6:33) "Here is another footnote.")
+            (footnote_definition (7:1-7:33) [
+                (paragraph (7:9-7:33) [
+                    (text (7:9-7:33) "Here is another footnote.")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn leave_footnote_definitions() {
+    assert_ast_match!(
+        [extension.footnotes, parse.leave_footnote_definitions],
+        "Here is a footnote reference.[^1]\n"
+        "\n"
+        "[^1]: Here is the footnote.\n"
+        "\n"
+        "Here is a longer footnote reference.[^ref]\n"
+        "\n"
+        "[^ref]: Here is another footnote.\n",
+        (document (1:1-7:33) [
+            (paragraph (1:1-1:33) [
+                (text (1:1-1:29) "Here is a footnote reference.")
+                (footnote_reference (1:30-1:33))
+            ])
+            (footnote_definition (3:1-4:0) [ // XXX :(
+                (paragraph (3:7-3:27) [
+                    (text (3:7-3:27) "Here is the footnote.")
+                ])
+            ])
+            (paragraph (5:1-5:42) [
+                (text (5:1-5:36) "Here is a longer footnote reference.")
+                (footnote_reference (5:37-5:42))
+            ])
+            (footnote_definition (7:1-7:33) [
+                (paragraph (7:9-7:33) [
+                    (text (7:9-7:33) "Here is another footnote.")
                 ])
             ])
         ])

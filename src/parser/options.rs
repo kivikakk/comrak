@@ -222,7 +222,7 @@ pub struct Extension<'c> {
     /// let mut options = Options::default();
     /// options.extension.front_matter_delimiter = Some("---".to_owned());
     /// let arena = Arena::new();
-    /// let input ="---\nlayout: post\n---\nText\n";
+    /// let input = "---\nlayout: post\n---\nText\n";
     /// let root = parse_document(&arena, input, &options);
     /// let mut buf = String::new();
     /// format_commonmark(&root, &options, &mut buf);
@@ -697,8 +697,54 @@ pub struct Parse<'c> {
     ///            "<h1>Cool input!</h1>\n<p>Wow look at this cool \
     ///            <a href=\"https://www.rust-lang.org/\" title=\"The Rust Language\">link</a>. \
     ///            A [broken link] renders as text.</p>\n");
+    /// ```
     #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub broken_link_callback: Option<Arc<dyn BrokenLinkCallback + 'c>>,
+
+    /// Leave footnote definitions in place in the document tree, rather than
+    /// reordering them to the end.  This will also cause unreferenced footnote
+    /// definitions to remain in the tree, rather than being removed.
+    ///
+    /// Comrak's default formatters expect this option to be turned off, so use
+    /// with care if you use the default formatters.
+    ///
+    /// ```rust
+    /// # use comrak::{Arena, parse_document, Node, Options};
+    /// let mut options = Options::default();
+    /// options.extension.footnotes = true;
+    /// let arena = Arena::new();
+    /// let input = concat!(
+    ///   "Remember burning a CD?[^cd]\n",
+    ///   "\n",
+    ///   "[^cd]: In the Old Days, a 4x burner was considered good.\n",
+    ///   "\n",
+    ///   "[^dvd]: And DVD-RWs? Those were something else.\n",
+    ///   "\n",
+    ///   "Me neither.",
+    /// );
+    ///
+    /// fn node_kinds<'a>(doc: Node<'a>) -> Vec<&'static str> {
+    ///   doc.descendants().map(|n| n.data().value.xml_node_name()).collect()
+    /// }
+    ///
+    /// let root = parse_document(&arena, input, &options);
+    /// assert_eq!(
+    ///   node_kinds(root),
+    ///   &["document", "paragraph", "text", "footnote_reference", "paragraph", "text",
+    ///     "footnote_definition", "paragraph", "text"],
+    /// );
+    ///
+    /// options.parse.leave_footnote_definitions = true;
+    ///
+    /// let root = parse_document(&arena, input, &options);
+    /// assert_eq!(
+    ///   node_kinds(root),
+    ///   &["document", "paragraph", "text", "footnote_reference", "footnote_definition",
+    ///     "paragraph", "text", "footnote_definition", "paragraph", "text", "paragraph", "text"],
+    /// );
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub leave_footnote_definitions: bool,
 }
 
 /// The type of the callback used when a reference link is encountered with no

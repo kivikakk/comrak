@@ -1768,8 +1768,10 @@ where
                 };
                 nfd.name = fd.name.to_string();
                 nfd.total_references = fd.total_references;
-                self.root.append(fd.node);
-            } else {
+                if !self.options.parse.leave_footnote_definitions {
+                    self.root.append(fd.node);
+                }
+            } else if !self.options.parse.leave_footnote_definitions {
                 fd.node.detach();
             }
         }
