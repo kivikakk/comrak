@@ -61,7 +61,11 @@
           fenixPkgs = fenix.packages.${system};
 
           mkShell =
-            { name, toolchain }:
+            {
+              name,
+              toolchain,
+              extraPkgs ? [ ],
+            }:
             pkgs.mkShell {
               inherit name;
 
@@ -91,13 +95,32 @@
                 python3
                 hyperfine
                 bacon
-              ]);
+              ])
+              ++ extraPkgs;
             };
         in
         {
           default = mkShell {
             name = "comrak";
             toolchain = fenixPkgs.complete;
+          };
+
+          codspeed = mkShell {
+            name = "comrak";
+            toolchain = fenixPkgs.complete;
+            extraPkgs = [
+              (pkgs.callPackage ./nix/codspeed.nix {
+                rustPlatform = pkgs.makeRustPlatform {
+                  cargo = fenixPkgs.complete.toolchain;
+                  rustc = fenixPkgs.complete.toolchain;
+                };
+              })
+            ];
+          };
+
+          stable = mkShell {
+            name = "comrak";
+            toolchain = fenixPkgs.stable;
           };
 
           msrv = mkShell {
