@@ -833,7 +833,7 @@ impl Ast {
 ///
 /// ```rust
 /// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
-/// # let arena = Arena::<AstNode>::new();
+/// # let arena = Arena::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
 pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
