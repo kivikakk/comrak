@@ -1,6 +1,6 @@
 name: benchmarks
 
-on: 
+on:
   pull_request:
     types:
       - opened
@@ -34,3 +34,4 @@ jobs:
         uses: mshick/add-pr-comment@v2
         with:
           message-path: bench-output.md
+        continue-on-error: true
