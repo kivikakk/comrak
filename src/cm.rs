@@ -516,7 +516,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             )?;
             let mut current_len = listmarker.len();
 
-            while current_len < self.options.render.ol_width {
+            while current_len < self.options.render.ol_width.min(12) {
                 write!(listmarker, " ").unwrap();
                 current_len += 1;
             }
