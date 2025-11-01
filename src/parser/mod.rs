@@ -1595,7 +1595,7 @@ where
         }
 
         for (lab, rr) in rrs_to_add {
-            self.refmap.map.insert(lab, rr);
+            self.refmap.map.entry(lab).or_insert(rr);
         }
 
         if seeked != 0 {

@@ -945,3 +945,11 @@ fn ipv6_host_unescaped() {
         "<p><a href=\"https://[2402:1f00:89aa:300::5%25eth0]:9443?target=%3Cyes%3E\">henwo</a></p>\n",
     );
 }
+
+#[test]
+fn link_ref_definition_priority() {
+    html(
+        "[foo]\n\n[foo]: first\n[foo]: second\n",
+        "<p><a href=\"first\">foo</a></p>\n",
+    );
+}
