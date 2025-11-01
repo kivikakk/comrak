@@ -724,6 +724,12 @@ impl std::fmt::Display for Sourcepos {
     }
 }
 
+impl From<(LineColumn, LineColumn)> for Sourcepos {
+    fn from((start, end): (LineColumn, LineColumn)) -> Sourcepos {
+        Sourcepos { start, end }
+    }
+}
+
 impl From<(usize, usize, usize, usize)> for Sourcepos {
     fn from(sp: (usize, usize, usize, usize)) -> Sourcepos {
         Sourcepos {
@@ -827,7 +833,7 @@ impl Ast {
 ///
 /// ```rust
 /// # use comrak::{nodes::{AstNode, NodeValue}, Arena};
-/// # let arena = Arena::<AstNode>::new();
+/// # let arena = Arena::new();
 /// let node_in_arena = arena.alloc(NodeValue::Document.into());
 /// ```
 pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;

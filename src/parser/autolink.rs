@@ -1,17 +1,18 @@
+use std::borrow::Cow;
 use std::str;
-use typed_arena::Arena;
 use unicode_categories::UnicodeCategories;
 
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
-use crate::nodes::{AstNode, Node, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::Subject;
-use crate::parser::{inlines::make_inline, Spx};
+use crate::nodes::{Node, NodeLink, NodeValue, Sourcepos};
+use crate::parser::inlines::{make_inline, Subject};
+use crate::parser::Spx;
+use crate::Arena;
 
 pub(crate) fn process_email_autolinks<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a Arena<'a>,
     node: Node<'a>,
-    contents: &mut String,
+    contents: &mut Cow<'static, str>,
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
     spx: &mut Spx,
@@ -69,7 +70,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
             let nsp_end_col = spx.consume(skip);
 
-            contents.truncate(i);
+            contents.to_mut().truncate(i);
 
             let nsp: Sourcepos = (
                 sourcepos.end.line,
@@ -95,17 +96,10 @@ pub(crate) fn process_email_autolinks<'a>(
                 post.insert_after(after);
 
                 let after_ast = &mut after.data_mut();
-                process_email_autolinks(
-                    arena,
-                    after,
-                    match after_ast.value {
-                        NodeValue::Text(ref mut t) => t.to_mut(),
-                        _ => unreachable!(),
-                    },
-                    relaxed_autolinks,
-                    &mut asp,
-                    spx,
-                );
+                let NodeValue::Text(ref mut text) = after_ast.value else {
+                    unreachable!();
+                };
+                process_email_autolinks(arena, after, text, relaxed_autolinks, &mut asp, spx);
                 after_ast.sourcepos = asp;
             }
 
@@ -113,8 +107,9 @@ pub(crate) fn process_email_autolinks<'a>(
         }
     }
 }
+
 fn email_match<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a Arena<'a>,
     contents: &str,
     i: usize,
     relaxed_autolinks: bool,
@@ -231,7 +226,7 @@ pub fn www_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
 ) -> Option<(Node<'a>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
 
@@ -397,7 +392,7 @@ pub fn url_match<'a>(
 ) -> Option<(Node<'a>, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
     let size = subject.input.len();

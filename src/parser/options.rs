@@ -842,9 +842,9 @@ pub struct Render {
     /// The wrap column when outputting CommonMark.
     ///
     /// ```rust
-    /// # use comrak::{parse_document, Options, format_commonmark};
+    /// # use comrak::{Arena, parse_document, Options, format_commonmark};
     /// # fn main() {
-    /// # let arena = typed_arena::Arena::new();
+    /// # let arena = Arena::new();
     /// let mut options = Options::default();
     /// let node = parse_document(&arena, "hello hello hello hello hello hello", &options);
     /// let mut output = String::new();

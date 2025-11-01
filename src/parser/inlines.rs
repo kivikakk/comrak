@@ -6,13 +6,12 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
 use std::{mem, ptr};
-use typed_arena::Arena;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, AstNode, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
-    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
+    Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
+    NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
@@ -21,6 +20,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
 use crate::scanners;
 use crate::strings::{self, count_newlines, is_blank, Case};
+use crate::Arena;
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -28,27 +28,28 @@ const MAX_MATH_DOLLARS: usize = 2;
 const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
-    pub arena: &'a Arena<AstNode<'a>>,
+    pub arena: &'a Arena<'a>,
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
-    pub pos: usize,
+    pub scanner: Scanner,
     column_offset: isize,
     line_offset: usize,
     inline_footnote_depth: usize,
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     footnote_defs: &'p mut FootnoteDefs<'a>,
-    delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+    delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: Vec<Bracket<'a>>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
-    special_chars: [bool; 256],
-    skip_chars: [bool; 256],
-    smart_chars: [bool; 256],
+    special_char_bytes: [bool; 256],
+    skip_char_bytes: [bool; 256],
+    smart_char_bytes: [bool; 256],
+    emph_delim_bytes: [bool; 256],
 }
 
 #[derive(Default)]
@@ -61,13 +62,13 @@ struct HtmlSkipFlags {
 
 impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     pub fn new(
-        arena: &'a Arena<AstNode<'a>>,
+        arena: &'a Arena<'a>,
         options: &'o Options<'c>,
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
         footnote_defs: &'p mut FootnoteDefs<'a>,
-        delimiter_arena: &'d Arena<Delimiter<'a, 'd>>,
+        delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
         inline_footnote_depth: usize,
     ) -> Self {
         let mut s = Subject {
@@ -75,7 +76,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             options,
             input,
             line,
-            pos: 0,
+            scanner: Scanner::new(),
             column_offset: 0,
             line_offset: 0,
             inline_footnote_depth,
@@ -89,36 +90,45 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             no_link_openers: true,
-            special_chars: [false; 256],
-            skip_chars: [false; 256],
-            smart_chars: [false; 256],
+            special_char_bytes: [false; 256],
+            skip_char_bytes: [false; 256],
+            smart_char_bytes: [false; 256],
+            emph_delim_bytes: [false; 256],
         };
-        for &c in b"\n\r_*\"`\\&<[]!$" {
-            s.special_chars[c as usize] = true;
+        for &b in b"\n\r_*\"`\\&<[]!$" {
+            s.special_char_bytes[b as usize] = true;
         }
         if options.extension.autolink {
-            s.special_chars[b':' as usize] = true;
-            s.special_chars[b'w' as usize] = true;
+            s.special_char_bytes[b':' as usize] = true;
+            s.special_char_bytes[b'w' as usize] = true;
         }
         if options.extension.strikethrough || options.extension.subscript {
-            s.special_chars[b'~' as usize] = true;
-            s.skip_chars[b'~' as usize] = true;
+            s.special_char_bytes[b'~' as usize] = true;
+            s.skip_char_bytes[b'~' as usize] = true;
+            s.emph_delim_bytes[b'~' as usize] = true;
         }
         if options.extension.superscript || options.extension.inline_footnotes {
-            s.special_chars[b'^' as usize] = true;
+            s.special_char_bytes[b'^' as usize] = true;
+        }
+        if options.extension.superscript {
+            s.emph_delim_bytes[b'^' as usize] = true;
         }
         #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
-            s.special_chars[b':' as usize] = true;
+            s.special_char_bytes[b':' as usize] = true;
         }
         if options.extension.underline {
-            s.special_chars[b'_' as usize] = true;
+            s.special_char_bytes[b'_' as usize] = true;
         }
         if options.extension.spoiler {
-            s.special_chars[b'|' as usize] = true;
+            s.special_char_bytes[b'|' as usize] = true;
+            s.emph_delim_bytes[b'|' as usize] = true;
         }
-        for &c in b"\"'.-" {
-            s.smart_chars[c as usize] = true;
+        for &b in b"\"'.-" {
+            s.smart_char_bytes[b as usize] = true;
+        }
+        for &b in b"*_" {
+            s.emph_delim_bytes[b as usize] = true;
         }
         s
     }
@@ -178,22 +188,21 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     /////////////
 
     pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
-        let c = match self.peek_char() {
-            None => return false,
-            Some(ch) => *ch as char,
+        let Some(b) = self.peek_byte() else {
+            return false;
         };
 
         let adjusted_line = self.line - ast.sourcepos.start.line;
         self.line_offset = ast.line_offsets[adjusted_line];
 
-        let new_inl: Option<Node<'a>> = match c {
-            '\0' => return false,
-            '\r' | '\n' => Some(self.handle_newline()),
-            '`' => Some(self.handle_backticks(&ast.line_offsets)),
-            '\\' => Some(self.handle_backslash()),
-            '&' => Some(self.handle_entity()),
-            '<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
-            ':' => {
+        let new_inl: Option<Node<'a>> = match b {
+            b'\0' => return false,
+            b'\r' | b'\n' => Some(self.handle_newline()),
+            b'`' => Some(self.handle_backticks(&ast.line_offsets)),
+            b'\\' => Some(self.handle_backslash()),
+            b'&' => Some(self.handle_entity()),
+            b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
+            b':' => {
                 let mut res = None;
 
                 if self.options.extension.autolink {
@@ -206,43 +215,50 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
 
                 if res.is_none() {
-                    self.pos += 1;
+                    self.scanner.pos += 1;
                     res = Some(self.make_inline(
                         NodeValue::Text(":".into()),
-                        self.pos - 1,
-                        self.pos - 1,
+                        self.scanner.pos - 1,
+                        self.scanner.pos - 1,
                     ));
                 }
 
                 res
             }
-            'w' if self.options.extension.autolink => match self
-                .handle_autolink_with(node, autolink::www_match)
-            {
-                Some(inl) => Some(inl),
-                None => {
-                    self.pos += 1;
-                    Some(self.make_inline(NodeValue::Text("w".into()), self.pos - 1, self.pos - 1))
+            b'w' if self.options.extension.autolink => {
+                match self.handle_autolink_with(node, autolink::www_match) {
+                    Some(inl) => Some(inl),
+                    None => {
+                        self.scanner.pos += 1;
+                        Some(self.make_inline(
+                            NodeValue::Text("w".into()),
+                            self.scanner.pos - 1,
+                            self.scanner.pos - 1,
+                        ))
+                    }
                 }
-            },
-            '*' | '_' | '\'' | '"' => Some(self.handle_delim(c as u8)),
-            '-' => Some(self.handle_hyphen()),
-            '.' => Some(self.handle_period()),
-            '[' => {
-                self.pos += 1;
+            }
+            b'*' | b'_' | b'\'' | b'"' => Some(self.handle_delim(b)),
+            b'-' => Some(self.handle_hyphen()),
+            b'.' => Some(self.handle_period()),
+            b'[' => {
+                self.scanner.pos += 1;
 
                 let mut wikilink_inl = None;
 
                 if self.options.extension.wikilinks().is_some()
                     && !self.within_brackets
-                    && self.peek_char() == Some(&(b'['))
+                    && self.peek_byte() == Some(b'[')
                 {
                     wikilink_inl = self.handle_wikilink();
                 }
 
                 if wikilink_inl.is_none() {
-                    let inl =
-                        self.make_inline(NodeValue::Text("[".into()), self.pos - 1, self.pos - 1);
+                    let inl = self.make_inline(
+                        NodeValue::Text("[".into()),
+                        self.scanner.pos - 1,
+                        self.scanner.pos - 1,
+                    );
                     self.push_bracket(false, inl);
                     self.within_brackets = true;
 
@@ -251,48 +267,59 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     wikilink_inl
                 }
             }
-            ']' => {
+            b']' => {
                 self.within_brackets = false;
                 self.handle_close_bracket()
             }
-            '!' => {
-                self.pos += 1;
-                if self.peek_char() == Some(&(b'[')) && self.peek_char_n(1) != Some(&(b'^')) {
-                    self.pos += 1;
-                    let inl =
-                        self.make_inline(NodeValue::Text("![".into()), self.pos - 2, self.pos - 1);
+            b'!' => {
+                self.scanner.pos += 1;
+                if self.peek_byte() == Some(b'[') && self.peek_byte_n(1) != Some(b'^') {
+                    self.scanner.pos += 1;
+                    let inl = self.make_inline(
+                        NodeValue::Text("![".into()),
+                        self.scanner.pos - 2,
+                        self.scanner.pos - 1,
+                    );
                     self.push_bracket(true, inl);
                     self.within_brackets = true;
                     Some(inl)
                 } else {
-                    Some(self.make_inline(NodeValue::Text("!".into()), self.pos - 1, self.pos - 1))
+                    Some(self.make_inline(
+                        NodeValue::Text("!".into()),
+                        self.scanner.pos - 1,
+                        self.scanner.pos - 1,
+                    ))
                 }
             }
-            '~' if self.options.extension.strikethrough || self.options.extension.subscript => {
+            b'~' if self.options.extension.strikethrough || self.options.extension.subscript => {
                 Some(self.handle_delim(b'~'))
             }
-            '^' => {
+            b'^' => {
                 // Check for inline footnote first
                 if self.options.extension.footnotes
                     && self.options.extension.inline_footnotes
                     && self.inline_footnote_depth < MAX_INLINE_FOOTNOTE_DEPTH
-                    && self.peek_char_n(1) == Some(&(b'['))
+                    && self.peek_byte_n(1) == Some(b'[')
                 {
                     self.handle_inline_footnote()
                 } else if self.options.extension.superscript && !self.within_brackets {
                     Some(self.handle_delim(b'^'))
                 } else {
                     // Just regular text
-                    self.pos += 1;
-                    Some(self.make_inline(NodeValue::Text("^".into()), self.pos - 1, self.pos - 1))
+                    self.scanner.pos += 1;
+                    Some(self.make_inline(
+                        NodeValue::Text("^".into()),
+                        self.scanner.pos - 1,
+                        self.scanner.pos - 1,
+                    ))
                 }
             }
-            '$' => Some(self.handle_dollars(&ast.line_offsets)),
-            '|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
+            b'$' => Some(self.handle_dollars(&ast.line_offsets)),
+            b'|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
-                let startpos = self.pos;
-                self.pos = endpos;
+                let startpos = self.scanner.pos;
+                self.scanner.pos = endpos;
 
                 let mut contents: Cow<str> = if endpos == self.input.len() {
                     let mut contents = mem::take(&mut self.input);
@@ -302,10 +329,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     self.input[startpos..endpos].into()
                 };
 
-                if self
-                    .peek_char()
-                    .map_or(false, |&c| strings::is_line_end_char(c))
-                {
+                if self.peek_byte().map_or(false, strings::is_line_end_char) {
                     let size_before = contents.len();
                     strings::rtrim_cow(&mut contents);
                     endpos -= size_before - contents.len();
@@ -333,39 +357,39 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn handle_newline(&mut self) -> Node<'a> {
-        let nlpos = self.pos;
-        if self.input.as_bytes()[self.pos] == b'\r' {
-            self.pos += 1;
+        let nlpos = self.scanner.pos;
+        if self.input.as_bytes()[self.scanner.pos] == b'\r' {
+            self.scanner.pos += 1;
         }
-        if self.input.as_bytes()[self.pos] == b'\n' {
-            self.pos += 1;
+        if self.input.as_bytes()[self.scanner.pos] == b'\n' {
+            self.scanner.pos += 1;
         }
         let inl = if nlpos > 1
             && self.input.as_bytes()[nlpos - 1] == b' '
             && self.input.as_bytes()[nlpos - 2] == b' '
         {
-            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.pos - 1)
+            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.scanner.pos - 1)
         } else {
-            self.make_inline(NodeValue::SoftBreak, nlpos, self.pos - 1)
+            self.make_inline(NodeValue::SoftBreak, nlpos, self.scanner.pos - 1)
         };
         self.line += 1;
-        self.column_offset = -(self.pos as isize);
+        self.column_offset = -(self.scanner.pos as isize);
         self.skip_spaces();
         inl
     }
 
     fn handle_backticks(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
 
         match endpos {
             None => {
-                self.pos = startpos + openticks;
+                self.scanner.pos = startpos + openticks;
                 self.make_inline(
                     NodeValue::Text("`".repeat(openticks).into()),
                     startpos,
-                    self.pos - 1,
+                    self.scanner.pos - 1,
                 )
             }
             Some(endpos) => {
@@ -388,70 +412,90 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn handle_backslash(&mut self) -> Node<'a> {
-        let startpos = self.pos;
-        self.pos += 1;
+        let startpos = self.scanner.pos;
+        self.scanner.pos += 1;
 
-        if self.peek_char().map_or(false, |&c| ispunct(c)) {
+        if self.peek_byte().map_or(false, ispunct) {
             let inl;
-            self.pos += 1;
+            self.scanner.pos += 1;
 
             let inline_text = self.make_inline(
-                NodeValue::Text(self.input[self.pos - 1..self.pos].to_string().into()),
-                self.pos - 1,
-                self.pos - 1,
+                NodeValue::Text(
+                    self.input[self.scanner.pos - 1..self.scanner.pos]
+                        .to_string()
+                        .into(),
+                ),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
             );
 
             if self.options.render.escaped_char_spans {
-                inl = self.make_inline(NodeValue::Escaped, self.pos - 2, self.pos - 1);
+                inl = self.make_inline(
+                    NodeValue::Escaped,
+                    self.scanner.pos - 2,
+                    self.scanner.pos - 1,
+                );
                 inl.append(inline_text);
                 inl
             } else {
                 inline_text
             }
         } else if !self.eof() && self.skip_line_end() {
-            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.pos - 1);
+            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.scanner.pos - 1);
             self.line += 1;
-            self.column_offset = -(self.pos as isize);
+            self.column_offset = -(self.scanner.pos as isize);
             self.skip_spaces();
             inl
         } else {
-            self.make_inline(NodeValue::Text("\\".into()), self.pos - 1, self.pos - 1)
+            self.make_inline(
+                NodeValue::Text("\\".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            )
         }
     }
 
     fn handle_entity(&mut self) -> Node<'a> {
-        self.pos += 1;
+        self.scanner.pos += 1;
 
-        match entity::unescape(&self.input[self.pos..]) {
-            None => self.make_inline(NodeValue::Text("&".into()), self.pos - 1, self.pos - 1),
+        match entity::unescape(&self.input[self.scanner.pos..]) {
+            None => self.make_inline(
+                NodeValue::Text("&".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            ),
             Some((entity, len)) => {
-                self.pos += len;
-                self.make_inline(NodeValue::Text(entity), self.pos - 1 - len, self.pos - 1)
+                self.scanner.pos += len;
+                self.make_inline(
+                    NodeValue::Text(entity),
+                    self.scanner.pos - 1 - len,
+                    self.scanner.pos - 1,
+                )
             }
         }
     }
 
     fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
-        self.pos += 1;
+        self.scanner.pos += 1;
 
-        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.pos..]) {
-            self.pos += matchlen;
+        if let Some(matchlen) = scanners::autolink_uri(&self.input[self.scanner.pos..]) {
+            self.scanner.pos += matchlen;
             let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
+                &self.input[self.scanner.pos - matchlen..self.scanner.pos - 1],
                 AutolinkType::Uri,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
+                self.scanner.pos - 1 - matchlen,
+                self.scanner.pos - 1,
             );
             return inl;
         }
 
-        if let Some(matchlen) = scanners::autolink_email(&self.input[self.pos..]) {
-            self.pos += matchlen;
+        if let Some(matchlen) = scanners::autolink_email(&self.input[self.scanner.pos..]) {
+            self.scanner.pos += matchlen;
             let inl = self.make_autolink(
-                &self.input[self.pos - matchlen..self.pos - 1],
+                &self.input[self.scanner.pos - matchlen..self.scanner.pos - 1],
                 AutolinkType::Email,
-                self.pos - 1 - matchlen,
-                self.pos - 1,
+                self.scanner.pos - 1 - matchlen,
+                self.scanner.pos - 1,
             );
             return inl;
         }
@@ -459,31 +503,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Most comments below are verbatim from cmark upstream.
         let mut matchlen: Option<usize> = None;
 
-        if self.pos + 2 <= self.input.len() {
-            let c = self.input.as_bytes()[self.pos];
-            if c == b'!' && !self.flags.comment {
-                let c = self.input.as_bytes()[self.pos + 1];
-                if c == b'-' && self.peek_char_n(2) == Some(&b'-') {
-                    if self.peek_char_n(3) == Some(&b'>') {
+        if self.scanner.pos + 2 <= self.input.len() {
+            let b = self.input.as_bytes()[self.scanner.pos];
+            if b == b'!' && !self.flags.comment {
+                let b = self.input.as_bytes()[self.scanner.pos + 1];
+                if b == b'-' && self.peek_byte_n(2) == Some(b'-') {
+                    if self.peek_byte_n(3) == Some(b'>') {
                         matchlen = Some(4);
-                    } else if self.peek_char_n(3) == Some(&b'-')
-                        && self.peek_char_n(4) == Some(&b'>')
+                    } else if self.peek_byte_n(3) == Some(b'-') && self.peek_byte_n(4) == Some(b'>')
                     {
                         matchlen = Some(5);
-                    } else if let Some(m) = scanners::html_comment(&self.input[self.pos + 1..]) {
+                    } else if let Some(m) =
+                        scanners::html_comment(&self.input[self.scanner.pos + 1..])
+                    {
                         matchlen = Some(m + 1);
                     } else {
                         self.flags.comment = true;
                     }
-                } else if c == b'[' {
-                    if !self.flags.cdata && self.pos + 3 <= self.input.len() {
-                        if let Some(m) = scanners::html_cdata(&self.input[self.pos + 2..]) {
+                } else if b == b'[' {
+                    if !self.flags.cdata && self.scanner.pos + 3 <= self.input.len() {
+                        if let Some(m) = scanners::html_cdata(&self.input[self.scanner.pos + 2..]) {
                             // The regex doesn't require the final "]]>". But if we're not at
                             // the end of input, it must come after the match. Otherwise,
                             // disable subsequent scans to avoid quadratic behavior.
 
                             // Adding 5 to matchlen for prefix "![", suffix "]]>"
-                            if self.pos + m + 5 > self.input.len() {
+                            if self.scanner.pos + m + 5 > self.input.len() {
                                 self.flags.cdata = true;
                             } else {
                                 matchlen = Some(m + 5);
@@ -491,45 +536,51 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         }
                     }
                 } else if !self.flags.declaration {
-                    if let Some(m) = scanners::html_declaration(&self.input[self.pos + 1..]) {
+                    if let Some(m) = scanners::html_declaration(&self.input[self.scanner.pos + 1..])
+                    {
                         // Adding 2 to matchlen for prefix "!", suffix ">"
-                        if self.pos + m + 2 > self.input.len() {
+                        if self.scanner.pos + m + 2 > self.input.len() {
                             self.flags.declaration = true;
                         } else {
                             matchlen = Some(m + 2);
                         }
                     }
                 }
-            } else if c == b'?' {
+            } else if b == b'?' {
                 if !self.flags.pi {
                     // Note that we allow an empty match.
-                    let m = scanners::html_processing_instruction(&self.input[self.pos + 1..])
-                        .unwrap_or(0);
+                    let m =
+                        scanners::html_processing_instruction(&self.input[self.scanner.pos + 1..])
+                            .unwrap_or(0);
                     // Adding 3 to matchlen fro prefix "?", suffix "?>"
-                    if self.pos + m + 3 > self.input.len() {
+                    if self.scanner.pos + m + 3 > self.input.len() {
                         self.flags.pi = true;
                     } else {
                         matchlen = Some(m + 3);
                     }
                 }
             } else {
-                matchlen = scanners::html_tag(&self.input[self.pos..]);
+                matchlen = scanners::html_tag(&self.input[self.scanner.pos..]);
             }
         }
 
         if let Some(matchlen) = matchlen {
-            let contents = &self.input[self.pos - 1..self.pos + matchlen];
-            self.pos += matchlen;
+            let contents = &self.input[self.scanner.pos - 1..self.scanner.pos + matchlen];
+            self.scanner.pos += matchlen;
             let inl = self.make_inline(
                 NodeValue::HtmlInline(contents.to_string()),
-                self.pos - matchlen - 1,
-                self.pos - 1,
+                self.scanner.pos - matchlen - 1,
+                self.scanner.pos - 1,
             );
             self.adjust_node_newlines(inl, matchlen, 1, parent_line_offsets);
             return inl;
         }
 
-        self.make_inline(NodeValue::Text("<".into()), self.pos - 1, self.pos - 1)
+        self.make_inline(
+            NodeValue::Text("<".into()),
+            self.scanner.pos - 1,
+            self.scanner.pos - 1,
+        )
     }
 
     fn handle_autolink_with(
@@ -540,10 +591,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if !self.options.parse.relaxed_autolinks && self.within_brackets {
             return None;
         }
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
         let (post, need_reverse, skip) = f(self)?;
 
-        self.pos += skip - need_reverse;
+        self.scanner.pos += skip - need_reverse;
 
         // We need to "rewind" by `need_reverse` chars, which should be in one
         // or more Text nodes beforehand. Typically the chars will *all* be in
@@ -585,7 +636,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 .into();
             sp.end = (
                 self.line,
-                (self.pos as isize + self.column_offset + self.line_offset as isize) as usize,
+                (self.scanner.pos as isize + self.column_offset + self.line_offset as isize)
+                    as usize,
             )
                 .into();
 
@@ -599,71 +651,75 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[cfg(feature = "shortcodes")]
     fn handle_shortcodes_colon(&mut self) -> Option<Node<'a>> {
-        let matchlen = scanners::shortcode(&self.input[self.pos + 1..])?;
+        let matchlen = scanners::shortcode(&self.input[self.scanner.pos + 1..])?;
 
-        let shortcode = &self.input[self.pos + 1..self.pos + 1 + matchlen - 1];
+        let shortcode = &self.input[self.scanner.pos + 1..self.scanner.pos + 1 + matchlen - 1];
 
         let nsc = NodeShortCode::resolve(shortcode)?;
-        self.pos += 1 + matchlen;
+        self.scanner.pos += 1 + matchlen;
 
         Some(self.make_inline(
             NodeValue::ShortCode(Box::new(nsc)),
-            self.pos - 1 - matchlen,
-            self.pos - 1,
+            self.scanner.pos - 1 - matchlen,
+            self.scanner.pos - 1,
         ))
     }
 
-    fn handle_delim(&mut self, c: u8) -> Node<'a> {
-        let (numdelims, can_open, can_close) = self.scan_delims(c);
+    fn handle_delim(&mut self, b: u8) -> Node<'a> {
+        let (numdelims, can_open, can_close) = self.scan_delims(b);
 
-        let contents: Cow<'static, str> = if c == b'\'' && self.options.parse.smart {
+        let contents: Cow<'static, str> = if b == b'\'' && self.options.parse.smart {
             "’".into()
-        } else if c == b'"' && self.options.parse.smart {
+        } else if b == b'"' && self.options.parse.smart {
             if can_close {
                 "”".into()
             } else {
                 "“".into()
             }
         } else {
-            self.input[self.pos - numdelims..self.pos]
+            self.input[self.scanner.pos - numdelims..self.scanner.pos]
                 .to_string()
                 .into()
         };
         let inl = self.make_inline(
             NodeValue::Text(contents),
-            self.pos - numdelims,
-            self.pos - 1,
+            self.scanner.pos - numdelims,
+            self.scanner.pos - 1,
         );
 
-        let is_valid_strikethrough_delim = if c == b'~' && self.options.extension.strikethrough {
+        let is_valid_strikethrough_delim = if b == b'~' && self.options.extension.strikethrough {
             numdelims <= 2
         } else {
             true
         };
 
         if (can_open || can_close)
-            && (!(c == b'\'' || c == b'"') || self.options.parse.smart)
+            && (!(b == b'\'' || b == b'"') || self.options.parse.smart)
             && is_valid_strikethrough_delim
         {
-            self.push_delimiter(c, can_open, can_close, inl);
+            self.push_delimiter(b, can_open, can_close, inl);
         }
 
         inl
     }
 
     fn handle_hyphen(&mut self) -> Node<'a> {
-        let start = self.pos;
-        self.pos += 1;
+        let start = self.scanner.pos;
+        self.scanner.pos += 1;
 
-        if !self.options.parse.smart || self.peek_char().map_or(true, |&c| c != b'-') {
-            return self.make_inline(NodeValue::Text("-".into()), self.pos - 1, self.pos - 1);
+        if !self.options.parse.smart || self.peek_byte().map_or(true, |b| b != b'-') {
+            return self.make_inline(
+                NodeValue::Text("-".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            );
         }
 
-        while self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'-') {
-            self.pos += 1;
+        while self.options.parse.smart && self.peek_byte().map_or(false, |b| b == b'-') {
+            self.scanner.pos += 1;
         }
 
-        let numhyphens = (self.pos - start) as i32;
+        let numhyphens = (self.scanner.pos - start) as i32;
 
         let (ens, ems) = if numhyphens % 3 == 0 {
             (0, numhyphens / 3)
@@ -681,21 +737,33 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut buf = String::with_capacity(3 * (ems + ens));
         buf.push_str(&"—".repeat(ems));
         buf.push_str(&"–".repeat(ens));
-        self.make_inline(NodeValue::Text(buf.into()), start, self.pos - 1)
+        self.make_inline(NodeValue::Text(buf.into()), start, self.scanner.pos - 1)
     }
 
     fn handle_period(&mut self) -> Node<'a> {
-        self.pos += 1;
-        if self.options.parse.smart && self.peek_char().map_or(false, |&c| c == b'.') {
-            self.pos += 1;
-            if self.peek_char().map_or(false, |&c| c == b'.') {
-                self.pos += 1;
-                self.make_inline(NodeValue::Text("…".into()), self.pos - 3, self.pos - 1)
+        self.scanner.pos += 1;
+        if self.options.parse.smart && self.peek_byte().map_or(false, |b| b == b'.') {
+            self.scanner.pos += 1;
+            if self.peek_byte().map_or(false, |b| b == b'.') {
+                self.scanner.pos += 1;
+                self.make_inline(
+                    NodeValue::Text("…".into()),
+                    self.scanner.pos - 3,
+                    self.scanner.pos - 1,
+                )
             } else {
-                self.make_inline(NodeValue::Text("..".into()), self.pos - 2, self.pos - 1)
+                self.make_inline(
+                    NodeValue::Text("..".into()),
+                    self.scanner.pos - 2,
+                    self.scanner.pos - 1,
+                )
             }
         } else {
-            self.make_inline(NodeValue::Text(".".into()), self.pos - 1, self.pos - 1)
+            self.make_inline(
+                NodeValue::Text(".".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            )
         }
     }
 
@@ -703,7 +771,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     //   [[link text|url]]
     //   [[url|link text]]
     fn handle_wikilink(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
         let (link_label, link_label_start_column, _link_label_end_column) =
@@ -712,14 +780,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 None => (
                     entity::unescape_html(&component.url).to_string(),
                     startpos + 1,
-                    self.pos - 3,
+                    self.scanner.pos - 3,
                 ),
             };
 
         let nl = NodeWikiLink {
             url: url_clean.into(),
         };
-        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.pos - 1);
+        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.scanner.pos - 1);
 
         self.label_backslash_escapes(inl, &link_label, link_label_start_column);
 
@@ -727,49 +795,50 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn wikilink_url_link_label(&mut self) -> Option<WikilinkComponents> {
-        let left_startpos = self.pos;
+        let left_startpos = self.scanner.pos;
 
-        if self.peek_char() != Some(&(b'[')) {
+        if self.peek_byte() != Some(b'[') {
             return None;
         }
 
         let found_left = self.wikilink_component();
 
         if !found_left {
-            self.pos = left_startpos;
+            self.scanner.pos = left_startpos;
             return None;
         }
 
-        let left = strings::trim_slice(&self.input[left_startpos + 1..self.pos]).to_string();
+        let left =
+            strings::trim_slice(&self.input[left_startpos + 1..self.scanner.pos]).to_string();
 
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
+        if self.peek_byte() == Some(b']') && self.peek_byte_n(1) == Some(b']') {
+            self.scanner.pos += 2;
             return Some(WikilinkComponents {
                 url: left,
                 link_label: None,
             });
-        } else if self.peek_char() != Some(&(b'|')) {
-            self.pos = left_startpos;
+        } else if self.peek_byte() != Some(b'|') {
+            self.scanner.pos = left_startpos;
             return None;
         }
 
-        let right_startpos = self.pos;
+        let right_startpos = self.scanner.pos;
         let found_right = self.wikilink_component();
 
         if !found_right {
-            self.pos = left_startpos;
+            self.scanner.pos = left_startpos;
             return None;
         }
 
-        let right = strings::trim_slice(&self.input[right_startpos + 1..self.pos]);
+        let right = strings::trim_slice(&self.input[right_startpos + 1..self.scanner.pos]);
 
-        if self.peek_char() == Some(&(b']')) && self.peek_char_n(1) == Some(&(b']')) {
-            self.pos += 2;
+        if self.peek_byte() == Some(b']') && self.peek_byte_n(1) == Some(b']') {
+            self.scanner.pos += 2;
 
             match self.options.extension.wikilinks() {
                 Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
                     url: left,
-                    link_label: Some((right.into(), right_startpos + 1, self.pos - 3)),
+                    link_label: Some((right.into(), right_startpos + 1, self.scanner.pos - 3)),
                 }),
                 Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
                     url: right.into(),
@@ -778,41 +847,41 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 None => unreachable!(),
             }
         } else {
-            self.pos = left_startpos;
+            self.scanner.pos = left_startpos;
             None
         }
     }
 
     // Locates the edge of a wikilink component (link label or url), and sets the
-    // self.pos to it's end if it's found.
+    // self.scanner.pos to it's end if it's found.
     fn wikilink_component(&mut self) -> bool {
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
 
-        if self.peek_char() != Some(&(b'[')) && self.peek_char() != Some(&(b'|')) {
+        if self.peek_byte() != Some(b'[') && self.peek_byte() != Some(b'|') {
             return false;
         }
 
-        self.pos += 1;
+        self.scanner.pos += 1;
 
         let mut length = 0;
-        while let Some(&c) = self.peek_char() {
-            if c == b'[' || c == b']' || c == b'|' {
+        while let Some(b) = self.peek_byte() {
+            if b == b'[' || b == b']' || b == b'|' {
                 break;
             }
 
-            if c == b'\\' {
-                self.pos += 1;
+            if b == b'\\' {
+                self.scanner.pos += 1;
                 length += 1;
-                if self.peek_char().map_or(false, |&c| ispunct(c)) {
-                    self.pos += 1;
+                if self.peek_byte().map_or(false, ispunct) {
+                    self.scanner.pos += 1;
                     length += 1;
                 }
             } else {
-                self.pos += 1;
+                self.scanner.pos += 1;
                 length += 1;
             }
             if length > MAX_LINK_LABEL_LENGTH {
-                self.pos = startpos;
+                self.scanner.pos = startpos;
                 return false;
             }
         }
@@ -829,9 +898,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let len = label.len();
 
         while offset < len {
-            let c = bytes[offset];
+            let b = bytes[offset];
 
-            if c == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
+            if b == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
                 let preceding_text = self.make_inline(
                     NodeValue::Text(label[startpos..offset].to_string().into()),
                     start_column + startpos,
@@ -876,14 +945,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
 
         // We're at ^, next should be [
-        self.pos += 2; // Skip ^[
+        self.scanner.pos += 2; // Skip ^[
 
         // Find the closing ]
         let mut depth = 1;
-        let mut endpos = self.pos;
+        let mut endpos = self.scanner.pos;
         while endpos < self.input.len() && depth > 0 {
             match self.input.as_bytes()[endpos] {
                 b'[' => depth += 1,
@@ -898,7 +967,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         if depth != 0 {
             // No matching closing bracket, treat as regular text
-            self.pos = startpos + 1;
+            self.scanner.pos = startpos + 1;
             return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
@@ -906,11 +975,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         endpos -= 1;
 
         // Extract the content
-        let content = &self.input[self.pos..endpos];
+        let content = &self.input[self.scanner.pos..endpos];
 
         // Empty inline footnote should not parse
         if content.is_empty() {
-            self.pos = startpos + 1;
+            self.scanner.pos = startpos + 1;
             return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
@@ -932,7 +1001,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let def_node = self.arena.alloc(
             Ast::new(
                 NodeValue::FootnoteDefinition(NodeFootnoteDefinition {
-                    name: name.clone(),
+                    name,
                     total_references: 0,
                 }),
                 (self.line, 1).into(),
@@ -946,18 +1015,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             (1, 1).into(), // Use line 1 as base
         );
         // Build line_offsets by scanning for newlines in the content
-        let mut line_offsets = vec![0];
+        para_ast.line_offsets = vec![0];
         for (i, &byte) in content.as_bytes().iter().enumerate() {
             if byte == b'\n' {
-                line_offsets.push(i + 1);
+                para_ast.line_offsets.push(i + 1);
             }
         }
-        para_ast.line_offsets = line_offsets;
+
         let para_node = self.arena.alloc(para_ast.into());
         def_node.append(para_node);
 
         // Parse the content recursively as inlines
-        let delimiter_arena = Arena::new();
+        let delimiter_arena = typed_arena::Arena::new();
         let mut subj = Subject::new(
             self.arena,
             self.options,
@@ -986,7 +1055,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         if !has_non_whitespace_content {
             // Content is empty or whitespace-only after parsing, treat as literal text
-            self.pos = startpos + 1;
+            self.scanner.pos = startpos + 1;
             return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
         }
 
@@ -994,7 +1063,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.footnote_defs.add_definition(def_node);
 
         // Move position past the closing ]
-        self.pos = endpos + 1;
+        self.scanner.pos = endpos + 1;
 
         Some(ref_node)
     }
@@ -1002,20 +1071,24 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // Heuristics used from https://pandoc.org/MANUAL.html#extension-tex_math_dollars
     fn handle_dollars(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         if !(self.options.extension.math_dollars || self.options.extension.math_code) {
-            self.pos += 1;
-            return self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1);
+            self.scanner.pos += 1;
+            return self.make_inline(
+                NodeValue::Text("$".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            );
         }
-        let startpos = self.pos;
+        let startpos = self.scanner.pos;
         let opendollars = self.take_while(b'$');
         let mut code_math = false;
 
         // check for code math
         if opendollars == 1
             && self.options.extension.math_code
-            && self.peek_char().map_or(false, |&c| c == b'`')
+            && self.peek_byte().map_or(false, |b| b == b'`')
         {
             code_math = true;
-            self.pos += 1;
+            self.scanner.pos += 1;
         }
         let fence_length = if code_math { 2 } else { opendollars };
 
@@ -1047,14 +1120,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             );
             node
         } else if code_math {
-            self.pos = startpos + 1;
-            self.make_inline(NodeValue::Text("$".into()), self.pos - 1, self.pos - 1)
+            self.scanner.pos = startpos + 1;
+            self.make_inline(
+                NodeValue::Text("$".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            )
         } else {
-            self.pos = startpos + fence_length;
+            self.scanner.pos = startpos + fence_length;
             self.make_inline(
                 NodeValue::Text("$".repeat(opendollars).into()),
-                self.pos - fence_length,
-                self.pos - 1,
+                self.scanner.pos - fence_length,
+                self.scanner.pos - 1,
             )
         }
     }
@@ -1139,7 +1216,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let mut opener_found = false;
                 let mut mod_three_rule_invoked = false;
 
-                let ix = match c.delim_char {
+                let ix = match c.delim_byte {
                     b'|' => 0,
                     b'~' => 1,
                     b'^' => 2,
@@ -1163,7 +1240,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // the stack, using the openers_bottom array.
                 while opener.map_or(false, |o| o.position >= openers_bottom[ix]) {
                     let o = opener.unwrap();
-                    if o.can_open && o.delim_char == c.delim_char {
+                    if o.can_open && o.delim_byte == c.delim_byte {
                         // This is a bit convoluted; see points 9 and 10 here:
                         // http://spec.commonmark.org/0.28/#can-open-emphasis.
                         // This is to aid processing of runs like this:
@@ -1191,13 +1268,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if c.delim_char == b'*'
-                    || c.delim_char == b'_'
-                    || ((self.options.extension.strikethrough || self.options.extension.subscript)
-                        && c.delim_char == b'~')
-                    || (self.options.extension.superscript && c.delim_char == b'^')
-                    || (self.options.extension.spoiler && c.delim_char == b'|')
-                {
+                if self.emph_delim_bytes[c.delim_byte as usize] {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
                         // match and they are inserted. We get a new closer
@@ -1219,14 +1290,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         // (below), try again.
                         closer = c.next.get();
                     }
-                } else if c.delim_char == b'\'' || c.delim_char == b'"' {
+                } else if c.delim_byte == b'\'' || c.delim_byte == b'"' {
                     *c.inl.data_mut().value.text_mut().unwrap() =
-                        if c.delim_char == b'\'' { "’" } else { "”" }.into();
+                        if c.delim_byte == b'\'' { "’" } else { "”" }.into();
                     closer = c.next.get();
 
                     if opener_found {
                         *opener.unwrap().inl.data_mut().value.text_mut().unwrap() =
-                            if old_c.delim_char == b'\'' {
+                            if old_c.delim_byte == b'\'' {
                                 "‘"
                             } else {
                                 "“"
@@ -1268,23 +1339,24 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn remove_delimiter(&mut self, delimiter: &'d Delimiter<'a, 'd>) {
-        if delimiter.next.get().is_none() {
+        if let Some(next) = delimiter.next.get() {
+            next.prev.set(delimiter.prev.get());
+        } else {
             assert!(Some(delimiter) == self.last_delimiter);
             self.last_delimiter = delimiter.prev.get();
-        } else {
-            delimiter.next.get().unwrap().prev.set(delimiter.prev.get());
         }
-        if delimiter.prev.get().is_some() {
-            delimiter.prev.get().unwrap().next.set(delimiter.next.get());
+
+        if let Some(prev) = delimiter.prev.get() {
+            prev.next.set(delimiter.next.get());
         }
     }
 
     fn remove_delimiters(&mut self, stack_bottom: usize) {
-        while self
-            .last_delimiter
-            .map_or(false, |d| d.position >= stack_bottom)
-        {
-            self.remove_delimiter(self.last_delimiter.unwrap());
+        while let Some(last) = self.last_delimiter {
+            if last.position < stack_bottom {
+                break;
+            }
+            self.remove_delimiter(last);
         }
     }
 
@@ -1293,14 +1365,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             prev: Cell::new(self.last_delimiter),
             next: Cell::new(None),
             inl,
-            position: self.pos,
+            position: self.scanner.pos,
             length: inl.data().value.text().unwrap().len(),
-            delim_char: c,
+            delim_byte: c,
             can_open,
             can_close,
         });
-        if d.prev.get().is_some() {
-            d.prev.get().unwrap().next.set(Some(d));
+        if let Some(last) = self.last_delimiter {
+            last.next.set(Some(d));
         }
         self.last_delimiter = Some(d);
     }
@@ -1315,21 +1387,21 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         opener: &'d Delimiter<'a, 'd>,
         closer: &'d Delimiter<'a, 'd>,
     ) -> Option<&'d Delimiter<'a, 'd>> {
-        let opener_char = opener.inl.data().value.text().unwrap().as_bytes()[0];
-        let mut opener_num_chars = opener.inl.data().value.text().unwrap().len();
-        let mut closer_num_chars = closer.inl.data().value.text().unwrap().len();
-        let use_delims = if closer_num_chars >= 2 && opener_num_chars >= 2 {
+        let opener_byte = opener.inl.data().value.text().unwrap().as_bytes()[0];
+        let mut opener_num_bytes = opener.inl.data().value.text().unwrap().len();
+        let mut closer_num_bytes = closer.inl.data().value.text().unwrap().len();
+        let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
             1
         };
 
-        opener_num_chars -= use_delims;
-        closer_num_chars -= use_delims;
+        opener_num_bytes -= use_delims;
+        closer_num_bytes -= use_delims;
 
         if (self.options.extension.strikethrough || self.options.extension.subscript)
-            && opener_char == b'~'
-            && (opener_num_chars != closer_num_chars || opener_num_chars > 0)
+            && opener_byte == b'~'
+            && (opener_num_bytes != closer_num_bytes || opener_num_bytes > 0)
         {
             return None;
         }
@@ -1341,7 +1413,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(opener_num_chars);
+            .truncate(opener_num_bytes);
         closer
             .inl
             .data_mut()
@@ -1349,20 +1421,23 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .text_mut()
             .unwrap()
             .to_mut()
-            .truncate(closer_num_chars);
+            .truncate(closer_num_bytes);
 
         // Remove all the candidate delimiters from between the opener and the
         // closer. None of them are matched pairs. They've been scanned already.
-        let mut delim = closer.prev.get();
-        while delim.is_some() && delim != Some(opener) {
-            self.remove_delimiter(delim.unwrap());
-            delim = delim.unwrap().prev.get();
+        let mut prev = closer.prev.get();
+        while let Some(delim) = prev {
+            if delim == opener {
+                break;
+            }
+            self.remove_delimiter(delim);
+            prev = delim.prev.get();
         }
 
         let emph = self.make_inline(
-            if self.options.extension.subscript && opener_char == b'~' && use_delims == 1 {
+            if self.options.extension.subscript && opener_byte == b'~' && use_delims == 1 {
                 NodeValue::Subscript
-            } else if opener_char == b'~' {
+            } else if opener_byte == b'~' {
                 // Not emphasis
                 // Unlike for |, these cases have to be handled because they will match
                 // in the event subscript but not strikethrough is enabled
@@ -1373,15 +1448,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 } else {
                     NodeValue::EscapedTag("~~".to_owned())
                 }
-            } else if self.options.extension.superscript && opener_char == b'^' {
+            } else if self.options.extension.superscript && opener_byte == b'^' {
                 NodeValue::Superscript
-            } else if self.options.extension.spoiler && opener_char == b'|' {
+            } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
                     NodeValue::SpoileredText
                 } else {
                     NodeValue::EscapedTag("|".to_owned())
                 }
-            } else if self.options.extension.underline && opener_char == b'_' && use_delims == 2 {
+            } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
                 NodeValue::Underline
             } else if use_delims == 1 {
                 NodeValue::Emph
@@ -1389,15 +1464,23 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 NodeValue::Strong
             },
             // These are overriden immediately below.
-            self.pos,
-            self.pos,
+            self.scanner.pos,
+            self.scanner.pos,
         );
 
         emph.data_mut().sourcepos = (
-            opener.inl.data().sourcepos.start.line,
-            opener.inl.data().sourcepos.start.column + opener_num_chars,
-            closer.inl.data().sourcepos.end.line,
-            closer.inl.data().sourcepos.end.column - closer_num_chars,
+            opener
+                .inl
+                .data()
+                .sourcepos
+                .start
+                .column_add(opener_num_bytes as isize),
+            closer
+                .inl
+                .data()
+                .sourcepos
+                .end
+                .column_add(-(closer_num_bytes as isize)),
         )
             .into();
 
@@ -1417,14 +1500,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Drop completely "used up" delimiters, adjust sourcepos of those not,
         // and return the next closest one for processing.
-        if opener_num_chars == 0 {
+        if opener_num_bytes == 0 {
             opener.inl.detach();
             self.remove_delimiter(opener);
         } else {
             opener.inl.data_mut().sourcepos.end.column -= use_delims;
         }
 
-        if closer_num_chars == 0 {
+        if closer_num_bytes == 0 {
             closer.inl.detach();
             self.remove_delimiter(closer);
             closer.next.get()
@@ -1435,13 +1518,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn push_bracket(&mut self, image: bool, inl_text: Node<'a>) {
-        let len = self.brackets.len();
-        if len > 0 {
-            self.brackets[len - 1].bracket_after = true;
+        if let Some(last) = self.brackets.last_mut() {
+            last.bracket_after = true;
         }
         self.brackets.push(Bracket {
             inl_text,
-            position: self.pos,
+            position: self.scanner.pos,
             image,
             bracket_after: false,
         });
@@ -1451,25 +1533,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
-        self.pos += 1;
-        let initial_pos = self.pos;
+        self.scanner.pos += 1;
+        let initial_pos = self.scanner.pos;
 
-        let brackets_len = self.brackets.len();
-        if brackets_len == 0 {
-            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
-        }
+        let Some(last) = self.brackets.last() else {
+            return Some(self.make_inline(
+                NodeValue::Text("]".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            ));
+        };
 
-        let is_image = self.brackets[brackets_len - 1].image;
+        let is_image = last.image;
 
         if !is_image && self.no_link_openers {
             self.brackets.pop();
-            return Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1));
+            return Some(self.make_inline(
+                NodeValue::Text("]".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            ));
         }
 
         // Ensure there was text if this was a link and not an image link
         if self.options.render.ignore_empty_links && !is_image {
             let mut non_blank_found = false;
-            let mut itm = self.brackets[brackets_len - 1].inl_text.next_sibling();
+            let mut itm = last.inl_text.next_sibling();
             while let Some(it) = itm {
                 match it.data().value {
                     NodeValue::Text(ref s) if is_blank(s) => (),
@@ -1486,22 +1575,22 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.brackets.pop();
                 return Some(self.make_inline(
                     NodeValue::Text("]".into()),
-                    self.pos - 1,
-                    self.pos - 1,
+                    self.scanner.pos - 1,
+                    self.scanner.pos - 1,
                 ));
             }
         }
 
-        let after_link_text_pos = self.pos;
+        let after_link_text_pos = self.scanner.pos;
 
         // Try to find a link destination within parenthesis
 
-        if self.peek_char() == Some(&(b'(')) {
-            let sps = scanners::spacechars(&self.input[self.pos + 1..]).unwrap_or(0);
-            let offset = self.pos + 1 + sps;
+        if self.peek_byte() == Some(b'(') {
+            let sps = scanners::spacechars(&self.input[self.scanner.pos + 1..]).unwrap_or(0);
+            let offset = self.scanner.pos + 1 + sps;
             if offset < self.input.len() {
                 if let Some((url, n)) = manual_scan_link_url(&self.input[offset..]) {
-                    let starturl = self.pos + 1 + sps;
+                    let starturl = self.scanner.pos + 1 + sps;
                     let endurl = starturl + n;
                     let starttitle =
                         endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
@@ -1524,7 +1613,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             endall + 1
                         };
 
-                        self.pos = endall + 1;
+                        self.scanner.pos = endall + 1;
                         let url = strings::clean_url(url);
                         let title = strings::clean_title(&self.input[starttitle..endtitle]);
                         self.close_bracket_match(
@@ -1535,7 +1624,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         );
                         return None;
                     } else {
-                        self.pos = after_link_text_pos;
+                        self.scanner.pos = after_link_text_pos;
                     }
                 }
             }
@@ -1543,17 +1632,18 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Try to see if this is a reference link
 
-        let (mut lab, mut found_label): (Cow<str>, bool) = match self.link_label() {
-            Some(lab) => (lab.to_string().into(), true),
-            None => ("".into(), false),
-        };
+        let (mut lab, mut found_label): (Cow<str>, bool) =
+            match self.scanner.link_label(&self.input) {
+                Some(lab) => (lab.to_string().into(), true),
+                None => ("".into(), false),
+            };
 
         if !found_label {
-            self.pos = initial_pos;
+            self.scanner.pos = initial_pos;
         }
 
-        if (!found_label || lab.is_empty()) && !self.brackets[brackets_len - 1].bracket_after {
-            lab = self.input[self.brackets[brackets_len - 1].position..initial_pos - 1].into();
+        if (!found_label || lab.is_empty()) && !last.bracket_after {
+            lab = self.input[last.position..initial_pos - 1].into();
             found_label = true;
         }
 
@@ -1579,11 +1669,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(is_image, reff.url.clone(), reff.title.clone(), self.pos);
+            self.close_bracket_match(
+                is_image,
+                reff.url.clone(),
+                reff.title.clone(),
+                self.scanner.pos,
+            );
             return None;
         }
 
-        let bracket_inl_text = self.brackets[brackets_len - 1].inl_text;
+        let bracket_inl_text = last.inl_text;
 
         if self.options.extension.footnotes
             && match bracket_inl_text.next_sibling() {
@@ -1600,7 +1695,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let mut text = String::new();
             let mut sibling_iterator = bracket_inl_text.following_siblings();
 
-            self.pos = initial_pos;
+            self.scanner.pos = initial_pos;
 
             // Skip the initial node, which holds the `[`
             sibling_iterator.next().unwrap();
@@ -1629,13 +1724,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         ix: 0,
                     }),
                     // Overridden immediately below.
-                    self.pos,
-                    self.pos,
+                    self.scanner.pos,
+                    self.scanner.pos,
                 );
                 inl.data_mut().sourcepos.start.column =
                     bracket_inl_text.data().sourcepos.start.column;
                 inl.data_mut().sourcepos.end.column = usize::try_from(
-                    self.pos as isize + self.column_offset + self.line_offset as isize,
+                    self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
                 )
                 .unwrap();
                 bracket_inl_text.insert_before(inl);
@@ -1653,7 +1748,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 // We don't need to process emphasis for footnote names, so cleanup
                 // any outstanding delimiters
-                self.remove_delimiters(self.brackets[brackets_len - 1].position);
+                self.remove_delimiters(last.position);
 
                 self.brackets.pop();
                 return None;
@@ -1661,48 +1756,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         self.brackets.pop();
-        self.pos = initial_pos;
-        Some(self.make_inline(NodeValue::Text("]".into()), self.pos - 1, self.pos - 1))
-    }
-
-    pub fn link_label(&mut self) -> Option<&str> {
-        let startpos = self.pos;
-
-        if self.peek_char() != Some(&(b'[')) {
-            return None;
-        }
-
-        self.pos += 1;
-
-        let mut length = 0;
-        while let Some(&c) = self.peek_char() {
-            if c == b']' {
-                let raw_label = strings::trim_slice(&self.input[startpos + 1..self.pos]);
-                self.pos += 1;
-                return Some(raw_label);
-            }
-            if c == b'[' {
-                break;
-            }
-            if c == b'\\' {
-                self.pos += 1;
-                length += 1;
-                if self.peek_char().map_or(false, |&c| ispunct(c)) {
-                    self.pos += 1;
-                    length += 1;
-                }
-            } else {
-                self.pos += 1;
-                length += 1;
-            }
-            if length > MAX_LINK_LABEL_LENGTH {
-                self.pos = startpos;
-                return None;
-            }
-        }
-
-        self.pos = startpos;
-        None
+        self.scanner.pos = initial_pos;
+        Some(self.make_inline(
+            NodeValue::Text("]".into()),
+            self.scanner.pos - 1,
+            self.scanner.pos - 1,
+        ))
     }
 
     fn close_bracket_match(
@@ -1712,38 +1771,38 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         title: String,
         source_end_pos: usize,
     ) {
-        let brackets_len = self.brackets.len();
+        let last = self.brackets.pop().unwrap();
 
         let nl = NodeLink { url, title };
-        let inl = self.make_inline(
+        let inl = make_inline(
+            self.arena,
             if is_image {
                 NodeValue::Image(Box::new(nl))
             } else {
                 NodeValue::Link(Box::new(nl))
             },
-            // Manually set below.
-            self.pos,
-            self.pos,
+            (
+                last.inl_text.data().sourcepos.start,
+                (
+                    self.line,
+                    usize::try_from(
+                        source_end_pos as isize + self.column_offset + self.line_offset as isize,
+                    )
+                    .unwrap(),
+                )
+                    .into(),
+            )
+                .into(),
         );
-        inl.data_mut().sourcepos.start = self.brackets[brackets_len - 1]
-            .inl_text
-            .data()
-            .sourcepos
-            .start;
-        inl.data_mut().sourcepos.end.column = usize::try_from(
-            source_end_pos as isize + self.column_offset + self.line_offset as isize,
-        )
-        .unwrap();
 
-        self.brackets[brackets_len - 1].inl_text.insert_before(inl);
-        let mut itm = self.brackets[brackets_len - 1].inl_text.next_sibling();
+        last.inl_text.insert_before(inl);
+        let mut itm = last.inl_text.next_sibling();
         while let Some(it) = itm {
             itm = it.next_sibling();
             inl.append(it);
         }
-        self.brackets[brackets_len - 1].inl_text.detach();
-        self.process_emphasis(self.brackets[brackets_len - 1].position);
-        self.brackets.pop();
+        last.inl_text.detach();
+        self.process_emphasis(last.position);
 
         if !is_image {
             self.no_link_openers = true;
@@ -1760,42 +1819,50 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[inline]
     fn eof(&self) -> bool {
-        self.pos >= self.input.len()
+        self.scanner.eof(&self.input)
     }
 
     #[inline]
-    pub fn peek_char(&self) -> Option<&u8> {
-        self.peek_char_n(0)
+    fn peek_byte(&self) -> Option<u8> {
+        self.scanner.peek_byte(&self.input)
     }
 
     #[inline]
-    fn peek_char_n(&self, n: usize) -> Option<&u8> {
-        if self.pos + n >= self.input.len() {
-            None
-        } else {
-            let c = &self.input.as_bytes()[self.pos + n];
-            assert!(*c > 0);
-            Some(c)
-        }
+    fn peek_byte_n(&self, n: usize) -> Option<u8> {
+        self.scanner.peek_byte_n(&self.input, n)
     }
 
-    pub fn spnl(&mut self) {
-        self.skip_spaces();
-        if self.skip_line_end() {
-            self.skip_spaces();
-        }
+    #[inline]
+    fn skip_spaces(&mut self) -> bool {
+        self.scanner.skip_spaces(&self.input)
+    }
+
+    #[inline]
+    fn skip_line_end(&mut self) -> bool {
+        self.scanner.skip_line_end(&self.input)
+    }
+
+    #[inline]
+    fn take_while(&mut self, b: u8) -> usize {
+        self.scanner.take_while(&self.input, b)
+    }
+
+    #[inline]
+    fn take_while_with_limit(&mut self, b: u8, limit: usize) -> usize {
+        self.scanner.take_while_with_limit(&self.input, b, limit)
     }
 
     fn find_special_char(&self) -> usize {
-        for n in self.pos..self.input.len() {
-            if self.special_chars[self.input.as_bytes()[n] as usize] {
+        for n in self.scanner.pos..self.input.len() {
+            if self.special_char_bytes[self.input.as_bytes()[n] as usize] {
                 if self.input.as_bytes()[n] == b'^' && self.within_brackets {
                     // NO OP
                 } else {
                     return n;
                 }
             }
-            if self.options.parse.smart && self.smart_chars[self.input.as_bytes()[n] as usize] {
+            if self.options.parse.smart && self.smart_char_bytes[self.input.as_bytes()[n] as usize]
+            {
                 return n;
             }
         }
@@ -1803,47 +1870,29 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.input.len()
     }
 
-    fn take_while(&mut self, c: u8) -> usize {
-        let start_pos = self.pos;
-        while self.peek_char() == Some(&c) {
-            self.pos += 1;
-        }
-        self.pos - start_pos
-    }
-
-    fn take_while_with_limit(&mut self, c: u8, limit: usize) -> usize {
-        let start_pos = self.pos;
-        let mut count = 0;
-        while count < limit && self.peek_char() == Some(&c) {
-            self.pos += 1;
-            count += 1;
-        }
-        self.pos - start_pos
-    }
-
     fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
         if openticklength > MAXBACKTICKS {
             return None;
         }
 
-        if self.scanned_for_backticks && self.backticks[openticklength] <= self.pos {
+        if self.scanned_for_backticks && self.backticks[openticklength] <= self.scanner.pos {
             return None;
         }
 
         loop {
-            while self.peek_char().map_or(false, |&c| c != b'`') {
-                self.pos += 1;
+            while self.peek_byte().map_or(false, |b| b != b'`') {
+                self.scanner.pos += 1;
             }
-            if self.pos >= self.input.len() {
+            if self.scanner.pos >= self.input.len() {
                 self.scanned_for_backticks = true;
                 return None;
             }
             let numticks = self.take_while(b'`');
             if numticks <= MAXBACKTICKS {
-                self.backticks[numticks] = self.pos - numticks;
+                self.backticks[numticks] = self.scanner.pos - numticks;
             }
             if numticks == openticklength {
-                return Some(self.pos);
+                return Some(self.scanner.pos);
             }
         }
     }
@@ -1854,20 +1903,20 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         // space not allowed after initial $
-        if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isspace(c)) {
+        if opendollarlength == 1 && self.peek_byte().map_or(false, isspace) {
             return None;
         }
 
         loop {
-            while self.peek_char().map_or(false, |&c| c != b'$') {
-                self.pos += 1;
+            while self.peek_byte().map_or(false, |b| b != b'$') {
+                self.scanner.pos += 1;
             }
 
-            if self.pos >= self.input.len() {
+            if self.scanner.pos >= self.input.len() {
                 return None;
             }
 
-            let c = self.input.as_bytes()[self.pos - 1];
+            let c = self.input.as_bytes()[self.scanner.pos - 1];
 
             // space not allowed before ending $
             if opendollarlength == 1 && isspace(c) {
@@ -1876,19 +1925,19 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
             // dollar signs must also be backslash-escaped if they occur within math
             if opendollarlength == 1 && c == b'\\' {
-                self.pos += 1;
+                self.scanner.pos += 1;
                 continue;
             }
 
             let numdollars = self.take_while_with_limit(b'$', opendollarlength);
 
             // ending $ can't be followed by a digit
-            if opendollarlength == 1 && self.peek_char().map_or(false, |&c| isdigit(c)) {
+            if opendollarlength == 1 && self.peek_byte().map_or(false, isdigit) {
                 return None;
             }
 
             if numdollars == opendollarlength {
-                return Some(self.pos);
+                return Some(self.scanner.pos);
             }
         }
     }
@@ -1897,32 +1946,22 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         assert!(self.options.extension.math_code);
 
         loop {
-            while self.peek_char().map_or(false, |&c| c != b'$') {
-                self.pos += 1;
+            while self.peek_byte().map_or(false, |b| b != b'$') {
+                self.scanner.pos += 1;
             }
 
-            if self.pos >= self.input.len() {
+            if self.scanner.pos >= self.input.len() {
                 return None;
             }
 
-            let c = self.input.as_bytes()[self.pos - 1];
-            self.pos += 1;
+            let c = self.input.as_bytes()[self.scanner.pos - 1];
+            self.scanner.pos += 1;
             if c == b'`' {
-                return Some(self.pos);
+                return Some(self.scanner.pos);
             }
         }
     }
 
-    pub fn skip_spaces(&mut self) -> bool {
-        let mut skipped = false;
-        while self.peek_char().map_or(false, |&c| c == b' ' || c == b'\t') {
-            self.pos += 1;
-            skipped = true;
-        }
-        skipped
-    }
-
-    #[inline]
     fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
         if pos == 0 {
             return ('\n', None);
@@ -1930,13 +1969,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut before_char_pos = pos - 1;
         while before_char_pos > 0
             && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.skip_chars[self.input.as_bytes()[before_char_pos] as usize])
+                || self.skip_char_bytes[self.input.as_bytes()[before_char_pos] as usize])
         {
             before_char_pos -= 1;
         }
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
-                if (x as usize) < 256 && self.skip_chars[x as usize] {
+                if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
                     ('\n', None)
                 } else {
                     (x, Some(before_char_pos))
@@ -1946,32 +1985,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn scan_delims(&mut self, c: u8) -> (usize, bool, bool) {
-        let (before_char, before_char_pos) = self.get_before_char(self.pos);
+    fn scan_delims(&mut self, b: u8) -> (usize, bool, bool) {
+        let (before_char, before_char_pos) = self.get_before_char(self.scanner.pos);
 
         let mut numdelims = 0;
-        if c == b'\'' || c == b'"' {
+        if b == b'\'' || b == b'"' {
             numdelims += 1;
-            self.pos += 1;
+            self.scanner.pos += 1;
         } else {
-            while self.peek_char() == Some(&c) {
+            while self.peek_byte() == Some(b) {
                 numdelims += 1;
-                self.pos += 1;
+                self.scanner.pos += 1;
             }
         }
 
         let after_char = if self.eof() {
             '\n'
         } else {
-            let mut after_char_pos = self.pos;
+            let mut after_char_pos = self.scanner.pos;
             while after_char_pos < self.input.len() - 1
-                && self.skip_chars[self.input.as_bytes()[after_char_pos] as usize]
+                && self.skip_char_bytes[self.input.as_bytes()[after_char_pos] as usize]
             {
                 after_char_pos += 1;
             }
             match self.input[after_char_pos..].chars().next() {
                 Some(x) => {
-                    if (x as usize) < 256 && self.skip_chars[x as usize] {
+                    if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
                         '\n'
                     } else {
                         x
@@ -1987,8 +2026,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
             && (!after_char.is_cmark_punctuation()
-                || (self.options.extension.superscript && c == b'^')
-                || (self.options.extension.subscript && c == b'~')
+                || (self.options.extension.superscript && b == b'^')
+                || (self.options.extension.subscript && b == b'~')
                 || before_char.is_whitespace()
                 || if !cjk_friendly {
                     before_char.is_cmark_punctuation()
@@ -2036,7 +2075,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             } || after_char.is_whitespace()
                 || after_char.is_cmark_punctuation());
 
-        if c == b'_' {
+        if b == b'_' {
             (
                 numdelims,
                 left_flanking
@@ -2055,7 +2094,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         }),
                 right_flanking && (!left_flanking || after_char.is_cmark_punctuation()),
             )
-        } else if c == b'\'' || c == b'"' {
+        } else if b == b'\'' || b == b'"' {
             (
                 numdelims,
                 left_flanking
@@ -2069,17 +2108,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    pub fn skip_line_end(&mut self) -> bool {
-        let old_pos = self.pos;
-        if self.peek_char() == Some(&(b'\r')) {
-            self.pos += 1;
-        }
-        if self.peek_char() == Some(&(b'\n')) {
-            self.pos += 1;
-        }
-        self.pos > old_pos || self.eof()
-    }
-
     /////////////
     // Utility //
     /////////////
@@ -2091,8 +2119,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         extra: usize,
         parent_line_offsets: &[usize],
     ) {
-        let (newlines, since_newline) =
-            count_newlines(&self.input[self.pos - matchlen - extra..self.pos - extra]);
+        let (newlines, since_newline) = count_newlines(
+            &self.input[self.scanner.pos - matchlen - extra..self.scanner.pos - extra],
+        );
 
         if newlines > 0 {
             self.line += newlines;
@@ -2101,7 +2130,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let adjusted_line = self.line - node_ast.sourcepos.start.line;
             node_ast.sourcepos.end.column =
                 parent_line_offsets[adjusted_line] + since_newline + extra;
-            self.column_offset = -(self.pos as isize) + since_newline as isize + extra as isize;
+            self.column_offset =
+                -(self.scanner.pos as isize) + since_newline as isize + extra as isize;
         }
     }
 }
@@ -2170,7 +2200,7 @@ pub struct Delimiter<'a: 'd, 'd> {
     inl: Node<'a>,
     position: usize,
     length: usize,
-    delim_char: u8,
+    delim_byte: u8,
     can_open: bool,
     can_close: bool,
     prev: Cell<Option<&'d Delimiter<'a, 'd>>>,
@@ -2190,7 +2220,7 @@ impl<'a: 'd, 'd> std::fmt::Debug for Delimiter<'a, 'd> {
             "[pos {}, len {}, delim_char {:?}, open? {} close? {} -- {}]",
             self.position,
             self.length,
-            self.delim_char,
+            self.delim_byte,
             self.can_open,
             self.can_close,
             self.inl
@@ -2286,7 +2316,7 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
 }
 
 pub(crate) fn make_inline<'a>(
-    arena: &'a Arena<AstNode<'a>>,
+    arena: &'a Arena<'a>,
     value: NodeValue,
     sourcepos: Sourcepos,
 ) -> Node<'a> {
@@ -2300,4 +2330,123 @@ pub(crate) fn make_inline<'a>(
         line_offsets: Vec::new(),
     };
     arena.alloc(ast.into())
+}
+
+#[derive(Default)]
+pub struct Scanner {
+    pub pos: usize,
+}
+
+impl Scanner {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    #[inline]
+    fn eof(&self, input: &str) -> bool {
+        self.pos >= input.len()
+    }
+
+    #[inline]
+    pub fn peek_byte(&self, input: &str) -> Option<u8> {
+        self.peek_byte_n(input, 0)
+    }
+
+    #[inline]
+    fn peek_byte_n(&self, input: &str, n: usize) -> Option<u8> {
+        if self.pos + n >= input.len() {
+            None
+        } else {
+            let b = input.as_bytes()[self.pos + n];
+            assert!(b > 0);
+            Some(b)
+        }
+    }
+
+    pub fn spnl(&mut self, input: &str) {
+        self.skip_spaces(input);
+        if self.skip_line_end(input) {
+            self.skip_spaces(input);
+        }
+    }
+
+    pub fn skip_spaces(&mut self, input: &str) -> bool {
+        let mut skipped = false;
+        while self
+            .peek_byte(input)
+            .map_or(false, |b| b == b' ' || b == b'\t')
+        {
+            self.pos += 1;
+            skipped = true;
+        }
+        skipped
+    }
+
+    pub fn skip_line_end(&mut self, input: &str) -> bool {
+        let old_pos = self.pos;
+        if self.peek_byte(input) == Some(b'\r') {
+            self.pos += 1;
+        }
+        if self.peek_byte(input) == Some(b'\n') {
+            self.pos += 1;
+        }
+        self.pos > old_pos || self.eof(input)
+    }
+
+    fn take_while(&mut self, input: &str, b: u8) -> usize {
+        let start_pos = self.pos;
+        while self.peek_byte(input) == Some(b) {
+            self.pos += 1;
+        }
+        self.pos - start_pos
+    }
+
+    fn take_while_with_limit(&mut self, input: &str, b: u8, limit: usize) -> usize {
+        let start_pos = self.pos;
+        let mut count = 0;
+        while count < limit && self.peek_byte(input) == Some(b) {
+            self.pos += 1;
+            count += 1;
+        }
+        self.pos - start_pos
+    }
+
+    pub fn link_label<'i>(&mut self, input: &'i str) -> Option<&'i str> {
+        let startpos = self.pos;
+
+        if self.peek_byte(input) != Some(b'[') {
+            return None;
+        }
+        self.pos += 1;
+
+        let mut length = 0;
+        while let Some(b) = self.peek_byte(input) {
+            if b == b']' {
+                let raw_label = strings::trim_slice(&input[startpos + 1..self.pos]);
+                self.pos += 1;
+                return Some(raw_label);
+            }
+            if b == b'[' {
+                break;
+            }
+            if b == b'\\' {
+                self.pos += 1;
+                length += 1;
+                if self.peek_byte(input).map_or(false, ispunct) {
+                    self.pos += 1;
+                    length += 1;
+                }
+            } else {
+                self.pos += 1;
+                length += 1;
+            }
+            if length > MAX_LINK_LABEL_LENGTH {
+                self.pos = startpos;
+                return None;
+            }
+        }
+
+        self.pos = startpos;
+        None
+    }
 }

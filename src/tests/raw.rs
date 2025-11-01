@@ -14,7 +14,7 @@ fn raw_node() {
     options.render.r#unsafe = false;
     options.extension.tagfilter = true;
 
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let root = parse_document(&arena, user_input, &options);
     let raw_ast_inline = Ast::new(
         NodeValue::Raw(system_input_inline.to_string()),

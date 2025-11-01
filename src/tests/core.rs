@@ -116,7 +116,7 @@ fn atx_heading_closed() {
         "## Heading ###   \n",
     );
 
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let root = parse_document(&arena, input, &options);
 
@@ -150,7 +150,7 @@ fn atx_heading_not_closed() {
         "# Heading \\#\n",
     );
 
-    let arena = Arena::<AstNode>::new();
+    let arena = Arena::new();
     let options = Options::default();
     let root = parse_document(&arena, input, &options);
 
@@ -943,5 +943,13 @@ fn ipv6_host_unescaped() {
     html(
         "[henwo](https://[2402:1f00:89aa:300::5%25eth0]:9443?target=<yes>)",
         "<p><a href=\"https://[2402:1f00:89aa:300::5%25eth0]:9443?target=%3Cyes%3E\">henwo</a></p>\n",
+    );
+}
+
+#[test]
+fn link_ref_definition_priority() {
+    html(
+        "[foo]\n\n[foo]: first\n[foo]: second\n",
+        "<p><a href=\"first\">foo</a></p>\n",
     );
 }
