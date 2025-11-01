@@ -226,7 +226,7 @@ pub fn www_match<'a>(
     subject: &mut Subject<'a, '_, '_, '_, '_, '_>,
 ) -> Option<(Node<'a>, usize, usize)> {
     const WWW_DELIMS: [bool; 256] = character_set!(b"*_~([");
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
 
@@ -392,7 +392,7 @@ pub fn url_match<'a>(
 ) -> Option<(Node<'a>, usize, usize)> {
     const SCHEMES: [&str; 3] = ["http", "https", "ftp"];
 
-    let i = subject.pos;
+    let i = subject.scanner.pos;
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
     let size = subject.input.len();

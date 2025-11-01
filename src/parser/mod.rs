@@ -1580,15 +1580,22 @@ where
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
+        let mut rrs_to_add = vec![];
+
         {
-            let bytes: &[u8] = content.as_bytes();
+            let bytes = content.as_bytes();
             while seeked < content.len() && bytes[seeked] == b'[' {
-                if let Some(offset) = self.parse_reference_inline(&content[seeked..]) {
+                if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
                     seeked += offset;
+                    rrs_to_add.extend(rr);
                 } else {
                     break;
                 }
             }
+        }
+
+        for (lab, rr) in rrs_to_add {
+            self.refmap.map.insert(lab, rr);
         }
 
         if seeked != 0 {
@@ -1668,7 +1675,7 @@ where
                         pos += 1;
                     }
 
-                    content.drain(..pos);
+                    strings::remove_from_start(content, pos);
                 }
                 mem::swap(&mut ncb.literal, content);
             }
@@ -1722,11 +1729,7 @@ where
     }
 
     fn process_inlines(&mut self) {
-        self.process_inlines_node(self.root);
-    }
-
-    fn process_inlines_node(&mut self, node: Node<'a>) {
-        for node in node.descendants() {
+        for node in self.root.descendants() {
             if node.data().value.contains_inlines() {
                 self.parse_inlines(node);
             }
@@ -1739,12 +1742,14 @@ where
         let mut content = mem::take(&mut node_data.content);
         strings::rtrim(&mut content);
 
+        let line = node_data.sourcepos.start.line;
+
         let delimiter_arena = typed_arena::Arena::new();
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
             content,
-            node_data.sourcepos.start.line,
+            line,
             &mut self.refmap,
             &mut self.footnote_defs,
             &delimiter_arena,
@@ -1842,29 +1847,29 @@ where
         }
     }
 
-    fn postprocess_text_nodes(&mut self, node: Node<'a>) {
-        let mut stack = vec![(node, false)];
+    fn postprocess_text_nodes(&mut self, root: Node<'a>) {
+        let mut stack = vec![(root, false)];
         let mut children = vec![];
 
-        while let Some((node, in_bracket_context)) = stack.pop() {
-            let mut nch = node.first_child();
+        while let Some((parent, in_bracket_context)) = stack.pop() {
+            let mut it = parent.first_child();
 
-            while let Some(n) = nch {
+            while let Some(node) = it {
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
-                let n_ast = &mut n.data_mut();
+                let ast = &mut node.data_mut();
 
-                let sourcepos = n_ast.sourcepos;
-                match n_ast.value {
-                    NodeValue::Text(ref mut root) => {
+                let sourcepos = ast.sourcepos;
+                match ast.value {
+                    NodeValue::Text(ref mut text) => {
                         let sourcepos = self.postprocess_text_node_with_context(
-                            n,
+                            node,
                             sourcepos,
-                            root,
+                            text,
                             in_bracket_context,
                         );
-                        emptied = root.is_empty();
-                        n_ast.sourcepos = sourcepos;
+                        emptied = text.is_empty();
+                        ast.sourcepos = sourcepos;
                     }
                     NodeValue::Link(..) | NodeValue::Image(..) | NodeValue::WikiLink(..) => {
                         // Recurse into links, images, and wikilinks to join adjacent text nodes,
@@ -1875,13 +1880,13 @@ where
                 }
 
                 if !emptied {
-                    children.push((n, child_in_bracket_context));
+                    children.push((node, child_in_bracket_context));
                 }
 
-                nch = n.next_sibling();
+                it = node.next_sibling();
 
                 if emptied {
-                    n.detach();
+                    node.detach();
                 }
             }
 
@@ -2046,67 +2051,54 @@ where
         }
     }
 
-    fn parse_reference_inline(&mut self, content: &str) -> Option<usize> {
-        // These are totally unused; we should extract the relevant input
-        // scanning from Subject so we don't have to make all this.
-        let unused_node_arena = Arena::with_capacity(0);
-        let mut unused_footnote_defs = inlines::FootnoteDefs::new();
-        let unused_delimiter_arena = typed_arena::Arena::with_capacity(0);
-        let mut unused_refmap = inlines::RefMap::new();
+    fn parse_reference_inline(
+        &self,
+        content: &str,
+    ) -> Option<(usize, Option<(String, ResolvedReference)>)> {
+        let mut scanner = inlines::Scanner::new();
 
-        let mut subj = inlines::Subject::new(
-            &unused_node_arena,
-            self.options,
-            content.to_string(),
-            0, // XXX -1 in upstream; never used?
-            &mut unused_refmap,
-            &mut unused_footnote_defs,
-            &unused_delimiter_arena,
-            0,
-        );
-
-        let mut lab: String = match subj.link_label() {
+        let mut lab: String = match scanner.link_label(content) {
             Some(lab) if !lab.is_empty() => lab.to_string(),
             _ => return None,
         };
 
-        if subj.peek_char() != Some(&(b':')) {
+        if scanner.peek_byte(content) != Some(b':') {
             return None;
         }
 
-        subj.pos += 1;
-        subj.spnl();
-        let (url, matchlen) = match inlines::manual_scan_link_url(&subj.input[subj.pos..]) {
+        scanner.pos += 1;
+        scanner.spnl(content);
+        let (url, matchlen) = match inlines::manual_scan_link_url(&content[scanner.pos..]) {
             Some((url, matchlen)) => (url.to_string(), matchlen),
             None => return None,
         };
-        subj.pos += matchlen;
+        scanner.pos += matchlen;
 
-        let beforetitle = subj.pos;
-        subj.spnl();
-        let title_search = if subj.pos == beforetitle {
+        let beforetitle = scanner.pos;
+        scanner.spnl(content);
+        let title_search = if scanner.pos == beforetitle {
             None
         } else {
-            scanners::link_title(&subj.input[subj.pos..])
+            scanners::link_title(&content[scanner.pos..])
         };
         let title = match title_search {
             Some(matchlen) => {
-                let t = &subj.input[subj.pos..subj.pos + matchlen];
-                subj.pos += matchlen;
-                t.to_string()
+                let t = &content[scanner.pos..scanner.pos + matchlen];
+                scanner.pos += matchlen;
+                t
             }
             _ => {
-                subj.pos = beforetitle;
-                String::new()
+                scanner.pos = beforetitle;
+                ""
             }
         };
 
-        subj.skip_spaces();
-        if !subj.skip_line_end() {
+        scanner.skip_spaces(content);
+        if !scanner.skip_line_end(content) {
             if !title.is_empty() {
-                subj.pos = beforetitle;
-                subj.skip_spaces();
-                if !subj.skip_line_end() {
+                scanner.pos = beforetitle;
+                scanner.skip_spaces(content);
+                if !scanner.skip_line_end(content) {
                     return None;
                 }
             } else {
@@ -2115,13 +2107,19 @@ where
         }
 
         lab = strings::normalize_label(&lab, Case::Fold);
+        let mut rr = None;
         if !lab.is_empty() {
-            self.refmap.map.entry(lab).or_insert(ResolvedReference {
-                url: strings::clean_url(&url).into(),
-                title: strings::clean_title(&title).into(),
-            });
+            if !self.refmap.map.contains_key(&lab) {
+                rr = Some((
+                    lab,
+                    ResolvedReference {
+                        url: strings::clean_url(&url).into(),
+                        title: strings::clean_title(&title).into(),
+                    },
+                ));
+            }
         }
-        Some(subj.pos)
+        Some((scanner.pos, rr))
     }
 }
 

@@ -724,6 +724,12 @@ impl std::fmt::Display for Sourcepos {
     }
 }
 
+impl From<(LineColumn, LineColumn)> for Sourcepos {
+    fn from((start, end): (LineColumn, LineColumn)) -> Sourcepos {
+        Sourcepos { start, end }
+    }
+}
+
 impl From<(usize, usize, usize, usize)> for Sourcepos {
     fn from(sp: (usize, usize, usize, usize)) -> Sourcepos {
         Sourcepos {
