@@ -440,6 +440,7 @@ pub fn format_node_default<'a, T>(
             render_footnote_reference(context, node, entering, nfr)
         }
         NodeValue::Strikethrough => render_strikethrough(context, node, entering),
+        NodeValue::Highlight => render_highlight(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
@@ -1029,6 +1030,22 @@ fn render_strikethrough<'a, T>(
         context.write_str(">")?;
     } else {
         context.write_str("</del>")?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+fn render_highlight<'a, T>(
+    context: &mut Context<T>,
+    node: Node<'a>,
+    entering: bool,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.write_str("<mark")?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+    } else {
+        context.write_str("</mark>")?;
     }
 
     Ok(ChildRendering::HTML)

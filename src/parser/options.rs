@@ -526,6 +526,23 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub subtext: bool,
+
+    /// Enables highlighting (mark) using `==`.
+    ///
+    /// ```md
+    /// Hey, ==this is important!==
+    /// ```
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.highlight = true;
+    ///
+    /// assert_eq!(markdown_to_html("Hey, ==this is important!==", &options),
+    ///           "<p>Hey, <mark>this is important!</mark></p>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub highlight: bool,
 }
 
 impl<'c> Extension<'c> {
