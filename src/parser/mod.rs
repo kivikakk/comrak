@@ -1904,30 +1904,34 @@ where
                 node.insert_before(escaped_text);
                 node.detach();
 
+                let mut target = escaped_text;
+
                 // We only need look one left and one right, as all adjacent
                 // Text nodes are coalesced already.
-                if let Some(after) = escaped_text.next_sibling() {
+                if let Some(before) = target.previous_sibling() {
+                    let mut before_mut = before.data_mut();
+                    if let Some(before_text) = before_mut.value.text_mut() {
+                        let target_data = target.data();
+                        let target_text = target_data.value.text().unwrap();
+                        before_text.to_mut().push_str(target_text);
+                        before_mut.sourcepos.end = target_data.sourcepos.end;
+                        target.detach();
+
+                        target = before;
+                    }
+                }
+
+                if let Some(after) = target.next_sibling() {
                     if let Some(after_text) = after.data().value.text() {
-                        let mut escaped_text_mut = escaped_text.data_mut();
-                        escaped_text_mut
+                        let mut target_mut = target.data_mut();
+                        target_mut
                             .value
                             .text_mut()
                             .unwrap()
                             .to_mut()
                             .push_str(after_text);
-                        escaped_text_mut.sourcepos.end = after.data().sourcepos.end;
+                        target_mut.sourcepos.end = after.data().sourcepos.end;
                         after.detach();
-                    }
-                }
-
-                if let Some(before) = escaped_text.previous_sibling() {
-                    let mut before_mut = before.data_mut();
-                    if let Some(before_text) = before_mut.value.text_mut() {
-                        let escaped_text_data = escaped_text.data();
-                        let escaped_text_text = escaped_text_data.value.text().unwrap();
-                        before_text.to_mut().push_str(escaped_text_text);
-                        before_mut.sourcepos.end = escaped_text_data.sourcepos.end;
-                        escaped_text.detach();
                     }
                 }
             }
