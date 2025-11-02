@@ -5,7 +5,7 @@ use std::mem;
 use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
-use crate::strings::{count_newlines, trim_cow};
+use crate::strings::{count_newlines, is_line_end_char, trim_cow};
 
 // Limit to prevent a malicious input from causing a denial of service.
 // See get_num_autocompleted_cells.
@@ -312,7 +312,7 @@ fn try_inserting_table_header_paragraph<'a>(
             .iter()
             .rev()
             .skip(1)
-            .take_while(|&&c| c != b'\n')
+            .take_while(|&&c| !is_line_end_char(c))
             .count();
 
     container_ast.sourcepos.start.line += newlines;

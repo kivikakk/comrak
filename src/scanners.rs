@@ -23083,14 +23083,9 @@ pub fn table_start(s: &str) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0x0A => {
+                        0x0A | 0x0D => {
                             cursor += 1;
                             yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x0D => {
-                            cursor += 1;
-                            yystate = 13;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -23100,7 +23095,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                         0x7C => {
                             cursor += 1;
-                            yystate = 14;
+                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
@@ -23146,19 +23141,14 @@ pub fn table_start(s: &str) -> Option<usize> {
                         yystate = 10;
                         continue 'yyl;
                     }
-                    0x0A => {
+                    0x0A | 0x0D => {
                         cursor += 1;
                         yystate = 12;
                         continue 'yyl;
                     }
-                    0x0D => {
-                        cursor += 1;
-                        yystate = 13;
-                        continue 'yyl;
-                    }
                     0x7C => {
                         cursor += 1;
-                        yystate = 14;
+                        yystate = 13;
                         continue 'yyl;
                     }
                     _ => {
@@ -23178,39 +23168,14 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x0A => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
                         0x09 | 0x0B..=0x0C | 0x20 => {
                             cursor += 1;
-                            yystate = 14;
+                            yystate = 13;
                             continue 'yyl;
                         }
-                        0x0A => {
+                        0x0A | 0x0D => {
                             cursor += 1;
                             yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x0D => {
-                            cursor += 1;
-                            yystate = 13;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -24397,12 +24362,8 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                             yystate = 3;
                             continue 'yyl;
                         }
-                        0x0A => {
+                        0x0A | 0x0D => {
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0D => {
-                            yystate = 5;
                             continue 'yyl;
                         }
                         _ => {
@@ -24429,7 +24390,7 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                     };
                     match yych {
                         0x09..=0x0D | 0x20 => {
-                            yystate = 7;
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -24449,74 +24410,29 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                             0
                         }
                     };
-                    match yych {
-                        0x0A => {
-                            cursor += 1;
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                6 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 7;
+                    yystate = 6;
                     continue 'yyl;
                 }
-                7 => match yych {
+                6 => match yych {
                     0x09 | 0x0B..=0x0C | 0x20 => {
                         cursor += 1;
-                        yystate = 6;
+                        yystate = 5;
                         continue 'yyl;
                     }
-                    0x0A => {
+                    0x0A | 0x0D => {
                         cursor += 1;
                         yystate = 4;
                         continue 'yyl;
                     }
-                    0x0D => {
-                        cursor += 1;
-                        yystate = 9;
-                        continue 'yyl;
-                    }
                     _ => {
-                        yystate = 8;
+                        yystate = 7;
                         continue 'yyl;
                     }
                 },
-                8 => {
+                7 => {
                     cursor = marker;
                     yystate = 2;
                     continue 'yyl;
-                }
-                9 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x0A => {
-                            cursor += 1;
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
                 }
                 _ => panic!("internal lexer error"),
             }

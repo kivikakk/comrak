@@ -140,21 +140,27 @@ where
 
         while ix < end {
             let mut eol = ix;
-            let mut ate_line_end = false;
+            let mut ate_line_end = 0;
 
             while eol < end {
-                if strings::is_line_end_char(sb[eol]) {
-                    ate_line_end = true;
-                    eol += 1;
-                    break;
-                }
-                if sb[eol] == 0 {
-                    break;
+                match sb[eol] {
+                    b'\r' if eol + 1 < end && sb[eol + 1] == b'\n' => {
+                        ate_line_end = 2;
+                        eol += 2;
+                        break;
+                    }
+                    b'\n' | b'\r' => {
+                        ate_line_end = 1;
+                        eol += 1;
+                        break;
+                    }
+                    0 => break,
+                    _ => {}
                 }
                 eol += 1;
             }
 
-            if ate_line_end || eol == end {
+            if ate_line_end > 0 || eol == end {
                 if !linebuf.is_empty() {
                     linebuf.push_str(&s[ix..eol]);
                     let line = mem::take(&mut linebuf);
@@ -166,24 +172,10 @@ where
                 assert_eq!(sb[eol], b'\0');
                 linebuf.push_str(&s[ix..eol]);
                 linebuf.push('\u{fffd}');
+                eol += 1;
             }
 
             ix = eol;
-            if ix < end {
-                if sb[ix] == b'\0' {
-                    ix += 1;
-                } else {
-                    if ate_line_end {
-                        ix -= 1;
-                    }
-                    if sb[ix] == b'\r' {
-                        ix += 1;
-                    }
-                    if ix < end && sb[ix] == b'\n' {
-                        ix += 1;
-                    }
-                }
-            }
         }
 
         if !linebuf.is_empty() {
@@ -227,14 +219,11 @@ where
     }
 
     fn process_line(&mut self, mut line: Cow<str>) {
-        let last_byte = line.as_bytes().last();
-        if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
+        let &last_byte = line.as_bytes().last().unwrap();
+        if !strings::is_line_end_char(last_byte) {
             line.to_mut().push('\n');
-        } else if last_byte == Some(&b'\r') {
-            let line_mut = line.to_mut();
-            line_mut.pop();
-            line_mut.push('\n');
-        };
+        }
+
         let line = line.as_ref();
         let bytes = line.as_bytes();
 
@@ -1639,7 +1628,7 @@ where
                     if content.as_bytes()[pos] == b'\r' {
                         pos += 1;
                     }
-                    if content.as_bytes()[pos] == b'\n' {
+                    if content.as_bytes().get(pos) == Some(&b'\n') {
                         pos += 1;
                     }
 
@@ -2163,7 +2152,7 @@ fn parse_list_marker(
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
             }
-            if bytes[i] == b'\n' {
+            if strings::is_line_end_char(bytes[i]) {
                 return None;
             }
         }
