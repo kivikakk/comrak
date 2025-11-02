@@ -1850,9 +1850,12 @@ where
     fn postprocess_text_nodes(&mut self, root: Node<'a>) {
         let mut stack = vec![(root, false)];
         let mut children = vec![];
+        let coalesce_escaped =
+            !(self.options.parse.escaped_char_spans || self.options.render.escaped_char_spans);
 
         while let Some((parent, in_bracket_context)) = stack.pop() {
             let mut it = parent.first_child();
+            let mut escaped_to_coalesce = vec![];
 
             while let Some(node) = it {
                 let mut child_in_bracket_context = in_bracket_context;
@@ -1876,6 +1879,11 @@ where
                         // but mark the context so autolinks won't be generated within them.
                         child_in_bracket_context = true;
                     }
+                    NodeValue::Escaped => {
+                        if coalesce_escaped {
+                            escaped_to_coalesce.push(node);
+                        }
+                    }
                     _ => {}
                 }
 
@@ -1887,6 +1895,40 @@ where
 
                 if emptied {
                     node.detach();
+                }
+            }
+
+            // Remove Escaped from the tree, coalescing with adjacent nodes.
+            for node in escaped_to_coalesce {
+                let escaped_text = node.first_child().unwrap();
+                node.insert_before(escaped_text);
+                node.detach();
+
+                // We only need look one left and one right, as all adjacent
+                // Text nodes are coalesced already.
+                if let Some(after) = escaped_text.next_sibling() {
+                    if let Some(after_text) = after.data().value.text() {
+                        let mut escaped_text_mut = escaped_text.data_mut();
+                        escaped_text_mut
+                            .value
+                            .text_mut()
+                            .unwrap()
+                            .to_mut()
+                            .push_str(after_text);
+                        escaped_text_mut.sourcepos.end = after.data().sourcepos.end;
+                        after.detach();
+                    }
+                }
+
+                if let Some(before) = escaped_text.previous_sibling() {
+                    let mut before_mut = before.data_mut();
+                    if let Some(before_text) = before_mut.value.text_mut() {
+                        let escaped_text_data = escaped_text.data();
+                        let escaped_text_text = escaped_text_data.value.text().unwrap();
+                        before_text.to_mut().push_str(escaped_text_text);
+                        before_mut.sourcepos.end = escaped_text_data.sourcepos.end;
+                        escaped_text.detach();
+                    }
                 }
             }
 

@@ -417,6 +417,16 @@ fn tasklist_and_escapes_do_not_play() {
         "\\!",
         (document (1:1-1:2) [
             (paragraph (1:1-1:2) [
+                (text (1:2-1:2) "!")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [parse.escaped_char_spans],
+        "\\!",
+        (document (1:1-1:2) [
+            (paragraph (1:1-1:2) [
                 (escaped (1:1-1:2) [
                     (text (1:2-1:2) "!")
                 ])
@@ -426,6 +436,20 @@ fn tasklist_and_escapes_do_not_play() {
 
     assert_ast_match!(
         [],
+        "+ \\[x]",
+        (document (1:1-1:6) [
+            (list (1:1-1:6) [
+                (item (1:1-1:6) [
+                    (paragraph (1:3-1:6) [
+                        (text (1:4-1:6) "[x]")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [parse.escaped_char_spans],
         "+ \\[x]",
         (document (1:1-1:6) [
             (list (1:1-1:6) [
@@ -443,6 +467,20 @@ fn tasklist_and_escapes_do_not_play() {
 
     assert_ast_match!(
         [extension.tasklist, parse.relaxed_tasklist_matching],
+        "+ \\[\\:]",
+        (document (1:1-1:7) [
+            (list (1:1-1:7) [
+                (item (1:1-1:7) [
+                    (paragraph (1:3-1:7) [
+                        (text (1:4-1:7) "[:]")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist, parse.relaxed_tasklist_matching, parse.escaped_char_spans],
         "+ \\[\\:]",
         (document (1:1-1:7) [
             (list (1:1-1:7) [

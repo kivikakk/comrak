@@ -203,7 +203,12 @@ pub enum NodeValue {
 
     /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     ///
-    /// Enabled with [`escaped_char_spans`](crate::options::RenderBuilder::escaped_char_spans).
+    /// Included in the document tree only if the `escaped_char_spans` [parse
+    /// option](crate::options::ParseBuilder::escaped_char_spans) and/or [render
+    /// option](crate::options::RenderBuilder::escaped_char_spans) is enabled.
+    ///
+    /// If the render option is enabled, these are wrapped in distinct `<span>`
+    /// tags in output HTML and XML.
     Escaped,
 
     /// **Inline**.  A wikilink to some URL.

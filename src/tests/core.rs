@@ -172,7 +172,7 @@ fn atx_heading_not_closed() {
 #[test]
 fn atx_heading_closed_sourcepos() {
     assert_ast_match!(
-        [],
+        [parse.escaped_char_spans],
         // https://spec.commonmark.org/0.31.2/#example-71
         "## Heading ##\n"
         "   ## Heading ##\n"
