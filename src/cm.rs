@@ -260,7 +260,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             } else if ispunct_char(c) {
                 write!(self.output, "\\{}", c)?;
             } else {
-                write!(self, "&#{};", c as u8)?;
+                write!(self.output, "&#{};", c as u8)?;
             }
             self.column += self.output.len() - len_before;
         } else {
