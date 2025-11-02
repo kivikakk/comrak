@@ -51,9 +51,7 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
         }
         .into(),
     );
-    let mut parser = Parser::new(arena, root, options);
-    let linebuf = parser.feed(String::new(), md, true);
-    parser.finish(linebuf)
+    Parser::new(arena, root, options).parse(md)
 }
 
 pub struct Parser<'a, 'o, 'c> {
@@ -74,7 +72,6 @@ pub struct Parser<'a, 'o, 'c> {
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
-    last_buffer_ended_with_cr: bool,
     total_size: usize,
     options: &'o Options<'c>,
 }
@@ -119,17 +116,13 @@ where
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
-            last_buffer_ended_with_cr: false,
             total_size: 0,
             options,
         }
     }
 
-    fn feed(&mut self, mut linebuf: String, mut s: &str, eof: bool) -> String {
-        if let (0, Some(delimiter)) = (
-            self.total_size,
-            &self.options.extension.front_matter_delimiter,
-        ) {
+    fn parse(mut self, mut s: &str) -> Node<'a> {
+        if let Some(delimiter) = &self.options.extension.front_matter_delimiter {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
                 self.handle_front_matter(front_matter, delimiter);
                 s = rest;
@@ -139,27 +132,18 @@ where
         let s = s;
         let sb = s.as_bytes();
 
-        if s.len() > usize::MAX - self.total_size {
-            self.total_size = usize::MAX;
-        } else {
-            self.total_size += s.len();
-        }
-
-        let mut buffer = 0;
-        if self.last_buffer_ended_with_cr && !s.is_empty() && sb[0] == b'\n' {
-            buffer += 1;
-        }
-        self.last_buffer_ended_with_cr = false;
-
         let end = s.len();
+        self.total_size = end;
 
-        while buffer < end {
-            let mut process = false;
-            let mut eol = buffer;
+        let mut ix = 0;
+        let mut linebuf = String::new();
+
+        while ix < end {
+            let mut eol = ix;
             let mut ate_line_end = false;
+
             while eol < end {
                 if strings::is_line_end_char(sb[eol]) {
-                    process = true;
                     ate_line_end = true;
                     eol += 1;
                     break;
@@ -170,47 +154,45 @@ where
                 eol += 1;
             }
 
-            if eol >= end && eof {
-                process = true;
-            }
-
-            if process {
+            if ate_line_end || eol == end {
                 if !linebuf.is_empty() {
-                    linebuf.push_str(&s[buffer..eol]);
+                    linebuf.push_str(&s[ix..eol]);
                     let line = mem::take(&mut linebuf);
                     self.process_line(line.into());
                 } else {
-                    self.process_line(s[buffer..eol].into());
+                    self.process_line(s[ix..eol].into());
                 }
-            } else if eol < end && sb[eol] == b'\0' {
-                linebuf.push_str(&s[buffer..eol]);
-                linebuf.push('\u{fffd}');
             } else {
-                linebuf.push_str(&s[buffer..eol]);
+                assert_eq!(sb[eol], b'\0');
+                linebuf.push_str(&s[ix..eol]);
+                linebuf.push('\u{fffd}');
             }
 
-            buffer = eol;
-            if buffer < end {
-                if sb[buffer] == b'\0' {
-                    buffer += 1;
+            ix = eol;
+            if ix < end {
+                if sb[ix] == b'\0' {
+                    ix += 1;
                 } else {
                     if ate_line_end {
-                        buffer -= 1;
+                        ix -= 1;
                     }
-                    if sb[buffer] == b'\r' {
-                        buffer += 1;
-                        if buffer == end {
-                            self.last_buffer_ended_with_cr = true;
-                        }
+                    if sb[ix] == b'\r' {
+                        ix += 1;
                     }
-                    if buffer < end && sb[buffer] == b'\n' {
-                        buffer += 1;
+                    if ix < end && sb[ix] == b'\n' {
+                        ix += 1;
                     }
                 }
             }
         }
 
-        linebuf
+        if !linebuf.is_empty() {
+            self.process_line(linebuf.into());
+        }
+
+        self.finalize_document();
+        self.postprocess_text_nodes(self.root);
+        self.root
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
@@ -1536,16 +1518,6 @@ where
         }
     }
 
-    fn finish(&mut self, remaining: String) -> Node<'a> {
-        if !remaining.is_empty() {
-            self.process_line(remaining.into());
-        }
-
-        self.finalize_document();
-        self.postprocess_text_nodes(self.root);
-        self.root
-    }
-
     fn finalize_document(&mut self) {
         while !self.current.same_node(self.root) {
             self.current = self.finalize(self.current).unwrap();
@@ -1553,11 +1525,7 @@ where
 
         self.finalize(self.root);
 
-        self.refmap.max_ref_size = if self.total_size > 100000 {
-            self.total_size
-        } else {
-            100000
-        };
+        self.refmap.max_ref_size = self.total_size.min(100000);
 
         self.process_inlines();
 
