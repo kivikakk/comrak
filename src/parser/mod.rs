@@ -136,6 +136,11 @@ where
         self.total_size = end;
 
         let mut ix = 0;
+
+        // linebuf is necessarily entirely to do spec-compliant NUL handling in
+        // one place. If the input document contains no NUL bytes, we will never
+        // use linebuf. Our re2c scanners presume there are no NUL bytes in
+        // the subject, and use 0 as the sentinel result when !(cursor < len).
         let mut linebuf = String::new();
 
         while ix < end {
@@ -163,10 +168,13 @@ where
             if ate_line_end > 0 || eol == end {
                 if !linebuf.is_empty() {
                     linebuf.push_str(&s[ix..eol]);
-                    let line = mem::take(&mut linebuf);
-                    self.process_line(line.into());
+                    // Keep one active linebuf allocation.
+                    let mut cow = Cow::Owned(mem::take(&mut linebuf));
+                    self.process_line(&mut cow, eol == end);
+                    mem::swap(&mut cow.into_owned(), &mut linebuf);
+                    linebuf.clear();
                 } else {
-                    self.process_line(s[ix..eol].into());
+                    self.process_line(&mut s[ix..eol].into(), eol == end);
                 }
             } else {
                 assert_eq!(sb[eol], b'\0');
@@ -179,7 +187,8 @@ where
         }
 
         if !linebuf.is_empty() {
-            self.process_line(linebuf.into());
+            // Reached only if the input ends with a NUL byte.
+            self.process_line(&mut linebuf.into(), true);
         }
 
         self.finalize_document();
@@ -218,9 +227,13 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, mut line: Cow<str>) {
+    fn process_line(&mut self, line: &mut Cow<str>, at_eof: bool) {
+        // Most scanners depend on seeing a \r or \n to end the line, even
+        // though the end of the document suffices per spec.  Synthesise a
+        // final EOL if there isn't one so these scanners work.
         let &last_byte = line.as_bytes().last().unwrap();
         if !strings::is_line_end_char(last_byte) {
+            assert!(at_eof); // This case should only ever occur at EOF, once per document.
             line.to_mut().push('\n');
         }
 
