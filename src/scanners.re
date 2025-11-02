@@ -1,10 +1,9 @@
 /*!re2c
     re2c:case-insensitive    = 1;
-    re2c:encoding:utf8       = 1;
-    re2c:encoding-policy     = substitute;
 
+    re2c:sentinel            = 255;
     re2c:define:YYCTYPE      = u8;
-    re2c:define:YYPEEK       = "if cursor < len { *s.as_bytes().get_unchecked(cursor) } else { 0 }";
+    re2c:define:YYPEEK       = "if cursor < len { *s.as_bytes().get_unchecked(cursor) } else { 255 }";
     re2c:define:YYSKIP       = "cursor += 1;";
     re2c:define:YYBACKUP     = "marker = cursor;";
     re2c:define:YYRESTORE    = "cursor = marker;";
@@ -14,11 +13,11 @@
     re2c:indent:string       = '    ';
     re2c:indent:top          = 1;
 
-    wordchar = [^\x00-\x20];
+    wordchar = [^\x01-\x20\xff];
 
     spacechar = [ \t\v\f\r\n];
 
-    reg_char     = [^\\()\x00-\x20];
+    reg_char     = [^\\()\x01-\x20\xff];
 
     escaped_char = [\\][!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~-];
 
@@ -28,9 +27,9 @@
 
     attributename = [a-zA-Z_:][a-zA-Z0-9:._-]*;
 
-    unquotedvalue = [^ \t\r\n\v\f"'=<>`\x00]+;
-    singlequotedvalue = ['][^'\x00]*['];
-    doublequotedvalue = ["][^"\x00]*["];
+    unquotedvalue = [^ \t\r\n\v\f"'=<>`\xff]+;
+    singlequotedvalue = ['][^'\xff]*['];
+    doublequotedvalue = ["][^"\xff]*["];
 
     attributevalue = unquotedvalue | singlequotedvalue | doublequotedvalue;
 
@@ -41,21 +40,21 @@
     opentag = tagname attribute* spacechar* [/]? [>];
     closetag = [/] tagname spacechar* [>];
 
-    htmlcomment = "--" ([^\x00-]+ | "-" [^\x00-] | "--" [^\x00>])* "-->";
+    htmlcomment = "--" ([^\xff-]+ | "-" [^\xff-] | "--" [^\xff>])* "-->";
 
-    processinginstruction = ([^?>\x00]+ | [?][^>\x00] | [>])+;
+    processinginstruction = ([^?>\xff]+ | [?][^>\xff] | [>])+;
 
-    declaration = [A-Z]+ spacechar+ [^>\x00]*;
+    declaration = [A-Z]+ spacechar+ [^>\xff]*;
 
-    cdata = "CDATA[" ([^\]\x00]+ | "]" [^\]\x00] | "]]" [^>\x00])*;
+    cdata = "CDATA[" ([^\]\xff]+ | "]" [^\]\xff] | "]]" [^>\xff])*;
 
     htmltag = opentag | closetag;
 
     in_parens_nosp   = [(] (reg_char|escaped_char|[\\])* [)];
 
-    in_double_quotes = ["] (escaped_char|[^"\x00])* ["];
-    in_single_quotes = ['] (escaped_char|[^'\x00])* ['];
-    in_parens        = [(] (escaped_char|[^)\x00])* [)];
+    in_double_quotes = ["] (escaped_char|[^"\xff])* ["];
+    in_single_quotes = ['] (escaped_char|[^'\xff])* ['];
+    in_parens        = [(] (escaped_char|[^)\xff])* [)];
 
     scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
 */
@@ -85,7 +84,7 @@ pub fn html_block_end_1(s: &str) -> bool {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [^\n\x00]* [<] [/] ('script'|'pre'|'textarea'|'style') [>] { return true; }
+    [^\n\xff]* [<] [/] ('script'|'pre'|'textarea'|'style') [>] { return true; }
     * { return false; }
 */
 }
@@ -95,7 +94,7 @@ pub fn html_block_end_2(s: &str) -> bool {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [^\n\x00]* '-->' { return true; }
+    [^\n\xff]* '-->' { return true; }
     * { return false; }
 */
 }
@@ -105,7 +104,7 @@ pub fn html_block_end_3(s: &str) -> bool {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [^\n\x00]* '?>' { return true; }
+    [^\n\xff]* '?>' { return true; }
     * { return false; }
 */
 }
@@ -115,7 +114,7 @@ pub fn html_block_end_4(s: &str) -> bool {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [^\n\x00]* '>' { return true; }
+    [^\n\xff]* '>' { return true; }
     * { return false; }
 */
 }
@@ -125,7 +124,7 @@ pub fn html_block_end_5(s: &str) -> bool {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [^\n\x00]* ']]>' { return true; }
+    [^\n\xff]* ']]>' { return true; }
     * { return false; }
 */
 }
@@ -151,8 +150,8 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
     let mut ctxmarker = 0;
     let len = s.len();
 /*!re2c
-    [`]{3,} / [^`\r\n\x00]*[\r\n] { return Some(cursor); }
-    [~]{3,} / [^\r\n\x00]*[\r\n] { return Some(cursor); }
+    [`]{3,} / [^`\r\n\xff]*[\r\n] { return Some(cursor); }
+    [~]{3,} / [^\r\n\xff]*[\r\n] { return Some(cursor); }
     * { return None; }
 */
 }
@@ -215,7 +214,7 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    '[^' ([^\] \r\n\x00\t]+) ']:' [ \t]* { return Some(cursor); }
+    '[^' ([^\] \r\n\xff\t]+) ']:' [ \t]* { return Some(cursor); }
     * { return None; }
 */
 }
@@ -235,7 +234,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    scheme [:][^\x00-\x20<>]*[>]  { return Some(cursor); }
+    scheme [:][^\x01-\x20\xff<>]*[>]  { return Some(cursor); }
     * { return None; }
 */
 }
@@ -318,9 +317,9 @@ pub fn link_title(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    ["] (escaped_char|[^"\x00])* ["]   { return Some(cursor); }
-    ['] (escaped_char|[^'\x00])* ['] { return Some(cursor); }
-    [(] (escaped_char|[^()\x00])* [)]  { return Some(cursor); }
+    ["] (escaped_char|[^"\xff])* ["]   { return Some(cursor); }
+    ['] (escaped_char|[^'\xff])* ['] { return Some(cursor); }
+    [(] (escaped_char|[^()\xff])* [)]  { return Some(cursor); }
     * { return None; }
 */
 }
@@ -363,8 +362,8 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
     table_newline = [\r\n];
 
     table_delimiter = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
-    table_cell = (escaped_char|[^\x00|\r\n])+;
-    table_cell_spoiler = (escaped_char|table_spoiler|[^\x00|\r\n])+;
+    table_cell = (escaped_char|[^\xff|\r\n])+;
+    table_cell_spoiler = (escaped_char|table_spoiler|[^\xff|\r\n])+;
 
 */
 
@@ -459,14 +458,15 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
     let mut marker = 0;
     let len = s.len();
 
-    let t1;
+    let mut t1;
 /*!stags:re2c format = 'let mut @@{tag} = 0;'; */
 
 /*!local:re2c
     re2c:define:YYSTAGP = "@@{tag} = cursor;";
+    re2c:define:YYSHIFTSTAG = "@@{tag} = (@@{tag} as isize + @@{shift}) as usize;";
     re2c:tags = 1;
 
-    spacechar* [[] @t1 [^\x00\r\n] [\]] (spacechar | [\x00]) {
+    spacechar* [[] @t1 [^\xff\r\n] [\]] (spacechar | [\xff]) {
         if cursor == len + 1 {
             cursor -= 1;
         }

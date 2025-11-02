@@ -196,7 +196,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.line_offset = ast.line_offsets[adjusted_line];
 
         let new_inl: Option<Node<'a>> = match b {
-            b'\0' => return false,
             b'\r' | b'\n' => Some(self.handle_newline()),
             b'`' => Some(self.handle_backticks(&ast.line_offsets)),
             b'\\' => Some(self.handle_backslash()),
@@ -2316,7 +2315,7 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
             }
             nb_p -= 1;
             i += 1;
-        } else if isspace(bytes[i]) || bytes[i].is_ascii_control() {
+        } else if isspace(bytes[i]) || (bytes[i].is_ascii_control() && bytes[i] != 0) {
             if i == 0 {
                 return None;
             }
@@ -2375,9 +2374,7 @@ impl Scanner {
         if self.pos + n >= input.len() {
             None
         } else {
-            let b = input.as_bytes()[self.pos + n];
-            assert!(b > 0);
-            Some(b)
+            Some(input.as_bytes()[self.pos + n])
         }
     }
 
