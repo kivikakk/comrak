@@ -239,3 +239,20 @@ hello foo@example.com world
         ])
     );
 }
+
+#[test]
+fn autolink_between_escaped_chars() {
+    assert_ast_match!(
+       [extension.autolink],
+       "a.b-c\\_d@a.b\\_\n",
+       (document (1:1-1:14) [
+           (paragraph (1:1-1:14) [
+               (text (1:1-1:7) "a.b-c_")
+               (link (1:8-1:12) "mailto:d@a.b" [
+                    (text (1:8-1:12) "d@a.b")
+                ])
+               (text (1:14-1:14) "_")
+           ])
+       ])
+    );
+}
