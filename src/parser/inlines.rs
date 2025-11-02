@@ -429,17 +429,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             );
 
-            if self.options.render.escaped_char_spans {
-                inl = self.make_inline(
-                    NodeValue::Escaped,
-                    self.scanner.pos - 2,
-                    self.scanner.pos - 1,
-                );
-                inl.append(inline_text);
-                inl
-            } else {
-                inline_text
-            }
+            inl = self.make_inline(
+                NodeValue::Escaped,
+                self.scanner.pos - 2,
+                self.scanner.pos - 1,
+            );
+            inl.append(inline_text);
+            inl
         } else if !self.eof() && self.skip_line_end() {
             let inl = self.make_inline(NodeValue::LineBreak, startpos, self.scanner.pos - 1);
             self.line += 1;

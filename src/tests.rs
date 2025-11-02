@@ -305,6 +305,8 @@ where
         let root = parse_document(&arena, md, &options);
 
         let mut output = String::new();
+        // Show escaped nodes in debugging XML where they exist.
+        options.render.escaped_char_spans = true;
         format_xml(root, &options, &mut output).unwrap();
         eprintln!("{output}");
 

@@ -2,6 +2,7 @@ use std::cmp;
 use std::fmt::{self, Write};
 
 use crate::character_set::character_set;
+use crate::node_matches;
 use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::options::{Options, Plugins};
@@ -107,7 +108,8 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         plain
                     } else {
                         stack.push((node, false, Phase::Post));
-                        self.format_node(node, true)?
+                        self.format_node(node, true)?;
+                        false
                     };
 
                     for ch in node.reverse_children() {
@@ -131,7 +133,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: Node<'a>, entering: bool) -> Result<bool, std::fmt::Error> {
+    fn format_node<'a>(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+        if !self.options.render.escaped_char_spans && node_matches!(node, NodeValue::Escaped) {
+            return Ok(());
+        }
+
         if entering {
             self.indent()?;
 
@@ -321,6 +327,6 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             self.indent()?;
             writeln!(self.output, "</{}>", node.data().value.xml_node_name())?;
         }
-        Ok(false)
+        Ok(())
     }
 }

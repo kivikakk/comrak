@@ -409,3 +409,55 @@ fn commonmark_table_of_fun() {
         Some(&opts),
     );
 }
+
+#[test]
+fn tasklist_and_escapes_do_not_play() {
+    assert_ast_match!(
+        [],
+        "\\!",
+        (document (1:1-1:2) [
+            (paragraph (1:1-1:2) [
+                (escaped (1:1-1:2) [
+                    (text (1:2-1:2) "!")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "+ \\[x]",
+        (document (1:1-1:6) [
+            (list (1:1-1:6) [
+                (item (1:1-1:6) [
+                    (paragraph (1:3-1:6) [
+                        (escaped (1:3-1:4) [
+                            (text (1:4-1:4) "[")
+                        ])
+                        (text (1:5-1:6) "x]")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "+ \\[\\:]",
+        (document (1:1-1:7) [
+            (list (1:1-1:7) [
+                (item (1:1-1:7) [
+                    (paragraph (1:3-1:7) [
+                        (escaped (1:3-1:4) [
+                            (text (1:4-1:4) "[")
+                        ])
+                        (escaped (1:5-1:6) [
+                            (text (1:6-1:6) ":")
+                        ])
+                        (text (1:7-1:7) "]")
+                    ])
+                ])
+            ])
+        ])
+    );
+}

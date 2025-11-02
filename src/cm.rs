@@ -143,7 +143,6 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         let mut it = s.char_indices();
 
         while let Some((mut i, c)) = it.next() {
-            // for (i, c) in s.char_indices() {
             if self.begin_line {
                 self.output.push_str(&self.prefix);
                 self.column = self.prefix.len();
