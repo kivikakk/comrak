@@ -203,7 +203,12 @@ pub enum NodeValue {
 
     /// **Inline**.  A character that has been [escaped](https://github.github.com/gfm/#backslash-escapes)
     ///
-    /// Enabled with [`escaped_char_spans`](crate::options::RenderBuilder::escaped_char_spans).
+    /// Included in the document tree only if the `escaped_char_spans` [parse
+    /// option](crate::options::ParseBuilder::escaped_char_spans) and/or [render
+    /// option](crate::options::RenderBuilder::escaped_char_spans) is enabled.
+    ///
+    /// If the render option is enabled, these are wrapped in distinct `<span>`
+    /// tags in output HTML and XML.
     Escaped,
 
     /// **Inline**.  A wikilink to some URL.
@@ -675,7 +680,7 @@ impl NodeValue {
 ///
 /// The struct contains metadata about the node's position in the original document, and the core
 /// enum, `NodeValue`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Ast {
     /// The node value itself.
     pub value: NodeValue,
@@ -688,6 +693,12 @@ pub struct Ast {
     pub(crate) last_line_blank: bool,
     pub(crate) table_visited: bool,
     pub(crate) line_offsets: Vec<usize>,
+}
+
+impl std::fmt::Debug for Ast {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{:?} ({})>", self.value, self.sourcepos)
+    }
 }
 
 #[allow(dead_code)]
@@ -706,12 +717,18 @@ const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sourcepos {
     /// The line and column of the first character of this node.
     pub start: LineColumn,
     /// The line and column of the last character of this node.
     pub end: LineColumn,
+}
+
+impl std::fmt::Debug for Sourcepos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
+    }
 }
 
 impl std::fmt::Display for Sourcepos {

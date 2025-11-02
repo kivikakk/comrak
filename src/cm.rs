@@ -143,7 +143,6 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         let mut it = s.char_indices();
 
         while let Some((mut i, c)) = it.next() {
-            // for (i, c) in s.char_indices() {
             if self.begin_line {
                 self.output.push_str(&self.prefix);
                 self.column = self.prefix.len();
@@ -261,7 +260,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             } else if ispunct_char(c) {
                 write!(self.output, "\\{}", c)?;
             } else {
-                write!(self, "&#{};", c as u8)?;
+                write!(self.output, "&#{};", c as u8)?;
             }
             self.column += self.output.len() - len_before;
         } else {
@@ -516,7 +515,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             )?;
             let mut current_len = listmarker.len();
 
-            while current_len < self.options.render.ol_width {
+            while current_len < self.options.render.ol_width.min(12) {
                 write!(listmarker, " ").unwrap();
                 current_len += 1;
             }

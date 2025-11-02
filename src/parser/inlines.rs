@@ -358,12 +358,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_newline(&mut self) -> Node<'a> {
         let nlpos = self.scanner.pos;
-        if self.input.as_bytes()[self.scanner.pos] == b'\r' {
+        if self.peek_byte() == Some(b'\r') {
             self.scanner.pos += 1;
         }
-        if self.input.as_bytes()[self.scanner.pos] == b'\n' {
+        if self.peek_byte() == Some(b'\n') {
             self.scanner.pos += 1;
         }
+        assert_ne!(nlpos, self.scanner.pos);
+
         let inl = if nlpos > 1
             && self.input.as_bytes()[nlpos - 1] == b' '
             && self.input.as_bytes()[nlpos - 2] == b' '
@@ -429,17 +431,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             );
 
-            if self.options.render.escaped_char_spans {
-                inl = self.make_inline(
-                    NodeValue::Escaped,
-                    self.scanner.pos - 2,
-                    self.scanner.pos - 1,
-                );
-                inl.append(inline_text);
-                inl
-            } else {
-                inline_text
-            }
+            inl = self.make_inline(
+                NodeValue::Escaped,
+                self.scanner.pos - 2,
+                self.scanner.pos - 1,
+            );
+            inl.append(inline_text);
+            inl
         } else if !self.eof() && self.skip_line_end() {
             let inl = self.make_inline(NodeValue::LineBreak, startpos, self.scanner.pos - 1);
             self.line += 1;
@@ -1016,10 +1014,22 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         );
         // Build line_offsets by scanning for newlines in the content
         para_ast.line_offsets = vec![0];
-        for (i, &byte) in content.as_bytes().iter().enumerate() {
-            if byte == b'\n' {
-                para_ast.line_offsets.push(i + 1);
+
+        let mut i = 0;
+        let bytes = content.as_bytes();
+        let len = content.len();
+        while i < len {
+            match bytes[i] {
+                b'\r' if i + 1 < len && bytes[i + 1] == b'\n' => {
+                    i += 1;
+                    para_ast.line_offsets.push(i + 1);
+                }
+                b'\n' | b'\r' => {
+                    para_ast.line_offsets.push(i + 1);
+                }
+                _ => {}
             }
+            i += 1;
         }
 
         let para_node = self.arena.alloc(para_ast.into());
@@ -2268,7 +2278,7 @@ pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
                 break;
             } else if b == b'\\' {
                 i += 2;
-            } else if b == b'\n' || b == b'<' {
+            } else if b == b'\n' || b == b'\r' || b == b'<' {
                 return None;
             } else {
                 i += 1;

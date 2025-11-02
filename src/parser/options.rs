@@ -745,6 +745,37 @@ pub struct Parse<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub leave_footnote_definitions: bool,
+
+    /// Leave escaped characters in an `Escaped` node in the document tree.
+    ///
+    /// ```rust
+    /// # use comrak::{Arena, parse_document, Node, Options};
+    /// let mut options = Options::default();
+    /// let arena = Arena::new();
+    /// let input = "Notify user \\@example";
+    ///
+    /// fn node_kinds<'a>(doc: Node<'a>) -> Vec<&'static str> {
+    ///   doc.descendants().map(|n| n.data().value.xml_node_name()).collect()
+    /// }
+    ///
+    /// let root = parse_document(&arena, input, &options);
+    /// assert_eq!(
+    ///   node_kinds(root),
+    ///   &["document", "paragraph", "text"],
+    /// );
+    ///
+    /// options.parse.escaped_char_spans = true;
+    /// let root = parse_document(&arena, input, &options);
+    /// assert_eq!(
+    ///   node_kinds(root),
+    ///   &["document", "paragraph", "text", "escaped", "text", "text"],
+    /// );
+    /// ```
+    ///
+    /// Note that enabling the `escaped_char_spans` render option will cause
+    /// this option to be enabled.
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub escaped_char_spans: bool,
 }
 
 /// The type of the callback used when a reference link is encountered with no
@@ -962,6 +993,9 @@ pub struct Render {
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p>Notify user <span data-escaped-char>@</span>example</p>\n");
     /// ```
+    ///
+    /// Enabling this option will cause the `escaped_char_spans` parse option to
+    /// be enabled.
     #[cfg_attr(feature = "bon", builder(default))]
     pub escaped_char_spans: bool,
 

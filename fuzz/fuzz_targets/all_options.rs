@@ -122,6 +122,7 @@ struct FuzzParseOptions {
     leave_footnote_definitions: bool,
     default_info_string: bool,
     broken_link_callback: bool,
+    escaped_char_spans: bool,
 }
 
 impl FuzzParseOptions {
@@ -146,6 +147,7 @@ impl FuzzParseOptions {
             } else {
                 None
             },
+            escaped_char_spans: self.escaped_char_spans,
         }
     }
 }

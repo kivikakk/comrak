@@ -239,3 +239,42 @@ hello foo@example.com world
         ])
     );
 }
+
+#[test]
+fn autolink_between_escaped_chars() {
+    assert_ast_match!(
+       [extension.autolink],
+       "a.b-c\\_d@a.b\\_\n",
+       (document (1:1-1:14) [
+           (paragraph (1:1-1:14) [
+               (text (1:1-1:7) "a.b-c_")
+               (link (1:8-1:12) "mailto:d@a.b" [
+                    (text (1:8-1:12) "d@a.b")
+                ])
+               (text (1:14-1:14) "_")
+           ])
+       ])
+    );
+}
+
+#[test]
+fn sourcepos_newline_kinds() {
+    assert_ast_match!(
+        [],
+        "LF\n"
+        "CRLF\r\n"
+        "CR\r"
+        "end.",
+        (document (1:1-4:4) [
+            (paragraph (1:1-4:4) [
+                (text (1:1-1:2) "LF")
+                (softbreak (1:3-1:3))
+                (text (2:1-2:4) "CRLF")
+                (softbreak (2:5-2:6))
+                (text (3:1-3:2) "CR")
+                (softbreak (3:3-3:3))
+                (text (4:1-4:4) "end.")
+            ])
+        ])
+    );
+}

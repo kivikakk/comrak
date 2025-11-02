@@ -51,9 +51,7 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
         }
         .into(),
     );
-    let mut parser = Parser::new(arena, root, options);
-    let linebuf = parser.feed(String::new(), md, true);
-    parser.finish(linebuf)
+    Parser::new(arena, root, options).parse(md)
 }
 
 pub struct Parser<'a, 'o, 'c> {
@@ -74,7 +72,6 @@ pub struct Parser<'a, 'o, 'c> {
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
-    last_buffer_ended_with_cr: bool,
     total_size: usize,
     options: &'o Options<'c>,
 }
@@ -119,17 +116,13 @@ where
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
-            last_buffer_ended_with_cr: false,
             total_size: 0,
             options,
         }
     }
 
-    fn feed(&mut self, mut linebuf: String, mut s: &str, eof: bool) -> String {
-        if let (0, Some(delimiter)) = (
-            self.total_size,
-            &self.options.extension.front_matter_delimiter,
-        ) {
+    fn parse(mut self, mut s: &str) -> Node<'a> {
+        if let Some(delimiter) = &self.options.extension.front_matter_delimiter {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
                 self.handle_front_matter(front_matter, delimiter);
                 s = rest;
@@ -139,78 +132,68 @@ where
         let s = s;
         let sb = s.as_bytes();
 
-        if s.len() > usize::MAX - self.total_size {
-            self.total_size = usize::MAX;
-        } else {
-            self.total_size += s.len();
-        }
-
-        let mut buffer = 0;
-        if self.last_buffer_ended_with_cr && !s.is_empty() && sb[0] == b'\n' {
-            buffer += 1;
-        }
-        self.last_buffer_ended_with_cr = false;
-
         let end = s.len();
+        self.total_size = end;
 
-        while buffer < end {
-            let mut process = false;
-            let mut eol = buffer;
-            let mut ate_line_end = false;
+        let mut ix = 0;
+
+        // linebuf is necessarily entirely to do spec-compliant NUL handling in
+        // one place. If the input document contains no NUL bytes, we will never
+        // use linebuf. Our re2c scanners presume there are no NUL bytes in
+        // the subject, and use 0 as the sentinel result when !(cursor < len).
+        let mut linebuf = String::new();
+
+        while ix < end {
+            let mut eol = ix;
+            let mut ate_line_end = 0;
+
             while eol < end {
-                if strings::is_line_end_char(sb[eol]) {
-                    process = true;
-                    ate_line_end = true;
-                    eol += 1;
-                    break;
-                }
-                if sb[eol] == 0 {
-                    break;
+                match sb[eol] {
+                    b'\r' if eol + 1 < end && sb[eol + 1] == b'\n' => {
+                        ate_line_end = 2;
+                        eol += 2;
+                        break;
+                    }
+                    b'\n' | b'\r' => {
+                        ate_line_end = 1;
+                        eol += 1;
+                        break;
+                    }
+                    0 => break,
+                    _ => {}
                 }
                 eol += 1;
             }
 
-            if eol >= end && eof {
-                process = true;
-            }
-
-            if process {
+            if ate_line_end > 0 || eol == end {
                 if !linebuf.is_empty() {
-                    linebuf.push_str(&s[buffer..eol]);
-                    let line = mem::take(&mut linebuf);
-                    self.process_line(line.into());
+                    linebuf.push_str(&s[ix..eol]);
+                    // Keep one active linebuf allocation.
+                    let mut cow = Cow::Owned(mem::take(&mut linebuf));
+                    self.process_line(&mut cow, eol == end);
+                    mem::swap(&mut cow.into_owned(), &mut linebuf);
+                    linebuf.clear();
                 } else {
-                    self.process_line(s[buffer..eol].into());
+                    self.process_line(&mut s[ix..eol].into(), eol == end);
                 }
-            } else if eol < end && sb[eol] == b'\0' {
-                linebuf.push_str(&s[buffer..eol]);
-                linebuf.push('\u{fffd}');
             } else {
-                linebuf.push_str(&s[buffer..eol]);
+                assert_eq!(sb[eol], b'\0');
+                linebuf.push_str(&s[ix..eol]);
+                linebuf.push('\u{fffd}');
+                eol += 1;
             }
 
-            buffer = eol;
-            if buffer < end {
-                if sb[buffer] == b'\0' {
-                    buffer += 1;
-                } else {
-                    if ate_line_end {
-                        buffer -= 1;
-                    }
-                    if sb[buffer] == b'\r' {
-                        buffer += 1;
-                        if buffer == end {
-                            self.last_buffer_ended_with_cr = true;
-                        }
-                    }
-                    if buffer < end && sb[buffer] == b'\n' {
-                        buffer += 1;
-                    }
-                }
-            }
+            ix = eol;
         }
 
-        linebuf
+        if !linebuf.is_empty() {
+            // Reached only if the input ends with a NUL byte.
+            self.process_line(&mut linebuf.into(), true);
+        }
+
+        self.finalize_document();
+        self.postprocess_text_nodes(self.root);
+        self.root
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
@@ -244,15 +227,16 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, mut line: Cow<str>) {
-        let last_byte = line.as_bytes().last();
-        if last_byte.map_or(true, |&b| !strings::is_line_end_char(b)) {
+    fn process_line(&mut self, line: &mut Cow<str>, at_eof: bool) {
+        // Most scanners depend on seeing a \r or \n to end the line, even
+        // though the end of the document suffices per spec.  Synthesise a
+        // final EOL if there isn't one so these scanners work.
+        let &last_byte = line.as_bytes().last().unwrap();
+        if !strings::is_line_end_char(last_byte) {
+            assert!(at_eof); // This case should only ever occur at EOF, once per document.
             line.to_mut().push('\n');
-        } else if last_byte == Some(&b'\r') {
-            let line_mut = line.to_mut();
-            line_mut.pop();
-            line_mut.push('\n');
-        };
+        }
+
         let line = line.as_ref();
         let bytes = line.as_bytes();
 
@@ -1536,16 +1520,6 @@ where
         }
     }
 
-    fn finish(&mut self, remaining: String) -> Node<'a> {
-        if !remaining.is_empty() {
-            self.process_line(remaining.into());
-        }
-
-        self.finalize_document();
-        self.postprocess_text_nodes(self.root);
-        self.root
-    }
-
     fn finalize_document(&mut self) {
         while !self.current.same_node(self.root) {
             self.current = self.finalize(self.current).unwrap();
@@ -1553,11 +1527,7 @@ where
 
         self.finalize(self.root);
 
-        self.refmap.max_ref_size = if self.total_size > 100000 {
-            self.total_size
-        } else {
-            100000
-        };
+        self.refmap.max_ref_size = self.total_size.min(100000);
 
         self.process_inlines();
 
@@ -1671,7 +1641,7 @@ where
                     if content.as_bytes()[pos] == b'\r' {
                         pos += 1;
                     }
-                    if content.as_bytes()[pos] == b'\n' {
+                    if content.as_bytes().get(pos) == Some(&b'\n') {
                         pos += 1;
                     }
 
@@ -1850,9 +1820,12 @@ where
     fn postprocess_text_nodes(&mut self, root: Node<'a>) {
         let mut stack = vec![(root, false)];
         let mut children = vec![];
+        let coalesce_escaped =
+            !(self.options.parse.escaped_char_spans || self.options.render.escaped_char_spans);
 
         while let Some((parent, in_bracket_context)) = stack.pop() {
             let mut it = parent.first_child();
+            let mut escaped_to_coalesce = vec![];
 
             while let Some(node) = it {
                 let mut child_in_bracket_context = in_bracket_context;
@@ -1876,6 +1849,11 @@ where
                         // but mark the context so autolinks won't be generated within them.
                         child_in_bracket_context = true;
                     }
+                    NodeValue::Escaped => {
+                        if coalesce_escaped {
+                            escaped_to_coalesce.push(node);
+                        }
+                    }
                     _ => {}
                 }
 
@@ -1887,6 +1865,44 @@ where
 
                 if emptied {
                     node.detach();
+                }
+            }
+
+            // Remove Escaped from the tree, coalescing with adjacent nodes.
+            for node in escaped_to_coalesce {
+                let escaped_text = node.first_child().unwrap();
+                node.insert_before(escaped_text);
+                node.detach();
+
+                let mut target = escaped_text;
+
+                // We only need look one left and one right, as all adjacent
+                // Text nodes are coalesced already.
+                if let Some(before) = target.previous_sibling() {
+                    let mut before_mut = before.data_mut();
+                    if let Some(before_text) = before_mut.value.text_mut() {
+                        let target_data = target.data();
+                        let target_text = target_data.value.text().unwrap();
+                        before_text.to_mut().push_str(target_text);
+                        before_mut.sourcepos.end = target_data.sourcepos.end;
+                        target.detach();
+
+                        target = before;
+                    }
+                }
+
+                if let Some(after) = target.next_sibling() {
+                    if let Some(after_text) = after.data().value.text() {
+                        let mut target_mut = target.data_mut();
+                        target_mut
+                            .value
+                            .text_mut()
+                            .unwrap()
+                            .to_mut()
+                            .push_str(after_text);
+                        target_mut.sourcepos.end = after.data().sourcepos.end;
+                        after.detach();
+                    }
                 }
             }
 
@@ -2149,7 +2165,7 @@ fn parse_list_marker(
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
             }
-            if bytes[i] == b'\n' {
+            if strings::is_line_end_char(bytes[i]) {
                 return None;
             }
         }

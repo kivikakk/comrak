@@ -172,7 +172,7 @@ fn atx_heading_not_closed() {
 #[test]
 fn atx_heading_closed_sourcepos() {
     assert_ast_match!(
-        [],
+        [parse.escaped_char_spans],
         // https://spec.commonmark.org/0.31.2/#example-71
         "## Heading ##\n"
         "   ## Heading ##\n"
@@ -217,13 +217,24 @@ fn atx_heading_closed_sourcepos() {
                 (text (8:3-8:10) "Heading#")
             ])
             (heading (9:1-9:16) [
-                (text (9:5-9:16) "Heading ###")
+                (text (9:5-9:12) "Heading ")
+                (escaped (9:13-9:14) [
+                    (text (9:14-9:14) "#")
+                ])
+                (text (9:15-9:16) "##")
             ])
             (heading (10:1-10:15) [
-                (text (10:4-10:15) "Heading ###")
+                (text (10:4-10:12) "Heading #")
+                (escaped (10:13-10:14) [
+                    (text (10:14-10:14) "#")
+                ])
+                (text (10:15-10:15) "#")
             ])
             (heading (11:1-11:12) [
-                (text (11:3-11:12) "Heading #")
+                (text (11:3-11:10) "Heading ")
+                (escaped (11:11-11:12) [
+                    (text (11:12-11:12) "#")
+                ])
             ])
         ])
     );
