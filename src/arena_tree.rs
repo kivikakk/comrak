@@ -12,7 +12,7 @@
 //! If you need mutability in the node’s `data`,
 //! make it a cell (`Cell` or `RefCell`) or use cells inside of it.
 
-use std::cell::Cell;
+use std::cell::{BorrowError, Cell, Ref, RefCell, RefMut};
 use std::fmt;
 
 /// A node inside a DOM-like tree.
@@ -29,12 +29,12 @@ pub struct Node<'a, T: 'a> {
 
 /// A simple Debug implementation that prints the children as a tree, without
 /// looping through the various interior pointer cycles.
-impl<'a, T: 'a> fmt::Debug for Node<'a, T>
+impl<'a, T: 'a> fmt::Debug for Node<'a, RefCell<T>>
 where
     T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        struct Children<'a, T>(Option<&'a Node<'a, T>>);
+        struct Children<'a, T>(Option<&'a Node<'a, RefCell<T>>>);
         impl<T: fmt::Debug> fmt::Debug for Children<'_, T> {
             fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
                 f.debug_list()
@@ -45,11 +45,14 @@ where
             }
         }
 
-        let mut struct_fmt = f.debug_struct("Node");
-        struct_fmt.field("data", &self.data);
-        struct_fmt.field("children", &Children(self.first_child.get()));
-        struct_fmt.finish()?;
-
+        if let Ok(data) = self.data.try_borrow() {
+            write!(f, "{data:?}")?;
+        } else {
+            write!(f, "!!mutably borrowed!!")?;
+        }
+        if let Some(first_child) = self.first_child.get() {
+            write!(f, " {:?}", &Children(Some(first_child)))?;
+        }
         Ok(())
     }
 }
@@ -259,8 +262,16 @@ impl<'a, T> Node<'a, T> {
 macro_rules! axis_iterator {
     (#[$attr:meta] $name:ident : $next:ident) => {
         #[$attr]
-        #[derive(Debug)]
         pub struct $name<'a, T: 'a>(Option<&'a Node<'a, T>>);
+
+        impl<'a, T: 'a> fmt::Debug for $name<'a, RefCell<T>>
+        where
+            T: fmt::Debug,
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.debug_tuple(stringify!($name)).field(&self.0).finish()
+            }
+        }
 
         impl<'a, T> Iterator for $name<'a, T> {
             type Item = &'a Node<'a, T>;
@@ -304,8 +315,16 @@ axis_iterator! {
 }
 
 /// An iterator of references to a given node and its descendants, in tree order.
-#[derive(Debug)]
 pub struct Descendants<'a, T: 'a>(Traverse<'a, T>);
+
+impl<'a, T: 'a> fmt::Debug for Descendants<'a, RefCell<T>>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Descendants").field(&self.0).finish()
+    }
+}
 
 impl<'a, T> Iterator for Descendants<'a, T> {
     type Item = &'a Node<'a, T>;
@@ -338,10 +357,21 @@ pub enum NodeEdge<T> {
 macro_rules! traverse_iterator {
     (#[$attr:meta] $name:ident : $first_child:ident, $next_sibling:ident) => {
         #[$attr]
-        #[derive(Debug)]
         pub struct $name<'a, T: 'a> {
             root: &'a Node<'a, T>,
             next: Option<NodeEdge<&'a Node<'a, T>>>,
+        }
+
+        impl<'a, T: 'a> fmt::Debug for $name<'a, RefCell<T>>
+        where
+            T: fmt::Debug,
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.debug_struct(stringify!($name))
+                    .field("root", &self.root)
+                    .field("next", &self.next)
+                    .finish()
+            }
         }
 
         impl<'a, T> Iterator for $name<'a, T> {
@@ -434,19 +464,19 @@ fn it_works() {
     assert_eq!(drop_counter.get(), 10);
 }
 
-impl<'a, T> Node<'a, std::cell::RefCell<T>> {
+impl<'a, T> Node<'a, RefCell<T>> {
     /// Shorthand for `node.data.borrow()`.
-    pub fn data(&self) -> std::cell::Ref<'_, T> {
+    pub fn data(&self) -> Ref<'_, T> {
         self.data.borrow()
     }
 
     /// Shorthand for `node.data.try_borrow()`.
-    pub fn try_data(&self) -> Result<std::cell::Ref<'_, T>, std::cell::BorrowError> {
+    pub fn try_data(&self) -> Result<Ref<'_, T>, BorrowError> {
         self.data.try_borrow()
     }
 
     /// Shorthand for `node.data.borrow_mut()`.
-    pub fn data_mut(&self) -> std::cell::RefMut<'_, T> {
+    pub fn data_mut(&self) -> RefMut<'_, T> {
         self.data.borrow_mut()
     }
 }
