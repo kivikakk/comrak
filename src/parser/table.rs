@@ -137,7 +137,7 @@ fn try_opening_header<'a>(
     mem::swap(&mut container.data_mut().content, &mut container_content);
     incr_table_row_count(container, i);
 
-    let offset = line.len() - 1 - parser.offset;
+    let offset = line.len() - newlines_of(line) - parser.offset;
     parser.advance_offset(line, offset, false);
 
     Some((table, true, false))

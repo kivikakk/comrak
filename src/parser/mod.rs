@@ -2197,12 +2197,17 @@ fn parse_list_marker(
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if pos == bytes.len() || !isspace(bytes[pos]) {
+        if !bytes.get(pos).map_or(true, |&b| isspace(b)) {
             return None;
         }
 
         if interrupts_paragraph {
+            // "However, an empty list item cannot interrupt a paragraph:"
             let mut i = pos;
+            if i == bytes.len() {
+                return None;
+            }
+
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
                 if i == bytes.len() {

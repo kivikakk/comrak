@@ -16462,8 +16462,13 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
-                        0x09..=0x0D | 0x20 | 0x7C => {
-                            yystate = 11;
+                        0x00..=0x08
+                        | 0x0E..=0x1F
+                        | 0x21..=0x2C
+                        | 0x2E..=0x39
+                        | 0x3B..=0x7B
+                        | 0x7D..=0xFE => {
+                            yystate = 2;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -16477,7 +16482,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
@@ -16547,14 +16552,18 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08
+                        | 0x0E..=0x1F
+                        | 0x21..=0x2C
+                        | 0x2E..=0x39
+                        | 0x3B..=0x7B
+                        | 0x7D..=0xFE => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                         0x09 | 0x0B..=0x0C | 0x20 | 0x3A => {
                             cursor += 1;
                             yystate = 10;
-                            continue 'yyl;
-                        }
-                        0x0A => {
-                            cursor += 1;
-                            yystate = 12;
                             continue 'yyl;
                         }
                         0x0D => {
@@ -16573,7 +16582,8 @@ pub fn table_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 7;
+                            cursor += 1;
+                            yystate = 12;
                             continue 'yyl;
                         }
                     }
@@ -16610,14 +16620,13 @@ pub fn table_start(s: &str) -> Option<usize> {
                     continue 'yyl;
                 }
                 11 => match yych {
+                    0x00..=0x08 | 0x0E..=0x1F | 0x21..=0x7B | 0x7D..=0xFE => {
+                        yystate = 7;
+                        continue 'yyl;
+                    }
                     0x09 | 0x0B..=0x0C | 0x20 => {
                         cursor += 1;
                         yystate = 10;
-                        continue 'yyl;
-                    }
-                    0x0A => {
-                        cursor += 1;
-                        yystate = 12;
                         continue 'yyl;
                     }
                     0x0D => {
@@ -16631,7 +16640,8 @@ pub fn table_start(s: &str) -> Option<usize> {
                         continue 'yyl;
                     }
                     _ => {
-                        yystate = 7;
+                        cursor += 1;
+                        yystate = 12;
                         continue 'yyl;
                     }
                 },
@@ -16671,14 +16681,13 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0E..=0x1F | 0x21..=0x2C | 0x2E..=0x39 | 0x3B..=0xFE => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                         0x09 | 0x0B..=0x0C | 0x20 => {
                             cursor += 1;
                             yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x0A => {
-                            cursor += 1;
-                            yystate = 12;
                             continue 'yyl;
                         }
                         0x0D => {
@@ -16697,7 +16706,8 @@ pub fn table_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 7;
+                            cursor += 1;
+                            yystate = 12;
                             continue 'yyl;
                         }
                     }

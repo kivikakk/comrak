@@ -356,3 +356,22 @@ fn table_cr() {
         ])
     );
 }
+
+#[test]
+fn table_no_body_no_eol_at_eof() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |"
+        ,
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [ // XXX Fix this, and how table sourcepos is done in general.
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+        ])
+    );
+}

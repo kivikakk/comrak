@@ -382,7 +382,7 @@ pub fn table_start(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [|]? table_delimiter ([|] table_delimiter)* [|]? table_spacechar* table_newline {
+    [|]? table_delimiter ([|] table_delimiter)* [|]? table_spacechar* (table_newline|[\xff]) {
         return Some(cursor);
     }
     * { return None; }
