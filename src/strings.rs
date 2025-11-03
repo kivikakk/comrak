@@ -126,6 +126,9 @@ pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
 
 fn remove_trailing_blank_lines_ix(line: &str) -> usize {
     let line_bytes = line.as_bytes();
+    if line.len() == 0 {
+        return 0;
+    }
     let mut i = line.len() - 1;
     loop {
         let c = line_bytes[i];

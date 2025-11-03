@@ -166,9 +166,7 @@ fn try_opening_row<'a>(
         NodeValue::TableRow(false),
         sourcepos.start.column,
     );
-    {
-        new_row.data_mut().sourcepos.end.column = sourcepos.end.column;
-    }
+    new_row.data_mut().sourcepos.end.column = parser.curline_end_col;
 
     let mut i = 0;
     let mut last_column = sourcepos.start.column;

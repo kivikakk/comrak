@@ -56,6 +56,7 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<'a>,
+    options: &'o Options<'c>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
@@ -73,7 +74,6 @@ pub struct Parser<'a, 'o, 'c> {
     curline_end_col: usize,
     last_line_length: usize,
     total_size: usize,
-    options: &'o Options<'c>,
 }
 
 /// A reference link's resolved details.
@@ -100,6 +100,7 @@ where
     fn new(arena: &'a Arena<'a>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
+            options,
             refmap: RefMap::new(),
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
@@ -117,7 +118,6 @@ where
             curline_end_col: 0,
             last_line_length: 0,
             total_size: 0,
-            options,
         }
     }
 
@@ -371,17 +371,24 @@ where
         }
 
         self.indent = self.first_nonspace_column - self.column;
-        self.blank = self.first_nonspace < line.len()
-            && strings::is_line_end_char(bytes[self.first_nonspace]);
+        self.blank = bytes
+            .get(self.first_nonspace)
+            .map_or(true, |&b| strings::is_line_end_char(b));
     }
 
     fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
         let bytes = line.as_bytes();
         let indent = self.indent;
-        if indent <= 3 && bytes[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
+        if indent <= 3
+            && bytes.get(self.first_nonspace) == Some(&b'>')
+            && self.is_not_greentext(line)
+        {
             self.advance_offset(line, indent + 1, true);
 
-            if strings::is_space_or_tab(bytes[self.offset]) {
+            if bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+            {
                 self.advance_offset(line, 1, true);
             }
 
@@ -393,7 +400,10 @@ where
 
     fn is_not_greentext(&self, line: &str) -> bool {
         !self.options.extension.greentext
-            || strings::is_space_or_tab(line.as_bytes()[self.first_nonspace + 1])
+            || line
+                .as_bytes()
+                .get(self.first_nonspace + 1)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
     }
 
     fn parse_node_item_prefix(&mut self, line: &str, container: Node<'a>, nl: &NodeList) -> bool {
@@ -456,7 +466,7 @@ where
         }
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == fence_char {
+        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&fence_char) {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -472,7 +482,11 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+        while i > 0
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -515,7 +529,7 @@ where
         };
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == b'>' {
+        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&b'>') {
             scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -540,7 +554,11 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+        while i > 0
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -586,14 +604,16 @@ where
             }
         }
 
-        // Compute a candidate end position for the container by looking
-        // at its deepest-last descendant. Return it only if it has a
-        // non-zero column; the caller can fall back to the container's
-        // start position if desired.
-        if let Some(mut last_desc) = container.last_child() {
-            while let Some(ld) = last_desc.last_child() {
-                last_desc = ld;
-            }
+        // Compute a candidate end position for the container by looking at
+        // its last child. Return it only if it has a non-zero column; the
+        // caller can fall back to the container's start position if desired.
+        //
+        // We originally looked at the deepest-last descendant, but there
+        // may be intermediate containers that are larger than it, which we
+        // should use instead. If looking just at the last child isn't
+        // enough in some circumstances, we should consider using the widest
+        // of the last descendants.
+        if let Some(last_desc) = container.last_child() {
             let last_end = last_desc.data().sourcepos.end;
             if last_end.column != 0 {
                 return Some(last_end);
@@ -695,7 +715,8 @@ where
     }
 
     fn detect_alert(&self, line: &str) -> Option<AlertType> {
-        if self.options.extension.alerts && line.as_bytes()[self.first_nonspace] == b'>' {
+        if self.options.extension.alerts && line.as_bytes().get(self.first_nonspace) == Some(&b'>')
+        {
             scanners::alert_start(&line[self.first_nonspace..])
         } else {
             None
@@ -1033,7 +1054,11 @@ where
 
         let offset = self.first_nonspace + matched - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+        if line
+            .as_bytes()
+            .get(self.offset)
+            .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
 
@@ -1172,12 +1197,20 @@ where
             (self.partially_consumed_tab, self.offset, self.column);
 
         let bytes = line.as_bytes();
-        while self.column - save_column <= 5 && strings::is_space_or_tab(bytes[self.offset]) {
+        while self.column - save_column <= 5
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
 
         let i = self.column - save_column;
-        if !(1..5).contains(&i) || strings::is_line_end_char(bytes[self.offset]) {
+        if !(1..5).contains(&i)
+            || bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_line_end_char(b))
+        {
             nl.padding = matched + 1;
             self.offset = save_offset;
             self.column = save_column;
@@ -1559,8 +1592,11 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if matches!(ast.value, NodeValue::ThematicBreak) {
-            // sourcepos.end set during opening.
+        } else if matches!(
+            ast.value,
+            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+        ) {
+            // sourcepos.end set by itself or managed below.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
@@ -1630,7 +1666,7 @@ where
                 }
                 nl.tight = self.determine_list_tight(node);
             }
-            NodeValue::FootnoteDefinition(_) => {
+            NodeValue::Table(..) | NodeValue::FootnoteDefinition(_) => {
                 if let Some(candidate_end) = self.fix_zero_end_columns(node) {
                     ast.sourcepos.end = candidate_end;
                 }
@@ -2134,6 +2170,9 @@ fn parse_list_marker(
             let mut i = pos;
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
+                if i == bytes.len() {
+                    return None;
+                }
             }
             if strings::is_line_end_char(bytes[i]) {
                 return None;

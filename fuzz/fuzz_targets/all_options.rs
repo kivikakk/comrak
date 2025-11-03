@@ -54,6 +54,8 @@ struct FuzzExtensionOptions {
     subscript: bool,
     subtext: bool,
     cjk_friendly_emphasis: bool,
+    highlight: bool,
+    // non-bool below
     header_ids: bool,
     front_matter_delimiter: bool,
     image_url_rewriter: bool,
@@ -88,6 +90,8 @@ impl FuzzExtensionOptions {
             subscript: self.subscript,
             subtext: self.subtext,
             cjk_friendly_emphasis: self.cjk_friendly_emphasis,
+            highlight: self.highlight,
+            // non-bool below
             header_ids: if self.header_ids {
                 Some("user-content-".into())
             } else {
