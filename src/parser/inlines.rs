@@ -2341,7 +2341,7 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
         }
     }
 
-    if i >= len || nb_p != 0 {
+    if len == 0 || nb_p != 0 {
         None
     } else {
         Some((&input[..i], i))

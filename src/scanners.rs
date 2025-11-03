@@ -48,14 +48,13 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x22 | 0x24..=0xFE => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         0x23 => {
@@ -64,7 +63,8 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -90,6 +90,9 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                     }
                 }
                 5 => {
+                    if cursor == len + 1 {
+                        cursor -= 1;
+                    }
                     return Some(cursor);
                 }
                 6 => {
@@ -105,14 +108,13 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x22 | 0x24..=0xFE => {
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         0x23 => {
@@ -121,7 +123,8 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 8;
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -140,14 +143,13 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x22 | 0x24..=0xFE => {
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         0x23 => {
@@ -156,7 +158,8 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 8;
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -170,14 +173,13 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x22 | 0x24..=0xFE => {
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         0x23 => {
@@ -186,7 +188,8 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 8;
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -200,14 +203,13 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x22 | 0x24..=0xFE => {
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         0x23 => {
@@ -216,7 +218,8 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 8;
+                            cursor += 1;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -230,18 +233,18 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 6;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
                             continue 'yyl;
                         }
                     }
@@ -320,18 +323,18 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 6;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
                             continue 'yyl;
                         }
                     }
@@ -362,6 +365,9 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                     }
                 }
                 7 => {
+                    if cursor == len + 1 {
+                        cursor -= 1;
+                    }
                     return Some(cursor);
                 }
                 8 => {
@@ -2842,19 +2848,15 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
                         0x60 => {
                             cursor += 1;
                             yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
@@ -2874,19 +2876,15 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                             yystate = 12;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
                         0x7E => {
                             cursor += 1;
                             yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 13;
                             continue 'yyl;
                         }
                     }
@@ -2905,13 +2903,13 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 11;
+                        0x60 => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            cursor += 1;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
@@ -2930,19 +2928,14 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                             255
                         }
                     };
+                    cursor += 1;
                     match yych {
                         0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
-                            cursor += 1;
                             yystate = 12;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 6;
+                            yystate = 13;
                             continue 'yyl;
                         }
                     }
@@ -3098,16 +3091,14 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x5F | 0x61..=0xFE => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             ctxmarker = cursor;
                             cursor += 1;
                             yystate = 10;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 11;
                             continue 'yyl;
                         }
                         0x60 => {
@@ -3116,7 +3107,9 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
@@ -3130,16 +3123,14 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x7D | 0x7F..=0xFE => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             ctxmarker = cursor;
                             cursor += 1;
                             yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 13;
                             continue 'yyl;
                         }
                         0x7E => {
@@ -3148,7 +3139,9 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 13;
                             continue 'yyl;
                         }
                     }
@@ -3162,18 +3155,18 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -3193,18 +3186,18 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 6;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 12;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -7064,6 +7057,10 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x0C | 0x20 => {
                             cursor += 1;
                             yystate = 10;
@@ -7074,13 +7071,9 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                             yystate = 13;
                             continue 'yyl;
                         }
-                        0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 15;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
                             continue 'yyl;
                         }
                     }
@@ -7161,6 +7154,10 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 14;
+                            continue 'yyl;
+                        }
                         0x09 | 0x0C | 0x20 => {
                             cursor += 1;
                             yystate = 10;
@@ -7171,13 +7168,9 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                             yystate = 13;
                             continue 'yyl;
                         }
-                        0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 15;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
                             continue 'yyl;
                         }
                     }
@@ -7449,8 +7442,8 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         }
                     };
                     match yych {
-                        0x09..=0x0A | 0x0D | 0x20 => {
-                            yystate = 6;
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x2C | 0x2E..=0xFE => {
+                            yystate = 2;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -7459,7 +7452,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 6;
                             continue 'yyl;
                         }
                     }
@@ -7474,8 +7467,8 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         }
                     };
                     match yych {
-                        0x09..=0x0A | 0x0D | 0x20 => {
-                            yystate = 11;
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x3C | 0x3E..=0xFE => {
+                            yystate = 2;
                             continue 'yyl;
                         }
                         0x3D => {
@@ -7484,7 +7477,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
@@ -7501,18 +7494,18 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                     continue 'yyl;
                 }
                 6 => match yych {
+                    0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                        yystate = 7;
+                        continue 'yyl;
+                    }
                     0x09 | 0x20 => {
                         cursor += 1;
                         yystate = 5;
                         continue 'yyl;
                     }
-                    0x0A | 0x0D => {
+                    _ => {
                         cursor += 1;
                         yystate = 8;
-                        continue 'yyl;
-                    }
-                    _ => {
-                        yystate = 7;
                         continue 'yyl;
                     }
                 },
@@ -7533,14 +7526,13 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x2C | 0x2E..=0xFE => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 5;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 8;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -7549,7 +7541,8 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 7;
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                     }
@@ -7566,18 +7559,18 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                     continue 'yyl;
                 }
                 11 => match yych {
+                    0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                        yystate = 7;
+                        continue 'yyl;
+                    }
                     0x09 | 0x20 => {
                         cursor += 1;
                         yystate = 10;
                         continue 'yyl;
                     }
-                    0x0A | 0x0D => {
+                    _ => {
                         cursor += 1;
                         yystate = 12;
-                        continue 'yyl;
-                    }
-                    _ => {
-                        yystate = 7;
                         continue 'yyl;
                     }
                 },
@@ -7593,14 +7586,13 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x3C | 0x3E..=0xFE => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 10;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 12;
                             continue 'yyl;
                         }
                         0x3D => {
@@ -7609,7 +7601,8 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 7;
+                            cursor += 1;
+                            yystate = 12;
                             continue 'yyl;
                         }
                     }
@@ -16559,9 +16552,14 @@ pub fn table_start(s: &str) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        0x0A => {
                             cursor += 1;
                             yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x0D => {
+                            cursor += 1;
+                            yystate = 14;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -16571,7 +16569,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         }
                         0x7C => {
                             cursor += 1;
-                            yystate = 13;
+                            yystate = 15;
                             continue 'yyl;
                         }
                         _ => {
@@ -16617,14 +16615,19 @@ pub fn table_start(s: &str) -> Option<usize> {
                         yystate = 10;
                         continue 'yyl;
                     }
-                    0x0A | 0x0D => {
+                    0x0A => {
                         cursor += 1;
                         yystate = 12;
                         continue 'yyl;
                     }
+                    0x0D => {
+                        cursor += 1;
+                        yystate = 14;
+                        continue 'yyl;
+                    }
                     0x7C => {
                         cursor += 1;
-                        yystate = 13;
+                        yystate = 15;
                         continue 'yyl;
                     }
                     _ => {
@@ -16633,9 +16636,33 @@ pub fn table_start(s: &str) -> Option<usize> {
                     }
                 },
                 12 => {
-                    return Some(cursor);
+                    yystate = 13;
+                    continue 'yyl;
                 }
                 13 => {
+                    return Some(cursor);
+                }
+                14 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x0A => {
+                            cursor += 1;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 13;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                15 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
@@ -16646,12 +16673,17 @@ pub fn table_start(s: &str) -> Option<usize> {
                     match yych {
                         0x09 | 0x0B..=0x0C | 0x20 => {
                             cursor += 1;
-                            yystate = 13;
+                            yystate = 15;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        0x0A => {
                             cursor += 1;
                             yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x0D => {
+                            cursor += 1;
+                            yystate = 14;
                             continue 'yyl;
                         }
                         0x2D => {
@@ -17030,8 +17062,12 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                             yystate = 3;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        0x0A => {
                             yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x0D => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -17058,7 +17094,7 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                     };
                     match yych {
                         0x09..=0x0D | 0x20 => {
-                            yystate = 6;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
@@ -17068,9 +17104,13 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                     }
                 }
                 4 => {
-                    return Some(cursor);
+                    yystate = 5;
+                    continue 'yyl;
                 }
                 5 => {
+                    return Some(cursor);
+                }
+                6 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
@@ -17078,26 +17118,51 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                             255
                         }
                     };
-                    yystate = 6;
+                    match yych {
+                        0x0A => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    yystate = 8;
                     continue 'yyl;
                 }
-                6 => match yych {
+                8 => match yych {
                     0x09 | 0x0B..=0x0C | 0x20 => {
                         cursor += 1;
-                        yystate = 5;
+                        yystate = 7;
                         continue 'yyl;
                     }
-                    0x0A | 0x0D => {
+                    0x0A => {
                         cursor += 1;
                         yystate = 4;
                         continue 'yyl;
                     }
+                    0x0D => {
+                        cursor += 1;
+                        yystate = 6;
+                        continue 'yyl;
+                    }
                     _ => {
-                        yystate = 7;
+                        yystate = 9;
                         continue 'yyl;
                     }
                 },
-                7 => {
+                9 => {
                     cursor = marker;
                     yystate = 2;
                     continue 'yyl;
@@ -17302,16 +17367,14 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x3D | 0x3F..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             ctxmarker = cursor;
                             cursor += 1;
                             yystate = 7;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 8;
                             continue 'yyl;
                         }
                         0x3E => {
@@ -17320,7 +17383,9 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 5;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                     }
@@ -17334,18 +17399,18 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 7;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
                             continue 'yyl;
                         }
                     }
@@ -17456,16 +17521,14 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x3D | 0x3F..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             ctxmarker = cursor;
                             cursor += 1;
                             yystate = 7;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 8;
                             continue 'yyl;
                         }
                         0x3E => {
@@ -17474,7 +17537,9 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 5;
+                            ctxmarker = cursor;
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                     }
@@ -17488,18 +17553,18 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         }
                     };
                     match yych {
+                        0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
                         0x09 | 0x20 => {
                             cursor += 1;
                             yystate = 7;
                             continue 'yyl;
                         }
-                        0x0A | 0x0D => {
+                        _ => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
                             continue 'yyl;
                         }
                     }

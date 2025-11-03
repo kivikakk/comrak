@@ -116,7 +116,7 @@ fn sourcepos_kind_1() {
         [],
         "<script></script>",
         (document (1:1-1:17) [
-            (html_block (1:1-1:17) "<script></script>\n")
+            (html_block (1:1-1:17) "<script></script>")
         ])
     );
 
@@ -124,7 +124,7 @@ fn sourcepos_kind_1() {
         [],
         "<script> </script>",
         (document (1:1-1:18) [
-            (html_block (1:1-1:18) "<script> </script>\n")
+            (html_block (1:1-1:18) "<script> </script>")
         ])
     );
 
@@ -132,7 +132,7 @@ fn sourcepos_kind_1() {
         [],
         "<script>A html block</script>",
         (document (1:1-1:29) [
-            (html_block (1:1-1:29) "<script>A html block</script>\n")
+            (html_block (1:1-1:29) "<script>A html block</script>")
         ])
     );
 
@@ -153,7 +153,7 @@ fn sourcepos_kind_1() {
         [],
         "<style>A html block</style>",
         (document (1:1-1:27) [
-            (html_block (1:1-1:27) "<style>A html block</style>\n")
+            (html_block (1:1-1:27) "<style>A html block</style>")
         ])
     );
 
@@ -161,7 +161,7 @@ fn sourcepos_kind_1() {
         [],
         "<textarea>A html block</textarea>",
         (document (1:1-1:33) [
-            (html_block (1:1-1:33) "<textarea>A html block</textarea>\n")
+            (html_block (1:1-1:33) "<textarea>A html block</textarea>")
         ])
     );
 
@@ -169,7 +169,7 @@ fn sourcepos_kind_1() {
         [],
         "<pre>A html block</pre>",
         (document (1:1-1:23) [
-            (html_block (1:1-1:23) "<pre>A html block</pre>\n")
+            (html_block (1:1-1:23) "<pre>A html block</pre>")
         ])
     );
 
@@ -177,7 +177,7 @@ fn sourcepos_kind_1() {
         [],
         "<pre>\nA html block\n</pre>",
         (document (1:1-3:6) [
-            (html_block (1:1-3:6) "<pre>\nA html block\n</pre>\n")
+            (html_block (1:1-3:6) "<pre>\nA html block\n</pre>")
         ])
     );
 
@@ -185,7 +185,7 @@ fn sourcepos_kind_1() {
         [],
         "<pre>\n\nA html block\n\n</pre>",
         (document (1:1-5:6) [
-            (html_block (1:1-5:6) "<pre>\n\nA html block\n\n</pre>\n")
+            (html_block (1:1-5:6) "<pre>\n\nA html block\n\n</pre>")
         ])
     );
 
@@ -210,7 +210,7 @@ fn sourcepos_kind_2() {
         [],
         "<!---->",
         (document (1:1-1:7) [
-            (html_block (1:1-1:7) "<!---->\n")
+            (html_block (1:1-1:7) "<!---->")
         ])
     );
 
@@ -218,7 +218,7 @@ fn sourcepos_kind_2() {
         [],
         "<!-- -->",
         (document (1:1-1:8) [
-            (html_block (1:1-1:8) "<!-- -->\n")
+            (html_block (1:1-1:8) "<!-- -->")
         ])
     );
 
@@ -226,7 +226,7 @@ fn sourcepos_kind_2() {
         [],
         "<!-- A html block -->",
         (document (1:1-1:21) [
-            (html_block (1:1-1:21) "<!-- A html block -->\n")
+            (html_block (1:1-1:21) "<!-- A html block -->")
         ])
     );
 
@@ -234,7 +234,7 @@ fn sourcepos_kind_2() {
         [],
         "<!-- A\nhtml\nblock -->",
         (document (1:1-3:9) [
-            (html_block (1:1-3:9) "<!-- A\nhtml\nblock -->\n")
+            (html_block (1:1-3:9) "<!-- A\nhtml\nblock -->")
         ])
     );
 
@@ -242,7 +242,7 @@ fn sourcepos_kind_2() {
         [],
         "<!-- A\n\nhtml\n\nblock -->",
         (document (1:1-5:9) [
-            (html_block (1:1-5:9) "<!-- A\n\nhtml\n\nblock -->\n")
+            (html_block (1:1-5:9) "<!-- A\n\nhtml\n\nblock -->")
         ])
     );
 
@@ -267,7 +267,7 @@ fn sourcepos_kind_3() {
         [],
         "<??>",
         (document (1:1-1:4) [
-            (html_block (1:1-1:4) "<??>\n")
+            (html_block (1:1-1:4) "<??>")
         ])
     );
 
@@ -275,7 +275,7 @@ fn sourcepos_kind_3() {
         [],
         "<? ?>",
         (document (1:1-1:5) [
-            (html_block (1:1-1:5) "<? ?>\n")
+            (html_block (1:1-1:5) "<? ?>")
         ])
     );
 
@@ -283,7 +283,7 @@ fn sourcepos_kind_3() {
         [],
         "<?html a html block ?>",
         (document (1:1-1:22) [
-            (html_block (1:1-1:22) "<?html a html block ?>\n")
+            (html_block (1:1-1:22) "<?html a html block ?>")
         ])
     );
 
@@ -291,7 +291,7 @@ fn sourcepos_kind_3() {
         [],
         "<?html\na html\nblock ?>",
         (document (1:1-3:8) [
-            (html_block (1:1-3:8) "<?html\na html\nblock ?>\n")
+            (html_block (1:1-3:8) "<?html\na html\nblock ?>")
         ])
     );
 
@@ -299,7 +299,7 @@ fn sourcepos_kind_3() {
         [],
         "<?html\n\na html\n\nblock ?>",
         (document (1:1-5:8) [
-            (html_block (1:1-5:8) "<?html\n\na html\n\nblock ?>\n")
+            (html_block (1:1-5:8) "<?html\n\na html\n\nblock ?>")
         ])
     );
 
@@ -324,7 +324,7 @@ fn sourcepos_kind_4() {
         [],
         "<!a>",
         (document (1:1-1:4) [
-            (html_block (1:1-1:4) "<!a>\n")
+            (html_block (1:1-1:4) "<!a>")
         ])
     );
 
@@ -332,7 +332,7 @@ fn sourcepos_kind_4() {
         [],
         "<!A>",
         (document (1:1-1:4) [
-            (html_block (1:1-1:4) "<!A>\n")
+            (html_block (1:1-1:4) "<!A>")
         ])
     );
 
@@ -340,7 +340,7 @@ fn sourcepos_kind_4() {
         [],
         "<!DOCTYPE html>",
         (document (1:1-1:15) [
-            (html_block (1:1-1:15) "<!DOCTYPE html>\n")
+            (html_block (1:1-1:15) "<!DOCTYPE html>")
         ])
     );
 
@@ -348,7 +348,7 @@ fn sourcepos_kind_4() {
         [],
         "<!DOCTYPE\nhtml>",
         (document (1:1-2:5) [
-            (html_block (1:1-2:5) "<!DOCTYPE\nhtml>\n")
+            (html_block (1:1-2:5) "<!DOCTYPE\nhtml>")
         ])
     );
 
@@ -356,7 +356,7 @@ fn sourcepos_kind_4() {
         [],
         "<!DOCTYPE\n\nhtml>",
         (document (1:1-3:5) [
-            (html_block (1:1-3:5) "<!DOCTYPE\n\nhtml>\n")
+            (html_block (1:1-3:5) "<!DOCTYPE\n\nhtml>")
         ])
     );
 
@@ -381,7 +381,7 @@ fn sourcepos_kind_5() {
         [],
         "<![CDATA[]]>",
         (document (1:1-1:12) [
-            (html_block (1:1-1:12) "<![CDATA[]]>\n")
+            (html_block (1:1-1:12) "<![CDATA[]]>")
         ])
     );
 
@@ -389,7 +389,7 @@ fn sourcepos_kind_5() {
         [],
         "<![CDATA[A html block]]>",
         (document (1:1-1:24) [
-            (html_block (1:1-1:24) "<![CDATA[A html block]]>\n")
+            (html_block (1:1-1:24) "<![CDATA[A html block]]>")
         ])
     );
 
@@ -397,7 +397,7 @@ fn sourcepos_kind_5() {
         [],
         "<![CDATA[\nA html\nblock]]>",
         (document (1:1-3:8) [
-            (html_block (1:1-3:8) "<![CDATA[\nA html\nblock]]>\n")
+            (html_block (1:1-3:8) "<![CDATA[\nA html\nblock]]>")
         ])
     );
 
@@ -405,7 +405,7 @@ fn sourcepos_kind_5() {
         [],
         "<![CDATA[\n\nA html\n\nblock]]>",
         (document (1:1-5:8) [
-            (html_block (1:1-5:8) "<![CDATA[\n\nA html\n\nblock]]>\n")
+            (html_block (1:1-5:8) "<![CDATA[\n\nA html\n\nblock]]>")
         ])
     );
 
@@ -430,7 +430,7 @@ fn sourcepos_kind_6() {
         [],
         "<div></div>",
         (document (1:1-1:11) [
-            (html_block (1:1-1:11) "<div></div>\n")
+            (html_block (1:1-1:11) "<div></div>")
         ])
     );
 
@@ -438,7 +438,7 @@ fn sourcepos_kind_6() {
         [],
         "<div>A html block</div>",
         (document (1:1-1:23) [
-            (html_block (1:1-1:23) "<div>A html block</div>\n")
+            (html_block (1:1-1:23) "<div>A html block</div>")
         ])
     );
 
@@ -446,7 +446,7 @@ fn sourcepos_kind_6() {
         [],
         "<div>A html block\n</div>",
         (document (1:1-2:6) [
-            (html_block (1:1-2:6) "<div>A html block\n</div>\n")
+            (html_block (1:1-2:6) "<div>A html block\n</div>")
         ])
     );
 
@@ -454,7 +454,7 @@ fn sourcepos_kind_6() {
         [],
         "<div>\nA html block</div>",
         (document (1:1-2:18) [
-            (html_block (1:1-2:18) "<div>\nA html block</div>\n")
+            (html_block (1:1-2:18) "<div>\nA html block</div>")
         ])
     );
 
@@ -462,7 +462,7 @@ fn sourcepos_kind_6() {
         [],
         "<div>\nA html block\n</div>",
         (document (1:1-3:6) [
-            (html_block (1:1-3:6) "<div>\nA html block\n</div>\n")
+            (html_block (1:1-3:6) "<div>\nA html block\n</div>")
         ])
     );
 
@@ -471,7 +471,7 @@ fn sourcepos_kind_6() {
         "<div>\nA html block\n\n</div>",
         (document (1:1-4:6) [
             (html_block (1:1-2:12) "<div>\nA html block\n")
-            (html_block (4:1-4:6) "</div>\n")
+            (html_block (4:1-4:6) "</div>")
         ])
     );
 
@@ -483,7 +483,7 @@ fn sourcepos_kind_6() {
             (paragraph (3:1-3:12) [
                 (text (3:1-3:12) "A html block")
             ])
-            (html_block (4:1-4:6) "</div>\n")
+            (html_block (4:1-4:6) "</div>")
         ])
     );
 
@@ -495,7 +495,7 @@ fn sourcepos_kind_6() {
             (paragraph (3:1-3:12) [
                 (text (3:1-3:12) "A html block")
             ])
-            (html_block (5:1-5:6) "</div>\n")
+            (html_block (5:1-5:6) "</div>")
         ])
     );
 
@@ -583,29 +583,29 @@ fn sourcepos_kind_6() {
 fn sourcepos_kind_7() {
     assert_ast_match!(
         [],
-        "<test></test>",
-        (document (1:1-1:13) [
-            (paragraph (1:1-1:13) [
-                (html_inline (1:1-1:6) "<test>")
-                (html_inline (1:7-1:13) "</test>")
+        "<testa></testa>",
+        (document (1:1-1:15) [
+            (paragraph (1:1-1:15) [
+                (html_inline (1:1-1:7) "<testa>")
+                (html_inline (1:8-1:15) "</testa>")
             ])
         ])
     );
 
     assert_ast_match!(
         [],
-        "<test>\n</test>",
-        (document (1:1-2:7) [
-            (html_block (1:1-2:7) "<test>\n</test>\n")
+        "<testb>\n</testb>",
+        (document (1:1-2:8) [
+            (html_block (1:1-2:8) "<testb>\n</testb>")
         ])
     );
 
     assert_ast_match!(
         [],
-        "<test>\n\n</test>",
-        (document (1:1-3:7) [
-            (html_block (1:1-1:6) "<test>\n")
-            (html_block (3:1-3:7) "</test>\n")
+        "<testc>\n\n</testc>",
+        (document (1:1-3:8) [
+            (html_block (1:1-1:7) "<testc>\n")
+            (html_block (3:1-3:8) "</testc>")
         ])
     );
 
@@ -613,26 +613,26 @@ fn sourcepos_kind_7() {
         [],
         "<test>\nA html block\n</test>",
         (document (1:1-3:7) [
-            (html_block (1:1-3:7) "<test>\nA html block\n</test>\n")
+            (html_block (1:1-3:7) "<test>\nA html block\n</test>")
         ])
     );
 
     assert_ast_match!(
         [],
-        "<test>\nA html block\n\n</test>",
+        "<test>\nB html block\n\n</test>",
         (document (1:1-4:7) [
-            (html_block (1:1-2:12) "<test>\nA html block\n")
-            (html_block (4:1-4:7) "</test>\n")
+            (html_block (1:1-2:12) "<test>\nB html block\n")
+            (html_block (4:1-4:7) "</test>")
         ])
     );
 
     assert_ast_match!(
         [],
-        "<test>\n\nA html block\n</test>",
+        "<test>\n\nC html block\n</test>",
         (document (1:1-4:7) [
             (html_block (1:1-1:6) "<test>\n")
             (paragraph (3:1-4:7) [
-                (text (3:1-3:12) "A html block")
+                (text (3:1-3:12) "C html block")
                 (softbreak (3:13-3:13))
                 (html_inline (4:1-4:7) "</test>")
             ])
@@ -641,24 +641,24 @@ fn sourcepos_kind_7() {
 
     assert_ast_match!(
         [],
-        "<test>\n\nA html block\n\n</test>",
+        "<test>\n\nD html block\n\n</test>",
         (document (1:1-5:7) [
             (html_block (1:1-1:6) "<test>\n")
             (paragraph (3:1-3:12) [
-                (text (3:1-3:12) "A html block")
+                (text (3:1-3:12) "D html block")
             ])
-            (html_block (5:1-5:7) "</test>\n")
+            (html_block (5:1-5:7) "</test>")
         ])
     );
 
     assert_ast_match!(
         [],
-        "Test\n\n<test>\nA html block\n</test>\n\nMore text",
+        "Test\n\n<test>\nE html block\n</test>\n\nMore text",
         (document (1:1-7:9) [
             (paragraph (1:1-1:4) [
                 (text (1:1-1:4) "Test")
             ])
-            (html_block (3:1-5:7) "<test>\nA html block\n</test>\n")
+            (html_block (3:1-5:7) "<test>\nE html block\n</test>\n")
             (paragraph (7:1-7:9) [
                 (text (7:1-7:9) "More text")
             ])
@@ -667,14 +667,14 @@ fn sourcepos_kind_7() {
 
     assert_ast_match!(
         [],
-        "Test\n\n<test>\n\nA html block\n\n</test>\n\nMore text",
+        "Test\n\n<test>\n\nF html block\n\n</test>\n\nMore text",
         (document (1:1-9:9) [
             (paragraph (1:1-1:4) [
                 (text (1:1-1:4) "Test")
             ])
             (html_block (3:1-3:6) "<test>\n")
             (paragraph (5:1-5:12) [
-                (text (5:1-5:12) "A html block")
+                (text (5:1-5:12) "F html block")
             ])
             (html_block (7:1-7:7) "</test>\n")
             (paragraph (9:1-9:9) [

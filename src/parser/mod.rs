@@ -137,6 +137,7 @@ where
 
         let mut ix = 0;
 
+        // TODO: jetscii.
         while ix < end {
             let mut eol = ix;
 
@@ -158,7 +159,7 @@ where
                 eol += 1;
             }
 
-            self.process_line(&s[ix..eol], eol == end);
+            self.process_line(&s[ix..eol]);
 
             ix = eol;
         }
@@ -199,18 +200,7 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, line: &str, at_eof: bool) {
-        let mut line = Cow::Borrowed(line);
-        // Most scanners depend on seeing a \r or \n to end the line, even
-        // though the end of the document suffices per spec.  Synthesise a
-        // final EOL if there isn't one so these scanners work.
-        let &last_byte = line.as_bytes().last().unwrap();
-        if !strings::is_line_end_char(last_byte) {
-            assert!(at_eof); // This case should only ever occur at EOF, once per document.
-            line.to_mut().push('\n');
-        }
-
-        let line = line.as_ref();
+    fn process_line(&mut self, line: &str) {
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -752,7 +742,11 @@ where
 
         let offset = self.first_nonspace + 1 - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+        if line
+            .as_bytes()
+            .get(self.offset)
+            .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
         *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
@@ -761,7 +755,7 @@ where
     }
 
     fn detect_blockquote(&self, line: &str) -> bool {
-        line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+        line.as_bytes().get(self.first_nonspace) == Some(&b'>') && self.is_not_greentext(line)
     }
 
     fn handle_atx_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -785,7 +779,7 @@ where
             .unwrap()
             + self.first_nonspace;
         let mut level = 0;
-        while bytes[hashpos] == b'#' {
+        while hashpos < bytes.len() && bytes[hashpos] == b'#' {
             level += 1;
             hashpos += 1;
         }
@@ -905,7 +899,7 @@ where
                 setext: true,
                 closed: false,
             });
-            let adv = line.len() - 1 - self.offset;
+            let adv = line.len() - strings::newlines_of(line) - self.offset;
             self.advance_offset(line, adv, false);
         }
 
@@ -936,7 +930,7 @@ where
 
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
-        let adv = line.len() - 1 - self.offset;
+        let adv = line.len() - strings::newlines_of(line) - self.offset;
         container.data_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
@@ -974,28 +968,29 @@ where
         }
 
         let bytes = line.as_bytes();
-        let c = bytes[i];
-        if c != b'*' && c != b'_' && c != b'-' {
+        let b = bytes[i];
+        if b != b'*' && b != b'_' && b != b'-' {
             return (i, false);
         }
 
         let mut count = 1;
-        let mut nextc;
+        let mut nextb;
         loop {
             i += 1;
             if i >= line.len() {
-                return (i, false);
+                nextb = 255;
+                break;
             }
-            nextc = bytes[i];
+            nextb = bytes[i];
 
-            if nextc == c {
+            if nextb == b {
                 count += 1;
-            } else if nextc != b' ' && nextc != b'\t' {
+            } else if nextb != b' ' && nextb != b'\t' {
                 break;
             }
         }
 
-        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+        if count >= 3 && (nextb == 255 || nextb == b'\r' || nextb == b'\n') {
             ((i - self.first_nonspace) + 1, true)
         } else {
             (i, false)
@@ -1595,7 +1590,6 @@ where
                         }
                         pos += 1;
                     }
-                    assert!(pos < content.len());
 
                     let mut info = entity::unescape_html(&content[..pos]).into();
                     strings::trim(&mut info);
@@ -1611,7 +1605,7 @@ where
                         ncb.info = info;
                     }
 
-                    if content.as_bytes()[pos] == b'\r' {
+                    if content.as_bytes().get(pos) == Some(&b'\r') {
                         pos += 1;
                     }
                     if content.as_bytes().get(pos) == Some(&b'\n') {
@@ -2124,12 +2118,15 @@ fn parse_list_marker(
     interrupts_paragraph: bool,
 ) -> Option<(usize, NodeList)> {
     let bytes = line.as_bytes();
+    if pos >= line.len() {
+        return None;
+    }
     let mut c = bytes[pos];
     let startpos = pos;
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !isspace(bytes[pos]) {
+        if pos == bytes.len() || !isspace(bytes[pos]) {
             return None;
         }
 
@@ -2165,6 +2162,10 @@ fn parse_list_marker(
             pos += 1;
             digits += 1;
 
+            if pos == bytes.len() {
+                return None;
+            }
+
             if !(digits < 9 && isdigit(bytes[pos])) {
                 break;
             }
@@ -2181,7 +2182,7 @@ fn parse_list_marker(
 
         pos += 1;
 
-        if !isspace(bytes[pos]) {
+        if pos == bytes.len() || !isspace(bytes[pos]) {
             return None;
         }
 
@@ -2189,6 +2190,9 @@ fn parse_list_marker(
             let mut i = pos;
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
+                if i == bytes.len() {
+                    return None;
+                }
             }
             if strings::is_line_end_char(bytes[i]) {
                 return None;

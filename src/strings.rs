@@ -415,6 +415,7 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
     s.strip_prefix(pat).unwrap_or(s)
 }
 
+// XXX: this counts \r\n as two newlines.
 pub fn count_newlines(input: &str) -> (usize, usize) {
     let mut num_lines = 0;
     let mut last_line_start = 0;
@@ -426,6 +427,16 @@ pub fn count_newlines(input: &str) -> (usize, usize) {
     }
     let last_line_len = input.len() - last_line_start;
     (num_lines, last_line_len)
+}
+
+pub fn newlines_of(s: &str) -> usize {
+    if s.ends_with("\r\n") {
+        2
+    } else if s.ends_with("\r") || s.ends_with("\n") {
+        1
+    } else {
+        0
+    }
 }
 
 #[cfg(test)]

@@ -294,3 +294,65 @@ fn sourcepos_with_preceding_para_spaces_before_both() {
         ])
     );
 }
+
+#[test]
+fn table_crlf() {
+    assert_ast_match!(
+        [extension.table],
+        "| a | b |\r\n"
+        "| - | - |\r\n"
+        "| c | d |\r\n"
+        ,
+        (document (1:1-3:9) [
+            (table (1:1-3:9) [
+                (table_row (1:1-1:9) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                    (table_cell (1:6-1:8) [
+                        (text (1:7-1:7) "b")
+                    ])
+                ])
+                (table_row (3:1-3:9) [
+                    (table_cell (3:2-3:4) [
+                        (text (3:3-3:3) "c")
+                    ])
+                    (table_cell (3:6-3:8) [
+                        (text (3:7-3:7) "d")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_cr() {
+    assert_ast_match!(
+        [extension.table],
+        "| a | b |\r"
+        "| - | - |\r"
+        "| c | d |\r"
+        ,
+        (document (1:1-3:9) [
+            (table (1:1-3:9) [
+                (table_row (1:1-1:9) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                    (table_cell (1:6-1:8) [
+                        (text (1:7-1:7) "b")
+                    ])
+                ])
+                (table_row (3:1-3:9) [
+                    (table_cell (3:2-3:4) [
+                        (text (3:3-3:3) "c")
+                    ])
+                    (table_cell (3:6-3:8) [
+                        (text (3:7-3:7) "d")
+                    ])
+                ])
+            ])
+        ])
+    );
+}

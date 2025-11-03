@@ -5,7 +5,7 @@ use std::mem;
 use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
-use crate::strings::{count_newlines, is_line_end_char, trim_cow};
+use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
 
 // Limit to prevent a malicious input from causing a denial of service.
 // See get_num_autocompleted_cells.
@@ -101,11 +101,16 @@ fn try_opening_header<'a>(
     container.append(table);
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
+    eprintln!("cc {container_content:?}");
     {
         let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
-        header_ast.sourcepos.end =
-            start.column_add((container_content.len() - 2 - header_row.paragraph_offset) as isize);
+        header_ast.sourcepos.end = start.column_add(
+            (container_content.len()
+                - newlines_of(&container_content)
+                - 1
+                - header_row.paragraph_offset) as isize,
+        );
     }
 
     let mut i = 0;
@@ -195,7 +200,7 @@ fn try_opening_row<'a>(
         i += 1;
     }
 
-    let offset = line.len() - 1 - parser.offset;
+    let offset = line.len() - parser.offset - newlines_of(line);
     parser.advance_offset(line, offset, false);
 
     Some((new_row, false, false))
@@ -299,7 +304,7 @@ fn try_inserting_table_header_paragraph<'a>(
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
-    paragraph.sourcepos.end.line = start.line + newlines - 1;
+    paragraph.sourcepos.end.line = start.line + newlines - 1; // This assumes endlines are one byte each.
 
     for n in 0..newlines {
         paragraph.line_offsets.push(container_ast.line_offsets[n]);
