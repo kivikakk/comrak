@@ -101,7 +101,6 @@ fn try_opening_header<'a>(
     container.append(table);
 
     let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
-    eprintln!("cc {container_content:?}");
     {
         let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
@@ -304,7 +303,7 @@ fn try_inserting_table_header_paragraph<'a>(
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
-    paragraph.sourcepos.end.line = start.line + newlines - 1; // This assumes endlines are one byte each.
+    paragraph.sourcepos.end.line = start.line + newlines - 1;
 
     for n in 0..newlines {
         paragraph.line_offsets.push(container_ast.line_offsets[n]);

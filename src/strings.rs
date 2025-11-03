@@ -415,15 +415,25 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
     s.strip_prefix(pat).unwrap_or(s)
 }
 
-// XXX: this counts \r\n as two newlines.
 pub fn count_newlines(input: &str) -> (usize, usize) {
+    let bytes = input.as_bytes();
     let mut num_lines = 0;
     let mut last_line_start = 0;
-    for (i, &c) in input.as_bytes().iter().enumerate() {
-        if is_line_end_char(c) {
-            num_lines += 1;
-            last_line_start = i + 1;
+    let mut i = 0;
+    while i < input.len() {
+        match bytes[i] {
+            b'\r' if i + 1 < input.len() && bytes[i + 1] == b'\n' => {
+                i += 1;
+                num_lines += 1;
+                last_line_start = i + 1;
+            }
+            b'\r' | b'\n' => {
+                num_lines += 1;
+                last_line_start = i + 1;
+            }
+            _ => {}
         }
+        i += 1;
     }
     let last_line_len = input.len() - last_line_start;
     (num_lines, last_line_len)
