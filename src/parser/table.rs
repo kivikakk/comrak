@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::cmp::min;
 use std::mem;
 
-use crate::nodes::{Ast, Node, NodeTable, NodeValue, TableAlignment};
+use crate::nodes::{Ast, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
 use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
@@ -135,10 +135,11 @@ fn try_opening_header<'a>(
     }
 
     mem::swap(&mut container.data_mut().content, &mut container_content);
-    incr_table_row_count(container, i);
 
     let offset = line.len() - newlines_of(line) - parser.offset;
     parser.advance_offset(line, offset, false);
+
+    adjust_table_counters(table, i, (parser.line_number, offset).into());
 
     Some((table, true, false))
 }
@@ -190,8 +191,6 @@ fn try_opening_row<'a>(
         i += 1;
     }
 
-    incr_table_row_count(container, i);
-
     while i < alignments.len() {
         parser.add_child(new_row, NodeValue::TableCell, last_column);
         i += 1;
@@ -199,6 +198,8 @@ fn try_opening_row<'a>(
 
     let offset = line.len() - parser.offset - newlines_of(line);
     parser.advance_offset(line, offset, false);
+
+    adjust_table_counters(container, i, (parser.line_number, offset).into());
 
     Some((new_row, false, false))
 }
@@ -350,22 +351,21 @@ fn unescape_pipes(string: &str) -> Cow<'_, str> {
     }
 }
 
-// Increment the number of rows in the table. Also update n_nonempty_cells,
+// Increment the number of rows in the table. Also update num_nonempty_cells,
 // which keeps track of the number of cells which were parsed from the
-// input file. (If one of the rows is too short, then the trailing cells
-// are autocompleted. Autocompleted cells are not counted in n_nonempty_cells.)
+// input file. (If one of the rows is too short, then the trailing cells are
+// autocompleted. Autocompleted cells are not counted in num_nonempty_cells.)
 // The purpose of this is to prevent a malicious input from generating a very
 // large number of autocompleted cells, which could cause a denial of service
 // vulnerability.
-fn incr_table_row_count<'a>(container: Node<'a>, i: usize) -> bool {
-    return match container.data_mut().value {
-        NodeValue::Table(ref mut node_table) => {
-            node_table.num_rows += 1;
-            node_table.num_nonempty_cells += i;
-            true
-        }
-        _ => false,
+fn adjust_table_counters<'a>(container: Node<'a>, i: usize, end: LineColumn) {
+    let mut ast = container.data_mut();
+    let NodeValue::Table(ref mut nt) = ast.value else {
+        unreachable!();
     };
+    nt.num_rows += 1;
+    nt.num_nonempty_cells += i;
+    ast.sourcepos.end = end;
 }
 
 // Calculate the number of autocompleted cells.

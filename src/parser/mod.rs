@@ -1583,7 +1583,9 @@ where
         let content = &mut ast.content;
         let parent = node.parent();
 
-        if self.curline_len == 0 {
+        if matches!(ast.value, NodeValue::Table(..)) {
+            // handles its own sourcepos.end.
+        } else if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
             NodeValue::Document => true,
@@ -1594,7 +1596,7 @@ where
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else if matches!(
             ast.value,
-            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+            NodeValue::ThematicBreak | NodeValue::TableRow(..)
         ) {
             // sourcepos.end set by itself or managed below.
         } else {
@@ -1666,7 +1668,7 @@ where
                 }
                 nl.tight = self.determine_list_tight(node);
             }
-            NodeValue::Table(..) | NodeValue::FootnoteDefinition(_) => {
+            NodeValue::FootnoteDefinition(_) => {
                 if let Some(candidate_end) = self.fix_zero_end_columns(node) {
                     ast.sourcepos.end = candidate_end;
                 }

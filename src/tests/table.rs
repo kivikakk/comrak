@@ -365,12 +365,60 @@ fn table_no_body_no_eol_at_eof() {
         "| - |"
         ,
         (document (1:1-2:5) [
-            (table (1:1-2:5) [ // XXX Fix this, and how table sourcepos is done in general.
+            (table (1:1-2:5) [
                 (table_row (1:1-1:5) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
                 ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_with_trailing_para() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |\n"
+        "\n"
+        "ok"
+        ,
+        (document (1:1-4:2) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+            (paragraph (4:1-4:2) [
+                (text (4:1-4:2) "ok")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_with_trailing_para_and_leading_whitespace() {
+    assert_ast_match!(
+        [extension.table],
+        "  | a  |\n"
+        "  | - |\n"
+        "\n"
+        " ok"
+        ,
+        (document (1:1-4:3) [
+            (table (1:3-2:7) [
+                (table_row (1:3-1:8) [
+                    (table_cell (1:4-1:7) [
+                        (text (1:5-1:5) "a")
+                    ])
+                ])
+            ])
+            (paragraph (4:2-4:3) [
+                (text (4:2-4:3) "ok")
             ])
         ])
     );
