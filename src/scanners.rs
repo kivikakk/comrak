@@ -16,7 +16,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -44,7 +44,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -74,7 +74,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -101,7 +101,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -136,7 +136,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -166,7 +166,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -196,7 +196,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -226,7 +226,7 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -268,7 +268,7 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -296,7 +296,7 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -316,7 +316,7 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -346,7 +346,7 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -391,73 +391,38 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x3C => {
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 1;
+                            yystate = 3;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return false;
-                }
-                3 => {
                     yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -466,6 +431,13 @@ pub fn html_block_end_1(s: &str) -> bool {
                         }
                     }
                 }
+                2 => {
+                    return false;
+                }
+                3 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
                 4 => {
                     yyaccept = 0;
                     marker = cursor;
@@ -473,17 +445,17 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2E | 0x30..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0x2E | 0x30..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         0x2F => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -493,155 +465,185 @@ pub fn html_block_end_1(s: &str) -> bool {
                     }
                 }
                 5 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
+                    yystate = 6;
+                    continue 'yyl;
                 }
-                6 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
+                6 => match yych {
+                    0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0xFE => {
+                        cursor += 1;
+                        yystate = 5;
+                        continue 'yyl;
                     }
-                }
+                    0x3C => {
+                        cursor += 1;
+                        yystate = 8;
+                        continue 'yyl;
+                    }
+                    _ => {
+                        yystate = 7;
+                        continue 'yyl;
+                    }
+                },
                 7 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
+                    cursor = marker;
+                    if yyaccept == 0 {
+                        yystate = 2;
+                        continue 'yyl;
+                    } else {
+                        yystate = 22;
+                        continue 'yyl;
                     }
                 }
                 8 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0x9F => {
+                        0x00..=0x09 | 0x0B..=0x2E | 0x30..=0x3B | 0x3D..=0xFE => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x2F => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
                 9 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x90..=0xBF => {
+                        0x00..=0x09
+                        | 0x0B..=0x3B
+                        | 0x3D..=0x4F
+                        | 0x51..=0x52
+                        | 0x55..=0x6F
+                        | 0x71..=0x72
+                        | 0x75..=0xFE => {
                             cursor += 1;
-                            yystate = 18;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x50 | 0x70 => {
+                            cursor += 1;
+                            yystate = 10;
+                            continue 'yyl;
+                        }
+                        0x53 | 0x73 => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 12;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
                 10 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0xFE => {
                             cursor += 1;
-                            yystate = 18;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x52 | 0x72 => {
+                            cursor += 1;
+                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
                 11 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0x8F => {
+                        0x00..=0x09
+                        | 0x0B..=0x3B
+                        | 0x3D..=0x42
+                        | 0x44..=0x53
+                        | 0x55..=0x62
+                        | 0x64..=0x73
+                        | 0x75..=0xFE => {
                             cursor += 1;
-                            yystate = 18;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 15;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 2;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -651,71 +653,89 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    yystate = 13;
-                    continue 'yyl;
+                    match yych {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0xFE => {
+                            cursor += 1;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x45 | 0x65 => {
+                            cursor += 1;
+                            yystate = 16;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                    }
                 }
-                13 => match yych {
-                    0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x7F => {
-                        cursor += 1;
-                        yystate = 12;
-                        continue 'yyl;
+                13 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0xFE => {
+                            cursor += 1;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x45 | 0x65 => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                     }
-                    0x3C => {
-                        cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
-                        continue 'yyl;
-                    }
-                    _ => {
-                        yystate = 14;
-                        continue 'yyl;
-                    }
-                },
+                }
                 14 => {
-                    cursor = marker;
-                    if yyaccept == 0 {
-                        yystate = 2;
-                        continue 'yyl;
-                    } else {
-                        yystate = 36;
-                        continue 'yyl;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0xFE => {
+                            cursor += 1;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x52 | 0x72 => {
+                            cursor += 1;
+                            yystate = 18;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 7;
+                            continue 'yyl;
+                        }
                     }
                 }
                 15 => {
@@ -723,62 +743,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2E | 0x30..=0x3B | 0x3D..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x58 | 0x5A..=0x78 | 0x7A..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x2F => {
-                            cursor += 1;
-                            yystate = 23;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
+                        0x59 | 0x79 => {
                             cursor += 1;
                             yystate = 19;
                             continue 'yyl;
                         }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -788,17 +773,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x57 | 0x59..=0x77 | 0x79..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x58 | 0x78 => {
+                            cursor += 1;
+                            yystate = 20;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -808,17 +803,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0xA0..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D | 0x3F..=0xFE => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 21;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -828,17 +833,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x48 | 0x4A..=0x68 | 0x6A..=0xFE => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x49 | 0x69 => {
+                            cursor += 1;
+                            yystate = 23;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -848,17 +863,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0x9F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x4B | 0x4D..=0x6B | 0x6D..=0xFE => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x4C | 0x6C => {
+                            cursor += 1;
+                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -868,138 +893,87 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x90..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x53 | 0x55..=0x73 | 0x75..=0xFE => {
                             cursor += 1;
-                            yystate = 18;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 24;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
                 21 => {
+                    yyaccept = 1;
+                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0xFE => {
                             cursor += 1;
-                            yystate = 18;
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                        0x3C => {
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 22;
                             continue 'yyl;
                         }
                     }
                 }
                 22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
+                    return true;
                 }
                 23 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09
-                        | 0x0B..=0x3B
-                        | 0x3D..=0x4F
-                        | 0x51..=0x52
-                        | 0x55..=0x6F
-                        | 0x71..=0x72
-                        | 0x75..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x4F | 0x51..=0x6F | 0x71..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         0x50 | 0x70 => {
                             cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0x53 | 0x73 => {
-                            cursor += 1;
                             yystate = 25;
                             continue 'yyl;
                         }
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -1009,62 +983,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x40 | 0x42..=0x60 | 0x62..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
-                        0x52 | 0x72 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 26;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -1074,73 +1013,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09
-                        | 0x0B..=0x3B
-                        | 0x3D..=0x42
-                        | 0x44..=0x53
-                        | 0x55..=0x62
-                        | 0x64..=0x73
-                        | 0x75..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x53 | 0x55..=0x73 | 0x75..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x43 | 0x63 => {
-                            cursor += 1;
-                            yystate = 28;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         0x54 | 0x74 => {
                             cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
                             yystate = 17;
                             continue 'yyl;
                         }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -1150,62 +1043,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
-                        0x45 | 0x65 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
-                            yystate = 30;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 27;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -1215,62 +1073,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         0x45 | 0x65 => {
                             cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 28;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -1280,907 +1103,27 @@ pub fn html_block_end_1(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3B | 0x3D..=0x40 | 0x42..=0x60 | 0x62..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3C => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x52 | 0x72 => {
-                            cursor += 1;
-                            yystate = 32;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                29 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x58 | 0x5A..=0x78 | 0x7A..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x59 | 0x79 => {
-                            cursor += 1;
-                            yystate = 33;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                30 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x57 | 0x59..=0x77 | 0x79..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x58 | 0x78 => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                31 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D | 0x3F..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x3E => {
-                            cursor += 1;
-                            yystate = 35;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                32 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x48 | 0x4A..=0x68 | 0x6A..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 37;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                33 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x4B | 0x4D..=0x6B | 0x6D..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x4C | 0x6C => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                34 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x53 | 0x55..=0x73 | 0x75..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                35 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                36 => {
-                    return true;
-                }
-                37 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x4F | 0x51..=0x6F | 0x71..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x50 | 0x70 => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x40 | 0x42..=0x60 | 0x62..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 40;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
                             yystate = 17;
                             continue 'yyl;
                         }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x53 | 0x55..=0x73 | 0x75..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x51 | 0x53..=0x71 | 0x73..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x52 | 0x72 => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                41 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x44 | 0x46..=0x64 | 0x66..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x45 | 0x65 => {
-                            cursor += 1;
-                            yystate = 42;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                42 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3B | 0x3D..=0x40 | 0x42..=0x60 | 0x62..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x3C => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0x41 | 0x61 => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
@@ -2208,73 +1151,38 @@ pub fn html_block_end_2(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x2D => {
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 1;
+                            yystate = 3;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return false;
-                }
-                3 => {
                     yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -2283,6 +1191,13 @@ pub fn html_block_end_2(s: &str) -> bool {
                         }
                     }
                 }
+                2 => {
+                    return false;
+                }
+                3 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
                 4 => {
                     yyaccept = 0;
                     marker = cursor;
@@ -2290,17 +1205,18 @@ pub fn html_block_end_2(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0xFE => {
+                            cursor += 1;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x2D => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -2310,559 +1226,125 @@ pub fn html_block_end_2(s: &str) -> bool {
                     }
                 }
                 5 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                6 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                7 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 13;
+                    yystate = 6;
                     continue 'yyl;
                 }
-                13 => match yych {
-                    0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x7F => {
+                6 => match yych {
+                    0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0xFE => {
                         cursor += 1;
-                        yystate = 12;
+                        yystate = 5;
                         continue 'yyl;
                     }
                     0x2D => {
                         cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
+                        yystate = 8;
                         continue 'yyl;
                     }
                     _ => {
-                        yystate = 14;
+                        yystate = 7;
                         continue 'yyl;
                     }
                 },
-                14 => {
+                7 => {
                     cursor = marker;
                     if yyaccept == 0 {
                         yystate = 2;
                         continue 'yyl;
                     } else {
-                        yystate = 25;
+                        yystate = 11;
                         continue 'yyl;
                     }
                 }
-                15 => {
+                8 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x2D => {
                             cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
-                16 => {
+                9 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0x3D | 0x3F..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x3D | 0x3F..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x2D => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         0x3E => {
                             cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 10;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
-                24 => {
+                10 => {
                     yyaccept = 1;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x2C | 0x2E..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x2C | 0x2E..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x2D => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 25;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
                 }
-                25 => {
+                11 => {
                     return true;
                 }
                 _ => panic!("internal lexer error"),
@@ -2888,73 +1370,38 @@ pub fn html_block_end_3(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3E | 0x40..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x09 | 0x0B..=0x3E | 0x40..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x3F => {
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 1;
+                            yystate = 3;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return false;
-                }
-                3 => {
                     yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -2963,6 +1410,13 @@ pub fn html_block_end_3(s: &str) -> bool {
                         }
                     }
                 }
+                2 => {
+                    return false;
+                }
+                3 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
                 4 => {
                     yyaccept = 0;
                     marker = cursor;
@@ -2970,17 +1424,17 @@ pub fn html_block_end_3(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3D | 0x3F..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0x3D | 0x3F..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         0x3E => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -2990,499 +1444,100 @@ pub fn html_block_end_3(s: &str) -> bool {
                     }
                 }
                 5 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                6 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                7 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 13;
+                    yystate = 6;
                     continue 'yyl;
                 }
-                13 => match yych {
-                    0x01..=0x09 | 0x0B..=0x3E | 0x40..=0x7F => {
+                6 => match yych {
+                    0x00..=0x09 | 0x0B..=0x3E | 0x40..=0xFE => {
                         cursor += 1;
-                        yystate = 12;
+                        yystate = 5;
                         continue 'yyl;
                     }
                     0x3F => {
                         cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
+                        yystate = 8;
                         continue 'yyl;
                     }
                     _ => {
-                        yystate = 14;
+                        yystate = 7;
                         continue 'yyl;
                     }
                 },
-                14 => {
+                7 => {
                     cursor = marker;
                     if yyaccept == 0 {
                         yystate = 2;
                         continue 'yyl;
                     } else {
-                        yystate = 24;
+                        yystate = 10;
                         continue 'yyl;
                     }
                 }
-                15 => {
+                8 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3D | 0x40..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3D | 0x40..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3E => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         0x3F => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
+                9 => {
                     yyaccept = 1;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3E | 0x40..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3E | 0x40..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3F => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 24;
+                            yystate = 10;
                             continue 'yyl;
                         }
                     }
                 }
-                24 => {
+                10 => {
                     return true;
                 }
                 _ => panic!("internal lexer error"),
@@ -3508,73 +1563,38 @@ pub fn html_block_end_4(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3D | 0x3F..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x09 | 0x0B..=0x3D | 0x3F..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x3E => {
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 12;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 1;
+                            yystate = 3;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return false;
-                }
-                3 => {
                     yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 14;
+                        0x00..=0x09 | 0x0B..=0xFE => {
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -3583,6 +1603,13 @@ pub fn html_block_end_4(s: &str) -> bool {
                         }
                     }
                 }
+                2 => {
+                    return false;
+                }
+                3 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
                 4 => {
                     yyaccept = 1;
                     marker = cursor;
@@ -3590,53 +1617,18 @@ pub fn html_block_end_4(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x3D | 0x3F..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x3D | 0x3F..=0xFE => {
                             cursor += 1;
-                            yystate = 13;
+                            yystate = 6;
                             continue 'yyl;
                         }
                         0x3E => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
                             continue 'yyl;
                         }
                         _ => {
@@ -3649,174 +1641,20 @@ pub fn html_block_end_4(s: &str) -> bool {
                     return true;
                 }
                 6 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                7 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 14;
+                    yystate = 7;
                     continue 'yyl;
                 }
-                14 => match yych {
-                    0x01..=0x09 | 0x0B..=0x3D | 0x3F..=0x7F => {
+                7 => match yych {
+                    0x00..=0x09 | 0x0B..=0x3D | 0x3F..=0xFE => {
                         cursor += 1;
-                        yystate = 13;
+                        yystate = 6;
                         continue 'yyl;
                     }
                     0x3E => {
@@ -3824,47 +1662,12 @@ pub fn html_block_end_4(s: &str) -> bool {
                         yystate = 4;
                         continue 'yyl;
                     }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
-                        continue 'yyl;
-                    }
                     _ => {
-                        yystate = 15;
+                        yystate = 8;
                         continue 'yyl;
                     }
                 },
-                15 => {
+                8 => {
                     cursor = marker;
                     if yyaccept == 0 {
                         yystate = 2;
@@ -3872,146 +1675,6 @@ pub fn html_block_end_4(s: &str) -> bool {
                     } else {
                         yystate = 5;
                         continue 'yyl;
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
                     }
                 }
                 _ => panic!("internal lexer error"),
@@ -4037,73 +1700,38 @@ pub fn html_block_end_5(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x5C | 0x5E..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x09 | 0x0B..=0x5C | 0x5E..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x5D => {
                             yystate = 4;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
                         _ => {
-                            yystate = 1;
+                            yystate = 3;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return false;
-                }
-                3 => {
                     yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -4112,6 +1740,13 @@ pub fn html_block_end_5(s: &str) -> bool {
                         }
                     }
                 }
+                2 => {
+                    return false;
+                }
+                3 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
                 4 => {
                     yyaccept = 0;
                     marker = cursor;
@@ -4119,17 +1754,18 @@ pub fn html_block_end_5(s: &str) -> bool {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x5C | 0x5E..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 13;
+                        0x00..=0x09 | 0x0B..=0x5C | 0x5E..=0xFE => {
+                            cursor += 1;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x5D => {
                             cursor += 1;
-                            yystate = 23;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -4139,559 +1775,125 @@ pub fn html_block_end_5(s: &str) -> bool {
                     }
                 }
                 5 => {
-                    yyaccept = 0;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                6 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                7 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 0;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 13;
+                    yystate = 6;
                     continue 'yyl;
                 }
-                13 => match yych {
-                    0x01..=0x09 | 0x0B..=0x5C | 0x5E..=0x7F => {
+                6 => match yych {
+                    0x00..=0x09 | 0x0B..=0x5C | 0x5E..=0xFE => {
                         cursor += 1;
-                        yystate = 12;
+                        yystate = 5;
                         continue 'yyl;
                     }
                     0x5D => {
                         cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
+                        yystate = 8;
                         continue 'yyl;
                     }
                     _ => {
-                        yystate = 14;
+                        yystate = 7;
                         continue 'yyl;
                     }
                 },
-                14 => {
+                7 => {
                     cursor = marker;
                     if yyaccept == 0 {
                         yystate = 2;
                         continue 'yyl;
                     } else {
-                        yystate = 25;
+                        yystate = 11;
                         continue 'yyl;
                     }
                 }
-                15 => {
+                8 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x5C | 0x5E..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x5C | 0x5E..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x5D => {
                             cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
-                16 => {
+                9 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x3D | 0x3F..=0x5C | 0x5E..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x3D | 0x3F..=0x5C | 0x5E..=0x7F => {
-                            cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x3E => {
                             cursor += 1;
-                            yystate = 24;
+                            yystate = 10;
                             continue 'yyl;
                         }
                         0x5D => {
                             cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 14;
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
-                24 => {
+                10 => {
                     yyaccept = 1;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x5C | 0x5E..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x5C | 0x5E..=0xFE => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 5;
                             continue 'yyl;
                         }
                         0x5D => {
                             cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 25;
+                            yystate = 11;
                             continue 'yyl;
                         }
                     }
                 }
-                25 => {
+                11 => {
                     return true;
                 }
                 _ => panic!("internal lexer error"),
@@ -4716,7 +1918,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -4744,7 +1946,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4769,7 +1971,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4794,7 +1996,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4819,7 +2021,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4839,7 +2041,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4879,7 +2081,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4899,7 +2101,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4919,7 +2121,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4939,7 +2141,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4959,7 +2161,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4979,7 +2181,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -4999,7 +2201,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5019,7 +2221,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5039,7 +2241,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5059,7 +2261,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5079,7 +2281,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5099,7 +2301,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5119,7 +2321,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5139,7 +2341,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5159,7 +2361,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5179,7 +2381,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5199,7 +2401,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5219,7 +2421,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5242,7 +2444,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5262,7 +2464,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5282,7 +2484,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5305,7 +2507,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5325,7 +2527,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5345,7 +2547,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5365,7 +2567,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5385,7 +2587,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5405,7 +2607,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5425,7 +2627,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5448,7 +2650,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5471,7 +2673,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5512,7 +2714,7 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -5544,7 +2746,7 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5565,7 +2767,7 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5585,7 +2787,7 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5610,7 +2812,7 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -5630,11 +2832,11 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5F | 0x61..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5F | 0x61..=0xFE => {
                             ctxmarker = cursor;
                             cursor += 1;
                             yystate = 10;
@@ -5651,48 +2853,6 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                             yystate = 8;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 6;
                             continue 'yyl;
@@ -5704,67 +2864,25 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7D | 0x7F => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x7D | 0x7F..=0xFE => {
                             ctxmarker = cursor;
                             cursor += 1;
-                            yystate = 19;
+                            yystate = 12;
                             continue 'yyl;
                         }
                         0x0A | 0x0D => {
                             ctxmarker = cursor;
                             cursor += 1;
-                            yystate = 20;
+                            yystate = 13;
                             continue 'yyl;
                         }
                         0x7E => {
                             cursor += 1;
                             yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            ctxmarker = cursor;
-                            cursor += 1;
-                            yystate = 27;
                             continue 'yyl;
                         }
                         _ => {
@@ -5778,11 +2896,11 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5F | 0x61..=0x7F => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5F | 0x61..=0xFE => {
                             cursor += 1;
                             yystate = 10;
                             continue 'yyl;
@@ -5790,41 +2908,6 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         0x0A | 0x0D => {
                             cursor += 1;
                             yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -5844,13 +2927,18 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
                             cursor += 1;
-                            yystate = 10;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x0A | 0x0D => {
+                            cursor += 1;
+                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
@@ -5860,329 +2948,9 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
                     }
                 }
                 13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7F => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0x0A | 0x0D => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
                     cursor = ctxmarker;
                     {
                         return Some(cursor);
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                24 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                25 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                26 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                27 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
                     }
                 }
                 _ => panic!("internal lexer error"),
@@ -6208,7 +2976,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -6240,7 +3008,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6261,7 +3029,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6281,7 +3049,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6306,7 +3074,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6326,7 +3094,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6358,7 +3126,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6390,7 +3158,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6421,7 +3189,7 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6469,7 +3237,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -6497,7 +3265,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6602,7 +3370,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6637,7 +3405,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6730,7 +3498,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6760,7 +3528,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6790,7 +3558,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6820,7 +3588,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6850,7 +3618,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6880,7 +3648,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6910,7 +3678,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6930,7 +3698,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6955,7 +3723,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -6980,7 +3748,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7005,7 +3773,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7030,7 +3798,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7065,7 +3833,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7100,7 +3868,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7155,7 +3923,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7175,7 +3943,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7198,7 +3966,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7218,7 +3986,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7248,7 +4016,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7273,7 +4041,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7323,7 +4091,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7343,7 +4111,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7363,7 +4131,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7383,7 +4151,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7403,7 +4171,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7423,7 +4191,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7443,7 +4211,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7463,7 +4231,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7483,7 +4251,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7503,7 +4271,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7528,7 +4296,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7548,7 +4316,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7573,7 +4341,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7598,7 +4366,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7623,7 +4391,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7643,7 +4411,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7663,7 +4431,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7683,7 +4451,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7703,7 +4471,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7723,7 +4491,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7753,7 +4521,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7773,7 +4541,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7793,7 +4561,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7813,7 +4581,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7833,7 +4601,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7856,7 +4624,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7876,7 +4644,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7896,7 +4664,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7916,7 +4684,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7936,7 +4704,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7961,7 +4729,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -7981,7 +4749,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8001,7 +4769,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8021,7 +4789,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8041,7 +4809,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8061,7 +4829,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8081,7 +4849,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8111,7 +4879,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8131,7 +4899,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8164,7 +4932,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8184,7 +4952,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8204,7 +4972,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8224,7 +4992,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8244,7 +5012,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8264,7 +5032,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8284,7 +5052,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8304,7 +5072,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8324,7 +5092,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8344,7 +5112,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8374,7 +5142,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8394,7 +5162,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8414,7 +5182,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8434,7 +5202,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8459,7 +5227,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8479,7 +5247,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8499,7 +5267,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8519,7 +5287,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8539,7 +5307,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8559,7 +5327,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8579,7 +5347,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8599,7 +5367,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8619,7 +5387,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8639,7 +5407,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8664,7 +5432,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8684,7 +5452,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8704,7 +5472,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8724,7 +5492,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8744,7 +5512,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8764,7 +5532,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8784,7 +5552,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8804,7 +5572,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8824,7 +5592,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8844,7 +5612,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8864,7 +5632,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8884,7 +5652,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8904,7 +5672,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8924,7 +5692,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8944,7 +5712,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8964,7 +5732,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -8994,7 +5762,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9014,7 +5782,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9034,7 +5802,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9054,7 +5822,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9074,7 +5842,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9094,7 +5862,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9114,7 +5882,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9134,7 +5902,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9154,7 +5922,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9174,7 +5942,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9194,7 +5962,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9224,7 +5992,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9244,7 +6012,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9264,7 +6032,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9294,7 +6062,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9314,7 +6082,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9337,7 +6105,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9357,7 +6125,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9377,7 +6145,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9397,7 +6165,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9417,7 +6185,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9437,7 +6205,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9457,7 +6225,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9477,7 +6245,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9497,7 +6265,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9517,7 +6285,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9537,7 +6305,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9557,7 +6325,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9577,7 +6345,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9597,7 +6365,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9617,7 +6385,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9637,7 +6405,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9667,7 +6435,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9687,7 +6455,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9707,7 +6475,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9727,7 +6495,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9747,7 +6515,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9767,7 +6535,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9787,7 +6555,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9807,7 +6575,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9827,7 +6595,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9847,7 +6615,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9867,7 +6635,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9887,7 +6655,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9907,7 +6675,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9927,7 +6695,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9947,7 +6715,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9967,7 +6735,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -9987,7 +6755,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10007,7 +6775,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10027,7 +6795,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10050,7 +6818,7 @@ pub fn html_block_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10088,7 +6856,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -10117,7 +6885,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10142,7 +6910,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10172,7 +6940,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10207,7 +6975,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10237,7 +7005,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10272,7 +7040,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10292,7 +7060,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10322,7 +7090,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10347,7 +7115,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10389,7 +7157,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10426,7 +7194,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10466,17 +7234,17 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x21
                         | 0x23..=0x26
                         | 0x28..=0x3B
                         | 0x3F..=0x5F
-                        | 0x61..=0x7F => {
+                        | 0x61..=0xFE => {
                             cursor += 1;
                             yystate = 18;
                             continue 'yyl;
@@ -10496,41 +7264,6 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                             yystate = 20;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 5;
                             continue 'yyl;
@@ -10542,17 +7275,17 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x21
                         | 0x23..=0x26
                         | 0x28..=0x3B
                         | 0x3F..=0x5F
-                        | 0x61..=0x7F => {
+                        | 0x61..=0xFE => {
                             cursor += 1;
                             yystate = 18;
                             continue 'yyl;
@@ -10567,41 +7300,6 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 5;
                             continue 'yyl;
@@ -10613,53 +7311,18 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x21 | 0x23..=0x7F => {
+                        0x00..=0x21 | 0x23..=0xFE => {
                             cursor += 1;
                             yystate = 19;
                             continue 'yyl;
                         }
                         0x22 => {
                             cursor += 1;
-                            yystate = 28;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 30;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 32;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 33;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 35;
+                            yystate = 21;
                             continue 'yyl;
                         }
                         _ => {
@@ -10673,53 +7336,18 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x26 | 0x28..=0x7F => {
+                        0x00..=0x26 | 0x28..=0xFE => {
                             cursor += 1;
                             yystate = 20;
                             continue 'yyl;
                         }
                         0x27 => {
                             cursor += 1;
-                            yystate = 28;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 37;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 40;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 42;
+                            yystate = 21;
                             continue 'yyl;
                         }
                         _ => {
@@ -10733,147 +7361,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                24 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                25 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                26 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                27 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                28 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -10890,286 +7378,6 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
                         0x3E => {
                             cursor += 1;
                             yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                29 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                30 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                31 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                32 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                33 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                34 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                35 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                36 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                37 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                41 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                42 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 38;
                             continue 'yyl;
                         }
                         _ => {
@@ -11205,7 +7413,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -11237,7 +7445,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11262,7 +7470,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11286,7 +7494,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 6;
@@ -11321,7 +7529,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11351,7 +7559,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 11;
@@ -11381,7 +7589,7 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11428,7 +7636,7 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -11456,7 +7664,7 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11476,7 +7684,7 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11500,56 +7708,21 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 7;
                     continue 'yyl;
                 }
                 7 => match yych {
-                    0x01..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x5C | 0x5E..=0x7F => {
+                    0x00..=0x08 | 0x0B..=0x0C | 0x0E..=0x1F | 0x21..=0x5C | 0x5E..=0xFE => {
                         cursor += 1;
                         yystate = 6;
                         continue 'yyl;
                     }
                     0x5D => {
                         cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
                         yystate = 8;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 9;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 10;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 11;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 12;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 13;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 14;
                         continue 'yyl;
                     }
                     _ => {
@@ -11562,13 +7735,13 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x3A => {
                             cursor += 1;
-                            yystate = 6;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -11582,162 +7755,22 @@ pub fn footnote_definition(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
+                            255
                         }
                     };
                     match yych {
                         0x09 | 0x20 => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 17;
+                            yystate = 10;
                             continue 'yyl;
                         }
                     }
                 }
-                17 => {
+                10 => {
                     return Some(cursor);
                 }
                 _ => panic!("internal lexer error"),
@@ -11762,7 +7795,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -11790,7 +7823,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11810,7 +7843,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11840,7 +7873,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11868,7 +7901,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11893,7 +7926,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11918,7 +7951,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11943,7 +7976,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11968,7 +8001,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -11993,7 +8026,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12018,7 +8051,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12043,7 +8076,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12068,7 +8101,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12093,7 +8126,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12118,7 +8151,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12143,7 +8176,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12168,7 +8201,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12193,7 +8226,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12218,7 +8251,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12243,7 +8276,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12268,7 +8301,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12293,7 +8326,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12318,7 +8351,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12343,7 +8376,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12368,7 +8401,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12393,7 +8426,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12418,7 +8451,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12443,7 +8476,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12468,7 +8501,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12493,7 +8526,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12518,7 +8551,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12543,7 +8576,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12568,7 +8601,7 @@ pub fn scheme(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12605,7 +8638,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -12633,7 +8666,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12653,7 +8686,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12683,7 +8716,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12708,11 +8741,11 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x21..=0x3B | 0x3D | 0x3F..=0x7F => {
+                        0x00 | 0x21..=0x3B | 0x3D | 0x3F..=0xFE => {
                             cursor += 1;
                             yystate = 7;
                             continue 'yyl;
@@ -12720,41 +8753,6 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         0x3E => {
                             cursor += 1;
                             yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 16;
                             continue 'yyl;
                         }
                         _ => {
@@ -12768,13 +8766,13 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
                         0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 17;
+                            yystate = 10;
                             continue 'yyl;
                         }
                         0x3A => {
@@ -12796,11 +8794,16 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        0x3A => {
                             cursor += 1;
                             yystate = 7;
                             continue 'yyl;
@@ -12816,13 +8819,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0xA0..=0xBF => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 10;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12836,13 +8844,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 10;
+                            yystate = 13;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12856,13 +8869,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0x9F => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 10;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12876,13 +8894,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x90..=0xBF => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 15;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12896,13 +8919,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 16;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12916,13 +8944,18 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0x8F => {
+                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
                             cursor += 1;
-                            yystate = 12;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        0x3A => {
+                            cursor += 1;
+                            yystate = 7;
                             continue 'yyl;
                         }
                         _ => {
@@ -12936,7 +8969,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12961,7 +8994,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -12986,7 +9019,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13011,7 +9044,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13036,7 +9069,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13061,7 +9094,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13086,7 +9119,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13111,7 +9144,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13136,7 +9169,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13161,7 +9194,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13186,7 +9219,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13211,7 +9244,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13236,7 +9269,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13261,7 +9294,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13286,7 +9319,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13311,7 +9344,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13336,7 +9369,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13361,7 +9394,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13386,7 +9419,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13411,7 +9444,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13436,182 +9469,7 @@ pub fn autolink_uri(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 40;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                41 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 42;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                42 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 43;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                43 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x2B | 0x2D..=0x2E | 0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
-                            cursor += 1;
-                            yystate = 44;
-                            continue 'yyl;
-                        }
-                        0x3A => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                44 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13648,7 +9506,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -13683,7 +9541,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13708,7 +9566,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 5;
@@ -13747,7 +9605,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13767,7 +9625,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13802,7 +9660,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13827,7 +9685,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13865,7 +9723,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13890,7 +9748,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13925,7 +9783,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13950,7 +9808,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -13985,7 +9843,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14010,7 +9868,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14045,7 +9903,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14070,7 +9928,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14105,7 +9963,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14130,7 +9988,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14165,7 +10023,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14190,7 +10048,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14225,7 +10083,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14250,7 +10108,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14285,7 +10143,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14310,7 +10168,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14345,7 +10203,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14370,7 +10228,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14405,7 +10263,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14430,7 +10288,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14465,7 +10323,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14490,7 +10348,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14525,7 +10383,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14550,7 +10408,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14585,7 +10443,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14610,7 +10468,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14645,7 +10503,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14670,7 +10528,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14705,7 +10563,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14730,7 +10588,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14765,7 +10623,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14790,7 +10648,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14825,7 +10683,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14850,7 +10708,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14885,7 +10743,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14910,7 +10768,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14945,7 +10803,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -14970,7 +10828,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15005,7 +10863,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15030,7 +10888,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15065,7 +10923,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15090,7 +10948,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15125,7 +10983,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15150,7 +11008,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15185,7 +11043,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15210,7 +11068,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15245,7 +11103,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15270,7 +11128,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15305,7 +11163,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15330,7 +11188,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15365,7 +11223,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15390,7 +11248,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15425,7 +11283,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15450,7 +11308,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15485,7 +11343,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15510,7 +11368,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15545,7 +11403,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15570,7 +11428,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15605,7 +11463,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15630,7 +11488,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15665,7 +11523,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15690,7 +11548,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15725,7 +11583,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15750,7 +11608,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15785,7 +11643,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15810,7 +11668,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15845,7 +11703,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15870,7 +11728,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15905,7 +11763,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15930,7 +11788,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15965,7 +11823,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -15990,7 +11848,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16025,7 +11883,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16050,7 +11908,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16085,7 +11943,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16110,7 +11968,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16145,7 +12003,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16170,7 +12028,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16205,7 +12063,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16230,7 +12088,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16265,7 +12123,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16290,7 +12148,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16325,7 +12183,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16350,7 +12208,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16385,7 +12243,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16410,7 +12268,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16445,7 +12303,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16470,7 +12328,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16505,7 +12363,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16530,7 +12388,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16565,7 +12423,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16590,7 +12448,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16625,7 +12483,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16650,7 +12508,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16685,7 +12543,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16710,7 +12568,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16745,7 +12603,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16770,7 +12628,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16805,7 +12663,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16830,7 +12688,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16865,7 +12723,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16890,7 +12748,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16925,7 +12783,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16950,7 +12808,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -16985,7 +12843,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17010,7 +12868,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17045,7 +12903,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17070,7 +12928,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17105,7 +12963,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17130,7 +12988,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17165,7 +13023,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17190,7 +13048,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17225,7 +13083,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17250,7 +13108,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17285,7 +13143,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17310,7 +13168,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17345,7 +13203,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17370,7 +13228,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17405,7 +13263,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17425,7 +13283,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17455,7 +13313,7 @@ pub fn autolink_email(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17497,7 +13355,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -17529,7 +13387,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17550,7 +13408,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17575,7 +13433,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17610,7 +13468,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17645,7 +13503,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 9;
@@ -17682,7 +13540,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17705,7 +13563,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17730,7 +13588,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17770,7 +13628,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17810,17 +13668,17 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x21
                         | 0x23..=0x26
                         | 0x28..=0x3B
                         | 0x3F..=0x5F
-                        | 0x61..=0x7F => {
+                        | 0x61..=0xFE => {
                             cursor += 1;
                             yystate = 16;
                             continue 'yyl;
@@ -17840,41 +13698,6 @@ pub fn html_tag(s: &str) -> Option<usize> {
                             yystate = 18;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 6;
                             continue 'yyl;
@@ -17886,17 +13709,17 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x21
                         | 0x23..=0x26
                         | 0x28..=0x3B
                         | 0x3F..=0x5F
-                        | 0x61..=0x7F => {
+                        | 0x61..=0xFE => {
                             cursor += 1;
                             yystate = 16;
                             continue 'yyl;
@@ -17911,41 +13734,6 @@ pub fn html_tag(s: &str) -> Option<usize> {
                             yystate = 11;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 6;
                             continue 'yyl;
@@ -17957,53 +13745,18 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x21 | 0x23..=0x7F => {
+                        0x00..=0x21 | 0x23..=0xFE => {
                             cursor += 1;
                             yystate = 17;
                             continue 'yyl;
                         }
                         0x22 => {
                             cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 28;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 30;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 32;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 33;
+                            yystate = 19;
                             continue 'yyl;
                         }
                         _ => {
@@ -18017,53 +13770,18 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x26 | 0x28..=0x7F => {
+                        0x00..=0x26 | 0x28..=0xFE => {
                             cursor += 1;
                             yystate = 18;
                             continue 'yyl;
                         }
                         0x27 => {
                             cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 35;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 37;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 40;
+                            yystate = 19;
                             continue 'yyl;
                         }
                         _ => {
@@ -18077,147 +13795,7 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                24 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                25 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                26 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18234,286 +13812,6 @@ pub fn html_tag(s: &str) -> Option<usize> {
                         0x3E => {
                             cursor += 1;
                             yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                27 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                28 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                29 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                30 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                31 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                32 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                33 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                34 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                35 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                36 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                37 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 34;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 36;
                             continue 'yyl;
                         }
                         _ => {
@@ -18544,7 +13842,7 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -18572,7 +13870,7 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18592,11 +13890,11 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x2C | 0x2E..=0x7F => {
+                        0x00..=0x2C | 0x2E..=0xFE => {
                             cursor += 1;
                             yystate = 4;
                             continue 'yyl;
@@ -18604,41 +13902,6 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         0x2D => {
                             cursor += 1;
                             yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
@@ -18657,53 +13920,18 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x2C | 0x2E..=0x7F => {
+                        0x00..=0x2C | 0x2E..=0xFE => {
                             cursor += 1;
                             yystate = 4;
                             continue 'yyl;
                         }
                         0x2D => {
                             cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
                             yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 13;
                             continue 'yyl;
                         }
                         _ => {
@@ -18717,13 +13945,18 @@ pub fn html_comment(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x3D | 0x3F..=0xFE => {
                             cursor += 1;
                             yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x3E => {
+                            cursor += 1;
+                            yystate = 8;
                             continue 'yyl;
                         }
                         _ => {
@@ -18733,186 +13966,6 @@ pub fn html_comment(s: &str) -> Option<usize> {
                     }
                 }
                 8 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x3D | 0x3F..=0x7F => {
-                            cursor += 1;
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x3E => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
                     return Some(cursor);
                 }
                 _ => panic!("internal lexer error"),
@@ -18929,7 +13982,6 @@ pub fn html_processing_instruction(s: &str) -> Option<usize> {
     {
         #[allow(unused_assignments)]
         let mut yych: u8 = 0;
-        let mut yyaccept: usize = 0;
         let mut yystate: usize = 0;
         'yyl: loop {
             match yystate {
@@ -18938,509 +13990,105 @@ pub fn html_processing_instruction(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
                     match yych {
-                        0x01..=0x3E | 0x40..=0x7F => {
-                            yystate = 3;
+                        0x00..=0x3E | 0x40..=0xFE => {
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x3F => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yystate = 13;
+                            yystate = 3;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 1;
+                            yystate = 5;
                             continue 'yyl;
                         }
                     }
                 }
                 1 => {
-                    yystate = 2;
-                    continue 'yyl;
-                }
-                2 => {
-                    return None;
-                }
-                3 => {
-                    yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
-                        }
-                    };
-                    yystate = 4;
-                    continue 'yyl;
-                }
-                4 => match yych {
-                    0x01..=0x3E | 0x40..=0x7F => {
-                        cursor += 1;
-                        yystate = 3;
-                        continue 'yyl;
-                    }
-                    0x3F => {
-                        cursor += 1;
-                        yystate = 14;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 18;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 20;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 22;
-                        continue 'yyl;
-                    }
-                    _ => {
-                        yystate = 5;
-                        continue 'yyl;
-                    }
-                },
-                5 => {
-                    return Some(cursor);
-                }
-                6 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x3D | 0x40..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 4;
+                        0x00..=0x3E | 0x40..=0xFE => {
+                            cursor += 1;
+                            yystate = 1;
                             continue 'yyl;
                         }
                         0x3F => {
                             cursor += 1;
-                            yystate = 3;
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
                             yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                2 => {
+                    return Some(cursor);
+                }
+                3 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x00..=0x3D | 0x3F..=0xFE => {
+                            cursor += 1;
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    return None;
+                }
+                5 => {
+                    yystate = 4;
+                    continue 'yyl;
+                }
+                6 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x00..=0x3D | 0x3F..=0xFE => {
+                            cursor += 1;
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 7;
                             continue 'yyl;
                         }
                     }
                 }
                 7 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                8 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yyaccept = 1;
-                    marker = cursor;
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x3D | 0x3F..=0x7F => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
                     cursor = marker;
-                    if yyaccept == 0 {
-                        yystate = 5;
-                        continue 'yyl;
-                    } else {
-                        yystate = 2;
-                        continue 'yyl;
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 3;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                    }
+                    yystate = 2;
+                    continue 'yyl;
                 }
                 _ => panic!("internal lexer error"),
             }
@@ -19456,7 +14104,6 @@ pub fn html_declaration(s: &str) -> Option<usize> {
     {
         #[allow(unused_assignments)]
         let mut yych: u8 = 0;
-        let mut yyaccept: usize = 0;
         let mut yystate: usize = 0;
         'yyl: loop {
             match yystate {
@@ -19465,7 +14112,7 @@ pub fn html_declaration(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -19488,13 +14135,12 @@ pub fn html_declaration(s: &str) -> Option<usize> {
                     return None;
                 }
                 3 => {
-                    yyaccept = 0;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19515,54 +14161,17 @@ pub fn html_declaration(s: &str) -> Option<usize> {
                     }
                 }
                 4 => {
-                    yyaccept = 1;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x3D | 0x3F..=0x7F => {
+                        0x00..=0x3D | 0x3F..=0xFE => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 14;
                             continue 'yyl;
                         }
                         _ => {
@@ -19579,7 +14188,7 @@ pub fn html_declaration(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19601,153 +14210,8 @@ pub fn html_declaration(s: &str) -> Option<usize> {
                 }
                 7 => {
                     cursor = marker;
-                    if yyaccept == 0 {
-                        yystate = 2;
-                        continue 'yyl;
-                    } else {
-                        yystate = 5;
-                        continue 'yyl;
-                    }
-                }
-                8 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                9 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                10 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                    }
+                    yystate = 2;
+                    continue 'yyl;
                 }
                 _ => panic!("internal lexer error"),
             }
@@ -19772,7 +14236,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -19801,7 +14265,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19821,7 +14285,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19851,7 +14315,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19871,7 +14335,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19891,7 +14355,7 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -19913,11 +14377,11 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x5C | 0x5E..=0x7F => {
+                        0x00..=0x5C | 0x5E..=0xFE => {
                             cursor += 1;
                             yystate = 9;
                             continue 'yyl;
@@ -19925,41 +14389,6 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         0x5D => {
                             cursor += 1;
                             yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -19976,53 +14405,18 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x5C | 0x5E..=0x7F => {
+                        0x00..=0x5C | 0x5E..=0xFE => {
                             cursor += 1;
                             yystate = 9;
                             continue 'yyl;
                         }
                         0x5D => {
                             cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
                             yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -20036,188 +14430,13 @@ pub fn html_cdata(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
+                        0x00..=0x3D | 0x3F..=0xFE => {
                             cursor += 1;
                             yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x3D | 0x3F..=0x7F => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -20247,7 +14466,7 @@ pub fn spacechars(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -20270,7 +14489,7 @@ pub fn spacechars(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -20311,7 +14530,7 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -20348,19 +14567,15 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x01..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
+                    if yych <= 0xFE {
+                        yystate = 7;
+                        continue 'yyl;
                     }
+                    yystate = 2;
+                    continue 'yyl;
                 }
                 4 => {
                     yyaccept = 0;
@@ -20369,19 +14584,15 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x01..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
+                    if yych <= 0xFE {
+                        yystate = 13;
+                        continue 'yyl;
                     }
+                    yystate = 2;
+                    continue 'yyl;
                 }
                 5 => {
                     yyaccept = 0;
@@ -20390,12 +14601,12 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x27 | 0x29..=0x7F | 0xC2..=0xF4 => {
-                            yystate = 32;
+                        0x00..=0x27 | 0x29..=0xFE => {
+                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -20409,14 +14620,14 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 7;
                     continue 'yyl;
                 }
                 7 => match yych {
-                    0x01..=0x21 | 0x23..=0x5B | 0x5D..=0x7F => {
+                    0x00..=0x21 | 0x23..=0x5B | 0x5D..=0xFE => {
                         cursor += 1;
                         yystate = 6;
                         continue 'yyl;
@@ -20429,41 +14640,6 @@ pub fn link_title(s: &str) -> Option<usize> {
                     0x5C => {
                         cursor += 1;
                         yystate = 11;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 12;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 13;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 14;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 15;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 16;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 17;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 18;
                         continue 'yyl;
                     }
                     _ => {
@@ -20483,11 +14659,11 @@ pub fn link_title(s: &str) -> Option<usize> {
                             continue 'yyl;
                         }
                         2 => {
-                            yystate = 22;
+                            yystate = 15;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 34;
+                            yystate = 20;
                             continue 'yyl;
                         }
                     }
@@ -20504,58 +14680,23 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x21 | 0x23..=0x5B | 0x5D..=0x7F => {
+                        0x00..=0x21 | 0x23..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
                             yystate = 6;
                             continue 'yyl;
                         }
                         0x22 => {
                             cursor += 1;
-                            yystate = 43;
+                            yystate = 22;
                             continue 'yyl;
                         }
                         0x5C => {
                             cursor += 1;
                             yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
                             continue 'yyl;
                         }
                         _ => {
@@ -20569,93 +14710,62 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
+                    yystate = 13;
+                    continue 'yyl;
                 }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
+                13 => match yych {
+                    0x00..=0x26 | 0x28..=0x5B | 0x5D..=0xFE => {
+                        cursor += 1;
+                        yystate = 12;
+                        continue 'yyl;
                     }
-                }
+                    0x27 => {
+                        cursor += 1;
+                        yystate = 14;
+                        continue 'yyl;
+                    }
+                    0x5C => {
+                        cursor += 1;
+                        yystate = 16;
+                        continue 'yyl;
+                    }
+                    _ => {
+                        yystate = 8;
+                        continue 'yyl;
+                    }
+                },
                 14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
+                    yystate = 15;
+                    continue 'yyl;
                 }
                 15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
+                    return Some(cursor);
                 }
                 16 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x90..=0xBF => {
+                        0x00..=0x26 | 0x28..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
-                            yystate = 14;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        0x27 => {
+                            cursor += 1;
+                            yystate = 23;
+                            continue 'yyl;
+                        }
+                        0x5C => {
+                            cursor += 1;
+                            yystate = 16;
                             continue 'yyl;
                         }
                         _ => {
@@ -20669,380 +14779,26 @@ pub fn link_title(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 20;
+                    yystate = 18;
                     continue 'yyl;
                 }
-                20 => match yych {
-                    0x01..=0x26 | 0x28..=0x5B | 0x5D..=0x7F => {
+                18 => match yych {
+                    0x00..=0x27 | 0x2A..=0x5B | 0x5D..=0xFE => {
                         cursor += 1;
-                        yystate = 19;
-                        continue 'yyl;
-                    }
-                    0x27 => {
-                        cursor += 1;
-                        yystate = 21;
-                        continue 'yyl;
-                    }
-                    0x5C => {
-                        cursor += 1;
-                        yystate = 23;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 24;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 25;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 26;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 27;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 28;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 29;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 30;
-                        continue 'yyl;
-                    }
-                    _ => {
-                        yystate = 8;
-                        continue 'yyl;
-                    }
-                },
-                21 => {
-                    yystate = 22;
-                    continue 'yyl;
-                }
-                22 => {
-                    return Some(cursor);
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x01..=0x26 | 0x28..=0x5B | 0x5D..=0x7F => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0x27 => {
-                            cursor += 1;
-                            yystate = 44;
-                            continue 'yyl;
-                        }
-                        0x5C => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 28;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 30;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                24 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                25 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                26 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                27 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                28 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                29 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                30 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                31 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    yystate = 32;
-                    continue 'yyl;
-                }
-                32 => match yych {
-                    0x01..=0x27 | 0x2A..=0x5B | 0x5D..=0x7F => {
-                        cursor += 1;
-                        yystate = 31;
+                        yystate = 17;
                         continue 'yyl;
                     }
                     0x29 => {
                         cursor += 1;
-                        yystate = 33;
+                        yystate = 19;
                         continue 'yyl;
                     }
                     0x5C => {
                         cursor += 1;
-                        yystate = 35;
-                        continue 'yyl;
-                    }
-                    0xC2..=0xDF => {
-                        cursor += 1;
-                        yystate = 36;
-                        continue 'yyl;
-                    }
-                    0xE0 => {
-                        cursor += 1;
-                        yystate = 37;
-                        continue 'yyl;
-                    }
-                    0xE1..=0xEC | 0xEE..=0xEF => {
-                        cursor += 1;
-                        yystate = 38;
-                        continue 'yyl;
-                    }
-                    0xED => {
-                        cursor += 1;
-                        yystate = 39;
-                        continue 'yyl;
-                    }
-                    0xF0 => {
-                        cursor += 1;
-                        yystate = 40;
-                        continue 'yyl;
-                    }
-                    0xF1..=0xF3 => {
-                        cursor += 1;
-                        yystate = 41;
-                        continue 'yyl;
-                    }
-                    0xF4 => {
-                        cursor += 1;
-                        yystate = 42;
+                        yystate = 21;
                         continue 'yyl;
                     }
                     _ => {
@@ -21050,70 +14806,35 @@ pub fn link_title(s: &str) -> Option<usize> {
                         continue 'yyl;
                     }
                 },
-                33 => {
-                    yystate = 34;
+                19 => {
+                    yystate = 20;
                     continue 'yyl;
                 }
-                34 => {
+                20 => {
                     return Some(cursor);
                 }
-                35 => {
+                21 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x28 | 0x2A..=0x5B | 0x5D..=0x7F => {
+                        0x00..=0x28 | 0x2A..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
-                            yystate = 31;
+                            yystate = 17;
                             continue 'yyl;
                         }
                         0x29 => {
                             cursor += 1;
-                            yystate = 45;
+                            yystate = 24;
                             continue 'yyl;
                         }
                         0x5C => {
                             cursor += 1;
-                            yystate = 35;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 37;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 40;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 42;
+                            yystate = 21;
                             continue 'yyl;
                         }
                         _ => {
@@ -21122,158 +14843,18 @@ pub fn link_title(s: &str) -> Option<usize> {
                         }
                     }
                 }
-                36 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                37 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                41 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                42 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                43 => {
+                22 => {
                     yyaccept = 1;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x21 | 0x23..=0x5B | 0x5D..=0x7F => {
+                        0x00..=0x21 | 0x23..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
                             yystate = 6;
                             continue 'yyl;
@@ -21288,177 +14869,72 @@ pub fn link_title(s: &str) -> Option<usize> {
                             yystate = 11;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 10;
                             continue 'yyl;
                         }
                     }
                 }
-                44 => {
+                23 => {
                     yyaccept = 2;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x26 | 0x28..=0x5B | 0x5D..=0x7F => {
+                        0x00..=0x26 | 0x28..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
-                            yystate = 19;
+                            yystate = 12;
                             continue 'yyl;
                         }
                         0x27 => {
                             cursor += 1;
-                            yystate = 21;
+                            yystate = 14;
                             continue 'yyl;
                         }
                         0x5C => {
                             cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 24;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 25;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 26;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 27;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 28;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 29;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 30;
+                            yystate = 16;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 22;
+                            yystate = 15;
                             continue 'yyl;
                         }
                     }
                 }
-                45 => {
+                24 => {
                     yyaccept = 3;
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x27 | 0x2A..=0x5B | 0x5D..=0x7F => {
+                        0x00..=0x27 | 0x2A..=0x5B | 0x5D..=0xFE => {
                             cursor += 1;
-                            yystate = 31;
+                            yystate = 17;
                             continue 'yyl;
                         }
                         0x29 => {
                             cursor += 1;
-                            yystate = 33;
+                            yystate = 19;
                             continue 'yyl;
                         }
                         0x5C => {
                             cursor += 1;
-                            yystate = 35;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 36;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 37;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 38;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 40;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 42;
+                            yystate = 21;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 34;
+                            yystate = 20;
                             continue 'yyl;
                         }
                     }
@@ -21486,7 +14962,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -21527,7 +15003,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21549,7 +15025,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21571,7 +15047,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21593,7 +15069,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21613,7 +15089,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21643,7 +15119,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21663,7 +15139,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21683,7 +15159,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21703,7 +15179,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21723,7 +15199,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21743,7 +15219,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21763,7 +15239,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21783,7 +15259,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21803,7 +15279,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21823,7 +15299,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21845,7 +15321,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21872,7 +15348,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21892,7 +15368,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21912,7 +15388,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21932,7 +15408,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21952,7 +15428,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21972,7 +15448,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -21992,7 +15468,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22012,7 +15488,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22032,7 +15508,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22067,7 +15543,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22087,7 +15563,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22107,7 +15583,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22127,7 +15603,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22147,7 +15623,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22167,7 +15643,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22187,7 +15663,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22207,7 +15683,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22230,7 +15706,7 @@ pub fn dangerous_url(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22267,7 +15743,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -22295,7 +15771,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22315,7 +15791,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22340,7 +15816,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22360,7 +15836,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22385,7 +15861,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22405,7 +15881,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22425,7 +15901,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22445,7 +15921,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22465,7 +15941,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22484,7 +15960,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 14;
@@ -22516,7 +15992,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22539,7 +16015,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22559,7 +16035,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22578,7 +16054,7 @@ pub fn ipv6_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 20;
@@ -22622,7 +16098,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -22650,7 +16126,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22675,7 +16151,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22700,7 +16176,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22725,7 +16201,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22745,7 +16221,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22765,7 +16241,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22784,7 +16260,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 11;
@@ -22816,7 +16292,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22839,7 +16315,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22859,7 +16335,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22878,7 +16354,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 17;
@@ -22922,7 +16398,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -22958,7 +16434,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -22989,7 +16465,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23019,7 +16495,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23039,7 +16515,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23074,7 +16550,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23109,7 +16585,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23129,7 +16605,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 11;
@@ -23164,7 +16640,7 @@ pub fn table_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -23212,7 +16688,6 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
         {
             #[allow(unused_assignments)]
             let mut yych: u8 = 0;
-            let mut yyaccept: usize = 0;
             let mut yystate: usize = 0;
             'yyl: loop {
                 match yystate {
@@ -23221,18 +16696,18 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         cursor += 1;
                         match yych {
-                            0x01..=0x09
+                            0x00..=0x09
                             | 0x0B..=0x0C
                             | 0x0E..=0x26
                             | 0x28..=0x5B
                             | 0x5D..=0x7B
-                            | 0x7D..=0x7F => {
-                                yystate = 3;
+                            | 0x7D..=0xFE => {
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             0x27 | 0x5C => {
@@ -23243,66 +16718,30 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                                 yystate = 6;
                                 continue 'yyl;
                             }
-                            0xC2..=0xDF => {
-                                yystate = 7;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                yystate = 9;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                yystate = 13;
-                                continue 'yyl;
-                            }
                             _ => {
-                                yystate = 1;
+                                yystate = 3;
                                 continue 'yyl;
                             }
                         }
                     }
                     1 => {
-                        yystate = 2;
-                        continue 'yyl;
-                    }
-                    2 => {
-                        return None;
-                    }
-                    3 => {
-                        yyaccept = 0;
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x09
+                            0x00..=0x09
                             | 0x0B..=0x0C
                             | 0x0E..=0x26
                             | 0x28..=0x5B
                             | 0x5D..=0x7B
-                            | 0x7D..=0x7F => {
+                            | 0x7D..=0xFE => {
                                 cursor += 1;
-                                yystate = 3;
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             0x27 | 0x5C => {
@@ -23312,72 +16751,42 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                             }
                             0x7C => {
                                 cursor += 1;
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 17;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 19;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 20;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 21;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 22;
+                                yystate = 7;
                                 continue 'yyl;
                             }
                             _ => {
-                                yystate = 4;
+                                yystate = 2;
                                 continue 'yyl;
                             }
                         }
                     }
-                    4 => {
+                    2 => {
                         return Some(cursor);
                     }
+                    3 => {
+                        yystate = 4;
+                        continue 'yyl;
+                    }
+                    4 => {
+                        return None;
+                    }
                     5 => {
-                        yyaccept = 0;
-                        marker = cursor;
                         yych = unsafe {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x09
+                            0x00..=0x09
                             | 0x0B..=0x0C
                             | 0x0E..=0x26
                             | 0x28..=0x5B
                             | 0x5D..=0x7B
-                            | 0x7D..=0x7F => {
+                            | 0x7D..=0xFE => {
                                 cursor += 1;
-                                yystate = 3;
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             0x27 | 0x5C | 0x7C => {
@@ -23385,43 +16794,8 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                                 yystate = 5;
                                 continue 'yyl;
                             }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 17;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 19;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 20;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 21;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 22;
-                                continue 'yyl;
-                            }
                             _ => {
-                                yystate = 4;
+                                yystate = 2;
                                 continue 'yyl;
                             }
                         }
@@ -23431,17 +16805,17 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
                             0x27 | 0x7C => {
                                 cursor += 1;
-                                yystate = 3;
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             _ => {
-                                yystate = 2;
+                                yystate = 4;
                                 continue 'yyl;
                             }
                         }
@@ -23451,322 +16825,25 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 3;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    8 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0xA0..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    9 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    10 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    11 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    12 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    13 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    14 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
+                                255
                             }
                         };
                         match yych {
                             0x27 | 0x7C => {
                                 cursor += 1;
-                                yystate = 3;
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             _ => {
-                                yystate = 15;
+                                yystate = 8;
                                 continue 'yyl;
                             }
                         }
                     }
-                    15 => {
+                    8 => {
                         cursor = marker;
-                        if yyaccept == 0 {
-                            yystate = 4;
-                            continue 'yyl;
-                        } else {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                    16 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 3;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    17 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0xA0..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    18 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    19 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    20 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    21 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    22 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                        }
+                        yystate = 2;
+                        continue 'yyl;
                     }
                     _ => panic!("internal lexer error"),
                 }
@@ -23776,7 +16853,6 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
         {
             #[allow(unused_assignments)]
             let mut yych: u8 = 0;
-            let mut yyaccept: usize = 0;
             let mut yystate: usize = 0;
             'yyl: loop {
                 match yystate {
@@ -23785,485 +16861,77 @@ pub fn table_cell(s: &str, spoiler: bool) -> Option<usize> {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         cursor += 1;
                         match yych {
-                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
-                                yystate = 3;
+                            0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0xFE => {
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             0x5C => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                yystate = 6;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                yystate = 7;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                yystate = 9;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                yystate = 12;
+                                yystate = 4;
                                 continue 'yyl;
                             }
                             _ => {
-                                yystate = 1;
+                                yystate = 3;
                                 continue 'yyl;
                             }
                         }
                     }
                     1 => {
-                        yystate = 2;
-                        continue 'yyl;
+                        yych = unsafe {
+                            if cursor < len {
+                                *s.as_bytes().get_unchecked(cursor)
+                            } else {
+                                255
+                            }
+                        };
+                        match yych {
+                            0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0xFE => {
+                                cursor += 1;
+                                yystate = 1;
+                                continue 'yyl;
+                            }
+                            0x5C => {
+                                cursor += 1;
+                                yystate = 4;
+                                continue 'yyl;
+                            }
+                            _ => {
+                                yystate = 2;
+                                continue 'yyl;
+                            }
+                        }
                     }
                     2 => {
-                        return None;
-                    }
-                    3 => {
-                        yyaccept = 0;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7B | 0x7D..=0x7F => {
-                                cursor += 1;
-                                yystate = 3;
-                                continue 'yyl;
-                            }
-                            0x5C => {
-                                cursor += 1;
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 17;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 19;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 20;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 4;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    4 => {
                         return Some(cursor);
                     }
-                    5 => {
-                        yyaccept = 0;
-                        marker = cursor;
+                    3 => {
+                        return None;
+                    }
+                    4 => {
                         yych = unsafe {
                             if cursor < len {
                                 *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0x7F => {
+                            0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5B | 0x5D..=0xFE => {
                                 cursor += 1;
-                                yystate = 3;
+                                yystate = 1;
                                 continue 'yyl;
                             }
                             0x5C => {
                                 cursor += 1;
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 17;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 19;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 20;
-                                continue 'yyl;
-                            }
-                            _ => {
                                 yystate = 4;
                                 continue 'yyl;
                             }
-                        }
-                    }
-                    6 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 3;
-                                continue 'yyl;
-                            }
                             _ => {
                                 yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    7 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0xA0..=0xBF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    8 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    9 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    10 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    11 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    12 => {
-                        yyaccept = 1;
-                        marker = cursor;
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 2;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    13 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 3;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    14 => {
-                        cursor = marker;
-                        if yyaccept == 0 {
-                            yystate = 4;
-                            continue 'yyl;
-                        } else {
-                            yystate = 2;
-                            continue 'yyl;
-                        }
-                    }
-                    15 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0xA0..=0xBF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    16 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    17 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    18 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    19 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    20 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.as_bytes().get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 14;
                                 continue 'yyl;
                             }
                         }
@@ -24290,7 +16958,7 @@ pub fn table_cell_end(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24313,7 +16981,7 @@ pub fn table_cell_end(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24353,7 +17021,7 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24385,7 +17053,7 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24407,7 +17075,7 @@ pub fn table_row_end(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 6;
@@ -24457,7 +17125,7 @@ pub fn shortcode(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24485,7 +17153,7 @@ pub fn shortcode(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24504,7 +17172,7 @@ pub fn shortcode(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     yystate = 5;
@@ -24557,7 +17225,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24585,7 +17253,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24605,7 +17273,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24630,7 +17298,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24662,7 +17330,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24711,7 +17379,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24739,7 +17407,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24759,7 +17427,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24784,7 +17452,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24816,7 +17484,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24854,8 +17522,7 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
     let mut marker = 0;
     let len = s.len();
 
-    let t1;
-    let mut yyt1 = 0;
+    let mut t1;
 
     {
         #[allow(unused_assignments)]
@@ -24868,7 +17535,7 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -24900,7 +17567,7 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -24926,56 +17593,13 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7F => {
-                            yyt1 = cursor;
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 15;
                             continue 'yyl;
                         }
                         _ => {
@@ -24989,7 +17613,7 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -25019,56 +17643,13 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x09 | 0x0B..=0x0C | 0x0E..=0x7F => {
-                            yyt1 = cursor;
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            yyt1 = cursor;
-                            cursor += 1;
-                            yystate = 15;
                             continue 'yyl;
                         }
                         _ => {
@@ -25082,13 +17663,13 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
                         0x5D => {
                             cursor += 1;
-                            yystate = 16;
+                            yystate = 9;
                             continue 'yyl;
                         }
                         _ => {
@@ -25102,163 +17683,24 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
+                        0x00..=0x08 | 0x0E..=0x1F | 0x21..=0xFE => {
+                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
-                            yystate = 6;
+                            cursor += 1;
+                            yystate = 10;
                             continue 'yyl;
                         }
                     }
                 }
                 10 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x00 | 0x09..=0x0D | 0x20 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    t1 = yyt1;
+                    t1 = cursor;
+                    t1 = (t1 as isize + -3) as usize;
                     {
                         if cursor == len + 1 {
                             cursor -= 1;
@@ -25287,7 +17729,7 @@ pub fn description_item_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -25314,7 +17756,7 @@ pub fn description_item_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -25334,7 +17776,7 @@ pub fn description_item_start(s: &str) -> Option<usize> {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {

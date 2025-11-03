@@ -132,3 +132,16 @@ Let's include some \*important\* \_ones\_ too.
     options.render.experimental_minimize_commonmark = true;
     commonmark(input, input, Some(&options));
 }
+
+#[test]
+fn dont_create_autolinks() {
+    let input = "a_b@c.d_";
+
+    let mut options = Options::default();
+    options.extension.autolink = true;
+
+    let expected = "a\\_b\\@c.d\\_\n";
+    commonmark(input, expected, Some(&options));
+
+    commonmark(expected, expected, Some(&options));
+}

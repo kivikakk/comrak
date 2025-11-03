@@ -50,7 +50,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
 
     fn escape(&mut self, buffer: &str) -> fmt::Result {
         let bytes = buffer.as_bytes();
-        const XML_UNSAFE: [bool; 256] = character_set!(b"&<>\"");
+        const XML_UNSAFE: [bool; 256] = character_set!(b"&<>\"\0");
 
         let mut offset = 0;
         for (i, &byte) in bytes.iter().enumerate() {
@@ -60,6 +60,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     b'&' => "&amp;",
                     b'<' => "&lt;",
                     b'>' => "&gt;",
+                    b'\0' => "\u{fffd}",
                     _ => unreachable!(),
                 };
                 self.output.write_str(&buffer[offset..i])?;

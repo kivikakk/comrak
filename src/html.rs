@@ -1652,7 +1652,7 @@ pub fn dangerous_url(input: &str) -> bool {
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
     let bytes = buffer.as_bytes();
-    let matcher = jetscii::bytes!(b'"', b'&', b'<', b'>');
+    let matcher = jetscii::bytes!(b'"', b'&', b'<', b'>', b'\0');
 
     let mut offset = 0;
     while let Some(i) = matcher.find(&bytes[offset..]) {
@@ -1661,6 +1661,7 @@ pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
             b'&' => "&amp;",
             b'<' => "&lt;",
             b'>' => "&gt;",
+            b'\0' => "\u{fffd}",
             _ => unreachable!(),
         };
         output.write_str(&buffer[offset..offset + i])?;
@@ -1741,6 +1742,10 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
             }
             b'\'' => {
                 output.write_str("&#x27;")?;
+            }
+            0 => {
+                // U+FFFD REPLACEMENT CHARACTER
+                output.write_str("%EF%BF%BD")?;
             }
             _ => write!(output, "%{:02X}", bytes[i])?,
         }

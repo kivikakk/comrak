@@ -230,9 +230,6 @@ fn echaw2() {
 fn echaw3() {
     assert_ast_match!(
         [extension.autolink, parse.smart],
-        // XXX As an extra special case, NUL bytes are expanded to U+FFFD
-        // REPLACEMENT CHARACTER (UTF-8: EF BF BD) during the feed stage, so
-        // sourcepos sees three bytes (!). I might like to change this later.
         "c@.r\0\t\r"
         "z  \n"
         " f@.x",
@@ -241,10 +238,10 @@ fn echaw3() {
                 (link (1:1-1:4) "mailto:c@.r" [
                     (text (1:1-1:4) "c@.r")
                 ])
-                (text (1:5-1:7) "�")
+                (text (1:5-1:5) "\x00")
                 // !! Spaces at EOL are trimmed.
                 // See parser::inlines::Subject::parse_inline's final case.
-                (softbreak (1:9-1:9))
+                (softbreak (1:7-1:7))
                 (text (2:1-2:1) "z")
                 (linebreak (2:2-2:4))
                 (link (3:2-3:5) "mailto:f@.x" [
@@ -379,7 +376,7 @@ fn relaxed_autolink_email_in_footnote() {
 }
 
 #[test]
-fn truncate() {
+fn nul_in_link() {
     html("![](\\#\0)", "<p><img src=\"#%EF%BF%BD\" alt=\"\" /></p>\n");
 }
 

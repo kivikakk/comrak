@@ -232,6 +232,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                     || c == '\\'
                     || c == '`'
                     || c == '!'
+                    || (self.options.extension.autolink && c == '@')
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
@@ -259,6 +260,8 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 write!(self.output, "%{:2X}", c as u8)?;
             } else if ispunct_char(c) {
                 write!(self.output, "\\{}", c)?;
+            } else if c == '\0' {
+                write!(self.output, "\u{fffd}")?;
             } else {
                 write!(self.output, "&#{};", c as u8)?;
             }

@@ -137,58 +137,30 @@ where
 
         let mut ix = 0;
 
-        // linebuf is necessarily entirely to do spec-compliant NUL handling in
-        // one place. If the input document contains no NUL bytes, we will never
-        // use linebuf. Our re2c scanners presume there are no NUL bytes in
-        // the subject, and use 0 as the sentinel result when !(cursor < len).
-        let mut linebuf = String::new();
-
         while ix < end {
             let mut eol = ix;
-            let mut ate_line_end = 0;
 
             while eol < end {
                 match sb[eol] {
-                    b'\r' if eol + 1 < end && sb[eol + 1] == b'\n' => {
-                        ate_line_end = 2;
-                        eol += 2;
+                    b'\r' => {
+                        eol += 1;
+                        if eol < end && sb[eol] == b'\n' {
+                            eol += 1;
+                        }
                         break;
                     }
-                    b'\n' | b'\r' => {
-                        ate_line_end = 1;
+                    b'\n' => {
                         eol += 1;
                         break;
                     }
-                    0 => break,
                     _ => {}
                 }
                 eol += 1;
             }
 
-            if ate_line_end > 0 || eol == end {
-                if !linebuf.is_empty() {
-                    linebuf.push_str(&s[ix..eol]);
-                    // Keep one active linebuf allocation.
-                    let mut cow = Cow::Owned(mem::take(&mut linebuf));
-                    self.process_line(&mut cow, eol == end);
-                    mem::swap(&mut cow.into_owned(), &mut linebuf);
-                    linebuf.clear();
-                } else {
-                    self.process_line(&mut s[ix..eol].into(), eol == end);
-                }
-            } else {
-                assert_eq!(sb[eol], b'\0');
-                linebuf.push_str(&s[ix..eol]);
-                linebuf.push('\u{fffd}');
-                eol += 1;
-            }
+            self.process_line(&s[ix..eol], eol == end);
 
             ix = eol;
-        }
-
-        if !linebuf.is_empty() {
-            // Reached only if the input ends with a NUL byte.
-            self.process_line(&mut linebuf.into(), true);
         }
 
         self.finalize_document();
@@ -227,7 +199,8 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, line: &mut Cow<str>, at_eof: bool) {
+    fn process_line(&mut self, line: &str, at_eof: bool) {
+        let mut line = Cow::Borrowed(line);
         // Most scanners depend on seeing a \r or \n to end the line, even
         // though the end of the document suffices per spec.  Synthesise a
         // final EOL if there isn't one so these scanners work.
