@@ -1740,7 +1740,7 @@ where
         Self::find_footnote_definitions(self.root, &mut fd_map);
 
         let mut next_ix = 0;
-        Self::find_footnote_references(self.root, &mut fd_map, &mut next_ix);
+        self.find_footnote_references(&mut fd_map, &mut next_ix);
 
         let mut fds = fd_map.into_values().collect::<Vec<_>>();
         fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
@@ -1786,13 +1786,14 @@ where
     }
 
     fn find_footnote_references(
-        root: Node<'a>,
+        &mut self,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let mut stack = vec![root];
+        let mut stack = vec![self.root];
         while let Some(node) = stack.pop() {
             let mut ast = node.data_mut();
+            let sp = ast.sourcepos;
             match ast.value {
                 NodeValue::FootnoteReference(ref mut nfr) => {
                     let normalized = strings::normalize_label(&nfr.name, Case::Fold);
@@ -1810,7 +1811,41 @@ where
                         nfr.ix = ix;
                         nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
                     } else {
-                        ast.value = NodeValue::Text(format!("[^{}]", nfr.name).into());
+                        // Restore the nodes as they were-ish.  We restore each
+                        // Text node as it was found, preserving the sourcepos
+                        // spans.  This is important for accurate sourcepos
+                        // tracking; we assert when 'consuming' sourcepos
+                        // lengths in post-processing that either the span
+                        // length matches the byte count of the string (meaning
+                        // we can reliably subset them both), or that we're
+                        // consuming a whole span.  Trying to consume part of a
+                        // span without a matching length is undefined, and we
+                        // will crash; see Spx::consume.
+                        //
+                        // See HACK comment in
+                        // `inlines::Subject::handle_close_bracket` for the
+                        // producer of these values.
+                        assert!(!nfr.texts.is_empty());
+                        let mut lc = sp.start;
+                        let mut target = node;
+
+                        let mut texts = mem::take(&mut nfr.texts);
+                        texts.insert(0, ("[".into(), 1));
+                        texts.push(("]".into(), 1));
+
+                        for (text, span) in &mut texts {
+                            let inl = self.arena.alloc(
+                                Ast::new_with_sourcepos(
+                                    NodeValue::Text(mem::take(text).into()),
+                                    (lc, lc.column_add(*span as isize - 1)).into(),
+                                )
+                                .into(),
+                            );
+                            target.insert_after(inl);
+                            target = inl;
+                            lc = lc.column_add(*span as isize);
+                        }
+                        node.detach();
                     }
                 }
                 _ => {

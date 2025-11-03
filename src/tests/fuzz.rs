@@ -540,3 +540,14 @@ fn oye_siri_prende_las_luces() {
         ])
     );
 }
+
+#[test]
+fn cursed_lands() {
+    let mut opts = Options::default();
+    opts.extension.autolink = true;
+    opts.extension.footnotes = true;
+    opts.parse.smart = true;
+    opts.parse.relaxed_autolinks = true;
+
+    markdown_to_html("[^a@b.c--d]", &opts);
+}

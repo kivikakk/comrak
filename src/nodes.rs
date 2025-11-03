@@ -173,7 +173,7 @@ pub enum NodeValue {
     Image(Box<NodeLink>),
 
     /// **Inline**.  A footnote reference.
-    FootnoteReference(NodeFootnoteReference),
+    FootnoteReference(Box<NodeFootnoteReference>),
 
     #[cfg(feature = "shortcodes")]
     /// **Inline**. An Emoji character generated from a shortcode. Enable with feature "shortcodes".
@@ -458,6 +458,9 @@ pub struct NodeFootnoteDefinition {
 pub struct NodeFootnoteReference {
     /// The name of the footnote.
     pub name: String,
+
+    /// The original text elements of the footnote, including their source position spans.
+    pub texts: Vec<(String, usize)>,
 
     /// The index of reference to the same footnote
     pub ref_num: u32,
