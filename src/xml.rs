@@ -223,6 +223,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Strong => {}
                 NodeValue::Emph => {}
                 NodeValue::Strikethrough => {}
+                NodeValue::Highlight => {}
                 NodeValue::Superscript => {}
                 NodeValue::Link(ref nl) | NodeValue::Image(ref nl) => {
                     self.output.write_str(" destination=\"")?;
