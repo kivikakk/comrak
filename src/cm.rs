@@ -232,6 +232,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                     || c == '\\'
                     || c == '`'
                     || c == '!'
+                    || (self.options.extension.autolink && c == '@')
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
