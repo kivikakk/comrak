@@ -337,6 +337,8 @@ projects and resources to also consider:
   Available on Hex as [`mdex`](https://hex.pm/packages/mdex).
 - [comrak](https://github.com/lmmx/comrak) — Python bindings for this library built with PyO3.
   Available on PyPI as [`comrak`](https://pypi.org/project/comrak), benchmarked at 15-60x faster than pure Python alternatives.
+- [comrak-ext](https://github.com/Martin005/comrak-ext) — Python bindings; fork of `comrak` with additional APIs exposed, including the AST.
+  Available on PyPI as [`comrak-ext`](https://pypi.org/project/comrak-ext).
 - [comrak-wasm](https://github.com/nberlette/comrak-wasm) — TypeScript bindings for this library, built with WebAssembly.
   Available on JSR as [`@nick/comrak`](https://jsr.io/@nick/comrak).
 
