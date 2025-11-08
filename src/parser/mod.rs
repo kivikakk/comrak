@@ -348,11 +348,8 @@ where
             self.first_nonspace_column = self.column;
 
             loop {
-                if self.first_nonspace >= line.len() {
-                    break;
-                }
-                match bytes[self.first_nonspace] {
-                    32 => {
+                match bytes.get(self.first_nonspace) {
+                    Some(b' ') => {
                         self.first_nonspace += 1;
                         self.first_nonspace_column += 1;
                         chars_to_tab -= 1;
@@ -360,7 +357,7 @@ where
                             chars_to_tab = TAB_STOP;
                         }
                     }
-                    9 => {
+                    Some(b'\t') => {
                         self.first_nonspace += 1;
                         self.first_nonspace_column += chars_to_tab;
                         chars_to_tab = TAB_STOP;
@@ -473,9 +470,10 @@ where
         };
 
         if matched >= fence_length {
-            if let NodeValue::CodeBlock(ref mut ncb) = ast.value {
-                ncb.closed = true;
-            }
+            let NodeValue::CodeBlock(ref mut ncb) = ast.value else {
+                unreachable!();
+            };
+            ncb.closed = true;
             self.advance_offset(line, matched, false);
             self.current = self.finalize_borrowed(container, ast).unwrap();
             return None;
@@ -597,8 +595,8 @@ where
                             }
                         }
                         // fallback to start position (better than column 0)
-                        let sp = node.data().sourcepos.start;
-                        node.data_mut().sourcepos.end = sp;
+                        let mut ast = node.data_mut();
+                        ast.sourcepos.end = ast.sourcepos.start;
                     }
                 }
             }
@@ -857,7 +855,7 @@ where
             fence_char: line.as_bytes()[first_nonspace],
             fence_length: matched,
             fence_offset: first_nonspace - offset,
-            info: String::with_capacity(10),
+            info: String::new(),
             literal: String::new(),
             closed: false,
         };
@@ -1091,13 +1089,12 @@ where
                     return false;
                 }
 
-                let parent = container.parent();
-                if parent.is_none() {
+                let Some(parent) = container.parent() else {
                     return false;
-                }
+                };
 
                 tight = true;
-                *container = parent.unwrap();
+                *container = parent;
                 container.last_child().unwrap()
             }
         };
@@ -1335,13 +1332,15 @@ where
         let bytes = line.as_bytes();
         while count > 0 {
             match bytes[self.offset] {
-                9 => {
+                b'\t' => {
                     let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
                     if columns {
                         self.partially_consumed_tab = chars_to_tab > count;
                         let chars_to_advance = min(count, chars_to_tab);
                         self.column += chars_to_advance;
-                        self.offset += if self.partially_consumed_tab { 0 } else { 1 };
+                        if !self.partially_consumed_tab {
+                            self.offset += 1;
+                        };
                         count -= chars_to_advance;
                     } else {
                         self.partially_consumed_tab = false;
@@ -1467,18 +1466,19 @@ where
                         };
                         let count = self.first_nonspace - self.offset;
 
-                        // In a rare case the above `chop` operation can leave
-                        // the line shorter than the recorded `first_nonspace`
-                        // This happens with ATX headers containing no header
-                        // text, multiple spaces and trailing hashes, e.g
+                        // In some cases the `chop_trailing_hashes` above
+                        // can leave the line shorter than the recorded
+                        // `first_nonspace` This happens with ATX headers
+                        // containing no header text, multiple spaces and
+                        // trailing hashes, e.g
                         //
                         // ###     ###
                         //
-                        // In this case `first_nonspace` indexes into the second
-                        // set of hashes, while `chop_trailing_hashtags` truncates
-                        // `line` to just `###` (the first three hashes).
-                        // In this case there's no text to add, and no further
-                        // processing to be done.
+                        // In this case `first_nonspace` indexes into the
+                        // second set of hashes, while `chop_trailing_hashtags`
+                        // truncates `line` to just `###` (the first three
+                        // hashes). In this case there's no text to add, and no
+                        // further processing to be done.
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
@@ -1514,9 +1514,9 @@ where
             }
         }
         if self.offset < line.len() {
-            // since whitespace is stripped off the beginning of lines, we need to keep
-            // track of how much was stripped off. This allows us to properly calculate
-            // inline sourcepos during inline processing.
+            // Since whitespace is stripped off the beginning of lines, we need
+            // to keep track of how much was stripped off. This allows us to
+            // properly calculate inline sourcepos during inline processing.
             ast.line_offsets.push(self.offset);
 
             ast.content.push_str(&line[self.offset..]);
@@ -1537,10 +1537,7 @@ where
         if self.options.extension.footnotes {
             // Append auto-generated inline footnote definitions
             if self.options.extension.inline_footnotes {
-                let inline_defs = self.footnote_defs.take();
-                for def in inline_defs.into_iter() {
-                    self.root.append(def);
-                }
+                self.root.extend(self.footnote_defs.take());
             }
 
             self.process_footnotes();
@@ -1553,21 +1550,19 @@ where
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
-        let mut rrs_to_add = vec![];
+        let mut rrs = vec![];
 
-        {
-            let bytes = content.as_bytes();
-            while seeked < content.len() && bytes[seeked] == b'[' {
-                if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
-                    seeked += offset;
-                    rrs_to_add.extend(rr);
-                } else {
-                    break;
-                }
+        let bytes = content.as_bytes();
+        while seeked < content.len() && bytes[seeked] == b'[' {
+            if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
+                seeked += offset;
+                rrs.extend(rr);
+            } else {
+                break;
             }
         }
 
-        for (lab, rr) in rrs_to_add {
+        for (lab, rr) in rrs {
             self.refmap.map.entry(lab).or_insert(rr);
         }
 
@@ -1585,9 +1580,7 @@ where
         let content = &mut ast.content;
         let parent = node.parent();
 
-        if matches!(ast.value, NodeValue::Table(..)) {
-            // handles its own sourcepos.end.
-        } else if self.curline_len == 0 {
+        if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
             NodeValue::Document => true,
@@ -1598,7 +1591,7 @@ where
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else if matches!(
             ast.value,
-            NodeValue::ThematicBreak | NodeValue::TableRow(..)
+            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
         ) {
             // sourcepos.end set by itself or managed below.
         } else {
@@ -1631,8 +1624,9 @@ where
                         pos += 1;
                     }
 
-                    let mut info = entity::unescape_html(&content[..pos]).into();
-                    strings::trim(&mut info);
+                    let mut info = entity::unescape_html(&content[..pos]);
+                    strings::trim_cow(&mut info);
+                    let mut info = info.into_owned();
                     strings::unescape(&mut info);
                     if info.is_empty() {
                         ncb.info = self

@@ -205,6 +205,13 @@ impl<'a, T> Node<'a, T> {
         self.last_child.set(Some(new_child));
     }
 
+    /// Append multiple new children to this node, after existing children.
+    pub fn extend(&'a self, new_children: impl IntoIterator<Item = &'a Node<'a, T>>) {
+        for child in new_children.into_iter() {
+            self.append(child);
+        }
+    }
+
     /// Prepend a new child to this node, before existing children.
     pub fn prepend(&'a self, new_child: &'a Node<'a, T>) {
         new_child.detach();
