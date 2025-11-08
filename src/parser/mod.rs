@@ -675,6 +675,7 @@ where
         let mut fence_length = 0;
 
         let bytes = line.as_bytes();
+        // The checks made here co-operate with the alert_start scanner for soundness.
         while bytes[title_startpos] != b']' {
             if bytes[title_startpos] == b'>' {
                 fence_length += 1
@@ -690,8 +691,9 @@ where
         }
 
         // anything remaining on this line is considered an alert title
-        let mut title = entity::unescape_html(&line[title_startpos..]).into_owned();
-        strings::trim(&mut title);
+        let mut title = entity::unescape_html(&line[title_startpos..]);
+        strings::trim_cow(&mut title);
+        let mut title = title.into_owned();
         strings::unescape(&mut title);
 
         let na = NodeAlert {
@@ -702,7 +704,7 @@ where
             title: if title.is_empty() { None } else { Some(title) },
         };
 
-        let offset = self.curline_len - self.offset - 1;
+        let offset = self.curline_len - self.offset - strings::newlines_of(line);
         self.advance_offset(line, offset, false);
 
         *container = self.add_child(
