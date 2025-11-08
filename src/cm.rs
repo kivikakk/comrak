@@ -61,7 +61,10 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     node: Node<'a>,
     options: &'o Options<'c>,
     output: &'w mut dyn Write,
-    buffer: String,
+    /// Buffer used by wrapping implementation; flushed on newline or wrapping
+    /// event.
+    wrap_buffer: String,
+    /// The last two bytes written (to output or wrap_buffer).
     window: Vec<u8>,
     /// Contains some assortment of:
     /// * "> " when formatting within a blockquote.
@@ -70,7 +73,7 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     /// * "    " when formatting within a footnote definition.
     /// * "> " when formatting within an alert.
     /// A prefix when non-empty is therefore guaranteed to have a length of at
-    /// least two.
+    /// least two. This is relevant in write_prefix.
     prefix: String,
     column: usize,
     need_cr: u8,
@@ -105,7 +108,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             node,
             options,
             output,
-            buffer: String::new(),
+            wrap_buffer: String::new(),
             window: Vec::with_capacity(2),
             prefix: String::new(),
             column: 0,
@@ -147,11 +150,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         } else {
             if self.window.last() == Some(&b'\n') {
                 // Can flush.
-                self.output.write_str(&self.buffer)?;
+                self.output.write_str(&self.wrap_buffer)?;
                 self.output.write_str(s)?;
-                self.buffer.clear();
+                self.wrap_buffer.clear();
             } else {
-                self.buffer.push_str(s);
+                self.wrap_buffer.push_str(s);
             }
         }
 
@@ -166,7 +169,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if self.options.render.width == 0 {
             self.output.write_str(&self.prefix)?;
         } else {
-            self.buffer.push_str(&self.prefix);
+            self.wrap_buffer.push_str(&self.prefix);
         }
         self.window.clear();
         self.window
@@ -221,7 +224,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             let nextb = bytes.get(i + 1);
             if c == ' ' && wrap {
                 if !self.begin_line {
-                    let last_nonspace = self.buffer.len();
+                    let last_nonspace = self.wrap_buffer.len();
                     self.write(" ")?;
                     self.column += 1;
                     self.begin_line = false;
@@ -258,11 +261,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 && !self.begin_line
                 && self.last_breakable > 0
             {
-                self.output.write_str(&self.buffer[..self.last_breakable])?;
+                self.output
+                    .write_str(&self.wrap_buffer[..self.last_breakable])?;
                 self.output.write_str("\n")?;
-                strings::remove_from_start(&mut self.buffer, self.last_breakable + 1);
-                self.buffer.insert_str(0, &self.prefix);
-                self.column = self.buffer.len();
+                strings::remove_from_start(&mut self.wrap_buffer, self.last_breakable + 1);
+                self.wrap_buffer.insert_str(0, &self.prefix);
+                self.column = self.wrap_buffer.len();
                 self.last_breakable = 0;
                 self.begin_line = false;
                 self.begin_content = false;
@@ -370,8 +374,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
         }
 
-        if !self.buffer.is_empty() {
-            self.output.write_str(&self.buffer)?;
+        if !self.wrap_buffer.is_empty() {
+            self.output.write_str(&self.wrap_buffer)?;
         }
         if !self.window.is_empty() && self.window.last() != Some(&b'\n') {
             self.output.write_str("\n")?;
