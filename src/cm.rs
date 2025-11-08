@@ -128,12 +128,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if s.is_empty() {
             return Ok(());
         }
-        if self.options.render.width == 0 {
-            self.output.write_str(s)?;
-        } else {
-            self.buffer.push_str(s);
-        }
-
         // We maintain a window size of 2 bytes at most.
         if s.len() > 1 {
             self.window.clear();
@@ -146,6 +140,19 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 assert!(self.window.len() < 2);
             }
             self.window.push(s.as_bytes()[0]);
+        }
+
+        if self.options.render.width == 0 {
+            self.output.write_str(s)?;
+        } else {
+            if self.window.last() == Some(&b'\n') {
+                // Can flush.
+                self.output.write_str(&self.buffer)?;
+                self.output.write_str(s)?;
+                self.buffer.clear();
+            } else {
+                self.buffer.push_str(s);
+            }
         }
 
         Ok(())
