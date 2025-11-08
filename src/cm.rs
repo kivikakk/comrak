@@ -79,6 +79,7 @@ struct CommonMarkFormatter<'a, 'o, 'c> {
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
+    allow_wrap: bool,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -112,12 +113,13 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             custom_escape: None,
             footnote_ix: 0,
             ol_stack: vec![],
+            allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
         }
     }
 
     fn output(&mut self, s: &str, wrap: bool, escaping: Escaping) -> fmt::Result {
         let bytes = s.as_bytes();
-        let wrap = wrap && !self.no_linebreaks;
+        let wrap = self.allow_wrap && wrap && !self.no_linebreaks;
 
         if self.in_tight_list_item && self.need_cr > 1 {
             self.need_cr = 1;
@@ -343,7 +345,6 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
-        let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
         let parent_node = node.parent();
         if entering {
@@ -382,10 +383,10 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
-            NodeValue::Text(ref literal) => self.format_text(literal, allow_wrap, entering)?,
+            NodeValue::Text(ref literal) => self.format_text(literal, entering)?,
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
-            NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering)?,
-            NodeValue::Code(ref code) => self.format_code(&code.literal, allow_wrap, entering)?,
+            NodeValue::SoftBreak => self.format_soft_break(entering)?,
+            NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
             NodeValue::Strong => {
@@ -400,7 +401,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::Highlight => self.format_highlight()?,
             NodeValue::Superscript => self.format_superscript()?,
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
-            NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering)?,
+            NodeValue::Image(ref nl) => self.format_image(nl, entering)?,
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering)?,
             NodeValue::Table(..) => self.format_table(entering),
@@ -417,7 +418,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 // Noop - the character gets escaped as usual, this is just an
                 // AST marker created by escaped_char_spans.
             }
-            NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering)?,
+            NodeValue::Math(ref math) => self.format_math(math, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
@@ -657,9 +658,9 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         }
     }
 
-    fn format_text(&mut self, literal: &str, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_text(&mut self, literal: &str, entering: bool) -> fmt::Result {
         if entering {
-            self.output(literal, allow_wrap, Escaping::Normal)?;
+            self.output(literal, true, Escaping::Normal)?;
         }
         Ok(())
     }
@@ -678,7 +679,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_soft_break(&mut self, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_soft_break(&mut self, entering: bool) -> fmt::Result {
         if entering {
             if !self.no_linebreaks
                 && self.options.render.width == 0
@@ -686,15 +687,15 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             {
                 self.cr();
             } else if self.options.render.hardbreaks {
-                self.output("\n", allow_wrap, Escaping::Literal)?;
+                self.output("\n", true, Escaping::Literal)?;
             } else {
-                self.output(" ", allow_wrap, Escaping::Literal)?;
+                self.output(" ", true, Escaping::Literal)?;
             }
         }
         Ok(())
     }
 
-    fn format_code(&mut self, literal: &str, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_code(&mut self, literal: &str, entering: bool) -> fmt::Result {
         if entering {
             let literal_bytes = literal.as_bytes();
             let numticks = shortest_unused_sequence(literal_bytes, b'`');
@@ -714,7 +715,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             if pad {
                 write!(self, " ")?
             }
-            self.output(literal, allow_wrap, Escaping::Literal)?;
+            self.output(literal, true, Escaping::Literal)?;
             if pad {
                 write!(self, " ")?;
             }
@@ -858,14 +859,14 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_image(&mut self, nl: &NodeLink, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_image(&mut self, nl: &NodeLink, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "![")?;
         } else {
             write!(self, "](")?;
             self.output(&nl.url, false, Escaping::Url)?;
             if !nl.title.is_empty() {
-                self.output(" \"", allow_wrap, Escaping::Literal)?;
+                self.output(" \"", true, Escaping::Literal)?;
                 self.output(&nl.title, false, Escaping::Title)?;
                 write!(self, "\"")?;
             }
@@ -961,7 +962,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_math(&mut self, math: &NodeMath, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_math(&mut self, math: &NodeMath, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
             let start_fence = if math.dollar_math {
@@ -981,7 +982,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
-            self.output(literal, allow_wrap, Escaping::Literal)?;
+            self.output(literal, true, Escaping::Literal)?;
             self.output(end_fence, false, Escaping::Literal)?;
         }
         Ok(())
