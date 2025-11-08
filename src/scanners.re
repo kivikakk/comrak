@@ -64,7 +64,12 @@ pub fn atx_heading_start(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [#]{1,6} ([ \t]+|[\r\n])  { return Some(cursor); }
+    [#]{1,6} ([ \t]+|[\r\n\xff])  {
+        if cursor == len + 1 {
+            cursor -= 1;
+        }
+        return Some(cursor);
+    }
     * { return None; }
 */
 }
@@ -74,7 +79,12 @@ pub fn atx_subtext_start(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [-][#] ([ \t]+|[\r\n])  { return Some(cursor); }
+    [-][#] ([ \t]+|[\r\n\xff])  {
+        if cursor == len + 1 {
+            cursor -= 1;
+        }
+        return Some(cursor);
+    }
     * { return None; }
 */
 }
@@ -150,8 +160,8 @@ pub fn open_code_fence(s: &str) -> Option<usize> {
     let mut ctxmarker = 0;
     let len = s.len();
 /*!re2c
-    [`]{3,} / [^`\r\n\xff]*[\r\n] { return Some(cursor); }
-    [~]{3,} / [^\r\n\xff]*[\r\n] { return Some(cursor); }
+    [`]{3,} / [^`\r\n\xff]*[\r\n\xff] { return Some(cursor); }
+    [~]{3,} / [^\r\n\xff]*[\r\n\xff] { return Some(cursor); }
     * { return None; }
 */
 }
@@ -162,8 +172,8 @@ pub fn close_code_fence(s: &str) -> Option<usize> {
     let mut ctxmarker = 0;
     let len = s.len();
 /*!re2c
-    [`]{3,} / [ \t]*[\r\n] { return Some(cursor); }
-    [~]{3,} / [ \t]*[\r\n] { return Some(cursor); }
+    [`]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
+    [~]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
     * { return None; }
 */
 }
@@ -188,7 +198,7 @@ pub fn html_block_start_7(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [<] (opentag | closetag) [\t\n\f ]* [\r\n] { return Some(7); }
+    [<] (opentag | closetag) [\t\n\f ]* [\r\n\xff] { return Some(7); }
     * { return None; }
 */
 }
@@ -203,8 +213,8 @@ pub fn setext_heading_line(s: &str) -> Option<SetextChar> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [=]+ [ \t]* [\r\n] { return Some(SetextChar::Equals); }
-    [-]+ [ \t]* [\r\n] { return Some(SetextChar::Hyphen); }
+    [=]+ [ \t]* [\r\n\xff] { return Some(SetextChar::Equals); }
+    [-]+ [ \t]* [\r\n\xff] { return Some(SetextChar::Hyphen); }
     * { return None; }
 */
 }
@@ -359,7 +369,7 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
 
     table_spoiler = ['|']['|'];
     table_spacechar = [ \t\v\f];
-    table_newline = [\r\n];
+    table_newline = ([\r][\n]|[\r\n]);
 
     table_delimiter = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
     table_cell = (escaped_char|[^\xff|\r\n])+;
@@ -372,7 +382,7 @@ pub fn table_start(s: &str) -> Option<usize> {
     let mut marker = 0;
     let len = s.len();
 /*!re2c
-    [|]? table_delimiter ([|] table_delimiter)* [|]? table_spacechar* table_newline {
+    [|]? table_delimiter ([|] table_delimiter)* [|]? table_spacechar* (table_newline|[\xff]) {
         return Some(cursor);
     }
     * { return None; }
@@ -436,7 +446,7 @@ pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut ctxmarker = 0;
     let len = s.len();
 /*!re2c
-    [>]{3,} / [ \t]*[\r\n] { return Some(cursor); }
+    [>]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
     * { return None; }
 */
 }
@@ -447,7 +457,7 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
     let mut ctxmarker = 0;
     let len = s.len();
 /*!re2c
-    [>]{3,} / [ \t]*[\r\n] { return Some(cursor); }
+    [>]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
     * { return None; }
 */
 }

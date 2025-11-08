@@ -56,6 +56,7 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
 
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<'a>,
+    options: &'o Options<'c>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
@@ -73,7 +74,6 @@ pub struct Parser<'a, 'o, 'c> {
     curline_end_col: usize,
     last_line_length: usize,
     total_size: usize,
-    options: &'o Options<'c>,
 }
 
 /// A reference link's resolved details.
@@ -100,6 +100,7 @@ where
     fn new(arena: &'a Arena<'a>, root: Node<'a>, options: &'o Options<'c>) -> Self {
         Parser {
             arena,
+            options,
             refmap: RefMap::new(),
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
@@ -117,7 +118,6 @@ where
             curline_end_col: 0,
             last_line_length: 0,
             total_size: 0,
-            options,
         }
     }
 
@@ -137,6 +137,7 @@ where
 
         let mut ix = 0;
 
+        // TODO: jetscii.
         while ix < end {
             let mut eol = ix;
 
@@ -158,7 +159,7 @@ where
                 eol += 1;
             }
 
-            self.process_line(&s[ix..eol], eol == end);
+            self.process_line(&s[ix..eol]);
 
             ix = eol;
         }
@@ -199,18 +200,7 @@ where
         self.line_number += lines;
     }
 
-    fn process_line(&mut self, line: &str, at_eof: bool) {
-        let mut line = Cow::Borrowed(line);
-        // Most scanners depend on seeing a \r or \n to end the line, even
-        // though the end of the document suffices per spec.  Synthesise a
-        // final EOL if there isn't one so these scanners work.
-        let &last_byte = line.as_bytes().last().unwrap();
-        if !strings::is_line_end_char(last_byte) {
-            assert!(at_eof); // This case should only ever occur at EOF, once per document.
-            line.to_mut().push('\n');
-        }
-
-        let line = line.as_ref();
+    fn process_line(&mut self, line: &str) {
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -358,11 +348,8 @@ where
             self.first_nonspace_column = self.column;
 
             loop {
-                if self.first_nonspace >= line.len() {
-                    break;
-                }
-                match bytes[self.first_nonspace] {
-                    32 => {
+                match bytes.get(self.first_nonspace) {
+                    Some(b' ') => {
                         self.first_nonspace += 1;
                         self.first_nonspace_column += 1;
                         chars_to_tab -= 1;
@@ -370,7 +357,7 @@ where
                             chars_to_tab = TAB_STOP;
                         }
                     }
-                    9 => {
+                    Some(b'\t') => {
                         self.first_nonspace += 1;
                         self.first_nonspace_column += chars_to_tab;
                         chars_to_tab = TAB_STOP;
@@ -381,17 +368,24 @@ where
         }
 
         self.indent = self.first_nonspace_column - self.column;
-        self.blank = self.first_nonspace < line.len()
-            && strings::is_line_end_char(bytes[self.first_nonspace]);
+        self.blank = bytes
+            .get(self.first_nonspace)
+            .map_or(true, |&b| strings::is_line_end_char(b));
     }
 
     fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
         let bytes = line.as_bytes();
         let indent = self.indent;
-        if indent <= 3 && bytes[self.first_nonspace] == b'>' && self.is_not_greentext(line) {
+        if indent <= 3
+            && bytes.get(self.first_nonspace) == Some(&b'>')
+            && self.is_not_greentext(line)
+        {
             self.advance_offset(line, indent + 1, true);
 
-            if strings::is_space_or_tab(bytes[self.offset]) {
+            if bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+            {
                 self.advance_offset(line, 1, true);
             }
 
@@ -403,7 +397,10 @@ where
 
     fn is_not_greentext(&self, line: &str) -> bool {
         !self.options.extension.greentext
-            || strings::is_space_or_tab(line.as_bytes()[self.first_nonspace + 1])
+            || line
+                .as_bytes()
+                .get(self.first_nonspace + 1)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
     }
 
     fn parse_node_item_prefix(&mut self, line: &str, container: Node<'a>, nl: &NodeList) -> bool {
@@ -466,23 +463,28 @@ where
         }
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == fence_char {
+        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&fence_char) {
             scanners::close_code_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
         };
 
         if matched >= fence_length {
-            if let NodeValue::CodeBlock(ref mut ncb) = ast.value {
-                ncb.closed = true;
-            }
+            let NodeValue::CodeBlock(ref mut ncb) = ast.value else {
+                unreachable!();
+            };
+            ncb.closed = true;
             self.advance_offset(line, matched, false);
             self.current = self.finalize_borrowed(container, ast).unwrap();
             return None;
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+        while i > 0
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -525,7 +527,7 @@ where
         };
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes[self.first_nonspace] == b'>' {
+        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&b'>') {
             scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
         } else {
             0
@@ -550,7 +552,11 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0 && strings::is_space_or_tab(bytes[self.offset]) {
+        while i > 0
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -589,21 +595,23 @@ where
                             }
                         }
                         // fallback to start position (better than column 0)
-                        let sp = node.data().sourcepos.start;
-                        node.data_mut().sourcepos.end = sp;
+                        let mut ast = node.data_mut();
+                        ast.sourcepos.end = ast.sourcepos.start;
                     }
                 }
             }
         }
 
-        // Compute a candidate end position for the container by looking
-        // at its deepest-last descendant. Return it only if it has a
-        // non-zero column; the caller can fall back to the container's
-        // start position if desired.
-        if let Some(mut last_desc) = container.last_child() {
-            while let Some(ld) = last_desc.last_child() {
-                last_desc = ld;
-            }
+        // Compute a candidate end position for the container by looking at
+        // its last child. Return it only if it has a non-zero column; the
+        // caller can fall back to the container's start position if desired.
+        //
+        // We originally looked at the deepest-last descendant, but there
+        // may be intermediate containers that are larger than it, which we
+        // should use instead. If looking just at the last child isn't
+        // enough in some circumstances, we should consider using the widest
+        // of the last descendants.
+        if let Some(last_desc) = container.last_child() {
             let last_end = last_desc.data().sourcepos.end;
             if last_end.column != 0 {
                 return Some(last_end);
@@ -665,6 +673,7 @@ where
         let mut fence_length = 0;
 
         let bytes = line.as_bytes();
+        // The checks made here co-operate with the alert_start scanner for soundness.
         while bytes[title_startpos] != b']' {
             if bytes[title_startpos] == b'>' {
                 fence_length += 1
@@ -680,8 +689,9 @@ where
         }
 
         // anything remaining on this line is considered an alert title
-        let mut title = entity::unescape_html(&line[title_startpos..]).into_owned();
-        strings::trim(&mut title);
+        let mut title = entity::unescape_html(&line[title_startpos..]);
+        strings::trim_cow(&mut title);
+        let mut title = title.into_owned();
         strings::unescape(&mut title);
 
         let na = NodeAlert {
@@ -692,7 +702,7 @@ where
             title: if title.is_empty() { None } else { Some(title) },
         };
 
-        let offset = self.curline_len - self.offset - 1;
+        let offset = self.curline_len - self.offset - strings::newlines_of(line);
         self.advance_offset(line, offset, false);
 
         *container = self.add_child(
@@ -705,7 +715,8 @@ where
     }
 
     fn detect_alert(&self, line: &str) -> Option<AlertType> {
-        if self.options.extension.alerts && line.as_bytes()[self.first_nonspace] == b'>' {
+        if self.options.extension.alerts && line.as_bytes().get(self.first_nonspace) == Some(&b'>')
+        {
             scanners::alert_start(&line[self.first_nonspace..])
         } else {
             None
@@ -752,7 +763,11 @@ where
 
         let offset = self.first_nonspace + 1 - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+        if line
+            .as_bytes()
+            .get(self.offset)
+            .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
         *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
@@ -761,7 +776,7 @@ where
     }
 
     fn detect_blockquote(&self, line: &str) -> bool {
-        line.as_bytes()[self.first_nonspace] == b'>' && self.is_not_greentext(line)
+        line.as_bytes().get(self.first_nonspace) == Some(&b'>') && self.is_not_greentext(line)
     }
 
     fn handle_atx_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -785,7 +800,7 @@ where
             .unwrap()
             + self.first_nonspace;
         let mut level = 0;
-        while bytes[hashpos] == b'#' {
+        while hashpos < bytes.len() && bytes[hashpos] == b'#' {
             level += 1;
             hashpos += 1;
         }
@@ -840,7 +855,7 @@ where
             fence_char: line.as_bytes()[first_nonspace],
             fence_length: matched,
             fence_offset: first_nonspace - offset,
-            info: String::with_capacity(10),
+            info: String::new(),
             literal: String::new(),
             closed: false,
         };
@@ -905,7 +920,7 @@ where
                 setext: true,
                 closed: false,
             });
-            let adv = line.len() - 1 - self.offset;
+            let adv = line.len() - strings::newlines_of(line) - self.offset;
             self.advance_offset(line, adv, false);
         }
 
@@ -936,7 +951,7 @@ where
 
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
-        let adv = line.len() - 1 - self.offset;
+        let adv = line.len() - strings::newlines_of(line) - self.offset;
         container.data_mut().sourcepos.end = (self.line_number, adv).into();
         self.advance_offset(line, adv, false);
 
@@ -974,28 +989,29 @@ where
         }
 
         let bytes = line.as_bytes();
-        let c = bytes[i];
-        if c != b'*' && c != b'_' && c != b'-' {
+        let b = bytes[i];
+        if b != b'*' && b != b'_' && b != b'-' {
             return (i, false);
         }
 
         let mut count = 1;
-        let mut nextc;
+        let mut nextb;
         loop {
             i += 1;
             if i >= line.len() {
-                return (i, false);
+                nextb = 255;
+                break;
             }
-            nextc = bytes[i];
+            nextb = bytes[i];
 
-            if nextc == c {
+            if nextb == b {
                 count += 1;
-            } else if nextc != b' ' && nextc != b'\t' {
+            } else if nextb != b' ' && nextb != b'\t' {
                 break;
             }
         }
 
-        if count >= 3 && (nextc == b'\r' || nextc == b'\n') {
+        if count >= 3 && (nextb == 255 || nextb == b'\r' || nextb == b'\n') {
             ((i - self.first_nonspace) + 1, true)
         } else {
             (i, false)
@@ -1038,7 +1054,11 @@ where
 
         let offset = self.first_nonspace + matched - self.offset;
         self.advance_offset(line, offset, false);
-        if strings::is_space_or_tab(line.as_bytes()[self.offset]) {
+        if line
+            .as_bytes()
+            .get(self.offset)
+            .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
 
@@ -1069,13 +1089,12 @@ where
                     return false;
                 }
 
-                let parent = container.parent();
-                if parent.is_none() {
+                let Some(parent) = container.parent() else {
                     return false;
-                }
+                };
 
                 tight = true;
-                *container = parent.unwrap();
+                *container = parent;
                 container.last_child().unwrap()
             }
         };
@@ -1177,12 +1196,20 @@ where
             (self.partially_consumed_tab, self.offset, self.column);
 
         let bytes = line.as_bytes();
-        while self.column - save_column <= 5 && strings::is_space_or_tab(bytes[self.offset]) {
+        while self.column - save_column <= 5
+            && bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_space_or_tab(b))
+        {
             self.advance_offset(line, 1, true);
         }
 
         let i = self.column - save_column;
-        if !(1..5).contains(&i) || strings::is_line_end_char(bytes[self.offset]) {
+        if !(1..5).contains(&i)
+            || bytes
+                .get(self.offset)
+                .map_or(false, |&b| strings::is_line_end_char(b))
+        {
             nl.padding = matched + 1;
             self.offset = save_offset;
             self.column = save_column;
@@ -1305,13 +1332,15 @@ where
         let bytes = line.as_bytes();
         while count > 0 {
             match bytes[self.offset] {
-                9 => {
+                b'\t' => {
                     let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
                     if columns {
                         self.partially_consumed_tab = chars_to_tab > count;
                         let chars_to_advance = min(count, chars_to_tab);
                         self.column += chars_to_advance;
-                        self.offset += if self.partially_consumed_tab { 0 } else { 1 };
+                        if !self.partially_consumed_tab {
+                            self.offset += 1;
+                        };
                         count -= chars_to_advance;
                     } else {
                         self.partially_consumed_tab = false;
@@ -1437,18 +1466,19 @@ where
                         };
                         let count = self.first_nonspace - self.offset;
 
-                        // In a rare case the above `chop` operation can leave
-                        // the line shorter than the recorded `first_nonspace`
-                        // This happens with ATX headers containing no header
-                        // text, multiple spaces and trailing hashes, e.g
+                        // In some cases the `chop_trailing_hashes` above
+                        // can leave the line shorter than the recorded
+                        // `first_nonspace` This happens with ATX headers
+                        // containing no header text, multiple spaces and
+                        // trailing hashes, e.g
                         //
                         // ###     ###
                         //
-                        // In this case `first_nonspace` indexes into the second
-                        // set of hashes, while `chop_trailing_hashtags` truncates
-                        // `line` to just `###` (the first three hashes).
-                        // In this case there's no text to add, and no further
-                        // processing to be done.
+                        // In this case `first_nonspace` indexes into the
+                        // second set of hashes, while `chop_trailing_hashtags`
+                        // truncates `line` to just `###` (the first three
+                        // hashes). In this case there's no text to add, and no
+                        // further processing to be done.
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
@@ -1484,9 +1514,9 @@ where
             }
         }
         if self.offset < line.len() {
-            // since whitespace is stripped off the beginning of lines, we need to keep
-            // track of how much was stripped off. This allows us to properly calculate
-            // inline sourcepos during inline processing.
+            // Since whitespace is stripped off the beginning of lines, we need
+            // to keep track of how much was stripped off. This allows us to
+            // properly calculate inline sourcepos during inline processing.
             ast.line_offsets.push(self.offset);
 
             ast.content.push_str(&line[self.offset..]);
@@ -1507,10 +1537,7 @@ where
         if self.options.extension.footnotes {
             // Append auto-generated inline footnote definitions
             if self.options.extension.inline_footnotes {
-                let inline_defs = self.footnote_defs.take();
-                for def in inline_defs.into_iter() {
-                    self.root.append(def);
-                }
+                self.root.extend(self.footnote_defs.take());
             }
 
             self.process_footnotes();
@@ -1523,21 +1550,19 @@ where
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
         let mut seeked = 0;
-        let mut rrs_to_add = vec![];
+        let mut rrs = vec![];
 
-        {
-            let bytes = content.as_bytes();
-            while seeked < content.len() && bytes[seeked] == b'[' {
-                if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
-                    seeked += offset;
-                    rrs_to_add.extend(rr);
-                } else {
-                    break;
-                }
+        let bytes = content.as_bytes();
+        while seeked < content.len() && bytes[seeked] == b'[' {
+            if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
+                seeked += offset;
+                rrs.extend(rr);
+            } else {
+                break;
             }
         }
 
-        for (lab, rr) in rrs_to_add {
+        for (lab, rr) in rrs {
             self.refmap.map.entry(lab).or_insert(rr);
         }
 
@@ -1564,8 +1589,11 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if matches!(ast.value, NodeValue::ThematicBreak) {
-            // sourcepos.end set during opening.
+        } else if matches!(
+            ast.value,
+            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+        ) {
+            // sourcepos.end set by itself or managed below.
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
@@ -1595,10 +1623,10 @@ where
                         }
                         pos += 1;
                     }
-                    assert!(pos < content.len());
 
-                    let mut info = entity::unescape_html(&content[..pos]).into();
-                    strings::trim(&mut info);
+                    let mut info = entity::unescape_html(&content[..pos]);
+                    strings::trim_cow(&mut info);
+                    let mut info = info.into_owned();
                     strings::unescape(&mut info);
                     if info.is_empty() {
                         ncb.info = self
@@ -1611,7 +1639,7 @@ where
                         ncb.info = info;
                     }
 
-                    if content.as_bytes()[pos] == b'\r' {
+                    if content.as_bytes().get(pos) == Some(&b'\r') {
                         pos += 1;
                     }
                     if content.as_bytes().get(pos) == Some(&b'\n') {
@@ -1710,7 +1738,7 @@ where
         Self::find_footnote_definitions(self.root, &mut fd_map);
 
         let mut next_ix = 0;
-        Self::find_footnote_references(self.root, &mut fd_map, &mut next_ix);
+        self.find_footnote_references(&mut fd_map, &mut next_ix);
 
         let mut fds = fd_map.into_values().collect::<Vec<_>>();
         fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
@@ -1756,13 +1784,14 @@ where
     }
 
     fn find_footnote_references(
-        root: Node<'a>,
+        &mut self,
         map: &mut HashMap<String, FootnoteDefinition>,
         ixp: &mut u32,
     ) {
-        let mut stack = vec![root];
+        let mut stack = vec![self.root];
         while let Some(node) = stack.pop() {
             let mut ast = node.data_mut();
+            let sp = ast.sourcepos;
             match ast.value {
                 NodeValue::FootnoteReference(ref mut nfr) => {
                     let normalized = strings::normalize_label(&nfr.name, Case::Fold);
@@ -1780,7 +1809,41 @@ where
                         nfr.ix = ix;
                         nfr.name = strings::normalize_label(&footnote.name, Case::Preserve);
                     } else {
-                        ast.value = NodeValue::Text(format!("[^{}]", nfr.name).into());
+                        // Restore the nodes as they were-ish.  We restore each
+                        // Text node as it was found, preserving the sourcepos
+                        // spans.  This is important for accurate sourcepos
+                        // tracking; we assert when 'consuming' sourcepos
+                        // lengths in post-processing that either the span
+                        // length matches the byte count of the string (meaning
+                        // we can reliably subset them both), or that we're
+                        // consuming a whole span.  Trying to consume part of a
+                        // span without a matching length is undefined, and we
+                        // will crash; see Spx::consume.
+                        //
+                        // See HACK comment in
+                        // `inlines::Subject::handle_close_bracket` for the
+                        // producer of these values.
+                        assert!(!nfr.texts.is_empty());
+                        let mut lc = sp.start;
+                        let mut target = node;
+
+                        let mut texts = mem::take(&mut nfr.texts);
+                        texts.insert(0, ("[".into(), 1));
+                        texts.push(("]".into(), 1));
+
+                        for (text, span) in &mut texts {
+                            let inl = self.arena.alloc(
+                                Ast::new_with_sourcepos(
+                                    NodeValue::Text(mem::take(text).into()),
+                                    (lc, lc.column_add(*span as isize - 1)).into(),
+                                )
+                                .into(),
+                            );
+                            target.insert_after(inl);
+                            target = inl;
+                            lc = lc.column_add(*span as isize);
+                        }
+                        node.detach();
                     }
                 }
                 _ => {
@@ -2124,19 +2187,30 @@ fn parse_list_marker(
     interrupts_paragraph: bool,
 ) -> Option<(usize, NodeList)> {
     let bytes = line.as_bytes();
+    if pos >= line.len() {
+        return None;
+    }
     let mut c = bytes[pos];
     let startpos = pos;
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !isspace(bytes[pos]) {
+        if !bytes.get(pos).map_or(true, |&b| isspace(b)) {
             return None;
         }
 
         if interrupts_paragraph {
+            // "However, an empty list item cannot interrupt a paragraph:"
             let mut i = pos;
+            if i == bytes.len() {
+                return None;
+            }
+
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
+                if i == bytes.len() {
+                    return None;
+                }
             }
             if strings::is_line_end_char(bytes[i]) {
                 return None;
@@ -2165,6 +2239,10 @@ fn parse_list_marker(
             pos += 1;
             digits += 1;
 
+            if pos == bytes.len() {
+                return None;
+            }
+
             if !(digits < 9 && isdigit(bytes[pos])) {
                 break;
             }
@@ -2181,7 +2259,7 @@ fn parse_list_marker(
 
         pos += 1;
 
-        if !isspace(bytes[pos]) {
+        if pos == bytes.len() || !isspace(bytes[pos]) {
             return None;
         }
 
@@ -2189,6 +2267,9 @@ fn parse_list_marker(
             let mut i = pos;
             while strings::is_space_or_tab(bytes[i]) {
                 i += 1;
+                if i == bytes.len() {
+                    return None;
+                }
             }
             if strings::is_line_end_char(bytes[i]) {
                 return None;

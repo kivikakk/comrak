@@ -85,3 +85,22 @@ fn sourcepos_multiline() {
         ])
     );
 }
+
+#[test]
+fn surprise_eof() {
+    assert_ast_match!(
+        [extension.alerts],
+        "> [!note]\n",
+        (document (1:1-1:9) [
+            (alert (1:1-1:9))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.alerts],
+        "> [!note]",
+        (document (1:1-1:9) [
+            (alert (1:1-1:9))
+        ])
+    );
+}

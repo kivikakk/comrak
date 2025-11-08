@@ -294,3 +294,132 @@ fn sourcepos_with_preceding_para_spaces_before_both() {
         ])
     );
 }
+
+#[test]
+fn table_crlf() {
+    assert_ast_match!(
+        [extension.table],
+        "| a | b |\r\n"
+        "| - | - |\r\n"
+        "| c | d |\r\n"
+        ,
+        (document (1:1-3:9) [
+            (table (1:1-3:9) [
+                (table_row (1:1-1:9) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                    (table_cell (1:6-1:8) [
+                        (text (1:7-1:7) "b")
+                    ])
+                ])
+                (table_row (3:1-3:9) [
+                    (table_cell (3:2-3:4) [
+                        (text (3:3-3:3) "c")
+                    ])
+                    (table_cell (3:6-3:8) [
+                        (text (3:7-3:7) "d")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_cr() {
+    assert_ast_match!(
+        [extension.table],
+        "| a | b |\r"
+        "| - | - |\r"
+        "| c | d |\r"
+        ,
+        (document (1:1-3:9) [
+            (table (1:1-3:9) [
+                (table_row (1:1-1:9) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                    (table_cell (1:6-1:8) [
+                        (text (1:7-1:7) "b")
+                    ])
+                ])
+                (table_row (3:1-3:9) [
+                    (table_cell (3:2-3:4) [
+                        (text (3:3-3:3) "c")
+                    ])
+                    (table_cell (3:6-3:8) [
+                        (text (3:7-3:7) "d")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_no_body_no_eol_at_eof() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |"
+        ,
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_with_trailing_para() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |\n"
+        "\n"
+        "ok"
+        ,
+        (document (1:1-4:2) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+            (paragraph (4:1-4:2) [
+                (text (4:1-4:2) "ok")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_with_trailing_para_and_leading_whitespace() {
+    assert_ast_match!(
+        [extension.table],
+        "  | a  |\n"
+        "  | - |\n"
+        "\n"
+        " ok"
+        ,
+        (document (1:1-4:3) [
+            (table (1:3-2:7) [
+                (table_row (1:3-1:8) [
+                    (table_cell (1:4-1:7) [
+                        (text (1:5-1:5) "a")
+                    ])
+                ])
+            ])
+            (paragraph (4:2-4:3) [
+                (text (4:2-4:3) "ok")
+            ])
+        ])
+    );
+}

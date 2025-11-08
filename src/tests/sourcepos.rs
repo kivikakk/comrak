@@ -502,8 +502,6 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
 
 #[test]
 fn sourcepos() {
-    // Use a single test instead of one test per node type so that we get a compile error when new
-    // variants are added to the `NodeValue` enum.
     let node_values = node_values();
 
     let mut options = Options::default();

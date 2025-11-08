@@ -126,6 +126,9 @@ pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
 
 fn remove_trailing_blank_lines_ix(line: &str) -> usize {
     let line_bytes = line.as_bytes();
+    if line.len() == 0 {
+        return 0;
+    }
     let mut i = line.len() - 1;
     loop {
         let c = line_bytes[i];
@@ -416,16 +419,37 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
 }
 
 pub fn count_newlines(input: &str) -> (usize, usize) {
+    let bytes = input.as_bytes();
     let mut num_lines = 0;
     let mut last_line_start = 0;
-    for (i, &c) in input.as_bytes().iter().enumerate() {
-        if is_line_end_char(c) {
-            num_lines += 1;
-            last_line_start = i + 1;
+    let mut i = 0;
+    while i < input.len() {
+        match bytes[i] {
+            b'\r' if i + 1 < input.len() && bytes[i + 1] == b'\n' => {
+                i += 1;
+                num_lines += 1;
+                last_line_start = i + 1;
+            }
+            b'\r' | b'\n' => {
+                num_lines += 1;
+                last_line_start = i + 1;
+            }
+            _ => {}
         }
+        i += 1;
     }
     let last_line_len = input.len() - last_line_start;
     (num_lines, last_line_len)
+}
+
+pub fn newlines_of(s: &str) -> usize {
+    if s.ends_with("\r\n") {
+        2
+    } else if s.ends_with("\r") || s.ends_with("\n") {
+        1
+    } else {
+        0
+    }
 }
 
 #[cfg(test)]

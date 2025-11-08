@@ -964,3 +964,8 @@ fn link_ref_definition_priority() {
         "<p><a href=\"first\">foo</a></p>\n",
     );
 }
+
+#[test]
+fn link_ref_definition_empty() {
+    html("[foo]:\n\n[foo]", "<p>[foo]:</p>\n<p>[foo]</p>\n");
+}

@@ -1622,9 +1622,10 @@ fn tagfilter(literal: &str) -> bool {
     for t in TAGFILTER_BLACKLIST.iter() {
         if lc.starts_with(t) {
             let j = i + t.len();
-            return isspace(bytes[j])
-                || bytes[j] == b'>'
-                || (bytes[j] == b'/' && bytes.len() >= j + 2 && bytes[j + 1] == b'>');
+            let Some(&b) = bytes.get(j) else {
+                return false;
+            };
+            return isspace(b) || b == b'>' || (b == b'/' && bytes.get(j + 1) == Some(&b'>'));
         }
     }
 

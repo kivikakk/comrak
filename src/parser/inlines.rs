@@ -994,11 +994,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Create the footnote reference node
         let ref_node = self.make_inline(
-            NodeValue::FootnoteReference(NodeFootnoteReference {
+            NodeValue::FootnoteReference(Box::new(NodeFootnoteReference {
                 name: name.clone(),
+                texts: vec![], // Unused.
                 ref_num: 0,
                 ix: 0,
-            }),
+            })),
             startpos,
             endpos,
         );
@@ -1734,13 +1735,33 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             // do anything fancy here at all.
             let mut sussy = false;
 
+            let mut texts = vec![];
+
             for sibling in sibling_iterator {
-                match sibling.data().value {
+                let sibling_ast = sibling.data();
+                if sibling_ast.sourcepos.start.line != sibling_ast.sourcepos.end.line
+                    || sibling_ast.sourcepos.end.column < sibling_ast.sourcepos.start.column
+                {
+                    sussy = true;
+                    break;
+                }
+
+                match sibling_ast.value {
                     NodeValue::Text(ref literal) => {
                         text.push_str(literal);
+                        texts.push((
+                            literal.to_string(),
+                            sibling_ast.sourcepos.end.column - sibling_ast.sourcepos.start.column
+                                + 1,
+                        ));
                     }
                     NodeValue::HtmlInline(ref literal) => {
                         text.push_str(literal);
+                        texts.push((
+                            literal.to_string(),
+                            sibling_ast.sourcepos.end.column - sibling_ast.sourcepos.start.column
+                                + 1,
+                        ));
                     }
                     _ => {
                         sussy = true;
@@ -1751,11 +1772,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
             if !sussy && text.len() > 1 {
                 let inl = self.make_inline(
-                    NodeValue::FootnoteReference(NodeFootnoteReference {
+                    NodeValue::FootnoteReference(Box::new(NodeFootnoteReference {
                         name: text[1..].to_string(),
+                        texts,
                         ref_num: 0,
                         ix: 0,
-                    }),
+                    })),
                     // Overridden immediately below.
                     self.scanner.pos,
                     self.scanner.pos,
@@ -2341,7 +2363,7 @@ pub(crate) fn manual_scan_link_url_2(input: &str) -> Option<(&str, usize)> {
         }
     }
 
-    if i >= len || nb_p != 0 {
+    if len == 0 || nb_p != 0 {
         None
     } else {
         Some((&input[..i], i))
