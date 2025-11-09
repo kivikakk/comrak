@@ -4,7 +4,6 @@ use std::fmt::{self, Write};
 use std::str;
 
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
-use crate::node_matches;
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
     NodeList, NodeMath, NodeValue, NodeWikiLink, TableAlignment,
@@ -15,6 +14,7 @@ use crate::parser::shortcodes::NodeShortCode;
 use crate::scanners;
 use crate::strings::trim_start_match;
 use crate::Arena;
+use crate::{node_matches, strings};
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document<'a>(
@@ -40,34 +40,40 @@ pub fn format_document_with_plugins<'a>(
     output: &mut dyn Write,
     _plugins: &Plugins,
 ) -> fmt::Result {
-    let mut f = CommonMarkFormatter::new(root, options);
-    f.format(root)?;
-
-    // TODO:
-    // If we're not using experimental_minimize_commonmark, and
-    // options.render.width == 0, we can theoretically output directly to
-    // output.
-    // Ideally, we separate the width splitting behaviour into a layer between
-    // CommonMarkFormatter and the output, which flushes lines as possible.
-    // Then we have CommonMarkFormatter output directly to Write, which we
-    // also output to a String when using experimental_minimize_commonmark.
-
-    let mut result = f.output;
-    if !result.is_empty() && result.as_bytes()[result.len() - 1] != b'\n' {
-        result.push('\n');
+    if !options.render.experimental_minimize_commonmark {
+        return format_internal(root, options, output);
     }
 
-    if options.render.experimental_minimize_commonmark {
-        minimize_commonmark(&mut result, options);
-    }
+    let mut result = String::new();
+    format_internal(root, options, &mut result)?;
+    minimize_commonmark(&mut result, options);
 
     output.write_str(&result)
 }
 
-struct CommonMarkFormatter<'a, 'o, 'c> {
+// Doesn't honour expermiental_minimize_commonmark.
+fn format_internal<'a>(root: Node<'a>, options: &Options, output: &mut dyn Write) -> fmt::Result {
+    let mut f = CommonMarkFormatter::new(root, options, output);
+    f.format(root)
+}
+
+struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     node: Node<'a>,
     options: &'o Options<'c>,
-    output: String,
+    output: &'w mut dyn Write,
+    /// Buffer used by wrapping implementation; flushed on newline or wrapping
+    /// event.
+    wrap_buffer: String,
+    /// The last two bytes written (to output or wrap_buffer).
+    window: Vec<u8>,
+    /// Contains some assortment of:
+    /// * "> " when formatting within a blockquote.
+    /// * " "*n when formatting within a list item (n≥2).
+    /// * "    " when formatting within a fenced code block.
+    /// * "    " when formatting within a footnote definition.
+    /// * "> " when formatting within an alert.
+    /// A prefix when non-empty is therefore guaranteed to have a length of at
+    /// least two. This is relevant in write_prefix.
     prefix: String,
     column: usize,
     need_cr: u8,
@@ -79,6 +85,7 @@ struct CommonMarkFormatter<'a, 'o, 'c> {
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
+    allow_wrap: bool,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -89,18 +96,20 @@ enum Escaping {
     Title,
 }
 
-impl<'a, 'o, 'c> Write for CommonMarkFormatter<'a, 'o, 'c> {
+impl<'a, 'o, 'c, 'w> Write for CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.output(s, false, Escaping::Literal)
     }
 }
 
-impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
-    fn new(node: Node<'a>, options: &'o Options<'c>) -> Self {
+impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
+    fn new(node: Node<'a>, options: &'o Options<'c>, output: &'w mut dyn Write) -> Self {
         CommonMarkFormatter {
             node,
             options,
-            output: String::new(),
+            output,
+            wrap_buffer: String::new(),
+            window: Vec::with_capacity(2),
             prefix: String::new(),
             column: 0,
             need_cr: 0,
@@ -112,31 +121,97 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             custom_escape: None,
             footnote_ix: 0,
             ol_stack: vec![],
+            allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
         }
+    }
+
+    /// Writes to self.output, or self.buffer if we're wrapping output, and
+    /// update self.window.
+    fn write(&mut self, s: &str) -> fmt::Result {
+        if s.is_empty() {
+            return Ok(());
+        }
+        // We maintain a window size of 2 bytes at most.
+        if s.len() > 1 {
+            self.window.clear();
+            self.window.extend_from_slice(&s.as_bytes()[s.len() - 2..]);
+        } else {
+            assert_eq!(s.len(), 1);
+            if self.window.len() == 2 {
+                self.window.remove(0);
+            } else {
+                assert!(self.window.len() < 2);
+            }
+            self.window.push(s.as_bytes()[0]);
+        }
+
+        let last_was_cr = self.window.last() == Some(&b'\n');
+
+        if self.options.render.width == 0 {
+            self.output.write_str(s)?;
+        } else {
+            if last_was_cr {
+                // Can flush.
+                self.output.write_str(&self.wrap_buffer)?;
+                self.output.write_str(s)?;
+                self.wrap_buffer.clear();
+            } else {
+                self.wrap_buffer.push_str(s);
+            }
+        }
+
+        if last_was_cr {
+            self.column = 0;
+            self.begin_line = true;
+            self.begin_content = true;
+            self.last_breakable = 0;
+        }
+
+        Ok(())
+    }
+
+    fn write_prefix(&mut self) -> fmt::Result {
+        // A non-empty prefix is guaranteed to have a length of at least two.
+        if self.prefix.is_empty() {
+            return Ok(());
+        }
+        if self.options.render.width == 0 {
+            self.output.write_str(&self.prefix)?;
+        } else {
+            self.wrap_buffer.push_str(&self.prefix);
+        }
+        self.window.clear();
+        self.window
+            .extend_from_slice(&self.prefix.as_bytes()[self.prefix.len() - 2..]);
+        Ok(())
     }
 
     fn output(&mut self, s: &str, wrap: bool, escaping: Escaping) -> fmt::Result {
         let bytes = s.as_bytes();
-        let wrap = wrap && !self.no_linebreaks;
+        let wrap = self.allow_wrap && wrap && !self.no_linebreaks;
 
         if self.in_tight_list_item && self.need_cr > 1 {
             self.need_cr = 1;
         }
 
-        let mut k = self.output.len() as i32 - 1;
+        let mut last_crs_consume = self
+            .window
+            .iter()
+            .rev()
+            .take_while(|&&b| b == b'\n')
+            .count();
         while self.need_cr > 0 {
-            if k < 0 || self.output.as_bytes()[k as usize] == b'\n' {
-                k -= 1;
+            if self.window.is_empty() {
+                // nvm
+            } else if last_crs_consume > 0 {
+                last_crs_consume -= 1;
             } else {
-                self.output.push('\n');
+                self.write("\n")?;
                 if self.need_cr > 1 {
-                    self.output.push_str(&self.prefix);
+                    self.write_prefix()?;
+                    self.column = self.prefix.len();
                 }
             }
-            self.column = 0;
-            self.last_breakable = 0;
-            self.begin_line = true;
-            self.begin_content = true;
             self.need_cr -= 1;
         }
 
@@ -144,19 +219,19 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
         while let Some((mut i, c)) = it.next() {
             if self.begin_line {
-                self.output.push_str(&self.prefix);
+                self.write_prefix()?;
                 self.column = self.prefix.len();
             }
 
             if self.custom_escape.map_or(false, |f| f(self.node, c)) {
-                self.output.push('\\');
+                self.write("\\")?;
             }
 
             let nextb = bytes.get(i + 1);
             if c == ' ' && wrap {
                 if !self.begin_line {
-                    let last_nonspace = self.output.len();
-                    self.output.push(' ');
+                    let last_nonspace = self.wrap_buffer.len();
+                    self.write(" ")?;
                     self.column += 1;
                     self.begin_line = false;
                     self.begin_content = false;
@@ -169,15 +244,11 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 }
             } else if escaping == Escaping::Literal {
                 if bytes[i] == b'\n' {
-                    self.output.push('\n');
-                    self.column = 0;
-                    self.begin_line = true;
-                    self.begin_content = true;
-                    self.last_breakable = 0;
+                    self.write("\n")?;
                 } else {
-                    let len_before = self.output.len();
-                    self.output.push(c);
-                    self.column += self.output.len() - len_before;
+                    let cs = char::to_string(&c);
+                    self.write(&cs)?;
+                    self.column += cs.len();
                     self.begin_line = false;
                     self.begin_content = self.begin_content && isdigit(bytes[i]);
                 }
@@ -192,12 +263,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 && !self.begin_line
                 && self.last_breakable > 0
             {
-                let remainder = self.output[self.last_breakable + 1..].to_string();
-                self.output.truncate(self.last_breakable);
-                self.output.push('\n');
-                self.output.push_str(&self.prefix);
-                self.output.push_str(&remainder);
-                self.column = self.prefix.len() + remainder.len();
+                self.output
+                    .write_str(&self.wrap_buffer[..self.last_breakable])?;
+                self.output.write_str("\n")?;
+                strings::remove_from_start(&mut self.wrap_buffer, self.last_breakable + 1);
+                self.wrap_buffer.insert_str(0, &self.prefix);
+                self.column = self.wrap_buffer.len();
                 self.last_breakable = 0;
                 self.begin_line = false;
                 self.begin_content = false;
@@ -213,8 +284,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         // character, in which case it faithfully represents the first byte of the
         // following character (or is None if the string ends).
         // Any use of nextb must be conditional on asserting c is a single byte character.
-        let follows_digit =
-            !self.output.is_empty() && isdigit(self.output.as_bytes()[self.output.len() - 1]);
+        let follows_digit = self.window.last().map_or(false, |&b| isdigit(b));
 
         let nextb = nextb.map_or(0, |&c| c);
 
@@ -255,21 +325,21 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
         if needs_escaping {
             // (c as u64) < 256 is implied.
-            let len_before = self.output.len();
-            if escaping == Escaping::Url && isspace_char(c) {
-                write!(self.output, "%{:2X}", c as u8)?;
+            let out = if escaping == Escaping::Url && isspace_char(c) {
+                format!("%{:2X}", c as u8)
             } else if ispunct_char(c) {
-                write!(self.output, "\\{}", c)?;
+                format!("\\{}", c)
             } else if c == '\0' {
-                write!(self.output, "\u{fffd}")?;
+                format!("\u{fffd}")
             } else {
-                write!(self.output, "&#{};", c as u8)?;
-            }
-            self.column += self.output.len() - len_before;
+                format!("&#{};", c as u8)
+            };
+            self.write(&out)?;
+            self.column += out.len();
         } else {
-            let len_before = self.output.len();
-            self.output.push(c);
-            self.column += self.output.len() - len_before;
+            let cs = char::to_string(&c);
+            self.write(&cs)?;
+            self.column += cs.len();
         }
 
         Ok(())
@@ -283,12 +353,12 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    fn format(&mut self, node: Node<'a>) -> fmt::Result {
+    fn format(&mut self, root: Node<'a>) -> fmt::Result {
         enum Phase {
             Pre,
             Post,
         }
-        let mut stack = vec![(node, Phase::Pre)];
+        let mut stack = vec![(root, Phase::Pre)];
 
         while let Some((node, phase)) = stack.pop() {
             match phase {
@@ -304,6 +374,13 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                     self.format_node(node, false)?;
                 }
             }
+        }
+
+        if !self.wrap_buffer.is_empty() {
+            self.output.write_str(&self.wrap_buffer)?;
+        }
+        if !self.window.is_empty() && self.window.last() != Some(&b'\n') {
+            self.output.write_str("\n")?;
         }
         Ok(())
     }
@@ -343,7 +420,6 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
 
     fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
-        let allow_wrap = self.options.render.width > 0 && !self.options.render.hardbreaks;
 
         let parent_node = node.parent();
         if entering {
@@ -382,10 +458,10 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
-            NodeValue::Text(ref literal) => self.format_text(literal, allow_wrap, entering)?,
+            NodeValue::Text(ref literal) => self.format_text(literal, entering)?,
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
-            NodeValue::SoftBreak => self.format_soft_break(allow_wrap, entering)?,
-            NodeValue::Code(ref code) => self.format_code(&code.literal, allow_wrap, entering)?,
+            NodeValue::SoftBreak => self.format_soft_break(entering)?,
+            NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
             NodeValue::Strong => {
@@ -400,7 +476,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             NodeValue::Highlight => self.format_highlight()?,
             NodeValue::Superscript => self.format_superscript()?,
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
-            NodeValue::Image(ref nl) => self.format_image(nl, allow_wrap, entering)?,
+            NodeValue::Image(ref nl) => self.format_image(nl, entering)?,
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering)?,
             NodeValue::Table(..) => self.format_table(entering),
@@ -417,7 +493,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
                 // Noop - the character gets escaped as usual, this is just an
                 // AST marker created by escaped_char_spans.
             }
-            NodeValue::Math(ref math) => self.format_math(math, allow_wrap, entering)?,
+            NodeValue::Math(ref math) => self.format_math(math, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
@@ -657,9 +733,9 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         }
     }
 
-    fn format_text(&mut self, literal: &str, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_text(&mut self, literal: &str, entering: bool) -> fmt::Result {
         if entering {
-            self.output(literal, allow_wrap, Escaping::Normal)?;
+            self.output(literal, true, Escaping::Normal)?;
         }
         Ok(())
     }
@@ -678,7 +754,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_soft_break(&mut self, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_soft_break(&mut self, entering: bool) -> fmt::Result {
         if entering {
             if !self.no_linebreaks
                 && self.options.render.width == 0
@@ -686,15 +762,15 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             {
                 self.cr();
             } else if self.options.render.hardbreaks {
-                self.output("\n", allow_wrap, Escaping::Literal)?;
+                self.output("\n", true, Escaping::Literal)?;
             } else {
-                self.output(" ", allow_wrap, Escaping::Literal)?;
+                self.output(" ", true, Escaping::Literal)?;
             }
         }
         Ok(())
     }
 
-    fn format_code(&mut self, literal: &str, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_code(&mut self, literal: &str, entering: bool) -> fmt::Result {
         if entering {
             let literal_bytes = literal.as_bytes();
             let numticks = shortest_unused_sequence(literal_bytes, b'`');
@@ -714,7 +790,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             if pad {
                 write!(self, " ")?
             }
-            self.output(literal, allow_wrap, Escaping::Literal)?;
+            self.output(literal, true, Escaping::Literal)?;
             if pad {
                 write!(self, " ")?;
             }
@@ -858,14 +934,14 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_image(&mut self, nl: &NodeLink, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_image(&mut self, nl: &NodeLink, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "![")?;
         } else {
             write!(self, "](")?;
             self.output(&nl.url, false, Escaping::Url)?;
             if !nl.title.is_empty() {
-                self.output(" \"", allow_wrap, Escaping::Literal)?;
+                self.output(" \"", true, Escaping::Literal)?;
                 self.output(&nl.title, false, Escaping::Title)?;
                 write!(self, "\"")?;
             }
@@ -961,7 +1037,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
         Ok(())
     }
 
-    fn format_math(&mut self, math: &NodeMath, allow_wrap: bool, entering: bool) -> fmt::Result {
+    fn format_math(&mut self, math: &NodeMath, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
             let start_fence = if math.dollar_math {
@@ -981,7 +1057,7 @@ impl<'a, 'o, 'c> CommonMarkFormatter<'a, 'o, 'c> {
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
-            self.output(literal, allow_wrap, Escaping::Literal)?;
+            self.output(literal, true, Escaping::Literal)?;
             self.output(end_fence, false, Escaping::Literal)?;
         }
         Ok(())

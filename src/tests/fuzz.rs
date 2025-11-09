@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::*;
 
 #[test]
@@ -550,4 +552,18 @@ fn cursed_lands() {
     opts.parse.relaxed_autolinks = true;
 
     markdown_to_html("[^a@b.c--d]", &opts);
+}
+
+#[test]
+fn inquisitor() {
+    let mut opts = Options::default();
+    opts.parse.broken_link_callback = Some(Arc::new(|link_ref: options::BrokenLinkReference| {
+        Some(ResolvedReference {
+            url: link_ref.normalized.to_string(),
+            title: link_ref.original.to_string(),
+        })
+    }));
+    opts.render.width = 45;
+
+    markdown_to_commonmark("\0\0\0\0\0\0[\\`\r\n;][ww=\\-", &opts);
 }
