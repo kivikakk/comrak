@@ -145,10 +145,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             self.window.push(s.as_bytes()[0]);
         }
 
+        let last_was_cr = self.window.last() == Some(&b'\n');
+
         if self.options.render.width == 0 {
             self.output.write_str(s)?;
         } else {
-            if self.window.last() == Some(&b'\n') {
+            if last_was_cr {
                 // Can flush.
                 self.output.write_str(&self.wrap_buffer)?;
                 self.output.write_str(s)?;
@@ -156,6 +158,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             } else {
                 self.wrap_buffer.push_str(s);
             }
+        }
+
+        if last_was_cr {
+            self.column = 0;
+            self.begin_line = true;
+            self.begin_content = true;
+            self.last_breakable = 0;
         }
 
         Ok(())
@@ -200,12 +209,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.write("\n")?;
                 if self.need_cr > 1 {
                     self.write_prefix()?;
+                    self.column = self.prefix.len();
                 }
             }
-            self.column = 0;
-            self.last_breakable = 0;
-            self.begin_line = true;
-            self.begin_content = true;
             self.need_cr -= 1;
         }
 
@@ -239,10 +245,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             } else if escaping == Escaping::Literal {
                 if bytes[i] == b'\n' {
                     self.write("\n")?;
-                    self.column = 0;
-                    self.begin_line = true;
-                    self.begin_content = true;
-                    self.last_breakable = 0;
                 } else {
                     let cs = char::to_string(&c);
                     self.write(&cs)?;
