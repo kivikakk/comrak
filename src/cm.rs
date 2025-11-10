@@ -694,7 +694,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "{}", fence_byte as char)?;
             }
             if !info.is_empty() {
-                write!(self, " ")?;
                 self.write_str(&ncb.info)?;
             }
             self.cr();

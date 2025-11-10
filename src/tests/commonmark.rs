@@ -58,7 +58,7 @@ fn commonmark_renders_single_list_item() {
 
 #[test_case("$$x^2$$ and $1 + 2$ and $`y^2`$", "$$x^2$$ and $1 + 2$ and $`y^2`$\n")]
 #[test_case("$$\nx^2\n$$", "$$\nx^2\n$$\n")]
-#[test_case("```math\nx^2\n```", "``` math\nx^2\n```\n")]
+#[test_case("```math\nx^2\n```", "```math\nx^2\n```\n")]
 fn commonmark_math(markdown: &str, cm: &str) {
     let mut options = Options::default();
     options.extension.math_dollars = true;
