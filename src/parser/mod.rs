@@ -136,27 +136,22 @@ where
         self.total_size = end;
 
         let mut ix = 0;
+        let matcher = jetscii::bytes!(b'\r', b'\n');
 
-        // TODO: jetscii.
         while ix < end {
-            let mut eol = ix;
-
-            while eol < end {
-                match sb[eol] {
-                    b'\r' => {
+            let mut eol = match matcher.find(&sb[ix..]) {
+                Some(offset) => ix + offset,
+                None => end,
+            };
+            if eol < end {
+                if sb[eol] == b'\r' {
+                    eol += 1;
+                    if eol < end && sb[eol] == b'\n' {
                         eol += 1;
-                        if eol < end && sb[eol] == b'\n' {
-                            eol += 1;
-                        }
-                        break;
                     }
-                    b'\n' => {
-                        eol += 1;
-                        break;
-                    }
-                    _ => {}
+                } else if sb[eol] == b'\n' {
+                    eol += 1;
                 }
-                eol += 1;
             }
 
             self.process_line(&s[ix..eol]);
