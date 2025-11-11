@@ -1699,8 +1699,8 @@ pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
 /// * U+0027 APOSTROPHE ' is rendered as &#x27;
 /// * Alphanumeric and a range of non-URL safe characters.
 ///
-/// The inclusion of characters like "%" in those which are not escaped is
-/// explained somewhat here:
+/// Note that we leave "%" alone if it is followed by two hexdigits.
+/// See:
 ///
 /// <https://github.com/github/cmark-gfm/blob/c32ef78bae851cb83b7ad52d0fbff880acdcd44a/src/houdini_href_e.c#L7-L31>
 ///
@@ -1721,7 +1721,7 @@ pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
 /// or `https` are permitted.
 pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> fmt::Result {
     const HREF_SAFE: [bool; 256] = character_set!(
-        b"-_.+!*(),%#@?=;:/,+$~",
+        b"-_.+!*(),#@?=;:/,+$~",
         b"abcdefghijklmnopqrstuvwxyz",
         b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     );
@@ -1760,6 +1760,16 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
             }
             b'\'' => {
                 output.write_str("&#x27;")?;
+            }
+            b'%' => {
+                if bytes.get(i + 1).map_or(false, |b| b.is_ascii_hexdigit())
+                    && bytes.get(i + 2).map_or(false, |b| b.is_ascii_hexdigit())
+                {
+                    output.write_str(&buffer[i..=i + 2])?;
+                    i += 2;
+                } else {
+                    output.write_str("%25")?;
+                }
             }
             0 => {
                 // U+FFFD REPLACEMENT CHARACTER

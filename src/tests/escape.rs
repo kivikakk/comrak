@@ -39,8 +39,9 @@ fn escape_inline_baseline() {
 /// [link destination]: https://spec.commonmark.org/0.31.2/#link-destination
 #[test]
 fn escape_link_target() {
-    let url = "rabbits) <cup\rcakes\n> [hyacinth](";
-    let escaped = r#"<rabbits) \<cup%0Dcakes%0A\> [hyacinth](>"#;
+    let url = "rabbits) <cup\rcakes\n> [%7Bhya%cinth%7d](";
+    let escaped = r#"<rabbits) \<cup%0Dcakes%0A\> [%7Bhya%cinth%7d](>"#;
+    let decoded = "rabbits) <cup\rcakes\n> [{hya%cinth}](";
 
     assert_eq!(escaped, escape_link_destination(url));
 
@@ -55,9 +56,12 @@ fn escape_link_target() {
         .expect("html should be one anchor in a paragraph")
         .to_string();
 
-    assert_eq!("rabbits)%20%3Ccup%0Dcakes%0A%3E%20%5Bhyacinth%5D(", html);
     assert_eq!(
-        url,
+        "rabbits)%20%3Ccup%0Dcakes%0A%3E%20%5B%7Bhya%25cinth%7d%5D(",
+        html
+    );
+    assert_eq!(
+        decoded,
         percent_encoding_rfc3986::percent_decode_str(&html)
             .unwrap()
             .decode_utf8()
