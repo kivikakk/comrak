@@ -1,3 +1,29 @@
+# [v0.48.0] - 2025-11-13
+
+## What's Changed
+* flake.nix: simplify, build for linux with musl. by @kivikakk in https://github.com/kivikakk/comrak/pull/671
+* Add "leave_footnote_definitions" parse option; add comrak::Node and expose NodeValue::xml_node_name. by @kivikakk in https://github.com/kivikakk/comrak/pull/673
+* don't make the whole PR look red if benchmarks can't post. by @kivikakk in https://github.com/kivikakk/comrak/pull/674
+* Factor out inlines::Scanner, and Other Such Cleanups. by @kivikakk in https://github.com/kivikakk/comrak/pull/675
+* fix relaxed autolink email in footnote edge case/panic. by @kivikakk in https://github.com/kivikakk/comrak/pull/677
+* all_options fuzzes *across* all options. by @kivikakk in https://github.com/kivikakk/comrak/pull/678
+* prevent unexpected post-processing & simplify internal feed. by @kivikakk in https://github.com/kivikakk/comrak/pull/679
+* keep NUL byte in the AST, translate to U+FFFD on output. by @kivikakk in https://github.com/kivikakk/comrak/pull/681
+* Add a Highlight Extension ==for highlights== by @pferreir in https://github.com/kivikakk/comrak/pull/672
+* don't append a newline at EOF; handle it in the parser. by @kivikakk in https://github.com/kivikakk/comrak/pull/682
+* don't buffer commonmark output unless necessary. by @kivikakk in https://github.com/kivikakk/comrak/pull/684
+* remove space before fenced codeblock info string. by @kivikakk in https://github.com/kivikakk/comrak/pull/686
+* write out %25 in hrefs where not part of a percent-encode sequence. by @kivikakk in https://github.com/kivikakk/comrak/pull/687
+* jetscii for line searcher. by @kivikakk in https://github.com/kivikakk/comrak/pull/688
+* tasklists: don't munge first byte into unicode codepoint. by @kivikakk in https://github.com/kivikakk/comrak/pull/689
+
+## New Contributors
+* @pferreir made their first contribution in https://github.com/kivikakk/comrak/pull/672
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.47.0...v0.48.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
