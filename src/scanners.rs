@@ -17591,13 +17591,17 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
     }
 }
 
-// Returns both the length of the match, and the tasklist character.
-pub fn tasklist(s: &str) -> Option<(usize, u8)> {
+// Returns both the length of the match, and the tasklist item contents.
+// It is not guaranteed to be one byte, or one "character" long; the caller must ascertain
+// its fitness for purpose.
+pub fn tasklist(s: &str) -> Option<(usize, &str)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
 
-    let mut t1;
+    let t1;
+    let mut t2;
+    let mut yyt1 = 0;
 
     {
         #[allow(unused_assignments)]
@@ -17672,7 +17676,8 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         }
                     };
                     match yych {
-                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5C | 0x5E..=0xFE => {
+                            yyt1 = cursor;
                             cursor += 1;
                             yystate = 8;
                             continue 'yyl;
@@ -17722,7 +17727,8 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         }
                     };
                     match yych {
-                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0xFE => {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5C | 0x5E..=0xFE => {
+                            yyt1 = cursor;
                             cursor += 1;
                             yystate = 8;
                             continue 'yyl;
@@ -17742,6 +17748,11 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                         }
                     };
                     match yych {
+                        0x00..=0x09 | 0x0B..=0x0C | 0x0E..=0x5C | 0x5E..=0xFE => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
                         0x5D => {
                             cursor += 1;
                             yystate = 9;
@@ -17774,13 +17785,14 @@ pub fn tasklist(s: &str) -> Option<(usize, u8)> {
                     }
                 }
                 10 => {
-                    t1 = cursor;
-                    t1 = (t1 as isize + -3) as usize;
+                    t1 = yyt1;
+                    t2 = cursor;
+                    t2 = (t2 as isize + -2) as usize;
                     {
                         if cursor == len + 1 {
                             cursor -= 1;
                         }
-                        return Some((cursor, s.as_bytes()[t1]));
+                        return Some((cursor, &s[t1..t2]));
                     }
                 }
                 _ => panic!("internal lexer error"),
