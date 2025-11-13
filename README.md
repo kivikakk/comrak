@@ -14,9 +14,9 @@ Compliant with [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) by defau
 
 Specify it as a requirement in `Cargo.toml`:
 
-``` toml
+```toml
 [dependencies]
-comrak = "0.47"
+comrak = "0.48"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.70</span>+.
@@ -40,7 +40,7 @@ You can also find builds I've published in [GitHub Releases](https://github.com/
 
 <summary>Click to expand the CLI <code>--help</code> output.
 
-``` console
+```console
 $ comrak --help
 ```
 
@@ -118,7 +118,7 @@ Options:
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
           math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
-          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext]
+          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight]
 
   -t, --to <FORMAT>
           Specify output format
@@ -179,7 +179,7 @@ the file does not exist.
 
 And there's a Rust interface. You can use `comrak::markdown_to_html` directly:
 
-``` rust
+```rust
 use comrak::{markdown_to_html, Options};
 assert_eq!(
     markdown_to_html("¡Olá, **世界**!", &Options::default()),
@@ -189,7 +189,7 @@ assert_eq!(
 
 Or you can parse the input into an AST yourself, manipulate it, and then use your desired formatter:
 
-``` rust
+```rust
 use comrak::nodes::NodeValue;
 use comrak::{format_html, parse_document, Arena, Options};
 
@@ -365,7 +365,7 @@ You'll need to [install hyperfine](https://github.com/sharkdp/hyperfine#installa
 
 If you want to just run the benchmark for the `comrak` binary itself, run:
 
-``` bash
+```bash
 make bench-comrak
 ```
 
@@ -373,7 +373,7 @@ This will build Comrak in release mode, and run benchmark on it. You will see th
 
 The `Makefile` also provides a way to run benchmarks for `comrak` current state (with your changes), `comrak` main branch, [`cmark-gfm`](https://github.com/github/cmark-gfm), [`pulldown-cmark`](https://github.com/raphlinus/pulldown-cmark) and [`markdown-it.rs`](https://github.com/rlidwka/markdown-it.rs). You'll need CMake, and ensure [submodules are prepared](https://stackoverflow.com/a/10168693/499609).
 
-``` bash
+```bash
 make bench-all
 ```
 
