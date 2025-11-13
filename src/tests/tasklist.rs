@@ -491,3 +491,28 @@ fn sourcepos() {
         ])
     );
 }
+
+#[test]
+fn tasklist_relaxed_unicode() {
+    assert_ast_match!(
+        [extension.tasklist, parse.relaxed_tasklist_matching],
+        "- [あ] xy\n" // U+3042
+        "  - [い] zw\n", // U+3044
+        (document (1:1-2:12) [
+            (list (1:1-2:12) [
+                (taskitem (1:1-2:12) [
+                    (paragraph (1:9-1:10) [
+                        (text (1:9-1:10) "xy")
+                    ])
+                    (list (2:3-2:12) [
+                        (taskitem (2:3-2:12) [
+                            (paragraph (2:11-2:12) [
+                                (text (2:11-2:12) "zw")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}

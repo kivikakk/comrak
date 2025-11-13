@@ -462,25 +462,28 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
 */
 }
 
-// Returns both the length of the match, and the tasklist character.
-pub fn tasklist(s: &str) -> Option<(usize, u8)> {
+// Returns both the length of the match, and the tasklist item contents.
+// It is not guaranteed to be one byte, or one "character" long; the caller must ascertain
+// its fitness for purpose.
+pub fn tasklist(s: &str) -> Option<(usize, &str)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
 
-    let mut t1;
+    let t1;
+    let mut t2;
 /*!stags:re2c format = 'let mut @@{tag} = 0;'; */
 
 /*!local:re2c
     re2c:define:YYSTAGP = "@@{tag} = cursor;";
     re2c:define:YYSHIFTSTAG = "@@{tag} = (@@{tag} as isize + @@{shift}) as usize;";
-    re2c:tags = 1;
+    re2c:tags = 2;
 
-    spacechar* [[] @t1 [^\xff\r\n] [\]] (spacechar | [\xff]) {
+    spacechar* [[] @t1 [^\xff\r\n\]]+ @t2 [\]] (spacechar | [\xff]) {
         if cursor == len + 1 {
             cursor -= 1;
         }
-        return Some((cursor, s.as_bytes()[t1]));
+        return Some((cursor, &s[t1..t2]));
     }
     * { return None; }
 */

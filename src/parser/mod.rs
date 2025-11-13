@@ -2019,12 +2019,21 @@ where
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
     ) {
-        let (end, symbol) = match scanners::tasklist(text) {
+        let (end, matched) = match scanners::tasklist(text) {
             Some(p) => p,
             None => return,
         };
 
-        let symbol = symbol as char;
+        let mut chars = matched.chars();
+        let Some(symbol) = chars.next() else {
+            return;
+        };
+
+        // There must be at most one `char`'s worth of content in `matched`,
+        // otherwise we ignore it.
+        if !chars.next().is_none() {
+            return;
+        }
 
         if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, ' ' | 'x' | 'X') {
             return;
