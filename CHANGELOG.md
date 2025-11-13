@@ -1,29 +1,3 @@
-# [v0.48.0] - 2025-11-13
-
-## What's Changed
-* flake.nix: simplify, build for linux with musl. by @kivikakk in https://github.com/kivikakk/comrak/pull/671
-* Add "leave_footnote_definitions" parse option; add comrak::Node and expose NodeValue::xml_node_name. by @kivikakk in https://github.com/kivikakk/comrak/pull/673
-* don't make the whole PR look red if benchmarks can't post. by @kivikakk in https://github.com/kivikakk/comrak/pull/674
-* Factor out inlines::Scanner, and Other Such Cleanups. by @kivikakk in https://github.com/kivikakk/comrak/pull/675
-* fix relaxed autolink email in footnote edge case/panic. by @kivikakk in https://github.com/kivikakk/comrak/pull/677
-* all_options fuzzes *across* all options. by @kivikakk in https://github.com/kivikakk/comrak/pull/678
-* prevent unexpected post-processing & simplify internal feed. by @kivikakk in https://github.com/kivikakk/comrak/pull/679
-* keep NUL byte in the AST, translate to U+FFFD on output. by @kivikakk in https://github.com/kivikakk/comrak/pull/681
-* Add a Highlight Extension ==for highlights== by @pferreir in https://github.com/kivikakk/comrak/pull/672
-* don't append a newline at EOF; handle it in the parser. by @kivikakk in https://github.com/kivikakk/comrak/pull/682
-* don't buffer commonmark output unless necessary. by @kivikakk in https://github.com/kivikakk/comrak/pull/684
-* remove space before fenced codeblock info string. by @kivikakk in https://github.com/kivikakk/comrak/pull/686
-* write out %25 in hrefs where not part of a percent-encode sequence. by @kivikakk in https://github.com/kivikakk/comrak/pull/687
-* jetscii for line searcher. by @kivikakk in https://github.com/kivikakk/comrak/pull/688
-* tasklists: don't munge first byte into unicode codepoint. by @kivikakk in https://github.com/kivikakk/comrak/pull/689
-
-## New Contributors
-* @pferreir made their first contribution in https://github.com/kivikakk/comrak/pull/672
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.47.0...v0.48.0
-
----snip---
-
 Categories to use in this document, and the order in which to give them:
 
 * Security
@@ -38,6 +12,70 @@ Categories to use in this document, and the order in which to give them:
 * Documentation
 * Build changes
 * Behind the scenes
+
+
+# [v0.48.0] - 2025-11-13
+
+The breaking changes are listed right at the top!  Please note that AST content now represents `NUL` bytes (codepoint number zero) as they were in the input; these used to be translated to the lovely � character at the very beginning of the input process, presumably so the rest of the reference C parser didn't have to deal with the possibility of strings containing NUL bytes.  We can do better, though, so let's!  The � character is now emitted by our formatters in place of `NUL`, but if you use custom or manual formatters and emit any part of the AST content **directly** (without using `comrak::html::escape`, `context::html::escape_href`, or the same-named functions on `Context`), you may need to do the same translation yourself.
+
+We also no longer append a newline to the end of the file where there wasn't one originally, which meant a lot of places in the parser had to adapt to their strings not necessarily containing a newline before they ended.  Careful review and extensive fuzzing should have squeaked out any unexpected overruns, but consider my eyes peeled for reports regarding this.  (Ew.)  We've cleaned up some sourcepos calculation which depended on this behaviour in odd ways, but there may yet be more to discover which our test suite didn't catch.
+
+Did you know November is [Trans Month](https://www.transmonth.org.au/)? I didn't! I'm guessing it's because Trans Awareness Week falls within it, and we've been having a pretty bad time of it rights-wise around the world lately!
+
+Happy Trans Month, and if you happen to typo it as Trans Moth, we can be happy about that too! 🏳️‍⚧️ ᖭི༏ᖫྀ 
+
+Parser changes:
+
+* No longer translate `NUL` bytes into `U+FFFD REPLACEMENT CHARACTER` in the parse stage; do it in formatters instead. (by @kivikakk in https://github.com/kivikakk/comrak/pull/681)
+  * This means the AST now contains `NUL` bytes where they were present in input, preserving the difference between `NUL` and literally-entered `�` characters.
+* No longer append a virtual newline at the end of the file where missing. (by @kivikakk in https://github.com/kivikakk/comrak/pull/682)
+  * The spec allows a line to end with either a newline or EOF; the reference parser would assume any given input string will always have a terminating linefeed and forced that to be the case, and so Comrak used to. Comrak no longer does.
+  * We also now handle line feed, carriage return, and carriage return plus line feed (as allow'd by the spec) without pretending they're all just a line feed, meaning e.g. sourcepos for softbreaks now correctly spans two bytes when it was produced by a carriage return plus line feed.
+
+Changed APIs:
+
+* Remove mandatory space before fenced codeblock info string in CommonMark output. (by @kivikakk in https://github.com/kivikakk/comrak/pull/686)
+* Write out `%25` in hrefs where not part of a percent-encode sequence. (by @kivikakk in https://github.com/kivikakk/comrak/pull/687)
+  * We used to leave any `%` character alone, such that `[link](%%20)` would roundtrip without change. It now roundtrips to `[link](%25%20)`.
+* Relaxed tasklist matching now supports a full Unicode scalar for the character between the `[…]`, and no longer turns single-byte UTF-8 characters into the Unicode codepoint numbered at the UTF-8 byte (!). (by @kivikakk in https://github.com/kivikakk/comrak/pull/689)
+
+New APIs:
+
+* Add `highlight` extension, `==for highlights==`! These render with `<mark>` in the HTML formatter. (by @pferreir in https://github.com/kivikakk/comrak/pull/672)
+* Add `comrak::Node<'a>` as an alias for `comrak::nodes::Node<'a>`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/673)
+* Add `comrak::Arena<'a>` as an alias for `typed_arena::Arena<comrak::nodes::AstNode<'a>>`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/675)
+* Add `From<(LineColumn, LineColumn)>` impl for `Sourcepos`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/675)
+* Make `comrak::nodes::NodeValue::xml_node_name` public, when you want a handy-to-access name for a node type. (by @kivikakk in https://github.com/kivikakk/comrak/pull/673)
+* Add `options.parse.leave_footnote_definitions`; this option causes footnote definitions to not be relocated to the bottom of the document, and unused references not to be garbage collected, for use with custom formatters. (by @kivikakk in https://github.com/kivikakk/comrak/pull/673)
+
+Bug fixes:
+
+* Fix relaxed autolink email in footnote edge case/panic. (by @kivikakk in https://github.com/kivikakk/comrak/pull/677)
+* Prevent unexpected post-processing, such as `\[x]` still being eligible for tasklist inclusion despite the escaped `[`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/679)
+
+Performance:
+
+* Simplify internal feed function, no longer requiring any allocation before the block parser. (by @kivikakk in https://github.com/kivikakk/comrak/pull/679, https://github.com/kivikakk/comrak/pull/681)
+  * This is possible due to not translating `NUL` and not appending a virtual EOF newline; compare [before](https://github.com/kivikakk/comrak/blob/4997b3f0579fadc24d68d37b69a6ae1fea302289/src/parser/mod.rs#L128-L214) and [after](https://github.com/kivikakk/comrak/blob/95fc43bc84e3069a832c8c2ed01c6cda5e2e7fd6/src/parser/mod.rs#L124-L165).
+* Don't buffer CommonMark output unless necessary. (by @kivikakk in https://github.com/kivikakk/comrak/pull/684)
+  * The full output was always buffered in a string before being written to the destination, which in many cases is going to be another string.  Buffering is now done only to the extent required by output options, which often will be "not at all."
+* Use SIMD for core line feed process. (by @kivikakk in https://github.com/kivikakk/comrak/pull/688)
+
+Build changes:
+
+* We now build Linux release binaries against musl, making them actually useful for anyone not running my exact Nix build :') (by @kivikakk in https://github.com/kivikakk/comrak/pull/671)
+* The benchmark CI job no longer causes the whole PR to fail checks if it can't post its comment. (by @kivikakk in https://github.com/kivikakk/comrak/pull/674)
+
+Behind the scenes:
+
+* Factor out `inlines::Scanner`, reducing some needless allocations. (by @kivikakk in https://github.com/kivikakk/comrak/pull/675)
+* The `all_options` fuzzer now fuzzes *across* all options, and not just with most of them switched on. (by @kivikakk in https://github.com/kivikakk/comrak/pull/678)
+
+## New Contributors
+
+* @pferreir made their first contribution in https://github.com/kivikakk/comrak/pull/672
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.47.0...v0.48.0
 
 
 # [v0.47.0] - 2025-10-30
