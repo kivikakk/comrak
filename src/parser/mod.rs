@@ -1544,13 +1544,13 @@ where
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
-        let mut seeked = 0;
+        let mut pos = 0;
         let mut rrs = vec![];
 
         let bytes = content.as_bytes();
-        while seeked < content.len() && bytes[seeked] == b'[' {
-            if let Some((offset, rr)) = self.parse_reference_inline(&content[seeked..]) {
-                seeked += offset;
+        while pos < content.len() && bytes[pos] == b'[' {
+            if let Some((offset, rr)) = self.parse_reference_inline(&content[pos..]) {
+                pos += offset;
                 rrs.extend(rr);
             } else {
                 break;
@@ -1561,8 +1561,8 @@ where
             self.refmap.map.entry(lab).or_insert(rr);
         }
 
-        if seeked != 0 {
-            strings::remove_from_start(content, seeked);
+        if pos != 0 {
+            strings::remove_from_start(content, pos);
         }
 
         !strings::is_blank(content)

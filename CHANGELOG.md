@@ -1056,7 +1056,7 @@ each case.
 
 # [0.2.0]
 
-* The formatters no longer produce Strings themeselves; you must specify an
+* The formatters no longer produce Strings themselves; you must specify an
   output stream.
 * Speed up whitespace normalisation.
 

@@ -1489,7 +1489,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             } else {
                 NodeValue::Strong
             },
-            // These are overriden immediately below.
+            // These are overridden immediately below.
             self.scanner.pos,
             self.scanner.pos,
         );

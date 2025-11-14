@@ -1147,7 +1147,7 @@ pub struct Render {
 
 #[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Options for bulleted list redering in markdown. See `link_style` in [`Render`] for more details.
+/// Options for bulleted list rendering in markdown. See `link_style` in [`Render`] for more details.
 pub enum ListStyleType {
     /// The `-` character
     #[default]

@@ -51,7 +51,7 @@ pub fn format_document_with_plugins<'a>(
     output.write_str(&result)
 }
 
-// Doesn't honour expermiental_minimize_commonmark.
+// Doesn't honour experimental_minimize_commonmark.
 fn format_internal<'a>(root: Node<'a>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     let mut f = CommonMarkFormatter::new(root, options, output);
     f.format(root)

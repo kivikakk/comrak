@@ -1,5 +1,5 @@
 ---
-title: Description / defintition lists
+title: Description / definition lists
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/definition_lists.md
 ---
 

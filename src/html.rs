@@ -1,4 +1,4 @@
-//! HTML renderering infrastructure for the CommonMark AST, as well as helper
+//! HTML rendering infrastructure for the CommonMark AST, as well as helper
 //! functions.
 //!
 //! [`format_document`] and [`format_document_with_plugins`] use the standard
@@ -869,7 +869,7 @@ fn render_paragraph<'a, T>(
         .and_then(|n| n.parent())
         .map_or(false, |n| match n.data().value {
             NodeValue::List(nl) => nl.tight,
-            NodeValue::DescriptionItem(nd) => nd.tight,
+            NodeValue::DescriptionItem(ndi) => ndi.tight,
             _ => false,
         })
         || node

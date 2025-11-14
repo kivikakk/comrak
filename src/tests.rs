@@ -233,7 +233,7 @@ where
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
-fn asssert_node_eq<'a>(node: Node<'a>, location: &[usize], expected: &NodeValue) {
+fn assert_node_eq<'a>(node: Node<'a>, location: &[usize], expected: &NodeValue) {
     let node = location
         .iter()
         .fold(node, |node, &n| node.children().nth(n).unwrap());
