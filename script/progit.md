@@ -999,7 +999,7 @@ To determine which commits in the Git source code repository (git://git.kernel.o
     $ git log --after="2014-04-29 00:00:00" --before="2014-04-29 23:59:59" \
       --pretty=fuller
 
-As the output will be different according to the timezone where it will be run, it's recommended to always use an absolute time such as ISO 8601 format (which includes timezone information) as argument to `--after` and `--before`, so that everone running the command will get the same repeatable results. 
+As the output will be different according to the timezone where it will be run, it's recommended to always use an absolute time such as ISO 8601 format (which includes timezone information) as argument to `--after` and `--before`, so that everyone running the command will get the same repeatable results. 
 
 To obtain commits made at a specific instant in time (e.g. 29 April 2013 at 17:07:22 CET), we can use
 
@@ -1023,7 +1023,7 @@ To obtain commits made at a specific instant in time (e.g. 29 April 2013 at 17:0
         Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
         Signed-off-by: Junio C Hamano <gitster@pobox.com>
 
-The above times (`AuthorDate`, `CommitDate`) are displayed in default format (`--date=default`), which shows timezone information of respective author and commiter.
+The above times (`AuthorDate`, `CommitDate`) are displayed in default format (`--date=default`), which shows timezone information of respective author and committer.
 
 Other useful formats include `--date=iso` (ISO 8601), `--date=rfc` (RFC 2822), `--date=raw` (seconds since the epoch (1970-01-01 UTC)) `--date=local` (times according to your local timezone) as well as `--date=relative` (e.g. "2 hours ago").
 

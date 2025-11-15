@@ -444,7 +444,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
         .filter(|v| {
             !matches!(
                 v,
-                Raw // unparseable
+                Raw // unparsable
             )
         })
         .filter_map(|v| {

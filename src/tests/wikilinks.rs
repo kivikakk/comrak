@@ -58,7 +58,7 @@ fn wikilinks_title_escape_chars() {
 }
 
 #[test]
-fn wikilinks_supercedes_relaxed_autolinks() {
+fn wikilinks_supersedes_relaxed_autolinks() {
     html_opts!(
         [
             extension.wikilinks_title_after_pipe,
