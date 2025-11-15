@@ -1908,21 +1908,31 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn find_special_char(&self) -> usize {
-        for n in self.scanner.pos..self.input.len() {
-            if self.special_char_bytes[self.input.as_bytes()[n] as usize] {
-                if self.input.as_bytes()[n] == b'^' && self.within_brackets {
-                    // NO OP
-                } else {
-                    return n;
-                }
-            }
-            if self.options.parse.smart && self.smart_char_bytes[self.input.as_bytes()[n] as usize]
-            {
-                return n;
-            }
+        let input = &self.input.as_bytes()[self.scanner.pos..];
+        let index = input
+            .iter()
+            .enumerate()
+            .find(|(_n, &value)| self.is_special_char(value))
+            .map(|(n, _value)| n)
+            .unwrap_or(input.len());
+
+        self.scanner.pos + index
+    }
+
+    fn is_special_char(&self, value: u8) -> bool {
+        if value == b'^' && self.within_brackets {
+            return false;
         }
 
-        self.input.len()
+        if self.special_char_bytes[value as usize] {
+            return true;
+        }
+
+        if self.options.parse.smart && self.smart_char_bytes[value as usize] {
+            return true;
+        }
+
+        false
     }
 
     fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
