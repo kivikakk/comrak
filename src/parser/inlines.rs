@@ -1911,9 +1911,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let input = &self.input.as_bytes()[self.scanner.pos..];
         let index = input
             .iter()
-            .enumerate()
-            .find(|(_n, &value)| self.is_special_char(value))
-            .map(|(n, _value)| n)
+            .position(|&value| self.is_special_char(value))
             .unwrap_or(input.len());
 
         self.scanner.pos + index
