@@ -397,9 +397,9 @@ Thank you to Comrak's many contributors for PRs and issues opened!
 
 ### Financial Contributors
 
-Become a financial contributor and help sustain Comrak's development.
+Since September 2025, the scope of my [day job](https://about.gitlab.com/company/team/#kivikakk) includes Comrak, meaning I can spend some time on it as part of my paid work!  That's so nice, and so donations from the community are better directed elsewhere, in my opinion.
 
-- [GitHub Sponsors](https://github.com/sponsors/kivikakk)
+If you feel like you would like to do so anyway, however, [GitHub Sponsors](https://github.com/sponsors/kivikakk) is the best way.
 
 ## Contact
 
