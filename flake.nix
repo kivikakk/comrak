@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -12,6 +13,7 @@
   outputs =
     {
       nixpkgs,
+      nixpkgs-unstable,
       fenix,
       ...
     }:
@@ -58,6 +60,7 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          unstablePkgs = nixpkgs-unstable.legacyPackages.${system};
           fenixPkgs = fenix.packages.${system};
 
           mkShell =
@@ -82,6 +85,9 @@
                   ]
                 ))
               ]
+              ++ (with unstablePkgs; [
+                  re2c
+              ])
               ++ (with pkgs; [
                 rust-analyzer
                 clippy
@@ -90,7 +96,6 @@
                 cargo-flamegraph
                 samply
                 python3
-                re2c
                 hyperfine
                 bacon
               ]);
