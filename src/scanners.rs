@@ -17887,7 +17887,8 @@ pub fn description_item_start(s: &str) -> Option<usize> {
     }
 }
 
-pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -17902,9 +17903,9 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -17931,9 +17932,9 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17956,9 +17957,9 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -17988,20 +17989,20 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x23..=0x26
                         | 0x28..=0x2C
                         | 0x30..=0x3B
                         | 0x3F..=0x7A
                         | 0x7C
-                        | 0x7E..=0x7F => {
+                        | 0x7E..=0xFE => {
                             cursor += 1;
                             yystate = 6;
                             continue 'yyl;
@@ -18009,41 +18010,6 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                         0x2E => {
                             cursor += 1;
                             yystate = 9;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 16;
                             continue 'yyl;
                         }
                         _ => {
@@ -18056,61 +18022,24 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                     return Some(cursor - 1);
                 }
                 8 => {
-                    yyaccept = 1;
-                    marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x23..=0x26
                         | 0x28..=0x2C
                         | 0x30..=0x3B
                         | 0x3F..=0x7A
                         | 0x7C
-                        | 0x7E..=0x7F => {
+                        | 0x7E..=0xFE => {
                             cursor += 1;
                             yystate = 8;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 23;
                             continue 'yyl;
                         }
                         _ => {
@@ -18122,9 +18051,9 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18144,293 +18073,14 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
                         }
                     }
                 }
-                10 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 6;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
                 _ => panic!("internal lexer error"),
             }
         }
     }
 }
 
-pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_closing_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -18444,9 +18094,9 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 0 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     cursor += 1;
@@ -18472,9 +18122,9 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                     marker = cursor;
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18492,9 +18142,9 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 4 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18522,9 +18172,9 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 6 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18542,20 +18192,20 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 7 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x23..=0x26
                         | 0x28..=0x2C
                         | 0x30..=0x3B
                         | 0x3F..=0x7A
                         | 0x7C
-                        | 0x7E..=0x7F => {
+                        | 0x7E..=0xFE => {
                             cursor += 1;
                             yystate = 7;
                             continue 'yyl;
@@ -18570,41 +18220,6 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                             yystate = 10;
                             continue 'yyl;
                         }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 14;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 15;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 16;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 17;
-                            continue 'yyl;
-                        }
                         _ => {
                             yystate = 5;
                             continue 'yyl;
@@ -18614,20 +18229,20 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 8 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
-                        0x01..=0x08
+                        0x00..=0x08
                         | 0x0E..=0x1F
                         | 0x23..=0x26
                         | 0x28..=0x2C
                         | 0x30..=0x3B
                         | 0x3F..=0x7A
                         | 0x7C
-                        | 0x7E..=0x7F => {
+                        | 0x7E..=0xFE => {
                             cursor += 1;
                             yystate = 8;
                             continue 'yyl;
@@ -18635,41 +18250,6 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                         0x3E => {
                             cursor += 1;
                             yystate = 10;
-                            continue 'yyl;
-                        }
-                        0xC2..=0xDF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        0xE0 => {
-                            cursor += 1;
-                            yystate = 19;
-                            continue 'yyl;
-                        }
-                        0xE1..=0xEC | 0xEE..=0xEF => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        0xED => {
-                            cursor += 1;
-                            yystate = 21;
-                            continue 'yyl;
-                        }
-                        0xF0 => {
-                            cursor += 1;
-                            yystate = 22;
-                            continue 'yyl;
-                        }
-                        0xF1..=0xF3 => {
-                            cursor += 1;
-                            yystate = 23;
-                            continue 'yyl;
-                        }
-                        0xF4 => {
-                            cursor += 1;
-                            yystate = 24;
                             continue 'yyl;
                         }
                         _ => {
@@ -18681,9 +18261,9 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 9 => {
                     yych = unsafe {
                         if cursor < len {
-                            *s.get_unchecked(cursor)
+                            *s.as_bytes().get_unchecked(cursor)
                         } else {
-                            0
+                            255
                         }
                     };
                     match yych {
@@ -18706,335 +18286,29 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
                 10 => {
                     return Some(cursor - 3);
                 }
-                11 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 7;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                12 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                13 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                14 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                15 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                16 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                17 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 13;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                18 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 8;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                19 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0xA0..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                20 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                21 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x9F => {
-                            cursor += 1;
-                            yystate = 18;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                22 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x90..=0xBF => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                23 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0xBF => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                24 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.get_unchecked(cursor)
-                        } else {
-                            0
-                        }
-                    };
-                    match yych {
-                        0x80..=0x8F => {
-                            cursor += 1;
-                            yystate = 20;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
                 _ => panic!("internal lexer error"),
             }
         }
     }
 }
 
-pub fn phoenix_closing_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_closing_tag(s: &str) -> Option<usize> {
     phoenix_block_closing_tag(s).map(|tag_len| tag_len + 3)
 }
 
-pub fn phoenix_inline_tag(s: &[u8]) -> Option<usize> {
-    let tag_name_len = phoenix_opening_tag(s)?;
-    let mut cursor = 1 + tag_name_len;
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_directive(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
     let len = s.len();
 
-    while cursor < len {
-        match s[cursor] {
-            b'>' => return Some(cursor + 1),
-            b'/' if cursor + 1 < len && s[cursor + 1] == b'>' => return Some(cursor + 2),
-            b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
-            }
-            b'{' => {
-                cursor = find_matching_brace(s, cursor + 1)?;
-            }
-            _ => cursor += 1,
-        }
-    }
-
-    None
-}
-
-pub fn phoenix_directive_start(s: &[u8]) -> Option<usize> {
-    if s.len() >= 2 && s[0] == b'<' && s[1] == b'%' {
-        Some(2)
-    } else {
-        None
-    }
-}
-
-pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
-    if s.len() < 4 || s[0] != b'<' || s[1] != b'%' {
+    if s.len() < 4 || bytes[0] != b'<' || bytes[1] != b'%' {
         return None;
     }
 
-    if s[2] == b'!' && s.len() >= 7 {
+    if bytes[2] == b'!' && s.len() >= 7 {
         let mut cursor = 0;
         let mut marker = 0;
-        let len = s.len();
 
         {
             #[allow(unused_assignments)]
@@ -19045,9 +18319,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     0 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         cursor += 1;
@@ -19073,9 +18347,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19093,9 +18367,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     4 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19118,9 +18392,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     6 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19138,9 +18412,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     7 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19158,13 +18432,13 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     8 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x2C | 0x2E..=0x7F => {
+                            0x00..=0x2C | 0x2E..=0xFE => {
                                 cursor += 1;
                                 yystate = 8;
                                 continue 'yyl;
@@ -19172,41 +18446,6 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                             0x2D => {
                                 cursor += 1;
                                 yystate = 9;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 16;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19218,55 +18457,20 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     9 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x2C | 0x2E..=0x7F => {
+                            0x00..=0x2C | 0x2E..=0xFE => {
                                 cursor += 1;
                                 yystate = 8;
                                 continue 'yyl;
                             }
                             0x2D => {
                                 cursor += 1;
-                                yystate = 17;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
                                 yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 16;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19278,15 +18482,20 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     10 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x80..=0xBF => {
+                            0x00..=0x24 | 0x26..=0xFE => {
                                 cursor += 1;
                                 yystate = 8;
+                                continue 'yyl;
+                            }
+                            0x25 => {
+                                cursor += 1;
+                                yystate = 11;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19298,15 +18507,15 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     11 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0xA0..=0xBF => {
+                            0x3E => {
                                 cursor += 1;
-                                yystate = 10;
+                                yystate = 12;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19316,186 +18525,6 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                         }
                     }
                     12 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    13 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    14 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    15 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    16 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    17 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x01..=0x24 | 0x26..=0x7F => {
-                                cursor += 1;
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            0x25 => {
-                                cursor += 1;
-                                yystate = 18;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 14;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 16;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    18 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x3E => {
-                                cursor += 1;
-                                yystate = 19;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    19 => {
                         return Some(cursor);
                     }
                     _ => panic!("internal lexer error"),
@@ -19504,10 +18533,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
         }
     }
 
-    if s[2] == b'#' {
+    if bytes[2] == b'#' {
         let mut cursor = 0;
         let mut marker = 0;
-        let len = s.len();
 
         {
             #[allow(unused_assignments)]
@@ -19518,9 +18546,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     0 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         cursor += 1;
@@ -19546,9 +18574,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                         marker = cursor;
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19566,9 +18594,9 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     4 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
@@ -19591,13 +18619,13 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     6 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x24 | 0x26..=0x7F => {
+                            0x00..=0x24 | 0x26..=0xFE => {
                                 cursor += 1;
                                 yystate = 6;
                                 continue 'yyl;
@@ -19605,41 +18633,6 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                             0x25 => {
                                 cursor += 1;
                                 yystate = 7;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 9;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 14;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19651,55 +18644,20 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                     7 => {
                         yych = unsafe {
                             if cursor < len {
-                                *s.get_unchecked(cursor)
+                                *s.as_bytes().get_unchecked(cursor)
                             } else {
-                                0
+                                255
                             }
                         };
                         match yych {
-                            0x01..=0x3D | 0x3F..=0x7F => {
+                            0x00..=0x3D | 0x3F..=0xFE => {
                                 cursor += 1;
                                 yystate = 6;
                                 continue 'yyl;
                             }
                             0x3E => {
                                 cursor += 1;
-                                yystate = 15;
-                                continue 'yyl;
-                            }
-                            0xC2..=0xDF => {
-                                cursor += 1;
                                 yystate = 8;
-                                continue 'yyl;
-                            }
-                            0xE0 => {
-                                cursor += 1;
-                                yystate = 9;
-                                continue 'yyl;
-                            }
-                            0xE1..=0xEC | 0xEE..=0xEF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            0xED => {
-                                cursor += 1;
-                                yystate = 11;
-                                continue 'yyl;
-                            }
-                            0xF0 => {
-                                cursor += 1;
-                                yystate = 12;
-                                continue 'yyl;
-                            }
-                            0xF1..=0xF3 => {
-                                cursor += 1;
-                                yystate = 13;
-                                continue 'yyl;
-                            }
-                            0xF4 => {
-                                cursor += 1;
-                                yystate = 14;
                                 continue 'yyl;
                             }
                             _ => {
@@ -19709,146 +18667,6 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
                         }
                     }
                     8 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 6;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    9 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0xA0..=0xBF => {
-                                cursor += 1;
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    10 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    11 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x9F => {
-                                cursor += 1;
-                                yystate = 8;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    12 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x90..=0xBF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    13 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0xBF => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    14 => {
-                        yych = unsafe {
-                            if cursor < len {
-                                *s.get_unchecked(cursor)
-                            } else {
-                                0
-                            }
-                        };
-                        match yych {
-                            0x80..=0x8F => {
-                                cursor += 1;
-                                yystate = 10;
-                                continue 'yyl;
-                            }
-                            _ => {
-                                yystate = 5;
-                                continue 'yyl;
-                            }
-                        }
-                    }
-                    15 => {
                         return Some(cursor);
                     }
                     _ => panic!("internal lexer error"),
@@ -19857,14 +18675,13 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
         }
     }
 
-    let len = s.len();
     let mut cursor = 2;
     while cursor + 1 < len {
-        match s[cursor] {
+        match bytes[cursor] {
             b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
+                cursor = crate::strings::skip_quoted_string(s, cursor + 1, bytes[cursor]);
             }
-            b'%' if s[cursor + 1] == b'>' => {
+            b'%' if bytes[cursor + 1] == b'>' => {
                 return Some(cursor + 2);
             }
             _ => cursor += 1,
@@ -19872,55 +18689,4 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
     }
 
     None
-}
-
-fn skip_quoted_string(s: &[u8], mut cursor: usize, quote: u8) -> usize {
-    let len = s.len();
-    let mut escaped = false;
-
-    while cursor < len {
-        if escaped {
-            escaped = false;
-        } else if s[cursor] == b'\\' {
-            escaped = true;
-        } else if s[cursor] == quote {
-            return cursor + 1;
-        }
-        cursor += 1;
-    }
-    cursor
-}
-
-fn find_matching_brace(s: &[u8], start: usize) -> Option<usize> {
-    let mut cursor = start;
-    let mut depth = 1;
-    let len = s.len();
-
-    while cursor < len {
-        match s[cursor] {
-            b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
-            }
-            b'{' => {
-                depth += 1;
-                cursor += 1;
-            }
-            b'}' => {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(cursor + 1);
-                }
-                cursor += 1;
-            }
-            _ => cursor += 1,
-        }
-    }
-    None
-}
-
-pub fn phoenix_inline_expression(s: &[u8]) -> Option<usize> {
-    if s.is_empty() || s[0] != b'{' {
-        return None;
-    }
-    find_matching_brace(s, 1)
 }

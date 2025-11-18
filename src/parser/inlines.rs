@@ -509,7 +509,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.options.extension.phoenix_heex {
             let scanners = [
                 scanners::phoenix_directive,
-                scanners::phoenix_inline_tag,
+                strings::phoenix_inline_tag,
                 scanners::phoenix_closing_tag,
             ];
 
@@ -751,9 +751,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     #[cfg(feature = "phoenix_heex")]
     fn make_heex_inline<F>(&mut self, scanner: F, parent_line_offsets: &[usize]) -> Option<Node<'a>>
     where
-        F: Fn(&[u8]) -> Option<usize>,
+        F: Fn(&str) -> Option<usize>,
     {
-        let matchlen = scanner(self.input[self.scanner.pos - 1..].as_bytes())?;
+        let matchlen = scanner(&self.input[self.scanner.pos - 1..])?;
         let start_pos = self.scanner.pos - 1;
         self.scanner.pos = self.scanner.pos - 1 + matchlen;
         let inl = self.make_inline(
@@ -767,8 +767,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[cfg(feature = "phoenix_heex")]
     fn handle_heex_inline_expression(&mut self, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
-        let matchlen =
-            scanners::phoenix_inline_expression(self.input[self.scanner.pos..].as_bytes())?;
+        let matchlen = strings::phoenix_inline_expression(&self.input[self.scanner.pos..])?;
         let start_pos = self.scanner.pos;
         self.scanner.pos += matchlen;
         let inl = self.make_inline(
