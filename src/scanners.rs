@@ -18690,3 +18690,134 @@ pub fn phoenix_directive(s: &str) -> Option<usize> {
 
     None
 }
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_directive_start(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    if bytes.len() >= 2 && bytes[0] == b'<' && bytes[1] == b'%' {
+        Some(2)
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_expression_start(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    if !bytes.is_empty() && bytes[0] == b'{' {
+        Some(1)
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_directive_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 2 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'-' if i + 3 < len
+                && bytes[i + 1] == b'-'
+                && bytes[i + 2] == b'%'
+                && bytes[i + 3] == b'>' =>
+            {
+                return true;
+            }
+            b'%' if i + 1 < len && bytes[i + 1] == b'>' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_comment_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 2 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'%' if i + 1 < len && bytes[i + 1] == b'>' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_multiline_comment_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 4 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'-' if i + 3 < len
+                && bytes[i + 1] == b'-'
+                && bytes[i + 2] == b'%'
+                && bytes[i + 3] == b'>' =>
+            {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_expression_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 1 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'}' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
