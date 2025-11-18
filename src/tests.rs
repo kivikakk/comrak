@@ -30,6 +30,7 @@ mod multiline_block_quotes;
 #[path = "tests/options.rs"]
 mod options_;
 mod pathological;
+mod phoenix_heex;
 mod plugins;
 mod raw;
 mod regressions;
@@ -377,8 +378,18 @@ impl AstMatchTree {
                         assert_eq!(text, &nhb.literal, "HtmlBlock literal should match");
                         asserted_text = true;
                     }
+                    #[cfg(feature = "phoenix_heex")]
+                    NodeValue::HeexBlock(ref nhb) => {
+                        assert_eq!(text, &nhb.literal, "HeexBlock literal should match");
+                        asserted_text = true;
+                    }
                     NodeValue::HtmlInline(ref nhi) => {
                         assert_eq!(text, nhi, "HtmlInline content should match");
+                        asserted_text = true;
+                    }
+                    #[cfg(feature = "phoenix_heex")]
+                    NodeValue::HeexInline(ref nhi) => {
+                        assert_eq!(text, nhi, "HeexInline content should match");
                         asserted_text = true;
                     }
                     NodeValue::Text(ref nt) => {

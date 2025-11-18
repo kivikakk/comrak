@@ -460,13 +460,13 @@ pub fn skip_quoted_string(s: &str, mut cursor: usize, quote_byte: u8) -> usize {
     let len = s.len();
     let mut escaped = false;
 
-    // TODO: jetscii
     while cursor < len {
+        let byte = bytes[cursor];
         if escaped {
             escaped = false;
-        } else if bytes[cursor] == b'\\' {
+        } else if byte == b'\\' {
             escaped = true;
-        } else if bytes[cursor] == quote_byte {
+        } else if byte == quote_byte {
             return cursor + 1;
         }
         cursor += 1;

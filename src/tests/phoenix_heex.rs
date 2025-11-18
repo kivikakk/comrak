@@ -100,7 +100,7 @@ fn html_comments() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -121,7 +121,7 @@ fn empty_html_comments() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -162,7 +162,7 @@ fn simple_expression() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -175,7 +175,7 @@ fn single_empty_tuple() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -188,7 +188,7 @@ fn nested_empty_tuples() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -201,7 +201,7 @@ fn interpolation() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -214,7 +214,7 @@ fn many_openings_and_closings() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -239,7 +239,7 @@ fn interpolation_inside_body() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -355,7 +355,7 @@ fn simple_example() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -475,7 +475,7 @@ fn tag_special_attribute_for() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -488,7 +488,7 @@ fn self_closing_tag_special_attribute_for() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -501,7 +501,7 @@ fn self_closing_tag_special_attribute_for_no_space() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -586,7 +586,7 @@ fn tag_special_attribute_stream() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -599,7 +599,7 @@ fn tag_special_attribute_if() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -612,7 +612,7 @@ fn self_closing_tag_special_attribute_if() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -693,7 +693,7 @@ fn html_tag() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -702,7 +702,7 @@ fn html_tag() {
 fn html_self_closing_tag() {
     html_opts_i("<div/>\n", "<div/>\n", true, |opts| {
         opts.extension.phoenix_heex = true;
-        opts.render.unsafe_ = true;
+        opts.render.r#unsafe = true;
     });
 }
 
@@ -726,7 +726,7 @@ fn html_nested_tags() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -754,7 +754,7 @@ fn doctype() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -767,7 +767,7 @@ fn tag_name_with_hyphen() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -848,7 +848,7 @@ fn alpine_directive() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -869,7 +869,7 @@ fn alpine_attribute() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1132,7 +1132,7 @@ fn special_attributes_for_with_html_tag() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1153,7 +1153,7 @@ fn special_attributes_if_with_html_tag() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1191,7 +1191,7 @@ fn special_attributes_stream_with_html_tag() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1243,7 +1243,7 @@ fn special_attributes_for_and_if_combined() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1268,7 +1268,7 @@ fn special_attributes_nested() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1285,7 +1285,7 @@ fn root_attributes_spread() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1298,7 +1298,7 @@ fn root_attributes_multiple() {
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
-            opts.render.unsafe_ = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1463,6 +1463,37 @@ fn sourcepos_with_content() {
         "</.form>\n",
         (document (1:1-3:8) [
             (heex_block (1:1-3:8) "<.form>\n  <.input />\n</.form>\n")
+        ]),
+    );
+}
+
+#[test]
+fn block_with_code_fence() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "<.header>\n"
+        "  ```elixir\n"
+        "</.header>\n",
+        (document (1:1-3:10) [
+            (heex_block (1:1-3:10) "<.header>\n  ```elixir\n</.header>\n")
+        ]),
+    );
+}
+
+#[test]
+fn block_with_text_and_paragraph() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "<.header>\n"
+        "hello\n"
+        "</.header>\n"
+        "\n"
+        "hello world\n",
+        (document (1:1-5:11) [
+            (heex_block (1:1-3:10) "<.header>\nhello\n</.header>\n")
+            (paragraph (5:1-5:11) [
+                (text (5:1-5:11) "hello world")
+            ])
         ]),
     );
 }
@@ -1891,6 +1922,7 @@ fn component_with_table() {
         |opts| {
             opts.extension.phoenix_heex = true;
             opts.extension.table = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1913,6 +1945,7 @@ fn directive_with_footnote() {
         |opts| {
             opts.extension.phoenix_heex = true;
             opts.extension.footnotes = true;
+            opts.render.r#unsafe = true;
         },
     );
 }
@@ -1969,19 +2002,7 @@ fn large_component_content() {
 fn block_level_expression_with_string_concatenation() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!(
-            "{\n",
-            "  \"a\"\n",
-            "  <>\n",
-            "  \"b\"\n",
-            "}\n",
-        ),
-        concat!(
-            "{\n",
-            "  \"a\"\n",
-            "  <>\n",
-            "  \"b\"\n",
-            "}\n",
-        ),
+        concat!("{\n", "  \"a\"\n", "  <>\n", "  \"b\"\n", "}\n",),
+        concat!("{\n", "  \"a\"\n", "  <>\n", "  \"b\"\n", "}\n",),
     );
 }

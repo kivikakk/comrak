@@ -691,13 +691,15 @@ impl NodeValue {
     }
 
     pub(crate) fn accepts_lines(&self) -> bool {
-        matches!(
-            *self,
+        match *self {
             NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::Subtext
-        )
+            | NodeValue::Heading(..)
+            | NodeValue::CodeBlock(..)
+            | NodeValue::Subtext => true,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => true,
+            _ => false,
+        }
     }
 }
 

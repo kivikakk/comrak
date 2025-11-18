@@ -517,7 +517,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Subtext => SUBTEXT,
                 Raw => unreachable!(),
                 #[cfg(feature = "phoenix_heex")]
-                HeexBlock => unreachable!(),
+                HeexBlock => HEEX_BLOCK,
                 #[cfg(feature = "phoenix_heex")]
                 HeexInline => HEEX_INLINE,
             };
