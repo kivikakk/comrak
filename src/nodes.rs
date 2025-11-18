@@ -963,10 +963,20 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             => !child.block(),
             NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
             NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-            #[cfg(not(feature = "shortcodes"))]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
+            NodeValue::TableCell => {
+                #[cfg(feature = "shortcodes")]
+                if matches!(*child, NodeValue::ShortCode(..)) {
+                    return true;
+                }
+
+                #[cfg(feature = "phoenix_heex")]
+                if matches!(*child, NodeValue::HeexInline(_)) {
+                    return true;
+                }
+
+                matches!(
+                    *child,
+                    NodeValue::Text(..)
                     | NodeValue::Code(..)
                     | NodeValue::Emph
                     | NodeValue::Strong
@@ -985,31 +995,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::TaskItem(_)
                     | NodeValue::Escaped
                     | NodeValue::EscapedTag(_)
-            ),
-            #[cfg(feature = "shortcodes")]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::Strikethrough
-                | NodeValue::Highlight
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
-                | NodeValue::FootnoteReference(..)
-                | NodeValue::Superscript
-                | NodeValue::SpoileredText
-                | NodeValue::Underline
-                | NodeValue::Subscript
-                | NodeValue::ShortCode(..)
-                | NodeValue::TaskItem(_)
-                | NodeValue::Escaped
-                | NodeValue::EscapedTag(_)
-            ),
+                )
+            }
             NodeValue::MultilineBlockQuote(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
@@ -1031,6 +1018,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::Raw(_)
             | NodeValue::FootnoteReference(_)
             | NodeValue::Math(_) => false,
+
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) => false,
         }
