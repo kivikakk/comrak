@@ -5,6 +5,8 @@ use std::str;
 use crate::ctype::{ispunct, isspace, isspace_char};
 use crate::entity;
 use crate::parser::AutolinkType;
+#[cfg(feature = "phoenix_heex")]
+use crate::scanners;
 
 #[derive(PartialEq, Eq)]
 pub enum Case {
@@ -450,6 +452,88 @@ pub fn newlines_of(s: &str) -> usize {
     } else {
         0
     }
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn skip_quoted_string(s: &str, mut cursor: usize, quote_byte: u8) -> usize {
+    let bytes = s.as_bytes();
+    let len = s.len();
+    let mut escaped = false;
+
+    // TODO: jetscii
+    while cursor < len {
+        if escaped {
+            escaped = false;
+        } else if bytes[cursor] == b'\\' {
+            escaped = true;
+        } else if bytes[cursor] == quote_byte {
+            return cursor + 1;
+        }
+        cursor += 1;
+    }
+
+    cursor
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn find_matching_brace(s: &str, start: usize) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let mut cursor = start;
+    let mut depth = 1;
+    let len = s.len();
+
+    while cursor < len {
+        match bytes[cursor] {
+            b'"' | b'\'' => {
+                cursor = skip_quoted_string(s, cursor + 1, bytes[cursor]);
+            }
+            b'{' => {
+                depth += 1;
+                cursor += 1;
+            }
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(cursor + 1);
+                }
+                cursor += 1;
+            }
+            _ => cursor += 1,
+        }
+    }
+    None
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_inline_tag(s: &str) -> Option<usize> {
+    let tag_name_len = scanners::phoenix_opening_tag(s)?;
+    let bytes = s.as_bytes();
+    let mut cursor = 1 + tag_name_len;
+    let len = s.len();
+
+    while cursor < len {
+        match bytes[cursor] {
+            b'>' => return Some(cursor + 1),
+            b'/' if cursor + 1 < len && bytes[cursor + 1] == b'>' => return Some(cursor + 2),
+            b'"' | b'\'' => {
+                cursor = skip_quoted_string(s, cursor + 1, bytes[cursor]);
+            }
+            b'{' => {
+                cursor = find_matching_brace(s, cursor + 1)?;
+            }
+            _ => cursor += 1,
+        }
+    }
+
+    None
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_inline_expression(s: &str) -> Option<usize> {
+    if s.chars().next() != Some('{') {
+        return None;
+    }
+    find_matching_brace(s, 1)
 }
 
 #[cfg(test)]

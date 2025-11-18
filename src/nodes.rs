@@ -5,6 +5,8 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::arena_tree;
+#[cfg(feature = "phoenix_heex")]
+pub use crate::parser::phoenix_heex::NodeHeexBlock;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
@@ -21,9 +23,6 @@ macro_rules! node_matches {
         )
     }};
 }
-
-#[cfg(feature = "phoenix_heex")]
-pub use crate::parser::phoenix_heex::NodeHeexBlock;
 
 /// The core AST node enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -100,7 +99,7 @@ pub enum NodeValue {
     #[cfg(feature = "phoenix_heex")]
     /// **Block**. A [Phoenix HEEx](https://hexdocs.pm/phoenix/components.html) template block.  Contains raw Phoenix HEEx text
     /// which is neither parsed as Markdown nor HTML escaped.
-    HeexBlock(NodeHeexBlock),
+    HeexBlock(Box<NodeHeexBlock>),
 
     /// **Block**. A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains **inlines**.
     Paragraph,
@@ -728,13 +727,13 @@ impl std::fmt::Debug for Ast {
 }
 
 #[allow(dead_code)]
-#[cfg(all(target_pointer_width = "64", not(feature = "phoenix_heex")))]
+#[cfg(target_pointer_width = "64")]
 /// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
 /// bigger.
 const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 
 #[allow(dead_code)]
-#[cfg(all(target_pointer_width = "64", not(feature = "phoenix_heex")))]
+#[cfg(target_pointer_width = "64")]
 /// Assert the total size of what we allocate in the Arena, for reference.
 ///
 /// Note that the size adds to Ast:

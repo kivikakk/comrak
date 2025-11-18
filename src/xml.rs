@@ -3,8 +3,6 @@ use std::fmt::{self, Write};
 
 use crate::character_set::character_set;
 use crate::node_matches;
-#[cfg(feature = "phoenix_heex")]
-use crate::nodes::NodeHeexBlock;
 use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::options::{Options, Plugins};
@@ -174,9 +172,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     was_literal = true;
                 }
                 #[cfg(feature = "phoenix_heex")]
-                NodeValue::HeexBlock(NodeHeexBlock { ref literal, .. }) => {
+                NodeValue::HeexBlock(ref nhb) => {
                     self.output.write_str(" xml:space=\"preserve\">")?;
-                    self.escape(literal)?;
+                    self.escape(&nhb.literal)?;
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }

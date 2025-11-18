@@ -60,9 +60,9 @@
 
     /* Phoenix Tags */
     /* https://github.com/phoenixframework/tree-sitter-heex/blob/6603380caf806b3e6c7f0bf61627bb47023d79f1/grammar.js */
-    phoenix_function_component = [.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\x00]*;
-    phoenix_module_component = [A-Z] [^-<>{}!"'/= \t\r\n\v\f.\x00]* ([.][A-Z] [^-<>{}!"'/= \t\r\n\v\f.\x00]*)* ([.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\x00]*)?;
-    phoenix_slot = [:][a-z]+ [^<>{}!"'/= \t\r\n\v\f\x00]*;
+    phoenix_function_component = [.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*;
+    phoenix_module_component = [A-Z] [^-<>{}!"'/= \t\r\n\v\f.\xff]* ([.][A-Z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*)* ([.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*)?;
+    phoenix_slot = [:][a-z]+ [^<>{}!"'/= \t\r\n\v\f\xff]*;
     phoenix_tag = phoenix_function_component | phoenix_module_component | phoenix_slot;
     phoenix_block_tag = phoenix_function_component | phoenix_module_component;
 */
@@ -506,7 +506,8 @@ pub fn description_item_start(s: &str) -> Option<usize> {
 */
 }
 
-pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -516,7 +517,8 @@ pub fn phoenix_opening_tag(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_closing_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -526,65 +528,45 @@ pub fn phoenix_block_closing_tag(s: &[u8]) -> Option<usize> {
 */
 }
 
-pub fn phoenix_closing_tag(s: &[u8]) -> Option<usize> {
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_closing_tag(s: &str) -> Option<usize> {
     phoenix_block_closing_tag(s).map(|tag_len| tag_len + 3)
 }
 
-pub fn phoenix_inline_tag(s: &[u8]) -> Option<usize> {
-    let tag_name_len = phoenix_opening_tag(s)?;
-    let mut cursor = 1 + tag_name_len;
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_directive(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
     let len = s.len();
 
-    while cursor < len {
-        match s[cursor] {
-            b'>' => return Some(cursor + 1),
-            b'/' if cursor + 1 < len && s[cursor + 1] == b'>' => return Some(cursor + 2),
-            b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
-            }
-            b'{' => {
-                cursor = find_matching_brace(s, cursor + 1)?;
-            }
-            _ => cursor += 1,
-        }
-    }
-
-    None
-}
-
-pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
-    if s.len() < 4 || s[0] != b'<' || s[1] != b'%' {
+    if s.len() < 4 || bytes[0] != b'<' || bytes[1] != b'%' {
         return None;
     }
 
-    if s[2] == b'!' && s.len() >= 7 {
+    if bytes[2] == b'!' && s.len() >= 7 {
         let mut cursor = 0;
         let mut marker = 0;
-        let len = s.len();
 /*!re2c
-        '<%!--' ([^\x00-] | '-' [^\x00-] | '--' [^\x00%])* '--%>' { return Some(cursor); }
+        '<%!--' ([^\xff-] | '-' [^\xff-] | '--' [^\xff%])* '--%>' { return Some(cursor); }
         * { return None; }
 */
     }
 
-    if s[2] == b'#' {
+    if bytes[2] == b'#' {
         let mut cursor = 0;
         let mut marker = 0;
-        let len = s.len();
 /*!re2c
-        '<%#' ([^\x00%] | '%' [^\x00>])* '%>' { return Some(cursor); }
+        '<%#' ([^\xff%] | '%' [^\xff>])* '%>' { return Some(cursor); }
         * { return None; }
 */
     }
 
-    let len = s.len();
     let mut cursor = 2;
     while cursor + 1 < len {
-        match s[cursor] {
+        match bytes[cursor] {
             b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
+                cursor = crate::strings::skip_quoted_string(s, cursor + 1, bytes[cursor]);
             }
-            b'%' if s[cursor + 1] == b'>' => {
+            b'%' if bytes[cursor + 1] == b'>' => {
                 return Some(cursor + 2);
             }
             _ => cursor += 1,
@@ -592,55 +574,4 @@ pub fn phoenix_directive(s: &[u8]) -> Option<usize> {
     }
 
     None
-}
-
-fn skip_quoted_string(s: &[u8], mut cursor: usize, quote: u8) -> usize {
-    let len = s.len();
-    let mut escaped = false;
-
-    while cursor < len {
-        if escaped {
-            escaped = false;
-        } else if s[cursor] == b'\\' {
-            escaped = true;
-        } else if s[cursor] == quote {
-            return cursor + 1;
-        }
-        cursor += 1;
-    }
-    cursor
-}
-
-fn find_matching_brace(s: &[u8], start: usize) -> Option<usize> {
-    let mut cursor = start;
-    let mut depth = 1;
-    let len = s.len();
-
-    while cursor < len {
-        match s[cursor] {
-            b'"' | b'\'' => {
-                cursor = skip_quoted_string(s, cursor + 1, s[cursor]);
-            }
-            b'{' => {
-                depth += 1;
-                cursor += 1;
-            }
-            b'}' => {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(cursor + 1);
-                }
-                cursor += 1;
-            }
-            _ => cursor += 1,
-        }
-    }
-    None
-}
-
-pub fn phoenix_inline_expression(s: &[u8]) -> Option<usize> {
-    if s.is_empty() || s[0] != b'{' {
-        return None;
-    }
-    find_matching_brace(s, 1)
 }
