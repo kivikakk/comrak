@@ -10,6 +10,11 @@ fn greentext_preserved() {
 }
 
 #[test]
+fn empty_line() {
+    html_opts!([extension.greentext], ">", "<p>&gt;</p>\n");
+}
+
+#[test]
 fn separate_quotes_on_line_end() {
     html_opts!(
         [extension.greentext],

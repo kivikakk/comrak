@@ -54,6 +54,16 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
     Parser::new(arena, root, options).parse(md)
 }
 
+/// Return whether the byte at the given offset passes the callback.
+///
+/// Returns `false` if the offset is out of bounds.
+fn byte_matches<F>(bytes: &[u8], offset: usize, predicate: F) -> bool
+where
+    F: Fn(u8) -> bool,
+{
+    bytes.get(offset).map_or(false, |&b| predicate(b))
+}
+
 pub struct Parser<'a, 'o, 'c> {
     arena: &'a Arena<'a>,
     options: &'o Options<'c>,
@@ -371,16 +381,11 @@ where
     fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
         let bytes = line.as_bytes();
         let indent = self.indent;
-        if indent <= 3
-            && bytes.get(self.first_nonspace) == Some(&b'>')
-            && self.is_not_greentext(line)
+        if indent <= 3 && bytes.get(self.first_nonspace) == Some(&b'>') && !self.is_greentext(line)
         {
             self.advance_offset(line, indent + 1, true);
 
-            if bytes
-                .get(self.offset)
-                .map_or(false, |&b| strings::is_space_or_tab(b))
-            {
+            if byte_matches(bytes, self.offset, strings::is_space_or_tab) {
                 self.advance_offset(line, 1, true);
             }
 
@@ -390,12 +395,16 @@ where
         false
     }
 
-    fn is_not_greentext(&self, line: &str) -> bool {
-        !self.options.extension.greentext
-            || line
-                .as_bytes()
-                .get(self.first_nonspace + 1)
-                .map_or(false, |&b| strings::is_space_or_tab(b))
+    fn is_greentext(&self, line: &str) -> bool {
+        if !self.options.extension.greentext {
+            return false;
+        }
+
+        !byte_matches(
+            line.as_bytes(),
+            self.first_nonspace + 1,
+            strings::is_space_or_tab,
+        )
     }
 
     fn parse_node_item_prefix(&mut self, line: &str, container: Node<'a>, nl: &NodeList) -> bool {
@@ -475,11 +484,7 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0
-            && bytes
-                .get(self.offset)
-                .map_or(false, |&b| strings::is_space_or_tab(b))
-        {
+        while i > 0 && byte_matches(bytes, self.offset, strings::is_space_or_tab) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -547,11 +552,7 @@ where
         }
 
         let mut i = fence_offset;
-        while i > 0
-            && bytes
-                .get(self.offset)
-                .map_or(false, |&b| strings::is_space_or_tab(b))
-        {
+        while i > 0 && byte_matches(bytes, self.offset, strings::is_space_or_tab) {
             self.advance_offset(line, 1, true);
             i -= 1;
         }
@@ -758,11 +759,7 @@ where
 
         let offset = self.first_nonspace + 1 - self.offset;
         self.advance_offset(line, offset, false);
-        if line
-            .as_bytes()
-            .get(self.offset)
-            .map_or(false, |&b| strings::is_space_or_tab(b))
-        {
+        if byte_matches(line.as_bytes(), self.offset, strings::is_space_or_tab) {
             self.advance_offset(line, 1, true);
         }
         *container = self.add_child(container, NodeValue::BlockQuote, blockquote_startpos + 1);
@@ -771,7 +768,7 @@ where
     }
 
     fn detect_blockquote(&self, line: &str) -> bool {
-        line.as_bytes().get(self.first_nonspace) == Some(&b'>') && self.is_not_greentext(line)
+        line.as_bytes().get(self.first_nonspace) == Some(&b'>') && !self.is_greentext(line)
     }
 
     fn handle_atx_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1049,11 +1046,7 @@ where
 
         let offset = self.first_nonspace + matched - self.offset;
         self.advance_offset(line, offset, false);
-        if line
-            .as_bytes()
-            .get(self.offset)
-            .map_or(false, |&b| strings::is_space_or_tab(b))
-        {
+        if byte_matches(line.as_bytes(), self.offset, strings::is_space_or_tab) {
             self.advance_offset(line, 1, true);
         }
 
@@ -1192,19 +1185,13 @@ where
 
         let bytes = line.as_bytes();
         while self.column - save_column <= 5
-            && bytes
-                .get(self.offset)
-                .map_or(false, |&b| strings::is_space_or_tab(b))
+            && byte_matches(bytes, self.offset, strings::is_space_or_tab)
         {
             self.advance_offset(line, 1, true);
         }
 
         let i = self.column - save_column;
-        if !(1..5).contains(&i)
-            || bytes
-                .get(self.offset)
-                .map_or(false, |&b| strings::is_line_end_char(b))
-        {
+        if !(1..5).contains(&i) || byte_matches(bytes, self.offset, strings::is_line_end_char) {
             nl.padding = matched + 1;
             self.offset = save_offset;
             self.column = save_column;
