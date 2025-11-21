@@ -171,6 +171,20 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
+                #[cfg(feature = "phoenix_heex")]
+                NodeValue::HeexBlock(ref nhb) => {
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&nhb.literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
+                #[cfg(feature = "phoenix_heex")]
+                NodeValue::HeexInline(ref literal) => {
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
                 NodeValue::List(ref nl) => {
                     match nl.list_type {
                         ListType::Bullet => {

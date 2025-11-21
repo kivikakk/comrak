@@ -9,6 +9,8 @@ use crate::nodes::{
     NodeList, NodeMath, NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
+#[cfg(feature = "phoenix_heex")]
+use crate::parser::phoenix_heex::NodeHeexBlock;
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
 use crate::scanners;
@@ -456,6 +458,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::Heading(ref nh) => self.format_heading(nh, entering)?,
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(ref nhb) => self.format_heex_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
             NodeValue::Text(ref literal) => self.format_text(literal, entering)?,
@@ -463,6 +467,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::SoftBreak => self.format_soft_break(entering)?,
             NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexInline(ref literal) => self.format_heex_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
             NodeValue::Strong => {
                 if parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong)
@@ -717,6 +723,16 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
+    #[cfg(feature = "phoenix_heex")]
+    fn format_heex_block(&mut self, nhb: &NodeHeexBlock, entering: bool) -> fmt::Result {
+        if entering {
+            self.blankline();
+            self.write_str(&nhb.literal)?;
+            self.blankline();
+        }
+        Ok(())
+    }
+
     fn format_thematic_break(&mut self, entering: bool) -> fmt::Result {
         if entering {
             self.blankline();
@@ -802,6 +818,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_html_inline(&mut self, literal: &str, entering: bool) -> fmt::Result {
+        if entering {
+            self.write_str(literal)?;
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn format_heex_inline(&mut self, literal: &str, entering: bool) -> fmt::Result {
         if entering {
             self.write_str(literal)?;
         }

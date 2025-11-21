@@ -1,6 +1,8 @@
 mod autolink;
 mod inlines;
 pub mod options;
+#[cfg(feature = "phoenix_heex")]
+pub mod phoenix_heex;
 #[cfg(feature = "shortcodes")]
 pub mod shortcodes;
 mod table;
@@ -627,7 +629,16 @@ where
         while !node_matches!(
             container,
             NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
-        ) {
+        ) && !{
+            #[cfg(feature = "phoenix_heex")]
+            {
+                node_matches!(container, NodeValue::HeexBlock(..))
+            }
+            #[cfg(not(feature = "phoenix_heex"))]
+            {
+                false
+            }
+        } {
             depth += 1;
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
@@ -639,6 +650,9 @@ where
                     || self.handle_atx_heading(container, line)
                     || self.handle_atx_subtext(container, line)
                     || self.handle_code_fence(container, line)
+                    || self.handle_heex_directive_block(container, line)
+                    || self.handle_heex_expression_block(container, line)
+                    || self.handle_heex_block(container, line)
                     || self.handle_html_block(container, line)
                     || self.handle_setext_heading(container, line)
                     || self.handle_thematic_break(container, line, all_matched)
@@ -892,6 +906,218 @@ where
                 None
             }
         })
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn handle_heex_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(tag_name_len) = self.detect_heex_block(line) else {
+            return false;
+        };
+
+        let tag_name =
+            line[self.first_nonspace + 1..=self.first_nonspace + tag_name_len].to_string();
+
+        let nhb = phoenix_heex::NodeHeexBlock {
+            literal: String::new(),
+            node: phoenix_heex::HeexNode::Tag(tag_name),
+        };
+
+        *container = self.add_child(
+            container,
+            NodeValue::HeexBlock(Box::new(nhb)),
+            self.first_nonspace + 1,
+        );
+
+        true
+    }
+
+    #[cfg(not(feature = "phoenix_heex"))]
+    fn handle_heex_block(&mut self, _container: &mut Node<'a>, _line: &str) -> bool {
+        false
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn detect_heex_block(&self, line: &str) -> Option<usize> {
+        if !self.options.extension.phoenix_heex {
+            return None;
+        }
+
+        let tag_name_len = scanners::phoenix_opening_tag(&line[self.first_nonspace..])?;
+
+        let bytes = &line.as_bytes()[self.first_nonspace..];
+        if bytes.len() >= 2 && bytes[bytes.len() - 2] == b'/' && bytes[bytes.len() - 1] == b'>' {
+            return None;
+        }
+
+        Some(tag_name_len)
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn handle_heex_directive_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !self.detect_heex_directive_block(container, line) {
+            return false;
+        }
+
+        let bytes = &line.as_bytes()[self.first_nonspace..];
+        let node = if bytes.len() >= 4 && bytes[2] == b'!' && bytes[3] == b'-' {
+            phoenix_heex::HeexNode::MultilineComment
+        } else if bytes.len() >= 3 && bytes[2] == b'#' {
+            phoenix_heex::HeexNode::Comment
+        } else {
+            phoenix_heex::HeexNode::Directive
+        };
+
+        let nhb = phoenix_heex::NodeHeexBlock {
+            literal: String::new(),
+            node,
+        };
+
+        *container = self.add_child(
+            container,
+            NodeValue::HeexBlock(Box::new(nhb)),
+            self.first_nonspace + 1,
+        );
+
+        true
+    }
+
+    #[cfg(not(feature = "phoenix_heex"))]
+    fn handle_heex_directive_block(&mut self, _container: &mut Node<'a>, _line: &str) -> bool {
+        false
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn detect_heex_directive_block(&self, container: Node<'a>, line: &str) -> bool {
+        if !self.options.extension.phoenix_heex {
+            return false;
+        }
+
+        if node_matches!(container, NodeValue::HeexBlock(..)) {
+            return false;
+        }
+
+        if self.first_nonspace > 0 {
+            let before = &line.as_bytes()[..self.first_nonspace];
+            if before
+                .iter()
+                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_char(b))
+            {
+                return false;
+            }
+        }
+
+        if scanners::phoenix_block_directive_start(&line[self.first_nonspace..]).is_none() {
+            return false;
+        }
+
+        if node_matches!(container, NodeValue::Paragraph) {
+            !scanners::phoenix_block_directive_end(&line[self.first_nonspace..])
+        } else {
+            true
+        }
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn handle_heex_expression_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !self.detect_heex_expression_block(container, line) {
+            return false;
+        }
+
+        let nhb = phoenix_heex::NodeHeexBlock {
+            literal: String::new(),
+            node: phoenix_heex::HeexNode::Expression,
+        };
+
+        *container = self.add_child(
+            container,
+            NodeValue::HeexBlock(Box::new(nhb)),
+            self.first_nonspace + 1,
+        );
+
+        true
+    }
+
+    #[cfg(not(feature = "phoenix_heex"))]
+    fn handle_heex_expression_block(&mut self, _container: &mut Node<'a>, _line: &str) -> bool {
+        false
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn has_unclosed_heex_directive(&self, node: Node<'a>) -> bool {
+        let content = &node.data().content;
+
+        if !content.as_bytes().contains(&b'<') {
+            return false;
+        }
+
+        let bytes = content.as_bytes();
+        let len = bytes.len();
+
+        let mut i = 0;
+        let mut in_directive = false;
+        let mut in_comment = false;
+
+        while i < len {
+            if i + 1 < len && bytes[i] == b'<' && bytes[i + 1] == b'%' {
+                in_directive = true;
+                if (i + 2 < len && bytes[i + 2] == b'#')
+                    || (i + 3 < len && bytes[i + 2] == b'!' && bytes[i + 3] == b'-')
+                {
+                    in_comment = true;
+                }
+                i += 2;
+            } else if in_directive && i + 1 < len && bytes[i] == b'%' && bytes[i + 1] == b'>' {
+                in_directive = false;
+                in_comment = false;
+                i += 2;
+            } else if in_directive
+                && in_comment
+                && i + 3 < len
+                && bytes[i] == b'-'
+                && bytes[i + 1] == b'-'
+                && bytes[i + 2] == b'%'
+                && bytes[i + 3] == b'>'
+            {
+                in_directive = false;
+                in_comment = false;
+                i += 4;
+            } else {
+                i += 1;
+            }
+        }
+
+        in_directive
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn detect_heex_expression_block(&self, container: Node<'a>, line: &str) -> bool {
+        if !self.options.extension.phoenix_heex {
+            return false;
+        }
+
+        if node_matches!(container, NodeValue::HeexBlock(..)) {
+            return false;
+        }
+
+        if self.first_nonspace > 0 {
+            let before = &line.as_bytes()[..self.first_nonspace];
+            if before
+                .iter()
+                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_char(b))
+            {
+                return false;
+            }
+        }
+
+        if scanners::phoenix_block_expression_start(&line[self.first_nonspace..]).is_none() {
+            return false;
+        }
+
+        if node_matches!(container, NodeValue::Paragraph) {
+            !scanners::phoenix_block_expression_end(&line[self.first_nonspace..])
+        } else {
+            true
+        }
     }
 
     fn handle_setext_heading(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1411,6 +1637,8 @@ where
             let add_text_result = match container.data().value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
+                #[cfg(feature = "phoenix_heex")]
+                NodeValue::HeexBlock(ref nhb) => AddTextResult::HeexBlock(nhb.clone()),
                 _ => AddTextResult::Otherwise,
             };
 
@@ -1434,6 +1662,42 @@ where
                         container = self.finalize(container).unwrap();
                     }
                 }
+                #[cfg(feature = "phoenix_heex")]
+                AddTextResult::HeexBlock(nhb) => {
+                    self.add_line(container, line);
+
+                    let matches_end = match nhb.node {
+                        phoenix_heex::HeexNode::Tag(ref tag_name) => {
+                            if let Some(closing_tag_name_len) =
+                                scanners::phoenix_block_closing_tag(&line[self.first_nonspace..])
+                            {
+                                let closing_tag_name = &line[self.first_nonspace + 2
+                                    ..self.first_nonspace + 2 + closing_tag_name_len];
+                                closing_tag_name == tag_name
+                            } else {
+                                false
+                            }
+                        }
+                        phoenix_heex::HeexNode::Directive => {
+                            scanners::phoenix_block_directive_end(&line[self.first_nonspace..])
+                        }
+                        phoenix_heex::HeexNode::Comment => {
+                            scanners::phoenix_block_comment_end(&line[self.first_nonspace..])
+                        }
+                        phoenix_heex::HeexNode::MultilineComment => {
+                            scanners::phoenix_block_multiline_comment_end(
+                                &line[self.first_nonspace..],
+                            )
+                        }
+                        phoenix_heex::HeexNode::Expression => {
+                            scanners::phoenix_block_expression_end(&line[self.first_nonspace..])
+                        }
+                    };
+
+                    if matches_end {
+                        container = self.finalize(container).unwrap();
+                    }
+                }
                 _ => {
                     if self.blank {
                         // do nothing
@@ -1446,6 +1710,17 @@ where
                                 nh.closed = closed;
                             }
                         };
+
+                        #[cfg(feature = "phoenix_heex")]
+                        let preserve_heex_whitespace = if self.options.extension.phoenix_heex {
+                            node_matches!(container, NodeValue::Paragraph)
+                                && self.has_unclosed_heex_directive(container)
+                        } else {
+                            false
+                        };
+                        #[cfg(not(feature = "phoenix_heex"))]
+                        let preserve_heex_whitespace = false;
+
                         let count = self.first_nonspace - self.offset;
 
                         // In some cases the `chop_trailing_hashes` above
@@ -1464,7 +1739,9 @@ where
                         let have_line_text = self.first_nonspace <= line.len();
 
                         if have_line_text {
-                            self.advance_offset(line, count, false);
+                            if !preserve_heex_whitespace {
+                                self.advance_offset(line, count, false);
+                            }
                             self.add_line(container, line);
                         }
                     } else {
@@ -1633,6 +1910,15 @@ where
                 mem::swap(&mut ncb.literal, content);
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
+                let trimmed = strings::remove_trailing_blank_lines_slice(content);
+                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
+                let end_line = ast.sourcepos.start.line + num_lines;
+                ast.sourcepos.end = (end_line, last_line_len).into();
+
+                mem::swap(&mut nhb.literal, content);
+            }
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(ref mut nhb) => {
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
@@ -2169,6 +2455,8 @@ where
 enum AddTextResult {
     LiteralText,
     HtmlBlock(u8),
+    #[cfg(feature = "phoenix_heex")]
+    HeexBlock(Box<phoenix_heex::NodeHeexBlock>),
     Otherwise,
 }
 

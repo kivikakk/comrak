@@ -58,8 +58,9 @@ entities = "1.0.1"
 
 [features]
 default = ["cli", "syntect", "bon"]
-cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes"]
+cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes", "phoenix_heex"]
 shortcodes = ["emojis"]
+phoenix_heex = []
 bon = ["dep:bon"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
