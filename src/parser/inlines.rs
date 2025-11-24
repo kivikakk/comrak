@@ -129,6 +129,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.special_char_bytes[b'|' as usize] = true;
             s.emph_delim_bytes[b'|' as usize] = true;
         }
+        #[cfg(feature = "phoenix_heex")]
+        if options.extension.phoenix_heex {
+            s.special_char_bytes[b'{' as usize] = true;
+            s.special_char_bytes[b'<' as usize] = true;
+        }
         for &b in b"\"'.-" {
             s.smart_char_bytes[b as usize] = true;
         }
@@ -207,6 +212,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             b'\\' => Some(self.handle_backslash()),
             b'&' => Some(self.handle_entity()),
             b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
+            #[cfg(feature = "phoenix_heex")]
+            b'{' => {
+                let mut res = None;
+
+                if self.options.extension.phoenix_heex {
+                    res = self.handle_heex_inline_expression(&ast.line_offsets);
+                }
+
+                if res.is_none() {
+                    self.scanner.pos += 1;
+                    res = Some(self.make_inline(
+                        NodeValue::Text("{".into()),
+                        self.scanner.pos - 1,
+                        self.scanner.pos - 1,
+                    ));
+                }
+
+                res
+            }
             b':' => {
                 let mut res = None;
 
@@ -481,6 +505,21 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         self.scanner.pos += 1;
 
+        #[cfg(feature = "phoenix_heex")]
+        if self.options.extension.phoenix_heex {
+            let scanners = [
+                scanners::phoenix_directive,
+                strings::phoenix_inline_tag,
+                scanners::phoenix_closing_tag,
+            ];
+
+            for scanner in scanners {
+                if let Some(inl) = self.make_heex_inline(scanner, parent_line_offsets) {
+                    return inl;
+                }
+            }
+        }
+
         if let Some(matchlen) = scanners::autolink_uri(&self.input[self.scanner.pos..]) {
             self.scanner.pos += matchlen;
             let inl = self.make_autolink(
@@ -707,6 +746,37 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         inl
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn make_heex_inline<F>(&mut self, scanner: F, parent_line_offsets: &[usize]) -> Option<Node<'a>>
+    where
+        F: Fn(&str) -> Option<usize>,
+    {
+        let matchlen = scanner(&self.input[self.scanner.pos - 1..])?;
+        let start_pos = self.scanner.pos - 1;
+        self.scanner.pos = self.scanner.pos - 1 + matchlen;
+        let inl = self.make_inline(
+            NodeValue::HeexInline(self.input[start_pos..self.scanner.pos].to_string()),
+            start_pos,
+            self.scanner.pos - 1,
+        );
+        self.adjust_node_newlines(inl, matchlen, 0, parent_line_offsets);
+        return Some(inl);
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn handle_heex_inline_expression(&mut self, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
+        let matchlen = strings::phoenix_inline_expression(&self.input[self.scanner.pos..])?;
+        let start_pos = self.scanner.pos;
+        self.scanner.pos += matchlen;
+        let inl = self.make_inline(
+            NodeValue::HeexInline(self.input[start_pos..self.scanner.pos].to_string()),
+            start_pos,
+            self.scanner.pos - 1,
+        );
+        self.adjust_node_newlines(inl, matchlen, 0, parent_line_offsets);
+        return Some(inl);
     }
 
     fn handle_hyphen(&mut self) -> Node<'a> {

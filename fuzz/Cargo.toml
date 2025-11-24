@@ -10,7 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
-comrak = { path = "..", features = ["shortcodes", "arbitrary"] }
+comrak = { path = "..", features = ["arbitrary", "shortcodes", "phoenix_heex"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

@@ -5,6 +5,8 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::arena_tree;
+#[cfg(feature = "phoenix_heex")]
+pub use crate::parser::phoenix_heex::NodeHeexBlock;
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
@@ -94,6 +96,11 @@ pub enum NodeValue {
     /// which is neither parsed as Markdown nor HTML escaped.
     HtmlBlock(NodeHtmlBlock),
 
+    #[cfg(feature = "phoenix_heex")]
+    /// **Block**. A [Phoenix HEEx](https://hexdocs.pm/phoenix/components.html) template block.  Contains raw Phoenix HEEx text
+    /// which is neither parsed as Markdown nor HTML escaped.
+    HeexBlock(Box<NodeHeexBlock>),
+
     /// **Block**. A [paragraph](https://github.github.com/gfm/#paragraphs).  Contains **inlines**.
     Paragraph,
 
@@ -143,6 +150,11 @@ pub enum NodeValue {
 
     /// **Inline**.  [Raw HTML](https://github.github.com/gfm/#raw-html) contained inline.
     HtmlInline(String),
+
+    #[cfg(feature = "phoenix_heex")]
+    /// **Inline**. A [Phoenix HEEx](https://hexdocs.pm/phoenix/components.html) inline template element.  Contains raw Phoenix HEEx text
+    /// which is neither parsed as Markdown nor HTML escaped.
+    HeexInline(String),
 
     /// **Block/Inline**.  A Raw output node. This will be inserted verbatim into CommonMark and
     /// HTML output. It can only be created programmatically, and is never parsed from input.
@@ -562,30 +574,32 @@ impl AlertType {
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
-        matches!(
-            *self,
+        match *self {
             NodeValue::Document
-                | NodeValue::BlockQuote
-                | NodeValue::FootnoteDefinition(_)
-                | NodeValue::List(..)
-                | NodeValue::DescriptionList
-                | NodeValue::DescriptionItem(_)
-                | NodeValue::DescriptionTerm
-                | NodeValue::DescriptionDetails
-                | NodeValue::Item(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::HtmlBlock(..)
-                | NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::ThematicBreak
-                | NodeValue::Table(..)
-                | NodeValue::TableRow(..)
-                | NodeValue::TableCell
-                | NodeValue::TaskItem(..)
-                | NodeValue::MultilineBlockQuote(_)
-                | NodeValue::Alert(_)
-                | NodeValue::Subtext
-        )
+            | NodeValue::BlockQuote
+            | NodeValue::FootnoteDefinition(_)
+            | NodeValue::List(..)
+            | NodeValue::DescriptionList
+            | NodeValue::DescriptionItem(_)
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
+            | NodeValue::Item(..)
+            | NodeValue::CodeBlock(..)
+            | NodeValue::HtmlBlock(..)
+            | NodeValue::Paragraph
+            | NodeValue::Heading(..)
+            | NodeValue::ThematicBreak
+            | NodeValue::Table(..)
+            | NodeValue::TableRow(..)
+            | NodeValue::TableCell
+            | NodeValue::TaskItem(..)
+            | NodeValue::MultilineBlockQuote(_)
+            | NodeValue::Alert(_)
+            | NodeValue::Subtext => true,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => true,
+            _ => false,
+        }
     }
 
     /// Whether the type the node is of can contain inline nodes.
@@ -635,6 +649,8 @@ impl NodeValue {
             NodeValue::Item(..) => "item",
             NodeValue::CodeBlock(..) => "code_block",
             NodeValue::HtmlBlock(..) => "html_block",
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => "heex_block",
             NodeValue::Paragraph => "paragraph",
             NodeValue::Heading(..) => "heading",
             NodeValue::ThematicBreak => "thematic_break",
@@ -650,6 +666,8 @@ impl NodeValue {
             NodeValue::Strong => "strong",
             NodeValue::Code(..) => "code",
             NodeValue::HtmlInline(..) => "html_inline",
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexInline(..) => "heex_inline",
             NodeValue::Raw(..) => "raw",
             NodeValue::Strikethrough => "strikethrough",
             NodeValue::Highlight => "highlight",
@@ -673,13 +691,15 @@ impl NodeValue {
     }
 
     pub(crate) fn accepts_lines(&self) -> bool {
-        matches!(
-            *self,
+        match *self {
             NodeValue::Paragraph
-                | NodeValue::Heading(..)
-                | NodeValue::CodeBlock(..)
-                | NodeValue::Subtext
-        )
+            | NodeValue::Heading(..)
+            | NodeValue::CodeBlock(..)
+            | NodeValue::Subtext => true,
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(..) => true,
+            _ => false,
+        }
     }
 }
 
@@ -945,10 +965,20 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             => !child.block(),
             NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
             NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-            #[cfg(not(feature = "shortcodes"))]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
+            NodeValue::TableCell => {
+                #[cfg(feature = "shortcodes")]
+                if matches!(*child, NodeValue::ShortCode(..)) {
+                    return true;
+                }
+
+                #[cfg(feature = "phoenix_heex")]
+                if matches!(*child, NodeValue::HeexInline(_)) {
+                    return true;
+                }
+
+                matches!(
+                    *child,
+                    NodeValue::Text(..)
                     | NodeValue::Code(..)
                     | NodeValue::Emph
                     | NodeValue::Strong
@@ -967,31 +997,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::TaskItem(_)
                     | NodeValue::Escaped
                     | NodeValue::EscapedTag(_)
-            ),
-            #[cfg(feature = "shortcodes")]
-            NodeValue::TableCell => matches!(
-                *child,
-                NodeValue::Text(..)
-                | NodeValue::Code(..)
-                | NodeValue::Emph
-                | NodeValue::Strong
-                | NodeValue::Link(..)
-                | NodeValue::Image(..)
-                | NodeValue::Strikethrough
-                | NodeValue::Highlight
-                | NodeValue::HtmlInline(..)
-                | NodeValue::Math(..)
-                | NodeValue::WikiLink(..)
-                | NodeValue::FootnoteReference(..)
-                | NodeValue::Superscript
-                | NodeValue::SpoileredText
-                | NodeValue::Underline
-                | NodeValue::Subscript
-                | NodeValue::ShortCode(..)
-                | NodeValue::TaskItem(_)
-                | NodeValue::Escaped
-                | NodeValue::EscapedTag(_)
-            ),
+                )
+            }
             NodeValue::MultilineBlockQuote(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
@@ -1013,6 +1020,9 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::Raw(_)
             | NodeValue::FootnoteReference(_)
             | NodeValue::Math(_) => false,
+
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) => false,
         }
     }
 

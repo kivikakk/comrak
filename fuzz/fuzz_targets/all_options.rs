@@ -55,6 +55,7 @@ struct FuzzExtensionOptions {
     subtext: bool,
     cjk_friendly_emphasis: bool,
     highlight: bool,
+    phoenix_heex: bool,
     // non-bool below
     header_ids: bool,
     front_matter_delimiter: bool,
@@ -91,6 +92,7 @@ impl FuzzExtensionOptions {
             subtext: self.subtext,
             cjk_friendly_emphasis: self.cjk_friendly_emphasis,
             highlight: self.highlight,
+            phoenix_heex: self.phoenix_heex,
             // non-bool below
             header_ids: if self.header_ids {
                 Some("user-content-".into())

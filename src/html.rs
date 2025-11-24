@@ -420,7 +420,11 @@ pub fn format_node_default<'a, T>(
         NodeValue::Emph => render_emph(context, node, entering),
         NodeValue::Heading(ref nh) => render_heading(context, node, entering, nh),
         NodeValue::HtmlBlock(ref nhb) => render_html_block(context, entering, nhb),
+        #[cfg(feature = "phoenix_heex")]
+        NodeValue::HeexBlock(ref nhb) => render_heex_block(context, entering, nhb),
         NodeValue::HtmlInline(ref literal) => render_html_inline(context, entering, literal),
+        #[cfg(feature = "phoenix_heex")]
+        NodeValue::HeexInline(ref literal) => render_heex_inline(context, entering, literal),
         NodeValue::Image(ref nl) => render_image(context, node, entering, nl),
         NodeValue::Item(_) => render_item(context, node, entering),
         NodeValue::LineBreak => render_line_break(context, node, entering),
@@ -684,6 +688,34 @@ fn render_html_block<T>(
             context.write_str(literal)?;
         }
         context.cr()?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+#[cfg(feature = "phoenix_heex")]
+fn render_heex_block<T>(
+    context: &mut Context<T>,
+    entering: bool,
+    nhb: &crate::nodes::NodeHeexBlock,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.cr()?;
+        context.write_str(&nhb.literal)?;
+        context.cr()?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+#[cfg(feature = "phoenix_heex")]
+fn render_heex_inline<T>(
+    context: &mut Context<T>,
+    entering: bool,
+    literal: &str,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.write_str(literal)?;
     }
 
     Ok(ChildRendering::HTML)

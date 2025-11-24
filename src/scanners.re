@@ -57,6 +57,14 @@
     in_parens        = [(] (escaped_char|[^)\xff])* [)];
 
     scheme           = [A-Za-z][A-Za-z0-9.+-]{1,31};
+
+    /* Phoenix Tags */
+    /* https://github.com/phoenixframework/tree-sitter-heex/blob/6603380caf806b3e6c7f0bf61627bb47023d79f1/grammar.js */
+    phoenix_function_component = [.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*;
+    phoenix_module_component = [A-Z] [^-<>{}!"'/= \t\r\n\v\f.\xff]* ([.][A-Z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*)* ([.][a-z] [^-<>{}!"'/= \t\r\n\v\f.\xff]*)?;
+    phoenix_slot = [:][a-z]+ [^<>{}!"'/= \t\r\n\v\f\xff]*;
+    phoenix_tag = phoenix_function_component | phoenix_module_component | phoenix_slot;
+    phoenix_block_tag = phoenix_function_component | phoenix_module_component;
 */
 
 pub fn atx_heading_start(s: &str) -> Option<usize> {
@@ -496,4 +504,197 @@ pub fn description_item_start(s: &str) -> Option<usize> {
     [:~] ([ \t]+) { return Some(cursor); }
     * { return None; }
 */
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    [<] phoenix_block_tag { return Some(cursor - 1); }
+    * { return None; }
+*/
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_closing_tag(s: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    [<][/] phoenix_block_tag [>] { return Some(cursor - 3); }
+    * { return None; }
+*/
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_closing_tag(s: &str) -> Option<usize> {
+    phoenix_block_closing_tag(s).map(|tag_len| tag_len + 3)
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_directive(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let len = s.len();
+
+    if s.len() < 4 || bytes[0] != b'<' || bytes[1] != b'%' {
+        return None;
+    }
+
+    if bytes[2] == b'!' && s.len() >= 7 {
+        let mut cursor = 0;
+        let mut marker = 0;
+/*!re2c
+        '<%!--' ([^\xff-] | '-' [^\xff-] | '--' [^\xff%])* '--%>' { return Some(cursor); }
+        * { return None; }
+*/
+    }
+
+    if bytes[2] == b'#' {
+        let mut cursor = 0;
+        let mut marker = 0;
+/*!re2c
+        '<%#' ([^\xff%] | '%' [^\xff>])* '%>' { return Some(cursor); }
+        * { return None; }
+*/
+    }
+
+    let mut cursor = 2;
+    while cursor + 1 < len {
+        match bytes[cursor] {
+            b'"' | b'\'' => {
+                cursor = crate::strings::skip_quoted_string(s, cursor + 1, bytes[cursor]);
+            }
+            b'%' if bytes[cursor + 1] == b'>' => {
+                return Some(cursor + 2);
+            }
+            _ => cursor += 1,
+        }
+    }
+
+    None
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_directive_start(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    if bytes.len() >= 2 && bytes[0] == b'<' && bytes[1] == b'%' {
+        Some(2)
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_expression_start(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    if !bytes.is_empty() && bytes[0] == b'{' {
+        Some(1)
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_directive_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 2 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'-' if i + 3 < len && bytes[i + 1] == b'-' && bytes[i + 2] == b'%' && bytes[i + 3] == b'>' => {
+                return true;
+            }
+            b'%' if i + 1 < len && bytes[i + 1] == b'>' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_comment_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 2 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'%' if i + 1 < len && bytes[i + 1] == b'>' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_multiline_comment_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 4 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'-' if i + 3 < len && bytes[i + 1] == b'-' && bytes[i + 2] == b'%' && bytes[i + 3] == b'>' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_block_expression_end(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 1 {
+        return false;
+    }
+
+    let mut i = 0;
+    while i < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'}' => {
+                return true;
+            }
+            _ => i += 1,
+        }
+    }
+
+    false
 }

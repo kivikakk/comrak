@@ -197,6 +197,7 @@ enum Extension {
     CjkFriendlyEmphasis,
     Subtext,
     Highlight,
+    PhoenixHeex,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -286,7 +287,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .maybe_front_matter_delimiter(cli.front_matter_delimiter)
         .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis))
         .subtext(exts.contains(&Extension::Subtext))
-        .highlight(exts.contains(&Extension::Highlight));
+        .highlight(exts.contains(&Extension::Highlight))
+        .phoenix_heex(exts.contains(&Extension::PhoenixHeex));
 
     #[cfg(feature = "shortcodes")]
     let extension = extension.shortcodes(cli.gemoji);
