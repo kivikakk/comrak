@@ -142,7 +142,7 @@ const HTML_INLINE: TestCase = (
 
 #[cfg(feature = "phoenix_heex")]
 const HEEX_BLOCK: TestCase = (
-    &[sourcepos!((1:1-3:11))],
+    &[sourcepos!((1:1-3:10))],
     r#"<.header>
 hello
 </.header>
@@ -459,16 +459,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
 
     NodeValueDiscriminants::VARIANTS
         .iter()
-        .filter(|v| {
-            #[cfg(feature = "phoenix_heex")]
-            {
-                !matches!(v, Raw | HeexBlock)
-            }
-            #[cfg(not(feature = "phoenix_heex"))]
-            {
-                !matches!(v, Raw)
-            }
-        })
+        .filter(|v| !matches!(v, Raw))
         .filter_map(|v| {
             let text = match v {
                 Document => DOCUMENT,
