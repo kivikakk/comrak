@@ -128,7 +128,7 @@ pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
 
 fn remove_trailing_blank_lines_ix(line: &str) -> usize {
     let line_bytes = line.as_bytes();
-    if line.len() == 0 {
+    if line.is_empty() {
         return 0;
     }
     let mut i = line.len() - 1;
@@ -447,7 +447,7 @@ pub fn count_newlines(input: &str) -> (usize, usize) {
 pub fn newlines_of(s: &str) -> usize {
     if s.ends_with("\r\n") {
         2
-    } else if s.ends_with("\r") || s.ends_with("\n") {
+    } else if s.ends_with('\r') || s.ends_with('\n') {
         1
     } else {
         0
@@ -530,7 +530,7 @@ pub fn phoenix_inline_tag(s: &str) -> Option<usize> {
 
 #[cfg(feature = "phoenix_heex")]
 pub fn phoenix_inline_expression(s: &str) -> Option<usize> {
-    if s.chars().next() != Some('{') {
+    if !s.starts_with('{') {
         return None;
     }
     find_matching_brace(s, 1)

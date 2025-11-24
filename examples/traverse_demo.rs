@@ -18,7 +18,7 @@ use comrak::{
 
 // Note: root can be any Node, not just document root.
 
-fn extract_text_traverse<'a>(root: Node<'a>) -> String {
+fn extract_text_traverse(root: Node<'_>) -> String {
     let mut output_text = String::new();
 
     // Use `traverse` to get an iterator of `NodeEdge` and process each.

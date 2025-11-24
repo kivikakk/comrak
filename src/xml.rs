@@ -10,17 +10,13 @@ use crate::parser::options::{Options, Plugins};
 const MAX_INDENT: u32 = 40;
 
 /// Formats an AST as HTML, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
-    options: &Options,
-    output: &mut dyn Write,
-) -> fmt::Result {
+pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     format_document_with_plugins(root, options, output, &Plugins::default())
 }
 
 /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins(
+    root: Node<'_>,
     options: &Options,
     output: &mut dyn Write,
     plugins: &Plugins,
@@ -72,7 +68,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format<'a>(&mut self, node: Node<'a>, plain: bool) -> fmt::Result {
+    fn format(&mut self, node: Node<'_>, plain: bool) -> fmt::Result {
         // Traverse the AST iteratively using a work stack, with pre- and
         // post-child-traversal phases. During pre-order traversal render the
         // opening tags, then push the node back onto the stack for the
@@ -134,7 +130,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
         Ok(())
     }
 
-    fn format_node<'a>(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+    fn format_node(&mut self, node: Node<'_>, entering: bool) -> fmt::Result {
         if !self.options.render.escaped_char_spans && node_matches!(node, NodeValue::Escaped) {
             return Ok(());
         }

@@ -6,10 +6,10 @@
 use comrak::nodes::{Node, NodeLink, NodeValue};
 use comrak::{parse_document, Arena};
 
-fn autotitle_images<'a>(
+fn autotitle_images(
     nl: &mut NodeLink,
     _context: &mut comrak::html::Context,
-    node: Node<'a>,
+    node: Node<'_>,
     entering: bool,
 ) {
     if !entering || !nl.title.is_empty() {

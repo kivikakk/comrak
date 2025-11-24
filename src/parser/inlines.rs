@@ -447,7 +447,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.scanner.pos += 1;
 
         if self.peek_byte().map_or(false, ispunct) {
-            let inl;
             self.scanner.pos += 1;
 
             let inline_text = self.make_inline(
@@ -460,7 +459,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             );
 
-            inl = self.make_inline(
+            let inl = self.make_inline(
                 NodeValue::Escaped,
                 self.scanner.pos - 2,
                 self.scanner.pos - 1,
@@ -762,7 +761,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.scanner.pos - 1,
         );
         self.adjust_node_newlines(inl, matchlen, 0, parent_line_offsets);
-        return Some(inl);
+        Some(inl)
     }
 
     #[cfg(feature = "phoenix_heex")]
@@ -776,7 +775,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.scanner.pos - 1,
         );
         self.adjust_node_newlines(inl, matchlen, 0, parent_line_offsets);
-        return Some(inl);
+        Some(inl)
     }
 
     fn handle_hyphen(&mut self) -> Node<'a> {

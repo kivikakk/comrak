@@ -25,20 +25,20 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// `<pre>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by Comrak.
-    fn write_pre_tag<'s>(
+    fn write_pre_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<&'static str, Cow<'s, str>>,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
     /// `<code>` tag possibly with some HTML attribute pre-filled.
     ///
     /// `attributes`: A map of HTML attributes provided by Comrak.
-    fn write_code_tag<'s>(
+    fn write_code_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<&'static str, Cow<'s, str>>,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result;
 }
 
