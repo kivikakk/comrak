@@ -19,11 +19,7 @@ use crate::Arena;
 use crate::{node_matches, strings};
 
 /// Formats an AST as CommonMark, modified by the given options.
-pub fn format_document<'a>(
-    root: Node<'a>,
-    options: &Options,
-    output: &mut dyn Write,
-) -> fmt::Result {
+pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
     // validation in normal workflow. As a middleground, we validate the AST in debug builds. See
     // https://github.com/kivikakk/comrak/issues/371.
@@ -36,8 +32,8 @@ pub fn format_document<'a>(
 }
 
 /// Formats an AST as CommonMark, modified by the given options. Accepts custom plugins.
-pub fn format_document_with_plugins<'a>(
-    root: Node<'a>,
+pub fn format_document_with_plugins(
+    root: Node<'_>,
     options: &Options,
     output: &mut dyn Write,
     _plugins: &Plugins,
@@ -54,7 +50,7 @@ pub fn format_document_with_plugins<'a>(
 }
 
 // Doesn't honour experimental_minimize_commonmark.
-fn format_internal<'a>(root: Node<'a>, options: &Options, output: &mut dyn Write) -> fmt::Result {
+fn format_internal(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     let mut f = CommonMarkFormatter::new(root, options, output);
     f.format(root)
 }
@@ -151,15 +147,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
         if self.options.render.width == 0 {
             self.output.write_str(s)?;
+        } else if last_was_cr {
+            // Can flush.
+            self.output.write_str(&self.wrap_buffer)?;
+            self.output.write_str(s)?;
+            self.wrap_buffer.clear();
         } else {
-            if last_was_cr {
-                // Can flush.
-                self.output.write_str(&self.wrap_buffer)?;
-                self.output.write_str(s)?;
-                self.wrap_buffer.clear();
-            } else {
-                self.wrap_buffer.push_str(s);
-            }
+            self.wrap_buffer.push_str(s);
         }
 
         if last_was_cr {
@@ -332,7 +326,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             } else if ispunct_char(c) {
                 format!("\\{}", c)
             } else if c == '\0' {
-                format!("\u{fffd}")
+                "\u{fffd}".to_string()
             } else {
                 format!("&#{};", c as u8)
             };
@@ -1165,7 +1159,7 @@ fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
     i
 }
 
-fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
+fn is_autolink(node: Node<'_>, nl: &NodeLink) -> bool {
     if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
         return false;
     }
@@ -1185,7 +1179,7 @@ fn is_autolink<'a>(node: Node<'a>, nl: &NodeLink) -> bool {
     trim_start_match(&nl.url, "mailto:") == link_text
 }
 
-fn table_escape<'a>(node: Node<'a>, c: char) -> bool {
+fn table_escape(node: Node<'_>, c: char) -> bool {
     match node.data().value {
         NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
         _ => c == '|',

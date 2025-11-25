@@ -2304,7 +2304,7 @@ where
 
         // There must be at most one `char`'s worth of content in `matched`,
         // otherwise we ignore it.
-        if !chars.next().is_none() {
+        if chars.next().is_some() {
             return;
         }
 
@@ -2437,16 +2437,14 @@ where
 
         lab = strings::normalize_label(&lab, Case::Fold);
         let mut rr = None;
-        if !lab.is_empty() {
-            if !self.refmap.map.contains_key(&lab) {
-                rr = Some((
-                    lab,
-                    ResolvedReference {
-                        url: strings::clean_url(&url).into(),
-                        title: strings::clean_title(&title).into(),
-                    },
-                ));
-            }
+        if !lab.is_empty() && !self.refmap.map.contains_key(&lab) {
+            rr = Some((
+                lab,
+                ResolvedReference {
+                    url: strings::clean_url(&url).into(),
+                    title: strings::clean_title(title).into(),
+                },
+            ));
         }
         Some((scanner.pos, rr))
     }
@@ -2583,7 +2581,7 @@ fn lists_match(list_data: &NodeList, item_data: &NodeList) -> bool {
         && list_data.bullet_char == item_data.bullet_char
 }
 
-fn reopen_ast_nodes<'a>(mut ast: Node<'a>) {
+fn reopen_ast_nodes(mut ast: Node<'_>) {
     loop {
         ast.data_mut().open = true;
         ast = match ast.parent() {

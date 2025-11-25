@@ -6,7 +6,7 @@ use ntest::timeout;
 #[timeout(4000)]
 fn pathological_emphases() {
     let n = 50_000;
-    let input = "*a_ ".repeat(n).to_string();
+    let input = "*a_ ".repeat(n);
     let mut exp = format!("<p>{}", input);
     // Right-most space is trimmed in output.
     exp.pop();
@@ -64,7 +64,7 @@ fn pathological_footnotes() {
     let input = format!("{}{}", "[^1]:".repeat(n), "\n".repeat(n));
     let exp = "";
 
-    html_opts!([extension.footnotes], &input, &exp);
+    html_opts!([extension.footnotes], &input, exp);
 }
 
 #[test]

@@ -21,7 +21,7 @@ use std::io::{self, BufWriter, Read, Write};
 use comrak::nodes::{Node, NodeValue};
 use comrak::{options, parse_document, Arena, Options};
 
-fn iter_nodes<'a, W: Write>(node: Node<'a>, writer: &mut W, indent: usize) -> io::Result<()> {
+fn iter_nodes<W: Write>(node: Node<'_>, writer: &mut W, indent: usize) -> io::Result<()> {
     use NodeValue::*;
 
     macro_rules! try_node_inline {

@@ -234,7 +234,7 @@ where
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
 }
 
-fn assert_node_eq<'a>(node: Node<'a>, location: &[usize], expected: &NodeValue) {
+fn assert_node_eq(node: Node<'_>, location: &[usize], expected: &NodeValue) {
     let node = location
         .iter()
         .fold(node, |node, &n| node.children().nth(n).unwrap());
@@ -355,7 +355,7 @@ enum AstMatchContent {
 
 impl AstMatchTree {
     #[track_caller]
-    fn assert_match<'a>(&self, node: Node<'a>) {
+    fn assert_match(&self, node: Node<'_>) {
         let ast = node.data();
         assert_eq!(self.name, ast.value.xml_node_name(), "node type matches");
         assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");

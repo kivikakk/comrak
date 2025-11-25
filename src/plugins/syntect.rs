@@ -105,10 +105,10 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         }
     }
 
-    fn write_pre_tag<'s>(
+    fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<&'static str, Cow<'s, str>>,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
@@ -127,10 +127,10 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         }
     }
 
-    fn write_code_tag<'s>(
+    fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<&'static str, Cow<'s, str>>,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }

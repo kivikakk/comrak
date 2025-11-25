@@ -358,7 +358,7 @@ fn unescape_pipes(string: &str) -> Cow<'_, str> {
 // The purpose of this is to prevent a malicious input from generating a very
 // large number of autocompleted cells, which could cause a denial of service
 // vulnerability.
-fn adjust_table_counters<'a>(container: Node<'a>, i: usize, end: LineColumn) {
+fn adjust_table_counters(container: Node<'_>, i: usize, end: LineColumn) {
     let mut ast = container.data_mut();
     let NodeValue::Table(ref mut nt) = ast.value else {
         unreachable!();
@@ -369,7 +369,7 @@ fn adjust_table_counters<'a>(container: Node<'a>, i: usize, end: LineColumn) {
 }
 
 // Calculate the number of autocompleted cells.
-fn get_num_autocompleted_cells<'a>(container: Node<'a>) -> usize {
+fn get_num_autocompleted_cells(container: Node<'_>) -> usize {
     return match container.data().value {
         NodeValue::Table(ref node_table) => {
             let num_cells = node_table.num_columns * node_table.num_rows;

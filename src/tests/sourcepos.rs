@@ -460,7 +460,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     NodeValueDiscriminants::VARIANTS
         .iter()
         .filter(|v| !matches!(v, Raw))
-        .filter_map(|v| {
+        .map(|v| {
             let text = match v {
                 Document => DOCUMENT,
                 FrontMatter => FRONT_MATTER,
@@ -512,7 +512,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 #[cfg(feature = "phoenix_heex")]
                 HeexInline => HEEX_INLINE,
             };
-            Some((*v, text))
+            (*v, text)
         })
         .collect()
 }

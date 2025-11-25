@@ -16,7 +16,7 @@ fn main() {
     // Sort it for binary search.
     let mut translated_entities = ENTITIES
         .iter()
-        .filter(|e| e.entity.starts_with("&") && e.entity.ends_with(";"))
+        .filter(|e| e.entity.starts_with('&') && e.entity.ends_with(';'))
         .map(|e| (&e.entity[1..e.entity.len() - 1], e.characters))
         .collect::<Vec<_>>();
     translated_entities.sort_by_key(|(entity, _characters)| *entity);
