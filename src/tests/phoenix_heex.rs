@@ -1603,6 +1603,24 @@ fn block_with_multiple_consecutive_empty_lines() {
     );
 }
 
+#[test]
+fn self_closing_followed_by_content() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!("<.btn />\n", "\n", "After\n"),
+        concat!("<.btn />\n", "<p>After</p>\n"),
+    );
+}
+
+#[test]
+fn self_closing_component_followed_by_content() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!("<Component.render />\n", "\n", "After\n"),
+        concat!("<Component.render />\n", "<p>After</p>\n"),
+    );
+}
+
 // ============================================================================
 // output formats
 // ============================================================================

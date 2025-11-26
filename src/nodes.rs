@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 
 use crate::arena_tree;
 #[cfg(feature = "phoenix_heex")]
-pub use crate::parser::phoenix_heex::NodeHeexBlock;
+pub use crate::parser::phoenix_heex::{HeexNode, NodeHeexBlock};
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
 
