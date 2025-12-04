@@ -944,12 +944,28 @@ where
 
         let tag_name_len = scanners::phoenix_opening_tag(&line[self.first_nonspace..])?;
 
-        let bytes = &line.as_bytes()[self.first_nonspace..];
-        if bytes.len() >= 2 && bytes[bytes.len() - 2] == b'/' && bytes[bytes.len() - 1] == b'>' {
-            return None;
+        Some(tag_name_len)
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn is_heex_opening_self_closing_tag(&self, line: &str, expected_tag_name: &str) -> bool {
+        let Some(tag_name_len) = scanners::phoenix_opening_tag(&line[self.first_nonspace..]) else {
+            return false;
+        };
+
+        let line_tag_name = &line[self.first_nonspace + 1..=self.first_nonspace + tag_name_len];
+
+        if line_tag_name != expected_tag_name {
+            return false;
         }
 
-        Some(tag_name_len)
+        let bytes = &line.as_bytes()[self.first_nonspace..];
+        let mut end = bytes.len();
+        while end > 0 && strings::is_line_end_char(bytes[end - 1]) {
+            end -= 1;
+        }
+
+        end >= 2 && bytes[end - 2] == b'/' && bytes[end - 1] == b'>'
     }
 
     #[cfg(feature = "phoenix_heex")]
@@ -1675,7 +1691,7 @@ where
                                     ..self.first_nonspace + 2 + closing_tag_name_len];
                                 closing_tag_name == tag_name
                             } else {
-                                false
+                                self.is_heex_opening_self_closing_tag(line, tag_name)
                             }
                         }
                         phoenix_heex::HeexNode::Directive => {
