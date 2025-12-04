@@ -140,7 +140,6 @@ pub enum ChildRendering {
 /// ```
 #[macro_export]
 macro_rules! create_formatter {
-    // Permit lack of trailing comma by adding one.
     ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* $(,)? }) => {
         $crate::create_formatter!(@inner $name<()>, { $( $pat => | $( $capture ),* | $case ),*, });
     };
@@ -185,7 +184,7 @@ macro_rules! create_formatter {
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
-                $(user: $type,)?
+                $(user: $user_type,)?
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
                 #[allow(unused_mut)]
                 let mut maybe_user = None$(::<$user_type>)?;
