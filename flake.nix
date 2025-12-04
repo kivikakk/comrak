@@ -84,8 +84,6 @@
               ]
               ++ (with pkgs; [
                 re2c
-                rust-analyzer
-                clippy
                 cargo-fuzz
                 cargo-nextest
                 cargo-flamegraph
