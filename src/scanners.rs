@@ -17591,10 +17591,11 @@ pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
     }
 }
 
-// Returns both the length of the match, and the tasklist item contents.
-// It is not guaranteed to be one byte, or one "character" long; the caller must ascertain
-// its fitness for purpose.
-pub fn tasklist(s: &str) -> Option<(usize, &str)> {
+// Returns the length of the match, the tasklist item contents, and the range of
+// the tasklist item match.
+// The match is not guaranteed to be one byte or one "character" long; the
+// caller must ascertain its fitness for purpose.
+pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -17792,7 +17793,7 @@ pub fn tasklist(s: &str) -> Option<(usize, &str)> {
                         if cursor == len + 1 {
                             cursor -= 1;
                         }
-                        return Some((cursor, &s[t1..t2]));
+                        return Some((cursor, &s[t1..t2], t1..t2));
                     }
                 }
                 _ => panic!("internal lexer error"),

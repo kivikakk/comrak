@@ -271,11 +271,12 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     self.escape(&nfr.name)?;
                     self.output.write_str("\"")?;
                 }
-                NodeValue::TaskItem(Some(_)) => {
-                    self.output.write_str(" completed=\"true\"")?;
-                }
-                NodeValue::TaskItem(None) => {
-                    self.output.write_str(" completed=\"false\"")?;
+                NodeValue::TaskItem(ref nti) => {
+                    if nti.symbol.is_some() {
+                        self.output.write_str(" completed=\"true\"")?;
+                    } else {
+                        self.output.write_str(" completed=\"false\"")?;
+                    }
                 }
                 #[cfg(feature = "shortcodes")]
                 NodeValue::ShortCode(ref nsc) => {

@@ -20,7 +20,7 @@ use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
     NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
-    NodeMultilineBlockQuote, NodeValue, Sourcepos,
+    NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -2308,7 +2308,7 @@ where
         sourcepos: &mut Sourcepos,
         spx: &mut Spx,
     ) {
-        let (end, matched) = match scanners::tasklist(text) {
+        let (end, matched, symbol_range) = match scanners::tasklist(text) {
             Some(p) => p,
             None => return,
         };
@@ -2327,6 +2327,13 @@ where
         if !self.options.parse.relaxed_tasklist_matching && !matches!(symbol, ' ' | 'x' | 'X') {
             return;
         }
+
+        let symbol_sourcepos: Sourcepos = (
+            sourcepos.start.column_add(symbol_range.start as isize),
+            // `- 1`: symbol_range is end-exclusive, but sourcepos are inclusive.
+            sourcepos.start.column_add(symbol_range.end as isize - 1),
+        )
+            .into();
 
         let parent = node.parent().unwrap();
 
@@ -2349,7 +2356,10 @@ where
             parent.prepend(
                 self.arena.alloc(
                     Ast::new_with_sourcepos(
-                        NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) }),
+                        NodeValue::TaskItem(NodeTaskItem {
+                            symbol: if symbol == ' ' { None } else { Some(symbol) },
+                            symbol_sourcepos,
+                        }),
                         *sourcepos,
                     )
                     .into(),
@@ -2387,8 +2397,10 @@ where
                 parent.data_mut().sourcepos.start.column = adjust;
             }
 
-            grandparent.data_mut().value =
-                NodeValue::TaskItem(if symbol == ' ' { None } else { Some(symbol) });
+            grandparent.data_mut().value = NodeValue::TaskItem(NodeTaskItem {
+                symbol: if symbol == ' ' { None } else { Some(symbol) },
+                symbol_sourcepos,
+            });
 
             if let NodeValue::List(ref mut list) = &mut great_grandparent.data_mut().value {
                 list.is_task_list = true;

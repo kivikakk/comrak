@@ -1,4 +1,5 @@
 use super::*;
+use pretty_assertions::assert_eq;
 
 #[test]
 fn tasklist() {
@@ -514,5 +515,40 @@ fn tasklist_relaxed_unicode() {
                 ])
             ])
         ])
+    );
+}
+
+#[test]
+fn tasklist_symbol_sourcepos() {
+    let mut options = Options::default();
+    options.extension.tasklist = true;
+
+    let arena = Arena::new();
+    let md = r#"Henlo!
+
+> - [x] well
+>
+>   1. * > 3. [ ] true
+
++ [x] ok
+"#;
+
+    let root = parse_document(&arena, md, &options);
+    let sourceposes = root
+        .descendants()
+        .filter_map(|n| {
+            let NodeValue::TaskItem(ref nti) = n.data().value else {
+                return None;
+            };
+            Some(nti.symbol_sourcepos)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sourceposes,
+        vec![
+            (3, 6, 3, 6).into(),
+            (5, 16, 5, 16).into(),
+            (7, 4, 7, 4).into()
+        ]
     );
 }
