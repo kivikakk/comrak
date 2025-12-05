@@ -140,28 +140,16 @@ pub enum ChildRendering {
 /// ```
 #[macro_export]
 macro_rules! create_formatter {
-    // Permit lack of trailing comma by adding one.
-    ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* }) => {
-        $crate::create_formatter!($name, { $( $pat => | $( $capture ),* | $case ),*, });
+    ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* $(,)? }) => {
+        $crate::create_formatter!(@inner $name<()>, { $( $pat => | $( $capture ),* | $case ),*, });
     };
 
-    ($name:ident<$type:ty>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* }) => {
-        $crate::create_formatter!($name<$type>, { $( $pat => | $( $capture ),* | $case ),*, });
+    ($name:ident<$type:ty>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* $(,)? }) => {
+        $crate::create_formatter!(@inner $name<$type, $type>, { $( $pat => | $( $capture ),* | $case ),*, });
     };
 
-    ($name:ident, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
-        $crate::create_formatter!($name<()>, { $( $pat => | $( $capture ),* | $case ),*, });
-    };
-
-    // TODO: is there a nice way to deduplicate the below two clauses? When a
-    // type isn't given, we default to `()`; in turn, we specialise the macro
-    // when `()` is the type and supply the `()` value on the user's behalf.
-    // This preserves the API from before the user type was added, and is just
-    // neater/cleaner besides.
-    //
-    // If you are reading this comment, you might know of a nice way to do this!
-    // I'd rather not resort to proc macros! TIA!
-    ($name:ident<()>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
+    // Actual implementation
+    (@inner $name:ident<$type:ty $(, $user_type:ty)?>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),* $(,)? }) => {
         #[allow(missing_copy_implementations)]
         #[allow(missing_debug_implementations)]
         /// Created by [`comrak::create_formatter!`][crate::create_formatter].
@@ -174,14 +162,18 @@ macro_rules! create_formatter {
                 root: &'a $crate::nodes::AstNode<'a>,
                 options: &$crate::Options,
                 output: &mut dyn ::std::fmt::Write,
-            ) -> ::std::fmt::Result {
+                $(user: $user_type,)?
+            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
+                #[allow(unused_mut)]
+                let mut maybe_user = None$(::<$user_type>)?;
+                $(maybe_user = Some::<$user_type>(user);)?
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
                     output,
                     &$crate::options::Plugins::default(),
                     Self::formatter,
-                    ()
+                    maybe_user.unwrap_or(<$type>::default()),
                 )
             }
 
@@ -192,79 +184,18 @@ macro_rules! create_formatter {
                 options: &'o $crate::Options<'c>,
                 output: &'o mut dyn ::std::fmt::Write,
                 plugins: &'o $crate::options::Plugins<'o>,
-            ) -> ::std::fmt::Result {
+                $(user: $user_type,)?
+            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
+                #[allow(unused_mut)]
+                let mut maybe_user = None$(::<$user_type>)?;
+                $(maybe_user = Some::<$user_type>(user);)?
                 $crate::html::format_document_with_formatter(
                     root,
                     options,
                     output,
                     plugins,
                     Self::formatter,
-                    ()
-                )
-            }
-
-            fn formatter<'a>(
-                context: &mut $crate::html::Context<()>,
-                node: &'a $crate::nodes::AstNode<'a>,
-                entering: bool,
-            ) -> ::std::result::Result<$crate::html::ChildRendering, ::std::fmt::Error> {
-                match node.data().value {
-                    $(
-                        $pat => {
-                            $crate::formatter_captures!((context, node, entering), ($( $capture ),*));
-                            $case
-                            // Don't warn on unconditional return in user code.
-                            #[allow(unreachable_code)]
-                            ::std::result::Result::Ok($crate::html::ChildRendering::HTML)
-                        }
-                    ),*
-                    _ => $crate::html::format_node_default(context, node, entering),
-                }
-            }
-        }
-    };
-
-    ($name:ident<$type:ty>, { $( $pat:pat => | $( $capture:ident ),* | $case:tt ),*, }) => {
-        #[allow(missing_copy_implementations)]
-        #[allow(missing_debug_implementations)]
-        /// Created by [`comrak::create_formatter!`][crate::create_formatter].
-        pub struct $name;
-
-        impl $name {
-            /// Formats an AST as HTML, modified by the given options.
-            #[inline]
-            pub fn format_document<'a>(
-                root: &'a $crate::nodes::AstNode<'a>,
-                options: &$crate::Options,
-                output: &mut dyn ::std::fmt::Write,
-                user: $type,
-            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
-                $crate::html::format_document_with_formatter(
-                    root,
-                    options,
-                    output,
-                    &$crate::options::Plugins::default(),
-                    Self::formatter,
-                    user
-                )
-            }
-
-            /// Formats an AST as HTML, modified by the given options. Accepts custom plugins.
-            #[inline]
-            pub fn format_document_with_plugins<'a, 'o, 'c: 'o>(
-                root: &'a $crate::nodes::AstNode<'a>,
-                options: &'o $crate::Options<'c>,
-                output: &'o mut dyn ::std::fmt::Write,
-                plugins: &'o $crate::options::Plugins<'o>,
-                user: $type,
-            ) -> ::std::result::Result<$type, ::std::fmt::Error> {
-                $crate::html::format_document_with_formatter(
-                    root,
-                    options,
-                    output,
-                    plugins,
-                    Self::formatter,
-                    user
+                    maybe_user.unwrap_or(<$type>::default()),
                 )
             }
 
