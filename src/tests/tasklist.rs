@@ -552,3 +552,43 @@ fn tasklist_symbol_sourcepos() {
         ]
     );
 }
+
+#[test]
+fn tasklist_symbol_sourcepos_relaxed() {
+    let mut options = Options::default();
+    options.extension.tasklist = true;
+    options.extension.table = true;
+    options.parse.relaxed_tasklist_matching = true;
+    options.parse.tasklist_in_table = true;
+
+    let arena = Arena::new();
+    let md = r#"Henlo!
+
+> - [あ] well
+>
+>   1. * > 3. [和] true
+
+| hm   |    |
+| ---- | -- |
+| [ワ] | ok |
+"#;
+
+    let root = parse_document(&arena, md, &options);
+    let sourceposes = root
+        .descendants()
+        .filter_map(|n| {
+            let NodeValue::TaskItem(ref nti) = n.data().value else {
+                return None;
+            };
+            Some(nti.symbol_sourcepos)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sourceposes,
+        vec![
+            (3, 6, 3, 8).into(),
+            (5, 16, 5, 18).into(),
+            (9, 4, 9, 6).into()
+        ]
+    );
+}
