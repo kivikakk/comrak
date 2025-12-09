@@ -14,6 +14,32 @@ Categories to use in this document, and the order in which to give them:
 * Behind the scenes
 
 
+# [v0.49.0] - 2025-12-09
+
+New APIs:
+
+* Support for Phoenix HEEx has been added! Comrak can now avoid interpreting the contents of HEEx tags, representing them in their own node type in the AST. (by @leandrocp in https://github.com/kivikakk/comrak/pull/693, https://github.com/kivikakk/comrak/pull/702)
+* Add sourcepos for the task item symbol (i.e. the `x` in `[x]`). (by @kivikakk in https://github.com/kivikakk/comrak/pull/705)
+
+Build changes:
+
+* Fix typos in repository and add typos CI config. (by @liamwhite in https://github.com/kivikakk/comrak/pull/691)
+* Promote clippy warns to errors in CI. (by @leandrocp in https://github.com/kivikakk/comrak/pull/701)
+
+Behind the scenes:
+
+* Clean up `find_special_char` logic for inlines. (by @liamwhite in https://github.com/kivikakk/comrak/pull/692)
+* Add `byte_matches` helper to simplify `get`/`map_or` chaining tests in parser. (by @liamwhite in https://github.com/kivikakk/comrak/pull/694)
+* Apply clippy suggestions. (by @leandrocp in https://github.com/kivikakk/comrak/pull/700)
+* DRY out the `create_formatter` macro a bit. (by @nberlette in https://github.com/kivikakk/comrak/pull/704)
+
+## New Contributors
+
+* @nberlette made their first contribution in https://github.com/kivikakk/comrak/pull/704
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.48.0...v0.49.0
+
+
 # [v0.48.0] - 2025-11-13
 
 The breaking changes are listed right at the top!  Please note that AST content now represents `NUL` bytes (codepoint number zero) as they were in the input; these used to be translated to the lovely � character at the very beginning of the input process, presumably so the rest of the reference C parser didn't have to deal with the possibility of strings containing NUL bytes.  We can do better, though, so let's!  The � character is now emitted by our formatters in place of `NUL`, but if you use custom or manual formatters and emit any part of the AST content **directly** (without using `comrak::html::escape`, `context::html::escape_href`, or the same-named functions on `Context`), you may need to do the same translation yourself.
