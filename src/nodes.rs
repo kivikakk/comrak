@@ -135,7 +135,7 @@ pub enum NodeValue {
     /// **Block**. [Task list item](https://github.github.com/gfm/#task-list-items-extension-).
     /// The value is the symbol that was used in the brackets to mark a task item as checked, or
     /// `None` if the item is unchecked.
-    TaskItem(Option<char>),
+    TaskItem(NodeTaskItem),
 
     /// **Inline**.  A [soft line break](https://github.github.com/gfm/#soft-line-breaks).  If
     /// the `hardbreaks` option is set in `Options` during formatting, it will be formatted
@@ -292,6 +292,17 @@ pub struct NodeTable {
 
     /// Number of non-empty, non-autocompleted cells
     pub num_nonempty_cells: usize,
+}
+
+/// A task list item's contents, and where it was found
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub struct NodeTaskItem {
+    /// The symbol within the brackets used to mark the task item as checked,
+    /// or `None` if unchecked.
+    pub symbol: Option<char>,
+
+    /// The source position of the symbol itself.
+    pub symbol_sourcepos: Sourcepos,
 }
 
 /// An inline [code span](https://github.github.com/gfm/#code-spans).

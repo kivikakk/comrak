@@ -6,7 +6,7 @@ use std::str;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeList, NodeMath, NodeValue, NodeWikiLink, TableAlignment,
+    NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "phoenix_heex")]
@@ -471,7 +471,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 }
             }
             NodeValue::Emph => self.format_emph(node)?,
-            NodeValue::TaskItem(symbol) => self.format_task_item(symbol, node, entering)?,
+            NodeValue::TaskItem(ref nti) => self.format_task_item(nti, node, entering)?,
             NodeValue::Strikethrough => self.format_strikethrough()?,
             NodeValue::Highlight => self.format_highlight()?,
             NodeValue::Superscript => self.format_superscript()?,
@@ -855,7 +855,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_task_item(
         &mut self,
-        symbol: Option<char>,
+        nti: &NodeTaskItem,
         node: Node<'a>,
         entering: bool,
     ) -> fmt::Result {
@@ -867,7 +867,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             self.format_item(node, entering)?;
         }
         if entering {
-            write!(self, "[{}] ", symbol.unwrap_or(' '))?;
+            write!(self, "[{}] ", nti.symbol.unwrap_or(' '))?;
         }
         Ok(())
     }

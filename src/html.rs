@@ -20,8 +20,8 @@ use crate::ctype::isspace;
 use crate::nodes::NodeShortCode;
 use crate::nodes::{
     ListType, Node, NodeAlert, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
-    NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeValue,
-    NodeWikiLink, TableAlignment,
+    NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
+    NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{Options, Plugins};
 use crate::{node_matches, scanners};
@@ -375,7 +375,7 @@ pub fn format_node_default<T>(
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
-        NodeValue::TaskItem(symbol) => render_task_item(context, node, entering, symbol),
+        NodeValue::TaskItem(ref nti) => render_task_item(context, node, entering, nti),
 
         // Extensions
         NodeValue::Alert(ref alert) => render_alert(context, node, entering, alert),
@@ -1135,7 +1135,7 @@ fn render_task_item<T>(
     context: &mut Context<T>,
     node: Node<'_>,
     entering: bool,
-    symbol: Option<char>,
+    nti: &NodeTaskItem,
 ) -> Result<ChildRendering, fmt::Error> {
     let write_li = node
         .parent()
@@ -1159,7 +1159,7 @@ fn render_task_item<T>(
         if context.options.render.tasklist_classes {
             context.write_str(" class=\"task-list-item-checkbox\"")?;
         }
-        if symbol.is_some() {
+        if nti.symbol.is_some() {
             context.write_str(" checked=\"\"")?;
         }
         context.write_str(" disabled=\"\" /> ")?;
