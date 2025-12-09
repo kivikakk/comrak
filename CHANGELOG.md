@@ -1,3 +1,23 @@
+# [v0.49.0] - 2025-12-09
+
+## What's Changed
+* Clean up find_special_char logic for inlines by @liamwhite in https://github.com/kivikakk/comrak/pull/692
+* Fix typos in repository and add typos CI config by @liamwhite in https://github.com/kivikakk/comrak/pull/691
+* Add byte_matches helper to simplify get/map_or chaining tests in parser by @liamwhite in https://github.com/kivikakk/comrak/pull/694
+* feat: phoenix heex support by @leandrocp in https://github.com/kivikakk/comrak/pull/693
+* chore: apply clippy suggestions by @leandrocp in https://github.com/kivikakk/comrak/pull/700
+* chore(ci): promote clippy warns to errors by @leandrocp in https://github.com/kivikakk/comrak/pull/701
+* fix(heex): self closing tag on same line by @leandrocp in https://github.com/kivikakk/comrak/pull/702
+* refactor(html): DRY out the create_formatter macro a bit by @nberlette in https://github.com/kivikakk/comrak/pull/704
+* Add sourcepos for the task item symbol by @kivikakk in https://github.com/kivikakk/comrak/pull/705
+
+## New Contributors
+* @nberlette made their first contribution in https://github.com/kivikakk/comrak/pull/704
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.48.0...v0.49.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
