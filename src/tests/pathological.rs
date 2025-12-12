@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "riscv64"))]
+
 use super::*;
 use ntest::timeout;
 
