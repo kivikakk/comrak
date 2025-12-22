@@ -849,11 +849,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let startpos = self.scanner.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
-        let (link_label, link_label_start_column, _link_label_end_column) =
-            match component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
+        let (link_label, link_label_start_column, _link_label_end_column): (Cow<'_, str>, _, _) =
+            match &component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(label), *sc, *ec),
                 None => (
-                    entity::unescape_html(&component.url).to_string(),
+                    entity::unescape_html(&component.url),
                     startpos + 1,
                     self.scanner.pos - 3,
                 ),
@@ -1764,12 +1764,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(
-                is_image,
-                reff.url.clone(),
-                reff.title.clone(),
-                self.scanner.pos,
-            );
+            let reff = reff.into_owned();
+            self.close_bracket_match(is_image, reff.url, reff.title, self.scanner.pos);
             return None;
         }
 
