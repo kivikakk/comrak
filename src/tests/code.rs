@@ -156,3 +156,161 @@ fn fenced_codeblock_unclosed_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn closed_list_between_fenced_codeblocks_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\n"
+        "code\n"
+        "```\n"
+        "- list\n"
+        "```\n"
+        "code\n"
+        "```\n",
+        (document (1:1-7:3) [
+            (code_block (1:1-3:3) "code\n")
+            (list (4:1-4:6) [
+                (item (4:1-4:6) [
+                    (paragraph (4:3-4:6) [
+                        (text (4:3-4:6) "list")
+                    ])
+                ])
+            ])
+            (code_block (5:1-7:3) "code\n")
+        ])
+    );
+}
+
+#[test]
+fn closed_list_before_fenced_codeblocks_sourcepos() {
+    assert_ast_match!(
+        [],
+        "- list\n"
+        "```\n"
+        "code\n"
+        "```\n",
+        (document (1:1-4:3) [
+            (list (1:1-1:6) [
+                (item (1:1-1:6) [
+                    (paragraph (1:3-1:6) [
+                        (text (1:3-1:6) "list")
+                    ])
+                ])
+            ])
+            (code_block (2:1-4:3) "code\n")
+        ])
+    );
+}
+
+#[test]
+fn closed_list_after_fenced_codeblocks_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\n"
+        "code\n"
+        "```\n"
+        "- list\n",
+        (document (1:1-4:6) [
+            (code_block (1:1-3:3) "code\n")
+            (list (4:1-4:6) [
+                (item (4:1-4:6) [
+                    (paragraph (4:3-4:6) [
+                        (text (4:3-4:6) "list")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn nested_list_between_fenced_codeblocks_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\n"
+        "code\n"
+        "```\n"
+        "1. list\n"
+        "    * nested list\n"
+        "```\n"
+        "code\n"
+        "```\n",
+        (document (1:1-8:3) [
+            (code_block (1:1-3:3) "code\n")
+            (list (4:1-5:17) [
+                (item (4:1-5:17) [
+                    (paragraph (4:4-4:7) [
+                        (text (4:4-4:7) "list")
+                    ])
+                    (list (5:5-5:17) [
+                        (item (5:5-5:17) [
+                            (paragraph (5:7-5:17) [
+                                (text (5:7-5:17) "nested list")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+            (code_block (6:1-8:3) "code\n")
+        ])
+    );
+}
+
+#[test]
+fn nested_list_before_fenced_codeblock_sourcepos() {
+    assert_ast_match!(
+        [],
+        "1. list\n"
+        "    * nested list\n"
+        "```\n"
+        "code\n"
+        "```\n",
+        (document (1:1-5:3) [
+            (list (1:1-2:17) [
+                (item (1:1-2:17) [
+                    (paragraph (1:4-1:7) [
+                        (text (1:4-1:7) "list")
+                    ])
+                    (list (2:5-2:17) [
+                        (item (2:5-2:17) [
+                            (paragraph (2:7-2:17) [
+                                (text (2:7-2:17) "nested list")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+            (code_block (3:1-5:3) "code\n")
+        ])
+    );
+}
+
+#[test]
+fn nested_list_after_fenced_codeblock_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\n"
+        "code\n"
+        "```\n"
+        "1. list\n"
+        "    * nested list\n",
+        (document (1:1-5:17) [
+            (code_block (1:1-3:3) "code\n")
+            (list (4:1-5:17) [
+                (item (4:1-5:17) [
+                    (paragraph (4:4-4:7) [
+                        (text (4:4-4:7) "list")
+                    ])
+                    (list (5:5-5:17) [
+                        (item (5:5-5:17) [
+                            (paragraph (5:7-5:17) [
+                                (text (5:7-5:17) "nested list")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
