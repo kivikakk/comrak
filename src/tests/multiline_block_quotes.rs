@@ -264,3 +264,22 @@ fn html_block_in_blockquote_in_mbq() {
         ),
     );
 }
+
+#[test]
+fn mbq_as_list_item_with_list_item() {
+    html_opts!(
+        [extension.multiline_block_quotes, render.r#unsafe],
+        concat!(" -  >>>\n", "    - foo\n", "    >>>"),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<blockquote>\n",
+            "<ul>\n",
+            "<li>foo</li>\n",
+            "</ul>\n",
+            "</blockquote>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+    );
+}

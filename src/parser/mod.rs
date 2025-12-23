@@ -542,10 +542,12 @@ where
             // Make sure it's finalized.
             if container.last_child_is_open() {
                 let mut child = container.last_child().unwrap();
-                // Descend to the deepest-last open child
-                // before finalizing it. This ensures nested open children
-                // (e.g. indented code blocks) are closed first.
-                while child.last_child_is_open() {
+                // Descend to the deepest-last open child before finalizing it.
+                // Stop descending when encountering a `List` node because
+                // list structure must be finalized at the item level. This
+                // ensures nested open children (e.g. indented code blocks)
+                // are closed first while avoiding descending into lists.
+                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
                     child = child.last_child().unwrap();
                 }
                 let child_ast = &mut child.data_mut();
