@@ -1744,28 +1744,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             found_label = true;
         }
 
-        // Need to normalize both to lookup in refmap and to call callback
-        let unfolded_lab = lab.clone();
-        let lab = strings::normalize_label(&lab, Case::Fold);
+        // Need to normalize to lookup in refmap
+        let normalized_lab = strings::normalize_label(&lab, Case::Fold);
         let mut reff: Option<Cow<ResolvedReference>> = if found_label {
-            self.refmap.lookup(&lab).map(Cow::Borrowed)
+            self.refmap.lookup(&normalized_lab).map(Cow::Borrowed)
         } else {
             None
         };
 
         // Attempt to use the provided broken link callback if a reference cannot be resolved
+        // Only clone the original label if we actually need to call the callback
         if reff.is_none() {
             if let Some(callback) = &self.options.parse.broken_link_callback {
                 reff = callback
                     .resolve(BrokenLinkReference {
-                        normalized: &lab,
-                        original: &unfolded_lab,
+                        normalized: &normalized_lab,
+                        original: &lab,
                     })
                     .map(Cow::Owned);
             }
         }
 
         if let Some(reff) = reff {
+            // When reff is Cow::Owned (from callback), into_owned() is a no-op
+            // When reff is Cow::Borrowed (from refmap), into_owned() clones
             let reff = reff.into_owned();
             self.close_bracket_match(is_image, reff.url, reff.title, self.scanner.pos);
             return None;
