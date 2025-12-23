@@ -2,10 +2,11 @@ mod cjk;
 
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
 use std::{mem, ptr};
+
+use rustc_hash::FxHashMap;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
@@ -2265,7 +2266,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 }
 
 pub struct RefMap {
-    pub map: HashMap<String, ResolvedReference>,
+    pub map: FxHashMap<String, ResolvedReference>,
     pub(crate) max_ref_size: usize,
     ref_size: Cell<usize>,
 }
@@ -2273,7 +2274,7 @@ pub struct RefMap {
 impl RefMap {
     pub fn new() -> Self {
         Self {
-            map: HashMap::new(),
+            map: FxHashMap::default(),
             max_ref_size: usize::MAX,
             ref_size: Cell::new(0),
         }
