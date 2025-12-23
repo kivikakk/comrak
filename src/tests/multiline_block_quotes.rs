@@ -243,3 +243,24 @@ fn sourcepos_with_block_quote_with_block_quote_and_list() {
         ])
     );
 }
+
+#[test]
+fn html_block_in_blockquote_in_mbq() {
+    html_opts!(
+        [extension.multiline_block_quotes, render.r#unsafe],
+        concat!(">>>\n", "<div>test</div>\n", ">>>\n"),
+        concat!("<blockquote>\n", "<div>test</div>\n", "</blockquote>\n",),
+    );
+
+    html_opts!(
+        [extension.multiline_block_quotes, render.r#unsafe],
+        concat!(">>>\n", "> <div>test</div>\n", ">>>\n"),
+        concat!(
+            "<blockquote>\n",
+            "<blockquote>\n",
+            "<div>test</div>\n",
+            "</blockquote>\n",
+            "</blockquote>\n",
+        ),
+    );
+}
