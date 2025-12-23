@@ -7,6 +7,7 @@ use std::str;
 use std::{mem, ptr};
 
 use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
@@ -42,7 +43,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a>>,
+    brackets: SmallVec<[Bracket<'a>; 8]>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -86,7 +87,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             footnote_defs,
             delimiter_arena,
             last_delimiter: None,
-            brackets: vec![],
+            brackets: SmallVec::new(),
             within_brackets: false,
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
