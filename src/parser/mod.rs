@@ -541,7 +541,15 @@ where
             // The last child, like an indented codeblock, could be left open.
             // Make sure it's finalized.
             if container.last_child_is_open() {
-                let child = container.last_child().unwrap();
+                let mut child = container.last_child().unwrap();
+                // Descend to the deepest-last open child before finalizing it.
+                // Stop descending when encountering a `List` node because
+                // list structure must be finalized at the item level. This
+                // ensures nested open children (e.g. indented code blocks)
+                // are closed first while avoiding descending into lists.
+                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
+                    child = child.last_child().unwrap();
+                }
                 let child_ast = &mut child.data_mut();
 
                 self.finalize_borrowed(child, child_ast).unwrap();
