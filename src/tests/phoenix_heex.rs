@@ -1468,6 +1468,21 @@ fn sourcepos_with_content() {
 }
 
 #[test]
+fn block_with_content_inside_blockquote_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "> <.form>\n"
+        ">   <.input />\n"
+        "> </.form>\n",
+        (document (1:1-3:10) [
+            (block_quote (1:1-3:10) [
+                (heex_block (1:3-3:10) "<.form>\n  <.input />\n</.form>\n")
+            ])
+        ]),
+    );
+}
+
+#[test]
 fn block_with_code_fence() {
     assert_ast_match!(
         [extension.phoenix_heex],
@@ -1476,6 +1491,21 @@ fn block_with_code_fence() {
         "</.header>\n",
         (document (1:1-3:10) [
             (heex_block (1:1-3:10) "<.header>\n  ```elixir\n</.header>\n")
+        ]),
+    );
+}
+
+#[test]
+fn block_with_code_fence_inside_blockquote_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "> <.header>\n"
+        ">   ```elixir\n"
+        "> </.header>\n",
+        (document (1:1-3:12) [
+            (block_quote (1:1-3:12) [
+                (heex_block (1:3-3:12) "<.header>\n  ```elixir\n</.header>\n")
+            ])
         ]),
     );
 }
@@ -1499,6 +1529,26 @@ fn block_with_text_and_paragraph() {
 }
 
 #[test]
+fn block_with_text_and_paragraph_inside_blockquote_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "> <.header>\n"
+        "> hello\n"
+        "> </.header>\n"
+        ">\n"
+        "> hello world\n",
+        (document (1:1-5:13) [
+            (block_quote (1:1-5:13) [
+                (heex_block (1:3-3:12) "<.header>\nhello\n</.header>\n")
+                (paragraph (5:3-5:13) [
+                    (text (5:3-5:13) "hello world")
+                ])
+            ])
+        ]),
+    );
+}
+
+#[test]
 fn inline_expression_sourcepos() {
     assert_ast_match!(
         [extension.phoenix_heex],
@@ -1513,6 +1563,22 @@ fn inline_expression_sourcepos() {
 }
 
 #[test]
+fn inline_expression_inside_blockquote_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "> Here is a value: {user.name}\n",
+        (document (1:1-1:30) [
+            (block_quote (1:1-1:30) [
+                (paragraph (1:3-1:30) [
+                    (text (1:3-1:19) "Here is a value: ")
+                    (heex_inline (1:20-1:30) "{user.name}")
+                ])
+            ])
+        ]),
+    );
+}
+
+#[test]
 fn directive_sourcepos() {
     assert_ast_match!(
         [extension.phoenix_heex],
@@ -1521,6 +1587,22 @@ fn directive_sourcepos() {
             (paragraph (1:1-1:19) [
                 (text (1:1-1:7) "Value: ")
                 (heex_inline (1:8-1:19) "<%= @user %>")
+            ])
+        ]),
+    );
+}
+
+#[test]
+fn directive_inside_blockquote_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "> Here is a value: <%= @user %>\n",
+        (document (1:1-1:31) [
+            (block_quote (1:1-1:31) [
+                (paragraph (1:3-1:31) [
+                    (text (1:3-1:19) "Here is a value: ")
+                    (heex_inline (1:20-1:31) "<%= @user %>")
+                ])
             ])
         ]),
     );
