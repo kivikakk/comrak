@@ -1535,9 +1535,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if self.options.extension.strikethrough {
                     NodeValue::Strikethrough
                 } else if use_delims == 1 {
-                    NodeValue::EscapedTag("~".to_owned())
+                    NodeValue::EscapedTag("~")
                 } else {
-                    NodeValue::EscapedTag("~~".to_owned())
+                    NodeValue::EscapedTag("~~")
                 }
             } else if self.options.extension.superscript && opener_byte == b'^' {
                 NodeValue::Superscript
@@ -1545,13 +1545,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if self.options.extension.highlight {
                     NodeValue::Highlight
                 } else {
-                    NodeValue::EscapedTag("==".to_owned())
+                    NodeValue::EscapedTag("==")
                 }
             } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
                     NodeValue::SpoileredText
                 } else {
-                    NodeValue::EscapedTag("|".to_owned())
+                    NodeValue::EscapedTag("|")
                 }
             } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
                 NodeValue::Underline

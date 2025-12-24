@@ -239,8 +239,8 @@ pub enum NodeValue {
     SpoileredText,
 
     /// **Inline**. Text surrounded by escaped markup. Enabled with `spoiler` option.
-    /// The `String` is the tag to be escaped.
-    EscapedTag(String),
+    /// The `&'static str` is the tag to be escaped.
+    EscapedTag(&'static str),
 
     /// **Block**. GitHub style alert boxes which uses a modified blockquote syntax.
     /// Enabled with the `alerts` option.
@@ -560,24 +560,24 @@ pub enum AlertType {
 
 impl AlertType {
     /// Returns the default title for an alert type
-    pub fn default_title(&self) -> String {
+    pub fn default_title(&self) -> &'static str {
         match *self {
-            AlertType::Note => String::from("Note"),
-            AlertType::Tip => String::from("Tip"),
-            AlertType::Important => String::from("Important"),
-            AlertType::Warning => String::from("Warning"),
-            AlertType::Caution => String::from("Caution"),
+            AlertType::Note => "Note",
+            AlertType::Tip => "Tip",
+            AlertType::Important => "Important",
+            AlertType::Warning => "Warning",
+            AlertType::Caution => "Caution",
         }
     }
 
     /// Returns the CSS class to use for an alert type
-    pub fn css_class(&self) -> String {
+    pub fn css_class(&self) -> &'static str {
         match *self {
-            AlertType::Note => String::from("markdown-alert-note"),
-            AlertType::Tip => String::from("markdown-alert-tip"),
-            AlertType::Important => String::from("markdown-alert-important"),
-            AlertType::Warning => String::from("markdown-alert-warning"),
-            AlertType::Caution => String::from("markdown-alert-caution"),
+            AlertType::Note => "markdown-alert-note",
+            AlertType::Tip => "markdown-alert-tip",
+            AlertType::Important => "markdown-alert-important",
+            AlertType::Warning => "markdown-alert-warning",
+            AlertType::Caution => "markdown-alert-caution",
         }
     }
 }
