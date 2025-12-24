@@ -683,3 +683,86 @@ fn sourcepos_kind_7() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_inside_blockquote() {
+    // Kind 1
+    assert_ast_match!(
+        [],
+        "> <script></script>",
+        (document (1:1-1:19) [
+            (block_quote (1:1-1:19) [
+                (html_block (1:3-1:19) "<script></script>")
+            ])
+        ])
+    );
+
+    // Kind 2
+    assert_ast_match!(
+        [],
+        "> <!---->",
+        (document (1:1-1:9) [
+            (block_quote (1:1-1:9) [
+                (html_block (1:3-1:9) "<!---->")
+            ])
+        ])
+    );
+
+    // Kind 3
+    assert_ast_match!(
+        [],
+        "> <??>",
+        (document (1:1-1:6) [
+            (block_quote (1:1-1:6) [
+                (html_block (1:3-1:6) "<??>")
+            ])
+        ])
+    );
+
+    // Kind 4
+    assert_ast_match!(
+        [],
+        "> <!a>",
+        (document (1:1-1:6) [
+            (block_quote (1:1-1:6) [
+                (html_block (1:3-1:6) "<!a>")
+            ])
+        ])
+    );
+
+    // Kind 5
+    assert_ast_match!(
+        [],
+        "> <![CDATA[]]>",
+        (document (1:1-1:14) [
+            (block_quote (1:1-1:14) [
+                (html_block (1:3-1:14) "<![CDATA[]]>")
+            ])
+        ])
+    );
+
+    // Kind 6
+    assert_ast_match!(
+        [],
+        "> <div></div>",
+        (document (1:1-1:13) [
+            (block_quote (1:1-1:13) [
+                (html_block (1:3-1:13) "<div></div>")
+            ])
+        ])
+    );
+
+    // Kind 7
+    assert_ast_match!(
+        [],
+        "> <testa></testa>",
+        (document (1:1-1:17) [
+            (block_quote (1:1-1:17) [
+                (paragraph (1:3-1:17) [
+                    (html_inline (1:3-1:9) "<testa>")
+                    (html_inline (1:10-1:17) "</testa>")
+                ])
+            ])
+        ])
+    );
+}

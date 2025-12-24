@@ -1979,7 +1979,8 @@ where
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                ast.sourcepos.end = (end_line, last_line_len).into();
+                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                ast.sourcepos.end = (end_line, end_col).into();
 
                 mem::swap(&mut nhb.literal, content);
             }
@@ -1988,7 +1989,8 @@ where
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                ast.sourcepos.end = (end_line, last_line_len).into();
+                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                ast.sourcepos.end = (end_line, end_col).into();
 
                 mem::swap(&mut nhb.literal, content);
             }
