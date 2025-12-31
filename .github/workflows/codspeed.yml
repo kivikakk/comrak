@@ -20,7 +20,7 @@ jobs:
         with:
           submodules: true
       - name: Obtain Rust
-        run: rustup override set stable
+        run: rustup override set beta
       - name: Install cargo-codspeed
         run: cargo install cargo-codspeed
       - name: Build benchmarks
