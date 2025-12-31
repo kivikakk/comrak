@@ -101,8 +101,9 @@ jobs:
         submodules: true
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
-    - name: Build and test with no features
-      run: cargo test --locked --all-features
+    - name: Build and test with all features
+      # All features except codspeed, which doesn't build on our MSRV.
+      run: cargo test --locked -F cli,shortcodes,phoenix_heex,bon
   clippy_format:
     runs-on: ubuntu-latest
     steps:
