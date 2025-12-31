@@ -34,6 +34,10 @@ name = "comrak"
 required-features = ["cli"]
 doc = false
 
+[[bench]]
+name = "progits"
+harness = false
+
 [dependencies]
 typed-arena = "2.0.2"
 unicode_categories = "0.1.1"
@@ -44,6 +48,9 @@ bon = { version = "3", optional = true }
 caseless = "0.2.1"
 fmt2io = { version = "1.0.0", optional = true }
 jetscii = "0.5.3"
+# This wants to be a dev dependency, but they can't be optional (and this
+# doesn't compile on our MSRV).
+divan = { version = "4.2.0", package = "codspeed-divan-compat", optional = true }
 
 [dev-dependencies]
 ntest = "0.9"
@@ -52,16 +59,19 @@ strum = { version = "0.26.3", features = ["derive"] }
 toml = "0.7.3"
 slug = "0.1.4"
 pretty_assertions = "1.4.1"
+glob = "0.3.3"
 
 [build-dependencies]
 entities = "1.0.1"
 
 [features]
+# Sync with GitHub Actions "all features" workflow.
 default = ["cli", "syntect", "bon"]
 cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes", "phoenix_heex"]
 shortcodes = ["emojis"]
 phoenix_heex = []
 bon = ["dep:bon"]
+codspeed = ["dep:divan"]  # Exclude from "all features" builds.
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
 xdg = { version = "^2.5", optional = true }
