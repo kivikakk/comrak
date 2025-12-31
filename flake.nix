@@ -106,7 +106,7 @@
           };
 
           codspeed = mkShell {
-            name = "comrak";
+            name = "comrak-codspeed";
             toolchain = fenixPkgs.complete;
             extraPkgs = [
               (pkgs.callPackage ./nix/codspeed.nix {
@@ -119,7 +119,7 @@
           };
 
           stable = mkShell {
-            name = "comrak";
+            name = "comrak-stable";
             toolchain = fenixPkgs.stable;
           };
 

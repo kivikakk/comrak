@@ -24,7 +24,7 @@ jobs:
       - name: Install cargo-codspeed
         run: cargo install cargo-codspeed
       - name: Build benchmarks
-        run: cargo codspeed build
+        run: cargo codspeed build -F codspeed
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4
         with:
