@@ -10,3 +10,6 @@
 [submodule "vendor/commonmark-spec"]
 	path = vendor/commonmark-spec
 	url = https://github.com/commonmark/commonmark-spec
+[submodule "vendor/progit"]
+	path = vendor/progit
+	url = https://github.com/progit/progit
