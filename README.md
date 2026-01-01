@@ -413,7 +413,7 @@ Asherah Connor <ashe kivikakk ee\>
 
 ## Legal
 
-Copyright (c) 2017–2025, Comrak contributors. Licensed under
+Copyright (c) 2017–2026, Comrak contributors. Licensed under
 the [2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause).
 
 `cmark` itself is is copyright (c) 2014, John MacFarlane.
