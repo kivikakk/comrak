@@ -48,7 +48,6 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     no_link_openers: bool,
     special_char_bytes: [bool; 256],
     skip_char_bytes: [bool; 256],
-    smart_char_bytes: [bool; 256],
     emph_delim_bytes: [bool; 256],
 }
 
@@ -92,7 +91,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             no_link_openers: true,
             special_char_bytes: [false; 256],
             skip_char_bytes: [false; 256],
-            smart_char_bytes: [false; 256],
             emph_delim_bytes: [false; 256],
         };
         for &b in b"\n\r_*\"`\\&<[]!$" {
@@ -134,8 +132,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.special_char_bytes[b'{' as usize] = true;
             s.special_char_bytes[b'<' as usize] = true;
         }
-        for &b in b"\"'.-" {
-            s.smart_char_bytes[b as usize] = true;
+        if options.parse.smart {
+            for &b in b"\"'.-" {
+                s.special_char_bytes[b as usize] = true;
+            }
         }
         for &b in b"*_" {
             s.emph_delim_bytes[b as usize] = true;
@@ -1991,15 +1991,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return false;
         }
 
-        if self.special_char_bytes[value as usize] {
-            return true;
-        }
-
-        if self.options.parse.smart && self.smart_char_bytes[value as usize] {
-            return true;
-        }
-
-        false
+        self.special_char_bytes[value as usize]
     }
 
     fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
