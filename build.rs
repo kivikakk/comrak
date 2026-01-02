@@ -22,10 +22,13 @@ fn main() {
     let mut bw = std::io::BufWriter::new(out);
 
     writeln!(bw, "mod entitydata {{").unwrap();
-    writeln!(bw, "    use phf;").unwrap();
     writeln!(bw).unwrap();
 
-    write!(bw, "    pub static ENTITY_MAP: phf::Map<&'static str, &'static str> = ").unwrap();
+    write!(
+        bw,
+        "    pub static ENTITY_MAP: phf::Map<&'static str, &'static str> = "
+    )
+    .unwrap();
 
     let mut map = phf_codegen::Map::new();
     for (entity, characters) in &translated_entities {

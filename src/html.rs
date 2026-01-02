@@ -384,7 +384,7 @@ pub fn format_node_default<T>(
         NodeValue::DescriptionList => render_description_list(context, node, entering),
         NodeValue::DescriptionTerm => render_description_term(context, node, entering),
         NodeValue::Escaped => render_escaped(context, node, entering),
-        NodeValue::EscapedTag(ref net) => render_escaped_tag(context, net),
+        NodeValue::EscapedTag(net) => render_escaped_tag(context, net),
         NodeValue::FrontMatter(_) => Ok(ChildRendering::HTML),
         NodeValue::Math(ref nm) => render_math(context, node, entering, nm),
         NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering),
@@ -1181,7 +1181,7 @@ fn render_alert<T>(
     if entering {
         context.cr()?;
         context.write_str("<div class=\"markdown-alert ")?;
-        context.write_str(&alert.alert_type.css_class())?;
+        context.write_str(alert.alert_type.css_class())?;
         context.write_str("\"")?;
         render_sourcepos(context, node)?;
         context.write_str(">\n")?;
@@ -1189,7 +1189,7 @@ fn render_alert<T>(
         match alert.title {
             Some(ref title) => context.escape(title)?,
             None => {
-                context.write_str(&alert.alert_type.default_title())?;
+                context.write_str(alert.alert_type.default_title())?;
             }
         }
         context.write_str("</p>\n")?;

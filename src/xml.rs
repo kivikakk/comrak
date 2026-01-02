@@ -306,7 +306,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Underline => {}
                 NodeValue::Subscript => {}
                 NodeValue::SpoileredText => {}
-                NodeValue::EscapedTag(ref data) => {
+                NodeValue::EscapedTag(data) => {
                     self.output.write_str(data)?;
                 }
                 NodeValue::Alert(ref alert) => {
