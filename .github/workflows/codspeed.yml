@@ -1,0 +1,32 @@
+name: CodSpeed benchmarks
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - name: Obtain Rust
+        run: rustup override set nightly
+      - name: Install cargo-codspeed
+        run: cargo install cargo-codspeed
+      - name: Build benchmarks
+        run: cargo codspeed build -F codspeed
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v4
+        with:
+          mode: instrumentation
+          run: cargo codspeed run

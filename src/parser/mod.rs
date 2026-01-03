@@ -541,7 +541,15 @@ where
             // The last child, like an indented codeblock, could be left open.
             // Make sure it's finalized.
             if container.last_child_is_open() {
-                let child = container.last_child().unwrap();
+                let mut child = container.last_child().unwrap();
+                // Descend to the deepest-last open child before finalizing it.
+                // Stop descending when encountering a `List` node because
+                // list structure must be finalized at the item level. This
+                // ensures nested open children (e.g. indented code blocks)
+                // are closed first while avoiding descending into lists.
+                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
+                    child = child.last_child().unwrap();
+                }
                 let child_ast = &mut child.data_mut();
 
                 self.finalize_borrowed(child, child_ast).unwrap();
@@ -1817,6 +1825,48 @@ where
 
             self.process_footnotes();
         }
+
+        self.propagate_list_sourcepos(self.root);
+    }
+
+    // Walk the tree and fix lists using their
+    // deepest-last descendant end where available.
+    fn propagate_list_sourcepos(&mut self, root: Node<'a>) {
+        // Post-order traversal using an explicit stack: (node, visited)
+        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
+        stack.push((root, false));
+
+        while let Some((node, visited)) = stack.pop() {
+            if !visited {
+                stack.push((node, true));
+                for ch in node.children() {
+                    stack.push((ch, false));
+                }
+            } else {
+                // Use a short-lived shared borrow to inspect descendants,
+                // then take a mutable borrow only when we need to update the
+                // node. This avoids RefCell borrow conflicts.
+                if matches!(node.data().value, NodeValue::List(..)) {
+                    let mut max_end = node.data().sourcepos.end;
+                    for d in node.descendants() {
+                        let de = d.data().sourcepos.end;
+                        if de.column == 0 {
+                            continue;
+                        }
+                        if de.line > max_end.line
+                            || (de.line == max_end.line && de.column > max_end.column)
+                        {
+                            max_end = de;
+                        }
+                    }
+
+                    if max_end.column != 0 {
+                        let mut ast = node.data_mut();
+                        ast.sourcepos.end = max_end;
+                    }
+                }
+            }
+        }
     }
 
     fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
@@ -1929,7 +1979,8 @@ where
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                ast.sourcepos.end = (end_line, last_line_len).into();
+                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                ast.sourcepos.end = (end_line, end_col).into();
 
                 mem::swap(&mut nhb.literal, content);
             }
@@ -1938,7 +1989,8 @@ where
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                ast.sourcepos.end = (end_line, last_line_len).into();
+                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                ast.sourcepos.end = (end_line, end_col).into();
 
                 mem::swap(&mut nhb.literal, content);
             }
