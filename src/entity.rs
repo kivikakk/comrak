@@ -69,10 +69,7 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
 include!(concat!(env!("OUT_DIR"), "/entitydata.rs"));
 
 fn lookup(text: &str) -> Option<&'static str> {
-    entitydata::TRANSLATED_ENTITIES
-        .binary_search_by_key(&text, |(entity, _characters)| entity)
-        .ok()
-        .map(|ix| entitydata::TRANSLATED_ENTITIES[ix].1)
+    entitydata::ENTITY_MAP.get(text).copied()
 }
 
 pub fn unescape_html(src: &str) -> Cow<'_, str> {

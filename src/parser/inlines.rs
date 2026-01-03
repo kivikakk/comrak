@@ -2,10 +2,12 @@ mod cjk;
 
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::str;
 use std::{mem, ptr};
+
+use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
@@ -41,7 +43,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
-    brackets: Vec<Bracket<'a>>,
+    brackets: SmallVec<[Bracket<'a>; 8]>,
     within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
@@ -84,7 +86,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             footnote_defs,
             delimiter_arena,
             last_delimiter: None,
-            brackets: vec![],
+            brackets: SmallVec::new(),
             within_brackets: false,
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
@@ -849,11 +851,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let startpos = self.scanner.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
-        let (link_label, link_label_start_column, _link_label_end_column) =
-            match component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(&label).to_string(), sc, ec),
+        let (link_label, link_label_start_column, _link_label_end_column): (Cow<'_, str>, _, _) =
+            match &component.link_label {
+                Some((label, sc, ec)) => (entity::unescape_html(label), *sc, *ec),
                 None => (
-                    entity::unescape_html(&component.url).to_string(),
+                    entity::unescape_html(&component.url),
                     startpos + 1,
                     self.scanner.pos - 3,
                 ),
@@ -1533,9 +1535,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if self.options.extension.strikethrough {
                     NodeValue::Strikethrough
                 } else if use_delims == 1 {
-                    NodeValue::EscapedTag("~".to_owned())
+                    NodeValue::EscapedTag("~")
                 } else {
-                    NodeValue::EscapedTag("~~".to_owned())
+                    NodeValue::EscapedTag("~~")
                 }
             } else if self.options.extension.superscript && opener_byte == b'^' {
                 NodeValue::Superscript
@@ -1543,13 +1545,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 if self.options.extension.highlight {
                     NodeValue::Highlight
                 } else {
-                    NodeValue::EscapedTag("==".to_owned())
+                    NodeValue::EscapedTag("==")
                 }
             } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
                     NodeValue::SpoileredText
                 } else {
-                    NodeValue::EscapedTag("|".to_owned())
+                    NodeValue::EscapedTag("|")
                 }
             } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
                 NodeValue::Underline
@@ -1742,34 +1744,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             found_label = true;
         }
 
-        // Need to normalize both to lookup in refmap and to call callback
-        let unfolded_lab = lab.clone();
-        let lab = strings::normalize_label(&lab, Case::Fold);
+        // Need to normalize to lookup in refmap
+        let normalized_lab = strings::normalize_label(&lab, Case::Fold);
         let mut reff: Option<Cow<ResolvedReference>> = if found_label {
-            self.refmap.lookup(&lab).map(Cow::Borrowed)
+            self.refmap.lookup(&normalized_lab).map(Cow::Borrowed)
         } else {
             None
         };
 
         // Attempt to use the provided broken link callback if a reference cannot be resolved
+        // Only clone the original label if we actually need to call the callback
         if reff.is_none() {
             if let Some(callback) = &self.options.parse.broken_link_callback {
                 reff = callback
                     .resolve(BrokenLinkReference {
-                        normalized: &lab,
-                        original: &unfolded_lab,
+                        normalized: &normalized_lab,
+                        original: &lab,
                     })
                     .map(Cow::Owned);
             }
         }
 
         if let Some(reff) = reff {
-            self.close_bracket_match(
-                is_image,
-                reff.url.clone(),
-                reff.title.clone(),
-                self.scanner.pos,
-            );
+            // When reff is Cow::Owned (from callback), into_owned() is a no-op
+            // When reff is Cow::Borrowed (from refmap), into_owned() clones
+            let reff = reff.into_owned();
+            self.close_bracket_match(is_image, reff.url, reff.title, self.scanner.pos);
             return None;
         }
 
@@ -2265,7 +2265,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 }
 
 pub struct RefMap {
-    pub map: HashMap<String, ResolvedReference>,
+    pub map: FxHashMap<String, ResolvedReference>,
     pub(crate) max_ref_size: usize,
     ref_size: Cell<usize>,
 }
@@ -2273,7 +2273,7 @@ pub struct RefMap {
 impl RefMap {
     pub fn new() -> Self {
         Self {
-            map: HashMap::new(),
+            map: FxHashMap::default(),
             max_ref_size: usize::MAX,
             ref_size: Cell::new(0),
         }
