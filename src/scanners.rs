@@ -18299,6 +18299,52 @@ pub fn phoenix_closing_tag(s: &str) -> Option<usize> {
 }
 
 #[cfg(feature = "phoenix_heex")]
+pub fn phoenix_closing_tag_end(s: &str, tag_name: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    let mut i = 0;
+    while i + 3 < len {
+        if bytes[i] == b'<' && bytes[i + 1] == b'/' {
+            if let Some(tag_name_len) = phoenix_block_closing_tag(&s[i..]) {
+                if &s[i + 2..i + 2 + tag_name_len] == tag_name {
+                    return Some(i + 2 + tag_name_len + 1);
+                }
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+#[cfg(feature = "phoenix_heex")]
+pub fn phoenix_self_closing_tag_end(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+
+    if len < 4 || bytes[0] != b'<' {
+        return None;
+    }
+
+    let mut i = 1;
+    while i + 1 < len {
+        match bytes[i] {
+            b'"' | b'\'' => {
+                i = crate::strings::skip_quoted_string(s, i + 1, bytes[i]);
+            }
+            b'/' if bytes[i + 1] == b'>' => {
+                return Some(i + 2);
+            }
+            b'>' => {
+                return None;
+            }
+            _ => i += 1,
+        }
+    }
+    None
+}
+
+#[cfg(feature = "phoenix_heex")]
 pub fn phoenix_directive(s: &str) -> Option<usize> {
     let bytes = s.as_bytes();
     let len = s.len();

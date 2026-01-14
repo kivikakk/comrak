@@ -80,7 +80,6 @@ fn elixir_comments() {
         [extension.phoenix_heex],
         concat!("<%= foo\n", "    # |> bar()\n", "    |> baz() %>\n",),
         concat!("<%= foo\n", "    # |> bar()\n", "    |> baz() %>\n",),
-        no_roundtrip,
     );
 }
 
@@ -949,6 +948,104 @@ fn inline_function_component() {
 }
 
 #[test]
+fn markdown_after_inline_component() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.component>first</.component> **second**\n",
+        "<p><.component>first</.component> <strong>second</strong></p>\n",
+    );
+}
+
+#[test]
+fn inline_nested_components() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.outer><.inner>text</.inner></.outer>\n",
+        "<.outer><.inner>text</.inner></.outer>\n",
+    );
+}
+
+#[test]
+fn markdown_after_inline_nested_component() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.outer><.inner>text</.inner></.outer> **after**\n",
+        "<p><.outer><.inner>text</.inner></.outer> <strong>after</strong></p>\n",
+    );
+}
+
+#[test]
+fn markdown_after_multiple_inline_components() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.a>x</.a><.b>y</.b> **after**\n",
+        "<p><.a>x</.a><.b>y</.b> <strong>after</strong></p>\n",
+    );
+}
+
+#[test]
+fn markdown_after_self_closing_component() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.icon name=\"star\" /> **label**\n",
+        "<p><.icon name=\"star\" /> <strong>label</strong></p>\n",
+    );
+}
+
+#[test]
+fn markdown_after_component_with_attributes() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.link href=\"/\">click</.link> **bold**\n",
+        "<p><.link href=\"/\">click</.link> <strong>bold</strong></p>\n",
+    );
+}
+
+#[test]
+fn markdown_after_empty_component() {
+    html_opts!(
+        [extension.phoenix_heex],
+        "<.spacer></.spacer> **after**\n",
+        "<p><.spacer></.spacer> <strong>after</strong></p>\n",
+    );
+}
+
+#[test]
+fn code_blocks_mixed_with_components() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!(
+            "# Hello World\n",
+            "\n",
+            "<.link href=\"/\">Regular anchor link</.link>\n",
+            "\n",
+            "```elixir\n",
+            "IO.puts(\"Hello\")\n",
+            "```\n",
+            "\n",
+            "<.link navigate=\"/?sort=asc\" replace={false}>\n",
+            "  Sort By Price\n",
+            "</.link>\n",
+            "\n",
+            "```rust\n",
+            "let result = ammonia::clean(\"<b><img src='' onerror=alert('hax')>I'm not trying to XSS you</b>\");\n",
+            "```\n",
+        ),
+        concat!(
+            "<h1>Hello World</h1>\n",
+            "<.link href=\"/\">Regular anchor link</.link>\n",
+            "<pre><code class=\"language-elixir\">IO.puts(&quot;Hello&quot;)\n",
+            "</code></pre>\n",
+            "<.link navigate=\"/?sort=asc\" replace={false}>\n",
+            "  Sort By Price\n",
+            "</.link>\n",
+            "<pre><code class=\"language-rust\">let result = ammonia::clean(&quot;&lt;b&gt;&lt;img src='' onerror=alert('hax')&gt;I'm not trying to XSS you&lt;/b&gt;&quot;);\n",
+            "</code></pre>\n",
+        ),
+    );
+}
+
+#[test]
 fn inline_slot() {
     // Slots are invalid inline (they only appear inside components)
     // so they should be HTML-escaped
@@ -1747,7 +1844,7 @@ fn commonmark_output() {
 }
 
 // ============================================================================
-// edge cases - bounds and safety
+// edge cases
 // ============================================================================
 
 #[test]

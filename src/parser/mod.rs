@@ -951,6 +951,24 @@ where
         }
 
         let tag_name_len = scanners::phoenix_opening_tag(&line[self.first_nonspace..])?;
+        let tag_name = &line[self.first_nonspace + 1..=self.first_nonspace + tag_name_len];
+
+        if let Some(end_pos) =
+            scanners::phoenix_closing_tag_end(&line[self.first_nonspace..], tag_name)
+        {
+            let after_closing = &line[self.first_nonspace + end_pos..];
+            if !after_closing.trim().is_empty() {
+                return None;
+            }
+        }
+
+        if let Some(end_pos) = scanners::phoenix_self_closing_tag_end(&line[self.first_nonspace..])
+        {
+            let after_closing = &line[self.first_nonspace + end_pos..];
+            if !after_closing.trim().is_empty() {
+                return None;
+            }
+        }
 
         Some(tag_name_len)
     }
@@ -1698,8 +1716,14 @@ where
                                 let closing_tag_name = &line[self.first_nonspace + 2
                                     ..self.first_nonspace + 2 + closing_tag_name_len];
                                 closing_tag_name == tag_name
+                            } else if self.is_heex_opening_self_closing_tag(line, tag_name) {
+                                true
                             } else {
-                                self.is_heex_opening_self_closing_tag(line, tag_name)
+                                scanners::phoenix_closing_tag_end(
+                                    &line[self.first_nonspace..],
+                                    tag_name,
+                                )
+                                .is_some()
                             }
                         }
                         phoenix_heex::HeexNode::Directive => {
