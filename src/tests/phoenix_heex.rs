@@ -1028,7 +1028,7 @@ fn code_blocks_mixed_with_components() {
             "</.link>\n",
             "\n",
             "```rust\n",
-            "let result = ammonia::clean(\"<b><img src='' onerror=alert('hax')>I'm not trying to XSS you</b>\");\n",
+            "let result = ammonia::clean(\"<b><img src='' onerror=alert('attack')>I'm not trying to XSS you</b>\");\n",
             "```\n",
         ),
         concat!(
@@ -1039,7 +1039,7 @@ fn code_blocks_mixed_with_components() {
             "<.link navigate=\"/?sort=asc\" replace={false}>\n",
             "  Sort By Price\n",
             "</.link>\n",
-            "<pre><code class=\"language-rust\">let result = ammonia::clean(&quot;&lt;b&gt;&lt;img src='' onerror=alert('hax')&gt;I'm not trying to XSS you&lt;/b&gt;&quot;);\n",
+            "<pre><code class=\"language-rust\">let result = ammonia::clean(&quot;&lt;b&gt;&lt;img src='' onerror=alert('attack')&gt;I'm not trying to XSS you&lt;/b&gt;&quot;);\n",
             "</code></pre>\n",
         ),
     );
