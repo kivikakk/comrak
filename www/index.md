@@ -66,7 +66,7 @@ The CLI help for the latest version is available in the [README], and the Rust d
 
 [Commonmarker]: https://github.com/gjtorikian/commonmarker
 [gitlab-glfm-markdown]: https://gitlab.com/gitlab-org/ruby/gems/gitlab-glfm-markdown
-[MDEx]: https://github.com/leandrocp/mdex
+[MDEx]: https://mdelixir.dev
 [comrak]: https://github.com/lmmx/comrak
 [comrak-ext]: https://github.com/Martin005/comrak-ext
 [comrak-wasm]: https://github.com/nberlette/comrak-wasm
