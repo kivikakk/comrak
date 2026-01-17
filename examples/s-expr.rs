@@ -19,13 +19,13 @@ use std::fs::File;
 use std::io::{self, BufWriter, Read, Write};
 
 use comrak::nodes::{Node, NodeValue};
-use comrak::{options, parse_document, Arena, Options};
+use comrak::{Arena, Options, options, parse_document};
 
 fn iter_nodes<W: Write>(node: Node<'_>, writer: &mut W, indent: usize) -> io::Result<()> {
     use NodeValue::*;
 
     macro_rules! try_node_inline {
-        ($node:expr, $name:ident) => {{
+        ($node:expr_2021, $name:ident) => {{
             if let $name(t) = $node {
                 return write!(writer, concat!(stringify!($name), "({:?})"), t,);
             }

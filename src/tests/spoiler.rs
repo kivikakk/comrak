@@ -4,10 +4,8 @@ use super::*;
 fn spoiler() {
     html_opts!(
         [extension.spoiler],
-        concat!("The ||dog dies at the end of Marley and Me||.\n"),
-        concat!(
-            "<p>The <span class=\"spoiler\">dog dies at the end of Marley and Me</span>.</p>\n"
-        ),
+        "The ||dog dies at the end of Marley and Me||.\n",
+        "<p>The <span class=\"spoiler\">dog dies at the end of Marley and Me</span>.</p>\n",
     );
 }
 
@@ -15,7 +13,7 @@ fn spoiler() {
 fn spoiler_in_table() {
     html_opts!(
         [extension.table, extension.spoiler],
-        concat!("Text | Result\n--- | ---\n`||some clever text||` | ||some clever text||\n"),
+        "Text | Result\n--- | ---\n`||some clever text||` | ||some clever text||\n",
         concat!(
             "<table>\n",
             "<thead>\n",
@@ -39,7 +37,7 @@ fn spoiler_in_table() {
 fn spoiler_regressions() {
     html_opts!(
         [extension.spoiler],
-        concat!("|should not be spoiler|\n||should be spoiler||\n|||should be spoiler surrounded by pipes|||"),
+        "|should not be spoiler|\n||should be spoiler||\n|||should be spoiler surrounded by pipes|||",
         concat!(
             "<p>|should not be spoiler|\n",
             "<span class=\"spoiler\">should be spoiler</span>\n",
@@ -52,7 +50,7 @@ fn spoiler_regressions() {
 fn mismatched_spoilers() {
     html_opts!(
         [extension.spoiler],
-        concat!("|||this is a spoiler with pipe in front||\n||this is not a spoiler|\n||this is a spoiler with pipe after|||"),
+        "|||this is a spoiler with pipe in front||\n||this is not a spoiler|\n||this is a spoiler with pipe after|||",
         concat!(
             "<p>|<span class=\"spoiler\">this is a spoiler with pipe in front</span>\n",
             "||this is not a spoiler|\n",

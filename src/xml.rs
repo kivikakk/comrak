@@ -314,9 +314,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     self.output
                         .write_str(&alert.alert_type.default_title().to_lowercase())?;
                     self.output.write_str("\"")?;
-                    if alert.title.is_some() {
-                        let title = alert.title.as_ref().unwrap();
-
+                    if let Some(title) = &alert.title {
                         self.output.write_str(" title=\"")?;
                         self.escape(title)?;
                         self.output.write_str("\"")?;

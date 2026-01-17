@@ -4,8 +4,8 @@ use super::*;
 fn underline() {
     html_opts!(
         [extension.underline],
-        concat!("__underlined text__\n"),
-        concat!("<p><u>underlined text</u></p>\n"),
+        "__underlined text__\n",
+        "<p><u>underlined text</u></p>\n",
     );
 }
 

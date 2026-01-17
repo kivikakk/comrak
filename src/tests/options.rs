@@ -5,9 +5,9 @@ use super::*;
 
 #[test]
 fn markdown_list_bullets() {
-    let dash = concat!("- a\n");
-    let plus = concat!("+ a\n");
-    let star = concat!("* a\n");
+    let dash = "- a\n";
+    let plus = "+ a\n";
+    let star = "* a\n";
     let mut dash_opts = Options::default();
     dash_opts.render.list_style = options::ListStyleType::Dash;
     let mut plus_opts = Options::default();

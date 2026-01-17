@@ -8,12 +8,13 @@ pub mod shortcodes;
 mod table;
 
 use std::borrow::Cow;
-use std::cmp::{min, Ordering};
+use std::cmp::{Ordering, min};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::mem;
 use std::str;
 
+use crate::Arena;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
@@ -25,8 +26,7 @@ use crate::nodes::{
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
 use crate::scanners;
-use crate::strings::{self, split_off_front_matter, Case};
-use crate::Arena;
+use crate::strings::{self, Case, split_off_front_matter};
 
 const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
@@ -63,7 +63,7 @@ fn byte_matches<F>(bytes: &[u8], offset: usize, predicate: F) -> bool
 where
     F: Fn(u8) -> bool,
 {
-    bytes.get(offset).map_or(false, |&b| predicate(b))
+    bytes.get(offset).is_some_and(|&b| predicate(b))
 }
 
 pub struct Parser<'a, 'o, 'c> {
@@ -377,7 +377,7 @@ where
         self.indent = self.first_nonspace_column - self.column;
         self.blank = bytes
             .get(self.first_nonspace)
-            .map_or(true, |&b| strings::is_line_end_char(b));
+            .is_none_or(|&b| strings::is_line_end_char(b));
     }
 
     fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
@@ -2478,7 +2478,7 @@ where
                 symbol_sourcepos,
             });
 
-            if let NodeValue::List(ref mut list) = &mut great_grandparent.data_mut().value {
+            if let NodeValue::List(list) = &mut great_grandparent.data_mut().value {
                 list.is_task_list = true;
             }
         }
@@ -2576,7 +2576,7 @@ fn parse_list_marker(
 
     if c == b'*' || c == b'-' || c == b'+' {
         pos += 1;
-        if !bytes.get(pos).map_or(true, |&b| isspace(b)) {
+        if !bytes.get(pos).is_none_or(|&b| isspace(b)) {
             return None;
         }
 

@@ -826,14 +826,14 @@ fn render_paragraph<T>(
     let tight = node
         .parent()
         .and_then(|n| n.parent())
-        .map_or(false, |n| match n.data().value {
+        .is_some_and(|n| match n.data().value {
             NodeValue::List(nl) => nl.tight,
             NodeValue::DescriptionItem(ndi) => ndi.tight,
             _ => false,
         })
         || node
             .parent()
-            .map_or(false, |n| node_matches!(n, NodeValue::DescriptionTerm));
+            .is_some_and(|n| node_matches!(n, NodeValue::DescriptionTerm));
 
     if !tight {
         if entering {
@@ -1721,8 +1721,8 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
                 output.write_str("&#x27;")?;
             }
             b'%' => {
-                if bytes.get(i + 1).map_or(false, |b| b.is_ascii_hexdigit())
-                    && bytes.get(i + 2).map_or(false, |b| b.is_ascii_hexdigit())
+                if bytes.get(i + 1).is_some_and(|b| b.is_ascii_hexdigit())
+                    && bytes.get(i + 2).is_some_and(|b| b.is_ascii_hexdigit())
                 {
                     output.write_str(&buffer[i..=i + 2])?;
                     i += 2;

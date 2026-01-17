@@ -6,6 +6,5 @@ updates:
       interval: weekly
   - package-ecosystem: "cargo"
     directory: "/"
-    versioning-strategy: lockfile-only
     schedule:
       interval: weekly

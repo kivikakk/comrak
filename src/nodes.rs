@@ -16,7 +16,7 @@ pub use crate::parser::shortcodes::NodeShortCode;
 /// mutably borrowed.
 #[macro_export]
 macro_rules! node_matches {
-    ($node:expr, $( $pat:pat_param )|+) => {{
+    ($node:expr_2021, $( $pat:pat_param )|+) => {{
         matches!(
             $node.data().value,
             $( $pat )|+
@@ -897,14 +897,14 @@ pub type AstNode<'a> = arena_tree::Node<'a, RefCell<Ast>>;
 /// before the arena, this is the type you will see most often.
 pub type Node<'a> = &'a AstNode<'a>;
 
-impl<'a> From<NodeValue> for AstNode<'a> {
+impl From<NodeValue> for AstNode<'_> {
     /// Create a new AST node with the given value. The sourcepos is set to (0,0)-(0,0).
     fn from(value: NodeValue) -> Self {
         arena_tree::Node::new(RefCell::new(Ast::new(value, LineColumn::default())))
     }
 }
 
-impl<'a> From<Ast> for AstNode<'a> {
+impl From<Ast> for AstNode<'_> {
     /// Create a new AST node with the given Ast.
     fn from(ast: Ast) -> Self {
         arena_tree::Node::new(RefCell::new(ast))
@@ -1069,7 +1069,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     }
 
     pub(crate) fn last_child_is_open(&self) -> bool {
-        self.last_child().map_or(false, |n| n.data().open)
+        self.last_child().is_some_and(|n| n.data().open)
     }
 
     pub(crate) fn ends_with_blank_line(&self) -> bool {

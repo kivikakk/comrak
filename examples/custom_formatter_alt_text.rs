@@ -4,7 +4,7 @@
 // Defaults image title text to alt text, if provided.
 
 use comrak::nodes::{Node, NodeLink, NodeValue};
-use comrak::{parse_document, Arena};
+use comrak::{Arena, parse_document};
 
 fn autotitle_images(
     nl: &mut NodeLink,

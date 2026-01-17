@@ -32,7 +32,7 @@ fn main() {
 
     let mut map = phf_codegen::Map::new();
     for (entity, characters) in &translated_entities {
-        map.entry(*entity, &format!("{:?}", characters));
+        map.entry(*entity, format!("{:?}", characters));
     }
     writeln!(bw, "{};", map.build()).unwrap();
 

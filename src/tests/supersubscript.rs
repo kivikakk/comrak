@@ -4,8 +4,8 @@ use super::*;
 fn superscript() {
     html_opts!(
         [extension.superscript],
-        concat!("e = mc^2^.\n"),
-        concat!("<p>e = mc<sup>2</sup>.</p>\n"),
+        "e = mc^2^.\n",
+        "<p>e = mc<sup>2</sup>.</p>\n",
     );
 }
 
@@ -13,8 +13,8 @@ fn superscript() {
 fn superscript_negative_exponents_are_real() {
     html_opts!(
         [extension.superscript],
-        concat!("i^-2^ = -1.\n"),
-        concat!("<p>i<sup>-2</sup> = -1.</p>\n"),
+        "i^-2^ = -1.\n",
+        "<p>i<sup>-2</sup> = -1.</p>\n",
     );
 }
 
@@ -22,8 +22,8 @@ fn superscript_negative_exponents_are_real() {
 fn subscript() {
     html_opts!(
         [extension.subscript],
-        concat!("f~i~ = f~i - 2~ + f~i - 1~.\n"),
-        concat!("<p>f<sub>i</sub> = f<sub>i - 2</sub> + f<sub>i - 1</sub>.</p>\n"),
+        "f~i~ = f~i - 2~ + f~i - 1~.\n",
+        "<p>f<sub>i</sub> = f<sub>i - 2</sub> + f<sub>i - 1</sub>.</p>\n",
     );
 }
 
@@ -31,7 +31,7 @@ fn subscript() {
 fn subscript_negative_terms_are_real() {
     html_opts!(
         [extension.subscript],
-        concat!("f~i~ = f~-2 + i~ + f~-1 + i~.\n"),
-        concat!("<p>f<sub>i</sub> = f<sub>-2 + i</sub> + f<sub>-1 + i</sub>.</p>\n"),
+        "f~i~ = f~-2 + i~ + f~-1 + i~.\n",
+        "<p>f<sub>i</sub> = f<sub>-2 + i</sub> + f<sub>-1 + i</sub>.</p>\n",
     );
 }

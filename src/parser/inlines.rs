@@ -9,6 +9,7 @@ use std::{mem, ptr};
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
+use crate::Arena;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
@@ -19,10 +20,9 @@ use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{autolink, AutolinkType, Options, ResolvedReference};
+use crate::parser::{AutolinkType, Options, ResolvedReference, autolink};
 use crate::scanners;
-use crate::strings::{self, count_newlines, is_blank, Case};
-use crate::Arena;
+use crate::strings::{self, Case, count_newlines, is_blank};
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -360,7 +360,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     self.input[startpos..endpos].into()
                 };
 
-                if self.peek_byte().map_or(false, strings::is_line_end_char) {
+                if self.peek_byte().is_some_and(strings::is_line_end_char) {
                     let size_before = contents.len();
                     strings::rtrim_cow(&mut contents);
                     endpos -= size_before - contents.len();
@@ -448,7 +448,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let startpos = self.scanner.pos;
         self.scanner.pos += 1;
 
-        if self.peek_byte().map_or(false, ispunct) {
+        if self.peek_byte().is_some_and(ispunct) {
             self.scanner.pos += 1;
 
             let inline_text = self.make_inline(
@@ -784,7 +784,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let start = self.scanner.pos;
         self.scanner.pos += 1;
 
-        if !self.options.parse.smart || self.peek_byte().map_or(true, |b| b != b'-') {
+        if !self.options.parse.smart || (self.peek_byte() != Some(b'-')) {
             return self.make_inline(
                 NodeValue::Text("-".into()),
                 self.scanner.pos - 1,
@@ -792,7 +792,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             );
         }
 
-        while self.options.parse.smart && self.peek_byte().map_or(false, |b| b == b'-') {
+        while self.options.parse.smart && (self.peek_byte() == Some(b'-')) {
             self.scanner.pos += 1;
         }
 
@@ -819,9 +819,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_period(&mut self) -> Node<'a> {
         self.scanner.pos += 1;
-        if self.options.parse.smart && self.peek_byte().map_or(false, |b| b == b'.') {
+        if self.options.parse.smart && (self.peek_byte() == Some(b'.')) {
             self.scanner.pos += 1;
-            if self.peek_byte().map_or(false, |b| b == b'.') {
+            if self.peek_byte() == Some(b'.') {
                 self.scanner.pos += 1;
                 self.make_inline(
                     NodeValue::Text("…".into()),
@@ -949,7 +949,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             if b == b'\\' {
                 self.scanner.pos += 1;
                 length += 1;
-                if self.peek_byte().map_or(false, ispunct) {
+                if self.peek_byte().is_some_and(ispunct) {
                     self.scanner.pos += 1;
                     length += 1;
                 }
@@ -1173,9 +1173,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut code_math = false;
 
         // check for code math
-        if opendollars == 1
-            && self.options.extension.math_code
-            && self.peek_byte().map_or(false, |b| b == b'`')
+        if opendollars == 1 && self.options.extension.math_code && (self.peek_byte() == Some(b'`'))
         {
             code_math = true;
             self.scanner.pos += 1;
@@ -1291,7 +1289,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // the very bottom of the stack.
         let mut candidate = self.last_delimiter;
         let mut closer: Option<&Delimiter> = None;
-        while candidate.map_or(false, |c| c.position >= stack_bottom) {
+        while candidate.is_some_and(|c| c.position >= stack_bottom) {
             closer = candidate;
             candidate = candidate.unwrap().prev.get();
         }
@@ -1329,7 +1327,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // This search short-circuits for openers we've previously
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
-                while opener.map_or(false, |o| o.position >= openers_bottom[ix]) {
+                while opener.is_some_and(|o| o.position >= openers_bottom[ix]) {
                     let o = opener.unwrap();
                     if o.can_open && o.delim_byte == c.delim_byte {
                         // This is a bit convoluted; see points 9 and 10 here:
@@ -1776,11 +1774,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let bracket_inl_text = last.inl_text;
 
         if self.options.extension.footnotes
-            && bracket_inl_text.next_sibling().map_or(false, |n| {
+            && bracket_inl_text.next_sibling().is_some_and(|n| {
                 n.data()
                     .value
                     .text()
-                    .map_or(false, |t| t.as_bytes().starts_with(b"^"))
+                    .is_some_and(|t| t.as_bytes().starts_with(b"^"))
             })
         {
             let mut text = String::new();
@@ -2008,7 +2006,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         loop {
-            while self.peek_byte().map_or(false, |b| b != b'`') {
+            while self.peek_byte().is_some_and(|b| b != b'`') {
                 self.scanner.pos += 1;
             }
             if self.scanner.pos >= self.input.len() {
@@ -2031,12 +2029,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         // space not allowed after initial $
-        if opendollarlength == 1 && self.peek_byte().map_or(false, isspace) {
+        if opendollarlength == 1 && self.peek_byte().is_some_and(isspace) {
             return None;
         }
 
         loop {
-            while self.peek_byte().map_or(false, |b| b != b'$') {
+            while self.peek_byte().is_some_and(|b| b != b'$') {
                 self.scanner.pos += 1;
             }
 
@@ -2060,7 +2058,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let numdollars = self.take_while_with_limit(b'$', opendollarlength);
 
             // ending $ can't be followed by a digit
-            if opendollarlength == 1 && self.peek_byte().map_or(false, isdigit) {
+            if opendollarlength == 1 && self.peek_byte().is_some_and(isdigit) {
                 return None;
             }
 
@@ -2074,7 +2072,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         assert!(self.options.extension.math_code);
 
         loop {
-            while self.peek_byte().map_or(false, |b| b != b'$') {
+            while self.peek_byte().is_some_and(|b| b != b'$') {
                 self.scanner.pos += 1;
             }
 
@@ -2335,7 +2333,7 @@ pub struct Delimiter<'a: 'd, 'd> {
     next: Cell<Option<&'d Delimiter<'a, 'd>>>,
 }
 
-impl<'a, 'd> PartialEq for &'d Delimiter<'a, 'd> {
+impl<'d> PartialEq for &'d Delimiter<'_, 'd> {
     fn eq(&self, other: &Self) -> bool {
         ptr::eq(*self, *other)
     }
@@ -2500,7 +2498,7 @@ impl Scanner {
         let mut skipped = false;
         while self
             .peek_byte(input)
-            .map_or(false, |b| b == b' ' || b == b'\t')
+            .is_some_and(|b| b == b' ' || b == b'\t')
         {
             self.pos += 1;
             skipped = true;
@@ -2558,7 +2556,7 @@ impl Scanner {
             if b == b'\\' {
                 self.pos += 1;
                 length += 1;
-                if self.peek_byte(input).map_or(false, ispunct) {
+                if self.peek_byte(input).is_some_and(ispunct) {
                     self.pos += 1;
                     length += 1;
                 }

@@ -1,16 +1,16 @@
 //! Adapter for the Syntect syntax highlighter plugin.
 
 use std::borrow::Cow;
-use std::collections::{hash_map, HashMap};
+use std::collections::{HashMap, hash_map};
 use std::fmt::{self, Write};
+use syntect::Error;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::{
-    append_highlighted_html_for_styled_line, ClassStyle, ClassedHTMLGenerator, IncludeBackground,
+    ClassStyle, ClassedHTMLGenerator, IncludeBackground, append_highlighted_html_for_styled_line,
 };
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
-use syntect::Error;
 
 use crate::adapters::SyntaxHighlighterAdapter;
 use crate::html;
@@ -164,7 +164,7 @@ struct SyntectPreAttributesIter<'a, 's> {
     style_written: bool,
 }
 
-impl<'a, 's> Iterator for SyntectPreAttributesIter<'a, 's> {
+impl<'a> Iterator for SyntectPreAttributesIter<'a, '_> {
     type Item = (&'a str, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {

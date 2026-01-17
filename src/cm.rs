@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::fmt::{self, Write};
 use std::str;
 
+use crate::Arena;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
@@ -15,7 +16,6 @@ use crate::parser::phoenix_heex::NodeHeexBlock;
 use crate::parser::shortcodes::NodeShortCode;
 use crate::scanners;
 use crate::strings::trim_start_match;
-use crate::Arena;
 use crate::{node_matches, strings};
 
 /// Formats an AST as CommonMark, modified by the given options.
@@ -65,11 +65,13 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     /// The last two bytes written (to output or wrap_buffer).
     window: Vec<u8>,
     /// Contains some assortment of:
+    ///
     /// * "> " when formatting within a blockquote.
     /// * " "*n when formatting within a list item (n≥2).
     /// * "    " when formatting within a fenced code block.
     /// * "    " when formatting within a footnote definition.
     /// * "> " when formatting within an alert.
+    ///
     /// A prefix when non-empty is therefore guaranteed to have a length of at
     /// least two. This is relevant in write_prefix.
     prefix: String,
@@ -94,7 +96,7 @@ enum Escaping {
     Title,
 }
 
-impl<'a, 'o, 'c, 'w> Write for CommonMarkFormatter<'a, 'o, 'c, 'w> {
+impl Write for CommonMarkFormatter<'_, '_, '_, '_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.output(s, false, Escaping::Literal)
     }
@@ -219,7 +221,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.column = self.prefix.len();
             }
 
-            if self.custom_escape.map_or(false, |f| f(self.node, c)) {
+            if self.custom_escape.is_some_and(|f| f(self.node, c)) {
                 self.write("\\")?;
             }
 
@@ -234,7 +236,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     while bytes.get(i + 1) == Some(&(b' ')) {
                         (i, _) = it.next().unwrap();
                     }
-                    if !bytes.get(i + 1).map_or(false, |&c| isdigit(c)) {
+                    if !bytes.get(i + 1).is_some_and(|&c| isdigit(c)) {
                         self.last_breakable = last_nonspace;
                     }
                 }
@@ -280,7 +282,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         // character, in which case it faithfully represents the first byte of the
         // following character (or is None if the string ends).
         // Any use of nextb must be conditional on asserting c is a single byte character.
-        let follows_digit = self.window.last().map_or(false, |&b| isdigit(b));
+        let follows_digit = self.window.last().is_some_and(|&b| isdigit(b));
 
         let nextb = nextb.map_or(0, |&c| c);
 
@@ -437,7 +439,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
         let next_is_block = node
             .next_sibling()
-            .map_or(true, |next| next.data().value.block());
+            .is_none_or(|next| next.data().value.block());
 
         match node.data().value {
             NodeValue::Document => (),
@@ -1058,11 +1060,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if entering {
             let literal = &math.literal;
             let start_fence = if math.dollar_math {
-                if math.display_math {
-                    "$$"
-                } else {
-                    "$"
-                }
+                if math.display_math { "$$" } else { "$" }
             } else {
                 "$`"
             };

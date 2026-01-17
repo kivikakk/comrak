@@ -1,5 +1,5 @@
 use crate::cm::{escape_inline, escape_link_destination};
-use crate::{entity, markdown_to_html, Options};
+use crate::{Options, entity, markdown_to_html};
 
 /// Assert that the input text escapes to the expected result in inline context,
 /// and that the expected result renders to HTML which displays the input text.

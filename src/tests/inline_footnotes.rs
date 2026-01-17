@@ -484,7 +484,11 @@ fn in_heading() {
 #[test]
 fn in_table_cell() {
     html_opts!(
-        [extension.footnotes, extension.inline_footnotes, extension.table],
+        [
+            extension.footnotes,
+            extension.inline_footnotes,
+            extension.table
+        ],
         "| H |\n| - |\n| c ^[cell] |\n",
         concat!(
             "<table>\n",

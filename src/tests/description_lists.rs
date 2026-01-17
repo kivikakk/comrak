@@ -107,23 +107,11 @@ fn description_lists_tight() {
 }
 #[test]
 fn description_lists_edge_cases() {
-    html_opts!(
-        [extension.description_lists],
-        concat!(":"),
-        concat!("<p>:</p>\n"),
-    );
+    html_opts!([extension.description_lists], ":", "<p>:</p>\n",);
 
-    html_opts!(
-        [extension.description_lists],
-        concat!(": foo"),
-        concat!("<p>: foo</p>\n"),
-    );
+    html_opts!([extension.description_lists], ": foo", "<p>: foo</p>\n",);
 
-    html_opts!(
-        [extension.description_lists],
-        concat!("a\n:"),
-        concat!("<p>a\n:</p>\n"),
-    );
+    html_opts!([extension.description_lists], "a\n:", "<p>a\n:</p>\n",);
 
     html_opts!(
         [extension.description_lists],

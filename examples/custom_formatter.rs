@@ -23,7 +23,7 @@ create_formatter!(CustomFormatter, {
 });
 
 fn main() {
-    use comrak::{parse_document, Arena, Options};
+    use comrak::{Arena, Options, parse_document};
 
     let options = Options::default();
     let arena = Arena::new();

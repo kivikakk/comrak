@@ -1158,8 +1158,8 @@ fn directive_escaped_output() {
 fn directive_with_string() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("Text: <%= \"hello %> world\" %>\n",),
-        concat!("<p>Text: <%= \"hello %> world\" %></p>\n",),
+        "Text: <%= \"hello %> world\" %>\n",
+        "<p>Text: <%= \"hello %> world\" %></p>\n",
     );
 }
 
@@ -1390,8 +1390,8 @@ fn root_attributes_spread() {
 #[test]
 fn root_attributes_multiple() {
     html_opts_i(
-        concat!("<.component class={@class} {@attrs1} hidden {@attrs2} />\n",),
-        concat!("<.component class={@class} {@attrs1} hidden {@attrs2} />\n",),
+        "<.component class={@class} {@attrs1} hidden {@attrs2} />\n",
+        "<.component class={@class} {@attrs1} hidden {@attrs2} />\n",
         true,
         |opts| {
             opts.extension.phoenix_heex = true;
@@ -1408,8 +1408,8 @@ fn root_attributes_multiple() {
 fn escaped_braces_in_string() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("Value: {\"\\{escaped}\"}\n",),
-        concat!("<p>Value: {\"\\{escaped}\"}</p>\n",),
+        "Value: {\"\\{escaped}\"}\n",
+        "<p>Value: {\"\\{escaped}\"}</p>\n",
     );
 }
 
@@ -1421,8 +1421,8 @@ fn escaped_braces_in_string() {
 fn boolean_attributes_phoenix_component() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("<.input field={@form[:email]} required />\n",),
-        concat!("<.input field={@form[:email]} required />\n",),
+        "<.input field={@form[:email]} required />\n",
+        "<.input field={@form[:email]} required />\n",
     );
 }
 
@@ -2028,8 +2028,8 @@ fn directive_with_text_after() {
 fn back_to_back_directives() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("<% foo %><% bar %><% baz %>\n",),
-        concat!("<% foo %><% bar %><% baz %>\n",),
+        "<% foo %><% bar %><% baz %>\n",
+        "<% foo %><% bar %><% baz %>\n",
     );
 }
 
@@ -2155,8 +2155,8 @@ fn directive_with_footnote() {
 fn directive_with_escaped_percent() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("<%= \"100%% complete\" %>\n",),
-        concat!("<%= \"100%% complete\" %>\n",),
+        "<%= \"100%% complete\" %>\n",
+        "<%= \"100%% complete\" %>\n",
     );
 }
 
@@ -2164,8 +2164,8 @@ fn directive_with_escaped_percent() {
 fn directive_with_angle_brackets_in_string() {
     html_opts!(
         [extension.phoenix_heex],
-        concat!("<%= \"<tag>\" %>\n",),
-        concat!("<%= \"<tag>\" %>\n",),
+        "<%= \"<tag>\" %>\n",
+        "<%= \"<tag>\" %>\n",
     );
 }
 

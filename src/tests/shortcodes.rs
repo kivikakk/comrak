@@ -7,29 +7,29 @@ fn emojis() {
     // Test match
     html_opts!(
         [extension.shortcodes],
-        concat!("Hello, happy days! :smile:\n"),
-        concat!("<p>Hello, happy days! 😄</p>\n"),
+        "Hello, happy days! :smile:\n",
+        "<p>Hello, happy days! 😄</p>\n",
     );
 
     // Test match
     html_opts!(
         [extension.shortcodes],
-        concat!(":smile::smile::smile::smile:\n"),
-        concat!("<p>😄😄😄😄</p>\n"),
+        ":smile::smile::smile::smile:\n",
+        "<p>😄😄😄😄</p>\n",
     );
 
     // Test match
     html_opts!(
         [extension.shortcodes],
-        concat!(":smile:::smile:::smile:::smile:\n"),
-        concat!("<p>😄:😄:😄:😄</p>\n"),
+        ":smile:::smile:::smile:::smile:\n",
+        "<p>😄:😄:😄:😄</p>\n",
     );
 
     // Test no match
     html_opts!(
         [extension.shortcodes],
-        concat!("Hello, happy days! :diego:\n"),
-        concat!("<p>Hello, happy days! :diego:</p>\n"),
+        "Hello, happy days! :diego:\n",
+        "<p>Hello, happy days! :diego:</p>\n",
     );
 }
 

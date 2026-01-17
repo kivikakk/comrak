@@ -6,7 +6,7 @@ use std::str;
 use toml::Table;
 
 use comrak::nodes::NodeValue;
-use comrak::{format_commonmark, parse_document, Arena, Options};
+use comrak::{Arena, Options, format_commonmark, parse_document};
 
 const DEPENDENCIES: &str = "[dependencies]\ncomrak = ";
 const HELP: &str = "$ comrak --help\n";
@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             NodeValue::Text(ref mut t) => {
                 if in_msrv {
-                    std::mem::swap(t, &mut msrv.to_string().into());
+                    *t = msrv.to_string().into();
                 }
             }
             _ => {}
