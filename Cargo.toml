@@ -48,7 +48,7 @@ bon = { version = "3", optional = true }
 caseless = "0.2.1"
 fmt2io = { version = "1.0.0", optional = true }
 jetscii = "0.5.3"
-phf = "0.13"
+phf = "0.11" # 0.12+ have dependencies taht won't build on 1.70
 rustc-hash = "2.0"
 smallvec = "1.13"
 # This wants to be a dev dependency, but they can't be optional (and this
