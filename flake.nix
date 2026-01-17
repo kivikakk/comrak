@@ -92,11 +92,11 @@
                 cargo-nextest
                 cargo-flamegraph
                 cargo-tarpaulin
+                cargo-audit
                 samply
                 python3
                 hyperfine
                 bacon
-                semgrep
               ])
               ++ extraPkgs;
             };
