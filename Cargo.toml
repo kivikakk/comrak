@@ -20,7 +20,7 @@ exclude = [
     "/spec_out.txt",
 ]
 resolver = "2"
-edition = "2018"
+edition = "2021"
 
 [package.metadata.docs.rs]
 all-features = true
