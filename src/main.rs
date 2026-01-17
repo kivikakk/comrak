@@ -416,11 +416,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[cfg(all(not(windows), not(target_arch = "wasm32")))]
 fn get_default_config_path() -> String {
-    if let Ok(xdg_dirs) = xdg::BaseDirectories::with_prefix("comrak") {
-        if let Ok(path) = xdg_dirs.place_config_file("config") {
-            if let Some(path_str) = path.to_str() {
-                return path_str.into();
-            }
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("comrak");
+    if let Ok(path) = xdg_dirs.place_config_file("config") {
+        if let Some(path_str) = path.to_str() {
+            return path_str.into();
         }
     }
 
