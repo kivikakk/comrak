@@ -19,7 +19,7 @@ exclude = [
     "/Makefile",
     "/spec_out.txt",
 ]
-resolver = "2"
+resolver = "3"
 edition = "2024"
 
 [package.metadata.docs.rs]
