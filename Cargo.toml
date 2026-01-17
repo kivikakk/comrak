@@ -74,7 +74,7 @@ phoenix_heex = []
 bon = ["dep:bon"]
 
 [target.'cfg(all(not(windows), not(target_arch="wasm32")))'.dependencies]
-xdg = { version = "2", optional = true }
+xdg = { version = "3", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_os = "ios"))'.dependencies]
 syntect = { version = "5", optional = true, default-features = false, features = [
