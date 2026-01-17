@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use comrak::{format_html, parse_document, Arena, Options};
+use comrak::{Arena, Options, format_html, parse_document};
 use divan::Bencher;
 use glob::glob;
 use std::fs::File;

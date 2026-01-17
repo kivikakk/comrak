@@ -1,7 +1,7 @@
 // Samples used in the README.  Wanna make sure they work as advertised.
 
 fn small() {
-    use comrak::{markdown_to_html, Options};
+    use comrak::{Options, markdown_to_html};
 
     assert_eq!(
         markdown_to_html("¡Olá, **世界**!", &Options::default()),
@@ -11,7 +11,7 @@ fn small() {
 
 fn large() {
     use comrak::nodes::NodeValue;
-    use comrak::{format_html, parse_document, Arena, Options};
+    use comrak::{Arena, Options, format_html, parse_document};
 
     fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
         // The returned nodes are created in the supplied Arena, and are bound by its lifetime.

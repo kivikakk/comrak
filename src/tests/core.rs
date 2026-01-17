@@ -270,8 +270,8 @@ fn setext_heading_sourcepos() {
 fn ignore_setext_heading() {
     html_opts!(
         [parse.ignore_setext],
-        concat!("text text\n---"),
-        concat!("<p>text text</p>\n<hr />\n"),
+        "text text\n---",
+        "<p>text text</p>\n<hr />\n",
     );
 }
 
@@ -279,8 +279,8 @@ fn ignore_setext_heading() {
 fn figure_with_caption_with_title() {
     html_opts!(
         [render.figure_with_caption],
-        concat!("![image](https://example.com/image.png \"this is an image\")\n"),
-        concat!("<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n"),
+        "![image](https://example.com/image.png \"this is an image\")\n",
+        "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" title=\"this is an image\" /><figcaption>this is an image</figcaption></figure></p>\n",
     );
 }
 
@@ -288,10 +288,8 @@ fn figure_with_caption_with_title() {
 fn figure_with_caption_without_title() {
     html_opts!(
         [render.figure_with_caption],
-        concat!("![image](https://example.com/image.png)\n"),
-        concat!(
-            "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" /></figure></p>\n"
-        ),
+        "![image](https://example.com/image.png)\n",
+        "<p><figure><img src=\"https://example.com/image.png\" alt=\"image\" /></figure></p>\n",
     );
 }
 
@@ -566,11 +564,8 @@ fn links() {
 #[test]
 fn images() {
     html(
-        concat!("I am ![eating [things](/url)](http://i.imgur.com/QqK1vq7.png).\n"),
-        concat!(
-            "<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" \
-             />.</p>\n"
-        ),
+        "I am ![eating [things](/url)](http://i.imgur.com/QqK1vq7.png).\n",
+        "<p>I am <img src=\"http://i.imgur.com/QqK1vq7.png\" alt=\"eating things\" />.</p>\n",
     );
 }
 
@@ -583,10 +578,7 @@ fn reference_links() {
             "[legit]: ok\n",
             "[honestly]: sure \"hm\"\n"
         ),
-        concat!(
-            "<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> \
-             legit.</p>\n"
-        ),
+        "<p>This [is] <a href=\"ok\">legit</a>, <a href=\"sure\" title=\"hm\">very</a> legit.</p>\n",
     );
 }
 

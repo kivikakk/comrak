@@ -3,7 +3,7 @@ name: Rust
 on: [push, pull_request]
 
 env:
-  MSRV: "1.70"
+  MSRV: "1.85"
 
 jobs:
   build_lib_test:
@@ -24,12 +24,10 @@ jobs:
     - name: Build library
       run: cargo build --locked --verbose --lib
     - name: Build examples
-      if: ${{ matrix.rust != env.MSRV }}
       run: cargo build --locked --verbose --examples
     - name: Run unit tests
       run: cargo test --locked --verbose
     - name: "Run README sample"
-      if: ${{ matrix.rust != env.MSRV }}
       run: cargo run --locked --example sample
   build_bin_spec:
     runs-on: ubuntu-latest
@@ -69,9 +67,6 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Build
       run: cargo build --locked --verbose --target wasm32-unknown-unknown --lib
-    - name: Build examples
-      run: cargo build --locked --verbose --target wasm32-unknown-unknown --examples
-      if: ${{ matrix.rust != env.MSRV }}
   no_features_build_test:
     runs-on: ubuntu-latest
     strategy:
@@ -105,8 +100,7 @@ jobs:
     - name: Obtain Rust
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test with all features
-      # All features except codspeed, which doesn't build on our MSRV.
-      run: cargo test --locked -F cli,shortcodes,phoenix_heex,bon
+      run: cargo test --locked --all-features
   clippy_format:
     runs-on: ubuntu-latest
     steps:

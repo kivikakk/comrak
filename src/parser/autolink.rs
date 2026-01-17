@@ -2,12 +2,12 @@ use std::borrow::Cow;
 use std::str;
 use unicode_categories::UnicodeCategories;
 
+use crate::Arena;
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{Node, NodeLink, NodeValue, Sourcepos};
-use crate::parser::inlines::{make_inline, Subject};
 use crate::parser::Spx;
-use crate::Arena;
+use crate::parser::inlines::{Subject, make_inline};
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<'a>,

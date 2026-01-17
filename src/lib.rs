@@ -87,13 +87,13 @@ pub use cm::escape_inline as escape_commonmark_inline;
 pub use cm::escape_link_destination as escape_commonmark_link_destination;
 pub use cm::format_document as format_commonmark;
 pub use cm::format_document_with_plugins as format_commonmark_with_plugins;
-pub use html::format_document as format_html;
-pub use html::format_document_with_plugins as format_html_with_plugins;
 #[doc(inline)]
 pub use html::Anchorizer;
+pub use html::format_document as format_html;
+pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use nodes::Node;
 pub use parser::options;
-pub use parser::{parse_document, Options, ResolvedReference};
+pub use parser::{Options, ResolvedReference, parse_document};
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 

@@ -1,7 +1,8 @@
 use comrak::{
+    Arena, Options,
     arena_tree::NodeEdge,
     nodes::{Node, NodeValue},
-    parse_document, Arena, Options,
+    parse_document,
 };
 
 // `node.traverse()`` creates an iterator that will traverse

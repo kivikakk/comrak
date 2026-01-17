@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use crate::{format_commonmark, parse_document, Arena, Options};
+use crate::{Arena, Options, format_commonmark, parse_document};
 
 use super::*;
 

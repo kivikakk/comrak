@@ -4,7 +4,7 @@ use super::*;
 fn subtext() {
     html_opts!(
         [extension.subtext],
-        concat!("-# Some Subtext\n"),
-        concat!("<p><sub>Some Subtext</sub></p>\n"),
+        "-# Some Subtext\n",
+        "<p><sub>Some Subtext</sub></p>\n",
     );
 }

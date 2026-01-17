@@ -11,9 +11,9 @@ use std::{boxed::Box, io::BufWriter};
 use clap::{Parser, ValueEnum};
 
 use comrak::options;
+use comrak::{Arena, Options};
 #[cfg(feature = "syntect")]
 use comrak::{adapters::SyntaxHighlighterAdapter, plugins::syntect::SyntectAdapter};
-use comrak::{Arena, Options};
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_PARSE_CONFIG: i32 = 2;

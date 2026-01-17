@@ -1,5 +1,5 @@
 use comrak::nodes::NodeValue;
-use comrak::{format_html, parse_document, Arena, Options};
+use comrak::{Arena, Options, format_html, parse_document};
 
 fn replace_text(document: &str, orig_string: &str, replacement: &str) -> String {
     // The returned nodes are created in the supplied Arena, and are bound by its lifetime.

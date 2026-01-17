@@ -248,7 +248,7 @@ pub fn rtrim_slice(i: &str) -> &str {
 
 pub fn rtrim_cow(s: &mut Cow<str>) {
     match s {
-        Cow::Borrowed(ref mut str) => *str = rtrim_slice(str),
+        Cow::Borrowed(str) => *str = rtrim_slice(str),
         Cow::Owned(string) => {
             rtrim(string);
         }
@@ -261,7 +261,7 @@ pub fn trim_slice(i: &str) -> &str {
 
 pub fn trim_cow(s: &mut Cow<str>) {
     match s {
-        Cow::Borrowed(ref mut str) => *str = trim_slice(str),
+        Cow::Borrowed(str) => *str = trim_slice(str),
         Cow::Owned(string) => trim(string),
     }
 }

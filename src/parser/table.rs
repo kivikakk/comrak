@@ -287,7 +287,7 @@ fn try_inserting_table_header_paragraph<'a>(
 ) {
     if container
         .parent()
-        .map_or(false, |p| !p.can_contain_type(&NodeValue::Paragraph))
+        .is_some_and(|p| !p.can_contain_type(&NodeValue::Paragraph))
     {
         return;
     }

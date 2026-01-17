@@ -559,7 +559,7 @@ pub struct Extension<'c> {
     pub phoenix_heex: bool,
 }
 
-impl<'c> Extension<'c> {
+impl Extension<'_> {
     pub(crate) fn wikilinks(&self) -> Option<WikiLinksMode> {
         match (
             self.wikilinks_title_before_pipe,
@@ -591,7 +591,7 @@ pub trait URLRewriter: RefUnwindSafe + Send + Sync {
     fn to_html(&self, url: &str) -> String;
 }
 
-impl<'c> Debug for dyn URLRewriter + 'c {
+impl Debug for dyn URLRewriter + '_ {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         formatter.write_str("<dyn URLRewriter>")
     }
@@ -821,7 +821,7 @@ pub trait BrokenLinkCallback: RefUnwindSafe + Send + Sync {
     fn resolve(&self, broken_link_reference: BrokenLinkReference) -> Option<ResolvedReference>;
 }
 
-impl<'c> Debug for dyn BrokenLinkCallback + 'c {
+impl Debug for dyn BrokenLinkCallback + '_ {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         formatter.write_str("<dyn BrokenLinkCallback>")
     }

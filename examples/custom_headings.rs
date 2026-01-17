@@ -1,9 +1,9 @@
 use comrak::{
+    Options,
     adapters::{HeadingAdapter, HeadingMeta},
     markdown_to_html_with_plugins,
     nodes::Sourcepos,
     options::Plugins,
-    Options,
 };
 use std::fmt::{self, Write};
 
@@ -26,7 +26,7 @@ fn main() {
     print_html(
         "Some text.\n\n### Here is some **bold** text and some *italicized* text\n\nSome other text",
         &options,
-        &plugins
+        &plugins,
     );
     options.render.sourcepos = true;
     print_html("# Here is a [link](/)", &options, &plugins);

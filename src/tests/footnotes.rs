@@ -85,7 +85,8 @@ fn footnote_in_table() {
             "| foot [^1] | note    |\n",
             "\n",
             "[^1]: a footnote\n",
-        ), concat!(
+        ),
+        concat!(
             "<p>A footnote in a paragraph<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup></p>\n",
             "<table>\n",
             "<thead>\n",
@@ -108,7 +109,8 @@ fn footnote_in_table() {
             "</li>\n",
             "</ol>\n",
             "</section>\n",
-        ));
+        )
+    );
 }
 
 #[test]
@@ -195,11 +197,7 @@ fn footnote_case_insensitive_and_case_preserving() {
 fn footnote_name_parsed_into_multiple_nodes() {
     html_opts!(
         [extension.footnotes],
-        concat!(
-            "Foo.[^_ab]\n",
-            "\n",
-            "[^_ab]: Here is the footnote.\n",
-        ),
+        concat!("Foo.[^_ab]\n", "\n", "[^_ab]: Here is the footnote.\n",),
         concat!(
             "<p>Foo.<sup class=\"footnote-ref\"><a href=\"#fn-_ab\" id=\"fnref-_ab\" data-footnote-ref>1</a></sup></p>\n",
             "<section class=\"footnotes\" data-footnotes>\n",

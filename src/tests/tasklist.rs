@@ -136,7 +136,11 @@ fn tasklist_relaxed_regression() {
 #[test]
 fn tasklist_with_classes_relaxed_regression() {
     html_opts!(
-        [extension.tasklist, render.tasklist_classes, parse.relaxed_tasklist_matching],
+        [
+            extension.tasklist,
+            render.tasklist_classes,
+            parse.relaxed_tasklist_matching
+        ],
         "* [!] Red\n",
         concat!(
             "<ul class=\"contains-task-list\">\n",
@@ -152,7 +156,11 @@ fn tasklist_with_classes_relaxed_regression() {
     );
 
     html_opts!(
-        [extension.tasklist, render.tasklist_classes, parse.relaxed_tasklist_matching],
+        [
+            extension.tasklist,
+            render.tasklist_classes,
+            parse.relaxed_tasklist_matching
+        ],
         "* [!] Red\n",
         concat!(
             "<ul class=\"contains-task-list\">\n",

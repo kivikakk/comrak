@@ -1,7 +1,7 @@
 //! This example shows how to implement a syntax highlighter plugin.
 
 use comrak::adapters::SyntaxHighlighterAdapter;
-use comrak::{markdown_to_html_with_plugins, options, Options};
+use comrak::{Options, markdown_to_html_with_plugins, options};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Write};

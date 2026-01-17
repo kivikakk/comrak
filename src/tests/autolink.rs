@@ -4,8 +4,8 @@ use super::*;
 fn autolink_www() {
     html_opts!(
         [extension.autolink],
-        concat!("www.autolink.com\n"),
-        concat!("<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n"),
+        "www.autolink.com\n",
+        "<p><a href=\"http://www.autolink.com\">www.autolink.com</a></p>\n",
     );
 }
 
@@ -13,8 +13,8 @@ fn autolink_www() {
 fn autolink_email() {
     html_opts!(
         [extension.autolink],
-        concat!("john@smith.com\n"),
-        concat!("<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n"),
+        "john@smith.com\n",
+        "<p><a href=\"mailto:john@smith.com\">john@smith.com</a></p>\n",
     );
 }
 
@@ -34,12 +34,8 @@ fn autolink_scheme() {
 fn autolink_scheme_multiline() {
     html_opts!(
         [extension.autolink],
-        concat!("https://google.com/search\nhttps://www.google.com/maps"),
-        concat!(
-            "<p><a href=\"https://google.com/search\">https://google.\
-             com/search</a>\n<a href=\"https://www.google.com/maps\">\
-             https://www.google.com/maps</a></p>\n"
-        ),
+        "https://google.com/search\nhttps://www.google.com/maps",
+        "<p><a href=\"https://google.com/search\">https://google.com/search</a>\n<a href=\"https://www.google.com/maps\">https://www.google.com/maps</a></p>\n",
     );
 }
 
@@ -90,10 +86,8 @@ fn autolink_parentheses_balanced() {
 fn autolink_brackets_unbalanced() {
     html_opts!(
         [extension.autolink],
-        concat!("http://example.com/[abc]]...\n"),
-        concat!(
-            "<p><a href=\"http://example.com/%5Babc%5D%5D\">http://example.com/[abc]]</a>...</p>\n"
-        ),
+        "http://example.com/[abc]]...\n",
+        "<p><a href=\"http://example.com/%5Babc%5D%5D\">http://example.com/[abc]]</a>...</p>\n",
     );
 }
 
@@ -180,10 +174,8 @@ fn autolink_relaxed_links_in_brackets() {
 fn autolink_relaxed_links_brackets_balanced() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
-        concat!("http://example.com/[abc]]...\n"),
-        concat!(
-            "<p><a href=\"http://example.com/%5Babc%5D\">http://example.com/[abc]</a>]...</p>\n"
-        ),
+        "http://example.com/[abc]]...\n",
+        "<p><a href=\"http://example.com/%5Babc%5D\">http://example.com/[abc]</a>]...</p>\n",
     );
 }
 
@@ -191,10 +183,8 @@ fn autolink_relaxed_links_brackets_balanced() {
 fn autolink_relaxed_links_curly_braces_balanced() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
-        concat!("http://example.com/{abc}}...\n"),
-        concat!(
-            "<p><a href=\"http://example.com/%7Babc%7D\">http://example.com/{abc}</a>}...</p>\n"
-        ),
+        "http://example.com/{abc}}...\n",
+        "<p><a href=\"http://example.com/%7Babc%7D\">http://example.com/{abc}</a>}...</p>\n",
     );
 }
 
@@ -202,8 +192,8 @@ fn autolink_relaxed_links_curly_braces_balanced() {
 fn autolink_relaxed_links_curly_parentheses_balanced() {
     html_opts!(
         [extension.autolink, parse.relaxed_autolinks],
-        concat!("http://example.com/(abc))...\n"),
-        concat!("<p><a href=\"http://example.com/(abc)\">http://example.com/(abc)</a>)...</p>\n"),
+        "http://example.com/(abc))...\n",
+        "<p><a href=\"http://example.com/(abc)\">http://example.com/(abc)</a>)...</p>\n",
     );
 }
 

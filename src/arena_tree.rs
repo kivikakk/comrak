@@ -45,10 +45,13 @@ where
             }
         }
 
-        if let Ok(data) = self.data.try_borrow() {
-            write!(f, "{data:?}")?;
-        } else {
-            write!(f, "!!mutably borrowed!!")?;
+        match self.data.try_borrow() {
+            Ok(data) => {
+                write!(f, "{data:?}")?;
+            }
+            _ => {
+                write!(f, "!!mutably borrowed!!")?;
+            }
         }
         if let Some(first_child) = self.first_child.get() {
             write!(f, " {:?}", &Children(Some(first_child)))?;
@@ -430,7 +433,7 @@ traverse_iterator! {
 #[test]
 fn it_works() {
     struct DropTracker<'a>(&'a Cell<u32>);
-    impl<'a> Drop for DropTracker<'a> {
+    impl Drop for DropTracker<'_> {
         fn drop(&mut self) {
             self.0.set(self.0.get() + 1);
         }
@@ -471,7 +474,7 @@ fn it_works() {
     assert_eq!(drop_counter.get(), 10);
 }
 
-impl<'a, T> Node<'a, RefCell<T>> {
+impl<T> Node<'_, RefCell<T>> {
     /// Shorthand for `node.data.borrow()`.
     pub fn data(&self) -> Ref<'_, T> {
         self.data.borrow()

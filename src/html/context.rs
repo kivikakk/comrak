@@ -1,5 +1,5 @@
 use crate::html::{self, Anchorizer};
-use crate::{options::Plugins, Options};
+use crate::{Options, options::Plugins};
 
 use std::cell::Cell;
 use std::fmt::{self, Write};
@@ -73,7 +73,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
     }
 }
 
-impl<'o, 'c, T> Write for Context<'o, 'c, T> {
+impl<T> Write for Context<'_, '_, T> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let l = s.len();
         if l > 0 {
@@ -83,7 +83,7 @@ impl<'o, 'c, T> Write for Context<'o, 'c, T> {
     }
 }
 
-impl<'o, 'c, T> fmt::Debug for Context<'o, 'c, T> {
+impl<T> fmt::Debug for Context<'_, '_, T> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         formatter.write_str("<comrak::html::Context>")
     }
