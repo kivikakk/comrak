@@ -59,7 +59,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /home/runner/.config/comrak/config]
+          [default: /Users/kivikakk/.config/comrak/config]
 
   -i, --inplace
           Reformat a CommonMark file in-place
@@ -391,6 +391,12 @@ Where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as 
 
 Thank you to Comrak's many contributors for PRs and issues opened!
 
+### Vulnerabilities
+
+Please report security issues to the author at <<ashe@kivikakk.ee>>.  If you
+have a GitHub account, you are welcome to use its interface to [privately report
+security issues](https://github.com/kivikakk/comrak/security/advisories/new).
+
 ### Policy on LLM contributions
 
 This policy is based on and inspired by [Servo's AI contributions policy](https://book.servo.org/contributing/getting-started.html#ai-contributions) ([permalink](https://archive.is/7LLb2#ai-contributions)) and [QEMU's Use of AI-generated content policy](https://github.com/qemu/qemu/blob/667e1fff878326c35c7f5146072e60a63a9a41c8/docs/devel/code-provenance.rst#use-of-ai-generated-content).  Please see those links for a more detailed analysis.
@@ -409,7 +415,7 @@ If you feel like you would like to do so anyway, however, [GitHub Sponsors](http
 
 ## Contact
 
-Asherah Connor <ashe kivikakk ee\>
+Asherah Connor <<ashe@kivikakk.ee>>
 
 ## Legal
 
