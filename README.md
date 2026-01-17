@@ -5,6 +5,7 @@
 [![GFM: 670/670](https://img.shields.io/badge/gfm-670%2F670-brightgreen.svg)](https://github.com/kivikakk/cmark-gfm/blob/2f13eeedfe9906c72a1843b03552550af7bee29a/test/spec.txt)
 [![crates.io version](https://img.shields.io/crates/v/comrak.svg)](https://crates.io/crates/comrak)
 [![docs.rs](https://docs.rs/comrak/badge.svg)](https://docs.rs/comrak)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11796/badge)](https://www.bestpractices.dev/projects/11796)
 
 [Comrak](https://comrak.ee/) is a [CommonMark](https://commonmark.org/) and [GitHub Flavored Markdown](https://github.github.com/gfm/) compatible parser and renderer, written in Rust.
 
