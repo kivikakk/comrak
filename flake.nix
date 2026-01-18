@@ -48,7 +48,7 @@
           default = comrak;
 
           comrak = mkComrak pkgs;
-          comrak-musl = mkComrak pkgs.pkgsStatic;
+          comrak-static = mkComrak pkgs.pkgsStatic;
         }
       );
 
