@@ -1,3 +1,35 @@
+# [v0.50.0] - 2026-01-22
+
+## What's Changed
+* Dependency updates for loongarch64 by @kivikakk in https://github.com/kivikakk/comrak/pull/708
+* Don't run pathological test suite on RV64 by @kivikakk in https://github.com/kivikakk/comrak/pull/710
+* Bump peter-evans/create-pull-request from 7 to 8 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/711
+* fix: Incorrect `sourcepos` for lists before CodeBlocks by @Martin005 in https://github.com/kivikakk/comrak/pull/712
+* fix: HTML block in blockquote in multiline block quotes has no content by @Martin005 in https://github.com/kivikakk/comrak/pull/713
+* fix: Incorrect `sourcepos` for HTML and HEEx blocks inside blockquotes by @Martin005 in https://github.com/kivikakk/comrak/pull/714
+* Integrate CodSpeed by @kivikakk in https://github.com/kivikakk/comrak/pull/715
+* add LLM policy. by @kivikakk in https://github.com/kivikakk/comrak/pull/718
+* Meagerly reduce heap allocations and improve hash function performance by @gjtorikian in https://github.com/kivikakk/comrak/pull/717
+* fix(heex): components mixed with markdown by @leandrocp in https://github.com/kivikakk/comrak/pull/719
+* Bump shell-words from 1.1.0 to 1.1.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/723
+* Lock ntest to 0.9.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/721
+* Bump arbitrary from 1.3.2 to 1.4.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/724
+* lock emojis to 0.6, update by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/722
+* Bump phf from 0.11.1 to 0.13.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/725
+* Lock ntest < 0.9.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/726
+* Bump phf from 0.11.1 to 0.11.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/730
+* Upgrade to edition 2021 by @kivikakk in https://github.com/kivikakk/comrak/pull/731
+* Upgrade to edition 2024; MSRV is 1.85 by @kivikakk in https://github.com/kivikakk/comrak/pull/732
+* Bump toml from 0.7.8 to 0.9.10+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/733
+* Bump strum from 0.26.3 to 0.27.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/734
+* Bump xdg from 2.5.2 to 3.0.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/735
+* use static builds on darwin too by @kivikakk in https://github.com/kivikakk/comrak/pull/736
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.49.0...v0.50.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
