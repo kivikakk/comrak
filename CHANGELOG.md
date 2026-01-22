@@ -1,35 +1,3 @@
-# [v0.50.0] - 2026-01-22
-
-## What's Changed
-* Dependency updates for loongarch64 by @kivikakk in https://github.com/kivikakk/comrak/pull/708
-* Don't run pathological test suite on RV64 by @kivikakk in https://github.com/kivikakk/comrak/pull/710
-* Bump peter-evans/create-pull-request from 7 to 8 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/711
-* fix: Incorrect `sourcepos` for lists before CodeBlocks by @Martin005 in https://github.com/kivikakk/comrak/pull/712
-* fix: HTML block in blockquote in multiline block quotes has no content by @Martin005 in https://github.com/kivikakk/comrak/pull/713
-* fix: Incorrect `sourcepos` for HTML and HEEx blocks inside blockquotes by @Martin005 in https://github.com/kivikakk/comrak/pull/714
-* Integrate CodSpeed by @kivikakk in https://github.com/kivikakk/comrak/pull/715
-* add LLM policy. by @kivikakk in https://github.com/kivikakk/comrak/pull/718
-* Meagerly reduce heap allocations and improve hash function performance by @gjtorikian in https://github.com/kivikakk/comrak/pull/717
-* fix(heex): components mixed with markdown by @leandrocp in https://github.com/kivikakk/comrak/pull/719
-* Bump shell-words from 1.1.0 to 1.1.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/723
-* Lock ntest to 0.9.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/721
-* Bump arbitrary from 1.3.2 to 1.4.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/724
-* lock emojis to 0.6, update by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/722
-* Bump phf from 0.11.1 to 0.13.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/725
-* Lock ntest < 0.9.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/726
-* Bump phf from 0.11.1 to 0.11.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/730
-* Upgrade to edition 2021 by @kivikakk in https://github.com/kivikakk/comrak/pull/731
-* Upgrade to edition 2024; MSRV is 1.85 by @kivikakk in https://github.com/kivikakk/comrak/pull/732
-* Bump toml from 0.7.8 to 0.9.10+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/733
-* Bump strum from 0.26.3 to 0.27.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/734
-* Bump xdg from 2.5.2 to 3.0.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/735
-* use static builds on darwin too by @kivikakk in https://github.com/kivikakk/comrak/pull/736
-
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.49.0...v0.50.0
-
----snip---
-
 Categories to use in this document, and the order in which to give them:
 
 * Security
@@ -44,6 +12,60 @@ Categories to use in this document, and the order in which to give them:
 * Documentation
 * Build changes
 * Behind the scenes
+
+
+# [v0.50.0] - 2026-01-22
+
+The big news is that I've updated Comrak to use Rust 2024, which means our MSRV has been updated to
+1.85.  I'm sorry if this affects you negatively!  Keeping dependencies up-to-date while respecting
+our MSRV is basically impossible without the [MSRV
+resolver](https://rust-lang.github.io/rfcs/3537-msrv-resolver.html), and I've spent far too many
+hours of my short life trying to do without it.  Thank you for your understanding 🤍
+
+Bug fixes:
+
+* Incorrect `sourcepos` for lists before CodeBlocks fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/712)
+* Incorrect `sourcepos` for HTML and HEEx blocks inside blockquotes fixed. (by @Martin005 in https://github.com/kivikakk/comrak/pull/714)
+* HTML block in blockquote in multiline block quotes had no content; now it does! (by @Martin005 in https://github.com/kivikakk/comrak/pull/713)
+* Fixed some bugs with HEEx components mixed with Markdown. (by @leandrocp in https://github.com/kivikakk/comrak/pull/719)
+
+Performance:
+
+* Reduced some heap allocations and improved hash function performance. (by @gjtorikian in https://github.com/kivikakk/comrak/pull/717)
+
+Dependency updates:
+
+* A whole _lot_ of Dependabot updates:
+  * https://github.com/kivikakk/comrak/pull/711
+  * https://github.com/kivikakk/comrak/pull/721
+  * https://github.com/kivikakk/comrak/pull/722
+  * https://github.com/kivikakk/comrak/pull/723
+  * https://github.com/kivikakk/comrak/pull/724
+  * https://github.com/kivikakk/comrak/pull/725
+  * https://github.com/kivikakk/comrak/pull/726
+  * https://github.com/kivikakk/comrak/pull/730
+  * https://github.com/kivikakk/comrak/pull/733
+  * https://github.com/kivikakk/comrak/pull/734
+  * https://github.com/kivikakk/comrak/pull/735
+* Upgrade to edition 2021, then 2024. (by @kivikakk in https://github.com/kivikakk/comrak/pull/731, https://github.com/kivikakk/comrak/pull/732)
+  * The latter PR includes even more dependency updates (using the v3 resolver), using the latest versions possible on 1.85.
+
+Documentation:
+
+* Added a policy on LLM-generated code. (by @kivikakk in https://github.com/kivikakk/comrak/pull/718)
+
+Build changes:
+
+* Dependency updates to help building on LoongArch64. (by @kivikakk in https://github.com/kivikakk/comrak/pull/708)
+* Don't run the pathological test suite on RISC-V. (by @kivikakk in https://github.com/kivikakk/comrak/pull/710)
+* Turns out the Darwin builds were also linking to the Nix store! (by @kivikakk in https://github.com/kivikakk/comrak/pull/736)
+
+Behind the scenes:
+
+* Integrated CodSpeed benchmarks on PRs. (by @kivikakk in https://github.com/kivikakk/comrak/pull/715)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.49.0...v0.50.0
 
 
 # [v0.49.0] - 2025-12-09
