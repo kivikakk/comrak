@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.49"
+comrak = "0.50"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.85</span>+.
@@ -60,7 +60,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /Users/kivikakk/.config/comrak/config]
+          [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
           Reformat a CommonMark file in-place
@@ -166,10 +166,10 @@ Options:
           Minimise escapes in CommonMark output using a trial-and-error algorithm
 
   -h, --help
-          Print help information (use `-h` for a summary)
+          Print help (see a summary with '-h')
 
   -V, --version
-          Print version information
+          Print version
 
 By default, Comrak will attempt to read command-line options from a config file specified by
 --config-file. This behaviour can be disabled by passing --config-file none. It is not an error if
