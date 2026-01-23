@@ -145,3 +145,16 @@ fn dont_create_autolinks() {
 
     commonmark(expected, expected, Some(&options));
 }
+
+#[test]
+fn dont_wrap_table_cell() {
+    let input = r#"| option | description |
+| --- | --- |
+| -o | Write output to FILE instead of stdout |
+| --gfm | Use GFM-style quirks in output HTML, such as not nesting <strong> tags, which otherwise breaks CommonMark compatibility |
+"#;
+    let mut options = Options::default();
+    options.extension.table = true;
+    options.render.width = 80;
+    commonmark(input, input, Some(&options));
+}

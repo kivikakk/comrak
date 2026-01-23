@@ -440,6 +440,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         let next_is_block = node
             .next_sibling()
             .is_none_or(|next| next.data().value.block());
+        let text_in_cell = node_matches!(node, NodeValue::Text(..))
+            && parent_node.is_some_and(|n| node_matches!(n, NodeValue::TableCell));
 
         match node.data().value {
             NodeValue::Document => (),
@@ -458,7 +460,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::HeexBlock(ref nhb) => self.format_heex_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
-            NodeValue::Text(ref literal) => self.format_text(literal, entering)?,
+            NodeValue::Text(ref literal) => self.format_text(literal, entering, !text_in_cell)?,
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
             NodeValue::SoftBreak => self.format_soft_break(entering)?,
             NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
@@ -744,9 +746,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
     }
 
-    fn format_text(&mut self, literal: &str, entering: bool) -> fmt::Result {
+    fn format_text(&mut self, literal: &str, entering: bool, wrap: bool) -> fmt::Result {
         if entering {
-            self.output(literal, true, Escaping::Normal)?;
+            self.output(literal, wrap, Escaping::Normal)?;
         }
         Ok(())
     }
