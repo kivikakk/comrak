@@ -184,7 +184,7 @@ impl<'a> Iterator for SyntectPreAttributesIter<'a, '_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 /// A builder for [`SyntectAdapter`].
 ///
 /// Allows customization of `Theme`, [`ThemeSet`], and [`SyntaxSet`].
@@ -193,17 +193,6 @@ pub struct SyntectAdapterBuilder {
     syntax_set: Option<SyntaxSet>,
     theme_set: Option<ThemeSet>,
     css_class_prefix: Option<&'static str>,
-}
-
-impl Default for SyntectAdapterBuilder {
-    fn default() -> Self {
-        SyntectAdapterBuilder {
-            theme: None, // CSS classes by default
-            syntax_set: None,
-            theme_set: None,
-            css_class_prefix: None,
-        }
-    }
 }
 
 impl SyntectAdapterBuilder {
