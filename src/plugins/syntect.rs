@@ -184,7 +184,7 @@ impl<'a> Iterator for SyntectPreAttributesIter<'a, '_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 /// A builder for [`SyntectAdapter`].
 ///
 /// Allows customization of `Theme`, [`ThemeSet`], and [`SyntaxSet`].
@@ -193,17 +193,6 @@ pub struct SyntectAdapterBuilder {
     syntax_set: Option<SyntaxSet>,
     theme_set: Option<ThemeSet>,
     css_class_prefix: Option<&'static str>,
-}
-
-impl Default for SyntectAdapterBuilder {
-    fn default() -> Self {
-        SyntectAdapterBuilder {
-            theme: Some("InspiredGitHub".into()),
-            syntax_set: None,
-            theme_set: None,
-            css_class_prefix: None,
-        }
-    }
 }
 
 impl SyntectAdapterBuilder {
@@ -244,7 +233,7 @@ impl SyntectAdapterBuilder {
     }
 
     /// Builds the [`SyntectAdapter`]. Default values:
-    /// - `theme`: `InspiredGitHub`
+    /// - `theme`: `None` (uses CSS classes)
     /// - `syntax_set`: [`SyntaxSet::load_defaults_newlines()`]
     /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter {

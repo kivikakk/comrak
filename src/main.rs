@@ -137,8 +137,9 @@ struct Cli {
     #[arg(long, value_name = "DELIMITER", allow_hyphen_values = true)]
     front_matter_delimiter: Option<String>,
 
-    /// Syntax highlighting theme for fenced code blocks; specify a theme, or 'none' to disable
-    #[arg(long, value_name = "THEME", default_value = "base16-ocean.dark")]
+    /// Syntax highlighting for fenced code blocks; 'css' for CSS classes (default),
+    /// a theme name for inline styles, or 'none' to disable
+    #[arg(long, value_name = "THEME", default_value = "css")]
     #[cfg(feature = "syntect")]
     syntax_highlighting: String,
 
@@ -338,6 +339,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let theme = cli.syntax_highlighting;
         if theme.is_empty() || theme == "none" {
             syntax_highlighter = None;
+        } else if theme == "css" {
+            adapter = SyntectAdapter::new(None);
+            syntax_highlighter = Some(&adapter);
         } else {
             adapter = SyntectAdapter::new(Some(&theme));
             syntax_highlighter = Some(&adapter);
