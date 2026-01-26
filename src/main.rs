@@ -139,6 +139,7 @@ struct Cli {
 
     /// Syntax highlighting for fenced code blocks; 'css' for CSS classes (default),
     /// a theme name for inline styles, or 'none' to disable
+    #[arg(long, value_name = "THEME", default_value = "css")]
     #[cfg(feature = "syntect")]
     syntax_highlighting: String,
 

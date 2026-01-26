@@ -198,7 +198,7 @@ pub struct SyntectAdapterBuilder {
 impl Default for SyntectAdapterBuilder {
     fn default() -> Self {
         SyntectAdapterBuilder {
-            theme: Some("InspiredGitHub".into()),
+            theme: None, // CSS classes by default
             syntax_set: None,
             theme_set: None,
             css_class_prefix: None,
@@ -244,7 +244,7 @@ impl SyntectAdapterBuilder {
     }
 
     /// Builds the [`SyntectAdapter`]. Default values:
-    /// - `theme`: `InspiredGitHub`
+    /// - `theme`: `None` (uses CSS classes)
     /// - `syntax_set`: [`SyntaxSet::load_defaults_newlines()`]
     /// - `theme_set`: [`ThemeSet::load_defaults()`]
     pub fn build(self) -> SyntectAdapter {
