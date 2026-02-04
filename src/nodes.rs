@@ -928,6 +928,9 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
     /// Returns true if the given node can contain a node with the given value.
     pub fn can_contain_type(&self, child: &NodeValue) -> bool {
         match *child {
+            NodeValue::Raw(_) => {
+                return true;
+            }
             NodeValue::Document => {
                 return false;
             }
