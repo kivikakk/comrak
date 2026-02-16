@@ -192,7 +192,10 @@ fn try_opening_row<'a>(
     }
 
     while i < alignments.len() {
-        parser.add_child(new_row, NodeValue::TableCell, last_column);
+        let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
+        // for autocompleted (empty) cells, set end column equal to start
+        let cell_ast = &mut cell_node.data_mut();
+        cell_ast.sourcepos.end.column = last_column + 1;
         i += 1;
     }
 

@@ -423,3 +423,99 @@ fn table_with_trailing_para_and_leading_whitespace() {
         ])
     );
 }
+
+#[test]
+fn table_missing_cell_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "|a|b|\n"
+        "|-|-|\n"
+        "|c|\n"
+        ,
+        (document (1:1-3:3) [
+            (table (1:1-3:3) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:2) [
+                        (text (1:2-1:2) "a")
+                    ])
+                    (table_cell (1:4-1:4) [
+                        (text (1:4-1:4) "b")
+                    ])
+                ])
+                (table_row (3:1-3:3) [
+                    (table_cell (3:2-3:2) [
+                        (text (3:2-3:2) "c")
+                    ])
+                    (table_cell (3:3-3:3)
+                    )
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_missing_cell_with_text_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "|a|b|\n"
+        "|-|-|\n"
+        "|c|d\n"
+        ,
+        (document (1:1-3:4) [
+            (table (1:1-3:4) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:2) [
+                        (text (1:2-1:2) "a")
+                    ])
+                    (table_cell (1:4-1:4) [
+                        (text (1:4-1:4) "b")
+                    ])
+                ])
+                (table_row (3:1-3:4) [
+                    (table_cell (3:2-3:2) [
+                        (text (3:2-3:2) "c")
+                    ])
+                    (table_cell (3:4-3:4) [
+                        (text (3:4-3:4) "d")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_missing_cells_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "|a|b|c|\n"
+        "|-|-|-|\n"
+        "|d|\n"
+        ,
+        (document (1:1-3:3) [
+            (table (1:1-3:3) [
+                (table_row (1:1-1:7) [
+                    (table_cell (1:2-1:2) [
+                        (text (1:2-1:2) "a")
+                    ])
+                    (table_cell (1:4-1:4) [
+                        (text (1:4-1:4) "b")
+                    ])
+                    (table_cell (1:6-1:6) [
+                        (text (1:6-1:6) "c")
+                    ])
+                ])
+                (table_row (3:1-3:3) [
+                    (table_cell (3:2-3:2) [
+                        (text (3:2-3:2) "d")
+                    ])
+                    (table_cell (3:3-3:3)
+                    )
+                    (table_cell (3:3-3:3)
+                    )
+                ])
+            ])
+        ])
+    );
+}
