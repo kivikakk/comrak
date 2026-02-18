@@ -86,6 +86,8 @@ pub struct Parser<'a, 'o, 'c> {
     curline_end_col: usize,
     last_line_length: usize,
     total_size: usize,
+    #[cfg(feature = "phoenix_heex")]
+    heex_block_depth: usize,
 }
 
 /// A reference link's resolved details.
@@ -130,6 +132,8 @@ where
             curline_end_col: 0,
             last_line_length: 0,
             total_size: 0,
+            #[cfg(feature = "phoenix_heex")]
+            heex_block_depth: 0,
         }
     }
 
@@ -930,6 +934,8 @@ where
             node: phoenix_heex::HeexNode::Tag(tag_name),
         };
 
+        self.heex_block_depth = 0;
+
         *container = self.add_child(
             container,
             NodeValue::HeexBlock(Box::new(nhb)),
@@ -992,6 +998,47 @@ where
         }
 
         end >= 2 && bytes[end - 2] == b'/' && bytes[end - 1] == b'>'
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn is_heex_opening_same_name_tag(&self, line: &str, tag_name: &str) -> bool {
+        if let Some(opening_len) = scanners::phoenix_opening_tag(&line[self.first_nonspace..]) {
+            let opening_name = &line[self.first_nonspace + 1..=self.first_nonspace + opening_len];
+            opening_name == tag_name && !self.is_heex_opening_self_closing_tag(line, tag_name)
+        } else {
+            false
+        }
+    }
+
+    #[cfg(feature = "phoenix_heex")]
+    fn heex_tag_matches_end(&mut self, line: &str, tag_name: &str) -> bool {
+        if self.is_heex_opening_same_name_tag(line, tag_name) {
+            self.heex_block_depth += 1;
+        }
+
+        let matched = if let Some(closing_tag_name_len) =
+            scanners::phoenix_block_closing_tag(&line[self.first_nonspace..])
+        {
+            let closing_tag_name =
+                &line[self.first_nonspace + 2..self.first_nonspace + 2 + closing_tag_name_len];
+            if closing_tag_name == tag_name {
+                self.heex_block_depth = self.heex_block_depth.saturating_sub(1);
+                true
+            } else {
+                false
+            }
+        } else if self.is_heex_opening_self_closing_tag(line, tag_name) {
+            true
+        } else if scanners::phoenix_closing_tag_end(&line[self.first_nonspace..], tag_name)
+            .is_some()
+        {
+            self.heex_block_depth = self.heex_block_depth.saturating_sub(1);
+            true
+        } else {
+            false
+        };
+
+        matched && self.heex_block_depth == 0
     }
 
     #[cfg(feature = "phoenix_heex")]
@@ -1710,21 +1757,7 @@ where
 
                     let matches_end = match nhb.node {
                         phoenix_heex::HeexNode::Tag(ref tag_name) => {
-                            if let Some(closing_tag_name_len) =
-                                scanners::phoenix_block_closing_tag(&line[self.first_nonspace..])
-                            {
-                                let closing_tag_name = &line[self.first_nonspace + 2
-                                    ..self.first_nonspace + 2 + closing_tag_name_len];
-                                closing_tag_name == tag_name
-                            } else if self.is_heex_opening_self_closing_tag(line, tag_name) {
-                                true
-                            } else {
-                                scanners::phoenix_closing_tag_end(
-                                    &line[self.first_nonspace..],
-                                    tag_name,
-                                )
-                                .is_some()
-                            }
+                            self.heex_tag_matches_end(line, tag_name)
                         }
                         phoenix_heex::HeexNode::Directive => {
                             scanners::phoenix_block_directive_end(&line[self.first_nonspace..])
