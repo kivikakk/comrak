@@ -1955,29 +1955,83 @@ fn closing_tag_with_whitespace() {
 // ============================================================================
 
 #[test]
-fn deeply_nested_same_component() {
+fn nested_same_name_module_component() {
+    // https://github.com/leandrocp/mdex/issues/298
     html_opts!(
         [extension.phoenix_heex],
         concat!(
-            "<.outer>\n",
-            "  <.inner>\n",
-            "    <.inner>\n",
-            "      <.inner>\n",
-            "      </.inner>\n",
-            "    </.inner>\n",
-            "  </.inner>\n",
-            "</.outer>\n",
+            "<MyApp.List.list>\n",
+            "  <MyApp.List.li>\n",
+            "    content\n",
+            "    <MyApp.List.list>\n",
+            "      <MyApp.List.li>nested</MyApp.List.li>\n",
+            "    </MyApp.List.list>\n",
+            "  </MyApp.List.li>\n",
+            "</MyApp.List.list>\n",
         ),
         concat!(
-            "<.outer>\n",
-            "  <.inner>\n",
-            "    <.inner>\n",
-            "      <.inner>\n",
-            "      </.inner>\n",
-            "    </.inner>\n",
-            "  </.inner>\n",
-            "</.outer>\n",
+            "<MyApp.List.list>\n",
+            "  <MyApp.List.li>\n",
+            "    content\n",
+            "    <MyApp.List.list>\n",
+            "      <MyApp.List.li>nested</MyApp.List.li>\n",
+            "    </MyApp.List.list>\n",
+            "  </MyApp.List.li>\n",
+            "</MyApp.List.list>\n",
         ),
+    );
+}
+
+#[test]
+fn nested_same_name_function_component() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!(
+            "<.list>\n",
+            "  <.li>\n",
+            "    content\n",
+            "    <.list>\n",
+            "      <.li>nested</.li>\n",
+            "    </.list>\n",
+            "  </.li>\n",
+            "</.list>\n",
+        ),
+        concat!(
+            "<.list>\n",
+            "  <.li>\n",
+            "    content\n",
+            "    <.list>\n",
+            "      <.li>nested</.li>\n",
+            "    </.list>\n",
+            "  </.li>\n",
+            "</.list>\n",
+        ),
+    );
+}
+
+#[test]
+fn self_closing_same_name_inside_block() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!(
+            "<MyApp.List.list>\n",
+            "  <MyApp.List.list />\n",
+            "</MyApp.List.list>\n",
+        ),
+        concat!(
+            "<MyApp.List.list>\n",
+            "  <MyApp.List.list />\n",
+            "</MyApp.List.list>\n",
+        ),
+    );
+}
+
+#[test]
+fn inline_open_close_same_name_inside_block() {
+    html_opts!(
+        [extension.phoenix_heex],
+        concat!("<.list>\n", "  <.list>inner</.list>\n", "</.list>\n"),
+        concat!("<.list>\n", "  <.list>inner</.list>\n", "</.list>\n")
     );
 }
 
