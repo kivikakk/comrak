@@ -205,7 +205,7 @@ fn entity_roundtrips_fooled_by_whitespace(markdown: &str) {
     cm::format_document(root, &options, &mut roundtripped).unwrap();
     let roundtripped_root = parse_document(&arena, &roundtripped, &options);
     let mut roundtripped_html = String::new();
-    cm::format_document(roundtripped_root, &options, &mut roundtripped_html).unwrap();
+    html::format_document(roundtripped_root, &options, &mut roundtripped_html).unwrap();
 
     assert_eq!(original_html, roundtripped_html);
 }
