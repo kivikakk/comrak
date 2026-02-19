@@ -13,6 +13,13 @@ Categories to use in this document, and the order in which to give them:
 * Build changes
 * Behind the scenes
 
+# [v0.51.0] - Unreleased
+
+New APIs:
+
+* Added `RenderPlugins::codefence_renderers` to register language-specific codefence renderers.
+* Added `CodefenceRendererAdapter` for language-specific codefence rendering. Its `write` method receives parsed codefence language and metadata (`lang`, `meta`) alongside code and source position.
+
 
 # [v0.50.0] - 2026-01-22
 
