@@ -162,8 +162,11 @@ fn dont_wrap_table_cell() {
 }
 
 #[test_case("**Hello&#32;**")]
+#[test_case("**Hello &#32;**")]
 #[test_case("*&#32;Hello*")]
+#[test_case("*&#32; Hello*")]
 #[test_case("*&#32;Hello&#32;*")]
+#[test_case("*&#32;&#32;Hello&#32;&#32;*")]
 #[test_case("~~Hello&#32;~~")]
 fn entity_roundtrips_fooled_by_whitespace(markdown: &str) {
     let arena = Arena::new();
