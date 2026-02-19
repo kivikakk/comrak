@@ -471,18 +471,21 @@ fn render_code_block<T>(
 
         if lang.eq("math") {
             render_math_code_block(context, node, &ncb.literal)?;
-        } else if !lang.is_empty()
-            && let Some(adapter) = context.plugins.render.codefence_renderers.get(lang)
-        {
-            context.cr()?;
-            let sourcepos = if context.options.render.sourcepos {
-                Some(node.data().sourcepos)
-            } else {
-                None
-            };
+        } else if !lang.is_empty() {
+            if let Some(adapter) = context.plugins.render.codefence_renderers.get(lang) {
+                context.cr()?;
+                let sourcepos = if context.options.render.sourcepos {
+                    Some(node.data().sourcepos)
+                } else {
+                    None
+                };
 
-            adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
-        } else {
+                adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
+                return Ok(ChildRendering::HTML);
+            }
+        }
+
+        if !lang.eq("math") {
             context.cr()?;
 
             let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
