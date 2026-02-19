@@ -64,7 +64,7 @@ fn commonmark_math(markdown: &str, cm: &str) {
     options.extension.math_dollars = true;
     options.extension.math_code = true;
 
-    commonmark(markdown, cm, None);
+    commonmark(markdown, cm, Some(&options));
 }
 
 #[test_case("\\(x^2\\) and \\[y^2\\]", "\\(x^2\\) and \\[y^2\\]\n")]
