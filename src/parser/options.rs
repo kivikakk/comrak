@@ -897,6 +897,7 @@ pub struct Render {
     ///
     /// options.render.full_info_string = true;
     /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
+    /// eprintln!("{}", html);
     /// assert!(html.contains(r#"data-meta="extra info""#));
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]

@@ -495,21 +495,18 @@ fn render_code_block<T>(
             let literal = &ncb.literal;
 
             if !info.is_empty() {
-                let lang_str = lang;
-                let info_str = meta;
-
                 if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang_str.into());
+                    pre_attributes.insert("lang", lang.into());
 
-                    if context.options.render.full_info_string && !info_str.is_empty() {
-                        pre_attributes.insert("data-meta", info_str.trim().into());
+                    if context.options.render.full_info_string && !meta.is_empty() {
+                        pre_attributes.insert("data-meta", meta.trim().into());
                     }
                 } else {
-                    code_attr = format!("language-{}", lang_str);
+                    code_attr = format!("language-{}", lang);
                     code_attributes.insert("class", code_attr.into());
 
-                    if context.options.render.full_info_string && !info_str.is_empty() {
-                        code_attributes.insert("data-meta", info_str.into());
+                    if context.options.render.full_info_string && !meta.is_empty() {
+                        code_attributes.insert("data-meta", meta.into());
                     }
                 }
             }
