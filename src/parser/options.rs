@@ -2,12 +2,13 @@
 
 #[cfg(feature = "bon")]
 use bon::Builder;
+use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::panic::RefUnwindSafe;
 use std::str;
 use std::sync::Arc;
 
-use crate::adapters::{HeadingAdapter, SyntaxHighlighterAdapter};
+use crate::adapters::{CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter};
 use crate::parser::ResolvedReference;
 
 #[derive(Default, Debug, Clone)]
@@ -896,6 +897,7 @@ pub struct Render {
     ///
     /// options.render.full_info_string = true;
     /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
+    /// eprintln!("{}", html);
     /// assert!(html.contains(r#"data-meta="extra info""#));
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
@@ -1185,6 +1187,13 @@ pub struct Plugins<'p> {
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {
+    /// Provide language-specific renderers for codefence blocks.
+    ///
+    /// `math` codefence blocks are handled separately by Comrak's built-in math renderer,
+    /// so entries keyed by `"math"` in this map are not used.
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub codefence_renderers: HashMap<String, &'p dyn CodefenceRendererAdapter>,
+
     /// Provide a syntax highlighter adapter implementation for syntax
     /// highlighting of codefence blocks.
     ///
@@ -1231,6 +1240,10 @@ pub struct RenderPlugins<'p> {
 impl Debug for RenderPlugins<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RenderPlugins")
+            .field(
+                "codefence_renderers",
+                &"HashMap<String, impl CodefenceRendererAdapter>",
+            )
             .field(
                 "codefence_syntax_highlighter",
                 &"impl SyntaxHighlighterAdapter",

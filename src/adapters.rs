@@ -8,6 +8,22 @@ use std::fmt;
 
 use crate::nodes::Sourcepos;
 
+/// Implement this adapter for custom rendering of codefence blocks.
+pub trait CodefenceRendererAdapter: Send + Sync {
+    /// Render a codefence block.
+    ///
+    /// lang: Name of the programming language (the first token of the info string).
+    /// meta: The remaining codefence info string after the language token, trimmed.
+    fn write(
+        &self,
+        output: &mut dyn fmt::Write,
+        lang: &str,
+        meta: &str,
+        code: &str,
+        sourcepos: Option<Sourcepos>,
+    ) -> fmt::Result;
+}
+
 /// Implement this adapter for creating a plugin for custom syntax highlighting of codefence blocks.
 pub trait SyntaxHighlighterAdapter: Send + Sync {
     /// Generates a syntax highlighted HTML output.

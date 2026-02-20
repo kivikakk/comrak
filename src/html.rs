@@ -458,40 +458,55 @@ fn render_code_block<T>(
     ncb: &NodeCodeBlock,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        if ncb.info.eq("math") {
+        let info = &ncb.info;
+        let info_bytes = info.as_bytes();
+        let mut first_tag = 0;
+
+        while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
+            first_tag += 1;
+        }
+
+        let lang = &info[..first_tag];
+        let meta = info[first_tag..].trim();
+
+        if lang.eq("math") {
             render_math_code_block(context, node, &ncb.literal)?;
-        } else {
+        } else if !lang.is_empty() {
+            if let Some(adapter) = context.plugins.render.codefence_renderers.get(lang) {
+                context.cr()?;
+                let sourcepos = if context.options.render.sourcepos {
+                    Some(node.data().sourcepos)
+                } else {
+                    None
+                };
+
+                adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
+                return Ok(ChildRendering::HTML);
+            }
+        }
+
+        if !lang.eq("math") {
             context.cr()?;
 
-            let mut first_tag = 0;
             let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
             let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
             let code_attr: String;
 
             let literal = &ncb.literal;
-            let info = &ncb.info;
-            let info_bytes = info.as_bytes();
 
             if !info.is_empty() {
-                while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
-                    first_tag += 1;
-                }
-
-                let lang_str = &info[..first_tag];
-                let info_str = info[first_tag..].trim();
-
                 if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang_str.into());
+                    pre_attributes.insert("lang", lang.into());
 
-                    if context.options.render.full_info_string && !info_str.is_empty() {
-                        pre_attributes.insert("data-meta", info_str.trim().into());
+                    if context.options.render.full_info_string && !meta.is_empty() {
+                        pre_attributes.insert("data-meta", meta.trim().into());
                     }
                 } else {
-                    code_attr = format!("language-{}", lang_str);
+                    code_attr = format!("language-{}", lang);
                     code_attributes.insert("class", code_attr.into());
 
-                    if context.options.render.full_info_string && !info_str.is_empty() {
-                        code_attributes.insert("data-meta", info_str.into());
+                    if context.options.render.full_info_string && !meta.is_empty() {
+                        code_attributes.insert("data-meta", meta.into());
                     }
                 }
             }
@@ -514,11 +529,7 @@ fn render_code_block<T>(
                     highlighter.write_pre_tag(context, pre_attributes)?;
                     highlighter.write_code_tag(context, code_attributes)?;
 
-                    highlighter.write_highlighted(
-                        context,
-                        Some(&info[..first_tag]),
-                        &ncb.literal,
-                    )?;
+                    highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
 
                     context.write_str("</code></pre>\n")?
                 }
