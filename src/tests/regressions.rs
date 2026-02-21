@@ -278,3 +278,15 @@ fn sourcepos_newline_kinds() {
         ])
     );
 }
+
+#[test]
+fn hex_entity_digit_limit() {
+    // 6 hex digits: valid
+    html("&#x000041;\n", "<p>A</p>\n");
+
+    // 7 hex digits: invalid, should be literal
+    html("&#x0000041;\n", "<p>&amp;#x0000041;</p>\n");
+
+    // 7 decimal digits: valid (decimal 100 = 'd')
+    html("&#0000100;\n", "<p>d</p>\n");
+}
