@@ -67,6 +67,27 @@ fn smart_chars() {
 }
 
 #[test]
+fn smart_guillemets() {
+    html_opts!([parse.smart], "<<hello>>\n", "<p>\u{ab}hello\u{bb}</p>\n",);
+
+    html_opts!(
+        [parse.smart],
+        "<< guillemets >> here\n",
+        "<p>\u{ab} guillemets \u{bb} here</p>\n",
+    );
+
+    // Single < and > should not be affected
+    html_opts!([parse.smart], "a < b > c\n", "<p>a &lt; b &gt; c</p>\n",);
+
+    // Autolinks should still work
+    html_opts!(
+        [parse.smart],
+        "<https://example.com>\n",
+        "<p><a href=\"https://example.com\">https://example.com</a></p>\n",
+    );
+}
+
+#[test]
 fn broken_link_callback() {
     let cb = |link_ref: options::BrokenLinkReference| match link_ref.normalized {
         "foo" => Some(ResolvedReference {

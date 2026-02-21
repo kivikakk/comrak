@@ -545,6 +545,23 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub highlight: bool,
 
+    /// Enables inserted text using `++`.
+    ///
+    /// ```md
+    /// This is ++added text++
+    /// ```
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.insert = true;
+    ///
+    /// assert_eq!(markdown_to_html("This is ++added text++", &options),
+    ///           "<p>This is <ins>added text</ins></p>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub insert: bool,
+
     #[cfg(feature = "phoenix_heex")]
     #[cfg_attr(docsrs, doc(cfg(feature = "phoenix_heex")))]
     /// Enables Phoenix HEEx template syntax support.
