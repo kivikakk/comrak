@@ -99,7 +99,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.special_char_bytes[b as usize] = true;
         }
         if options.parse.smart {
-            for &b in b"\"'.-" {
+            for &b in b"\"'.->" {
                 s.special_char_bytes[b as usize] = true;
             }
         }
@@ -352,6 +352,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
             }
             b'$' => Some(self.handle_dollars(&ast.line_offsets)),
+            b'>' if self.options.parse.smart => Some(self.handle_guillemet_close()),
             b'|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
                 let mut endpos = self.find_special_char();
@@ -511,6 +512,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_pointy_brace(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         self.scanner.pos += 1;
+
+        if self.options.parse.smart && self.peek_byte() == Some(b'<') {
+            self.scanner.pos += 1;
+            return self.make_inline(
+                NodeValue::Text("\u{ab}".into()),
+                self.scanner.pos - 2,
+                self.scanner.pos - 1,
+            );
+        }
 
         #[cfg(feature = "phoenix_heex")]
         if self.options.extension.phoenix_heex {
@@ -739,9 +749,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let is_valid_double_delim_if_required = if b == b'~' && self.options.extension.strikethrough
         {
             numdelims <= 2
-        } else if b == b'=' && self.options.extension.highlight {
-            numdelims == 2
-        } else if b == b'+' && self.options.extension.insert {
+        } else if (b == b'=' && self.options.extension.highlight)
+            || (b == b'+' && self.options.extension.insert)
+        {
             numdelims == 2
         } else {
             true
@@ -846,6 +856,24 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         } else {
             self.make_inline(
                 NodeValue::Text(".".into()),
+                self.scanner.pos - 1,
+                self.scanner.pos - 1,
+            )
+        }
+    }
+
+    fn handle_guillemet_close(&mut self) -> Node<'a> {
+        self.scanner.pos += 1;
+        if self.peek_byte() == Some(b'>') {
+            self.scanner.pos += 1;
+            self.make_inline(
+                NodeValue::Text("\u{bb}".into()),
+                self.scanner.pos - 2,
+                self.scanner.pos - 1,
+            )
+        } else {
+            self.make_inline(
+                NodeValue::Text(">".into()),
                 self.scanner.pos - 1,
                 self.scanner.pos - 1,
             )
