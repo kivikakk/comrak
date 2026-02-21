@@ -372,6 +372,7 @@ pub fn format_node_default<T>(
         }
         NodeValue::Strikethrough => render_strikethrough(context, node, entering),
         NodeValue::Highlight => render_highlight(context, node, entering),
+        NodeValue::Insert => render_insert(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
@@ -1016,6 +1017,22 @@ fn render_highlight<T>(
         context.write_str(">")?;
     } else {
         context.write_str("</mark>")?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+fn render_insert<T>(
+    context: &mut Context<T>,
+    node: Node<'_>,
+    entering: bool,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.write_str("<ins")?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+    } else {
+        context.write_str("</ins>")?;
     }
 
     Ok(ChildRendering::HTML)

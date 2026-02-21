@@ -198,6 +198,7 @@ enum Extension {
     CjkFriendlyEmphasis,
     Subtext,
     Highlight,
+    Insert,
     PhoenixHeex,
 }
 
@@ -289,6 +290,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis))
         .subtext(exts.contains(&Extension::Subtext))
         .highlight(exts.contains(&Extension::Highlight))
+        .insert(exts.contains(&Extension::Insert))
         .phoenix_heex(exts.contains(&Extension::PhoenixHeex));
 
     #[cfg(feature = "shortcodes")]

@@ -478,6 +478,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::TaskItem(ref nti) => self.format_task_item(nti, node, entering)?,
             NodeValue::Strikethrough => self.format_strikethrough()?,
             NodeValue::Highlight => self.format_highlight()?,
+            NodeValue::Insert => self.format_insert()?,
             NodeValue::Superscript => self.format_superscript()?,
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
             NodeValue::Image(ref nl) => self.format_image(nl, entering)?,
@@ -883,6 +884,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_highlight(&mut self) -> fmt::Result {
         write!(self, "==")?;
+        Ok(())
+    }
+
+    fn format_insert(&mut self) -> fmt::Result {
+        write!(self, "++")?;
         Ok(())
     }
 

@@ -321,6 +321,11 @@ const HIGHLIGHT: TestCase = (
     "hello ==world== between ==wo\nrld== after",
 );
 
+const INSERT: TestCase = (
+    &[sourcepos!((1:7-1:15)), sourcepos!((1:25-2:5))],
+    "hello ++world++ between ++wo\nrld++ after",
+);
+
 const SUPERSCRIPT: TestCase = (
     &[sourcepos!((1:7-1:13)), sourcepos!((1:23-2:4))],
     "hello ^world^ between ^wo\nrld^ after",
@@ -494,6 +499,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Strong => STRONG,
                 Strikethrough => STRIKETHROUGH,
                 Highlight => HIGHLIGHT,
+                Insert => INSERT,
                 Superscript => SUPERSCRIPT,
                 Subscript => SUBSCRIPT,
                 Link => LINK,
@@ -530,6 +536,7 @@ fn sourcepos() {
     options.extension.tasklist = true;
     options.extension.strikethrough = true;
     options.extension.highlight = true;
+    options.extension.insert = true;
     options.extension.superscript = true;
     options.extension.subscript = true;
     options.extension.autolink = true;

@@ -25,6 +25,7 @@ mod highlight;
 #[path = "tests/html.rs"]
 mod html_;
 mod inline_footnotes;
+mod insert;
 mod math;
 mod multiline_block_quotes;
 #[path = "tests/options.rs"]

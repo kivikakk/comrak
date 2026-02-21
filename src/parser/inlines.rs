@@ -117,6 +117,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             s.skip_char_bytes[b'=' as usize] = true;
             s.emph_delim_bytes[b'=' as usize] = true;
         }
+        if options.extension.insert {
+            s.special_char_bytes[b'+' as usize] = true;
+            s.skip_char_bytes[b'+' as usize] = true;
+            s.emph_delim_bytes[b'+' as usize] = true;
+        }
         if options.extension.superscript || options.extension.inline_footnotes {
             s.special_char_bytes[b'^' as usize] = true;
         }
@@ -211,6 +216,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             b'\r' | b'\n' => Some(self.handle_newline()),
             b'`' => Some(self.handle_backticks(&ast.line_offsets)),
             b'=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
+            b'+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
             b'\\' => Some(self.handle_backslash()),
             b'&' => Some(self.handle_entity()),
             b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
@@ -734,6 +740,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         {
             numdelims <= 2
         } else if b == b'=' && self.options.extension.highlight {
+            numdelims == 2
+        } else if b == b'+' && self.options.extension.insert {
             numdelims == 2
         } else {
             true
@@ -1281,7 +1289,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 13] = [stack_bottom; 13];
+        let mut openers_bottom: [usize; 14] = [stack_bottom; 14];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -1313,6 +1321,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     b'_' => 5,
                     b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
                     b'=' => 12,
+                    b'+' => 13,
                     _ => unreachable!(),
                 };
 
@@ -1544,6 +1553,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     NodeValue::Highlight
                 } else {
                     NodeValue::EscapedTag("==")
+                }
+            } else if opener_byte == b'+' {
+                if self.options.extension.insert {
+                    NodeValue::Insert
+                } else {
+                    NodeValue::EscapedTag("++")
                 }
             } else if self.options.extension.spoiler && opener_byte == b'|' {
                 if use_delims == 2 {
