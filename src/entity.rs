@@ -34,10 +34,12 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
             0
         };
 
+        let is_hex = bytes[1] == b'x' || bytes[1] == b'X';
+
         if i < bytes.len()
             && bytes[i] == b';'
-            && (((bytes[1] == b'x' || bytes[1] == b'X') && (1..=6).contains(&num_digits))
-                || (1..=7).contains(&num_digits))
+            && ((is_hex && (1..=6).contains(&num_digits))
+                || (!is_hex && (1..=7).contains(&num_digits)))
         {
             if codepoint == 0 || (0xD800..=0xE000).contains(&codepoint) || codepoint >= 0x110000 {
                 codepoint = 0xFFFD;
