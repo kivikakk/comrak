@@ -1,6 +1,6 @@
 /// The details of an inline "shortcode" emoji/gemoji.
 ///
-/// ("gemoji" name context: https://github.com/github/gemoji)
+/// ("gemoji" name context: <https://github.com/github/gemoji>)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeShortCode {
     /// The shortcode that was resolved, e.g. "rabbit".
