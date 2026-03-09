@@ -805,11 +805,17 @@ impl From<(usize, usize, usize, usize)> for Sourcepos {
 }
 
 /// Represents the 1-based line and column positions of a given character.
+///
+/// The `column` value is measured in UTF-8 byte offsets (1-based),
+/// matching cmark behavior. This means multi-byte UTF-8 characters
+/// (for example, `ö` or `好`) increase the column count by their byte
+/// length rather than by Rust's `char` count.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LineColumn {
     /// The 1-based line number of the character.
     pub line: usize,
-    /// The 1-based column number of the character.
+    /// The 1-based column number of the character, counted as UTF-8 bytes.
+    /// For example, a 3-byte UTF-8 character increments the column by 3.
     pub column: usize,
 }
 
