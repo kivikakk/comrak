@@ -427,10 +427,12 @@ fn render_block_quote<T>(
         context.cr()?;
         context.write_str("<blockquote")?;
         render_sourcepos(context, node)?;
-        context.write_str(">\n")?;
+        context.write_str(">")?;
+        context.lf()?;
     } else {
         context.cr()?;
-        context.write_str("</blockquote>\n")?;
+        context.write_str("</blockquote>")?;
+        context.lf()?;
     }
     Ok(ChildRendering::HTML)
 }
@@ -524,7 +526,8 @@ fn render_code_block<T>(
 
                     context.escape(literal)?;
 
-                    context.write_str("</code></pre>\n")?
+                    context.write_str("</code></pre>")?;
+                    context.lf()?
                 }
                 Some(highlighter) => {
                     highlighter.write_pre_tag(context, pre_attributes)?;
@@ -532,7 +535,8 @@ fn render_code_block<T>(
 
                     highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
 
-                    context.write_str("</code></pre>\n")?
+                    context.write_str("</code></pre>")?;
+                    context.lf()?
                 }
             }
         }
@@ -581,7 +585,8 @@ fn render_heading<T>(
                     )?;
                 }
             } else {
-                writeln!(context, "</h{}>", nh.level)?;
+                write!(context, "</h{}>", nh.level)?;
+                context.lf()?;
             }
         }
         Some(adapter) => {
@@ -735,7 +740,8 @@ fn render_item<T>(
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
-        context.write_str("</li>\n")?;
+        context.write_str("</li>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -749,7 +755,8 @@ fn render_line_break<T>(
     if entering {
         context.write_str("<br")?;
         render_sourcepos(context, node)?;
-        context.write_str(" />\n")?;
+        context.write_str(" />")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -806,7 +813,8 @@ fn render_list<T>(
                     context.write_str(" class=\"contains-task-list\"")?;
                 }
                 render_sourcepos(context, node)?;
-                context.write_str(">\n")?;
+                context.write_str(">")?;
+                context.lf()?;
             }
             ListType::Ordered => {
                 context.write_str("<ol")?;
@@ -815,16 +823,20 @@ fn render_list<T>(
                 }
                 render_sourcepos(context, node)?;
                 if nl.start == 1 {
-                    context.write_str(">\n")?;
+                    context.write_str(">")?;
+                    context.lf()?;
                 } else {
-                    writeln!(context, " start=\"{}\">", nl.start)?;
+                    write!(context, " start=\"{}\">", nl.start)?;
+                    context.lf()?;
                 }
             }
         }
     } else if nl.list_type == ListType::Bullet {
-        context.write_str("</ul>\n")?;
+        context.write_str("</ul>")?;
+        context.lf()?;
     } else {
-        context.write_str("</ol>\n")?;
+        context.write_str("</ol>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -862,7 +874,8 @@ fn render_paragraph<T>(
                     }
                 }
             }
-            context.write_str("</p>\n")?;
+            context.write_str("</p>")?;
+            context.lf()?;
         }
     }
 
@@ -878,7 +891,8 @@ fn render_soft_break<T>(
         if context.options.render.hardbreaks {
             context.write_str("<br")?;
             render_sourcepos(context, node)?;
-            context.write_str(" />\n")?;
+            context.write_str(" />")?;
+            context.lf()?;
         } else {
             context.write_str("\n")?;
         }
@@ -930,7 +944,8 @@ fn render_thematic_break<T>(
         context.cr()?;
         context.write_str("<hr")?;
         render_sourcepos(context, node)?;
-        context.write_str(" />\n")?;
+        context.write_str(" />")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -948,7 +963,10 @@ fn render_footnote_definition<T>(
         if context.footnote_ix == 0 {
             context.write_str("<section")?;
             render_sourcepos(context, node)?;
-            context.write_str(" class=\"footnotes\" data-footnotes>\n<ol>\n")?;
+            context.write_str(" class=\"footnotes\" data-footnotes>")?;
+            context.lf()?;
+            context.write_str("<ol>")?;
+            context.lf()?;
         }
         context.footnote_ix += 1;
         context.write_str("<li")?;
@@ -958,9 +976,10 @@ fn render_footnote_definition<T>(
         context.write_str("\">")?;
     } else {
         if put_footnote_backref(context, nfd)? {
-            context.write_str("\n")?;
+            context.lf()?;
         }
-        context.write_str("</li>\n")?;
+        context.write_str("</li>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1047,7 +1066,8 @@ fn render_table<T>(
         context.cr()?;
         context.write_str("<table")?;
         render_sourcepos(context, node)?;
-        context.write_str(">\n")?;
+        context.write_str(">")?;
+        context.lf()?;
     } else {
         if let Some(true) = node
             .last_child()
@@ -1055,10 +1075,12 @@ fn render_table<T>(
         // node.first_child() guaranteed to exist in block since last_child does!
         {
             context.cr()?;
-            context.write_str("</tbody>\n")?;
+            context.write_str("</tbody>")?;
+            context.lf()?;
         }
         context.cr()?;
-        context.write_str("</table>\n")?;
+        context.write_str("</table>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1138,10 +1160,12 @@ fn render_table_row<T>(
     if entering {
         context.cr()?;
         if thead {
-            context.write_str("<thead>\n")?;
+            context.write_str("<thead>")?;
+            context.lf()?;
         } else if let Some(n) = node.previous_sibling() {
             if let NodeValue::TableRow(true) = n.data().value {
-                context.write_str("<tbody>\n")?;
+                context.write_str("<tbody>")?;
+                context.lf()?;
             }
         }
         context.write_str("<tr")?;
@@ -1192,7 +1216,8 @@ fn render_task_item<T>(
         }
         context.write_str(" disabled=\"\" /> ")?;
     } else if write_li {
-        context.write_str("</li>\n")?;
+        context.write_str("</li>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1212,7 +1237,8 @@ fn render_alert<T>(
         context.write_str(alert.alert_type.css_class())?;
         context.write_str("\"")?;
         render_sourcepos(context, node)?;
-        context.write_str(">\n")?;
+        context.write_str(">")?;
+        context.lf()?;
         context.write_str("<p class=\"markdown-alert-title\">")?;
         match alert.title {
             Some(ref title) => context.escape(title)?,
@@ -1220,10 +1246,12 @@ fn render_alert<T>(
                 context.write_str(alert.alert_type.default_title())?;
             }
         }
-        context.write_str("</p>\n")?;
+        context.write_str("</p>")?;
+        context.lf()?;
     } else {
         context.cr()?;
-        context.write_str("</div>\n")?;
+        context.write_str("</div>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1239,7 +1267,8 @@ fn render_description_details<T>(
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
-        context.write_str("</dd>\n")?;
+        context.write_str("</dd>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1254,9 +1283,11 @@ fn render_description_list<T>(
         context.cr()?;
         context.write_str("<dl")?;
         render_sourcepos(context, node)?;
-        context.write_str(">\n")?;
+        context.write_str(">")?;
+        context.lf()?;
     } else {
-        context.write_str("</dl>\n")?;
+        context.write_str("</dl>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1272,7 +1303,8 @@ fn render_description_term<T>(
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
-        context.write_str("</dt>\n")?;
+        context.write_str("</dt>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1366,7 +1398,8 @@ pub fn render_math_code_block<T>(
     write_opening_tag(context, "code", code_attributes.into_iter())?;
 
     context.escape(literal)?;
-    context.write_str("</code></pre>\n")?;
+    context.write_str("</code></pre>")?;
+    context.lf()?;
 
     Ok(ChildRendering::HTML)
 }
@@ -1380,10 +1413,12 @@ fn render_multiline_block_quote<T>(
         context.cr()?;
         context.write_str("<blockquote")?;
         render_sourcepos(context, node)?;
-        context.write_str(">\n")?;
+        context.write_str(">")?;
+        context.lf()?;
     } else {
         context.cr()?;
-        context.write_str("</blockquote>\n")?;
+        context.write_str("</blockquote>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1459,7 +1494,8 @@ fn render_subtext<T>(
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
-        writeln!(context, "</sub></p>")?;
+        write!(context, "</sub></p>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)

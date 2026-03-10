@@ -162,6 +162,10 @@ struct Cli {
     /// Minimise escapes in CommonMark output using a trial-and-error algorithm
     #[arg(long)]
     experimental_minimize_commonmark: bool,
+
+    /// Suppress pretty-printing newlines between block-level HTML elements
+    #[arg(long)]
+    compact: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -316,6 +320,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .list_style(cli.list_style.into())
         .sourcepos(cli.sourcepos)
         .experimental_minimize_commonmark(cli.experimental_minimize_commonmark)
+        .compact_html(cli.compact)
         .escaped_char_spans(cli.escaped_char_spans)
         .ignore_empty_links(cli.ignore_empty_links)
         .gfm_quirks(cli.gfm_quirks || cli.gfm)

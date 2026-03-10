@@ -1176,6 +1176,24 @@ pub struct Render {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub experimental_minimize_commonmark: bool,
+
+    /// Suppress pretty-printing newlines between block-level HTML elements.
+    ///
+    /// Normally comrak puts a `\n` after closing tags like `</p>`, `</li>`,
+    /// etc.  With this option on, those newlines are omitted.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// assert_eq!(markdown_to_html("# Hello\n\nWorld.\n", &options),
+    ///            "<h1>Hello</h1>\n<p>World.</p>\n");
+    ///
+    /// options.render.compact_html = true;
+    /// assert_eq!(markdown_to_html("# Hello\n\nWorld.\n", &options),
+    ///            "<h1>Hello</h1><p>World.</p>");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub compact_html: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
