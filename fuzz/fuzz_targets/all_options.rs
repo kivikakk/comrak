@@ -5,8 +5,8 @@ use libfuzzer_sys::fuzz_target;
 use std::sync::Arc;
 
 use comrak::{
-    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
-    ResolvedReference,
+    Options, ResolvedReference, markdown_to_commonmark, markdown_to_commonmark_xml,
+    markdown_to_html, options,
 };
 
 #[derive(Arbitrary, Debug)]
@@ -56,6 +56,7 @@ struct FuzzExtensionOptions {
     cjk_friendly_emphasis: bool,
     highlight: bool,
     phoenix_heex: bool,
+    insert: bool,
     // non-bool below
     header_ids: bool,
     front_matter_delimiter: bool,
@@ -93,6 +94,7 @@ impl FuzzExtensionOptions {
             cjk_friendly_emphasis: self.cjk_friendly_emphasis,
             highlight: self.highlight,
             phoenix_heex: self.phoenix_heex,
+            insert: self.insert,
             // non-bool below
             header_ids: if self.header_ids {
                 Some("user-content-".into())
@@ -176,6 +178,7 @@ struct FuzzRenderOptions {
     tasklist_classes: bool,
     ol_width: usize,
     experimental_minimize_commonmark: bool,
+    compact_html: bool,
 }
 
 impl FuzzRenderOptions {
@@ -197,6 +200,7 @@ impl FuzzRenderOptions {
             tasklist_classes: self.tasklist_classes,
             ol_width: self.ol_width,
             experimental_minimize_commonmark: self.experimental_minimize_commonmark,
+            compact_html: self.compact_html,
         }
     }
 }
