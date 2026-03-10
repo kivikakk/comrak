@@ -1,3 +1,41 @@
+# [v0.51.0] - 2026-03-10
+
+## What's Changed
+* Don't wrap text in table cells by @cinerea0 in https://github.com/kivikakk/comrak/pull/737
+* Add "css" to CLI's syntax highlighting options; set CSS as the default highlighting mode by @gjtorikian in https://github.com/kivikakk/comrak/pull/739
+* Bump toml from 0.9.10+spec-1.1.0 to 0.9.11+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/742
+* support raw nodes with children by @JeanMertz in https://github.com/kivikakk/comrak/pull/743
+* Bump time from 0.3.36 to 0.3.47 in /fuzz by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/744
+* fix: Incorrect `sourcepos` for inserted table cells by @Martin005 in https://github.com/kivikakk/comrak/pull/747
+* Bump clap from 4.5.54 to 4.5.56 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/748
+* fix(heex): nested elements by @leandrocp in https://github.com/kivikakk/comrak/pull/749
+* Support language-specific codefence renderers by @neilberkman in https://github.com/kivikakk/comrak/pull/751
+* Support comma-delimited language tokens in syntect by @neilberkman in https://github.com/kivikakk/comrak/pull/752
+* Fix off-by-one in hex entity digit limit by @neilberkman in https://github.com/kivikakk/comrak/pull/753
+* Add ++insert++ extension and guillemet smart punctuation by @neilberkman in https://github.com/kivikakk/comrak/pull/754
+* Bump clap from 4.5.56 to 4.5.57 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/756
+* feat: Replace `unicode_categories` with `finl_unicode` for Unicode character categories by @Martin005 in https://github.com/kivikakk/comrak/pull/757
+* Bump toml from 0.9.11+spec-1.1.0 to 1.0.1+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/760
+* Bump bon from 3.8.2 to 3.9.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/759
+* Bump clap from 4.5.57 to 4.5.58 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/758
+* Add `alerts` (admonitions) to README by @kritzelkrak in https://github.com/kivikakk/comrak/pull/761
+* docs: Explain column counting in LineColumn and fix shortcode context link by @Martin005 in https://github.com/kivikakk/comrak/pull/764
+* Bump clap from 4.5.59 to 4.5.60 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/766
+* Bump toml from 1.0.1+spec-1.1.0 to 1.0.3+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/767
+* Bump strum from 0.27.2 to 0.28.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/765
+* feat: Add compact_html render option to suppress pretty-printing newlines by @xvchris in https://github.com/kivikakk/comrak/pull/769
+
+## New Contributors
+* @cinerea0 made their first contribution in https://github.com/kivikakk/comrak/pull/737
+* @JeanMertz made their first contribution in https://github.com/kivikakk/comrak/pull/743
+* @neilberkman made their first contribution in https://github.com/kivikakk/comrak/pull/751
+* @kritzelkrak made their first contribution in https://github.com/kivikakk/comrak/pull/761
+* @xvchris made their first contribution in https://github.com/kivikakk/comrak/pull/769
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.50.0...v0.51.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security

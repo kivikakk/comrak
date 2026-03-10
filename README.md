@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.50"
+comrak = "0.51"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.85</span>+.
@@ -119,7 +119,8 @@ Options:
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
           math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
-          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, phoenix-heex]
+          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
+          phoenix-heex]
 
   -t, --to <FORMAT>
           Specify output format
@@ -143,9 +144,10 @@ Options:
           the resulting document
 
       --syntax-highlighting <THEME>
-          Syntax highlighting theme for fenced code blocks; specify a theme, or 'none' to disable
+          Syntax highlighting for fenced code blocks; 'css' for CSS classes (default), a theme name
+          for inline styles, or 'none' to disable
           
-          [default: base16-ocean.dark]
+          [default: css]
 
       --list-style <LIST_STYLE>
           Specify bullet character for lists ("-", "+", "*") in CommonMark output
@@ -164,6 +166,9 @@ Options:
 
       --experimental-minimize-commonmark
           Minimise escapes in CommonMark output using a trial-and-error algorithm
+
+      --compact
+          Suppress pretty-printing newlines between block-level HTML elements
 
   -h, --help
           Print help (see a summary with '-h')
