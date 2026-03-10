@@ -45,7 +45,10 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
 
     pub(super) fn finish(mut self) -> Result<T, fmt::Error> {
         if self.footnote_ix > 0 {
-            self.write_str("</ol>\n</section>\n")?;
+            self.write_str("</ol>")?;
+            self.lf()?;
+            self.write_str("</section>")?;
+            self.lf()?;
         }
         Ok(self.user)
     }
@@ -54,8 +57,21 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
     /// LINE FEED, writes one. Otherwise, does nothing.
     ///
     /// (In other words, ensures the output is at a new line.)
+    ///
+    /// No-op when [`compact_html`](crate::Render::compact_html) is on.
     pub fn cr(&mut self) -> fmt::Result {
+        if self.options.render.compact_html {
+            return Ok(());
+        }
         if !self.last_was_lf.get() {
+            self.write_str("\n")?;
+        }
+        Ok(())
+    }
+
+    /// Writes `\n` unless [`compact_html`](crate::Render::compact_html) is on.
+    pub fn lf(&mut self) -> fmt::Result {
+        if !self.options.render.compact_html {
             self.write_str("\n")?;
         }
         Ok(())
