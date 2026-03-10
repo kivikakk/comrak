@@ -5,7 +5,7 @@ use ntest::timeout;
 
 // input: python3 -c 'n = 50000; print("*a_ " * n)'
 #[test]
-#[timeout(8000)]
+#[timeout(4000)]
 fn pathological_emphases() {
     let n = 50_000;
     let input = "*a_ ".repeat(n);
