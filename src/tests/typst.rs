@@ -99,6 +99,14 @@ fn typst_escapes_text_that_would_trigger_markup_or_comments() {
 }
 
 #[test]
+fn literal_footnote_sentinels_in_text_are_preserved() {
+    typst(
+        "text \u{FDD0}12\u{FDD1} here\n",
+        "text \u{FDD0}12\u{FDD1} here\n",
+    );
+}
+
+#[test]
 fn fenced_code_blocks_use_raw_blocks() {
     typst(
         "```rust\nfn main() {}\n```\n",
@@ -111,6 +119,14 @@ fn typst_code_fences_passthrough_verbatim() {
     typst(
         "```typst\n#bibliography(\"refs.bib\")\n```\n",
         "#bibliography(\"refs.bib\")\n",
+    );
+}
+
+#[test]
+fn typst_code_fences_preserve_literal_footnote_sentinels() {
+    typst(
+        "```typst\n#text(\"\u{FDD0}12\u{FDD1}\")\n```\n",
+        "#text(\"\u{FDD0}12\u{FDD1}\")\n",
     );
 }
 

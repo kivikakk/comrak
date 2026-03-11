@@ -117,6 +117,11 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
     }
 
     fn expand_footnotes(&mut self, input: String) -> String {
+        if !input.contains(FOOTNOTE_PLACEHOLDER_START) && !input.contains(FOOTNOTE_PLACEHOLDER_END)
+        {
+            return input;
+        }
+
         enum ExpansionKind {
             Root,
             Footnote { label: usize },
@@ -165,6 +170,12 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
 
             match frame.chars[frame.pos] {
                 FOOTNOTE_PLACEHOLDER_START => {
+                    if frame.chars.get(frame.pos + 1) == Some(&FOOTNOTE_PLACEHOLDER_START) {
+                        frame.out.push(FOOTNOTE_PLACEHOLDER_START);
+                        frame.pos += 2;
+                        continue;
+                    }
+
                     let mut label_end = frame.pos + 1;
                     while matches!(frame.chars.get(label_end), Some(ch) if ch.is_ascii_digit()) {
                         label_end += 1;
@@ -199,6 +210,15 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
 
                     let body = self.render_footnote_body(entry.node);
                     stack.push(ExpansionFrame::new(body, ExpansionKind::Footnote { label }));
+                }
+                FOOTNOTE_PLACEHOLDER_END => {
+                    if frame.chars.get(frame.pos + 1) == Some(&FOOTNOTE_PLACEHOLDER_END) {
+                        frame.out.push(FOOTNOTE_PLACEHOLDER_END);
+                        frame.pos += 2;
+                    } else {
+                        frame.out.push(FOOTNOTE_PLACEHOLDER_END);
+                        frame.pos += 1;
+                    }
                 }
                 ch => {
                     frame.out.push(ch);
@@ -256,7 +276,7 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             NodeValue::LineBreak => "\\\n".to_string(),
             NodeValue::Code(NodeCode { ref literal, .. }) => raw_inline(literal),
             NodeValue::HtmlInline(ref literal) => render_html_inline(literal),
-            NodeValue::Raw(ref literal) => literal.clone(),
+            NodeValue::Raw(ref literal) => escape_footnote_sentinels(literal),
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(ref literal) => raw_inline(literal),
             NodeValue::Emph => format!("_{}_", child_outputs.concat()),
@@ -438,7 +458,7 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             .filter(|token| !token.is_empty());
 
         if matches!(lang, Some("typst" | "typ")) {
-            return code.literal.trim_end_matches('\n').to_string();
+            return escape_footnote_sentinels(code.literal.trim_end_matches('\n'));
         }
 
         self.render_raw_block(&code.literal, lang)
@@ -880,6 +900,30 @@ fn footnote_placeholder(label: usize) -> String {
     format!("{FOOTNOTE_PLACEHOLDER_START}{label}{FOOTNOTE_PLACEHOLDER_END}")
 }
 
+fn escape_footnote_sentinels(input: &str) -> String {
+    if !input.contains(FOOTNOTE_PLACEHOLDER_START) && !input.contains(FOOTNOTE_PLACEHOLDER_END) {
+        return input.to_string();
+    }
+
+    let mut out = String::with_capacity(input.len() + 4);
+
+    for ch in input.chars() {
+        match ch {
+            FOOTNOTE_PLACEHOLDER_START => {
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+            }
+            FOOTNOTE_PLACEHOLDER_END => {
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+            }
+            _ => out.push(ch),
+        }
+    }
+
+    out
+}
+
 fn take_child_outputs(node: Node<'_>, rendered: &mut HashMap<usize, String>) -> Vec<String> {
     node.children()
         .map(|child| rendered.remove(&node_key(child)).unwrap_or_default())
@@ -1223,6 +1267,14 @@ fn escape_string(input: &str) -> String {
 
     for ch in input.chars() {
         match ch {
+            FOOTNOTE_PLACEHOLDER_START => {
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+            }
+            FOOTNOTE_PLACEHOLDER_END => {
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+            }
             '\\' => out.push_str("\\\\"),
             '"' => out.push_str("\\\""),
             '\n' => out.push_str("\\n"),
@@ -1270,6 +1322,14 @@ fn escape_text(input: &str) -> String {
         }
 
         match ch {
+            FOOTNOTE_PLACEHOLDER_START => {
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+                out.push(FOOTNOTE_PLACEHOLDER_START);
+            }
+            FOOTNOTE_PLACEHOLDER_END => {
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+                out.push(FOOTNOTE_PLACEHOLDER_END);
+            }
             '\\' | '#' | '[' | ']' | '$' | '`' | '@' | '<' | '>' | '{' | '}' | '*' | '_' | '~' => {
                 out.push('\\');
                 out.push(ch);
