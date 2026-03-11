@@ -325,8 +325,8 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         out.push_str(func);
         out.push_str("(\n");
 
-        if list.tight {
-            out.push_str("  tight: true,\n");
+        if !list.tight {
+            out.push_str("  tight: false,\n");
         }
 
         if matches!(list.list_type, ListType::Ordered) && list.start != 1 {
@@ -703,7 +703,9 @@ fn render_custom_marker_list(marker: &str, tight: bool, items: &[String]) -> Str
     out.push_str("  marker: ");
     out.push_str(&content_block(&escape_text(marker), 2));
     out.push_str(",\n");
-    out.push_str(&format!("  tight: {},\n", tight));
+    if !tight {
+        out.push_str("  tight: false,\n");
+    }
 
     for item in items {
         out.push_str("  ");
@@ -996,7 +998,7 @@ fn is_typst_label_segment(segment: &str) -> bool {
         return false;
     };
 
-    if !first.is_ascii_alphanumeric() {
+    if first.is_ascii_digit() || !(first.is_ascii_alphanumeric() || first == '_') {
         return false;
     }
 
@@ -1007,18 +1009,16 @@ fn translate_math_literal(input: &str) -> String {
     MathTranslator::new(input).translate()
 }
 
-struct MathTranslator<'a> {
+struct MathTranslator {
     chars: Vec<char>,
     pos: usize,
-    _input: &'a str,
 }
 
-impl<'a> MathTranslator<'a> {
-    fn new(input: &'a str) -> Self {
+impl MathTranslator {
+    fn new(input: &str) -> Self {
         Self {
             chars: input.chars().collect(),
             pos: 0,
-            _input: input,
         }
     }
 
@@ -1270,7 +1270,7 @@ fn escape_text(input: &str) -> String {
         }
 
         match ch {
-            '\\' | '#' | '[' | ']' | '$' | '`' | '@' | '<' | '*' | '_' | '~' => {
+            '\\' | '#' | '[' | ']' | '$' | '`' | '@' | '<' | '>' | '{' | '}' | '*' | '_' | '~' => {
                 out.push('\\');
                 out.push(ch);
             }

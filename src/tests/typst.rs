@@ -10,7 +10,6 @@ fn basic_blocks_and_inlines() {
             "= Title\n\n",
             "Paragraph with #link(\"https://example.com\")[link], *strong*, _emphasis_, and #raw(\"code\").\n\n",
             "#list(\n",
-            "  tight: true,\n",
             "  [one],\n",
             "  [two],\n",
             ")\n",
@@ -24,10 +23,23 @@ fn ordered_lists_preserve_start() {
         "3. third\n4. fourth\n",
         concat!(
             "#enum(\n",
-            "  tight: true,\n",
             "  start: 3,\n",
             "  [third],\n",
             "  [fourth],\n",
+            ")\n",
+        ),
+    );
+}
+
+#[test]
+fn loose_lists_emit_tight_false() {
+    typst(
+        "- one\n\n- two\n",
+        concat!(
+            "#list(\n",
+            "  tight: false,\n",
+            "  [one],\n",
+            "  [two],\n",
             ")\n",
         ),
     );
@@ -78,10 +90,10 @@ fn standalone_images_with_titles_respect_figure_with_caption() {
 #[test]
 fn typst_escapes_text_that_would_trigger_markup_or_comments() {
     typst(
-        "\\* not a list item\n\nuse // for comments, /* blocks, and ~100.\n",
+        "\\* not a list item\n\nuse // for comments, /* blocks, ~100, {braces}, and > labels.\n",
         concat!(
             "\\* not a list item\n\n",
-            "use /\\/ for comments, /\\* blocks, and \\~100.\n",
+            "use /\\/ for comments, /\\* blocks, \\~100, \\{braces\\}, and \\> labels.\n",
         ),
     );
 }
@@ -266,13 +278,33 @@ fn task_lists_render_as_custom_marker_lists() {
         concat!(
             "#list(\n",
             "  marker: [☐],\n",
-            "  tight: true,\n",
             "  [draft],\n",
             "  [review],\n",
             ")\n",
             "#list(\n",
             "  marker: [☒],\n",
-            "  tight: true,\n",
+            "  [ship],\n",
+            ")\n",
+        ),
+        |opts| {
+            opts.extension.tasklist = true;
+        },
+    );
+}
+
+#[test]
+fn loose_task_lists_emit_tight_false() {
+    typst_opts(
+        "- [ ] draft\n\n- [x] ship\n",
+        concat!(
+            "#list(\n",
+            "  marker: [☐],\n",
+            "  tight: false,\n",
+            "  [draft],\n",
+            ")\n",
+            "#list(\n",
+            "  marker: [☒],\n",
+            "  tight: false,\n",
             "  [ship],\n",
             ")\n",
         ),
@@ -324,6 +356,17 @@ fn label_autolinks_and_internal_links_render_to_typst_targets() {
             "= Intro <sec:intro>\n\n",
             "#image(\"image.png\", alt: \"Alt\") <fig:hero>\n\n",
             "#link(<sec:intro>)[See intro]\n",
+        ),
+    );
+}
+
+#[test]
+fn underscore_prefixed_typst_labels_are_preserved() {
+    typst(
+        "# Intro <sec:_intro>\n\n[See intro](#sec:_intro)\n",
+        concat!(
+            "= Intro <sec:_intro>\n\n",
+            "#link(<sec:_intro>)[See intro]\n",
         ),
     );
 }
