@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Write};
 
-use crate::html::collect_text;
 use crate::nodes::{
     AlertType, ListDelimType, ListType, Node, NodeAlert, NodeCode, NodeCodeBlock,
     NodeDescriptionItem, NodeFootnoteDefinition, NodeFootnoteReference, NodeHeading, NodeHtmlBlock,
@@ -28,7 +27,8 @@ pub fn format_document_with_plugins(
     _plugins: &Plugins,
 ) -> fmt::Result {
     let mut formatter = TypstFormatter::new(root, options);
-    let mut rendered = formatter.render_blocks(root);
+    let rendered = formatter.render_subtree(root);
+    let mut rendered = formatter.expand_footnotes(rendered);
 
     if !rendered.is_empty() && !rendered.ends_with('\n') {
         rendered.push('\n');
@@ -45,14 +45,16 @@ struct FootnoteEntry<'a> {
 
 struct TypstFormatter<'a, 'o, 'c> {
     options: &'o Options<'c>,
-    anchorizer: Anchorizer,
+    heading_labels: HashMap<usize, String>,
     footnotes: HashMap<String, FootnoteEntry<'a>>,
-    emitted_footnotes: HashSet<String>,
+    footnotes_by_label: HashMap<usize, FootnoteEntry<'a>>,
+    emitted_footnotes: HashSet<usize>,
 }
 
 impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
     fn new(root: Node<'a>, options: &'o Options<'c>) -> Self {
         let mut footnotes = HashMap::new();
+        let mut footnotes_by_label = HashMap::new();
         let mut next_footnote = 1usize;
 
         for node in root.descendants() {
@@ -67,73 +69,183 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
                     label: next_footnote,
                     node,
                 };
+                footnotes_by_label.insert(next_footnote, entry);
                 next_footnote += 1;
                 entry
             });
         }
 
+        let heading_labels = compute_heading_labels(root, options, &footnotes);
+
         TypstFormatter {
             options,
-            anchorizer: Anchorizer::new(),
+            heading_labels,
             footnotes,
+            footnotes_by_label,
             emitted_footnotes: HashSet::new(),
         }
     }
 
-    fn render_blocks(&mut self, parent: Node<'a>) -> String {
-        let mut parts = Vec::new();
+    fn render_subtree(&mut self, root: Node<'a>) -> String {
+        enum Phase {
+            Pre,
+            Post,
+        }
 
-        for child in parent.children() {
-            let rendered = self.render_block(child);
-            let trimmed = rendered.trim_matches('\n');
+        let mut rendered = HashMap::new();
+        let mut stack = vec![(root, Phase::Pre)];
 
-            if !trimmed.is_empty() {
-                parts.push(trimmed.to_string());
+        while let Some((node, phase)) = stack.pop() {
+            match phase {
+                Phase::Pre => {
+                    stack.push((node, Phase::Post));
+                    if !matches!(node.data().value, NodeValue::FootnoteDefinition(_)) {
+                        for child in node.reverse_children() {
+                            stack.push((child, Phase::Pre));
+                        }
+                    }
+                }
+                Phase::Post => {
+                    let child_outputs = take_child_outputs(node, &mut rendered);
+                    let output = self.render_node(node, child_outputs);
+                    rendered.insert(node_key(node), output);
+                }
             }
         }
 
-        parts.join("\n\n")
+        rendered.remove(&node_key(root)).unwrap_or_default()
     }
 
-    fn render_block(&mut self, node: Node<'a>) -> String {
-        match node.data().value.clone() {
-            NodeValue::Document => self.render_blocks(node),
+    fn expand_footnotes(&mut self, input: String) -> String {
+        enum ExpansionKind {
+            Root,
+            Footnote { label: usize },
+        }
+
+        struct ExpansionFrame {
+            chars: Vec<char>,
+            pos: usize,
+            out: String,
+            kind: ExpansionKind,
+        }
+
+        impl ExpansionFrame {
+            fn new(text: String, kind: ExpansionKind) -> Self {
+                Self {
+                    chars: text.chars().collect(),
+                    pos: 0,
+                    out: String::new(),
+                    kind,
+                }
+            }
+        }
+
+        let mut stack = vec![ExpansionFrame::new(input, ExpansionKind::Root)];
+
+        while let Some(frame) = stack.last_mut() {
+            if frame.pos >= frame.chars.len() {
+                let completed = stack.pop().unwrap();
+                let rendered = match completed.kind {
+                    ExpansionKind::Root => completed.out,
+                    ExpansionKind::Footnote { label } => {
+                        format!(
+                            "#footnote{} <footnote-{label}>",
+                            content_block(&completed.out, 0)
+                        )
+                    }
+                };
+
+                if let Some(parent) = stack.last_mut() {
+                    parent.out.push_str(&rendered);
+                    continue;
+                }
+
+                return rendered;
+            }
+
+            match frame.chars[frame.pos] {
+                FOOTNOTE_PLACEHOLDER_START => {
+                    let mut label_end = frame.pos + 1;
+                    while matches!(frame.chars.get(label_end), Some(ch) if ch.is_ascii_digit()) {
+                        label_end += 1;
+                    }
+
+                    if label_end == frame.pos + 1
+                        || frame.chars.get(label_end) != Some(&FOOTNOTE_PLACEHOLDER_END)
+                    {
+                        frame.out.push(FOOTNOTE_PLACEHOLDER_START);
+                        frame.pos += 1;
+                        continue;
+                    }
+
+                    let label = frame.chars[frame.pos + 1..label_end]
+                        .iter()
+                        .collect::<String>()
+                        .parse()
+                        .unwrap();
+                    frame.pos = label_end + 1;
+
+                    if !self.emitted_footnotes.insert(label) {
+                        frame
+                            .out
+                            .push_str(&format!("#footnote(<footnote-{label}>)"));
+                        continue;
+                    }
+
+                    let Some(entry) = self.footnotes_by_label.get(&label).copied() else {
+                        frame.out.push_str(&format!("[^{}]", label));
+                        continue;
+                    };
+
+                    let body = self.render_footnote_body(entry.node);
+                    stack.push(ExpansionFrame::new(body, ExpansionKind::Footnote { label }));
+                }
+                ch => {
+                    frame.out.push(ch);
+                    frame.pos += 1;
+                }
+            }
+        }
+
+        String::new()
+    }
+
+    fn render_node(&mut self, node: Node<'a>, child_outputs: Vec<String>) -> String {
+        match node.data().value {
+            NodeValue::Document => join_block_children(&child_outputs),
             NodeValue::FrontMatter(_) => String::new(),
-            NodeValue::BlockQuote | NodeValue::MultilineBlockQuote(_) => self.render_quote(node),
-            NodeValue::List(list) => self.render_list(node, list),
-            NodeValue::Item(_) | NodeValue::TaskItem(_) => self.render_list_item(node),
-            NodeValue::DescriptionList => self.render_description_list(node),
-            NodeValue::DescriptionItem(meta) => self.render_description_item(node, meta),
-            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => self.render_blocks(node),
-            NodeValue::CodeBlock(code) => self.render_code_block(&code),
-            NodeValue::HtmlBlock(block) => self.render_raw_block(&block.literal, None),
+            NodeValue::BlockQuote | NodeValue::MultilineBlockQuote(_) => {
+                self.render_quote(join_block_children(&child_outputs))
+            }
+            NodeValue::List(ref list) => self.render_list(node, *list, child_outputs),
+            NodeValue::Item(_) | NodeValue::TaskItem(_) => render_list_item(&child_outputs),
+            NodeValue::DescriptionList => render_description_list(&child_outputs),
+            NodeValue::DescriptionItem(ref meta) => {
+                self.render_description_item(node, *meta, child_outputs)
+            }
+            NodeValue::DescriptionTerm | NodeValue::DescriptionDetails => {
+                join_block_children(&child_outputs)
+            }
+            NodeValue::CodeBlock(ref code) => self.render_code_block(code),
+            NodeValue::HtmlBlock(ref block) => self.render_raw_block(&block.literal, None),
             #[cfg(feature = "phoenix_heex")]
-            NodeValue::HeexBlock(block) => self.render_raw_block(&block.literal, None),
-            NodeValue::Paragraph => self.render_inline_children(node),
-            NodeValue::Heading(heading) => self.render_heading(node, heading),
+            NodeValue::HeexBlock(ref block) => self.render_raw_block(&block.literal, None),
+            NodeValue::Paragraph
+            | NodeValue::TableCell
+            | NodeValue::SpoileredText
+            | NodeValue::Escaped => child_outputs.concat(),
+            NodeValue::Heading(ref heading) => {
+                self.render_heading(node, *heading, child_outputs.concat())
+            }
             NodeValue::ThematicBreak => "#line(length: 100%)".to_string(),
             NodeValue::FootnoteDefinition(_) => String::new(),
-            NodeValue::Table(table) => self.render_table(node, &table),
-            NodeValue::TableRow(_) | NodeValue::TableCell => self.render_inline_children(node),
-            NodeValue::Alert(alert) => self.render_alert(node, &alert),
-            NodeValue::Subtext => self.render_inline_wrapper("sub", node),
-            _ => self.render_inline(node),
-        }
-    }
-
-    fn render_inline_children(&mut self, parent: Node<'a>) -> String {
-        let mut rendered = String::new();
-
-        for child in parent.children() {
-            rendered.push_str(&self.render_inline(child));
-        }
-
-        rendered
-    }
-
-    fn render_inline(&mut self, node: Node<'a>) -> String {
-        match node.data().value.clone() {
-            NodeValue::Text(text) => escape_text(&text),
+            NodeValue::Table(ref table) => self.render_table(table, child_outputs),
+            NodeValue::TableRow(is_header) => self.render_table_row(node, is_header, child_outputs),
+            NodeValue::Alert(ref alert) => {
+                self.render_alert(alert, join_block_children(&child_outputs))
+            }
+            NodeValue::Subtext => render_inline_wrapper("sub", &child_outputs.concat()),
+            NodeValue::Text(ref text) => escape_text(text),
             NodeValue::SoftBreak => {
                 if self.options.render.hardbreaks {
                     "\\\n".to_string()
@@ -142,63 +254,33 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
                 }
             }
             NodeValue::LineBreak => "\\\n".to_string(),
-            NodeValue::Code(NodeCode { literal, .. }) => raw_inline(&literal),
-            NodeValue::HtmlInline(literal) => render_html_inline(&literal),
-            NodeValue::Raw(literal) => literal,
+            NodeValue::Code(NodeCode { ref literal, .. }) => raw_inline(literal),
+            NodeValue::HtmlInline(ref literal) => render_html_inline(literal),
+            NodeValue::Raw(ref literal) => literal.clone(),
             #[cfg(feature = "phoenix_heex")]
-            NodeValue::HeexInline(literal) => raw_inline(&literal),
-            NodeValue::Emph => format!("_{}_", self.render_inline_children(node)),
-            NodeValue::Strong => format!("*{}*", self.render_inline_children(node)),
-            NodeValue::Strikethrough => self.render_inline_wrapper("strike", node),
-            NodeValue::Highlight => self.render_inline_wrapper("highlight", node),
-            NodeValue::Superscript => self.render_inline_wrapper("super", node),
-            NodeValue::Underline => self.render_inline_wrapper("underline", node),
-            NodeValue::Subscript => self.render_inline_wrapper("sub", node),
-            NodeValue::Insert => self.render_inline_wrapper("underline", node),
-            NodeValue::SpoileredText | NodeValue::Escaped => self.render_inline_children(node),
-            NodeValue::Link(link) => self.render_link(node, &link),
-            NodeValue::Image(link) => self.render_image(node, &link),
-            NodeValue::FootnoteReference(reference) => self.render_footnote_reference(&reference),
+            NodeValue::HeexInline(ref literal) => raw_inline(literal),
+            NodeValue::Emph => format!("_{}_", child_outputs.concat()),
+            NodeValue::Strong => format!("*{}*", child_outputs.concat()),
+            NodeValue::Strikethrough => render_inline_wrapper("strike", &child_outputs.concat()),
+            NodeValue::Highlight => render_inline_wrapper("highlight", &child_outputs.concat()),
+            NodeValue::Superscript => render_inline_wrapper("super", &child_outputs.concat()),
+            NodeValue::Underline => render_inline_wrapper("underline", &child_outputs.concat()),
+            NodeValue::Subscript => render_inline_wrapper("sub", &child_outputs.concat()),
+            NodeValue::Insert => render_inline_wrapper("underline", &child_outputs.concat()),
+            NodeValue::Link(ref link) => self.render_link(node, link, child_outputs.concat()),
+            NodeValue::Image(ref link) => self.render_image(node, link),
+            NodeValue::FootnoteReference(ref reference) => {
+                self.render_footnote_reference(reference)
+            }
             #[cfg(feature = "shortcodes")]
-            NodeValue::ShortCode(shortcode) => shortcode.emoji.clone(),
-            NodeValue::Math(math) => self.render_math(&math),
-            NodeValue::WikiLink(link) => self.render_wikilink(node, &link),
+            NodeValue::ShortCode(ref shortcode) => shortcode.emoji.clone(),
+            NodeValue::Math(ref math) => self.render_math(math),
+            NodeValue::WikiLink(ref link) => self.render_wikilink(link, child_outputs.concat()),
             NodeValue::EscapedTag(tag) => escape_text(tag),
-            NodeValue::BlockQuote
-            | NodeValue::MultilineBlockQuote(_)
-            | NodeValue::List(_)
-            | NodeValue::Item(_)
-            | NodeValue::TaskItem(_)
-            | NodeValue::DescriptionList
-            | NodeValue::DescriptionItem(_)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails
-            | NodeValue::CodeBlock(_)
-            | NodeValue::HtmlBlock(_)
-            | NodeValue::Paragraph
-            | NodeValue::Heading(_)
-            | NodeValue::ThematicBreak
-            | NodeValue::FootnoteDefinition(_)
-            | NodeValue::Table(_)
-            | NodeValue::TableRow(_)
-            | NodeValue::TableCell
-            | NodeValue::Alert(_)
-            | NodeValue::Subtext
-            | NodeValue::Document
-            | NodeValue::FrontMatter(_) => self.render_block(node),
-            #[cfg(feature = "phoenix_heex")]
-            NodeValue::HeexBlock(_) => self.render_block(node),
         }
     }
 
-    fn render_inline_wrapper(&mut self, function: &str, node: Node<'a>) -> String {
-        let body = self.render_inline_children(node);
-        format!("#{function}{}", content_block(&body, 0))
-    }
-
-    fn render_heading(&mut self, node: Node<'a>, heading: NodeHeading) -> String {
-        let mut body = self.render_inline_children(node);
-
+    fn render_heading(&mut self, node: Node<'a>, heading: NodeHeading, mut body: String) -> String {
         if let Some(label) = self.render_heading_label(node) {
             if !body.is_empty() && !body.ends_with(char::is_whitespace) {
                 body.push(' ');
@@ -209,31 +291,28 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         format!("{} {}", "=".repeat(heading.level as usize), body.trim_end())
     }
 
-    fn render_quote(&mut self, node: Node<'a>) -> String {
-        let body = self.render_blocks(node);
-
+    fn render_quote(&mut self, body: String) -> String {
         format!("#quote(block: true){}", content_block(&body, 0))
     }
 
-    fn render_alert(&mut self, node: Node<'a>, alert: &NodeAlert) -> String {
+    fn render_alert(&mut self, alert: &NodeAlert, body: String) -> String {
         let title = alert
             .title
-            .clone()
-            .unwrap_or_else(|| alert_title(alert.alert_type).to_string());
-        let body = self.render_blocks(node);
+            .as_deref()
+            .unwrap_or(alert_title(alert.alert_type));
         let mut out = String::from("#quote(\n");
         out.push_str("  block: true,\n");
         out.push_str("  attribution: ");
-        out.push_str(&content_block(&escape_text(&title), 2));
+        out.push_str(&content_block(&escape_text(title), 2));
         out.push_str(",\n");
         out.push(')');
         out.push_str(&content_block(&body, 0));
         out
     }
 
-    fn render_list(&mut self, node: Node<'a>, list: NodeList) -> String {
+    fn render_list(&mut self, node: Node<'a>, list: NodeList, item_outputs: Vec<String>) -> String {
         if list.is_task_list {
-            return self.render_task_list(node, list);
+            return self.render_task_list(node, list, item_outputs);
         }
 
         let mut out = String::new();
@@ -260,14 +339,14 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             out.push_str("  numbering: \"1)\",\n");
         }
 
-        for child in node.children() {
-            let rendered = self.render_list_item(child);
-            if rendered.trim().is_empty() {
+        for rendered in item_outputs {
+            let trimmed = rendered.trim_matches('\n');
+            if trimmed.is_empty() {
                 continue;
             }
 
             out.push_str("  ");
-            out.push_str(&content_block(&rendered, 2));
+            out.push_str(&content_block(trimmed, 2));
             out.push_str(",\n");
         }
 
@@ -275,12 +354,16 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         out
     }
 
-    fn render_task_list(&mut self, node: Node<'a>, list: NodeList) -> String {
+    fn render_task_list(
+        &mut self,
+        node: Node<'a>,
+        list: NodeList,
+        item_outputs: Vec<String>,
+    ) -> String {
         let mut ordinal = list.start;
         let mut groups: Vec<(String, Vec<String>)> = Vec::new();
 
-        for child in node.children() {
-            let rendered = self.render_list_item(child);
+        for (child, rendered) in node.children().zip(item_outputs) {
             let trimmed = rendered.trim_matches('\n');
             let marker = list_item_marker(child, list, ordinal);
 
@@ -309,46 +392,19 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             .join("\n")
     }
 
-    fn render_list_item(&mut self, node: Node<'a>) -> String {
-        let mut blocks = Vec::new();
-        for child in node.children() {
-            let rendered = self.render_block(child);
-            let trimmed = rendered.trim_matches('\n');
-            if !trimmed.is_empty() {
-                blocks.push(trimmed.to_string());
-            }
-        }
-
-        blocks.join("\n\n")
-    }
-
-    fn render_description_list(&mut self, node: Node<'a>) -> String {
-        let mut out = String::from("#terms(\n");
-
-        for child in node.children() {
-            let rendered = self.render_block(child);
-            let trimmed = rendered.trim_matches('\n');
-            if trimmed.is_empty() {
-                continue;
-            }
-
-            out.push_str("  ");
-            out.push_str(trimmed);
-            out.push_str(",\n");
-        }
-
-        out.push(')');
-        out
-    }
-
-    fn render_description_item(&mut self, node: Node<'a>, _meta: NodeDescriptionItem) -> String {
+    fn render_description_item(
+        &mut self,
+        node: Node<'a>,
+        _meta: NodeDescriptionItem,
+        child_outputs: Vec<String>,
+    ) -> String {
         let mut term = String::new();
         let mut details = String::new();
 
-        for child in node.children() {
-            match child.data().value.clone() {
-                NodeValue::DescriptionTerm => term = self.render_blocks(child),
-                NodeValue::DescriptionDetails => details = self.render_blocks(child),
+        for (child, rendered) in node.children().zip(child_outputs) {
+            match child.data().value {
+                NodeValue::DescriptionTerm => term = rendered,
+                NodeValue::DescriptionDetails => details = rendered,
                 _ => {}
             }
         }
@@ -358,6 +414,20 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             content_block(&term, 4),
             content_block(&details, 4)
         )
+    }
+
+    fn render_footnote_body(&mut self, node: Node<'a>) -> String {
+        let mut parts = Vec::new();
+
+        for child in node.children() {
+            let rendered = self.render_subtree(child);
+            let trimmed = rendered.trim_matches('\n');
+            if !trimmed.is_empty() {
+                parts.push(trimmed.to_string());
+            }
+        }
+
+        parts.join("\n\n")
     }
 
     fn render_code_block(&mut self, code: &NodeCodeBlock) -> String {
@@ -385,58 +455,71 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         out
     }
 
-    fn render_table(&mut self, node: Node<'a>, table: &crate::nodes::NodeTable) -> String {
+    fn render_table(
+        &mut self,
+        table: &crate::nodes::NodeTable,
+        row_outputs: Vec<String>,
+    ) -> String {
         let mut out = String::new();
         out.push_str("#table(\n");
         out.push_str(&format!("  columns: {},\n", table.num_columns));
 
-        for row in node.children() {
-            let NodeValue::TableRow(is_header) = row.data().value.clone() else {
-                continue;
-            };
-
-            if is_header {
-                out.push_str("  table.header(\n");
-                for (idx, cell) in row.children().enumerate() {
-                    out.push_str("    ");
-                    out.push_str(&self.render_table_cell(cell, table.alignments.get(idx).copied()));
-                    out.push_str(",\n");
-                }
-                out.push_str("  ),\n");
+        for row in row_outputs {
+            let trimmed = row.trim_matches('\n');
+            if trimmed.is_empty() {
                 continue;
             }
 
-            for (idx, cell) in row.children().enumerate() {
-                out.push_str("  ");
-                out.push_str(&self.render_table_cell(cell, table.alignments.get(idx).copied()));
-                out.push_str(",\n");
-            }
+            out.push_str(trimmed);
+            out.push('\n');
         }
 
         out.push(')');
         out
     }
 
-    fn render_table_cell(&mut self, cell: Node<'a>, align: Option<TableAlignment>) -> String {
-        let content = self.render_inline_children(cell);
-        let block = content_block(&content, 0);
+    fn render_table_row(
+        &mut self,
+        node: Node<'a>,
+        is_header: bool,
+        cell_outputs: Vec<String>,
+    ) -> String {
+        let mut out = String::new();
 
-        match align.unwrap_or(TableAlignment::None) {
-            TableAlignment::None => block,
-            TableAlignment::Left => format!("table.cell(align: left){}", block),
-            TableAlignment::Center => format!("table.cell(align: center){}", block),
-            TableAlignment::Right => format!("table.cell(align: right){}", block),
+        if is_header {
+            out.push_str("  table.header(\n");
+            for (idx, content) in cell_outputs.into_iter().enumerate() {
+                let align = node.parent().and_then(|parent| match parent.data().value {
+                    NodeValue::Table(ref table) => table.alignments.get(idx).copied(),
+                    _ => None,
+                });
+                out.push_str("    ");
+                out.push_str(&render_table_cell(&content, align));
+                out.push_str(",\n");
+            }
+            out.push_str("  ),");
+            return out;
         }
+
+        for (idx, content) in cell_outputs.into_iter().enumerate() {
+            let align = node.parent().and_then(|parent| match parent.data().value {
+                NodeValue::Table(ref table) => table.alignments.get(idx).copied(),
+                _ => None,
+            });
+            out.push_str("  ");
+            out.push_str(&render_table_cell(&content, align));
+            out.push_str(",\n");
+        }
+
+        out.trim_end_matches('\n').to_string()
     }
 
-    fn render_link(&mut self, node: Node<'a>, link: &NodeLink) -> String {
+    fn render_link(&mut self, node: Node<'a>, link: &NodeLink, body: String) -> String {
         if let Some(label) = render_explicit_typst_label(node, link) {
             return label;
         }
 
         if let Some(label) = typst_link_target(&link.url) {
-            let body = self.render_inline_children(node);
-
             if body.is_empty() {
                 return format!("#link(<{}>)", label);
             }
@@ -445,7 +528,6 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         }
 
         let url = escape_string(&link.url);
-        let body = self.render_inline_children(node);
 
         if body.is_empty() {
             format!("#link(\"{}\")", url)
@@ -487,13 +569,7 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
             return escape_text(&format!("[^{}]", reference.name));
         };
 
-        let label = format!("footnote-{}", entry.label);
-        if self.emitted_footnotes.insert(reference.name.clone()) {
-            let body = self.render_blocks(entry.node);
-            format!("#footnote{} <{}>", content_block(&body, 0), label)
-        } else {
-            format!("#footnote(<{}>)", label)
-        }
+        footnote_placeholder(entry.label)
     }
 
     fn render_math(&self, math: &NodeMath) -> String {
@@ -506,9 +582,8 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         }
     }
 
-    fn render_wikilink(&mut self, node: Node<'a>, link: &NodeWikiLink) -> String {
+    fn render_wikilink(&mut self, link: &NodeWikiLink, label: String) -> String {
         let url = escape_string(&link.url);
-        let label = self.render_inline_children(node);
         let label = if label.is_empty() {
             escape_text(&link.url)
         } else {
@@ -517,18 +592,72 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
         format!("#link(\"{}\"){}", url, content_block(&label, 0))
     }
 
-    fn render_heading_label(&mut self, node: Node<'a>) -> Option<String> {
-        let prefix = self.options.extension.header_ids.as_ref()?;
-
-        if node.children().any(is_explicit_typst_label_node) {
-            return None;
-        }
-
-        let anchor = self.anchorizer.anchorize(&collect_text(node));
-        let label = format!("{prefix}{anchor}");
-
-        is_typst_label_name(&label).then(|| format!("<{}>", label))
+    fn render_heading_label(&self, node: Node<'a>) -> Option<String> {
+        self.heading_labels.get(&node_key(node)).cloned()
     }
+}
+
+fn compute_heading_labels<'a>(
+    root: Node<'a>,
+    options: &Options<'_>,
+    footnotes: &HashMap<String, FootnoteEntry<'a>>,
+) -> HashMap<usize, String> {
+    let Some(prefix) = options.extension.header_ids.as_ref() else {
+        return HashMap::new();
+    };
+
+    enum Phase<'a> {
+        Enter(Node<'a>),
+        AssignHeading(Node<'a>),
+    }
+
+    let mut labels = HashMap::new();
+    let mut anchorizer = Anchorizer::new();
+    let mut emitted_footnotes = HashSet::new();
+    let mut stack = vec![Phase::Enter(root)];
+
+    while let Some(phase) = stack.pop() {
+        match phase {
+            Phase::Enter(node) => match node.data().value {
+                NodeValue::FootnoteDefinition(_) => {}
+                NodeValue::FootnoteReference(ref reference) => {
+                    let Some(entry) = footnotes.get(&reference.name).copied() else {
+                        continue;
+                    };
+
+                    if emitted_footnotes.insert(reference.name.clone()) {
+                        for child in entry.node.reverse_children() {
+                            stack.push(Phase::Enter(child));
+                        }
+                    }
+                }
+                NodeValue::Heading(_) => {
+                    if !node.children().any(is_explicit_typst_label_node) {
+                        stack.push(Phase::AssignHeading(node));
+                    }
+
+                    for child in node.reverse_children() {
+                        stack.push(Phase::Enter(child));
+                    }
+                }
+                _ => {
+                    for child in node.reverse_children() {
+                        stack.push(Phase::Enter(child));
+                    }
+                }
+            },
+            Phase::AssignHeading(node) => {
+                let anchor = anchorizer.anchorize(&collect_text_iter(node));
+                let label = format!("{prefix}{anchor}");
+
+                if is_typst_label_name(&label) {
+                    labels.insert(node_key(node), format!("<{}>", label));
+                }
+            }
+        }
+    }
+
+    labels
 }
 
 fn alert_title(alert_type: AlertType) -> &'static str {
@@ -542,7 +671,7 @@ fn alert_title(alert_type: AlertType) -> &'static str {
 }
 
 fn list_item_marker(node: Node<'_>, list: NodeList, ordinal: usize) -> String {
-    let checkbox = match node.data().value.clone() {
+    let checkbox = match node.data().value {
         NodeValue::TaskItem(task) => Some(task_marker(task)),
         _ => None,
     };
@@ -586,6 +715,43 @@ fn render_custom_marker_list(marker: &str, tight: bool, items: &[String]) -> Str
     out
 }
 
+fn render_inline_wrapper(function: &str, body: &str) -> String {
+    format!("#{function}{}", content_block(body, 0))
+}
+
+fn render_list_item(blocks: &[String]) -> String {
+    join_block_children(blocks)
+}
+
+fn render_description_list(items: &[String]) -> String {
+    let mut out = String::from("#terms(\n");
+
+    for rendered in items {
+        let trimmed = rendered.trim_matches('\n');
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        out.push_str("  ");
+        out.push_str(trimmed);
+        out.push_str(",\n");
+    }
+
+    out.push(')');
+    out
+}
+
+fn render_table_cell(content: &str, align: Option<TableAlignment>) -> String {
+    let block = content_block(content, 0);
+
+    match align.unwrap_or(TableAlignment::None) {
+        TableAlignment::None => block,
+        TableAlignment::Left => format!("table.cell(align: left){}", block),
+        TableAlignment::Center => format!("table.cell(align: center){}", block),
+        TableAlignment::Right => format!("table.cell(align: right){}", block),
+    }
+}
+
 fn is_typst_standalone_image_paragraph(node: Node<'_>) -> bool {
     if !node_matches!(node, NodeValue::Paragraph) {
         return false;
@@ -594,10 +760,10 @@ fn is_typst_standalone_image_paragraph(node: Node<'_>) -> bool {
     let mut saw_image = false;
 
     for child in node.children() {
-        match child.data().value.clone() {
+        match &child.data().value {
             NodeValue::Image(_) if !saw_image => saw_image = true,
             NodeValue::Text(text) if text.trim().is_empty() => {}
-            NodeValue::Link(link) if render_explicit_typst_label(child, &link).is_some() => {}
+            NodeValue::Link(link) if render_explicit_typst_label(child, link).is_some() => {}
             _ => return false,
         }
     }
@@ -606,11 +772,11 @@ fn is_typst_standalone_image_paragraph(node: Node<'_>) -> bool {
 }
 
 fn is_explicit_typst_label_node(node: Node<'_>) -> bool {
-    let NodeValue::Link(link) = node.data().value.clone() else {
+    let NodeValue::Link(ref link) = node.data().value else {
         return false;
     };
 
-    render_explicit_typst_label(node, &link).is_some()
+    render_explicit_typst_label(node, link).is_some()
 }
 
 fn render_explicit_typst_label(node: Node<'_>, link: &NodeLink) -> Option<String> {
@@ -638,56 +804,97 @@ fn image_expr(url: &str, alt: Option<&str>) -> String {
 }
 
 fn plain_text(node: Node<'_>) -> String {
-    match node.data().value.clone() {
-        NodeValue::Text(text) => text.into_owned(),
-        NodeValue::SoftBreak | NodeValue::LineBreak => " ".to_string(),
-        NodeValue::Code(NodeCode { literal, .. })
-        | NodeValue::Raw(literal)
-        | NodeValue::FrontMatter(literal) => literal,
-        NodeValue::HtmlInline(literal) => plain_text_html_inline(&literal).unwrap_or(literal),
-        #[cfg(feature = "phoenix_heex")]
-        NodeValue::HeexInline(literal) => literal,
-        #[cfg(feature = "phoenix_heex")]
-        NodeValue::HeexBlock(block) => block.literal,
-        NodeValue::CodeBlock(block) => block.literal,
-        NodeValue::HtmlBlock(NodeHtmlBlock { literal, .. }) => literal,
-        NodeValue::Link(_) | NodeValue::Image(_) | NodeValue::Emph | NodeValue::Strong => {
-            node.children().map(plain_text).collect()
+    let mut out = String::new();
+    let mut stack = vec![node];
+
+    while let Some(node) = stack.pop() {
+        match node.data().value {
+            NodeValue::Text(ref text) => out.push_str(text),
+            NodeValue::SoftBreak | NodeValue::LineBreak => out.push(' '),
+            NodeValue::Code(NodeCode { ref literal, .. })
+            | NodeValue::Raw(ref literal)
+            | NodeValue::FrontMatter(ref literal) => out.push_str(literal),
+            NodeValue::HtmlInline(ref literal) => {
+                if let Some(text) = plain_text_html_inline(literal) {
+                    out.push_str(&text);
+                } else {
+                    out.push_str(literal);
+                }
+            }
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexInline(ref literal) => out.push_str(literal),
+            #[cfg(feature = "phoenix_heex")]
+            NodeValue::HeexBlock(ref block) => out.push_str(&block.literal),
+            NodeValue::CodeBlock(ref block) => out.push_str(&block.literal),
+            NodeValue::HtmlBlock(NodeHtmlBlock { ref literal, .. }) => out.push_str(literal),
+            NodeValue::Math(NodeMath { ref literal, .. }) => out.push_str(literal),
+            NodeValue::FootnoteReference(ref reference) => {
+                out.push_str(&format!("[^{}]", reference.name));
+            }
+            NodeValue::EscapedTag(tag) => out.push_str(tag),
+            #[cfg(feature = "shortcodes")]
+            NodeValue::ShortCode(ref shortcode) => out.push_str(&shortcode.emoji),
+            _ => {
+                for child in node.reverse_children() {
+                    stack.push(child);
+                }
+            }
         }
-        NodeValue::Strikethrough
-        | NodeValue::Highlight
-        | NodeValue::Insert
-        | NodeValue::Superscript
-        | NodeValue::Underline
-        | NodeValue::Subscript
-        | NodeValue::SpoileredText
-        | NodeValue::Escaped
-        | NodeValue::Paragraph
-        | NodeValue::Heading(_)
-        | NodeValue::BlockQuote
-        | NodeValue::MultilineBlockQuote(_)
-        | NodeValue::DescriptionTerm
-        | NodeValue::DescriptionDetails
-        | NodeValue::Subtext
-        | NodeValue::Document => node.children().map(plain_text).collect(),
-        NodeValue::WikiLink(_) => node.children().map(plain_text).collect(),
-        NodeValue::Math(NodeMath { literal, .. }) => literal,
-        NodeValue::FootnoteReference(reference) => format!("[^{}]", reference.name),
-        NodeValue::EscapedTag(tag) => tag.to_string(),
-        NodeValue::TaskItem(_) => node.children().map(plain_text).collect(),
-        NodeValue::Table(_) | NodeValue::TableRow(_) | NodeValue::TableCell => {
-            node.children().map(plain_text).collect()
-        }
-        NodeValue::List(_)
-        | NodeValue::Item(_)
-        | NodeValue::DescriptionList
-        | NodeValue::DescriptionItem(_)
-        | NodeValue::FootnoteDefinition(_)
-        | NodeValue::ThematicBreak
-        | NodeValue::Alert(_) => node.children().map(plain_text).collect(),
-        #[cfg(feature = "shortcodes")]
-        NodeValue::ShortCode(shortcode) => shortcode.emoji,
     }
+
+    out
+}
+
+fn collect_text_iter(node: Node<'_>) -> String {
+    let mut text = String::with_capacity(20);
+    let mut stack = vec![node];
+
+    while let Some(node) = stack.pop() {
+        match node.data().value {
+            NodeValue::Text(ref literal) => text.push_str(literal),
+            NodeValue::Code(NodeCode { ref literal, .. }) => text.push_str(literal),
+            NodeValue::LineBreak | NodeValue::SoftBreak => text.push(' '),
+            NodeValue::Math(NodeMath { ref literal, .. }) => text.push_str(literal),
+            _ => {
+                for child in node.reverse_children() {
+                    stack.push(child);
+                }
+            }
+        }
+    }
+
+    text
+}
+
+fn node_key(node: Node<'_>) -> usize {
+    let ptr: *const _ = node;
+    ptr as usize
+}
+
+const FOOTNOTE_PLACEHOLDER_START: char = '\u{FDD0}';
+const FOOTNOTE_PLACEHOLDER_END: char = '\u{FDD1}';
+
+fn footnote_placeholder(label: usize) -> String {
+    format!("{FOOTNOTE_PLACEHOLDER_START}{label}{FOOTNOTE_PLACEHOLDER_END}")
+}
+
+fn take_child_outputs(node: Node<'_>, rendered: &mut HashMap<usize, String>) -> Vec<String> {
+    node.children()
+        .map(|child| rendered.remove(&node_key(child)).unwrap_or_default())
+        .collect()
+}
+
+fn join_block_children(children: &[String]) -> String {
+    let mut parts = Vec::new();
+
+    for rendered in children {
+        let trimmed = rendered.trim_matches('\n');
+        if !trimmed.is_empty() {
+            parts.push(trimmed.to_string());
+        }
+    }
+
+    parts.join("\n\n")
 }
 
 fn content_block(content: &str, indent: usize) -> String {

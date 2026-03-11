@@ -114,6 +114,29 @@ fn footnotes_render_inline() {
 }
 
 #[test]
+fn nested_footnotes_expand_without_preemptive_backrefs() {
+    typst_opts(
+        "Hello[^a]\n\n[^a]: Alpha[^b]\n[^b]: Beta\n",
+        "Hello#footnote[Alpha#footnote[Beta] <footnote-2>] <footnote-1>\n",
+        |opts| {
+            opts.extension.footnotes = true;
+        },
+    );
+}
+
+#[test]
+fn referenced_footnote_headings_keep_document_order_for_header_ids() {
+    typst_opts(
+        "a[^n]\n\n[^n]: # Intro\n\n# Intro\n",
+        "a#footnote[= Intro <sec:intro>] <footnote-1>\n\n= Intro <sec:intro-1>\n",
+        |opts| {
+            opts.extension.footnotes = true;
+            opts.extension.header_ids = Some("sec:".to_owned());
+        },
+    );
+}
+
+#[test]
 fn inline_footnotes_render_inline() {
     typst_opts(
         "Hello^[Footnote text]\n",
@@ -302,6 +325,31 @@ fn label_autolinks_and_internal_links_render_to_typst_targets() {
             "#image(\"image.png\", alt: \"Alt\") <fig:hero>\n\n",
             "#link(<sec:intro>)[See intro]\n",
         ),
+    );
+}
+
+#[test]
+fn footnote_definitions_do_not_preemit_nested_references() {
+    typst_opts(
+        "[^a]: [^b]\n\n[^b]: visible body\n\nmain[^b]\n",
+        "main#footnote[visible body] <footnote-2>\n",
+        |opts| {
+            opts.extension.footnotes = true;
+            opts.parse.leave_footnote_definitions = true;
+        },
+    );
+}
+
+#[test]
+fn footnote_definitions_do_not_advance_heading_labels() {
+    typst_opts(
+        "[^note]:\n    # Intro\n\n# Intro\n",
+        "= Intro <sec:intro>\n",
+        |opts| {
+            opts.extension.footnotes = true;
+            opts.parse.leave_footnote_definitions = true;
+            opts.extension.header_ids = Some("sec:".to_owned());
+        },
     );
 }
 
