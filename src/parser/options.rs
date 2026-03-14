@@ -8,7 +8,9 @@ use std::panic::RefUnwindSafe;
 use std::str;
 use std::sync::Arc;
 
-use crate::adapters::{CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter};
+use crate::adapters::{
+    CodefenceRendererAdapter, HeadingAdapter, MathAdapter, SyntaxHighlighterAdapter,
+};
 use crate::parser::ResolvedReference;
 
 #[derive(Default, Debug, Clone)]
@@ -1270,6 +1272,17 @@ pub struct RenderPlugins<'p> {
 
     /// Optional heading adapter
     pub heading_adapter: Option<&'p dyn HeadingAdapter>,
+
+    /// Optional math rendering adapter.
+    ///
+    /// When set, math content (from `$...$`, `$$...$$`, `` $`...`$ ``, and
+    /// ` ```math ` blocks) is rendered using this adapter instead of the
+    /// default `<span>`/`<code>` wrapping.
+    ///
+    /// See [`MathAdapter`] for the trait to implement.
+    ///
+    /// [`MathAdapter`]: crate::adapters::MathAdapter
+    pub math_renderer: Option<&'p dyn MathAdapter>,
 }
 
 impl Debug for RenderPlugins<'_> {
@@ -1283,6 +1296,7 @@ impl Debug for RenderPlugins<'_> {
                 "codefence_syntax_highlighter",
                 &"impl SyntaxHighlighterAdapter",
             )
+            .field("math_renderer", &"impl MathAdapter")
             .finish()
     }
 }

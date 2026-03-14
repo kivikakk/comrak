@@ -206,6 +206,21 @@ fn html_plugins(input: &str, expected: &str, plugins: &options::Plugins) {
 }
 
 #[track_caller]
+fn html_opts_plugins<'c, F>(input: &str, expected: &str, opts: F, plugins: &options::Plugins)
+where
+    F: FnOnce(&mut Options<'c>),
+{
+    let arena = Arena::new();
+    let mut options = Options::default();
+    opts(&mut options);
+
+    let root = parse_document(&arena, input, &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, plugins).unwrap();
+    compare_strs(&output, expected, "regular", input);
+}
+
+#[track_caller]
 fn xml(input: &str, expected: &str) {
     xml_opts(input, expected, |_| ());
 }

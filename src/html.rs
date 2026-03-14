@@ -1347,6 +1347,22 @@ pub fn render_math<T>(
     nm: &NodeMath,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
+        if let Some(adapter) = context.plugins.render.math_renderer {
+            let sourcepos = if context.options.render.sourcepos {
+                Some(node.data().sourcepos)
+            } else {
+                None
+            };
+            adapter.render(
+                context,
+                &nm.literal,
+                nm.display_math,
+                nm.dollar_math,
+                sourcepos,
+            )?;
+            return Ok(ChildRendering::HTML);
+        }
+
         let mut tag_attributes: Vec<(&str, Cow<str>)> = Vec::new();
         let style_attr = if nm.display_math { "display" } else { "inline" };
         let tag: &str = if nm.dollar_math { "span" } else { "code" };
@@ -1372,6 +1388,18 @@ pub fn render_math_code_block<T>(
     node: Node<'_>,
     literal: &str,
 ) -> Result<ChildRendering, fmt::Error> {
+    if let Some(adapter) = context.plugins.render.math_renderer {
+        context.cr()?;
+        let sourcepos = if context.options.render.sourcepos {
+            Some(node.data().sourcepos)
+        } else {
+            None
+        };
+        adapter.render(context, literal, true, false, sourcepos)?;
+        context.lf()?;
+        return Ok(ChildRendering::HTML);
+    }
+
     context.cr()?;
 
     // use vectors to ensure attributes always written in the same order,

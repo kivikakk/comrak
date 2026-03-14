@@ -434,3 +434,318 @@ fn syntect_plugin_with_prefixed_css_classes() {
 
     html_plugins(input, expected, &plugins);
 }
+
+#[test]
+fn math_adapter_inline_dollar() {
+    struct MockMathAdapter;
+
+    impl crate::adapters::MathAdapter for MockMathAdapter {
+        fn render(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            latex: &str,
+            display_math: bool,
+            dollar_math: bool,
+            sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            let display = if display_math { "block" } else { "inline" };
+            let syntax = if dollar_math { "dollar" } else { "code" };
+            if let Some(sp) = sourcepos {
+                write!(
+                    output,
+                    "<math display=\"{display}\" data-syntax=\"{syntax}\" data-sourcepos=\"{sp}\">{latex}</math>"
+                )
+            } else {
+                write!(
+                    output,
+                    "<math display=\"{display}\" data-syntax=\"{syntax}\">{latex}</math>"
+                )
+            }
+        }
+    }
+
+    let adapter = MockMathAdapter;
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    html_opts_plugins(
+        "$2+2$",
+        "<p><math display=\"inline\" data-syntax=\"dollar\">2+2</math></p>\n",
+        |opts| opts.extension.math_dollars = true,
+        &plugins,
+    );
+}
+
+#[test]
+fn math_adapter_display_dollar() {
+    struct MockMathAdapter;
+
+    impl crate::adapters::MathAdapter for MockMathAdapter {
+        fn render(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            latex: &str,
+            display_math: bool,
+            _dollar_math: bool,
+            _sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            let display = if display_math { "block" } else { "inline" };
+            write!(output, "<math display=\"{display}\">{latex}</math>")
+        }
+    }
+
+    let adapter = MockMathAdapter;
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    html_opts_plugins(
+        "$$2+2$$",
+        "<p><math display=\"block\">2+2</math></p>\n",
+        |opts| opts.extension.math_dollars = true,
+        &plugins,
+    );
+}
+
+#[test]
+fn math_adapter_code_inline() {
+    struct MockMathAdapter;
+
+    impl crate::adapters::MathAdapter for MockMathAdapter {
+        fn render(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            latex: &str,
+            display_math: bool,
+            dollar_math: bool,
+            _sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            let display = if display_math { "block" } else { "inline" };
+            let syntax = if dollar_math { "dollar" } else { "code" };
+            write!(
+                output,
+                "<math display=\"{display}\" data-syntax=\"{syntax}\">{latex}</math>"
+            )
+        }
+    }
+
+    let adapter = MockMathAdapter;
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    html_opts_plugins(
+        "$`2+2`$",
+        "<p><math display=\"inline\" data-syntax=\"code\">2+2</math></p>\n",
+        |opts| opts.extension.math_code = true,
+        &plugins,
+    );
+}
+
+#[test]
+fn math_adapter_code_block() {
+    struct MockMathAdapter;
+
+    impl crate::adapters::MathAdapter for MockMathAdapter {
+        fn render(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            latex: &str,
+            display_math: bool,
+            _dollar_math: bool,
+            _sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            let display = if display_math { "block" } else { "inline" };
+            write!(output, "<math display=\"{display}\">{latex}</math>")
+        }
+    }
+
+    let adapter = MockMathAdapter;
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    html_opts_plugins(
+        "```math\nx^2\n```",
+        "<math display=\"block\">x^2\n</math>\n",
+        |opts| opts.extension.math_dollars = true,
+        &plugins,
+    );
+}
+
+#[test]
+fn math_adapter_with_sourcepos() {
+    struct MockMathAdapter;
+
+    impl crate::adapters::MathAdapter for MockMathAdapter {
+        fn render(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            latex: &str,
+            display_math: bool,
+            _dollar_math: bool,
+            sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            let display = if display_math { "block" } else { "inline" };
+            if let Some(sp) = sourcepos {
+                write!(
+                    output,
+                    "<math display=\"{display}\" data-sourcepos=\"{sp}\">{latex}</math>"
+                )
+            } else {
+                write!(output, "<math display=\"{display}\">{latex}</math>")
+            }
+        }
+    }
+
+    let adapter = MockMathAdapter;
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    html_opts_plugins(
+        "$x$",
+        "<p data-sourcepos=\"1:1-1:3\"><math display=\"inline\" data-sourcepos=\"1:1-1:3\">x</math></p>\n",
+        |opts| {
+            opts.extension.math_dollars = true;
+            opts.render.sourcepos = true;
+        },
+        &plugins,
+    );
+}
+
+#[test]
+fn math_adapter_none_falls_back_to_default() {
+    let plugins = options::Plugins::default();
+
+    html_opts_plugins(
+        "$2+2$",
+        "<p><span data-math-style=\"inline\">2+2</span></p>\n",
+        |opts| opts.extension.math_dollars = true,
+        &plugins,
+    );
+}
+
+#[test]
+#[cfg(feature = "mathml")]
+fn pulldown_latex_inline_math() {
+    let adapter = crate::plugins::pulldown_latex::PulldownLatexAdapter::default();
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+
+    let root = parse_document(&arena, "$E=mc^2$", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.contains("<math"),
+        "Expected MathML output, got: {output}"
+    );
+    assert!(
+        output.contains("display=\"inline\""),
+        "Expected inline display mode, got: {output}"
+    );
+    assert!(
+        output.contains("<annotation encoding=\"application/x-tex\">"),
+        "Expected annotation, got: {output}"
+    );
+}
+
+#[test]
+#[cfg(feature = "mathml")]
+fn pulldown_latex_display_math() {
+    let adapter = crate::plugins::pulldown_latex::PulldownLatexAdapter::default();
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+
+    let root = parse_document(&arena, "$$\\sum_{i=1}^n i$$", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.contains("<math"),
+        "Expected MathML output, got: {output}"
+    );
+    assert!(
+        output.contains("display=\"block\""),
+        "Expected block display mode, got: {output}"
+    );
+}
+
+#[test]
+#[cfg(feature = "mathml")]
+fn pulldown_latex_code_block_math() {
+    let adapter = crate::plugins::pulldown_latex::PulldownLatexAdapter::default();
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+
+    let root = parse_document(&arena, "```math\n\\frac{1}{2}\n```", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.contains("<math"),
+        "Expected MathML output, got: {output}"
+    );
+    assert!(
+        output.contains("display=\"block\""),
+        "Expected block display mode for code block, got: {output}"
+    );
+}
+
+#[test]
+#[cfg(feature = "mathml")]
+fn pulldown_latex_no_annotation() {
+    let adapter = crate::plugins::pulldown_latex::PulldownLatexAdapter {
+        include_annotation: false,
+    };
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+
+    let root = parse_document(&arena, "$x$", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.contains("<math"),
+        "Expected MathML output, got: {output}"
+    );
+    assert!(
+        !output.contains("<annotation"),
+        "Expected no annotation, got: {output}"
+    );
+}
+
+#[test]
+#[cfg(feature = "mathml")]
+fn pulldown_latex_with_sourcepos() {
+    let adapter = crate::plugins::pulldown_latex::PulldownLatexAdapter::default();
+    let mut plugins = options::Plugins::default();
+    plugins.render.math_renderer = Some(&adapter);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+    options.render.sourcepos = true;
+
+    let root = parse_document(&arena, "$x$", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.contains("data-sourcepos="),
+        "Expected sourcepos attribute, got: {output}"
+    );
+}

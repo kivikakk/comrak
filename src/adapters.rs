@@ -86,3 +86,26 @@ pub trait HeadingAdapter: Send + Sync {
     /// Render the closing tag.
     fn exit(&self, output: &mut dyn fmt::Write, heading: &HeadingMeta) -> fmt::Result;
 }
+
+/// Implement this adapter for custom rendering of math content.
+///
+/// When set in [`crate::options::RenderPlugins::math_renderer`], this adapter
+/// is called instead of the default math rendering for both inline math
+/// (`$...$`, `` $`...`$ ``) and display math (`$$...$$`, ` ```math `).
+pub trait MathAdapter: Send + Sync {
+    /// Render the given LaTeX math content.
+    ///
+    /// `output`: Write the rendered HTML here.
+    /// `latex`: The raw LaTeX math content.
+    /// `display_math`: `true` for display/block math, `false` for inline math.
+    /// `dollar_math`: `true` for `$`/`$$` syntax, `false` for code math (`` $` `` / ` ```math `).
+    /// `sourcepos`: Source position if `render.sourcepos` is enabled.
+    fn render(
+        &self,
+        output: &mut dyn fmt::Write,
+        latex: &str,
+        display_math: bool,
+        dollar_math: bool,
+        sourcepos: Option<Sourcepos>,
+    ) -> fmt::Result;
+}
