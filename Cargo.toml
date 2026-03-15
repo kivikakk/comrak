@@ -28,6 +28,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [profile.release]
 lto = true
+codegen-units = 1
 
 [[bin]]
 name = "comrak"
