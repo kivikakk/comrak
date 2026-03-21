@@ -580,8 +580,8 @@ fn render_heading<T>(
                     let id = context.anchorizer.anchorize(&text_content);
                     write!(
                         context,
-                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                        id, prefix, id
+                        "<a href=\"#{}{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                        prefix, id, prefix, id
                     )?;
                 }
             } else {
