@@ -24,10 +24,134 @@ use crate::parser::{AutolinkType, Options, ResolvedReference, autolink};
 use crate::scanners;
 use crate::strings::{self, Case, count_newlines, is_blank};
 
+/// Static string table for single ASCII characters to avoid allocations.
+static ASCII_CHARS: [&str; 128] = {
+    let mut table: [&str; 128] = [""; 128];
+    table[b'\n' as usize] = "\n";
+    table[b'\r' as usize] = "\r";
+    table[b' ' as usize] = " ";
+    table[b'!' as usize] = "!";
+    table[b'"' as usize] = "\"";
+    table[b'#' as usize] = "#";
+    table[b'$' as usize] = "$";
+    table[b'%' as usize] = "%";
+    table[b'&' as usize] = "&";
+    table[b'\'' as usize] = "'";
+    table[b'(' as usize] = "(";
+    table[b')' as usize] = ")";
+    table[b'*' as usize] = "*";
+    table[b'+' as usize] = "+";
+    table[b',' as usize] = ",";
+    table[b'-' as usize] = "-";
+    table[b'.' as usize] = ".";
+    table[b'/' as usize] = "/";
+    table[b':' as usize] = ":";
+    table[b';' as usize] = ";";
+    table[b'<' as usize] = "<";
+    table[b'=' as usize] = "=";
+    table[b'>' as usize] = ">";
+    table[b'?' as usize] = "?";
+    table[b'@' as usize] = "@";
+    table[b'[' as usize] = "[";
+    table[b'\\' as usize] = "\\";
+    table[b']' as usize] = "]";
+    table[b'^' as usize] = "^";
+    table[b'_' as usize] = "_";
+    table[b'`' as usize] = "`";
+    table[b'{' as usize] = "{";
+    table[b'|' as usize] = "|";
+    table[b'}' as usize] = "}";
+    table[b'~' as usize] = "~";
+    table
+};
+
+/// Convert an ASCII byte to a `Cow<'static, str>` without allocation.
+#[inline]
+fn ascii_char_to_cow(b: u8) -> Cow<'static, str> {
+    if (b as usize) < 128 && !ASCII_CHARS[b as usize].is_empty() {
+        ASCII_CHARS[b as usize].into()
+    } else {
+        String::from(b as char).into()
+    }
+}
+
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
+
+/// Precomputed lookup tables for inline parsing, built once per parse from options.
+pub struct InlineConfig {
+    special_char_bytes: [bool; 256],
+    skip_char_bytes: [bool; 256],
+    emph_delim_bytes: [bool; 256],
+}
+
+impl InlineConfig {
+    pub fn new(options: &Options) -> Self {
+        let mut config = InlineConfig {
+            special_char_bytes: [false; 256],
+            skip_char_bytes: [false; 256],
+            emph_delim_bytes: [false; 256],
+        };
+        for &b in b"\n\r_*`\\&<[]!" {
+            config.special_char_bytes[b as usize] = true;
+        }
+        if options.extension.math_dollars || options.extension.math_code {
+            config.special_char_bytes[b'$' as usize] = true;
+        }
+        if options.parse.smart {
+            for &b in b"\"'.->" {
+                config.special_char_bytes[b as usize] = true;
+            }
+        }
+        if options.extension.autolink {
+            config.special_char_bytes[b':' as usize] = true;
+            config.special_char_bytes[b'w' as usize] = true;
+        }
+        if options.extension.strikethrough || options.extension.subscript {
+            config.special_char_bytes[b'~' as usize] = true;
+            config.skip_char_bytes[b'~' as usize] = true;
+            config.emph_delim_bytes[b'~' as usize] = true;
+        }
+        if options.extension.highlight {
+            config.special_char_bytes[b'=' as usize] = true;
+            config.skip_char_bytes[b'=' as usize] = true;
+            config.emph_delim_bytes[b'=' as usize] = true;
+        }
+        if options.extension.insert {
+            config.special_char_bytes[b'+' as usize] = true;
+            config.skip_char_bytes[b'+' as usize] = true;
+            config.emph_delim_bytes[b'+' as usize] = true;
+        }
+        if options.extension.superscript || options.extension.inline_footnotes {
+            config.special_char_bytes[b'^' as usize] = true;
+        }
+        if options.extension.superscript {
+            config.emph_delim_bytes[b'^' as usize] = true;
+        }
+        #[cfg(feature = "shortcodes")]
+        if options.extension.shortcodes {
+            config.special_char_bytes[b':' as usize] = true;
+        }
+        if options.extension.underline {
+            config.special_char_bytes[b'_' as usize] = true;
+        }
+        if options.extension.spoiler {
+            config.special_char_bytes[b'|' as usize] = true;
+            config.emph_delim_bytes[b'|' as usize] = true;
+        }
+        #[cfg(feature = "phoenix_heex")]
+        if options.extension.phoenix_heex {
+            config.special_char_bytes[b'{' as usize] = true;
+            config.special_char_bytes[b'<' as usize] = true;
+        }
+        for &b in b"*_" {
+            config.emph_delim_bytes[b as usize] = true;
+        }
+        config
+    }
+}
 
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub arena: &'a Arena<'a>,
@@ -48,9 +172,11 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
-    special_char_bytes: [bool; 256],
-    skip_char_bytes: [bool; 256],
-    emph_delim_bytes: [bool; 256],
+    config: &'o InlineConfig,
+    /// Whether any Escaped nodes were created during inline parsing.
+    pub created_escaped: bool,
+    /// Tracks the last line for which line_offset was computed, to avoid redundant Vec lookups.
+    last_line_offset_line: usize,
 }
 
 #[derive(Default)]
@@ -71,8 +197,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
         inline_footnote_depth: usize,
+        config: &'o InlineConfig,
     ) -> Self {
-        let mut s = Subject {
+        Subject {
             arena,
             options,
             input,
@@ -91,84 +218,27 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             no_link_openers: true,
-            special_char_bytes: [false; 256],
-            skip_char_bytes: [false; 256],
-            emph_delim_bytes: [false; 256],
-        };
-        for &b in b"\n\r_*\"`\\&<[]!$" {
-            s.special_char_bytes[b as usize] = true;
+            config,
+            created_escaped: false,
+            last_line_offset_line: usize::MAX, // Force recalculation on first call
         }
-        if options.parse.smart {
-            for &b in b"\"'.->" {
-                s.special_char_bytes[b as usize] = true;
-            }
-        }
-        if options.extension.autolink {
-            s.special_char_bytes[b':' as usize] = true;
-            s.special_char_bytes[b'w' as usize] = true;
-        }
-        if options.extension.strikethrough || options.extension.subscript {
-            s.special_char_bytes[b'~' as usize] = true;
-            s.skip_char_bytes[b'~' as usize] = true;
-            s.emph_delim_bytes[b'~' as usize] = true;
-        }
-        if options.extension.highlight {
-            s.special_char_bytes[b'=' as usize] = true;
-            s.skip_char_bytes[b'=' as usize] = true;
-            s.emph_delim_bytes[b'=' as usize] = true;
-        }
-        if options.extension.insert {
-            s.special_char_bytes[b'+' as usize] = true;
-            s.skip_char_bytes[b'+' as usize] = true;
-            s.emph_delim_bytes[b'+' as usize] = true;
-        }
-        if options.extension.superscript || options.extension.inline_footnotes {
-            s.special_char_bytes[b'^' as usize] = true;
-        }
-        if options.extension.superscript {
-            s.emph_delim_bytes[b'^' as usize] = true;
-        }
-        #[cfg(feature = "shortcodes")]
-        if options.extension.shortcodes {
-            s.special_char_bytes[b':' as usize] = true;
-        }
-        if options.extension.underline {
-            s.special_char_bytes[b'_' as usize] = true;
-        }
-        if options.extension.spoiler {
-            s.special_char_bytes[b'|' as usize] = true;
-            s.emph_delim_bytes[b'|' as usize] = true;
-        }
-        #[cfg(feature = "phoenix_heex")]
-        if options.extension.phoenix_heex {
-            s.special_char_bytes[b'{' as usize] = true;
-            s.special_char_bytes[b'<' as usize] = true;
-        }
-        for &b in b"*_" {
-            s.emph_delim_bytes[b as usize] = true;
-        }
-        s
     }
 
     //////////////////
     // Constructors //
     //////////////////
 
+    #[inline]
     fn make_inline(&self, value: NodeValue, start_column: usize, end_column: usize) -> Node<'a> {
         let start_column =
-            start_column as isize + 1 + self.column_offset + self.line_offset as isize;
-        let end_column = end_column as isize + 1 + self.column_offset + self.line_offset as isize;
+            (start_column as isize + 1 + self.column_offset + self.line_offset as isize) as usize;
+        let end_column =
+            (end_column as isize + 1 + self.column_offset + self.line_offset as isize) as usize;
 
         let ast = Ast {
             value,
             content: String::new(),
-            sourcepos: (
-                self.line,
-                usize::try_from(start_column).unwrap(),
-                self.line,
-                usize::try_from(end_column).unwrap(),
-            )
-                .into(),
+            sourcepos: (self.line, start_column, self.line, end_column).into(),
             open: false,
             last_line_blank: false,
             table_visited: false,
@@ -209,8 +279,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return false;
         };
 
-        let adjusted_line = self.line - ast.sourcepos.start.line;
-        self.line_offset = ast.line_offsets[adjusted_line];
+        // Only recalculate line_offset when the line changes (happens at newlines).
+        // For most calls, self.line is stable and this avoids a Vec index + bounds check.
+        let line = self.line;
+        if line != self.last_line_offset_line {
+            let adjusted_line = line - ast.sourcepos.start.line;
+            self.line_offset = ast.line_offsets[adjusted_line];
+            self.last_line_offset_line = line;
+        }
 
         let new_inl: Option<Node<'a>> = match b {
             b'\r' | b'\n' => Some(self.handle_newline()),
@@ -359,25 +435,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let startpos = self.scanner.pos;
                 self.scanner.pos = endpos;
 
-                let mut contents: Cow<str> = if endpos == self.input.len() {
-                    let mut contents = mem::take(&mut self.input);
-                    strings::remove_from_start(&mut contents, startpos);
-                    contents.into()
-                } else {
-                    self.input[startpos..endpos].into()
-                };
-
+                // Trim trailing whitespace if followed by a line end
                 if self.peek_byte().is_some_and(strings::is_line_end_char) {
-                    let size_before = contents.len();
-                    strings::rtrim_cow(&mut contents);
-                    endpos -= size_before - contents.len();
+                    while endpos > startpos && isspace(self.input.as_bytes()[endpos - 1]) {
+                        endpos -= 1;
+                    }
                 }
 
-                // Don't create empty text nodes - this can happen after trimming trailing
-                // whitespace, is useless, and would cause sourcepos underflow in endpos - 1.
-                if !contents.is_empty() {
+                // Don't create empty text nodes
+                if endpos > startpos {
+                    let text: Cow<'static, str> = if endpos == self.input.len()
+                        && startpos == 0
+                    {
+                        // Take ownership of the entire remaining input to avoid copy
+                        mem::take(&mut self.input).into()
+                    } else if endpos == self.input.len() {
+                        // Take ownership and remove prefix
+                        let mut contents = mem::take(&mut self.input);
+                        strings::remove_from_start(&mut contents, startpos);
+                        contents.into()
+                    } else {
+                        self.input[startpos..endpos].to_string().into()
+                    };
                     Some(self.make_inline(
-                        NodeValue::Text(contents.into_owned().into()),
+                        NodeValue::Text(text),
                         startpos,
                         endpos - 1,
                     ))
@@ -402,7 +483,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_byte() == Some(b'\n') {
             self.scanner.pos += 1;
         }
-        assert_ne!(nlpos, self.scanner.pos);
+        debug_assert_ne!(nlpos, self.scanner.pos);
 
         let inl = if nlpos > 1
             && self.input.as_bytes()[nlpos - 1] == b' '
@@ -426,18 +507,23 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         match endpos {
             None => {
                 self.scanner.pos = startpos + openticks;
+                let text: Cow<'static, str> = match openticks {
+                    1 => "`".into(),
+                    2 => "``".into(),
+                    3 => "```".into(),
+                    _ => "`".repeat(openticks).into(),
+                };
                 self.make_inline(
-                    NodeValue::Text("`".repeat(openticks).into()),
+                    NodeValue::Text(text),
                     startpos,
                     self.scanner.pos - 1,
                 )
             }
             Some(endpos) => {
                 let buf = &self.input[startpos + openticks..endpos - openticks];
-                let buf = strings::normalize_code(buf);
                 let code = NodeCode {
                     num_backticks: openticks,
-                    literal: buf.into(),
+                    literal: strings::normalize_code(buf).into_owned(),
                 };
                 let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
                 self.adjust_node_newlines(
@@ -458,12 +544,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_byte().is_some_and(ispunct) {
             self.scanner.pos += 1;
 
+            let ch = self.input.as_bytes()[self.scanner.pos - 1];
+            let text: Cow<'static, str> = ascii_char_to_cow(ch);
             let inline_text = self.make_inline(
-                NodeValue::Text(
-                    self.input[self.scanner.pos - 1..self.scanner.pos]
-                        .to_string()
-                        .into(),
-                ),
+                NodeValue::Text(text),
                 self.scanner.pos - 1,
                 self.scanner.pos - 1,
             );
@@ -474,6 +558,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             );
             inl.append(inline_text);
+            self.created_escaped = true;
             inl
         } else if !self.eof() && self.skip_line_end() {
             let inl = self.make_inline(NodeValue::LineBreak, startpos, self.scanner.pos - 1);
@@ -736,9 +821,26 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 "“".into()
             }
         } else {
-            self.input[self.scanner.pos - numdelims..self.scanner.pos]
-                .to_string()
-                .into()
+            // Use static strings for common delimiter patterns to avoid allocation
+            match (b, numdelims) {
+                (b'*', 1) => "*".into(),
+                (b'*', 2) => "**".into(),
+                (b'*', 3) => "***".into(),
+                (b'_', 1) => "_".into(),
+                (b'_', 2) => "__".into(),
+                (b'_', 3) => "___".into(),
+                (b'~', 1) => "~".into(),
+                (b'~', 2) => "~~".into(),
+                (b'=', 2) => "==".into(),
+                (b'+', 2) => "++".into(),
+                (b'^', 1) => "^".into(),
+                (b'|', 2) => "||".into(),
+                (b'"', 1) => "\"".into(),
+                (b'\'', 1) => "'".into(),
+                _ => self.input[self.scanner.pos - numdelims..self.scanner.pos]
+                    .to_string()
+                    .into(),
+            }
         };
         let inl = self.make_inline(
             NodeValue::Text(contents),
@@ -1037,6 +1139,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                     span.append(inline_text);
                     container.append(span);
+                    self.created_escaped = true;
                 } else {
                     container.append(inline_text);
                 }
@@ -1162,6 +1265,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.footnote_defs,
             &delimiter_arena,
             self.inline_footnote_depth + 1,
+            self.config,
         );
 
         while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
@@ -1314,6 +1418,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // complex rules for which can be opening and/or closing delimiters,
     // determined in `scan_delims`.
     pub fn process_emphasis(&mut self, stack_bottom: usize) {
+        // Early return if there are no delimiters to process.
+        if self.last_delimiter.is_none() {
+            return;
+        }
+
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
@@ -1394,7 +1503,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if self.emph_delim_bytes[c.delim_byte as usize] {
+                if self.config.emph_delim_bytes[c.delim_byte as usize] {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
                         // match and they are inserted. We get a new closer
@@ -2027,16 +2136,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.scanner.pos + index
     }
 
+    #[inline]
     fn is_special_char(&self, value: u8) -> bool {
-        if value == b'^' && self.within_brackets {
-            return false;
-        }
-
-        if self.special_char_bytes[value as usize] {
-            return true;
-        }
-
-        false
+        self.config.special_char_bytes[value as usize]
+            && !(value == b'^' && self.within_brackets)
     }
 
     fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
@@ -2048,13 +2151,19 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        // Use jetscii for SIMD-accelerated backtick search
+        let matcher = jetscii::bytes!(b'`');
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'`') {
-                self.scanner.pos += 1;
-            }
-            if self.scanner.pos >= self.input.len() {
-                self.scanned_for_backticks = true;
-                return None;
+            let remaining = &self.input.as_bytes()[self.scanner.pos..];
+            match matcher.find(remaining) {
+                Some(offset) => {
+                    self.scanner.pos += offset;
+                }
+                None => {
+                    self.scanner.pos = self.input.len();
+                    self.scanned_for_backticks = true;
+                    return None;
+                }
             }
             let numticks = self.take_while(b'`');
             if numticks <= MAXBACKTICKS {
@@ -2138,13 +2247,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut before_char_pos = pos - 1;
         while before_char_pos > 0
             && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.skip_char_bytes[self.input.as_bytes()[before_char_pos] as usize])
+                || self.config.skip_char_bytes[self.input.as_bytes()[before_char_pos] as usize])
         {
             before_char_pos -= 1;
         }
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
-                if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
+                if (x as usize) < 256 && self.config.skip_char_bytes[x as usize] {
                     ('\n', None)
                 } else {
                     (x, Some(before_char_pos))
@@ -2173,13 +2282,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         } else {
             let mut after_char_pos = self.scanner.pos;
             while after_char_pos < self.input.len() - 1
-                && self.skip_char_bytes[self.input.as_bytes()[after_char_pos] as usize]
+                && self.config.skip_char_bytes[self.input.as_bytes()[after_char_pos] as usize]
             {
                 after_char_pos += 1;
             }
             match self.input[after_char_pos..].chars().next() {
                 Some(x) => {
-                    if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
+                    if (x as usize) < 256 && self.config.skip_char_bytes[x as usize] {
                         '\n'
                     } else {
                         x
