@@ -71,6 +71,7 @@ pub struct Parser<'a, 'o, 'c> {
     options: &'o Options<'c>,
     refmap: RefMap,
     footnote_defs: inlines::FootnoteDefs<'a>,
+    inline_config: inlines::InlineConfig,
     root: Node<'a>,
     current: Node<'a>,
     line_number: usize,
@@ -86,6 +87,10 @@ pub struct Parser<'a, 'o, 'c> {
     curline_end_col: usize,
     last_line_length: usize,
     total_size: usize,
+    /// Whether postprocess_text_nodes needs to do work.
+    /// Set to true if any Escaped nodes were created during inline parsing
+    /// or if extensions that need postprocessing are enabled.
+    needs_text_postprocessing: bool,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
 }
@@ -117,6 +122,7 @@ where
             options,
             refmap: RefMap::new(),
             footnote_defs: inlines::FootnoteDefs::new(),
+            inline_config: inlines::InlineConfig::new(options),
             root,
             current: root,
             line_number: 0,
@@ -132,6 +138,10 @@ where
             curline_end_col: 0,
             last_line_length: 0,
             total_size: 0,
+            // Extensions that need postprocessing always need the text pass.
+            // Without extensions, we only need it if escaped nodes are created.
+            needs_text_postprocessing: options.extension.tasklist
+                || options.extension.autolink,
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
         }
@@ -1666,7 +1676,7 @@ where
             parent = self.finalize(parent).unwrap();
         }
 
-        assert!(start_column > 0);
+        debug_assert!(start_column > 0);
 
         let child = Ast::new(value, (self.line_number, start_column).into());
         let node = self.arena.alloc(child.into());
@@ -1844,7 +1854,7 @@ where
 
     fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data_mut();
-        assert!(ast.open);
+        debug_assert!(ast.open);
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
@@ -1888,39 +1898,46 @@ where
 
     // Walk the tree and fix lists using their
     // deepest-last descendant end where available.
-    fn propagate_list_sourcepos(&mut self, root: Node<'a>) {
-        // Post-order traversal using an explicit stack: (node, visited)
-        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
+    fn propagate_list_sourcepos(&self, root: Node<'a>) {
+        // Post-order traversal of block-level nodes only.
+        // Lists are block-level, so we skip inline nodes entirely.
+        let mut stack: Vec<(Node<'a>, bool)> = Vec::with_capacity(32);
         stack.push((root, false));
 
         while let Some((node, visited)) = stack.pop() {
             if !visited {
                 stack.push((node, true));
+                // Only traverse children that are block-level nodes.
+                // This skips inline subtrees (Text, Emph, Code, etc.)
                 for ch in node.children() {
-                    stack.push((ch, false));
+                    if ch.data().value.block() {
+                        stack.push((ch, false));
+                    }
                 }
-            } else {
-                // Use a short-lived shared borrow to inspect descendants,
-                // then take a mutable borrow only when we need to update the
-                // node. This avoids RefCell borrow conflicts.
-                if matches!(node.data().value, NodeValue::List(..)) {
-                    let mut max_end = node.data().sourcepos.end;
-                    for d in node.descendants() {
-                        let de = d.data().sourcepos.end;
-                        if de.column == 0 {
-                            continue;
-                        }
-                        if de.line > max_end.line
-                            || (de.line == max_end.line && de.column > max_end.column)
+            } else if matches!(node.data().value, NodeValue::List(..)) {
+                // For list nodes, find the maximum sourcepos end among block descendants.
+                // We only need to check block-level descendants (Items, Paragraphs, etc.)
+                let mut max_end = node.data().sourcepos.end;
+                let mut desc_stack = vec![node];
+                while let Some(n) = desc_stack.pop() {
+                    for ch in n.children() {
+                        let ch_data = ch.data();
+                        let de = ch_data.sourcepos.end;
+                        if de.column != 0
+                            && (de.line > max_end.line
+                                || (de.line == max_end.line && de.column > max_end.column))
                         {
                             max_end = de;
                         }
+                        if ch_data.value.block() {
+                            drop(ch_data);
+                            desc_stack.push(ch);
+                        }
                     }
+                }
 
-                    if max_end.column != 0 {
-                        let mut ast = node.data_mut();
-                        ast.sourcepos.end = max_end;
-                    }
+                if max_end.column != 0 {
+                    node.data_mut().sourcepos.end = max_end;
                 }
             }
         }
@@ -1931,6 +1948,11 @@ where
     }
 
     fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
+        // Fast path: if the content doesn't start with '[', no reference definitions possible
+        if content.as_bytes().first() != Some(&b'[') {
+            return !strings::is_blank(content);
+        }
+
         let mut pos = 0;
         let mut rrs = vec![];
 
@@ -1956,7 +1978,7 @@ where
     }
 
     fn finalize_borrowed(&mut self, node: Node<'a>, ast: &mut Ast) -> Option<Node<'a>> {
-        assert!(ast.open);
+        debug_assert!(ast.open);
         ast.open = false;
 
         let content = &mut ast.content;
@@ -1998,18 +2020,28 @@ where
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
                 } else {
+                    let bytes = content.as_bytes();
                     let mut pos = 0;
                     while pos < content.len() {
-                        if strings::is_line_end_char(content.as_bytes()[pos]) {
+                        if strings::is_line_end_char(bytes[pos]) {
                             break;
                         }
                         pos += 1;
                     }
 
-                    let mut info = entity::unescape_html(&content[..pos]);
-                    strings::trim_cow(&mut info);
-                    let mut info = info.into_owned();
-                    strings::unescape(&mut info);
+                    let info_slice = &content[..pos];
+                    let trimmed = strings::trim_slice(info_slice);
+
+                    // Fast path: if the info string has no '&' or '\\', no unescaping needed
+                    let has_special = trimmed.as_bytes().iter().any(|&b| b == b'&' || b == b'\\');
+                    let info = if has_special {
+                        let mut info = entity::unescape_html(trimmed).into_owned();
+                        strings::unescape(&mut info);
+                        info
+                    } else {
+                        trimmed.to_string()
+                    };
+
                     if info.is_empty() {
                         ncb.info = self
                             .options
@@ -2118,10 +2150,14 @@ where
             &mut self.footnote_defs,
             &delimiter_arena,
             0,
+            &self.inline_config,
         );
 
         while subj.parse_inline(node, &mut node_data) {}
         subj.process_emphasis(0);
+        if subj.created_escaped {
+            self.needs_text_postprocessing = true;
+        }
         subj.clear_brackets();
     }
 
@@ -2251,10 +2287,11 @@ where
         let mut children = vec![];
         let coalesce_escaped =
             !(self.options.parse.escaped_char_spans || self.options.render.escaped_char_spans);
+        let mut escaped_to_coalesce = vec![];
 
         while let Some((parent, in_bracket_context)) = stack.pop() {
             let mut it = parent.first_child();
-            let mut escaped_to_coalesce = vec![];
+            escaped_to_coalesce.clear();
 
             while let Some(node) = it {
                 let mut child_in_bracket_context = in_bracket_context;
@@ -2287,7 +2324,26 @@ where
                 }
 
                 if !emptied {
-                    children.push((node, child_in_bracket_context));
+                    // Only recurse into nodes that can contain inlines or block containers.
+                    // Skip leaf block nodes (CodeBlock, HtmlBlock, ThematicBreak) that
+                    // don't need text coalescing.
+                    let should_recurse = match ast.value {
+                        NodeValue::CodeBlock(..)
+                        | NodeValue::HtmlBlock(..)
+                        | NodeValue::ThematicBreak
+                        | NodeValue::FrontMatter(..)
+                        | NodeValue::Text(..)
+                        | NodeValue::Code(..)
+                        | NodeValue::SoftBreak
+                        | NodeValue::LineBreak
+                        | NodeValue::HtmlInline(..)
+                        | NodeValue::Math(..)
+                        | NodeValue::Raw(..) => false,
+                        _ => true,
+                    };
+                    if should_recurse {
+                        children.push((node, child_in_bracket_context));
+                    }
                 }
 
                 it = node.next_sibling();
@@ -2298,7 +2354,7 @@ where
             }
 
             // Remove Escaped from the tree, coalescing with adjacent nodes.
-            for node in escaped_to_coalesce {
+            for node in escaped_to_coalesce.drain(..) {
                 let escaped_text = node.first_child().unwrap();
                 node.insert_before(escaped_text);
                 node.detach();
@@ -2352,28 +2408,47 @@ where
         // Record the original list of sourcepos and bytecounts
         // for the post-processing step.
 
-        let mut spxv = VecDeque::new();
-        spxv.push_back((sourcepos, root.len()));
-        while let Some(ns) = node.next_sibling() {
-            match ns.data().value {
-                NodeValue::Text(ref adj) => {
-                    root.to_mut().push_str(adj);
-                    let sp = ns.data().sourcepos;
-                    spxv.push_back((sp, adj.len()));
-                    sourcepos.end.column = sp.end.column;
-                    ns.detach();
+        // Fast path: when no extensions need post-processing, skip VecDeque tracking
+        let needs_postprocessing = self.options.extension.tasklist
+            || (self.options.extension.autolink && !in_bracket_context);
+
+        if needs_postprocessing {
+            let mut spxv = VecDeque::new();
+            spxv.push_back((sourcepos, root.len()));
+            while let Some(ns) = node.next_sibling() {
+                match ns.data().value {
+                    NodeValue::Text(ref adj) => {
+                        root.to_mut().push_str(adj);
+                        let sp = ns.data().sourcepos;
+                        spxv.push_back((sp, adj.len()));
+                        sourcepos.end.column = sp.end.column;
+                        ns.detach();
+                    }
+                    _ => break,
                 }
-                _ => break,
+            }
+            self.postprocess_text_node_with_context_inner(
+                node,
+                root,
+                &mut sourcepos,
+                spxv,
+                in_bracket_context,
+            );
+        } else {
+            // Just coalesce adjacent text nodes without sourcepos tracking
+            while let Some(ns) = node.next_sibling() {
+                let ns_data = ns.data();
+                match ns_data.value {
+                    NodeValue::Text(ref adj) => {
+                        root.to_mut().push_str(adj);
+                        sourcepos.end.column = ns_data.sourcepos.end.column;
+                        drop(ns_data);
+                        ns.detach();
+                    }
+                    _ => break,
+                }
             }
         }
-
-        self.postprocess_text_node_with_context_inner(
-            node,
-            root,
-            &mut sourcepos,
-            spxv,
-            in_bracket_context,
-        );
 
         sourcepos
     }
