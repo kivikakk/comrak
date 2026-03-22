@@ -136,6 +136,10 @@ struct Cli {
     #[arg(long, value_name = "PREFIX", required = false, hide = true)]
     header_ids: Option<String>,
 
+    /// Apply the header ID prefix to the href anchor as well
+    #[arg(long)]
+    header_id_prefix_in_href: bool,
+
     /// Detect frontmatter that starts and ends with the given string, and do
     /// not include it in the resulting document
     #[arg(long, value_name = "DELIMITER", allow_hyphen_values = true)]
@@ -287,6 +291,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .tasklist(exts.contains(&Extension::Tasklist) || cli.gfm)
         .superscript(exts.contains(&Extension::Superscript))
         .maybe_header_id_prefix(cli.header_id_prefix.or(cli.header_ids))
+        .header_id_prefix_in_href(cli.header_id_prefix_in_href)
         .footnotes(exts.contains(&Extension::Footnotes))
         .inline_footnotes(exts.contains(&Extension::InlineFootnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))

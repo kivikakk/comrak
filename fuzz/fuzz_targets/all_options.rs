@@ -57,6 +57,7 @@ struct FuzzExtensionOptions {
     highlight: bool,
     phoenix_heex: bool,
     insert: bool,
+    header_id_prefix_in_href: bool,
     // non-bool below
     header_id_prefix: bool,
     front_matter_delimiter: bool,
@@ -101,6 +102,7 @@ impl FuzzExtensionOptions {
             } else {
                 None
             },
+            header_id_prefix_in_href: self.header_id_prefix_in_href,
             front_matter_delimiter: if self.front_matter_delimiter {
                 Some("---".into())
             } else {
