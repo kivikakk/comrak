@@ -118,6 +118,7 @@ impl FuzzExtensionOptions {
             } else {
                 None
             },
+            header_ids: None,
         }
     }
 }
