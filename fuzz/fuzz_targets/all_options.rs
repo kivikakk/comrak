@@ -57,8 +57,9 @@ struct FuzzExtensionOptions {
     highlight: bool,
     phoenix_heex: bool,
     insert: bool,
+    header_id_prefix_in_href: bool,
     // non-bool below
-    header_ids: bool,
+    header_id_prefix: bool,
     front_matter_delimiter: bool,
     image_url_rewriter: bool,
     link_url_rewriter: bool,
@@ -95,8 +96,9 @@ impl FuzzExtensionOptions {
             highlight: self.highlight,
             phoenix_heex: self.phoenix_heex,
             insert: self.insert,
+            header_id_prefix_in_href: self.header_id_prefix_in_href,
             // non-bool below
-            header_ids: if self.header_ids {
+            header_id_prefix: if self.header_id_prefix {
                 Some("user-content-".into())
             } else {
                 None
@@ -116,6 +118,7 @@ impl FuzzExtensionOptions {
             } else {
                 None
             },
+            header_ids: None,
         }
     }
 }

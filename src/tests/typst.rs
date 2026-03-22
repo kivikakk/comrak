@@ -287,9 +287,9 @@ fn wikilinks_use_their_rendered_label() {
 }
 
 #[test]
-fn heading_labels_follow_header_ids() {
+fn heading_labels_follow_header_id_prefix() {
     typst_opts("# Intro\n", "= Intro <sec:intro>\n", |opts| {
-        opts.extension.header_ids = Some("sec:".to_owned());
+        opts.extension.header_id_prefix = Some("sec:".to_owned());
     });
 }
 

@@ -575,13 +575,18 @@ fn render_heading<T>(
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
 
-                if let Some(ref prefix) = context.options.extension.header_ids {
+                if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
                     let text_content = collect_text(node);
                     let id = context.anchorizer.anchorize(&text_content);
+                    let href_prefix = if context.options.extension.header_id_prefix_in_href {
+                        prefix.as_str()
+                    } else {
+                        ""
+                    };
                     write!(
                         context,
-                        "<a href=\"#{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                        id, prefix, id
+                        "<a href=\"#{}{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
+                        href_prefix, id, prefix, id
                     )?;
                 }
             } else {

@@ -117,16 +117,43 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub superscript: bool,
 
-    /// Enables the header IDs Comrak extension.
+    /// Enables the header IDs Comrak extension, with the given ID prefix.
+    ///
+    /// When set, each heading gains an anchor element with an `id` attribute
+    /// formed by prefixing the slugified heading text. This is useful for
+    /// namespacing heading anchors to avoid collisions when rendered Markdown
+    /// is embedded alongside other content on a page (e.g. GitHub uses the
+    /// prefix `"user-content-"` for this purpose).
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
-    /// options.extension.header_ids = Some("user-content-".to_string());
+    /// options.extension.header_id_prefix = Some("user-content-".to_string());
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
+    pub header_id_prefix: Option<String>,
+
+    #[deprecated(since = "0.52.0", note = "renamed to `header_id_prefix`")]
+    /// Deprecated: use [`header_id_prefix`](#structfield.header_id_prefix) instead.
+    #[cfg_attr(feature = "bon", builder(skip))]
     pub header_ids: Option<String>,
+
+    /// When enabled alongside [`header_id_prefix`](#structfield.header_id_prefix), the header ID
+    /// prefix is also applied to the `href` anchor in the generated link.
+    ///
+    /// Has no effect if `header_id_prefix` is `None`.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.header_id_prefix = Some("user-content-".to_string());
+    /// options.extension.header_id_prefix_in_href = true;
+    /// assert_eq!(markdown_to_html("# README\n", &options),
+    ///            "<h1><a href=\"#user-content-readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub header_id_prefix_in_href: bool,
 
     /// Enables the footnotes extension per `cmark-gfm`.
     ///
@@ -578,6 +605,15 @@ pub struct Extension<'c> {
 }
 
 impl Extension<'_> {
+    /// Returns the effective header ID prefix, preferring [`header_id_prefix`] over the
+    /// deprecated [`header_ids`].
+    ///
+    /// TODO: Remove this method when `header_ids` is removed.
+    #[allow(deprecated)]
+    pub(crate) fn effective_header_id_prefix(&self) -> Option<&String> {
+        self.header_id_prefix.as_ref().or(self.header_ids.as_ref())
+    }
+
     pub(crate) fn wikilinks(&self) -> Option<WikiLinksMode> {
         match (
             self.wikilinks_title_before_pipe,

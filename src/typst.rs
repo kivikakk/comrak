@@ -518,7 +518,7 @@ impl<'a, 'o, 'c> TypstFormatter<'a, 'o, 'c> {
     }
 
     fn render_heading_label(&mut self, node: Node<'a>) -> Option<String> {
-        let prefix = self.options.extension.header_ids.as_ref()?;
+        let prefix = self.options.extension.effective_header_id_prefix()?;
 
         if node.children().any(is_explicit_typst_label_node) {
             return None;

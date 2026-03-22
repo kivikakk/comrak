@@ -136,8 +136,11 @@ Options:
           
           [default: 0]
 
-      --header-ids <PREFIX>
-          Use the Comrak header IDs extension, with the given ID prefix
+      --header-id-prefix <PREFIX>
+          Prefix generated header IDs with the given ID prefix
+
+      --header-id-prefix-in-href
+          Apply the header ID prefix to the href anchor as well
 
       --front-matter-delimiter <DELIMITER>
           Detect frontmatter that starts and ends with the given string, and do not include it in
