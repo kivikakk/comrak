@@ -246,6 +246,7 @@ pub fn rtrim_slice(i: &str) -> &str {
     i.trim_end_matches(isspace_char)
 }
 
+#[allow(dead_code)]
 pub fn rtrim_cow(s: &mut Cow<str>) {
     match s {
         Cow::Borrowed(str) => *str = rtrim_slice(str),

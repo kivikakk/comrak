@@ -77,34 +77,34 @@ fn lookup(text: &str) -> Option<&'static str> {
 pub fn unescape_html(src: &str) -> Cow<'_, str> {
     let bytes = src.as_bytes();
     let size = src.len();
-    let mut i = 0;
+
+    // Fast path: find the first '&'. If none, return borrowed.
+    let first_amp = match bytes.iter().position(|&b| b == b'&') {
+        Some(pos) => pos,
+        None => return src.into(),
+    };
+
+    // Slow path: there's at least one '&', need to potentially unescape
     let mut v = String::with_capacity(size);
+    v.push_str(&src[..first_amp]);
+    let mut i = first_amp;
 
     while i < size {
-        let org = i;
-        while i < size && bytes[i] != b'&' {
+        if bytes[i] == b'&' {
             i += 1;
-        }
-
-        if i > org {
-            if org == 0 && i >= size {
-                return src.into();
+            match unescape(&src[i..]) {
+                Some((chs, consumed)) => {
+                    v.push_str(&chs);
+                    i += consumed;
+                }
+                None => v.push('&'),
             }
-
+        } else {
+            let org = i;
+            while i < size && bytes[i] != b'&' {
+                i += 1;
+            }
             v.push_str(&src[org..i]);
-        }
-
-        if i >= size {
-            return v.into();
-        }
-
-        i += 1;
-        match unescape(&src[i..]) {
-            Some((chs, size)) => {
-                v.push_str(&chs);
-                i += size;
-            }
-            None => v.push('&'),
         }
     }
 

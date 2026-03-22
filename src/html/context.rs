@@ -4,11 +4,17 @@ use crate::{Options, options::Plugins};
 use std::cell::Cell;
 use std::fmt::{self, Write};
 
+/// Output sink that provides a fast path for String output (avoiding dyn dispatch).
+enum Output<'o> {
+    Dyn(&'o mut dyn Write),
+    Str(&'o mut String),
+}
+
 /// Context struct given to formatter functions as taken by
 /// [`html::format_document_with_formatter`].  Output can be appended to through
 /// this struct's [`Write`] interface.
 pub struct Context<'o, 'c, T = ()> {
-    output: &'o mut dyn Write,
+    output: Output<'o>,
     last_was_lf: Cell<bool>,
 
     /// [`Options`] in use in this render.
@@ -32,7 +38,26 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
         user: T,
     ) -> Self {
         Context {
-            output,
+            output: Output::Dyn(output),
+            last_was_lf: Cell::new(true),
+            options,
+            plugins,
+            anchorizer: Anchorizer::new(),
+            user,
+            footnote_ix: 0,
+            written_footnote_ix: 0,
+        }
+    }
+
+    /// Create a Context with a specialized String output (avoids dyn dispatch).
+    pub(super) fn new_string(
+        output: &'o mut String,
+        options: &'o Options<'c>,
+        plugins: &'o Plugins<'o>,
+        user: T,
+    ) -> Self {
+        Context {
+            output: Output::Str(output),
             last_was_lf: Cell::new(true),
             options,
             plugins,
@@ -90,12 +115,19 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
 }
 
 impl<T> Write for Context<'_, '_, T> {
+    #[inline]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let l = s.len();
         if l > 0 {
             self.last_was_lf.set(s.as_bytes()[l - 1] == 10);
         }
-        self.output.write_str(s)
+        match &mut self.output {
+            Output::Str(string) => {
+                string.push_str(s);
+                Ok(())
+            }
+            Output::Dyn(writer) => writer.write_str(s),
+        }
     }
 }
 

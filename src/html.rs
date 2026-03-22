@@ -52,6 +52,17 @@ pub fn format_document_with_plugins(
     format_document_with_formatter(root, options, output, plugins, format_node_default, ())
 }
 
+/// Format to a String with specialized (non-dyn) dispatch for better performance.
+/// This avoids virtual dispatch overhead when the output is a String.
+pub fn format_document_to_string(
+    root: Node<'_>,
+    options: &Options,
+    output: &mut String,
+    plugins: &Plugins,
+) -> fmt::Result {
+    format_document_with_formatter_string(root, options, output, plugins, format_node_default, ())
+}
+
 /// Returned by the [`format_document_with_formatter`] callback to indicate
 /// whether children of a node should be rendered with full HTML as usual, in
 /// "plain" mode, such as for the `title` attribute of an image (which is a full
@@ -274,17 +285,33 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
 
     let mut context = Context::new(output, options, plugins, user);
 
-    enum Phase {
-        Pre,
-        Post,
-    }
-    let mut stack = vec![(root, ChildRendering::HTML, Phase::Pre)];
+    // Use the tree's built-in traverse iterator instead of a manual stack.
+    // This avoids Vec push/pop overhead and is more cache-friendly since
+    // it follows tree pointers directly.
+    //
+    // Track rendering mode changes: store the node that started the mode
+    // change so we can pop when that node's End edge is reached.
+    // Plain mode is rare (only for image alt text), so this is typically empty.
+    let mut plain_node: Option<Node<'a>> = None;
+    let mut current_cr = ChildRendering::HTML;
+    let mut skip_depth: usize = 0;
+    // Track which nodes need exit processing. The stack parallels the
+    // tree depth: push on Start, pop on End. `false` means skip the
+    // exit formatter call (for leaf/no-op-exit nodes).
+    let mut needs_exit: Vec<bool> = Vec::with_capacity(64);
 
-    while let Some((node, child_rendering, phase)) = stack.pop() {
-        match phase {
-            Phase::Pre => {
-                let new_cr = match child_rendering {
+    for edge in root.traverse() {
+        match edge {
+            crate::arena_tree::NodeEdge::Start(node) => {
+                if skip_depth > 0 {
+                    skip_depth += 1;
+                    needs_exit.push(false);
+                    continue;
+                }
+
+                match current_cr {
                     ChildRendering::Plain => {
+                        needs_exit.push(false);
                         match node.data().value {
                             NodeValue::Text(ref literal) => {
                                 context.escape(literal)?;
@@ -301,27 +328,178 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
                             }
                             _ => (),
                         }
-                        ChildRendering::Plain
                     }
                     ChildRendering::HTML => {
-                        stack.push((node, ChildRendering::HTML, Phase::Post));
-                        formatter(&mut context, node, true)?
+                        let new_cr = formatter(&mut context, node, true)?;
+                        match new_cr {
+                            ChildRendering::Skip => {
+                                skip_depth = 1;
+                                needs_exit.push(true); // skip root needs exit
+                            }
+                            ChildRendering::Plain => {
+                                plain_node = Some(node);
+                                current_cr = ChildRendering::Plain;
+                                needs_exit.push(true); // plain root needs exit
+                            }
+                            ChildRendering::HTML => {
+                                // Check if this node type has a no-op exit
+                                let has_exit = !matches!(
+                                    node.data().value,
+                                    NodeValue::Text(..)
+                                        | NodeValue::Code(..)
+                                        | NodeValue::SoftBreak
+                                        | NodeValue::LineBreak
+                                        | NodeValue::CodeBlock(..)
+                                        | NodeValue::HtmlBlock(..)
+                                        | NodeValue::Document
+                                        | NodeValue::FrontMatter(..)
+                                        | NodeValue::ThematicBreak
+                                        | NodeValue::Raw(..)
+                                );
+                                needs_exit.push(has_exit);
+                            }
+                        }
                     }
-                    ChildRendering::Skip => {
-                        // We never push a node with ChildRendering::Skip.
-                        unreachable!()
-                    }
-                };
-
-                if !matches!(new_cr, ChildRendering::Skip) {
-                    for ch in node.reverse_children() {
-                        stack.push((ch, new_cr, Phase::Pre));
-                    }
+                    ChildRendering::Skip => unreachable!(),
                 }
             }
-            Phase::Post => {
-                debug_assert!(matches!(child_rendering, ChildRendering::HTML));
-                formatter(&mut context, node, false)?;
+            crate::arena_tree::NodeEdge::End(node) => {
+                let need = needs_exit.pop().unwrap_or(true);
+
+                if skip_depth > 0 {
+                    skip_depth -= 1;
+                    if skip_depth == 0 {
+                        formatter(&mut context, node, false)?;
+                    }
+                    continue;
+                }
+
+                // Check if we're leaving the node that started Plain mode
+                if let Some(pn) = plain_node {
+                    if pn.same_node(node) {
+                        plain_node = None;
+                        current_cr = ChildRendering::HTML;
+                        formatter(&mut context, node, false)?;
+                        continue;
+                    }
+                }
+
+                if need && matches!(current_cr, ChildRendering::HTML) {
+                    formatter(&mut context, node, false)?;
+                }
+            }
+        }
+    }
+
+    context.finish()
+}
+
+/// String-specialized version of format_document_with_formatter.
+/// Uses Context::new_string for direct String output without dyn dispatch.
+fn format_document_with_formatter_string<'a, 'o, 'c: 'o, T>(
+    root: Node<'a>,
+    options: &'o Options<'c>,
+    output: &'o mut String,
+    plugins: &'o Plugins<'o>,
+    formatter: fn(
+        context: &mut Context<T>,
+        node: Node<'a>,
+        entering: bool,
+    ) -> Result<ChildRendering, fmt::Error>,
+    user: T,
+) -> Result<T, fmt::Error> {
+    let mut context = Context::new_string(output, options, plugins, user);
+
+    let mut plain_node: Option<Node<'a>> = None;
+    let mut current_cr = ChildRendering::HTML;
+    let mut skip_depth: usize = 0;
+    let mut needs_exit: Vec<bool> = Vec::with_capacity(64);
+
+    for edge in root.traverse() {
+        match edge {
+            crate::arena_tree::NodeEdge::Start(node) => {
+                if skip_depth > 0 {
+                    skip_depth += 1;
+                    needs_exit.push(false);
+                    continue;
+                }
+
+                match current_cr {
+                    ChildRendering::Plain => {
+                        needs_exit.push(false);
+                        match node.data().value {
+                            NodeValue::Text(ref literal) => {
+                                context.escape(literal)?;
+                            }
+                            NodeValue::Code(NodeCode { ref literal, .. })
+                            | NodeValue::HtmlInline(ref literal) => {
+                                context.escape(literal)?;
+                            }
+                            NodeValue::LineBreak | NodeValue::SoftBreak => {
+                                fmt::Write::write_str(&mut context, " ")?;
+                            }
+                            NodeValue::Math(NodeMath { ref literal, .. }) => {
+                                context.escape(literal)?;
+                            }
+                            _ => (),
+                        }
+                    }
+                    ChildRendering::HTML => {
+                        let new_cr = formatter(&mut context, node, true)?;
+                        match new_cr {
+                            ChildRendering::Skip => {
+                                skip_depth = 1;
+                                needs_exit.push(true);
+                            }
+                            ChildRendering::Plain => {
+                                plain_node = Some(node);
+                                current_cr = ChildRendering::Plain;
+                                needs_exit.push(true);
+                            }
+                            ChildRendering::HTML => {
+                                let has_exit = !matches!(
+                                    node.data().value,
+                                    NodeValue::Text(..)
+                                        | NodeValue::Code(..)
+                                        | NodeValue::SoftBreak
+                                        | NodeValue::LineBreak
+                                        | NodeValue::CodeBlock(..)
+                                        | NodeValue::HtmlBlock(..)
+                                        | NodeValue::Document
+                                        | NodeValue::FrontMatter(..)
+                                        | NodeValue::ThematicBreak
+                                        | NodeValue::Raw(..)
+                                );
+                                needs_exit.push(has_exit);
+                            }
+                        }
+                    }
+                    ChildRendering::Skip => unreachable!(),
+                }
+            }
+            crate::arena_tree::NodeEdge::End(node) => {
+                let need = needs_exit.pop().unwrap_or(true);
+
+                if skip_depth > 0 {
+                    skip_depth -= 1;
+                    if skip_depth == 0 {
+                        formatter(&mut context, node, false)?;
+                    }
+                    continue;
+                }
+
+                if let Some(pn) = plain_node {
+                    if pn.same_node(node) {
+                        plain_node = None;
+                        current_cr = ChildRendering::HTML;
+                        formatter(&mut context, node, false)?;
+                        continue;
+                    }
+                }
+
+                if need && matches!(current_cr, ChildRendering::HTML) {
+                    formatter(&mut context, node, false)?;
+                }
             }
         }
     }
@@ -444,9 +622,13 @@ fn render_code<T>(
     nc: &NodeCode,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_str("<code")?;
-        render_sourcepos(context, node)?;
-        context.write_str(">")?;
+        if context.options.render.sourcepos {
+            context.write_str("<code")?;
+            render_sourcepos(context, node)?;
+            context.write_str(">")?;
+        } else {
+            context.write_str("<code>")?;
+        }
         context.escape(&nc.literal)?;
         context.write_str("</code>")?;
     }
@@ -491,52 +673,93 @@ fn render_code_block<T>(
         if !lang.eq("math") {
             context.cr()?;
 
-            let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
-            let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
-            let code_attr: String;
-
             let literal = &ncb.literal;
 
-            if !info.is_empty() {
-                if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang.into());
+            // Fast path: when no syntax highlighter, no sourcepos, no special
+            // attributes, write tags directly without HashMap overhead
+            let has_highlighter =
+                context.plugins.render.codefence_syntax_highlighter.is_some();
+            let has_sourcepos = context.options.render.sourcepos;
+            let has_github_pre_lang = context.options.render.github_pre_lang;
 
+            if !has_highlighter && !has_sourcepos {
+                // Direct write path — avoids HashMap allocation
+                if info.is_empty() {
+                    context.write_str("<pre><code>")?;
+                } else if has_github_pre_lang {
+                    context.write_str("<pre lang=\"")?;
+                    context.escape(lang)?;
+                    context.write_str("\"")?;
                     if context.options.render.full_info_string && !meta.is_empty() {
-                        pre_attributes.insert("data-meta", meta.trim().into());
+                        context.write_str(" data-meta=\"")?;
+                        context.escape(meta.trim())?;
+                        context.write_str("\"")?;
                     }
+                    context.write_str("><code>")?;
                 } else {
-                    code_attr = format!("language-{}", lang);
-                    code_attributes.insert("class", code_attr.into());
-
+                    context.write_str("<pre><code class=\"language-")?;
+                    context.escape(lang)?;
+                    context.write_str("\"")?;
                     if context.options.render.full_info_string && !meta.is_empty() {
-                        code_attributes.insert("data-meta", meta.into());
+                        context.write_str(" data-meta=\"")?;
+                        context.escape(meta)?;
+                        context.write_str("\"")?;
+                    }
+                    context.write_str(">")?;
+                }
+
+                context.escape(literal)?;
+                context.write_str("</code></pre>")?;
+                context.lf()?;
+            } else {
+                // Slow path with HashMap for syntax highlighter or sourcepos
+                let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+                let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+                let code_attr: String;
+
+                if !info.is_empty() {
+                    if has_github_pre_lang {
+                        pre_attributes.insert("lang", lang.into());
+
+                        if context.options.render.full_info_string && !meta.is_empty() {
+                            pre_attributes.insert("data-meta", meta.trim().into());
+                        }
+                    } else {
+                        code_attr = format!("language-{}", lang);
+                        code_attributes.insert("class", code_attr.into());
+
+                        if context.options.render.full_info_string && !meta.is_empty() {
+                            code_attributes.insert("data-meta", meta.into());
+                        }
                     }
                 }
-            }
 
-            if context.options.render.sourcepos {
-                let ast = node.data();
-                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
-            }
-
-            match context.plugins.render.codefence_syntax_highlighter {
-                None => {
-                    write_opening_tag(context, "pre", pre_attributes.into_iter())?;
-                    write_opening_tag(context, "code", code_attributes.into_iter())?;
-
-                    context.escape(literal)?;
-
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
+                if has_sourcepos {
+                    let ast = node.data();
+                    pre_attributes
+                        .insert("data-sourcepos", ast.sourcepos.to_string().into());
                 }
-                Some(highlighter) => {
-                    highlighter.write_pre_tag(context, pre_attributes)?;
-                    highlighter.write_code_tag(context, code_attributes)?;
 
-                    highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
+                match context.plugins.render.codefence_syntax_highlighter {
+                    None => {
+                        write_opening_tag(context, "pre", pre_attributes.into_iter())?;
+                        write_opening_tag(context, "code", code_attributes.into_iter())?;
 
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
+                        context.escape(literal)?;
+
+                        context.write_str("</code></pre>")?;
+                        context.lf()?
+                    }
+                    Some(highlighter) => {
+                        highlighter.write_pre_tag(context, pre_attributes)?;
+                        highlighter.write_code_tag(context, code_attributes)?;
+
+                        highlighter
+                            .write_highlighted(context, Some(lang), &ncb.literal)?;
+
+                        context.write_str("</code></pre>")?;
+                        context.lf()?
+                    }
                 }
             }
         }
@@ -551,9 +774,13 @@ fn render_emph<T>(
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.write_str("<em")?;
-        render_sourcepos(context, node)?;
-        context.write_str(">")?;
+        if context.options.render.sourcepos {
+            context.write_str("<em")?;
+            render_sourcepos(context, node)?;
+            context.write_str(">")?;
+        } else {
+            context.write_str("<em>")?;
+        }
     } else {
         context.write_str("</em>")?;
     }
@@ -569,11 +796,24 @@ fn render_heading<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     match context.plugins.render.heading_adapter {
         None => {
+            // Static heading tags to avoid format! overhead for 5.6K headings
+            static HEADING_OPEN: [&str; 7] =
+                ["", "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>"];
+            static HEADING_OPEN_NOCLOSE: [&str; 7] =
+                ["", "<h1", "<h2", "<h3", "<h4", "<h5", "<h6"];
+            static HEADING_CLOSE: [&str; 7] =
+                ["", "</h1>", "</h2>", "</h3>", "</h4>", "</h5>", "</h6>"];
+
             if entering {
                 context.cr()?;
-                write!(context, "<h{}", nh.level)?;
-                render_sourcepos(context, node)?;
-                context.write_str(">")?;
+                let level = nh.level as usize;
+                if context.options.render.sourcepos {
+                    context.write_str(HEADING_OPEN_NOCLOSE[level])?;
+                    render_sourcepos(context, node)?;
+                    context.write_str(">")?;
+                } else {
+                    context.write_str(HEADING_OPEN[level])?;
+                }
 
                 if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
                     let text_content = collect_text(node);
@@ -590,7 +830,7 @@ fn render_heading<T>(
                     )?;
                 }
             } else {
-                write!(context, "</h{}>", nh.level)?;
+                context.write_str(HEADING_CLOSE[nh.level as usize])?;
                 context.lf()?;
             }
         }
@@ -866,16 +1106,23 @@ fn render_paragraph<T>(
 
     if !tight {
         if entering {
-            context.cr()?;
-            context.write_str("<p")?;
-            render_sourcepos(context, node)?;
-            context.write_str(">")?;
+            if context.options.render.sourcepos {
+                context.cr()?;
+                context.write_str("<p")?;
+                render_sourcepos(context, node)?;
+                context.write_str(">")?;
+            } else {
+                context.cr()?;
+                context.write_str("<p>")?;
+            }
         } else {
-            if let Some(parent) = node.parent() {
-                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value {
-                    if node.next_sibling().is_none() {
-                        context.write_str(" ")?;
-                        put_footnote_backref(context, nfd)?;
+            if context.footnote_ix > 0 {
+                if let Some(parent) = node.parent() {
+                    if let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value {
+                        if node.next_sibling().is_none() {
+                            context.write_str(" ")?;
+                            put_footnote_backref(context, nfd)?;
+                        }
                     }
                 }
             }
@@ -916,9 +1163,13 @@ fn render_strong<T>(
         || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
     {
         if entering {
-            context.write_str("<strong")?;
-            render_sourcepos(context, node)?;
-            context.write_str(">")?;
+            if context.options.render.sourcepos {
+                context.write_str("<strong")?;
+                render_sourcepos(context, node)?;
+                context.write_str(">")?;
+            } else {
+                context.write_str("<strong>")?;
+            }
         } else {
             context.write_str("</strong>")?;
         }
