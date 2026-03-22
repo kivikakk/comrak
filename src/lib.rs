@@ -206,8 +206,10 @@ pub fn markdown_to_html_with_plugins(
 ) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, md, options);
-    let mut out = String::new();
-    format_html_with_plugins(root, options, &mut out, plugins).unwrap();
+    // Pre-allocate: HTML output is typically close to or slightly larger than input
+    let mut out = String::with_capacity(md.len() + md.len() / 4);
+    // Use String-specialized rendering path (avoids dyn Write dispatch overhead)
+    html::format_document_to_string(root, options, &mut out, plugins).unwrap();
     out
 }
 
