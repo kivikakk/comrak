@@ -96,13 +96,13 @@ impl FuzzExtensionOptions {
             highlight: self.highlight,
             phoenix_heex: self.phoenix_heex,
             insert: self.insert,
+            header_id_prefix_in_href: self.header_id_prefix_in_href,
             // non-bool below
             header_id_prefix: if self.header_id_prefix {
                 Some("user-content-".into())
             } else {
                 None
             },
-            header_id_prefix_in_href: self.header_id_prefix_in_href,
             front_matter_delimiter: if self.front_matter_delimiter {
                 Some("---".into())
             } else {
