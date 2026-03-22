@@ -370,11 +370,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // The stdlib is very good at reserving buffer space based on available
-    // information; don't try to one-up it.
     let input = match cli.files {
         None => {
-            let mut buf = String::new();
+            // Pre-allocate for stdin: pipe inputs don't report size, so
+            // we start with a reasonable buffer to reduce reallocations.
+            let mut buf = String::with_capacity(64 * 1024);
             std::io::stdin().read_to_string(&mut buf)?;
             buf
         }
@@ -430,11 +430,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         })?;
         std::io::Write::flush(&mut bw)?;
     } else {
-        let stdout = std::io::stdout();
-        let mut bw = BufWriter::new(stdout.lock());
-        fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
+        // Format to String first (uses fmt::Write natively, no adapter overhead),
+        // then write to stdout in bulk.
+        let mut html = String::with_capacity(input.len() + input.len() / 4);
+        formatter(root, &options, &mut html, &plugins).map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::Other, e)
         })?;
+        let stdout = std::io::stdout();
+        let mut bw = BufWriter::with_capacity(64 * 1024, stdout.lock());
+        std::io::Write::write_all(&mut bw, html.as_bytes())?;
         std::io::Write::flush(&mut bw)?;
     };
 
