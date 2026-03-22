@@ -575,7 +575,7 @@ fn render_heading<T>(
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
 
-                if let Some(ref prefix) = context.options.extension.header_ids {
+                if let Some(ref prefix) = context.options.extension.header_id_prefix {
                     let text_content = collect_text(node);
                     let id = context.anchorizer.anchorize(&text_content);
                     write!(

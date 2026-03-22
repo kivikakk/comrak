@@ -41,7 +41,7 @@ The WASM target lets it be used [directly in webpages].
 This webpage is [created with Comrak] by stitching together three elements:
 
 * [`header.html`]
-* [`index.md`] converted with `--header-ids "" --smart -e footnotes`
+* [`index.md`] converted with `--header-id-prefix "" --smart -e footnotes`
 * [`footer.html`]
 
 The CLI help for the latest version is available in the [README], and the Rust documentation is on [docs.rs].

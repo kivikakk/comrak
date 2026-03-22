@@ -117,15 +117,26 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub superscript: bool,
 
-    /// Enables the header IDs Comrak extension.
+    /// Enables the header IDs Comrak extension, with the given ID prefix.
+    ///
+    /// When set, each heading gains an anchor element with an `id` attribute
+    /// formed by prefixing the slugified heading text. This is useful for
+    /// namespacing heading anchors to avoid collisions when rendered Markdown
+    /// is embedded alongside other content on a page (e.g. GitHub uses the
+    /// prefix `"user-content-"` for this purpose).
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
-    /// options.extension.header_ids = Some("user-content-".to_string());
+    /// options.extension.header_id_prefix = Some("user-content-".to_string());
     /// assert_eq!(markdown_to_html("# README\n", &options),
     ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
     /// ```
+    pub header_id_prefix: Option<String>,
+
+    #[deprecated(since = "0.52.0", note = "renamed to `header_id_prefix`")]
+    /// Deprecated: use [`header_id_prefix`](#structfield.header_id_prefix) instead.
+    #[cfg_attr(feature = "bon", builder(skip))]
     pub header_ids: Option<String>,
 
     /// Enables the footnotes extension per `cmark-gfm`.

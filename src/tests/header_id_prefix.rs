@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn header_ids() {
+fn header_id_prefix() {
     html_opts_i(
         concat!(
             "# Hi.\n",
@@ -22,6 +22,6 @@ fn header_ids() {
             "<h1><a href=\"#isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
         ),
         true,
-        |opts| opts.extension.header_ids = Some("user-content-".to_owned()),
+        |opts| opts.extension.header_id_prefix = Some("user-content-".to_owned()),
     );
 }

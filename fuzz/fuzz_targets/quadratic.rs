@@ -226,7 +226,7 @@ impl FuzzExtensionOptions {
             greentext: self.greentext,
             alerts: self.alerts,
             front_matter_delimiter: None,
-            header_ids: None,
+            header_id_prefix: None,
             ..Default::default()
         }
     }

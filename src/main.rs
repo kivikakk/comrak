@@ -130,6 +130,10 @@ struct Cli {
 
     /// Use the Comrak header IDs extension, with the given ID prefix
     #[arg(long, value_name = "PREFIX", required = false)]
+    header_id_prefix: Option<String>,
+
+    /// Deprecated: use --header-id-prefix instead
+    #[arg(long, value_name = "PREFIX", required = false, hide = true)]
     header_ids: Option<String>,
 
     /// Detect frontmatter that starts and ends with the given string, and do
@@ -269,6 +273,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    if cli.header_ids.is_some() {
+        eprintln!("warning: --header-ids is deprecated, use --header-id-prefix instead");
+    }
+
     let exts = &cli.extensions;
 
     let extension = options::Extension::builder()
@@ -278,7 +286,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .autolink(exts.contains(&Extension::Autolink) || cli.gfm)
         .tasklist(exts.contains(&Extension::Tasklist) || cli.gfm)
         .superscript(exts.contains(&Extension::Superscript))
-        .maybe_header_ids(cli.header_ids)
+        .maybe_header_id_prefix(cli.header_id_prefix.or(cli.header_ids))
         .footnotes(exts.contains(&Extension::Footnotes))
         .inline_footnotes(exts.contains(&Extension::InlineFootnotes))
         .description_lists(exts.contains(&Extension::DescriptionLists))
