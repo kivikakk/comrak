@@ -420,6 +420,7 @@ impl AstMatchTree {
                         assert_eq!(text, &nc.literal, "Code literal should match");
                         asserted_text = true;
                     }
+                    #[cfg(feature = "shortcodes")]
                     NodeValue::ShortCode(ref nsc) => {
                         assert_eq!(text, &nsc.code, "Shortcode code should match");
                         asserted_text = true;
