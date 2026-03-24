@@ -53,7 +53,49 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
         }
         .into(),
     );
-    Parser::new(arena, root, options).parse(md)
+    let document = Parser::new(arena, root, options).parse(md);
+    if options.parse.sourcepos_chars {
+        convert_sourcepos_columns_to_chars(document, md);
+    }
+    document
+}
+
+/// Convert all byte-based column values in the AST's sourcepos to char-based.
+fn convert_sourcepos_columns_to_chars(document: Node<'_>, md: &str) {
+    let lines: Vec<&str> = md.lines().collect();
+
+    let convert = |lc: &mut nodes::LineColumn| {
+        if lc.column == 0 {
+            return;
+        }
+        if let Some(line) = lines.get(lc.line.wrapping_sub(1)) {
+            lc.column = byte_col_to_char_col(line, lc.column);
+        }
+    };
+
+    for node in document.descendants() {
+        let mut ast = node.data_mut();
+        convert(&mut ast.sourcepos.start);
+        convert(&mut ast.sourcepos.end);
+    }
+}
+
+/// Convert a 1-based byte column index to a 1-based char column index for the given line.
+fn byte_col_to_char_col(line: &str, byte_col: usize) -> usize {
+    // If the byte column points past the end of the line (e.g. position
+    // after the final byte, such as softbreak/newline positions),
+    // map it to the position after the last Unicode character.
+    if byte_col > line.len() {
+        return line.chars().count() + 1;
+    }
+
+    // Count all chars whose start byte offset is <= byte_idx.
+    // Since `char_indices()` yields (byte_offset_of_char_start, char),
+    // `take_while` includes exactly the chars that start at or before `byte_idx`.
+    let byte_idx = byte_col - 1;
+    line.char_indices()
+        .take_while(|&(i, _)| i <= byte_idx)
+        .count()
 }
 
 /// Return whether the byte at the given offset passes the callback.

@@ -806,16 +806,23 @@ impl From<(usize, usize, usize, usize)> for Sourcepos {
 
 /// Represents the 1-based line and column positions of a given character.
 ///
-/// The `column` value is measured in UTF-8 byte offsets (1-based),
+/// By default, the `column` value is measured in UTF-8 byte offsets (1-based),
 /// matching cmark behavior. This means multi-byte UTF-8 characters
 /// (for example, `ö` or `好`) increase the column count by their byte
 /// length rather than by Rust's `char` count.
+///
+/// Enable [`parse.sourcepos_chars`][crate::options::Parse#structfield.sourcepos_chars] to have
+/// column values reported as a Unicode character count instead.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LineColumn {
     /// The 1-based line number of the character.
     pub line: usize,
-    /// The 1-based column number of the character, counted as UTF-8 bytes.
-    /// For example, a 3-byte UTF-8 character increments the column by 3.
+    /// The 1-based column number of the character.
+    ///
+    /// By default this is counted in UTF-8 bytes (so a 3-byte character
+    /// increments the column by 3).  Enable
+    /// [`parse.sourcepos_chars`][crate::options::Parse#structfield.sourcepos_chars] to have
+    /// it reported as a Unicode character count instead.
     pub column: usize,
 }
 

@@ -40,6 +40,7 @@ mod rewriter;
 mod shortcodes;
 #[path = "tests/sourcepos.rs"]
 mod sourcepos_;
+mod sourcepos_chars;
 mod spoiler;
 mod strikethrough;
 mod subscript;
@@ -339,6 +340,17 @@ where
     }
 }
 
+macro_rules! assert_ast_match_set_opt_single {
+    ($opts:ident; $optclass:ident.$optname:ident = $val:expr_2021) => {
+        $opts.$optclass.$optname = $val;
+    };
+    ($opts:ident; $optclass:ident.$optname:ident) => {
+        $opts.$optclass.$optname = true;
+    };
+}
+
+pub(crate) use assert_ast_match_set_opt_single;
+
 macro_rules! assert_ast_match {
     ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt,) => {
         assert_ast_match!(
@@ -352,6 +364,13 @@ macro_rules! assert_ast_match {
             concat!( $( $md ),+ ),
             ast!($amt),
             |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = $val;)*},
+        );
+    };
+    ([ $( $optclass:ident.$optname:ident $(= $val:expr_2021)? ),* ], $( $md:literal )+, $amt:tt) => {
+        crate::tests::assert_ast_match_i(
+            concat!( $( $md ),+ ),
+            ast!($amt),
+            |#[allow(unused_variables)] opts| { $( assert_ast_match_set_opt_single!(opts; $optclass.$optname $(= $val)? ); )* },
         );
     };
     ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt) => {
@@ -395,6 +414,14 @@ impl AstMatchTree {
                     }
                     NodeValue::CodeBlock(ref ncb) => {
                         assert_eq!(text, &ncb.literal, "CodeBlock literal should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::Code(ref nc) => {
+                        assert_eq!(text, &nc.literal, "Code literal should match");
+                        asserted_text = true;
+                    }
+                    NodeValue::ShortCode(ref nsc) => {
+                        assert_eq!(text, &nsc.code, "Shortcode code should match");
                         asserted_text = true;
                     }
                     NodeValue::HtmlBlock(ref nhb) => {
