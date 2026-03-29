@@ -167,6 +167,11 @@ struct Cli {
     #[arg(long)]
     ignore_empty_links: bool,
 
+    /// Report column positions in sourcepos as a Unicode character count
+    /// rather than UTF-8 byte offsets
+    #[arg(long)]
+    sourcepos_chars: bool,
+
     /// Minimise escapes in CommonMark output using a trial-and-error algorithm
     #[arg(long)]
     experimental_minimize_commonmark: bool,
@@ -323,6 +328,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .relaxed_tasklist_matching(cli.relaxed_tasklist_character)
         .relaxed_autolinks(cli.relaxed_autolinks)
         .ignore_setext(cli.ignore_setext)
+        .sourcepos_chars(cli.sourcepos_chars)
         .build();
 
     let render = options::Render::builder()

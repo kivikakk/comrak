@@ -861,6 +861,37 @@ pub struct Parse<'c> {
     /// this option to be enabled.
     #[cfg_attr(feature = "bon", builder(default))]
     pub escaped_char_spans: bool,
+
+    /// When enabled, the [`column`][crate::nodes::LineColumn::column] values in
+    /// [`Sourcepos`][crate::nodes::Sourcepos] are counted as Unicode characters
+    /// (i.e. `char`s) rather than as UTF-8 bytes.
+    ///
+    /// By default, column values follow cmark behaviour: each byte of a
+    /// multi-byte UTF-8 character counts as a separate column. Enabling this
+    /// option converts those byte-based columns to character-based columns after
+    /// parsing, so that a 3-byte character such as `好` occupies only one
+    /// column position instead of three.
+    ///
+    /// ```rust
+    /// # use comrak::{Arena, parse_document, Options};
+    /// let arena = Arena::new();
+    /// let mut options = Options::default();
+    ///
+    /// // Default (byte-based): "好" spans columns 1-3
+    /// let root = parse_document(&arena, "好", &options);
+    /// let sp = root.first_child().unwrap().data().sourcepos;
+    /// assert_eq!(sp.start.column, 1);
+    /// assert_eq!(sp.end.column, 3);
+    ///
+    /// // Char-based: "好" occupies only column 1
+    /// options.parse.sourcepos_chars = true;
+    /// let root = parse_document(&arena, "好", &options);
+    /// let sp = root.first_child().unwrap().data().sourcepos;
+    /// assert_eq!(sp.start.column, 1);
+    /// assert_eq!(sp.end.column, 1);
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub sourcepos_chars: bool,
 }
 
 /// The type of the callback used when a reference link is encountered with no
