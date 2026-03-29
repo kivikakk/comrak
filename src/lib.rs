@@ -81,7 +81,6 @@ mod scanners;
 mod strings;
 #[cfg(test)]
 mod tests;
-mod typst;
 mod xml;
 
 pub use cm::escape_inline as escape_commonmark_inline;
@@ -95,8 +94,6 @@ pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use nodes::Node;
 pub use parser::options;
 pub use parser::{Options, ResolvedReference, parse_document};
-pub use typst::format_document as format_typst;
-pub use typst::format_document_with_plugins as format_typst_with_plugins;
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 
@@ -244,23 +241,5 @@ pub fn markdown_to_commonmark_xml_with_plugins(
     let root = parse_document(&arena, md, options);
     let mut out = String::new();
     format_xml_with_plugins(root, options, &mut out, plugins).unwrap();
-    out
-}
-
-/// Render Markdown to Typst.
-pub fn markdown_to_typst(md: &str, options: &Options) -> String {
-    markdown_to_typst_with_plugins(md, options, &options::Plugins::default())
-}
-
-/// Render Markdown to Typst using plugins.
-pub fn markdown_to_typst_with_plugins(
-    md: &str,
-    options: &Options,
-    plugins: &options::Plugins,
-) -> String {
-    let arena = Arena::new();
-    let root = parse_document(&arena, md, options);
-    let mut out = String::new();
-    format_typst_with_plugins(root, options, &mut out, plugins).unwrap();
     out
 }

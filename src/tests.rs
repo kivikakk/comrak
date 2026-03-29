@@ -49,7 +49,6 @@ mod supersubscript;
 mod table;
 mod tagfilter;
 mod tasklist;
-mod typst;
 mod underline;
 mod wikilinks;
 mod xml;
@@ -236,26 +235,6 @@ where
     let mut output_from_rt = String::new();
     crate::xml::format_document(root, &options, &mut output_from_rt).unwrap();
     compare_strs(&output_from_rt, expected, "roundtrip", &md);
-}
-
-#[track_caller]
-fn typst(input: &str, expected: &str) {
-    typst_opts(input, expected, |_| ());
-}
-
-#[track_caller]
-fn typst_opts<F>(input: &str, expected: &str, opts: F)
-where
-    F: Fn(&mut Options),
-{
-    let arena = Arena::new();
-    let mut options = Options::default();
-    opts(&mut options);
-
-    let root = parse_document(&arena, input, &options);
-    let mut output = String::new();
-    crate::typst::format_document(root, &options, &mut output).unwrap();
-    compare_strs(&output, expected, "regular", input);
 }
 
 fn assert_node_eq(node: Node<'_>, location: &[usize], expected: &NodeValue) {

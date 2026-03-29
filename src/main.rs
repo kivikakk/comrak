@@ -187,8 +187,6 @@ enum Format {
 
     Xml,
 
-    Typst,
-
     #[value(name = "commonmark")]
     CommonMark,
 }
@@ -416,7 +414,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 comrak::format_html_with_plugins
             }
             Format::Xml => comrak::format_xml_with_plugins,
-            Format::Typst => comrak::format_typst_with_plugins,
             Format::CommonMark => comrak::format_commonmark_with_plugins,
         }
     };
