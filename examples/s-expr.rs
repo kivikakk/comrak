@@ -25,7 +25,7 @@ fn iter_nodes<W: Write>(node: Node<'_>, writer: &mut W, indent: usize) -> io::Re
     use NodeValue::*;
 
     macro_rules! try_node_inline {
-        ($node:expr_2021, $name:ident) => {{
+        ($node:expr, $name:ident) => {{
             if let $name(t) = $node {
                 return write!(writer, concat!(stringify!($name), "({:?})"), t,);
             }

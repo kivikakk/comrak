@@ -149,36 +149,36 @@ fn remove_sourcepos(i: &str) -> String {
 }
 
 macro_rules! html_opts {
-    ([$($optclass:ident.$optname:ident),*], $input:expr_2021, $expected:expr_2021) => {
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr) => {
         html_opts!([$($optclass.$optname),*], $input, $expected,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr_2021),*], $input:expr_2021, $expected:expr_2021) => {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr) => {
         html_opts!([$($optclass.$optname = $val),*], $input, $expected,)
     };
-    ([$($optclass:ident.$optname:ident),*], $input:expr_2021, $expected:expr_2021,) => {
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr,) => {
         html_opts!([$($optclass.$optname),*], $input, $expected, roundtrip)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr_2021),*], $input:expr_2021, $expected:expr_2021,) => {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr,) => {
         html_opts!([$($optclass.$optname = $val),*], $input, $expected, roundtrip)
     };
-    ([$($optclass:ident.$optname:ident),*], $input:expr_2021, $expected:expr_2021, $rt:ident) => {
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, $rt:ident) => {
         html_opts!([$($optclass.$optname),*], $input, $expected, $rt,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr_2021),*], $input:expr_2021, $expected:expr_2021, $rt:ident) => {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, $rt:ident) => {
         html_opts!([$($optclass.$optname = $val),*], $input, $expected, $rt,)
     };
-    ([$($optclass:ident.$optname:ident),*], $input:expr_2021, $expected:expr_2021, roundtrip,) => {
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, roundtrip,) => {
         html_opts!([$($optclass.$optname = true),*], $input, $expected, roundtrip,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr_2021),*], $input:expr_2021, $expected:expr_2021, roundtrip,) => {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, roundtrip,) => {
         $crate::tests::html_opts_i($input, $expected, true, |opts| {
             $(opts.$optclass.$optname = $val;)*
         });
     };
-    ([$($optclass:ident.$optname:ident),*], $input:expr_2021, $expected:expr_2021, no_roundtrip,) => {
+    ([$($optclass:ident.$optname:ident),*], $input:expr, $expected:expr, no_roundtrip,) => {
         html_opts!([$($optclass.$optname = true),*], $input, $expected, no_roundtrip,)
     };
-    ([$($optclass:ident.$optname:ident = $val:expr_2021),*], $input:expr_2021, $expected:expr_2021, no_roundtrip,) => {
+    ([$($optclass:ident.$optname:ident = $val:expr),*], $input:expr, $expected:expr, no_roundtrip,) => {
         $crate::tests::html_opts_i($input, $expected, false, |opts| {
             $(opts.$optclass.$optname = $val;)*
         });
@@ -341,7 +341,7 @@ where
 }
 
 macro_rules! assert_ast_match_set_opt_single {
-    ($opts:ident; $optclass:ident.$optname:ident = $val:expr_2021) => {
+    ($opts:ident; $optclass:ident.$optname:ident = $val:expr) => {
         $opts.$optclass.$optname = $val;
     };
     ($opts:ident; $optclass:ident.$optname:ident) => {
@@ -359,14 +359,14 @@ macro_rules! assert_ast_match {
             $amt
         )
     };
-    ([ $( $optclass:ident.$optname:ident = $val:expr_2021 ),* ], $( $md:literal )+, $amt:tt) => {
+    ([ $( $optclass:ident.$optname:ident = $val:expr ),* ], $( $md:literal )+, $amt:tt) => {
         crate::tests::assert_ast_match_i(
             concat!( $( $md ),+ ),
             ast!($amt),
             |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = $val;)*},
         );
     };
-    ([ $( $optclass:ident.$optname:ident $(= $val:expr_2021)? ),* ], $( $md:literal )+, $amt:tt) => {
+    ([ $( $optclass:ident.$optname:ident $(= $val:expr)? ),* ], $( $md:literal )+, $amt:tt) => {
         crate::tests::assert_ast_match_i(
             concat!( $( $md ),+ ),
             ast!($amt),

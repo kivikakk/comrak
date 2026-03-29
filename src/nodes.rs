@@ -16,7 +16,7 @@ pub use crate::parser::shortcodes::NodeShortCode;
 /// mutably borrowed.
 #[macro_export]
 macro_rules! node_matches {
-    ($node:expr_2021, $( $pat:pat_param )|+) => {{
+    ($node:expr, $( $pat:pat_param )|+) => {{
         matches!(
             $node.data().value,
             $( $pat )|+
