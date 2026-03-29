@@ -6,8 +6,9 @@ use std::str;
 use crate::Arena;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
-    ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink, TableAlignment,
+    ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective, NodeCodeBlock, NodeHeading,
+    NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink,
+    TableAlignment,
 };
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "phoenix_heex")]
@@ -506,6 +507,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::EscapedTag(net) => self.format_escaped_tag(net)?,
             NodeValue::Alert(ref alert) => self.format_alert(alert, entering)?,
             NodeValue::Subtext => self.format_subtext(entering)?,
+            NodeValue::BlockDirective(ref nbd) => self.format_block_directive(nbd, entering)?,
         };
         Ok(true)
     }
@@ -1115,6 +1117,23 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             self.no_linebreaks = true;
         } else {
             self.no_linebreaks = false;
+            self.blankline();
+        }
+        Ok(())
+    }
+
+    fn format_block_directive(&mut self, nbd: &NodeBlockDirective, entering: bool) -> fmt::Result {
+        if entering {
+            let fence = ":".repeat(nbd.fence_length.max(3));
+            if nbd.info.is_empty() {
+                writeln!(self, "{fence}")?;
+            } else {
+                writeln!(self, "{fence}{}", nbd.info)?;
+            }
+            self.begin_content = true;
+        } else {
+            let fence = ":".repeat(nbd.fence_length.max(3));
+            write!(self, "{fence}")?;
             self.blankline();
         }
         Ok(())

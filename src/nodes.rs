@@ -252,6 +252,19 @@ pub enum NodeValue {
     /// **Block**. Block scoped subscript that acts similar to a header.
     /// Enabled with `subtext` option.
     Subtext,
+
+    /// **Block**. A container directive block which can be used for custom extensions.
+    /// Contains other **blocks**.
+    ///
+    /// ```markdown
+    /// :::warning
+    /// A paragraph.
+    ///
+    /// - item one
+    /// - item two
+    /// :::
+    /// ```
+    BlockDirective(Box<NodeBlockDirective>),
 }
 
 /// Alignment of a single table cell.
@@ -585,6 +598,19 @@ impl AlertType {
     }
 }
 
+/// The metadata of a container block directive node.
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeBlockDirective {
+    /// The length of the fence.
+    pub fence_length: usize,
+
+    /// The indentation level of the fence marker.
+    pub fence_offset: usize,
+
+    /// The info string after the opening fence, if any.
+    pub info: String,
+}
+
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
@@ -610,6 +636,7 @@ impl NodeValue {
             | NodeValue::MultilineBlockQuote(_)
             | NodeValue::Alert(_)
             | NodeValue::Subtext => true,
+            NodeValue::BlockDirective(_) => true,
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(..) => true,
             _ => false,
@@ -702,6 +729,7 @@ impl NodeValue {
             NodeValue::EscapedTag(_) => "escaped_tag",
             NodeValue::Alert(_) => "alert",
             NodeValue::Subtext => "subtext",
+            NodeValue::BlockDirective(_) => "block_directive",
         }
     }
 
@@ -1036,6 +1064,9 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
             NodeValue::Alert(_) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+            NodeValue::BlockDirective(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
 

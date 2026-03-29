@@ -67,6 +67,28 @@
     phoenix_block_tag = phoenix_function_component | phoenix_module_component;
 */
 
+pub fn open_block_directive_fence(s: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+/*!re2c
+    [:]{3,} / [^:\r\n\xff]*[\r\n\xff] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
+pub fn close_block_directive_fence(s: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let mut ctxmarker = 0;
+    let len = s.len();
+/*!re2c
+    [:]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
+    * { return None; }
+*/
+}
+
 pub fn atx_heading_start(s: &str) -> Option<usize> {
     let mut cursor = 0;
     let mut marker = 0;

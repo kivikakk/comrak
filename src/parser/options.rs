@@ -602,6 +602,31 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub phoenix_heex: bool,
+
+    /// Enables the container block directive extension.
+    ///
+    /// Container block directives are container blocks that start and end with `:::`.
+    /// The info string after the opening `:::` is used as the block type.
+    ///
+    /// ```md
+    /// :::warning
+    /// A paragraph.
+    ///
+    /// - item one
+    /// - item two
+    /// :::
+    /// ```
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.block_directive = true;
+    ///
+    /// assert_eq!(markdown_to_html(":::warning\nparagraph\n:::", &options),
+    ///            "<div class=\"warning\">\n<p>paragraph</p>\n</div>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub block_directive: bool,
 }
 
 impl Extension<'_> {

@@ -217,6 +217,7 @@ enum Extension {
     Highlight,
     Insert,
     PhoenixHeex,
+    BlockDirective,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -313,7 +314,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subtext(exts.contains(&Extension::Subtext))
         .highlight(exts.contains(&Extension::Highlight))
         .insert(exts.contains(&Extension::Insert))
-        .phoenix_heex(exts.contains(&Extension::PhoenixHeex));
+        .phoenix_heex(exts.contains(&Extension::PhoenixHeex))
+        .block_directive(exts.contains(&Extension::BlockDirective));
 
     #[cfg(feature = "shortcodes")]
     let extension = extension.shortcodes(cli.gemoji);
