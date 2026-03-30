@@ -19,9 +19,9 @@ use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
 use crate::nodes::{
-    self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
-    NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
-    NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
+    self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
+    NodeCodeBlock, NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock,
+    NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -385,6 +385,9 @@ where
                         break;
                     }
                 }
+                NodeValue::BlockDirective(..) => {
+                    self.parse_block_directive_prefix(line, container, ast)?;
+                }
                 _ => {}
             }
         }
@@ -615,6 +618,58 @@ where
         Some(())
     }
 
+    fn parse_block_directive_prefix(
+        &mut self,
+        line: &str,
+        container: Node<'a>,
+        ast: &mut Ast,
+    ) -> Option<()> {
+        let (fence_length, fence_offset) = match ast.value {
+            NodeValue::BlockDirective(ref nbd) => (nbd.fence_length, nbd.fence_offset),
+            _ => unreachable!(),
+        };
+
+        let bytes = line.as_bytes();
+        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&b':') {
+            scanners::close_block_directive_fence(&line[self.first_nonspace..]).unwrap_or(0)
+        } else {
+            0
+        };
+
+        if matched >= fence_length {
+            self.advance_offset(line, matched, false);
+
+            // The last child, like an indented codeblock, could be left open.
+            // Make sure it's finalized.
+            if container.last_child_is_open() {
+                let mut child = container.last_child().unwrap();
+                // Descend to the deepest-last open child before finalizing it.
+                // Stop descending when encountering a `List` node because
+                // list structure must be finalized at the item level. This
+                // ensures nested open children (e.g. indented code blocks)
+                // are closed first while avoiding descending into lists.
+                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
+                    child = child.last_child().unwrap();
+                }
+                let child_ast = &mut child.data_mut();
+
+                self.finalize_borrowed(child, child_ast).unwrap();
+            }
+
+            self.fix_zero_end_columns(container);
+
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return None;
+        }
+
+        let mut i = fence_offset;
+        while i > 0 && byte_matches(bytes, self.offset, strings::is_space_or_tab) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        Some(())
+    }
+
     // Walk the subtree rooted at each child of `container` in post-order
     // and, where a node's end column is zero, attempt to adopt a
     // non-zero end column from its deepest-last descendant; otherwise
@@ -698,7 +753,8 @@ where
             let indented = self.indent >= CODE_INDENT;
 
             if !((!indented
-                && (self.handle_alert(container, line)
+                && (self.handle_block_directive(container, line)
+                    || self.handle_alert(container, line)
                     || self.handle_multiline_blockquote(container, line)
                     || self.handle_blockquote(container, line)
                     || self.handle_atx_heading(container, line)
@@ -724,6 +780,51 @@ where
             }
 
             maybe_lazy = false;
+        }
+    }
+
+    fn handle_block_directive(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_block_directive(line) else {
+            return false;
+        };
+
+        let first_nonspace = self.first_nonspace;
+        let offset = self.offset;
+
+        let info_start = first_nonspace + matched;
+        let mut info_end = info_start;
+        while info_end < line.len() && !strings::is_line_end_char(line.as_bytes()[info_end]) {
+            info_end += 1;
+        }
+
+        let mut info = entity::unescape_html(&line[info_start..info_end]);
+        strings::trim_cow(&mut info);
+        let mut info = info.into_owned();
+        strings::unescape(&mut info);
+
+        let nbd = NodeBlockDirective {
+            fence_length: matched,
+            fence_offset: first_nonspace - offset,
+            info,
+        };
+
+        *container = self.add_child(
+            container,
+            NodeValue::BlockDirective(Box::new(nbd)),
+            self.first_nonspace + 1,
+        );
+
+        let line_to_consume = line.len() - offset;
+        self.advance_offset(line, line_to_consume, false);
+
+        true
+    }
+
+    fn detect_block_directive(&self, line: &str) -> Option<usize> {
+        if self.options.extension.block_directive {
+            scanners::open_block_directive_fence(&line[self.first_nonspace..])
+        } else {
+            None
         }
     }
 
@@ -2010,6 +2111,7 @@ where
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
             NodeValue::MultilineBlockQuote(..) => true,
+            NodeValue::BlockDirective(..) => true,
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();

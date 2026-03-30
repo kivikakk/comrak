@@ -19,7 +19,7 @@ use crate::ctype::isspace;
 #[cfg(feature = "shortcodes")]
 use crate::nodes::NodeShortCode;
 use crate::nodes::{
-    ListType, Node, NodeAlert, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
+    ListType, Node, NodeAlert, NodeBlockDirective, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
     NodeValue, NodeWikiLink, TableAlignment,
 };
@@ -398,6 +398,7 @@ pub fn format_node_default<T>(
         NodeValue::Underline => render_underline(context, node, entering),
         NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
         NodeValue::Subtext => render_subtext(context, node, entering),
+        NodeValue::BlockDirective(ref nbd) => render_block_directive(context, node, entering, nbd),
     }
 }
 
@@ -416,6 +417,28 @@ pub fn render_sourcepos<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Res
         }
     }
     Ok(())
+}
+
+fn render_block_directive<T>(
+    context: &mut Context<T>,
+    node: Node<'_>,
+    entering: bool,
+    nbd: &NodeBlockDirective,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.cr()?;
+        context.write_str("<div class=\"")?;
+        context.escape(&nbd.info)?;
+        context.write_str("\"")?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+    } else {
+        context.cr()?;
+        context.write_str("</div>")?;
+        context.lf()?;
+    }
+
+    Ok(ChildRendering::HTML)
 }
 
 fn render_block_quote<T>(

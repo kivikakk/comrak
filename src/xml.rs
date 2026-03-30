@@ -326,6 +326,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     }
                 }
                 NodeValue::Subtext => {}
+                NodeValue::BlockDirective(ref nbd) => {
+                    self.output.write_str(" info=\"")?;
+                    self.escape(&nbd.info)?;
+                    self.output.write_str("\"")?;
+                }
             }
 
             if node.first_child().is_some() {

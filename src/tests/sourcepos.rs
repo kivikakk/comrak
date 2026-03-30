@@ -459,6 +459,15 @@ hello world
 "#,
 );
 
+const BLOCK_DIRECTIVE: TestCase = (
+    &[sourcepos!((2:1-4:3))],
+    r#"before
+:::
+hello world
+:::
+after"#,
+);
+
 fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     use NodeValueDiscriminants::*;
 
@@ -512,6 +521,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 EscapedTag => ESCAPED_TAG,
                 Alert => ALERT,
                 Subtext => SUBTEXT,
+                BlockDirective => BLOCK_DIRECTIVE,
                 Raw => unreachable!(),
                 #[cfg(feature = "phoenix_heex")]
                 HeexBlock => HEEX_BLOCK,
@@ -552,6 +562,7 @@ fn sourcepos() {
     options.extension.spoiler = true;
     options.extension.alerts = true;
     options.extension.subtext = true;
+    options.extension.block_directive = true;
     #[cfg(feature = "phoenix_heex")]
     {
         options.extension.phoenix_heex = true;
