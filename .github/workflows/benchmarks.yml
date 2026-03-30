@@ -31,7 +31,7 @@ jobs:
       - name: Run Benchmarks
         run: make bench-all
       - name: Post result comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         with:
           message-path: bench-output.md
         continue-on-error: true
