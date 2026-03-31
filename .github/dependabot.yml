@@ -5,12 +5,12 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 14
+      default-days: 90
     labels: ["dependencies"]
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: weekly
     cooldown:
-      default-days: 14
+      default-days: 90
     labels: ["dependencies"]
