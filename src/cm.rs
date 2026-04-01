@@ -81,6 +81,7 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     last_breakable: usize,
     begin_line: bool,
     begin_content: bool,
+    block_marker_spaces: Option<u8>,
     no_linebreaks: bool,
     in_tight_list_item: bool,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
@@ -117,6 +118,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             last_breakable: 0,
             begin_line: true,
             begin_content: true,
+            block_marker_spaces: Some(0),
             no_linebreaks: false,
             in_tight_list_item: false,
             custom_escape: None,
@@ -162,7 +164,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if last_was_cr {
             self.column = 0;
             self.begin_line = true;
-            self.begin_content = true;
+            self.reset_line_start_state();
             self.last_breakable = 0;
         }
 
@@ -233,9 +235,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     self.write(" ")?;
                     self.column += 1;
                     self.begin_line = false;
+                    self.advance_block_marker_spaces(1);
                     self.begin_content = false;
                     while bytes.get(i + 1) == Some(&(b' ')) {
                         (i, _) = it.next().unwrap();
+                        self.advance_block_marker_spaces(1);
                     }
                     if !bytes.get(i + 1).is_some_and(|&c| isdigit(c)) {
                         self.last_breakable = last_nonspace;
@@ -249,12 +253,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     self.write(&cs)?;
                     self.column += cs.len();
                     self.begin_line = false;
-                    self.begin_content = self.begin_content && isdigit(bytes[i]);
+                    self.advance_content_state(c, bytes[i]);
                 }
             } else {
-                self.outc(c, escaping, nextb)?;
+                self.outc(c, escaping, nextb, &s[i..])?;
                 self.begin_line = false;
-                self.begin_content = self.begin_content && isdigit(bytes[i]);
+                self.advance_content_state(c, bytes[i]);
             }
 
             if self.options.render.width > 0
@@ -271,12 +275,19 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.last_breakable = 0;
                 self.begin_line = false;
                 self.begin_content = false;
+                self.block_marker_spaces = None;
             }
         }
         Ok(())
     }
 
-    fn outc(&mut self, c: char, escaping: Escaping, nextb: Option<&u8>) -> fmt::Result {
+    fn outc(
+        &mut self,
+        c: char,
+        escaping: Escaping,
+        nextb: Option<&u8>,
+        remaining: &str,
+    ) -> fmt::Result {
         // NOTE: nextb contains the byte *immediately following the first byte of c*.
         // If c is a multibyte character, nextb contains the second byte of c!
         // We rely on it here *only* where we know c to be a single byte
@@ -304,6 +315,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || (self.options.extension.autolink && c == '@')
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
+                    || (self.block_marker_spaces.is_some()
+                        && self.needs_block_marker_escape(remaining))
                     || (self.begin_content
                         && (c == '-' || c == '+' || c == '=')
                         && !follows_digit)
@@ -342,6 +355,45 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
 
         Ok(())
+    }
+
+    fn needs_block_marker_escape(&self, remaining: &str) -> bool {
+        scanners::open_code_fence(remaining).is_some()
+            || (self.options.extension.block_directive
+                && scanners::open_block_directive_fence(remaining).is_some())
+            || (self.options.extension.description_lists
+                && scanners::description_item_start(remaining).is_some())
+    }
+
+    fn reset_line_start_state(&mut self) {
+        self.begin_content = true;
+        self.block_marker_spaces = Some(0);
+    }
+
+    fn start_inline_content(&mut self) {
+        self.begin_content = true;
+        self.block_marker_spaces = None;
+    }
+
+    fn start_container_content(&mut self) {
+        self.begin_content = true;
+        self.block_marker_spaces = Some(0);
+    }
+
+    fn advance_block_marker_spaces(&mut self, count: u8) {
+        self.block_marker_spaces = match self.block_marker_spaces {
+            Some(spaces) if spaces + count <= 3 => Some(spaces + count),
+            _ => None,
+        };
+    }
+
+    fn advance_content_state(&mut self, c: char, byte: u8) {
+        self.begin_content = self.begin_content && isdigit(byte);
+        if c == ' ' {
+            self.advance_block_marker_spaces(1);
+        } else {
+            self.block_marker_spaces = None;
+        }
     }
 
     fn cr(&mut self) {
@@ -522,7 +574,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_block_quote(&mut self, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "> ")?;
-            self.begin_content = true;
+            self.start_container_content();
             write!(self.prefix, "> ")?;
         } else {
             let new_len = self.prefix.len() - 2;
@@ -617,7 +669,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             } else {
                 self.write_str(&listmarker)?;
             }
-            self.begin_content = true;
+            self.start_container_content();
             for _ in 0..marker_width {
                 write!(self.prefix, " ")?;
             }
@@ -647,7 +699,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "#")?;
             }
             write!(self, " ")?;
-            self.begin_content = true;
+            self.start_inline_content();
             self.no_linebreaks = true;
         } else {
             self.no_linebreaks = false;
@@ -1100,7 +1152,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
             writeln!(self)?;
             write!(self, "> ")?;
-            self.begin_content = true;
+            self.start_container_content();
             write!(self.prefix, "> ")?;
         } else {
             let new_len = self.prefix.len() - 2;
@@ -1113,7 +1165,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_subtext(&mut self, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "-# ")?;
-            self.begin_content = true;
+            self.start_inline_content();
             self.no_linebreaks = true;
         } else {
             self.no_linebreaks = false;
@@ -1130,7 +1182,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             } else {
                 writeln!(self, "{fence}{}", nbd.info)?;
             }
-            self.begin_content = true;
+            self.reset_line_start_state();
         } else {
             let fence = ":".repeat(nbd.fence_length.max(3));
             write!(self, "{fence}")?;

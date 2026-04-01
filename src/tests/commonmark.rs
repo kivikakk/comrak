@@ -3,6 +3,54 @@ use self::nodes::{Ast, LineColumn, ListType, NodeList};
 use super::*;
 use ntest::test_case;
 
+fn synthetic_text_paragraph<'a>(arena: &'a Arena<'a>, text: &str) -> Node<'a> {
+    let empty = LineColumn { line: 0, column: 0 };
+    let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());
+    let root = ast(NodeValue::Document);
+    let p = ast(NodeValue::Paragraph);
+    p.append(ast(NodeValue::Text(text.to_string().into())));
+    root.append(p);
+    root
+}
+
+fn synthetic_softbreak_paragraph<'a>(arena: &'a Arena<'a>, before: &str, after: &str) -> Node<'a> {
+    let empty = LineColumn { line: 0, column: 0 };
+    let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());
+    let root = ast(NodeValue::Document);
+    let p = ast(NodeValue::Paragraph);
+    p.append(ast(NodeValue::Text(before.to_string().into())));
+    p.append(ast(NodeValue::SoftBreak));
+    p.append(ast(NodeValue::Text(after.to_string().into())));
+    root.append(p);
+    root
+}
+
+fn assert_synthetic_roundtrip(
+    root: Node<'_>,
+    options: &Options,
+    expected_cm: &str,
+    expected_html: &str,
+) {
+    let mut rendered = String::new();
+    cm::format_document(root, options, &mut rendered).unwrap();
+    compare_strs(&rendered, expected_cm, "rendered", "<synthetic>");
+
+    let mut original_html = String::new();
+    html::format_document(root, options, &mut original_html).unwrap();
+    compare_strs(
+        &original_html,
+        expected_html,
+        "original html",
+        "<synthetic>",
+    );
+
+    let reparsed_arena = Arena::new();
+    let reparsed = parse_document(&reparsed_arena, &rendered, options);
+    let mut reparsed_html = String::new();
+    html::format_document(reparsed, options, &mut reparsed_html).unwrap();
+    compare_strs(&reparsed_html, expected_html, "roundtrip html", &rendered);
+}
+
 #[test]
 fn commonmark_removes_redundant_strong() {
     let input = "This is **something **even** better**";
@@ -157,4 +205,89 @@ fn dont_wrap_table_cell() {
     options.extension.table = true;
     options.render.width = 80;
     commonmark(input, input, Some(&options));
+}
+
+#[test]
+fn commonmark_escapes_synthetic_fence_markers() {
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_text_paragraph(&arena, "~~~");
+    assert_synthetic_roundtrip(root, &options, "\\~~~\n", "<p>~~~</p>\n");
+
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_text_paragraph(&arena, "```");
+    assert_synthetic_roundtrip(root, &options, "\\`\\`\\`\n", "<p>```</p>\n");
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.block_directive = true;
+    let root = synthetic_text_paragraph(&arena, ":::");
+    assert_synthetic_roundtrip(root, &options, "\\:::\n", "<p>:::</p>\n");
+}
+
+#[test]
+fn commonmark_escapes_synthetic_markers_after_softbreak() {
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_softbreak_paragraph(&arena, "foo", "~~~");
+    assert_synthetic_roundtrip(root, &options, "foo\n\\~~~\n", "<p>foo\n~~~</p>\n");
+
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_softbreak_paragraph(&arena, "foo", "```");
+    assert_synthetic_roundtrip(root, &options, "foo\n\\`\\`\\`\n", "<p>foo\n```</p>\n");
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    let root = synthetic_softbreak_paragraph(&arena, "term", ": details");
+    assert_synthetic_roundtrip(
+        root,
+        &options,
+        "term\n\\: details\n",
+        "<p>term\n: details</p>\n",
+    );
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    let root = synthetic_softbreak_paragraph(&arena, "term", "~ details");
+    assert_synthetic_roundtrip(
+        root,
+        &options,
+        "term\n\\~ details\n",
+        "<p>term\n~ details</p>\n",
+    );
+}
+
+#[test]
+fn commonmark_does_not_escape_numeric_prefix_before_synthetic_markers() {
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_text_paragraph(&arena, "1~~~");
+    assert_synthetic_roundtrip(root, &options, "1~~~\n", "<p>1~~~</p>\n");
+
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = synthetic_text_paragraph(&arena, "1```");
+    assert_synthetic_roundtrip(root, &options, "1\\`\\`\\`\n", "<p>1```</p>\n");
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.block_directive = true;
+    let root = synthetic_text_paragraph(&arena, "1:::");
+    assert_synthetic_roundtrip(root, &options, "1:::\n", "<p>1:::</p>\n");
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    let root = synthetic_text_paragraph(&arena, "1: details");
+    assert_synthetic_roundtrip(root, &options, "1: details\n", "<p>1: details</p>\n");
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    let root = synthetic_text_paragraph(&arena, "1~ details");
+    assert_synthetic_roundtrip(root, &options, "1~ details\n", "<p>1~ details</p>\n");
 }
