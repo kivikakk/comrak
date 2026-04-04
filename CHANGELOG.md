@@ -1,3 +1,5 @@
+<!--
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
@@ -12,6 +14,52 @@ Categories to use in this document, and the order in which to give them:
 * Documentation
 * Build changes
 * Behind the scenes
+
+-->
+
+# [v0.52.0] - 2026-04-04
+
+Happy April!
+
+Reverts:
+
+* I had to remove the Typst formatter I was so happy about in the last release! This is very unfortunate. It turned out to be LLM-generated, and I just haven't had the time or energy to replace it myself. (by @kivikakk in https://github.com/kivikakk/comrak/pull/781)
+
+Changed APIs:
+
+* Deprecate the option name `header_ids` in favor of `header_id_prefix`, to make it clear that the option value actually adds a prefix to the `id` attribute, and add the `header_id_prefix_in_href` option, which adds the same prefix to generated `href`s. (by @miketheman in https://github.com/kivikakk/comrak/pull/776)
+* Decouple greentext handling from blockquote parsing. (by @Martin005 in https://github.com/kivikakk/comrak/pull/789)
+  * This means a lone `>` amongst blockquotes won't trigger greentext when enabled.
+
+New APIs:
+
+* Add parse option for char-based columns in `Sourcepos`. They report by default in byte columns according to the input UTF-8 source. (by @Martin005 in https://github.com/kivikakk/comrak/pull/779)
+* Add block directive extension. (by @P-SiZK in https://github.com/kivikakk/comrak/pull/782)
+
+Dependency updates:
+
+* Bump toml from 1.0.3+spec-1.1.0 to 1.0.6+spec-1.1.0. (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/778)
+* I've lengthened the dependency cooldown in Dependabot to 90 days, given _gestures aimlessly_ the state of everything. (15c22fa2)
+
+Documentation:
+
+* Added a `CONTRIBUTING.md` that directs the reader to the README's contributing section. (ddae1558)
+
+Build changes:
+
+* Set `codegen-units = 1` for release builds. (suggested by @zamazan4ik, added in ea026ef3)
+
+Behind the scenes:
+
+* Stop fuzz targets regressing by adding the build to CI. (by @kivikakk in https://github.com/kivikakk/comrak/pull/771)
+
+
+## New Contributors
+
+* @P-SiZK made their first contribution in https://github.com/kivikakk/comrak/pull/782
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.51.0...v0.52.0
+
 
 # [v0.51.0] - 2026-03-10
 
