@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.51"
+comrak = "0.52"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.85</span>+.
@@ -120,7 +120,7 @@ Options:
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
           math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
           spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
-          phoenix-heex]
+          phoenix-heex, block-directive]
 
   -t, --to <FORMAT>
           Specify output format
@@ -137,7 +137,7 @@ Options:
           [default: 0]
 
       --header-id-prefix <PREFIX>
-          Prefix generated header IDs with the given ID prefix
+          Use the Comrak header IDs extension, with the given ID prefix
 
       --header-id-prefix-in-href
           Apply the header ID prefix to the href anchor as well
@@ -166,6 +166,10 @@ Options:
 
       --ignore-empty-links
           Do not parse empty links
+
+      --sourcepos-chars
+          Report column positions in sourcepos as a Unicode character count rather than UTF-8 byte
+          offsets
 
       --experimental-minimize-commonmark
           Minimise escapes in CommonMark output using a trial-and-error algorithm

@@ -1,3 +1,21 @@
+# [v0.52.0] - 2026-04-04
+
+## What's Changed
+* workflows: stop fuzz regressing. by @kivikakk in https://github.com/kivikakk/comrak/pull/771
+* Deprecate `header_ids` in favor of `header_id_prefix`, add `header_id_prefix_in_href` by @miketheman in https://github.com/kivikakk/comrak/pull/776
+* Bump toml from 1.0.3+spec-1.1.0 to 1.0.6+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/778
+* feat: Add parse option for char-based columns in Sourcepos by @Martin005 in https://github.com/kivikakk/comrak/pull/779
+* expr_2021 cleanup, and remove Typst formatter. by @kivikakk in https://github.com/kivikakk/comrak/pull/781
+* Add block directive extension by @P-SiZK in https://github.com/kivikakk/comrak/pull/782
+* feat: Decouple greentext handling from blockquote parsing by @Martin005 in https://github.com/kivikakk/comrak/pull/789
+
+## New Contributors
+* @P-SiZK made their first contribution in https://github.com/kivikakk/comrak/pull/782
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.51.0...v0.52.0
+
+---snip---
+
 Categories to use in this document, and the order in which to give them:
 
 * Security
