@@ -300,10 +300,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '>'
                     || c == '\\'
                     || c == '`'
+                    || c == '~'
                     || c == '!'
                     || (self.options.extension.autolink && c == '@')
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
+                    || (self.begin_content
+                        && self.options.extension.block_directive
+                        && c == ':')
                     || (self.begin_content
                         && (c == '-' || c == '+' || c == '=')
                         && !follows_digit)
@@ -1262,6 +1266,7 @@ pub fn escape_inline(text: &str) -> String {
             || c == '>'
             || c == '\\'
             || c == '`'
+            || c == '~'
             || c == '!'
             || c == '&'
             || c == '!'

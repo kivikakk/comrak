@@ -1,5 +1,5 @@
 use crate::cm::{escape_inline, escape_link_destination};
-use crate::{Options, entity, markdown_to_html};
+use crate::{Arena, Options, entity, format_commonmark, markdown_to_html, parse_document};
 
 /// Assert that the input text escapes to the expected result in inline context,
 /// and that the expected result renders to HTML which displays the input text.
@@ -66,5 +66,29 @@ fn escape_link_target() {
             .unwrap()
             .decode_utf8()
             .unwrap()
+    );
+}
+
+#[test]
+fn escape_strikethrough() {
+    assert_escape_inline("~~text~~", "\\~\\~text\\~\\~");
+}
+
+#[test]
+fn escape_block_directive_colon() {
+    // Block directives use ::: syntax at line start, so : is only escaped
+    // when at the beginning of content
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.block_directive = true;
+
+    let input = ":::foo bar\ncontent\n:::\n";
+    let root = parse_document(&arena, input, &options);
+    let mut output = String::new();
+    format_commonmark(root, &options, &mut output).unwrap();
+    assert!(
+        output.contains(r#"\:\:\:"#) || output.contains(r#":::foo"#),
+        "Output was: {}",
+        output
     );
 }
