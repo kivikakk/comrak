@@ -36,7 +36,7 @@ struct Cli {
     #[arg(short, long, value_name = "PATH", default_value = get_default_config_path())]
     config_file: String,
 
-    /// Reformat a CommonMark file in-place
+    /// Reformat CommonMark files in-place
     #[arg(short, long, conflicts_with_all(["format", "output"]))]
     inplace: bool,
 
@@ -269,16 +269,9 @@ fn cli_with_config() -> Cli {
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = cli_with_config();
 
-    if cli.inplace {
-        if let Some(ref files) = cli.files {
-            if files.len() != 1 {
-                eprintln!("cannot have more than 1 input file with in-place mode");
-                process::exit(EXIT_CHECK_FILE_NUM);
-            }
-        } else {
-            eprintln!("no input file specified: cannot use standard input with in-place mode");
-            process::exit(EXIT_CHECK_FILE_NUM);
-        }
+    if cli.inplace && cli.files.is_none() {
+        eprintln!("no input file specified: cannot use standard input with in-place mode");
+        process::exit(EXIT_CHECK_FILE_NUM);
     }
 
     if cli.header_ids.is_some() {
@@ -376,38 +369,57 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // The stdlib is very good at reserving buffer space based on available
-    // information; don't try to one-up it.
-    let input = match cli.files {
-        None => {
-            let mut buf = String::new();
-            std::io::stdin().read_to_string(&mut buf)?;
-            buf
-        }
-        Some(ref paths) => {
-            let mut buf = String::new();
-            for path in paths {
-                match fs::File::open(path) {
-                    Ok(mut io) => {
-                        io.read_to_string(&mut buf)?;
-                    }
-                    Err(e) => {
-                        eprintln!("failed to read {}: {}", path.display(), e);
-                        process::exit(EXIT_READ_INPUT);
-                    }
+    if cli.inplace {
+        for path in cli.files.as_ref().unwrap() {
+            let mut input = String::new();
+            match fs::File::open(path) {
+                Ok(mut io) => {
+                    io.read_to_string(&mut input)?;
+                }
+                Err(e) => {
+                    eprintln!("failed to read {}: {}", path.display(), e);
+                    process::exit(EXIT_READ_INPUT);
                 }
             }
-            buf
+
+            let arena = Arena::new();
+            let root = comrak::parse_document(&arena, &input, &options);
+            let mut bw = BufWriter::new(fs::File::create(path)?);
+            fmt2io::write(&mut bw, |writer| {
+                comrak::format_commonmark_with_plugins(root, &options, writer, &plugins)
+            })?;
+            std::io::Write::flush(&mut bw)?;
         }
-    };
-
-    let arena = Arena::new();
-    let root = comrak::parse_document(&arena, &input, &options);
-
-    let formatter = if cli.inplace {
-        comrak::format_commonmark_with_plugins
     } else {
-        match cli.format {
+        // The stdlib is very good at reserving buffer space based on available
+        // information; don't try to one-up it.
+        let input = match cli.files {
+            None => {
+                let mut buf = String::new();
+                std::io::stdin().read_to_string(&mut buf)?;
+                buf
+            }
+            Some(ref paths) => {
+                let mut buf = String::new();
+                for path in paths {
+                    match fs::File::open(path) {
+                        Ok(mut io) => {
+                            io.read_to_string(&mut buf)?;
+                        }
+                        Err(e) => {
+                            eprintln!("failed to read {}: {}", path.display(), e);
+                            process::exit(EXIT_READ_INPUT);
+                        }
+                    }
+                }
+                buf
+            }
+        };
+
+        let arena = Arena::new();
+        let root = comrak::parse_document(&arena, &input, &options);
+
+        let formatter = match cli.format {
             Format::Html => {
                 #[cfg(feature = "syntect")]
                 {
@@ -417,31 +429,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             Format::Xml => comrak::format_xml_with_plugins,
             Format::CommonMark => comrak::format_commonmark_with_plugins,
-        }
-    };
+        };
 
-    if let Some(output_filename) = cli.output {
-        let mut bw = BufWriter::new(fs::File::create(output_filename)?);
-        fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
-        })?;
-        std::io::Write::flush(&mut bw)?;
-    } else if cli.inplace {
-        // We already assert there's exactly one input file.
-        let output_filename = cli.files.as_ref().unwrap().first().unwrap();
-        let mut bw = BufWriter::new(fs::File::create(output_filename)?);
-        fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
-        })?;
-        std::io::Write::flush(&mut bw)?;
-    } else {
-        let stdout = std::io::stdout();
-        let mut bw = BufWriter::new(stdout.lock());
-        fmt2io::write(&mut bw, |writer| {
-            formatter(root, &options, writer, &plugins)
-        })?;
-        std::io::Write::flush(&mut bw)?;
-    };
+        if let Some(output_filename) = cli.output {
+            let mut bw = BufWriter::new(fs::File::create(output_filename)?);
+            fmt2io::write(&mut bw, |writer| {
+                formatter(root, &options, writer, &plugins)
+            })?;
+            std::io::Write::flush(&mut bw)?;
+        } else {
+            let stdout = std::io::stdout();
+            let mut bw = BufWriter::new(stdout.lock());
+            fmt2io::write(&mut bw, |writer| {
+                formatter(root, &options, writer, &plugins)
+            })?;
+            std::io::Write::flush(&mut bw)?;
+        };
+    }
 
     process::exit(EXIT_SUCCESS);
 }

@@ -63,7 +63,7 @@ Options:
           [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
-          Reformat a CommonMark file in-place
+          Reformat CommonMark files in-place
 
       --hardbreaks
           Treat newlines as hard line breaks
