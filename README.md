@@ -32,6 +32,8 @@ Comrak's library supports Rust <span class="msrv">1.85</span>+.
   - `brew install comrak`
   - `dnf install comrak`
   - `nix run nixpkgs#comrak`
+- Windows:
+  - <code>[scoop](https://scoop.sh/) install comrak</code>
 
 You can also find builds I've published in [GitHub Releases](https://github.com/kivikakk/comrak/releases), but they're limited to machines I have access to at the time of making them! [webinstall.dev](https://webinstall.dev/comrak/) offers `curl | shell`-style installation of the latest of these for your OS, including Windows.
 
