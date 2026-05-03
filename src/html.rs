@@ -483,85 +483,93 @@ fn render_code_block<T>(
     entering: bool,
     ncb: &NodeCodeBlock,
 ) -> Result<ChildRendering, fmt::Error> {
-    if entering {
-        let info = &ncb.info;
-        let info_bytes = info.as_bytes();
-        let mut first_tag = 0;
+    if !entering {
+        return Ok(ChildRendering::HTML);
+    }
 
-        while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
-            first_tag += 1;
-        }
+    let info = &ncb.info;
+    let info_bytes = info.as_bytes();
+    let mut first_tag = 0;
 
-        let lang = &info[..first_tag];
-        let meta = info[first_tag..].trim();
+    while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
+        first_tag += 1;
+    }
 
-        if lang.eq("math") {
-            render_math_code_block(context, node, &ncb.literal)?;
-        } else if !lang.is_empty() {
-            if let Some(adapter) = context.plugins.render.codefence_renderers.get(lang) {
-                context.cr()?;
-                let sourcepos = if context.options.render.sourcepos {
-                    Some(node.data().sourcepos)
-                } else {
-                    None
-                };
+    let lang = &info[..first_tag];
+    let meta = info[first_tag..].trim();
 
-                adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
-                return Ok(ChildRendering::HTML);
-            }
-        }
+    let sourcepos = if context.options.render.sourcepos {
+        Some(node.data().sourcepos)
+    } else {
+        None
+    };
 
-        if !lang.eq("math") {
+    // Full-block adapter takes precedence over everything else.
+    if let Some(adapter) = context.plugins.render.codefence_block_renderer {
+        context.cr()?;
+        let out: &mut dyn fmt::Write = context;
+        adapter.render(out, lang, meta, &ncb.literal, sourcepos)?;
+        context.lf()?;
+        return Ok(ChildRendering::HTML);
+    }
+
+    // Built-in math rendering.
+    if lang == "math" {
+        render_math_code_block(context, node, &ncb.literal)?;
+        return Ok(ChildRendering::HTML);
+    }
+
+    // Per-language renderer.
+    if !lang.is_empty() {
+        if let Some(adapter) = context.plugins.render.codefence_renderers.get(lang) {
             context.cr()?;
+            adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
+            return Ok(ChildRendering::HTML);
+        }
+    }
 
-            let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
-            let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
-            let code_attr: String;
+    // Default <pre><code> rendering, optionally passed through a syntax highlighter.
+    context.cr()?;
 
-            let literal = &ncb.literal;
+    let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+    let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+    let code_attr: String;
 
-            if !info.is_empty() {
-                if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang.into());
+    if !info.is_empty() {
+        if context.options.render.github_pre_lang {
+            pre_attributes.insert("lang", lang.into());
 
-                    if context.options.render.full_info_string && !meta.is_empty() {
-                        pre_attributes.insert("data-meta", meta.trim().into());
-                    }
-                } else {
-                    code_attr = format!("language-{}", lang);
-                    code_attributes.insert("class", code_attr.into());
-
-                    if context.options.render.full_info_string && !meta.is_empty() {
-                        code_attributes.insert("data-meta", meta.into());
-                    }
-                }
+            if context.options.render.full_info_string && !meta.is_empty() {
+                pre_attributes.insert("data-meta", meta.trim().into());
             }
+        } else {
+            code_attr = format!("language-{}", lang);
+            code_attributes.insert("class", code_attr.into());
 
-            if context.options.render.sourcepos {
-                let ast = node.data();
-                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
+            if context.options.render.full_info_string && !meta.is_empty() {
+                code_attributes.insert("data-meta", meta.into());
             }
+        }
+    }
 
-            match context.plugins.render.codefence_syntax_highlighter {
-                None => {
-                    write_opening_tag(context, "pre", pre_attributes.into_iter())?;
-                    write_opening_tag(context, "code", code_attributes.into_iter())?;
+    if context.options.render.sourcepos {
+        pre_attributes.insert("data-sourcepos", node.data().sourcepos.to_string().into());
+    }
 
-                    context.escape(literal)?;
-
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
-                }
-                Some(highlighter) => {
-                    highlighter.write_pre_tag(context, pre_attributes)?;
-                    highlighter.write_code_tag(context, code_attributes)?;
-
-                    highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
-
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
-                }
-            }
+    match context.plugins.render.codefence_syntax_highlighter {
+        None => {
+            write_opening_tag(context, "pre", pre_attributes.into_iter())?;
+            write_opening_tag(context, "code", code_attributes.into_iter())?;
+            context.escape(&ncb.literal)?;
+            context.write_str("</code></pre>")?;
+            context.lf()?;
+        }
+        Some(highlighter) => {
+            highlighter.write_pre_tag(context, pre_attributes)?;
+            highlighter.write_code_tag(context, code_attributes)?;
+            highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
+            context.write_str("</code></pre>")?;
+            context.lf()?;
         }
     }
 
