@@ -11,7 +11,7 @@ const MAX_INDENT: u32 = 40;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
-    // Validate the AST as part of the debug build. See https://github.com/kivikakk/comrak/issues/371
+    // Validate the AST as part of the debug build. See https://github.com/kivikakk/comrak/issues/371.
     #[cfg(debug_assertions)]
     root.validate().unwrap_or_else(|e| {
         panic!("The document to format is ill-formed: {:?}", e);

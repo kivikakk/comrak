@@ -32,7 +32,7 @@ pub use context::Context;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
-    // Validate the AST as part of the debug build. See https://github.com/kivikakk/comrak/issues/371
+    // Validate the AST as part of the debug build. See https://github.com/kivikakk/comrak/issues/371.
     #[cfg(debug_assertions)]
     root.validate().unwrap_or_else(|e| {
         panic!("The document to format is ill-formed: {:?}", e);
@@ -170,7 +170,7 @@ macro_rules! create_formatter {
                 output: &mut dyn ::std::fmt::Write,
                 $(user: $user_type,)?
             ) -> ::std::result::Result<$type, ::std::fmt::Error> {
-                // Validate the ast as part of the debug build. See https://github.com/kivikakk/comrak/issues/371
+                // Validate the AST as part of the debug build. See https://github.com/kivikakk/comrak/issues/371.
                 #[cfg(debug_assertions)]
                 root.validate().unwrap_or_else(|e| {
                     panic!("The document to format is ill-formed: {:?}", e);
