@@ -16,7 +16,7 @@ jobs:
     name: Run benchmarks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           submodules: true
       - name: Obtain Rust
@@ -26,7 +26,7 @@ jobs:
       - name: Build benchmarks
         run: cargo codspeed build
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4.10.4
+        uses: CodSpeedHQ/action@fa0c9b1770f933c1bc025c83a9b42946b102f4e6 # v4.10.4
         with:
           mode: instrumentation
           run: cargo codspeed run
