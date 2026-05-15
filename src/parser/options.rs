@@ -130,7 +130,7 @@ pub struct Extension<'c> {
     /// let mut options = Options::default();
     /// options.extension.header_id_prefix = Some("user-content-".to_string());
     /// assert_eq!(markdown_to_html("# README\n", &options),
-    ///            "<h1><a href=\"#readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
+    ///            "<h1>README<a href=\"#readme\" aria-label=\"Link to heading 'README'\" data-heading-content=\"README\" class=\"anchor\" id=\"user-content-readme\"></a></h1>\n");
     /// ```
     pub header_id_prefix: Option<String>,
 
@@ -150,7 +150,7 @@ pub struct Extension<'c> {
     /// options.extension.header_id_prefix = Some("user-content-".to_string());
     /// options.extension.header_id_prefix_in_href = true;
     /// assert_eq!(markdown_to_html("# README\n", &options),
-    ///            "<h1><a href=\"#user-content-readme\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-readme\"></a>README</h1>\n");
+    ///            "<h1>README<a href=\"#user-content-readme\" aria-label=\"Link to heading 'README'\" data-heading-content=\"README\" class=\"anchor\" id=\"user-content-readme\"></a></h1>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub header_id_prefix_in_href: bool,

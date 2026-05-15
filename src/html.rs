@@ -609,7 +609,7 @@ fn render_heading<T>(
                 write!(context, "<h{}", nh.level)?;
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
-
+            } else {
                 if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
                     let text_content = collect_text(node);
                     let id = context.anchorizer.anchorize(&text_content);
@@ -620,11 +620,14 @@ fn render_heading<T>(
                     };
                     write!(
                         context,
-                        "<a href=\"#{}{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                        href_prefix, id, prefix, id
+                        "<a href=\"#{}{}\" aria-label=\"Link to heading '",
+                        href_prefix, id
                     )?;
+                    context.escape(&text_content)?;
+                    context.write_str("'\" data-heading-content=\"")?;
+                    context.escape(&text_content)?;
+                    write!(context, "\" class=\"anchor\" id=\"{}{}\"></a>", prefix, id)?;
                 }
-            } else {
                 write!(context, "</h{}>", nh.level)?;
                 context.lf()?;
             }

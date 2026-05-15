@@ -13,13 +13,13 @@ fn header_id_prefix() {
             "# Isn't it grand?"
         ),
         concat!(
-            "<h1><a href=\"#hi\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi\"></a>Hi.</h1>\n",
-            "<h2><a href=\"#hi-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-1\"></a>Hi 1.</h2>\n",
-            "<h3><a href=\"#hi-2\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-2\"></a>Hi.</h3>\n",
-            "<h4><a href=\"#hello\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello\"></a>Hello.</h4>\n",
-            "<h5><a href=\"#hi-3\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-3\"></a>Hi.</h5>\n",
-            "<h6><a href=\"#hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n",
-            "<h1><a href=\"#isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
+            "<h1>Hi.<a href=\"#hi\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi\"></a></h1>\n",
+            "<h2>Hi 1.<a href=\"#hi-1\" aria-label=\"Link to heading 'Hi 1.'\" data-heading-content=\"Hi 1.\" class=\"anchor\" id=\"user-content-hi-1\"></a></h2>\n",
+            "<h3>Hi.<a href=\"#hi-2\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi-2\"></a></h3>\n",
+            "<h4>Hello.<a href=\"#hello\" aria-label=\"Link to heading 'Hello.'\" data-heading-content=\"Hello.\" class=\"anchor\" id=\"user-content-hello\"></a></h4>\n",
+            "<h5>Hi.<a href=\"#hi-3\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi-3\"></a></h5>\n",
+            "<h6>Hello.<a href=\"#hello-1\" aria-label=\"Link to heading 'Hello.'\" data-heading-content=\"Hello.\" class=\"anchor\" id=\"user-content-hello-1\"></a></h6>\n",
+            "<h1>Isn't it grand?<a href=\"#isnt-it-grand\" aria-label=\"Link to heading 'Isn't it grand?'\" data-heading-content=\"Isn't it grand?\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a></h1>\n"
         ),
         true,
         |opts| opts.extension.header_id_prefix = Some("user-content-".to_owned()),
@@ -39,13 +39,13 @@ fn header_ids_prefix_in_href() {
             "# Isn't it grand?"
         ),
         concat!(
-            "<h1><a href=\"#user-content-hi\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi\"></a>Hi.</h1>\n",
-            "<h2><a href=\"#user-content-hi-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-1\"></a>Hi 1.</h2>\n",
-            "<h3><a href=\"#user-content-hi-2\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-2\"></a>Hi.</h3>\n",
-            "<h4><a href=\"#user-content-hello\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello\"></a>Hello.</h4>\n",
-            "<h5><a href=\"#user-content-hi-3\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hi-3\"></a>Hi.</h5>\n",
-            "<h6><a href=\"#user-content-hello-1\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-hello-1\"></a>Hello.</h6>\n",
-            "<h1><a href=\"#user-content-isnt-it-grand\" aria-hidden=\"true\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a>Isn't it grand?</h1>\n"
+            "<h1>Hi.<a href=\"#user-content-hi\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi\"></a></h1>\n",
+            "<h2>Hi 1.<a href=\"#user-content-hi-1\" aria-label=\"Link to heading 'Hi 1.'\" data-heading-content=\"Hi 1.\" class=\"anchor\" id=\"user-content-hi-1\"></a></h2>\n",
+            "<h3>Hi.<a href=\"#user-content-hi-2\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi-2\"></a></h3>\n",
+            "<h4>Hello.<a href=\"#user-content-hello\" aria-label=\"Link to heading 'Hello.'\" data-heading-content=\"Hello.\" class=\"anchor\" id=\"user-content-hello\"></a></h4>\n",
+            "<h5>Hi.<a href=\"#user-content-hi-3\" aria-label=\"Link to heading 'Hi.'\" data-heading-content=\"Hi.\" class=\"anchor\" id=\"user-content-hi-3\"></a></h5>\n",
+            "<h6>Hello.<a href=\"#user-content-hello-1\" aria-label=\"Link to heading 'Hello.'\" data-heading-content=\"Hello.\" class=\"anchor\" id=\"user-content-hello-1\"></a></h6>\n",
+            "<h1>Isn't it grand?<a href=\"#user-content-isnt-it-grand\" aria-label=\"Link to heading 'Isn't it grand?'\" data-heading-content=\"Isn't it grand?\" class=\"anchor\" id=\"user-content-isnt-it-grand\"></a></h1>\n"
         ),
         true,
         |opts| {
