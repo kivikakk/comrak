@@ -8,7 +8,9 @@ use std::panic::RefUnwindSafe;
 use std::str;
 use std::sync::Arc;
 
-use crate::adapters::{CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter};
+use crate::adapters::{
+    CodefenceBlockAdapter, CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter,
+};
 use crate::parser::ResolvedReference;
 
 #[derive(Default, Debug, Clone)]
@@ -1314,6 +1316,9 @@ pub struct Plugins<'p> {
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.
 pub struct RenderPlugins<'p> {
+    /// TODO
+    pub codefence_block_renderer: Option<&'p dyn CodefenceBlockAdapter>,
+
     /// Provide language-specific renderers for codefence blocks.
     ///
     /// `math` codefence blocks are handled separately by Comrak's built-in math renderer,

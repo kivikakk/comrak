@@ -64,9 +64,9 @@ fn language_specific_codefence_renderer_plugin() {
             code: &str,
             _sourcepos: Option<Sourcepos>,
         ) -> std::fmt::Result {
-            write!(
+            writeln!(
                 output,
-                "<figure class=\"{lang}\" data-meta=\"{meta}\">{code}</figure>\n"
+                "<figure class=\"{lang}\" data-meta=\"{meta}\">{code}</figure>"
             )
         }
     }
@@ -98,7 +98,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
             code: &str,
             _sourcepos: Option<Sourcepos>,
         ) -> std::fmt::Result {
-            write!(output, "<div>{code}</div>\n")
+            writeln!(output, "<div>{code}</div>")
         }
     }
 
@@ -158,9 +158,9 @@ fn language_specific_codefence_renderer_receives_sourcepos() {
             sourcepos: Option<Sourcepos>,
         ) -> std::fmt::Result {
             let sourcepos = sourcepos.expect("sourcepos should be passed to adapter");
-            write!(
+            writeln!(
                 output,
-                "<figure data-sourcepos=\"{sourcepos}\">{code}</figure>\n"
+                "<figure data-sourcepos=\"{sourcepos}\">{code}</figure>"
             )
         }
     }
