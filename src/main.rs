@@ -204,6 +204,7 @@ enum Extension {
     DescriptionLists,
     MultilineBlockQuotes,
     MathDollars,
+    MathLatex,
     MathCode,
     WikilinksTitleAfterPipe,
     WikilinksTitleBeforePipe,
@@ -298,6 +299,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .description_lists(exts.contains(&Extension::DescriptionLists))
         .multiline_block_quotes(exts.contains(&Extension::MultilineBlockQuotes))
         .math_dollars(exts.contains(&Extension::MathDollars))
+        .math_latex(exts.contains(&Extension::MathLatex))
         .math_code(exts.contains(&Extension::MathCode))
         .wikilinks_title_after_pipe(exts.contains(&Extension::WikilinksTitleAfterPipe))
         .wikilinks_title_before_pipe(exts.contains(&Extension::WikilinksTitleBeforePipe))

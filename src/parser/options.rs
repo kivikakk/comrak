@@ -323,6 +323,22 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub math_dollars: bool,
 
+    /// Enables math using LaTeX-style delimiters.
+    ///
+    /// ```markdown
+    /// Inline math \(1 + 2\) and display math \[x + y\]
+    /// ```
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_latex = true;
+    /// assert_eq!(markdown_to_html("\\(1 + 2\\) and \\[x = y\\]", &options),
+    ///            "<p><span data-math-style=\"inline\">1 + 2</span> and <span data-math-style=\"display\">x = y</span></p>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub math_latex: bool,
+
     /// Enables math using code syntax.
     ///
     /// ````markdown

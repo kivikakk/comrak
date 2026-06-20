@@ -67,6 +67,24 @@ fn commonmark_math(markdown: &str, cm: &str) {
     commonmark(markdown, cm, None);
 }
 
+#[test_case("\\(x^2\\) and \\[y^2\\]", "\\(x^2\\) and \\[y^2\\]\n")]
+#[test_case("\\[\nx^2\n\\]", "\\[\nx^2\n\\]\n")]
+fn commonmark_latex_math(markdown: &str, cm: &str) {
+    let mut options = Options::default();
+    options.extension.math_latex = true;
+
+    commonmark(markdown, cm, Some(&options));
+}
+
+#[test_case("\\(x^2\\) and \\[y^2\\]", "$x^2$ and $$y^2$$\n")]
+fn commonmark_latex_math_with_dollars_enabled(markdown: &str, cm: &str) {
+    let mut options = Options::default();
+    options.extension.math_latex = true;
+    options.extension.math_dollars = true;
+
+    commonmark(markdown, cm, Some(&options));
+}
+
 #[test_case("This [[url]] that", "This [[url|url]] that\n")]
 #[test_case("This [[url|link label]] that", "This [[url|link%20label]] that\n")]
 fn commonmark_wikilinks(markdown: &str, cm: &str) {
