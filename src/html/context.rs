@@ -19,8 +19,8 @@ pub struct Context<'o, 'c, T = ()> {
     pub anchorizer: Anchorizer,
     /// Any user data used by the [`Context`].
     pub user: T,
-    /// TEST REMOVE ME
-    pub current_id: Option<String>,
+    /// Current anchorized id being rendered.
+    pub current_anchorized_id: Option<String>,
 
     pub(super) footnote_ix: u32,
     pub(super) written_footnote_ix: u32,
@@ -40,7 +40,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
             plugins,
             anchorizer: Anchorizer::new(),
             user,
-            current_id: None, // Heck, I probs shouldn't be adding a new struct member :(( Will ask @kivikakk
+            current_anchorized_id: None,
             footnote_ix: 0,
             written_footnote_ix: 0,
         }
