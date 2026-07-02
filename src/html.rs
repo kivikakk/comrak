@@ -621,7 +621,6 @@ fn render_heading<T>(
             } else {
                 if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
                     let text_content = collect_text(node);
-                    // let id = context.anchorizer.anchorize(&text_content);
                     let id = context.current_anchorized_id.take().unwrap();
                     let href_prefix = if context.options.extension.header_id_prefix_in_href {
                         prefix.as_str()
