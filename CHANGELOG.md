@@ -1,3 +1,29 @@
+# [v0.53.0] - 2026-07-02
+
+## What's Changed
+* Escape '~', '~~~' and ':::' markdown patterns by @sandmor in https://github.com/kivikakk/comrak/pull/791
+* Make `--inplace` accept multiple arguments by @ilkecan in https://github.com/kivikakk/comrak/pull/792
+* Bump mshick/add-pr-comment from 2 to 2.8.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/793
+* Bump CodSpeedHQ/action from 4 to 4.8.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/794
+* Add how to install via scoop by @tats-u in https://github.com/kivikakk/comrak/pull/796
+* Bump peter-evans/create-pull-request from 8 to 8.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/797
+* Bump CodSpeedHQ/action from 4.8.0 to 4.10.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/798
+* Bump CodSpeedHQ/action from 4.10.0 to 4.10.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/799
+* Add root.validate() calls under html and xml format_document() by @aozerova in https://github.com/kivikakk/comrak/pull/800
+* pinact run --min-age 90. by @kivikakk in https://github.com/kivikakk/comrak/pull/802
+* Bump toml from 1.0.6+spec-1.1.0 to 1.1.0+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/810
+* Bump rustc-hash from 2.1.1 to 2.1.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/811
+* fix: expose alternative syntect backends by @gjtorikian in https://github.com/kivikakk/comrak/pull/812
+
+## New Contributors
+* @sandmor made their first contribution in https://github.com/kivikakk/comrak/pull/791
+* @ilkecan made their first contribution in https://github.com/kivikakk/comrak/pull/792
+* @aozerova made their first contribution in https://github.com/kivikakk/comrak/pull/800
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.52.0...v0.53.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
