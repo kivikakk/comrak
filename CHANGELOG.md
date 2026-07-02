@@ -17,6 +17,48 @@ Categories to use in this document, and the order in which to give them:
 
 -->
 
+# [v0.53.0] - 2026-07-02
+
+Changed APIs:
+
+* `--inplace` now accepts multiple arguments (by @ilkecan in https://github.com/kivikakk/comrak/pull/792)
+
+Bug fixes:
+
+* `~`, `~~~` and `:::` are escaped in CommonMark output (by @sandmor in https://github.com/kivikakk/comrak/pull/791)
+
+Stability:
+
+* AST now validated when formatting HTML and XML in debug builds (@aozerova in https://github.com/kivikakk/comrak/pull/800)
+
+Dependency updates:
+
+* Bump mshick/add-pr-comment from 2 to 2.8.2 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/793)
+* Bump peter-evans/create-pull-request from 8 to 8.1.0 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/797)
+* Bump CodSpeedHQ/action from 4 to 4.10.4 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/794, https://github.com/kivikakk/comrak/pull/798, https://github.com/kivikakk/comrak/pull/799)
+* Bump toml from 1.0.6+spec-1.1.0 to 1.1.0+spec-1.1.0 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/810)
+* Bump rustc-hash from 2.1.1 to 2.1.2 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/811)
+* GitHub Actions SHAs pinned with 90 day minimum age to avoid supply-chain nonsense (by @kivikakk in https://github.com/kivikakk/comrak/pull/802)
+
+Documentation:
+
+* Scoop installation instructions added to README (by @tats-u in https://github.com/kivikakk/comrak/pull/796)
+
+Build changes:
+
+* Alternative syntect backends are exposed as features (by @gjtorikian in https://github.com/kivikakk/comrak/pull/812)
+  * **WASM users**: you will need to build with `--no-default-features`. Please read the pull request for more details; suggestions/fixes most appreciated!
+
+
+## New Contributors
+
+* @sandmor made their first contribution in https://github.com/kivikakk/comrak/pull/791
+* @ilkecan made their first contribution in https://github.com/kivikakk/comrak/pull/792
+* @aozerova made their first contribution in https://github.com/kivikakk/comrak/pull/800!
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.52.0...v0.53.0
+
+
 # [v0.52.0] - 2026-04-04
 
 Happy April!
