@@ -607,12 +607,21 @@ fn render_heading<T>(
             if entering {
                 context.cr()?;
                 write!(context, "<h{}", nh.level)?;
-                render_sourcepos(context, node)?;
-                context.write_str(">")?;
 
                 if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
                     let text_content = collect_text(node);
                     let id = context.anchorizer.anchorize(&text_content);
+
+                    write!(context, r##" id="{prefix}{id}""##)?;
+                    context.current_anchorized_id = Some(id);
+                };
+
+                render_sourcepos(context, node)?;
+                context.write_str(">")?;
+            } else {
+                if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
+                    let text_content = collect_text(node);
+                    let id = context.current_anchorized_id.take().unwrap();
                     let href_prefix = if context.options.extension.header_id_prefix_in_href {
                         prefix.as_str()
                     } else {
@@ -620,11 +629,13 @@ fn render_heading<T>(
                     };
                     write!(
                         context,
-                        "<a href=\"#{}{}\" aria-hidden=\"true\" class=\"anchor\" id=\"{}{}\"></a>",
-                        href_prefix, id, prefix, id
+                        r##"<a href="#{href_prefix}{id}" aria-label="Link to heading '"##
                     )?;
+                    context.escape(&text_content)?;
+                    context.write_str(r#"'" data-heading-content=""#)?;
+                    context.escape(&text_content)?;
+                    context.write_str(r#"" class="anchor"></a>"#)?;
                 }
-            } else {
                 write!(context, "</h{}>", nh.level)?;
                 context.lf()?;
             }
