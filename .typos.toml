@@ -5,4 +5,7 @@ extend-ignore-re = [
 
   # Ignore hello world fixture demo
   "worl[^\\w]",
+
+  # it's german
+  "egal",
 ]
