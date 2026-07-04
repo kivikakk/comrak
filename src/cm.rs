@@ -584,8 +584,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 let list_number = *last_stack;
                 if entering {
                     *last_stack += 1;
-                };
-                list_number
+                    list_number
+                } else {
+                    list_number - 1
+                }
             } else {
                 match node.data().value {
                     NodeValue::Item(ref ni) => ni.start,
