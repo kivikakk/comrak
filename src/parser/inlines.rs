@@ -16,6 +16,8 @@ use crate::nodes::{
     Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
     NodeValue, NodeWikiLink, Sourcepos,
 };
+#[cfg(feature = "attributes")]
+use crate::parser::attributes;
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
@@ -425,32 +427,43 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let openticks = self.take_while(b'`');
         let endpos = self.scan_to_closing_backtick(openticks);
 
-        match endpos {
-            None => {
-                self.scanner.pos = startpos + openticks;
-                self.make_inline(
-                    NodeValue::Text("`".repeat(openticks).into()),
-                    startpos,
-                    self.scanner.pos - 1,
-                )
-            }
-            Some(endpos) => {
-                let buf = &self.input[startpos + openticks..endpos - openticks];
-                let buf = strings::normalize_code(buf);
-                let code = NodeCode {
-                    num_backticks: openticks,
-                    literal: buf.into(),
-                };
-                let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
-                self.adjust_node_newlines(
-                    node,
-                    endpos - startpos - openticks,
-                    openticks,
-                    parent_line_offsets,
-                );
-                node
+        let Some(endpos) = endpos else {
+            self.scanner.pos = startpos + openticks;
+            return self.make_inline(
+                NodeValue::Text("`".repeat(openticks).into()),
+                startpos,
+                self.scanner.pos - 1,
+            );
+        };
+
+        let buf = &self.input[startpos + openticks..endpos - openticks];
+        let buf = strings::normalize_code(buf);
+        let code = NodeCode {
+            num_backticks: openticks,
+            literal: buf.into(),
+        };
+        let node = self.make_inline(NodeValue::Code(code), startpos, endpos - 1);
+        self.adjust_node_newlines(
+            node,
+            endpos - startpos - openticks,
+            openticks,
+            parent_line_offsets,
+        );
+
+        #[cfg(feature = "attributes")]
+        if self.options.extension.inline_code_attributes && self.peek_byte() == Some(b'{') {
+            if let Some((attrs, i)) = attributes::parse_attributes(&self.input[self.scanner.pos..])
+            {
+                let mut ast = node.data_mut();
+                // TODO: what if newline!!
+                ast.sourcepos.end.column += i;
+                ast.attrs = Some(Box::new(attrs));
+
+                self.scanner.pos += i;
             }
         }
+
+        node
     }
 
     fn handle_backslash(&mut self) -> Node<'a> {

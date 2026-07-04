@@ -49,12 +49,41 @@ fn heading_with_attrs() {
 #[test]
 fn fenced_code_with_attrs() {
     assert_ast_match!(
-        [extension.header_attributes],
+        [extension.fenced_code_attributes],
         "```rust {#example}\n"
-        "const fn dogs() -> { yay }\n"
+        "const fn dogs() -> ! { yay }\n"
         "```\n",
         (document (1:1-3:3) [
-            (code_block (1:1-3:3) info:"rust" {#example} "const fn dogs() -> { yay }\n")
+            (code_block (1:1-3:3) info:"rust" {#example} "const fn dogs() -> ! { yay }\n")
+        ])
+    );
+
+    // Pandoc does some weird language/first-class interpretative dance,
+    // but I'm not yet convinced I want to do that. Let the formatter decide.
+    assert_ast_match!(
+        [extension.fenced_code_attributes],
+        "```{.zig #truism}\n"
+        "fn cats() noreturn { yay_too }\n"
+        "```\n",
+        (document (1:1-3:3) [
+            (code_block (1:1-3:3) info:"" {#truism .zig} "fn cats() noreturn { yay_too }\n")
+        ])
+    );
+}
+
+#[test]
+fn inline_code_with_attrs() {
+    assert_ast_match!(
+        [extension.inline_code_attributes],
+        "Uhh `totally`{yea=so} hm.",
+        (document (1:1-1:25) [
+            (paragraph (1:1-1:25) [
+                (text (1:1-1:4) "Uhh ")
+                // There's probably someone out there depending on sourcepos not being this way.
+                // But then again, if they enable attributes, it's on them!
+                (code (1:5-1:21) {yea="so"} "totally")
+                (text (1:22-1:25) " hm.")
+            ])
         ])
     );
 }

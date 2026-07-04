@@ -2163,7 +2163,7 @@ where
                     strings::unescape(&mut info);
 
                     #[cfg(feature = "attributes")]
-                    if self.options.extension.header_attributes {
+                    if self.options.extension.fenced_code_attributes {
                         if let Some(attrs) = attributes::parse_off_attributes(&mut info) {
                             ast.attrs = Some(Box::new(attrs));
                         }
