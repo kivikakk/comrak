@@ -163,7 +163,9 @@ pub fn parse_off_attributes(content: &mut String) -> Option<Attributes> {
                 // XXX: We can possibly fold this assertion into the above state
                 // tracking? :inuthonk:
                 if !content[i + j..].chars().all(char::is_whitespace) {
-                    return None;
+                    // For now, we might be within an attribute value, so we
+                    // must keep on.
+                    continue;
                 }
 
                 // Either there's nothing left (fine!) ORRRRR there's *at least*
@@ -298,6 +300,26 @@ mod tests {
             "hi",
             Some(Attributes {
                 id: Some("yay".to_string()),
+                ..Default::default()
+            }),
+        );
+
+        assert_parse_off("Well!{#yay}", "Well!{#yay}", None);
+
+        assert_parse_off(
+            "Well! {#okay} {Not really.}",
+            "Well! {#okay} {Not really.}",
+            None,
+        );
+
+        assert_parse_off(
+            "Well!! {cool=\"Lest \\\"{#confusion}\\\" sets in.\" } \t",
+            "Well!!",
+            Some(Attributes {
+                pairs: vec![(
+                    "cool".to_string(),
+                    "Lest \"{#confusion}\" sets in.".to_string(),
+                )],
                 ..Default::default()
             }),
         );
