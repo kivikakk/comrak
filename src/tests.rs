@@ -503,7 +503,8 @@ impl AstMatchTree {
                     assert_eq!(
                         children.len(),
                         node.children().count(),
-                        "children count should match"
+                        "children count should match ({:?})",
+                        node
                     );
                     for (e, a) in children.iter().zip(node.children()) {
                         e.assert_match(a);

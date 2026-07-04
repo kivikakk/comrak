@@ -32,6 +32,9 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
     let mut state = State::Betwixt;
     let mut attrs = Attributes::default();
 
+    // We permit ' ' | '\t' | '\r' | '\n' between/around attributes in the braces.
+    // Is ASCII whitespace also '\v' | '\f'? Does anyone mind?
+
     loop {
         let (i, c) = ci.next()?;
 
@@ -51,7 +54,7 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
                         break;
                     }
                     '}' => return Some((attrs, i + 1)),
-                    ' ' | '\t' => break,
+                    ' ' | '\t' | '\r' | '\n' => break,
                     _ => return None,
                 },
                 State::Value(ref mut kind, ref mut value, Quote::Bare) => match c {
@@ -68,7 +71,7 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
                         value.push(c);
                         break;
                     }
-                    ' ' | '}' => {
+                    ' ' | '\t' | '\r' | '\n' | '}' => {
                         match kind {
                             Kind::Id => {
                                 if value.is_empty() {
@@ -87,7 +90,7 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
                         state = State::Betwixt;
                         // handle in loop
                     }
-                    _ => todo!(),
+                    _ => return None,
                 },
                 State::Value(ref mut kind, ref mut value, Quote::Quoted) => match c {
                     '"' => {
@@ -133,7 +136,7 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
                 },
                 State::PostQuote => match c {
                     // Require a space after quote before anything else.
-                    ' ' | '}' => {
+                    ' ' | '\t' | '\r' | '\n' | '}' => {
                         state = State::Betwixt;
                         // handle in loop
                     }
@@ -267,7 +270,17 @@ mod tests {
         assert_eq!(parse_attributes("{}"), Some((Attributes::default(), 2)));
         assert_eq!(parse_attributes("{.}"), None);
         assert_eq!(parse_attributes("{uh"), None);
-        assert_eq!(parse_attributes("{yeah\nnah}"), None);
+
+        assert_eq!(
+            parse_attributes("{.why\n.not}"),
+            Some((
+                Attributes {
+                    classes: vec!["why".to_string(), "not".to_string()],
+                    ..Default::default()
+                },
+                11
+            ))
+        );
 
         assert_eq!(
             parse_attributes("{hi=}"),

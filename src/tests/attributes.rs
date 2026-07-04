@@ -86,4 +86,18 @@ fn inline_code_with_attrs() {
             ])
         ])
     );
+
+    // "Bart, can we stop for newlines?"
+    // "I don't see why not."
+    assert_ast_match!(
+        [extension.inline_code_attributes],
+        "`T1 Faker`{role=mid\n"
+        "  kda=\"0/0/0\"\n"
+        "  cs=120}\n",
+        (document (1:1-3:9) [
+            (paragraph (1:1-3:9) [
+                (code (1:1-3:9) {role="mid" kda="0/0/0" cs="120"} "T1 Faker")
+            ])
+        ])
+    );
 }

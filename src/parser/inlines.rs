@@ -455,8 +455,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             if let Some((attrs, i)) = attributes::parse_attributes(&self.input[self.scanner.pos..])
             {
                 let mut ast = node.data_mut();
-                // TODO: what if newline!!
-                ast.sourcepos.end.column += i;
+                let (lines, last_line) = count_newlines(&self.input[self.scanner.pos..][..i]);
+                if lines == 0 {
+                    ast.sourcepos.end.column += last_line;
+                } else {
+                    ast.sourcepos.end.line += lines;
+                    // XXX I really freestyled this next line.
+                    ast.sourcepos.end.column = parent_line_offsets
+                        [ast.sourcepos.end.line - ast.sourcepos.start.line]
+                        + last_line;
+                }
                 ast.attrs = Some(Box::new(attrs));
 
                 self.scanner.pos += i;
