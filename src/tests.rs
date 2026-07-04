@@ -288,6 +288,20 @@ macro_rules! ast_content {
     ([ $( $children:tt )* ]) => {
         $crate::tests::AstMatchContent::Children(vec![ $( $crate::tests::ast!($children), )* ])
     };
+
+    // Are you reading this comment right now?
+    //
+    // Can you see that the following definition forces test authors to specify
+    // attributes in the order "id, classes, key/value pairs", even though in
+    // the actual syntax, that's not necessary? (Indeed, you could have multiple
+    // ids in real syntax; the last one wins.)
+    //
+    // It's VERY possible to rewrite this to allow parsing them in any order, just
+    // like the actual syntax. Feel free to try it and open a PR, and you can ask for help.
+    //
+    // Hint: you'll want to feed _all_ attribute tokens (here) into a new macro,
+    // which has three arms; one for each type, each also accepting $( $rest:tt )* at
+    // the end. Recursively call itself on the $rest each time to consume all tokens.
     ({ $( # $id:ident )? $( . $class:ident )* $( $key:ident = $value:literal )* }) => ({
         #[allow(unused_mut)]
         let mut attrs = $crate::nodes::Attributes::default();
