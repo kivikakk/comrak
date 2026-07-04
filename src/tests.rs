@@ -288,9 +288,14 @@ macro_rules! ast_content {
     ([ $( $children:tt )* ]) => {
         $crate::tests::AstMatchContent::Children(vec![ $( $crate::tests::ast!($children), )* ])
     };
-    ({ $( $attr:literal )* }) => {
-        $crate::tests::AstMatchContent::parse_attributes(&[$( $attr ),*])
-    };
+    ({ $( # $id:ident )? $( . $class:ident )* $( $key:ident = $value:literal )* }) => ({
+        #[allow(unused_mut)]
+        let mut attrs = $crate::nodes::Attributes::default();
+        $( attrs.id = Some(stringify!($id).to_string()); )?
+        $( attrs.classes.push(stringify!($class).to_string()); )*
+        $( attrs.pairs.push((stringify!($key).to_string(), $value.to_string())); )*
+        $crate::tests::AstMatchContent::Attributes(attrs)
+    });
 }
 
 pub(crate) use ast;
@@ -375,28 +380,6 @@ enum AstMatchContent {
     Children(Vec<AstMatchTree>),
     #[cfg(feature = "attributes")]
     Attributes(Attributes),
-}
-
-impl AstMatchContent {
-    fn parse_attributes(literals: &[&str]) -> Self {
-        let mut attrs = Attributes::default();
-
-        for literal in literals {
-            if literal.starts_with("#") {
-                attrs.id = Some(literal[1..].to_string());
-            } else if literal.starts_with(".") {
-                attrs.classes.push(literal[1..].to_string());
-            } else if let Some(ix) = literal.find('=') {
-                attrs
-                    .pairs
-                    .push((literal[0..ix].to_string(), literal[ix + 1..].to_string()));
-            } else {
-                unreachable!()
-            }
-        }
-
-        Self::Attributes(attrs)
-    }
 }
 
 struct AstMatchTree {
