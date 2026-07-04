@@ -2,7 +2,7 @@ use std::mem;
 
 use crate::nodes::Attributes;
 
-pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
+pub fn parse(input: &str) -> Option<(Attributes, usize)> {
     let mut ci = input.char_indices();
     if ci.next()?.1 != '{' {
         return None;
@@ -147,50 +147,91 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
     }
 }
 
-pub fn parse_off_attributes(content: &mut String) -> Option<Attributes> {
+/// Use this only in contexts where there can *not* be any following text
+/// and the attribute set still valid; i.e. blocks are OK, inlines are not.
+pub fn parse_off(content: &mut String) -> Option<Attributes> {
     let mut ci = content.char_indices().rev();
-    // This is a very mid check. We can track state backwards
-    // to know exactly when to attempt the parse; we care only
-    // about '}', '"', '\', '}'. XXX
-    let mut seen_close = false;
+
+    enum State {
+        Pre,
+        Within,
+        Quoted,
+        /// We've hit an opening quote, but there could be a backslash behind it;
+        /// if there is, return to Quoted, otherwise go to Within and reparse.
+        MaybeQuoteEnd,
+    }
+
+    let mut state = State::Pre;
+    let mut end = None;
 
     loop {
         let (i, c) = ci.next()?;
 
-        seen_close = seen_close || c == '}';
-
-        if c == '{' && seen_close {
-            if let Some((attrs, j)) = parse_attributes(&content[i..]) {
-                // There should be nothing but whitespace (if anything) after.
-                // Feeling generous so it can be Unicode whitespace even.
-                // XXX: We can possibly fold this assertion into the above state
-                // tracking? :inuthonk:
-                if !content[i + j..].chars().all(char::is_whitespace) {
-                    // For now, we might be within an attribute value, so we
-                    // must keep on.
-                    continue;
-                }
-
-                // Either there's nothing left (fine!) ORRRRR there's *at least*
-                // one (but possibly multiple) whitespace, which we truncate.
-                let Some((mut i, c)) = ci.next() else {
-                    content.truncate(i);
-                    return Some(attrs);
-                };
-
-                if !c.is_whitespace() {
-                    return None;
-                }
-
-                for (i2, c) in ci {
-                    if !c.is_whitespace() {
+        loop {
+            match state {
+                State::Pre => match c {
+                    '}' => {
+                        end = Some(i + 1);
+                        state = State::Within;
                         break;
                     }
-                    i = i2;
-                }
+                    _ if c.is_whitespace() => break,
+                    _ => return None,
+                },
+                State::Within => match c {
+                    '"' => {
+                        state = State::Quoted;
+                        break;
+                    }
+                    '{' => {
+                        let (attrs, j) = parse(&content[i..])?;
 
-                content.truncate(i);
-                return Some(attrs);
+                        // We can't transition into Within without setting `end`.
+                        // If these don't match up, something is Bad.
+                        if i + j != end.unwrap() {
+                            return None;
+                        }
+
+                        // Either there's nothing left (fine!) ORRRRR there's *at least*
+                        // one (but possibly multiple) whitespace, which we truncate.
+                        let Some((mut i, c)) = ci.next() else {
+                            content.truncate(i);
+                            return Some(attrs);
+                        };
+
+                        if !c.is_whitespace() {
+                            return None;
+                        }
+
+                        for (i2, c) in ci {
+                            if !c.is_whitespace() {
+                                break;
+                            }
+                            i = i2;
+                        }
+
+                        content.truncate(i);
+                        return Some(attrs);
+                    }
+                    _ => break,
+                },
+                State::Quoted => match c {
+                    '"' => {
+                        state = State::MaybeQuoteEnd;
+                        break;
+                    }
+                    _ => break,
+                },
+                State::MaybeQuoteEnd => match c {
+                    '\\' => {
+                        state = State::Quoted;
+                        break;
+                    }
+                    _ => {
+                        state = State::Within;
+                        // handle in loop
+                    }
+                },
             }
         }
     }
@@ -202,10 +243,10 @@ mod tests {
 
     #[test]
     fn fundamentals() {
-        assert_eq!(parse_attributes(""), None);
+        assert_eq!(parse(""), None);
 
         assert_eq!(
-            parse_attributes("{#henlo} there"),
+            parse("{#henlo} there"),
             Some((
                 Attributes {
                     id: Some("henlo".to_string()),
@@ -216,7 +257,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_attributes("{.oken}"),
+            parse("{.oken}"),
             Some((
                 Attributes {
                     classes: vec!["oken".to_string()],
@@ -227,7 +268,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_attributes("{data-thingy=ya}"),
+            parse("{data-thingy=ya}"),
             Some((
                 Attributes {
                     pairs: vec![("data-thingy".to_string(), "ya".to_string())],
@@ -238,7 +279,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_attributes("{.oken #yip m=26 .sure x=3 #yap} oh!"),
+            parse("{.oken #yip m=26 .sure x=3 #yap} oh!"),
             Some((
                 Attributes {
                     id: Some("yap".to_string()),
@@ -253,9 +294,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_attributes(
-                "{#\"has space, will travel\" .\"ok\\\"en\" title=\"是非 \\\"not\\\"\"}"
-            ),
+            parse("{#\"has space, will travel\" .\"ok\\\"en\" title=\"是非 \\\"not\\\"\"}"),
             Some((
                 Attributes {
                     id: Some("has space, will travel".to_string()),
@@ -266,13 +305,13 @@ mod tests {
             ))
         );
 
-        assert_eq!(parse_attributes("{#}"), None);
-        assert_eq!(parse_attributes("{}"), Some((Attributes::default(), 2)));
-        assert_eq!(parse_attributes("{.}"), None);
-        assert_eq!(parse_attributes("{uh"), None);
+        assert_eq!(parse("{#}"), None);
+        assert_eq!(parse("{}"), Some((Attributes::default(), 2)));
+        assert_eq!(parse("{.}"), None);
+        assert_eq!(parse("{uh"), None);
 
         assert_eq!(
-            parse_attributes("{.why\n.not}"),
+            parse("{.why\n.not}"),
             Some((
                 Attributes {
                     classes: vec!["why".to_string(), "not".to_string()],
@@ -283,7 +322,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_attributes("{hi=}"),
+            parse("{hi=}"),
             Some((
                 Attributes {
                     pairs: vec![("hi".to_string(), String::new())],
@@ -295,18 +334,18 @@ mod tests {
 
         // XXX: I kind of feel like this should be equivalent to above.
         // Check Pandoc.
-        assert_eq!(parse_attributes("{hi}"), None);
+        assert_eq!(parse("{hi}"), None);
     }
 
     fn assert_parse_off(input: &str, expected_str: &str, expected_attrs: Option<Attributes>) {
         let mut s = input.to_string();
-        let attrs = parse_off_attributes(&mut s);
+        let attrs = parse_off(&mut s);
         assert_eq!(s, expected_str);
         assert_eq!(attrs, expected_attrs);
     }
 
     #[test]
-    fn parse_off() {
+    fn parses_off() {
         assert_parse_off("hi", "hi", None);
         assert_parse_off(
             "hi  {#yay}",

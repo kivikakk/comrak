@@ -2164,7 +2164,7 @@ where
 
                     #[cfg(feature = "attributes")]
                     if self.options.extension.fenced_code_attributes {
-                        if let Some(attrs) = attributes::parse_off_attributes(&mut info) {
+                        if let Some(attrs) = attributes::parse_off(&mut info) {
                             ast.attrs = Some(Box::new(attrs));
                         }
                     }
@@ -2225,7 +2225,7 @@ where
             {
                 #[cfg(feature = "attributes")]
                 if self.options.extension.header_attributes {
-                    if let Some(attrs) = attributes::parse_off_attributes(content) {
+                    if let Some(attrs) = attributes::parse_off(content) {
                         ast.attrs = Some(Box::new(attrs));
                     }
                 }

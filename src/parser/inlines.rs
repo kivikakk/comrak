@@ -2330,7 +2330,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return;
         }
 
-        let Some((attrs, i)) = attributes::parse_attributes(&self.input[self.scanner.pos..]) else {
+        let Some((attrs, i)) = attributes::parse(&self.input[self.scanner.pos..]) else {
             return;
         };
 
