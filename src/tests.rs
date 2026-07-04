@@ -2,11 +2,14 @@ use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::panic;
 
+#[cfg(feature = "attributes")]
+use crate::nodes::Attributes;
 use crate::nodes::{Node, NodeValue, Sourcepos};
 use crate::options;
 use crate::*;
 
 mod alerts;
+mod attributes;
 mod autolink;
 mod block_directive;
 mod cjk_friendly_emphasis;
@@ -272,19 +275,30 @@ pub(crate) use sourcepos;
 
 macro_rules! ast {
     (($name:tt $sp:tt $( $content:tt )*)) => {
-        AstMatchTree {
+        $crate::tests::AstMatchTree {
             name: stringify!($name).to_string(),
-            sourcepos: sourcepos!($sp),
-            matches: vec![ $( ast_content!($content), )* ],
+            sourcepos: $crate::tests::sourcepos!($sp),
+            matches: vec![ $( $crate::tests::ast_content!($content), )* ],
         }
     };
 }
 
 macro_rules! ast_content {
-    ($text:literal) => {AstMatchContent::Text($text.to_string())};
+    ($text:literal) => {$crate::tests::AstMatchContent::Text($text.to_string())};
     ([ $( $children:tt )* ]) => {
-        AstMatchContent::Children(vec![ $( ast!($children), )* ])
+        $crate::tests::AstMatchContent::Children(vec![ $( $crate::tests::ast!($children), )* ])
     };
+    ({ $( $attr:literal )* }) => ({
+        let mut attrs = $crate::nodes::Attributes::default();
+        $(
+          if $attr.starts_with("#") {
+              attrs.id = Some($attr[1..].to_string());
+          } else {
+              unreachable!()
+          }
+        )*
+        $crate::tests::AstMatchContent::Attributes(attrs)
+    });
 }
 
 pub(crate) use ast;
@@ -333,28 +347,28 @@ pub(crate) use assert_ast_match_set_opt_single;
 
 macro_rules! assert_ast_match {
     ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt,) => {
-        assert_ast_match!(
+        $crate::tests::assert_ast_match!(
             [ $( $optclass.$optname ),* ],
             $( $md )+,
             $amt
         )
     };
     ([ $( $optclass:ident.$optname:ident = $val:expr ),* ], $( $md:literal )+, $amt:tt) => {
-        crate::tests::assert_ast_match_i(
+        $crate::tests::assert_ast_match_i(
             concat!( $( $md ),+ ),
-            ast!($amt),
+            $crate::tests::ast!($amt),
             |#[allow(unused_variables)] opts| {$(opts.$optclass.$optname = $val;)*},
         );
     };
     ([ $( $optclass:ident.$optname:ident $(= $val:expr)? ),* ], $( $md:literal )+, $amt:tt) => {
-        crate::tests::assert_ast_match_i(
+        $crate::tests::assert_ast_match_i(
             concat!( $( $md ),+ ),
-            ast!($amt),
-            |#[allow(unused_variables)] opts| { $( assert_ast_match_set_opt_single!(opts; $optclass.$optname $(= $val)? ); )* },
+            $crate::tests::ast!($amt),
+            |#[allow(unused_variables)] opts| { $( $crate::tests::assert_ast_match_set_opt_single!(opts; $optclass.$optname $(= $val)? ); )* },
         );
     };
     ([ $( $optclass:ident.$optname:ident ),* ], $( $md:literal )+, $amt:tt) => {
-        assert_ast_match!(
+        $crate::tests::assert_ast_match!(
             [ $( $optclass.$optname  = true),* ],
             $( $md )+,
             $amt
@@ -373,6 +387,8 @@ struct AstMatchTree {
 enum AstMatchContent {
     Text(String),
     Children(Vec<AstMatchTree>),
+    #[cfg(feature = "attributes")]
+    Attributes(Attributes),
 }
 
 impl AstMatchTree {
@@ -384,6 +400,8 @@ impl AstMatchTree {
 
         let mut asserted_text = false;
         let mut asserted_children = false;
+        #[cfg(feature = "attributes")]
+        let mut asserted_attributes = false;
 
         for m in &self.matches {
             match m {
@@ -455,12 +473,23 @@ impl AstMatchTree {
                     }
                     asserted_children = true;
                 }
+                #[cfg(feature = "attributes")]
+                AstMatchContent::Attributes(attrs) => {
+                    assert!(ast.attrs.is_some());
+                    assert_eq!(attrs, &**ast.attrs.as_ref().unwrap());
+                    asserted_attributes = true;
+                }
             }
         }
 
         assert!(
             asserted_children || node.children().count() == 0,
             "children were not asserted"
+        );
+        #[cfg(feature = "attributes")]
+        assert!(
+            asserted_attributes || ast.attrs.is_none(),
+            "attributes were not asserted"
         );
         assert!(
             asserted_text

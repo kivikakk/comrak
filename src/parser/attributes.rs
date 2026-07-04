@@ -144,12 +144,60 @@ pub fn parse_attributes(input: &str) -> Option<(Attributes, usize)> {
     }
 }
 
+pub fn parse_off_attributes(content: &mut String) -> Option<Attributes> {
+    let mut ci = content.char_indices().rev();
+    // This is a very mid check. We can track state backwards
+    // to know exactly when to attempt the parse; we care only
+    // about '}', '"', '\', '}'. XXX
+    let mut seen_close = false;
+
+    loop {
+        let (i, c) = ci.next()?;
+
+        seen_close = seen_close || c == '}';
+
+        if c == '{'
+            && seen_close
+            && let Some((attrs, j)) = parse_attributes(&content[i..])
+        {
+            // There should be nothing but whitespace (if anything) after.
+            // Feeling generous so it can be Unicode whitespace even.
+            // XXX: We can possibly fold this assertion into the above state
+            // tracking? :inuthonk:
+            if !content[i + j..].chars().all(char::is_whitespace) {
+                return None;
+            }
+
+            // Either there's nothing left (fine!) ORRRRR there's *at least*
+            // one (but possibly multiple) whitespace, which we truncate.
+            let Some((mut i, c)) = ci.next() else {
+                content.truncate(i);
+                return Some(attrs);
+            };
+
+            if !c.is_whitespace() {
+                return None;
+            }
+
+            while let Some((i2, c)) = ci.next() {
+                if !c.is_whitespace() {
+                    break;
+                }
+                i = i2;
+            }
+
+            content.truncate(i);
+            return Some(attrs);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn trivial() {
+    fn fundamentals() {
         assert_eq!(parse_attributes(""), None);
 
         assert_eq!(
@@ -234,5 +282,25 @@ mod tests {
         // XXX: I kind of feel like this should be equivalent to above.
         // Check Pandoc.
         assert_eq!(parse_attributes("{hi}"), None);
+    }
+
+    fn assert_parse_off(input: &str, expected_str: &str, expected_attrs: Option<Attributes>) {
+        let mut s = input.to_string();
+        let attrs = parse_off_attributes(&mut s);
+        assert_eq!(s, expected_str);
+        assert_eq!(attrs, expected_attrs);
+    }
+
+    #[test]
+    fn parse_off() {
+        assert_parse_off("hi", "hi", None);
+        assert_parse_off(
+            "hi  {#yay}",
+            "hi",
+            Some(Attributes {
+                id: Some("yay".to_string()),
+                ..Default::default()
+            }),
+        );
     }
 }
