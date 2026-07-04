@@ -222,7 +222,6 @@ enum Extension {
     FencedCodeAttributes,
     InlineCodeAttributes,
     LinkAttributes,
-    Attributes,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -320,8 +319,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .header_attributes(exts.contains(&Extension::HeaderAttributes))
         .fenced_code_attributes(exts.contains(&Extension::FencedCodeAttributes))
         .inline_code_attributes(exts.contains(&Extension::InlineCodeAttributes))
-        .link_attributes(exts.contains(&Extension::LinkAttributes))
-        .attributes(exts.contains(&Extension::Attributes));
+        .link_attributes(exts.contains(&Extension::LinkAttributes));
 
     #[cfg(feature = "shortcodes")]
     let extension = extension.shortcodes(cli.gemoji);

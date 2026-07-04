@@ -611,17 +611,44 @@ pub struct NodeBlockDirective {
     pub info: String,
 }
 
-/// TODO
+/// Attributes on the node, if any.
+///
+/// These are somewhat HTML-specific in nature, though none are formatted
+/// automatically to HTML.  There may be an `id` (specified like "#xyz" in the
+/// source document; last ID-like attribute wins), zero or more `classes`
+/// (specified like ".abc" in the source document), and zero or more `pairs`
+/// (specified like "a=b" in the source document).
+///
+/// Attribute values may be quoted as follows:
+///
+/// * `#"id with spaces in it"`
+/// * `."class with \"double quotes\" in it"`
+/// * `pair="with spaces and such in the value"`
+///
+/// Pair keys may not be quoted.  You can't open quotes late or close them early.
+/// Backslashes escape whatever character follows them within quotes.
+/// Newlines are not permitted in quoted values, but they are permitted around
+/// attribute values when attached to an inline, e.g.:
+///
+/// ```markdown
+/// Some `code`{
+///   a="hello"
+///   b="privyet"
+/// }
+/// ```
+///
+/// Take care that you don't lead such lines with four or more spaces relative to
+/// the block offset, or you'll get an unwanted code block!
 #[cfg(feature = "attributes")]
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Attributes {
-    /// TODO
+    /// The id attribute, if any; specified like `#id` (last wins).
     pub id: Option<String>,
 
-    /// TODO
+    /// Class attributes, if any; specified like `.a .b`.
     pub classes: Vec<String>,
 
-    /// TODO
+    /// Attribute pairs, if any; specified like `a=b c=d`.
     pub pairs: Vec<(String, String)>,
 }
 
@@ -773,7 +800,7 @@ pub struct Ast {
     pub sourcepos: Sourcepos,
 
     #[cfg(feature = "attributes")]
-    /// TODO
+    /// [Attributes] on this node, if any.
     pub attrs: Option<Box<Attributes>>,
 
     pub(crate) content: String,

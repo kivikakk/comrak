@@ -5,8 +5,8 @@ use libfuzzer_sys::fuzz_target;
 use std::sync::Arc;
 
 use comrak::{
-    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
-    ResolvedReference,
+    Options, ResolvedReference, markdown_to_commonmark, markdown_to_commonmark_xml,
+    markdown_to_html, options,
 };
 
 #[derive(Arbitrary, Debug)]
@@ -63,7 +63,6 @@ struct FuzzExtensionOptions {
     fenced_code_attributes: bool,
     inline_code_attributes: bool,
     link_attributes: bool,
-    attributes: bool,
     // non-bool below
     header_id_prefix: bool,
     front_matter_delimiter: bool,
@@ -108,7 +107,6 @@ impl FuzzExtensionOptions {
             fenced_code_attributes: self.fenced_code_attributes,
             inline_code_attributes: self.inline_code_attributes,
             link_attributes: self.link_attributes,
-            attributes: self.attributes,
             // non-bool below
             header_id_prefix: if self.header_id_prefix {
                 Some("user-content-".into())
