@@ -156,38 +156,37 @@ pub fn parse_off_attributes(content: &mut String) -> Option<Attributes> {
 
         seen_close = seen_close || c == '}';
 
-        if c == '{'
-            && seen_close
-            && let Some((attrs, j)) = parse_attributes(&content[i..])
-        {
-            // There should be nothing but whitespace (if anything) after.
-            // Feeling generous so it can be Unicode whitespace even.
-            // XXX: We can possibly fold this assertion into the above state
-            // tracking? :inuthonk:
-            if !content[i + j..].chars().all(char::is_whitespace) {
-                return None;
-            }
+        if c == '{' && seen_close {
+            if let Some((attrs, j)) = parse_attributes(&content[i..]) {
+                // There should be nothing but whitespace (if anything) after.
+                // Feeling generous so it can be Unicode whitespace even.
+                // XXX: We can possibly fold this assertion into the above state
+                // tracking? :inuthonk:
+                if !content[i + j..].chars().all(char::is_whitespace) {
+                    return None;
+                }
 
-            // Either there's nothing left (fine!) ORRRRR there's *at least*
-            // one (but possibly multiple) whitespace, which we truncate.
-            let Some((mut i, c)) = ci.next() else {
+                // Either there's nothing left (fine!) ORRRRR there's *at least*
+                // one (but possibly multiple) whitespace, which we truncate.
+                let Some((mut i, c)) = ci.next() else {
+                    content.truncate(i);
+                    return Some(attrs);
+                };
+
+                if !c.is_whitespace() {
+                    return None;
+                }
+
+                while let Some((i2, c)) = ci.next() {
+                    if !c.is_whitespace() {
+                        break;
+                    }
+                    i = i2;
+                }
+
                 content.truncate(i);
                 return Some(attrs);
-            };
-
-            if !c.is_whitespace() {
-                return None;
             }
-
-            while let Some((i2, c)) = ci.next() {
-                if !c.is_whitespace() {
-                    break;
-                }
-                i = i2;
-            }
-
-            content.truncate(i);
-            return Some(attrs);
         }
     }
 }

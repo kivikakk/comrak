@@ -2213,12 +2213,13 @@ where
                     ast.sourcepos.end = candidate_end;
                 }
             }
-            NodeValue::Heading(_) => {
+            NodeValue::Heading(_) =>
+            {
                 #[cfg(feature = "attributes")]
-                if self.options.extension.header_attributes
-                    && let Some(attrs) = attributes::parse_off_attributes(content)
-                {
-                    ast.attrs = Some(Box::new(attrs));
+                if self.options.extension.header_attributes {
+                    if let Some(attrs) = attributes::parse_off_attributes(content) {
+                        ast.attrs = Some(Box::new(attrs));
+                    }
                 }
             }
             _ => (),
