@@ -29,4 +29,4 @@ jobs:
         uses: CodSpeedHQ/action@fa0c9b1770f933c1bc025c83a9b42946b102f4e6 # v4.10.4
         with:
           mode: instrumentation
-          run: cargo codspeed run
+          run: cargo codspeed run --no-default-features
