@@ -1,3 +1,5 @@
+#[cfg(feature = "attributes")]
+mod attributes;
 mod autolink;
 mod inlines;
 pub mod options;
@@ -46,6 +48,8 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
             value: NodeValue::Document,
             content: String::new(),
             sourcepos: (1, 1, 1, 1).into(),
+            #[cfg(feature = "attributes")]
+            attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,

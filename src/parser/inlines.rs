@@ -169,6 +169,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 usize::try_from(end_column).unwrap(),
             )
                 .into(),
+            #[cfg(feature = "attributes")]
+            attrs: None,
             open: false,
             last_line_blank: false,
             table_visited: false,
@@ -2493,6 +2495,8 @@ pub(crate) fn make_inline<'a>(
         value,
         content: String::new(),
         sourcepos,
+        #[cfg(feature = "attributes")]
+        attrs: None,
         open: false,
         last_line_blank: false,
         table_visited: false,

@@ -69,9 +69,10 @@ phf_codegen = "0.13"
 
 [features]
 default = ["cli", "syntect-onig", "bon"]
-cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes", "phoenix_heex"]
+cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes", "phoenix_heex", "attributes"]
 shortcodes = ["emojis"]
 phoenix_heex = []
+attributes = []
 bon = ["dep:bon"]
 # `syntect` enables the syntect plugin but is backend-neutral; pick a regex
 # backend via `syntect-onig` (C Oniguruma, the default) or `syntect-fancy`

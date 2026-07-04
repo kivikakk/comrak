@@ -611,6 +611,20 @@ pub struct NodeBlockDirective {
     pub info: String,
 }
 
+/// TODO
+#[cfg(feature = "attributes")]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct Attributes {
+    /// TODO
+    pub id: Option<String>,
+
+    /// TODO
+    pub classes: Vec<String>,
+
+    /// TODO
+    pub pairs: Vec<(String, String)>,
+}
+
 impl NodeValue {
     /// Indicates whether this node is a block node or inline node.
     pub fn block(&self) -> bool {
@@ -758,6 +772,10 @@ pub struct Ast {
     /// The positions in the source document this node comes from.
     pub sourcepos: Sourcepos,
 
+    #[cfg(feature = "attributes")]
+    /// TODO
+    pub attrs: Option<Box<Attributes>>,
+
     pub(crate) content: String,
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
@@ -772,13 +790,13 @@ impl std::fmt::Debug for Ast {
 }
 
 #[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(target_pointer_width = "64", not(feature = "attributes")))]
 /// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
 /// bigger.
 const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 
 #[allow(dead_code)]
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(target_pointer_width = "64", not(feature = "attributes")))]
 /// Assert the total size of what we allocate in the Arena, for reference.
 ///
 /// Note that the size adds to Ast:
@@ -883,6 +901,8 @@ impl Ast {
             value,
             content: String::new(),
             sourcepos: (start.line, start.column, start.line, 0).into(),
+            #[cfg(feature = "attributes")]
+            attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
@@ -896,6 +916,8 @@ impl Ast {
             value,
             content: String::new(),
             sourcepos,
+            #[cfg(feature = "attributes")]
+            attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
