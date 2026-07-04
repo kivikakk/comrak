@@ -177,7 +177,7 @@ pub fn parse_off_attributes(content: &mut String) -> Option<Attributes> {
                     return None;
                 }
 
-                while let Some((i2, c)) = ci.next() {
+                for (i2, c) in ci {
                     if !c.is_whitespace() {
                         break;
                     }
