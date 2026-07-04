@@ -13,4 +13,14 @@ fn heading_with_attrs() {
             ])
         ])
     );
+
+    assert_ast_match!(
+        [extension.header_attributes],
+        "## Yeww {yeww=\"\\\"true\\\"\"} ##\n",
+        (document (1:1-1:28) [
+            (heading (1:1-1:28) {"yeww=\"true\""} [
+                (text (1:4-1:7) "Yeww")
+            ])
+        ])
+    );
 }
