@@ -72,19 +72,12 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         break;
                     }
                     ' ' | '\t' | '\r' | '\n' | '}' => {
+                        if value.is_empty() {
+                            return None;
+                        }
                         match kind {
-                            Kind::Id => {
-                                if value.is_empty() {
-                                    return None;
-                                }
-                                attrs.id = Some(mem::take(value));
-                            }
-                            Kind::Class => {
-                                if value.is_empty() {
-                                    return None;
-                                }
-                                attrs.classes.push(mem::take(value));
-                            }
+                            Kind::Id => attrs.id = Some(mem::take(value)),
+                            Kind::Class => attrs.classes.push(mem::take(value)),
                             Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
                         }
                         state = State::Betwixt;
@@ -321,20 +314,19 @@ mod tests {
             ))
         );
 
+        // Consistent with Pandoc's commonmark+attributes.
+        assert_eq!(parse("{hi}"), None);
+        assert_eq!(parse("{hi=}"), None);
         assert_eq!(
-            parse("{hi=}"),
+            parse("{hi=\"\"}"),
             Some((
                 Attributes {
                     pairs: vec![("hi".to_string(), String::new())],
                     ..Default::default()
                 },
-                5
+                7
             ))
         );
-
-        // XXX: I kind of feel like this should be equivalent to above.
-        // Check Pandoc.
-        assert_eq!(parse("{hi}"), None);
     }
 
     fn assert_parse_off(input: &str, expected_str: &str, expected_attrs: Option<Attributes>) {
