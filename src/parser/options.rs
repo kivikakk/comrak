@@ -627,6 +627,31 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub block_directive: bool,
+
+    /// TODO
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub header_attributes: bool,
+
+    /// TODO
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub fenced_code_attributes: bool,
+
+    /// TODO
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub inline_code_attributes: bool,
+
+    /// TODO
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub link_attributes: bool,
+
+    /// TODO
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub attributes: bool,
 }
 
 impl Extension<'_> {
