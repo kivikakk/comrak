@@ -299,7 +299,8 @@ macro_rules! ast_content {
      ($matches:ident ~ info:$info:literal $( $rest:tt )*) => {
         $matches.push($crate::tests::AstMatchContent::Info($info.to_string()));
         $crate::tests::ast_content!($matches ~ $( $rest )*);
-    };
+     };
+
     // Are you reading this comment right now?
     //
     // Can you see that the following definition forces test authors to specify
@@ -310,10 +311,7 @@ macro_rules! ast_content {
     // It's VERY possible to rewrite this to allow parsing them in any order, just
     // like the actual syntax. Feel free to try it and open a PR, and you can ask for help.
     //
-    // Hint: you'll want to feed _all_ attribute tokens (here) into a new macro,
-    // same as ast_content itself, which has three arms; one for each type,
-    // each also accepting $( $rest:tt )* at the end. Recursively call itself on the
-    // $rest each time to consume all tokens.
+    // Hint: look at how ast_content itself is implemented; recursion is the trick!
     //
     // Extra credit: at the moment, we only support x="y" syntax for pairs.
     // The above change would let us easily support both that *and* x=y syntax
@@ -327,6 +325,7 @@ macro_rules! ast_content {
         $matches.push($crate::tests::AstMatchContent::Attributes(attrs));
         $crate::tests::ast_content!($matches ~ $( $rest )*);
     };
+
     ($matches:ident ~) => {};
 }
 
