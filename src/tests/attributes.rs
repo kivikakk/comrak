@@ -101,3 +101,34 @@ fn inline_code_with_attrs() {
         ])
     );
 }
+
+#[test]
+fn links_and_images_with_attrs() {
+    assert_ast_match!(
+        [extension.link_attributes],
+        "Incredible [Jhin](game){lies=true}.\n",
+        (document (1:1-1:35) [
+            (paragraph (1:1-1:35) [
+                (text (1:1-1:11) "Incredible ")
+                (link (1:12-1:34) {lies="true"} "game" [
+                    (text (1:13-1:16) "Jhin")
+                ])
+                (text (1:35-1:35) ".")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.link_attributes],
+        "Incredible ![Jhin](game){lies=true}.\n",
+        (document (1:1-1:36) [
+            (paragraph (1:1-1:36) [
+                (text (1:1-1:11) "Incredible ")
+                (image (1:12-1:35) {lies="true"} "game" [
+                    (text (1:14-1:17) "Jhin")
+                ])
+                (text (1:36-1:36) ".")
+            ])
+        ])
+    );
+}

@@ -310,7 +310,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
             b']' => {
                 self.within_brackets = false;
-                self.handle_close_bracket()
+                self.handle_close_bracket(&ast.line_offsets)
             }
             b'!' => {
                 self.scanner.pos += 1;
@@ -451,24 +451,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         );
 
         #[cfg(feature = "attributes")]
-        if self.options.extension.inline_code_attributes && self.peek_byte() == Some(b'{') {
-            if let Some((attrs, i)) = attributes::parse_attributes(&self.input[self.scanner.pos..])
-            {
-                let mut ast = node.data_mut();
-                let (lines, last_line) = count_newlines(&self.input[self.scanner.pos..][..i]);
-                if lines == 0 {
-                    ast.sourcepos.end.column += last_line;
-                } else {
-                    ast.sourcepos.end.line += lines;
-                    // XXX I really freestyled this next line.
-                    ast.sourcepos.end.column = parent_line_offsets
-                        [ast.sourcepos.end.line - ast.sourcepos.start.line]
-                        + last_line;
-                }
-                ast.attrs = Some(Box::new(attrs));
-
-                self.scanner.pos += i;
-            }
+        if self.options.extension.inline_code_attributes {
+            self.handle_potential_attribute(node, parent_line_offsets);
         }
 
         node
@@ -1693,7 +1677,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_close_bracket(&mut self) -> Option<Node<'a>> {
+    fn handle_close_bracket(&mut self, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
         self.scanner.pos += 1;
         let initial_pos = self.scanner.pos;
 
@@ -1782,6 +1766,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             url.into(),
                             title.into(),
                             source_end_pos,
+                            parent_line_offsets,
                         );
                         return None;
                     } else {
@@ -1833,7 +1818,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             // When reff is Cow::Owned (from callback), into_owned() is a no-op
             // When reff is Cow::Borrowed (from refmap), into_owned() clones
             let reff = reff.into_owned();
-            self.close_bracket_match(is_image, reff.url, reff.title, self.scanner.pos);
+            self.close_bracket_match(
+                is_image,
+                reff.url,
+                reff.title,
+                self.scanner.pos,
+                parent_line_offsets,
+            );
             return None;
         }
 
@@ -1958,6 +1949,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         url: String,
         title: String,
         source_end_pos: usize,
+        #[cfg_attr(not(feature = "attributes"), allow(unused))] parent_line_offsets: &[usize],
     ) {
         let last = self.brackets.pop().unwrap();
 
@@ -1982,6 +1974,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             )
                 .into(),
         );
+
+        #[cfg(feature = "attributes")]
+        if self.options.extension.link_attributes {
+            self.handle_potential_attribute(inl, parent_line_offsets);
+        }
 
         last.inl_text.insert_before(inl);
         let mut itm = last.inl_text.next_sibling();
@@ -2325,6 +2322,31 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.column_offset =
                 -(self.scanner.pos as isize) + since_newline as isize + extra as isize;
         }
+    }
+
+    #[cfg(feature = "attributes")]
+    fn handle_potential_attribute(&mut self, node: Node<'a>, parent_line_offsets: &[usize]) {
+        if self.peek_byte() != Some(b'{') {
+            return;
+        }
+
+        let Some((attrs, i)) = attributes::parse_attributes(&self.input[self.scanner.pos..]) else {
+            return;
+        };
+
+        let mut ast = node.data_mut();
+        let (lines, last_line) = count_newlines(&self.input[self.scanner.pos..][..i]);
+        if lines == 0 {
+            ast.sourcepos.end.column += last_line;
+        } else {
+            ast.sourcepos.end.line += lines;
+            // XXX I really freestyled this next line.
+            ast.sourcepos.end.column =
+                parent_line_offsets[ast.sourcepos.end.line - ast.sourcepos.start.line] + last_line;
+        }
+        ast.attrs = Some(Box::new(attrs));
+
+        self.scanner.pos += i;
     }
 }
 
