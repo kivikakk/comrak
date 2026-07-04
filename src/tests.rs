@@ -302,6 +302,10 @@ macro_rules! ast_content {
     // Hint: you'll want to feed _all_ attribute tokens (here) into a new macro,
     // which has three arms; one for each type, each also accepting $( $rest:tt )* at
     // the end. Recursively call itself on the $rest each time to consume all tokens.
+    //
+    // Extra credit: at the moment, we only support x="y" syntax for pairs.
+    // The above change would let us easily support both that *and* x=y syntax
+    // (when there's no 'need' to quote the value).
     ({ $( # $id:ident )? $( . $class:ident )* $( $key:ident = $value:literal )* }) => ({
         #[allow(unused_mut)]
         let mut attrs = $crate::nodes::Attributes::default();
