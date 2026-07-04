@@ -2161,6 +2161,14 @@ where
                     strings::trim_cow(&mut info);
                     let mut info = info.into_owned();
                     strings::unescape(&mut info);
+
+                    #[cfg(feature = "attributes")]
+                    if self.options.extension.header_attributes {
+                        if let Some(attrs) = attributes::parse_off_attributes(&mut info) {
+                            ast.attrs = Some(Box::new(attrs));
+                        }
+                    }
+
                     if info.is_empty() {
                         ncb.info = self
                             .options

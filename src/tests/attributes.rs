@@ -45,3 +45,16 @@ fn heading_with_attrs() {
         ])
     );
 }
+
+#[test]
+fn fenced_code_with_attrs() {
+    assert_ast_match!(
+        [extension.header_attributes],
+        "```rust {#example}\n"
+        "const fn dogs() -> { yay }\n"
+        "```\n",
+        (document (1:1-3:3) [
+            (code_block (1:1-3:3) info:"rust" {#example} "const fn dogs() -> { yay }\n")
+        ])
+    );
+}

@@ -157,7 +157,7 @@ fn sourcepos() {
             (paragraph (3:1-5:2) [
                 (math (3:1-5:2) "\na^2\n")
             ])
-            (code_block (7:1-9:3) "b^2\n")
+            (code_block (7:1-9:3) info:"math" "b^2\n")
         ])
     );
 }

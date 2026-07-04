@@ -274,21 +274,32 @@ macro_rules! sourcepos {
 pub(crate) use sourcepos;
 
 macro_rules! ast {
-    (($name:tt $sp:tt $( $content:tt )*)) => {
+    (($name:tt $sp:tt $( $content:tt )*)) => ({
+        #[allow(unused_mut)]
+        let mut matches = vec![];
+        $crate::tests::ast_content!(matches ~ $( $content )*);
+
         $crate::tests::AstMatchTree {
             name: stringify!($name).to_string(),
             sourcepos: $crate::tests::sourcepos!($sp),
-            matches: vec![ $( $crate::tests::ast_content!($content), )* ],
+            matches,
         }
-    };
+    });
 }
 
 macro_rules! ast_content {
-    ($text:literal) => {$crate::tests::AstMatchContent::Text($text.to_string())};
-    ([ $( $children:tt )* ]) => {
-        $crate::tests::AstMatchContent::Children(vec![ $( $crate::tests::ast!($children), )* ])
+    ($matches:ident ~ $text:literal $( $rest:tt )*) => {
+        $matches.push($crate::tests::AstMatchContent::Text($text.to_string()));
+        $crate::tests::ast_content!($matches ~ $( $rest )*);
     };
-
+    ($matches:ident ~ [ $( $children:tt )* ] $( $rest:tt )*) => {
+        $matches.push($crate::tests::AstMatchContent::Children(vec![ $( $crate::tests::ast!($children), )* ]));
+        $crate::tests::ast_content!($matches ~ $( $rest )*);
+    };
+     ($matches:ident ~ info:$info:literal $( $rest:tt )*) => {
+        $matches.push($crate::tests::AstMatchContent::Info($info.to_string()));
+        $crate::tests::ast_content!($matches ~ $( $rest )*);
+    };
     // Are you reading this comment right now?
     //
     // Can you see that the following definition forces test authors to specify
@@ -300,20 +311,23 @@ macro_rules! ast_content {
     // like the actual syntax. Feel free to try it and open a PR, and you can ask for help.
     //
     // Hint: you'll want to feed _all_ attribute tokens (here) into a new macro,
-    // which has three arms; one for each type, each also accepting $( $rest:tt )* at
-    // the end. Recursively call itself on the $rest each time to consume all tokens.
+    // same as ast_content itself, which has three arms; one for each type,
+    // each also accepting $( $rest:tt )* at the end. Recursively call itself on the
+    // $rest each time to consume all tokens.
     //
     // Extra credit: at the moment, we only support x="y" syntax for pairs.
     // The above change would let us easily support both that *and* x=y syntax
     // (when there's no 'need' to quote the value).
-    ({ $( # $id:ident )? $( . $class:ident )* $( $key:ident = $value:literal )* }) => ({
+    ($matches:ident ~ { $( # $id:ident )? $( . $class:ident )* $( $key:ident = $value:literal )* } $( $rest:tt )*) => {
         #[allow(unused_mut)]
         let mut attrs = $crate::nodes::Attributes::default();
         $( attrs.id = Some(stringify!($id).to_string()); )?
         $( attrs.classes.push(stringify!($class).to_string()); )*
         $( attrs.pairs.push((stringify!($key).to_string(), $value.to_string())); )*
-        $crate::tests::AstMatchContent::Attributes(attrs)
-    });
+        $matches.push($crate::tests::AstMatchContent::Attributes(attrs));
+        $crate::tests::ast_content!($matches ~ $( $rest )*);
+    };
+    ($matches:ident ~) => {};
 }
 
 pub(crate) use ast;
@@ -395,6 +409,7 @@ pub(crate) use assert_ast_match;
 
 enum AstMatchContent {
     Text(String),
+    Info(String),
     Children(Vec<AstMatchTree>),
     #[cfg(feature = "attributes")]
     Attributes(Attributes),
@@ -414,6 +429,7 @@ impl AstMatchTree {
         assert_eq!(self.sourcepos, ast.sourcepos, "sourcepos are equal");
 
         let mut asserted_text = false;
+        let mut asserted_info = false;
         let mut asserted_children = false;
         #[cfg(feature = "attributes")]
         let mut asserted_attributes = false;
@@ -477,6 +493,13 @@ impl AstMatchTree {
                         ast.value
                     ),
                 },
+                AstMatchContent::Info(info) => match ast.value {
+                    NodeValue::CodeBlock(ref ncb) => {
+                        assert_eq!(info, &ncb.info, "CodeBlock info should match");
+                        asserted_info = true;
+                    }
+                    _ => panic!("no info matcher for this node type: {:?}", ast.value),
+                },
                 AstMatchContent::Children(children) => {
                     assert_eq!(
                         children.len(),
@@ -500,6 +523,14 @@ impl AstMatchTree {
         assert!(
             asserted_children || node.children().count() == 0,
             "children were not asserted"
+        );
+        assert!(
+            asserted_info
+                || match ast.value {
+                    NodeValue::CodeBlock(ref ncb) => ncb.info.is_empty(),
+                    _ => true,
+                },
+            "info string was not asserted"
         );
         #[cfg(feature = "attributes")]
         assert!(
