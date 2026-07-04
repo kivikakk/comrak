@@ -33,4 +33,15 @@ fn heading_with_attrs() {
             ])
         ])
     );
+
+    assert_ast_match!(
+        [extension.header_attributes],
+        "Yeww {x=y x=y #a #b}\n"
+        "====================\n",
+        (document (1:1-2:20) [
+            (heading (1:1-2:20) {#b x="y" x="y"} [
+                (text (1:1-1:4) "Yeww")
+            ])
+        ])
+    );
 }
