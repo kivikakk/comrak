@@ -61,7 +61,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
     ///
     /// (In other words, ensures the output is at a new line.)
     ///
-    /// No-op when [`compact_html`](crate::Render::compact_html) is on.
+    /// No-op when [`compact_html`](crate::options::Render::compact_html) is on.
     pub fn cr(&mut self) -> fmt::Result {
         if self.options.render.compact_html {
             return Ok(());
@@ -72,7 +72,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
         Ok(())
     }
 
-    /// Writes `\n` unless [`compact_html`](crate::Render::compact_html) is on.
+    /// Writes `\n` unless [`compact_html`](crate::options::Render::compact_html) is on.
     pub fn lf(&mut self) -> fmt::Result {
         if !self.options.render.compact_html {
             self.write_str("\n")?;

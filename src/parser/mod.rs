@@ -1,3 +1,5 @@
+#[cfg(feature = "attributes")]
+mod attributes;
 mod autolink;
 mod inlines;
 pub mod options;
@@ -46,6 +48,8 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
             value: NodeValue::Document,
             content: String::new(),
             sourcepos: (1, 1, 1, 1).into(),
+            #[cfg(feature = "attributes")]
+            attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
@@ -2157,6 +2161,14 @@ where
                     strings::trim_cow(&mut info);
                     let mut info = info.into_owned();
                     strings::unescape(&mut info);
+
+                    #[cfg(feature = "attributes")]
+                    if self.options.extension.fenced_code_attributes {
+                        if let Some(attrs) = attributes::parse_off(&mut info) {
+                            ast.attrs = Some(Box::new(attrs));
+                        }
+                    }
+
                     if info.is_empty() {
                         ncb.info = self
                             .options
@@ -2207,6 +2219,15 @@ where
             NodeValue::FootnoteDefinition(_) => {
                 if let Some(candidate_end) = self.fix_zero_end_columns(node) {
                     ast.sourcepos.end = candidate_end;
+                }
+            }
+            NodeValue::Heading(_) =>
+            {
+                #[cfg(feature = "attributes")]
+                if self.options.extension.header_attributes {
+                    if let Some(attrs) = attributes::parse_off(content) {
+                        ast.attrs = Some(Box::new(attrs));
+                    }
                 }
             }
             _ => (),

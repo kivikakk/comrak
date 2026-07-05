@@ -59,6 +59,10 @@ struct FuzzExtensionOptions {
     phoenix_heex: bool,
     insert: bool,
     header_id_prefix_in_href: bool,
+    header_attributes: bool,
+    fenced_code_attributes: bool,
+    inline_code_attributes: bool,
+    link_attributes: bool,
     // non-bool below
     header_id_prefix: bool,
     front_matter_delimiter: bool,
@@ -99,6 +103,10 @@ impl FuzzExtensionOptions {
             phoenix_heex: self.phoenix_heex,
             insert: self.insert,
             header_id_prefix_in_href: self.header_id_prefix_in_href,
+            header_attributes: self.header_attributes,
+            fenced_code_attributes: self.fenced_code_attributes,
+            inline_code_attributes: self.inline_code_attributes,
+            link_attributes: self.link_attributes,
             // non-bool below
             header_id_prefix: if self.header_id_prefix {
                 Some("user-content-".into())

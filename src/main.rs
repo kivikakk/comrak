@@ -218,6 +218,10 @@ enum Extension {
     Insert,
     PhoenixHeex,
     BlockDirective,
+    HeaderAttributes,
+    FencedCodeAttributes,
+    InlineCodeAttributes,
+    LinkAttributes,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -309,6 +313,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         .insert(exts.contains(&Extension::Insert))
         .phoenix_heex(exts.contains(&Extension::PhoenixHeex))
         .block_directive(exts.contains(&Extension::BlockDirective));
+
+    #[cfg(feature = "attributes")]
+    let extension = extension
+        .header_attributes(exts.contains(&Extension::HeaderAttributes))
+        .fenced_code_attributes(exts.contains(&Extension::FencedCodeAttributes))
+        .inline_code_attributes(exts.contains(&Extension::InlineCodeAttributes))
+        .link_attributes(exts.contains(&Extension::LinkAttributes));
 
     #[cfg(feature = "shortcodes")]
     let extension = extension.shortcodes(cli.gemoji);

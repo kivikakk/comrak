@@ -627,6 +627,86 @@ pub struct Extension<'c> {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub block_directive: bool,
+
+    /// Parse attributes in setext and ATX headers.
+    /// ```rust
+    /// # use comrak::{parse_document, Arena, Options, nodes::NodeValue};
+    /// let mut options = Options::default();
+    /// options.extension.header_attributes = true;
+    /// let arena = Arena::new();
+    /// let input = "## Catgirl {author=\"City Girl\"}\n";
+    /// let root = parse_document(&arena, input, &options);
+    /// for node in root.descendants() {
+    ///   let ast = node.data();
+    ///   if let NodeValue::Heading(_) = ast.value {
+    ///     assert_eq!(ast.attrs.as_ref().unwrap().pairs,
+    ///                &[("author".to_string(), "City Girl".to_string())]);
+    ///   }
+    /// }
+    /// ```
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub header_attributes: bool,
+
+    /// Parse attributes in fenced code blocks' info strings.
+    /// ```rust
+    /// # use comrak::{parse_document, Arena, Options, nodes::NodeValue};
+    /// let mut options = Options::default();
+    /// options.extension.fenced_code_attributes = true;
+    /// let arena = Arena::new();
+    /// let input = "```german {#beispel}\nÄhm... egal.\n```\n";
+    /// let root = parse_document(&arena, input, &options);
+    /// for node in root.descendants() {
+    ///   let ast = node.data();
+    ///   if let NodeValue::CodeBlock(_) = ast.value {
+    ///     assert_eq!(ast.attrs.as_ref().unwrap().id,
+    ///                Some("beispel".to_string()));
+    ///   }
+    /// }
+    /// ```
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub fenced_code_attributes: bool,
+
+    /// Parse attributes immediately following inline code spans.
+    /// ```rust
+    /// # use comrak::{parse_document, Arena, Options, nodes::NodeValue};
+    /// let mut options = Options::default();
+    /// options.extension.inline_code_attributes = true;
+    /// let arena = Arena::new();
+    /// let input = "More inline spans should be `syntax-highlighted`{.common-lisp}.";
+    /// let root = parse_document(&arena, input, &options);
+    /// for node in root.descendants() {
+    ///   let ast = node.data();
+    ///   if let NodeValue::Code(_) = ast.value {
+    ///     assert_eq!(ast.attrs.as_ref().unwrap().classes,
+    ///                &["common-lisp".to_string()]);
+    ///   }
+    /// }
+    /// ```
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub inline_code_attributes: bool,
+
+    /// Parse attributes immediately following links and images.
+    /// ```rust
+    /// # use comrak::{parse_document, Arena, Options, nodes::NodeValue};
+    /// let mut options = Options::default();
+    /// options.extension.link_attributes = true;
+    /// let arena = Arena::new();
+    /// let input = "For instance:\n\n![A photo of an open-hearth furnace](zaporizhstal.jfif){data-date=2012-04-03}\n";
+    /// let root = parse_document(&arena, input, &options);
+    /// for node in root.descendants() {
+    ///   let ast = node.data();
+    ///   if let NodeValue::Image(_) = ast.value {
+    ///     assert_eq!(ast.attrs.as_ref().unwrap().pairs,
+    ///                &[("data-date".to_string(), "2012-04-03".to_string())]);
+    ///   }
+    /// }
+    /// ```
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub link_attributes: bool,
 }
 
 impl Extension<'_> {
