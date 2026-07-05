@@ -158,3 +158,8 @@ fn dont_wrap_table_cell() {
     options.render.width = 80;
     commonmark(input, input, Some(&options));
 }
+
+#[test]
+fn ol_marker_wonk() {
+    commonmark(">9)\r\u{b}", "> 9) \n\n&#11;\n", None);
+}
