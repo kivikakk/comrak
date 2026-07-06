@@ -191,6 +191,7 @@ fn ol_marker_wonk() {
 #[test_case("*&#32;Hello&#32;*")]
 #[test_case("*&#32;&#32;Hello&#32;&#32;*")]
 #[test_case("~~Hello&#32;~~")]
+#[test_case("_&#9;_")]
 fn entity_roundtrips_fooled_by_whitespace(markdown: &str) {
     let arena = Arena::new();
     let mut options = Options::default();

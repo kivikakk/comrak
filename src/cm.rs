@@ -797,6 +797,15 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
             if let Some(leading) = leading {
                 write!(self, "&#{};", leading as u32)?;
+
+                if leading.len_utf8() == literal.len() {
+                    // Deleterious case: the emphasis contains a text node which
+                    // is a single whitespace character. Then,leading and trailing
+                    // are actually the same (only) character, and the string slice
+                    // below will fail.
+                    // We can just stop!
+                    return Ok(());
+                }
             }
 
             self.output(
