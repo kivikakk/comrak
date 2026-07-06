@@ -221,7 +221,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             b'`' => Some(self.handle_backticks(&ast.line_offsets)),
             b'=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             b'+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
-            b'\\' => Some(self.handle_backslash()),
+            b'\\' => Some(self.handle_backslash(&ast.line_offsets)),
             b'&' => Some(self.handle_entity()),
             b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
             #[cfg(feature = "phoenix_heex")]
@@ -458,9 +458,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         node
     }
 
-    fn handle_backslash(&mut self) -> Node<'a> {
+    fn handle_backslash(&mut self, parent_line_offsets: &[usize]) -> Node<'a> {
         let startpos = self.scanner.pos;
         self.scanner.pos += 1;
+
+        if let Some(math) = self.handle_latex_math(startpos, parent_line_offsets) {
+            return math;
+        }
 
         if self.peek_byte().is_some_and(ispunct) {
             self.scanner.pos += 1;
@@ -495,6 +499,43 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             )
         }
+    }
+
+    fn handle_latex_math(
+        &mut self,
+        startpos: usize,
+        parent_line_offsets: &[usize],
+    ) -> Option<Node<'a>> {
+        if !self.options.extension.math_latex {
+            return None;
+        }
+
+        let (closing_delimiter, display_math) = match self.peek_byte()? {
+            b'(' => (b')', false),
+            b'[' => (b']', true),
+            _ => return None,
+        };
+        let content_start = self.scanner.pos + 1;
+        let endpos = self.scan_to_closing_latex_math(content_start, closing_delimiter)?;
+
+        if endpos == content_start {
+            return None;
+        }
+
+        let math = NodeMath {
+            dollar_math: true,
+            display_math,
+            literal: self.input[content_start..endpos].to_string(),
+        };
+        self.scanner.pos = endpos + 2;
+        let node = self.make_inline(NodeValue::Math(math), startpos, self.scanner.pos - 1);
+        self.adjust_node_newlines(
+            node,
+            self.scanner.pos - startpos - 2,
+            2,
+            parent_line_offsets,
+        );
+        Some(node)
     }
 
     fn handle_entity(&mut self) -> Node<'a> {
@@ -2149,6 +2190,20 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 return Some(self.scanner.pos);
             }
         }
+    }
+
+    fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
+        let mut pos = startpos;
+        let bytes = self.input.as_bytes();
+
+        while pos + 1 < bytes.len() {
+            if bytes[pos] == b'\\' && bytes[pos + 1] == closing_delimiter {
+                return Some(pos);
+            }
+            pos += 1;
+        }
+
+        None
     }
 
     fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {

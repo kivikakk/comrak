@@ -120,9 +120,9 @@ Options:
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
-          math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
-          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
-          phoenix-heex, block-directive]
+          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe,
+          underline, subscript, spoiler, greentext, alerts, cjk-friendly-emphasis, subtext,
+          highlight, insert, phoenix-heex, block-directive]
 
   -t, --to <FORMAT>
           Specify output format

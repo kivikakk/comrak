@@ -1075,16 +1075,17 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_math(&mut self, math: &NodeMath, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
-            let start_fence = if math.dollar_math {
-                if math.display_math { "$$" } else { "$" }
-            } else {
-                "$`"
-            };
-
-            let end_fence = if start_fence == "$`" {
-                "`$"
-            } else {
-                start_fence
+            let (start_fence, end_fence) = match (
+                math.dollar_math,
+                math.display_math,
+                self.options.extension.math_latex,
+                self.options.extension.math_dollars,
+            ) {
+                (false, _, _, _) => ("$`", "`$"),
+                (true, true, true, false) => ("\\[", "\\]"),
+                (true, false, true, false) => ("\\(", "\\)"),
+                (true, true, _, _) => ("$$", "$$"),
+                (true, false, _, _) => ("$", "$"),
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
