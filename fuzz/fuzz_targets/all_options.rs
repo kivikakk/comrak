@@ -63,6 +63,7 @@ struct FuzzExtensionOptions {
     fenced_code_attributes: bool,
     inline_code_attributes: bool,
     link_attributes: bool,
+    math_latex: bool,
     // non-bool below
     header_id_prefix: bool,
     front_matter_delimiter: bool,
@@ -107,6 +108,7 @@ impl FuzzExtensionOptions {
             fenced_code_attributes: self.fenced_code_attributes,
             inline_code_attributes: self.inline_code_attributes,
             link_attributes: self.link_attributes,
+            math_latex: self.math_latex,
             // non-bool below
             header_id_prefix: if self.header_id_prefix {
                 Some("user-content-".into())
