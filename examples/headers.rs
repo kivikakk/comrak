@@ -1,6 +1,6 @@
 // Extract the document title by srching for a level-one header at the root level.
 
-use comrak::{Arena, Options, html::collect_text, nodes::NodeValue, parse_document};
+use comrak::{Arena, Options, nodes::NodeValue, parse_document};
 
 fn main() {
     println!("{:?}", get_document_title("# Hello\n"));
@@ -22,7 +22,7 @@ fn get_document_title(document: &str) -> String {
             continue;
         }
 
-        return collect_text(node);
+        return node.collect_text();
     }
 
     "Untitled Document".to_string()
