@@ -1170,6 +1170,34 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         Ok(())
     }
 
+    /// Recurses through a node and all of its children in depth-first
+    /// (document) order, returning the concatenated literal contents of text,
+    /// code and math blocks. Line breaks and soft breaks are represented as a
+    /// single whitespace character.
+    pub fn collect_text(&'a self) -> String {
+        let mut text = String::with_capacity(20);
+        self.collect_text_append(&mut text);
+        text
+    }
+
+    /// Recurses through a node and all of its children in depth-first
+    /// (document) order, appending the literal contents of text, code and math
+    /// blocks to an output buffer. Line breaks and soft breaks are represented
+    /// as a single whitespace character.
+    pub fn collect_text_append(&'a self, output: &mut String) {
+        match self.data().value {
+            NodeValue::Text(ref literal) => output.push_str(literal),
+            NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
+            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
+            NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
+            _ => {
+                for n in self.children() {
+                    n.collect_text_append(output);
+                }
+            }
+        }
+    }
+
     pub(crate) fn last_child_is_open(&self) -> bool {
         self.last_child().is_some_and(|n| n.data().open)
     }
