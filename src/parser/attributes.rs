@@ -67,7 +67,9 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                     // Per above, classes are also literally anything, *except* ASCII whitespace.
                     //
                     // [literally anything]: https://html.spec.whatwg.org/multipage/dom.html#the-id-attribute
-                    'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | ':' | '.' => {
+                    //
+                    // The below range of characters selected is arbitrary. Add to it if you like.
+                    'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | ':' | '.' | '%' => {
                         value.push(c);
                         break;
                     }
@@ -272,17 +274,17 @@ mod tests {
         );
 
         assert_eq!(
-            parse("{.oken #yip m=26 .sure x=3 #yap} oh!"),
+            parse("{.oken #yip m=26 .sure x=3% #yap} oh!"),
             Some((
                 Attributes {
                     id: Some("yap".to_string()),
                     classes: vec!["oken".to_string(), "sure".to_string()],
                     pairs: vec![
                         ("m".to_string(), "26".to_string()),
-                        ("x".to_string(), "3".to_string())
+                        ("x".to_string(), "3%".to_string())
                     ]
                 },
-                32
+                33
             ))
         );
 
