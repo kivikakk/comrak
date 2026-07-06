@@ -2,6 +2,14 @@ use std::mem;
 
 use crate::nodes::Attributes;
 
+#[derive(Default)]
+enum Kind {
+    #[default]
+    Id,
+    Class,
+    Pair(String),
+}
+
 pub fn parse(input: &str) -> Option<(Attributes, usize)> {
     let mut ci = input.char_indices();
     if ci.next()?.1 != '{' {
@@ -13,14 +21,6 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
         Value(Kind, String, Quote),
         Key(String),
         PostQuote,
-    }
-
-    #[derive(Default)]
-    enum Kind {
-        #[default]
-        Id,
-        Class,
-        Pair(String),
     }
 
     enum Quote {
@@ -77,11 +77,7 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         if value.is_empty() {
                             return None;
                         }
-                        match kind {
-                            Kind::Id => attrs.id = Some(mem::take(value)),
-                            Kind::Class => attrs.classes.push(mem::take(value)),
-                            Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
-                        }
+                        parse_attribute_value(kind, value, &mut attrs);
                         state = State::Betwixt;
                         // handle in loop
                     }
@@ -89,12 +85,7 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                 },
                 State::Value(ref mut kind, ref mut value, Quote::Quoted) => match c {
                     '"' => {
-                        // XXX: duplicates above, wish it didn't.
-                        match kind {
-                            Kind::Id => attrs.id = Some(mem::take(value)),
-                            Kind::Class => attrs.classes.push(mem::take(value)),
-                            Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
-                        }
+                        parse_attribute_value(kind, value, &mut attrs);
                         state = State::PostQuote;
                         break;
                     }
@@ -140,6 +131,14 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
             }
         }
     }
+}
+
+fn parse_attribute_value(kind: &mut Kind, value: &mut String, attrs: &mut Attributes) {
+    match kind {
+        Kind::Id => attrs.id = Some(mem::take(value)),
+        Kind::Class => attrs.classes.push(mem::take(value)),
+        Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
+    };
 }
 
 /// Use this only in contexts where there can *not* be any following text
