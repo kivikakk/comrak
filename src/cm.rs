@@ -465,7 +465,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::HeexBlock(ref nhb) => self.format_heex_block(nhb, entering)?,
             NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
-            NodeValue::Text(ref literal) => self.format_text(literal, entering, !text_in_cell)?,
+            NodeValue::Text(ref literal) => {
+                self.format_text(literal, node, entering, !text_in_cell)?
+            }
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
             NodeValue::SoftBreak => self.format_soft_break(entering)?,
             NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
@@ -755,9 +757,67 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
     }
 
-    fn format_text(&mut self, literal: &str, entering: bool, wrap: bool) -> fmt::Result {
+    fn format_text(
+        &mut self,
+        literal: &str,
+        node: Node<'a>,
+        entering: bool,
+        wrap: bool,
+    ) -> fmt::Result {
         if entering {
-            self.output(literal, wrap, Escaping::Normal)?;
+            // Entity encode a leading or trailing whitespace character if this
+            // is the first or last child of an emphasis node respectively,
+            // otherwise flankingness rules will cause the emph to not be
+            // parsed! (Note that both is possible.)
+            let (leading, trailing) = if node
+                .parent()
+                .is_some_and(|n| is_emphasis_delimiter_node(&n.data().value))
+            {
+                (
+                    if node.previous_sibling().is_none() {
+                        literal
+                            .chars()
+                            .next()
+                            .and_then(|c| if c.is_whitespace() { Some(c) } else { None })
+                    } else {
+                        None
+                    },
+                    if node.next_sibling().is_none() {
+                        literal
+                            .chars()
+                            .next_back()
+                            .and_then(|c| if c.is_whitespace() { Some(c) } else { None })
+                    } else {
+                        None
+                    },
+                )
+            } else {
+                (None, None)
+            };
+
+            if let Some(leading) = leading {
+                write!(self, "&#{};", leading as u32)?;
+
+                if leading.len_utf8() == literal.len() {
+                    // Deleterious case: the emphasis contains a text node which
+                    // is a single whitespace character. Then,leading and trailing
+                    // are actually the same (only) character, and the string slice
+                    // below will fail.
+                    // We can just stop!
+                    return Ok(());
+                }
+            }
+
+            self.output(
+                &literal[leading.map_or(0, char::len_utf8)
+                    ..literal.len() - trailing.map_or(0, char::len_utf8)],
+                wrap,
+                Escaping::Normal,
+            )?;
+
+            if let Some(trailing) = trailing {
+                write!(self, "&#{};", trailing as u32)?;
+            }
         }
         Ok(())
     }
@@ -1316,4 +1376,19 @@ pub fn escape_link_destination(url: &str) -> String {
     result.push('>');
 
     result
+}
+
+#[inline]
+fn is_emphasis_delimiter_node(value: &NodeValue) -> bool {
+    matches!(
+        value,
+        NodeValue::Emph
+            | NodeValue::Strong
+            | NodeValue::Strikethrough
+            | NodeValue::Highlight
+            | NodeValue::Superscript
+            | NodeValue::Subscript
+            | NodeValue::SpoileredText
+            | NodeValue::Underline
+    )
 }

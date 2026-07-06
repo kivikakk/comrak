@@ -1,7 +1,9 @@
-use self::nodes::{Ast, LineColumn, ListType, NodeList};
+use ntest::test_case;
+use pretty_assertions::assert_eq;
+
+use crate::nodes::{Ast, LineColumn, ListType, NodeList};
 
 use super::*;
-use ntest::test_case;
 
 #[test]
 fn commonmark_removes_redundant_strong() {
@@ -64,7 +66,7 @@ fn commonmark_math(markdown: &str, cm: &str) {
     options.extension.math_dollars = true;
     options.extension.math_code = true;
 
-    commonmark(markdown, cm, None);
+    commonmark(markdown, cm, Some(&options));
 }
 
 #[test_case("\\(x^2\\) and \\[y^2\\]", "\\(x^2\\) and \\[y^2\\]\n")]
@@ -180,4 +182,31 @@ fn dont_wrap_table_cell() {
 #[test]
 fn ol_marker_wonk() {
     commonmark(">9)\r\u{b}", "> 9) \n\n&#11;\n", None);
+}
+
+#[test_case("**Hello&#32;**")]
+#[test_case("**Hello &#32;**")]
+#[test_case("*&#32;Hello*")]
+#[test_case("*&#32; Hello*")]
+#[test_case("*&#32;Hello&#32;*")]
+#[test_case("*&#32;&#32;Hello&#32;&#32;*")]
+#[test_case("~~Hello&#32;~~")]
+#[test_case("_&#9;_")]
+fn entity_roundtrips_fooled_by_whitespace(markdown: &str) {
+    let arena = Arena::new();
+    let mut options = Options::default();
+    if markdown.contains("~") {
+        options.extension.strikethrough = true;
+    }
+    let root = parse_document(&arena, markdown, &options);
+    let mut original_html = String::new();
+    html::format_document(root, &options, &mut original_html).unwrap();
+
+    let mut roundtripped = String::new();
+    cm::format_document(root, &options, &mut roundtripped).unwrap();
+    let roundtripped_root = parse_document(&arena, &roundtripped, &options);
+    let mut roundtripped_html = String::new();
+    html::format_document(roundtripped_root, &options, &mut roundtripped_html).unwrap();
+
+    assert_eq!(original_html, roundtripped_html);
 }
