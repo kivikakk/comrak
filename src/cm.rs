@@ -8,7 +8,7 @@ use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_cha
 use crate::nodes::{
     ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective, NodeCodeBlock, NodeHeading,
     NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink,
-    TableAlignment,
+    TableAlignment, TableRowKind,
 };
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "phoenix_heex")]
@@ -446,7 +446,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             .next_sibling()
             .is_none_or(|next| next.data().value.block());
         let text_in_cell = node_matches!(node, NodeValue::Text(..))
-            && parent_node.is_some_and(|n| node_matches!(n, NodeValue::TableCell));
+            && parent_node.is_some_and(|n| node_matches!(n, NodeValue::TableCell(..)));
 
         match node.data().value {
             NodeValue::Document => (),
@@ -493,7 +493,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering)?,
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering)?,
-            NodeValue::TableCell => self.format_table_cell(node, entering)?,
+            NodeValue::TableCell(..) => self.format_table_cell(node, entering)?,
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)?
             }
@@ -1079,12 +1079,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             write!(self, " |")?;
 
             let row = &node.parent().unwrap().data().value;
-            let in_header = match *row {
-                NodeValue::TableRow(header) => header,
+            let kind = match *row {
+                NodeValue::TableRow(trk) => trk,
                 _ => panic!(),
             };
 
-            if in_header && node.next_sibling().is_none() {
+            if kind == TableRowKind::Header && node.next_sibling().is_none() {
                 let table = &node.parent().unwrap().parent().unwrap().data().value;
                 let alignments = match table {
                     NodeValue::Table(nt) => &nt.alignments,
@@ -1273,7 +1273,7 @@ fn is_autolink(node: Node<'_>, nl: &NodeLink) -> bool {
 
 fn table_escape(node: Node<'_>, c: char) -> bool {
     match node.data().value {
-        NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell => false,
+        NodeValue::Table(..) | NodeValue::TableRow(..) | NodeValue::TableCell(..) => false,
         _ => c == '|',
     }
 }
