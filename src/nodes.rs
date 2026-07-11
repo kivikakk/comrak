@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
-use crate::arena_tree;
+use crate::{arena_tree, options::AlertStyleType};
 #[cfg(feature = "phoenix_heex")]
 pub use crate::parser::phoenix_heex::{HeexNode, NodeHeexBlock};
 #[cfg(feature = "shortcodes")]
@@ -587,13 +587,18 @@ impl AlertType {
     }
 
     /// Returns the CSS class to use for an alert type
-    pub fn css_class(&self) -> &'static str {
-        match *self {
-            AlertType::Note => "markdown-alert-note",
-            AlertType::Tip => "markdown-alert-tip",
-            AlertType::Important => "markdown-alert-important",
-            AlertType::Warning => "markdown-alert-warning",
-            AlertType::Caution => "markdown-alert-caution",
+    pub fn css_class(&self, style: AlertStyleType) -> &'static str {
+        match (*self, style) {
+            (AlertType::Note, AlertStyleType::Specific) => "markdown-alert-note",
+            (AlertType::Note, AlertStyleType::Semantic) => "note",
+            (AlertType::Tip, AlertStyleType::Specific) => "markdown-alert-tip",
+            (AlertType::Tip, AlertStyleType::Semantic) => "tip",
+            (AlertType::Important, AlertStyleType::Specific) => "markdown-alert-important",
+            (AlertType::Important, AlertStyleType::Semantic) => "important",
+            (AlertType::Warning, AlertStyleType::Specific) => "markdown-alert-warning",
+            (AlertType::Warning, AlertStyleType::Semantic) => "warning",
+            (AlertType::Caution, AlertStyleType::Specific) => "markdown-alert-caution",
+            (AlertType::Caution, AlertStyleType::Semantic) => "caution",
         }
     }
 }

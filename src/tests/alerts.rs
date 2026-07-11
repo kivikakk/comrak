@@ -29,6 +29,20 @@ fn multiline_alerts() {
 }
 
 #[test]
+fn semantic_alerts() {
+    html_opts!(
+        [extension.alerts = true, render.alert_style = options::AlertStyleType::Semantic],
+        concat!("> [!note]\n", "> Pay attention\n",),
+        concat!(
+            "<aside class=\"admonition note\">\n",
+            "<p class=\"admonition-title\">Note</p>\n",
+            "<p>Pay attention</p>\n",
+            "</aside>\n",
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     assert_ast_match!(
         [extension.alerts],
