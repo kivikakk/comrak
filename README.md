@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.53"
+comrak = "0.54"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.85</span>+.
@@ -120,9 +120,10 @@ Options:
           
           [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
-          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe,
-          underline, subscript, spoiler, greentext, alerts, cjk-friendly-emphasis, subtext,
-          highlight, insert, phoenix-heex, block-directive]
+          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline,
+          subscript, spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
+          phoenix-heex, block-directive, header-attributes, fenced-code-attributes,
+          inline-code-attributes, link-attributes]
 
   -t, --to <FORMAT>
           Specify output format
@@ -159,6 +160,12 @@ Options:
           
           [default: dash]
           [possible values: dash, plus, star]
+
+      --alert-style <ALERT_STYLE>
+          Specify alert style (<div> vs <aside>) in HTML output
+          
+          [default: specific]
+          [possible values: specific, semantic]
 
       --sourcepos
           Include source position attributes in HTML and XML output
