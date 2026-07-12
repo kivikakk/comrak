@@ -1327,6 +1327,22 @@ pub struct Render {
     #[cfg_attr(feature = "bon", builder(default))]
     pub tasklist_classes: bool,
 
+    /// How to render alert blocks. Options are:
+    ///
+    /// * [`AlertStyleType::Specific`] to use `div`s with `markdown-` prefixed classes (default)
+    /// * [`AlertStyleType::Semantic`] to use `aside`s with an `admonition` class
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options, options::AlertStyleType};
+    /// let mut options = Options::default();
+    /// options.extension.alerts = true;
+    /// options.render.alert_style = AlertStyleType::Semantic;
+    /// assert_eq!(markdown_to_html("> [!note]\n> Something of note", &options),
+    ///            "<aside class=\"admonition note\">\n<p class=\"admonition-title\">Note</p>\n<p>Something of note</p>\n</aside>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub alert_style: AlertStyleType,
+
     /// Render ordered list with a minimum marker width.
     /// Having a width lower than 3 doesn't do anything.
     ///
@@ -1386,7 +1402,7 @@ pub struct Render {
 
 #[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Options for bulleted list rendering in markdown. See `link_style` in [`Render`] for more details.
+/// Options for bulleted list rendering in markdown. See [`Render::list_style`] for more details.
 pub enum ListStyleType {
     /// The `-` character
     #[default]
@@ -1395,6 +1411,17 @@ pub enum ListStyleType {
     Plus = 43,
     /// The `*` character
     Star = 42,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// Options for alert rendering in markdown. See [`Render::alert_style`] for more details.
+pub enum AlertStyleType {
+    /// `div`s with `class="markdown-alert markdown-alert-<type>"`
+    #[default]
+    Specific,
+    /// `aside`s with `class="admonition <type>"`, matching `docutils`' output
+    Semantic,
 }
 
 #[derive(Default, Debug, Clone)]

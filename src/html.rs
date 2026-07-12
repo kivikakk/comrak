@@ -23,7 +23,7 @@ use crate::nodes::{
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
     NodeValue, NodeWikiLink, TableAlignment,
 };
-use crate::parser::options::{Options, Plugins};
+use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
 
 #[doc(hidden)]
@@ -1284,13 +1284,25 @@ fn render_alert<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        context.write_str("<div class=\"markdown-alert ")?;
-        context.write_str(alert.alert_type.css_class())?;
+        context.write_str(match context.options.render.alert_style {
+            AlertStyleType::Specific => "<div class=\"markdown-alert ",
+            AlertStyleType::Semantic => "<aside class=\"admonition ",
+        })?;
+        context.write_str(
+            alert
+                .alert_type
+                .css_class(context.options.render.alert_style),
+        )?;
         context.write_str("\"")?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
-        context.write_str("<p class=\"markdown-alert-title\">")?;
+        context.write_str("<p class=\"")?;
+        context.write_str(match context.options.render.alert_style {
+            AlertStyleType::Specific => "markdown-alert-title",
+            AlertStyleType::Semantic => "admonition-title",
+        })?;
+        context.write_str("\">")?;
         match alert.title {
             Some(ref title) => context.escape(title)?,
             None => {
@@ -1301,7 +1313,10 @@ fn render_alert<T>(
         context.lf()?;
     } else {
         context.cr()?;
-        context.write_str("</div>")?;
+        context.write_str(match context.options.render.alert_style {
+            AlertStyleType::Specific => "</div>",
+            AlertStyleType::Semantic => "</aside>",
+        })?;
         context.lf()?;
     }
 
