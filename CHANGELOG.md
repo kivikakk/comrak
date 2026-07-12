@@ -1,3 +1,27 @@
+# [v0.54.0] - 2026-07-12
+
+## What's Changed
+* Update headers for improved accessibility  by @aozerova in https://github.com/kivikakk/comrak/pull/808
+* cm: correct ol marker when exiting. by @kivikakk in https://github.com/kivikakk/comrak/pull/815
+* Attribute support by @kivikakk in https://github.com/kivikakk/comrak/pull/814
+* Add latex-style math delimiters #469 by @blib in https://github.com/kivikakk/comrak/pull/809
+* support unquoted % in attribute values. by @kivikakk in https://github.com/kivikakk/comrak/pull/816
+* Deduplicate attribute value parsing by @KevSlashNull in https://github.com/kivikakk/comrak/pull/817
+* Output whitespace entities at emphasis boundaries by @kivikakk in https://github.com/kivikakk/comrak/pull/750
+* move collect_text onto Node; include details in CONTRIBUTING. by @kivikakk in https://github.com/kivikakk/comrak/pull/818
+* Bump toml from 1.1.0+spec-1.1.0 to 1.1.2+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/819
+* feat: add option to emit semantic HTML for alerts by @flying-sheep in https://github.com/kivikakk/comrak/pull/822
+* remove deprecated items. by @kivikakk in https://github.com/kivikakk/comrak/pull/823
+
+## New Contributors
+* @blib made their first contribution in https://github.com/kivikakk/comrak/pull/809
+* @KevSlashNull made their first contribution in https://github.com/kivikakk/comrak/pull/817
+* @flying-sheep made their first contribution in https://github.com/kivikakk/comrak/pull/822
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.53.0...v0.54.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
