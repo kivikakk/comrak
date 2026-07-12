@@ -1,45 +1,58 @@
-# [v0.54.0] - 2026-07-12
-
-## What's Changed
-* Update headers for improved accessibility  by @aozerova in https://github.com/kivikakk/comrak/pull/808
-* cm: correct ol marker when exiting. by @kivikakk in https://github.com/kivikakk/comrak/pull/815
-* Attribute support by @kivikakk in https://github.com/kivikakk/comrak/pull/814
-* Add latex-style math delimiters #469 by @blib in https://github.com/kivikakk/comrak/pull/809
-* support unquoted % in attribute values. by @kivikakk in https://github.com/kivikakk/comrak/pull/816
-* Deduplicate attribute value parsing by @KevSlashNull in https://github.com/kivikakk/comrak/pull/817
-* Output whitespace entities at emphasis boundaries by @kivikakk in https://github.com/kivikakk/comrak/pull/750
-* move collect_text onto Node; include details in CONTRIBUTING. by @kivikakk in https://github.com/kivikakk/comrak/pull/818
-* Bump toml from 1.1.0+spec-1.1.0 to 1.1.2+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/819
-* feat: add option to emit semantic HTML for alerts by @flying-sheep in https://github.com/kivikakk/comrak/pull/822
-* remove deprecated items. by @kivikakk in https://github.com/kivikakk/comrak/pull/823
-
-## New Contributors
-* @blib made their first contribution in https://github.com/kivikakk/comrak/pull/809
-* @KevSlashNull made their first contribution in https://github.com/kivikakk/comrak/pull/817
-* @flying-sheep made their first contribution in https://github.com/kivikakk/comrak/pull/822
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.53.0...v0.54.0
-
----snip---
-
 <!--
 
 Categories to use in this document, and the order in which to give them:
 
-* Security
-* Reverts
-* Parser changes
-* Changed APIs
-* New APIs
-* Bug fixes
-* Stability
-* Performance
-* Dependency updates
-* Documentation
-* Build changes
-* Behind the scenes
+Security:
+Reverts:
+Parser changes:
+Changed APIs:
+New APIs:
+Bug fixes:
+Stability:
+Performance:
+Dependency updates:
+Documentation:
+Build changes:
+Behind the scenes:
 
 -->
+
+# [v0.54.0] - 2026-07-12
+
+Changed APIs:
+
+* Header/anchor renders been changed to improve accessibility (by @aozerova in https://github.com/kivikakk/comrak/pull/808)
+  * The anchor no longer has `aria-hidden`, and gets a proper `aria-label`. It also now appears at the _end_ of the header, not the front.
+* `html::collect_text` has been moved onto `Node` (by @kivikakk in https://github.com/kivikakk/comrak/pull/818)
+* All items marked as deprecated has been removed. You've been warned! (by @kivikakk in https://github.com/kivikakk/comrak/pull/823)
+
+New APIs:
+
+* LaTeX-style math delimiters are now supported with an option! (by @blib in https://github.com/kivikakk/comrak/pull/809
+* Attribute support has been added! (by @kivikakk in https://github.com/kivikakk/comrak/pull/814, https://github.com/kivikakk/comrak/pull/816)
+  * They aren't exposed in any formatter yet, so you'll need a custom formatter.
+  * Attribute parsing can be enabled on headers, fenced code blocks, inline code spans, and links and images.
+  * Aaaand the parsing code was cleaned up a bit :) (by @KevSlashNull in https://github.com/kivikakk/comrak/pull/817)
+* Semantic HTML for alerts/admonitions can now be used! (by @flying-sheep in https://github.com/kivikakk/comrak/pull/822)
+
+Bug fixes:
+
+* Fix a CommonMark roundtripping failure when whitespace entities are place at emphasis boundaries (by @kivikakk in https://github.com/kivikakk/comrak/pull/750)
+* Fix a crash in the CommonMark renderer with ordered lists nested in blockquotes (by @kivikakk in https://github.com/kivikakk/comrak/pull/815)
+
+Dependency updates:
+
+* Bump toml from `1.1.0+spec-1.1.0` to `1.1.2+spec-1.1.0` (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/819)
+
+
+## New Contributors
+
+* @blib made their first contribution in https://github.com/kivikakk/comrak/pull/809
+* @KevSlashNull made their first contribution in https://github.com/kivikakk/comrak/pull/817
+* @flying-sheep made their first contribution in https://github.com/kivikakk/comrak/pull/822
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.53.0...v0.54.0
+
 
 # [v0.53.0] - 2026-07-02
 
