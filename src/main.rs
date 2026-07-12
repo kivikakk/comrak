@@ -155,6 +155,10 @@ struct Cli {
     #[arg(long, value_enum, default_value_t = ListStyle::Dash)]
     list_style: ListStyle,
 
+    /// Specify alert style (<div> vs <aside>) in HTML output
+    #[arg(long, value_enum, default_value_t = AlertStyle::Specific)]
+    alert_style: AlertStyle,
+
     /// Include source position attributes in HTML and XML output
     #[arg(long)]
     sourcepos: bool,
@@ -238,6 +242,21 @@ impl From<ListStyle> for options::ListStyleType {
             ListStyle::Dash => Self::Dash,
             ListStyle::Plus => Self::Plus,
             ListStyle::Star => Self::Star,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum AlertStyle {
+    Specific,
+    Semantic,
+}
+
+impl From<AlertStyle> for options::AlertStyleType {
+    fn from(style: AlertStyle) -> Self {
+        match style {
+            AlertStyle::Specific => Self::Specific,
+            AlertStyle::Semantic => Self::Semantic,
         }
     }
 }
@@ -345,6 +364,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .r#unsafe(cli.r#unsafe)
         .escape(cli.escape)
         .list_style(cli.list_style.into())
+        .alert_style(cli.alert_style.into())
         .sourcepos(cli.sourcepos)
         .experimental_minimize_commonmark(cli.experimental_minimize_commonmark)
         .compact_html(cli.compact)
