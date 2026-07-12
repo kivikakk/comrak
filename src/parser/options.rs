@@ -1338,7 +1338,7 @@ pub struct Render {
     /// options.extension.alerts = true;
     /// options.render.alert_style = AlertStyleType::Semantic;
     /// assert_eq!(markdown_to_html("> [!note]\n> Something of note", &options),
-    ///            "<aside class=\"admonition note\">\n<p class=\"admonition-title\">Note</p>\n<p>Something of note</p>\n</div>\n");
+    ///            "<aside class=\"admonition note\">\n<p class=\"admonition-title\">Note</p>\n<p>Something of note</p>\n</aside>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub alert_style: AlertStyleType,
