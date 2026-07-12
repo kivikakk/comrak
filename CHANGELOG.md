@@ -28,7 +28,7 @@ Changed APIs:
 
 New APIs:
 
-* LaTeX-style math delimiters are now supported with an option! (by @blib in https://github.com/kivikakk/comrak/pull/809
+* LaTeX-style math delimiters are now supported with an option! (by @blib in https://github.com/kivikakk/comrak/pull/809)
 * Attribute support has been added! (by @kivikakk in https://github.com/kivikakk/comrak/pull/814, https://github.com/kivikakk/comrak/pull/816)
   * They aren't exposed in any formatter yet, so you'll need a custom formatter.
   * Attribute parsing can be enabled on headers, fenced code blocks, inline code spans, and links and images.
