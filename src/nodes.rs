@@ -4,11 +4,11 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
-use crate::{arena_tree, options::AlertStyleType};
 #[cfg(feature = "phoenix_heex")]
 pub use crate::parser::phoenix_heex::{HeexNode, NodeHeexBlock};
 #[cfg(feature = "shortcodes")]
 pub use crate::parser::shortcodes::NodeShortCode;
+use crate::{arena_tree, options::AlertStyleType};
 
 /// Shorthand for checking if a node's value matches the given expression.
 ///

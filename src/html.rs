@@ -23,7 +23,7 @@ use crate::nodes::{
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
     NodeValue, NodeWikiLink, TableAlignment,
 };
-use crate::parser::options::{Options, Plugins, AlertStyleType};
+use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
 
 #[doc(hidden)]
@@ -1288,7 +1288,11 @@ fn render_alert<T>(
             AlertStyleType::Specific => "<div class=\"markdown-alert ",
             AlertStyleType::Semantic => "<aside class=\"admonition ",
         })?;
-        context.write_str(alert.alert_type.css_class(context.options.render.alert_style))?;
+        context.write_str(
+            alert
+                .alert_type
+                .css_class(context.options.render.alert_style),
+        )?;
         context.write_str("\"")?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;

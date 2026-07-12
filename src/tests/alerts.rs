@@ -31,7 +31,10 @@ fn multiline_alerts() {
 #[test]
 fn semantic_alerts() {
     html_opts!(
-        [extension.alerts = true, render.alert_style = options::AlertStyleType::Semantic],
+        [
+            extension.alerts = true,
+            render.alert_style = options::AlertStyleType::Semantic
+        ],
         concat!("> [!note]\n", "> Pay attention\n",),
         concat!(
             "<aside class=\"admonition note\">\n",
