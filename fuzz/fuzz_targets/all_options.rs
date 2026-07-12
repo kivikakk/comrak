@@ -130,8 +130,6 @@ impl FuzzExtensionOptions {
             } else {
                 None
             },
-            #[allow(deprecated)]
-            header_ids: None,
         }
     }
 }
