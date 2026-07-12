@@ -608,7 +608,7 @@ fn render_heading<T>(
                 context.cr()?;
                 write!(context, "<h{}", nh.level)?;
 
-                if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
+                if let Some(prefix) = &context.options.extension.header_id_prefix {
                     let text_content = node.collect_text();
                     let id = context.anchorizer.anchorize(&text_content);
 
@@ -619,7 +619,7 @@ fn render_heading<T>(
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
             } else {
-                if let Some(prefix) = context.options.extension.effective_header_id_prefix() {
+                if let Some(prefix) = &context.options.extension.header_id_prefix {
                     let text_content = node.collect_text();
                     let id = context.current_anchorized_id.take().unwrap();
                     let href_prefix = if context.options.extension.header_id_prefix_in_href {

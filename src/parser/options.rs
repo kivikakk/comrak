@@ -134,11 +134,6 @@ pub struct Extension<'c> {
     /// ```
     pub header_id_prefix: Option<String>,
 
-    #[deprecated(since = "0.52.0", note = "renamed to `header_id_prefix`")]
-    /// Deprecated: use [`header_id_prefix`](#structfield.header_id_prefix) instead.
-    #[cfg_attr(feature = "bon", builder(skip))]
-    pub header_ids: Option<String>,
-
     /// When enabled alongside [`header_id_prefix`](#structfield.header_id_prefix), the header ID
     /// prefix is also applied to the `href` anchor in the generated link.
     ///
@@ -726,15 +721,6 @@ pub struct Extension<'c> {
 }
 
 impl Extension<'_> {
-    /// Returns the effective header ID prefix, preferring [`header_id_prefix`] over the
-    /// deprecated [`header_ids`].
-    ///
-    /// TODO: Remove this method when `header_ids` is removed.
-    #[allow(deprecated)]
-    pub(crate) fn effective_header_id_prefix(&self) -> Option<&String> {
-        self.header_id_prefix.as_ref().or(self.header_ids.as_ref())
-    }
-
     pub(crate) fn wikilinks(&self) -> Option<WikiLinksMode> {
         match (
             self.wikilinks_title_before_pipe,
