@@ -1295,7 +1295,7 @@ fn render_alert<T>(
         context.lf()?;
         context.write_str("<p class=\"")?;
         context.write_str(match context.options.render.alert_style {
-            AlertStyleType::Specific => "markdown-alert-title>",
+            AlertStyleType::Specific => "markdown-alert-title",
             AlertStyleType::Semantic => "admonition-title",
         })?;
         context.write_str("\">")?;
