@@ -21,7 +21,7 @@ use crate::nodes::NodeShortCode;
 use crate::nodes::{
     ListType, Node, NodeAlert, NodeBlockDirective, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
     NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
-    NodeValue, NodeWikiLink, TableAlignment,
+    NodeValue, NodeWikiLink, TableAlignment, TableRowKind,
 };
 use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
@@ -386,8 +386,8 @@ pub fn format_node_default<T>(
         NodeValue::Highlight => render_highlight(context, node, entering),
         NodeValue::Insert => render_insert(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
-        NodeValue::TableCell => render_table_cell(context, node, entering),
-        NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
+        NodeValue::TableCell(..) => render_table_cell(context, node, entering),
+        NodeValue::TableRow(trk) => render_table_row(context, node, entering, trk),
         NodeValue::TaskItem(ref nti) => render_task_item(context, node, entering, nti),
 
         // Extensions
@@ -1146,8 +1146,8 @@ fn render_table_cell<T>(
         panic!("rendered a table cell without a containing table row");
     };
     let row = &row_node.data().value;
-    let in_header = match *row {
-        NodeValue::TableRow(header) => header,
+    let kind = match *row {
+        NodeValue::TableRow(trk) => trk,
         _ => panic!("rendered a table cell contained by something other than a table row"),
     };
 
@@ -1164,7 +1164,7 @@ fn render_table_cell<T>(
 
     if entering {
         context.cr()?;
-        if in_header {
+        if kind == TableRowKind::Header {
             context.write_str("<th")?;
             render_sourcepos(context, node)?;
         } else {
@@ -1193,7 +1193,7 @@ fn render_table_cell<T>(
         }
 
         context.write_str(">")?;
-    } else if in_header {
+    } else if kind == TableRowKind::Header {
         context.write_str("</th>")?;
     } else {
         context.write_str("</td>")?;
@@ -1206,15 +1206,15 @@ fn render_table_row<T>(
     context: &mut Context<T>,
     node: Node<'_>,
     entering: bool,
-    thead: bool,
+    kind: TableRowKind,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.cr()?;
-        if thead {
+        if kind == TableRowKind::Header {
             context.write_str("<thead>")?;
             context.lf()?;
         } else if let Some(n) = node.previous_sibling() {
-            if let NodeValue::TableRow(true) = n.data().value {
+            if let NodeValue::TableRow(TableRowKind::Header) = n.data().value {
                 context.write_str("<tbody>")?;
                 context.lf()?;
             }
@@ -1225,7 +1225,7 @@ fn render_table_row<T>(
     } else {
         context.cr()?;
         context.write_str("</tr>")?;
-        if thead {
+        if kind == TableRowKind::Header {
             context.cr()?;
             context.write_str("</thead>")?;
         }
