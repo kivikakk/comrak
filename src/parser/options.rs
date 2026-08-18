@@ -384,12 +384,20 @@ pub struct Extension<'c> {
     ///
     /// [0]: Self::wikilinks_title_before_pipe
     ///
+    /// A wikilink prefixed with `!` is treated as an embed (`![[url]]`), as used
+    /// by Obsidian. Embeds set [`NodeWikiLink::embed`][1] and are rendered as
+    /// images in HTML output.
+    ///
+    /// [1]: crate::nodes::NodeWikiLink::embed
+    ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
     /// let mut options = Options::default();
     /// options.extension.wikilinks_title_after_pipe = true;
     /// assert_eq!(markdown_to_html("[[url|link label]]", &options),
     ///            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
+    /// assert_eq!(markdown_to_html("![[image.jpg]]", &options),
+    ///            "<p><img src=\"image.jpg\" data-wikilink=\"true\" alt=\"image.jpg\" /></p>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub wikilinks_title_after_pipe: bool,

@@ -291,7 +291,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && !self.within_brackets
                     && self.peek_byte() == Some(b'[')
                 {
-                    wikilink_inl = self.handle_wikilink();
+                    wikilink_inl = self.handle_wikilink(false);
                 }
 
                 if wikilink_inl.is_none() {
@@ -314,7 +314,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
             b'!' => {
                 self.scanner.pos += 1;
-                if self.peek_byte() == Some(b'[') && self.peek_byte_n(1) != Some(b'^') {
+                let after_bang = self.scanner.pos;
+
+                let mut wikilink_inl = None;
+
+                if self.options.extension.wikilinks().is_some()
+                    && !self.within_brackets
+                    && self.peek_byte() == Some(b'[')
+                    && self.peek_byte_n(1) == Some(b'[')
+                {
+                    self.scanner.pos += 1;
+                    wikilink_inl = self.handle_wikilink(true);
+                    if wikilink_inl.is_none() {
+                        self.scanner.pos = after_bang;
+                    }
+                }
+
+                if wikilink_inl.is_some() {
+                    wikilink_inl
+                } else if self.peek_byte() == Some(b'[') && self.peek_byte_n(1) != Some(b'^') {
                     self.scanner.pos += 1;
                     let inl = self.make_inline(
                         NodeValue::Text("![".into()),
@@ -931,7 +949,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // Handles wikilink syntax
     //   [[link text|url]]
     //   [[url|link text]]
-    fn handle_wikilink(&mut self) -> Option<Node<'a>> {
+    // When `embed` is true the wikilink was preceded by a `!` (`![[target]]`),
+    // and the opening bang is included in the resulting node's source position.
+    fn handle_wikilink(&mut self, embed: bool) -> Option<Node<'a>> {
         let startpos = self.scanner.pos;
         let component = self.wikilink_url_link_label()?;
         let url_clean = strings::clean_url(&component.url);
@@ -947,8 +967,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         let nl = NodeWikiLink {
             url: url_clean.into(),
+            embed,
         };
-        let inl = self.make_inline(NodeValue::WikiLink(nl), startpos - 1, self.scanner.pos - 1);
+        // For an embed the node starts one byte earlier, at the leading `!`.
+        let start_offset = if embed { 2 } else { 1 };
+        let inl = self.make_inline(
+            NodeValue::WikiLink(nl),
+            startpos - start_offset,
+            self.scanner.pos - 1,
+        );
 
         self.label_backslash_escapes(inl, &link_label, link_label_start_column);
 

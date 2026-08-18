@@ -248,3 +248,102 @@ fn sourcepos() {
         ])
     );
 }
+
+#[test]
+fn wikilinks_embed_renders_as_image() {
+    // An embed (`![[...]]`) becomes an image, with the label used as alt text.
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "an ![[fido.jpg]] here",
+        "<p>an <img src=\"fido.jpg\" data-wikilink=\"true\" alt=\"fido.jpg\" /> here</p>\n",
+    );
+
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "![[fido.jpg|a good dog]]",
+        "<p><img src=\"fido.jpg\" data-wikilink=\"true\" alt=\"a good dog\" /></p>\n",
+    );
+
+    html_opts!(
+        [extension.wikilinks_title_before_pipe],
+        "![[a good dog|fido.jpg]]",
+        "<p><img src=\"fido.jpg\" data-wikilink=\"true\" alt=\"a good dog\" /></p>\n",
+    );
+}
+
+#[test]
+fn wikilinks_without_bang_is_still_a_link() {
+    // Regression: an ordinary wikilink (no leading `!`) keeps rendering as a link.
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "[[fido.jpg]]",
+        "<p><a href=\"fido.jpg\" data-wikilink=\"true\">fido.jpg</a></p>\n",
+    );
+}
+
+#[test]
+fn wikilinks_embed_needs_the_extension() {
+    // Regression: without the extension, `![[...]]` is not treated as an embed.
+    html("![[fido.jpg]]", "<p>![[fido.jpg]]</p>\n");
+}
+
+#[test]
+fn wikilinks_embed_uses_image_url_rewriter() {
+    html_opts_i(
+        "![[bad.png]]",
+        "<p><img src=\"https://safe.example.com?url=bad.png\" data-wikilink=\"true\" alt=\"bad.png\" /></p>\n",
+        true,
+        |opts| {
+            opts.extension.wikilinks_title_after_pipe = true;
+            opts.extension.image_url_rewriter = Some(std::sync::Arc::new(|url: &str| {
+                format!("{}{}", "https://safe.example.com?url=", url)
+            }));
+        },
+    );
+}
+
+#[test]
+fn wikilinks_embed_sanitizes_the_src_attribute() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "![[javascript:alert(0)]]",
+        "<p><img src=\"\" data-wikilink=\"true\" alt=\"javascript:alert(0)\" /></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn wikilinks_embed_xml_has_embed_attribute() {
+    xml_opts(
+        "![[fido.jpg|a good dog]]\n",
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <paragraph>\n",
+            "    <wikilink destination=\"fido.jpg\" embed=\"true\">\n",
+            "      <text xml:space=\"preserve\">a good dog</text>\n",
+            "    </wikilink>\n",
+            "  </paragraph>\n",
+            "</document>\n",
+        ),
+        |opts| opts.extension.wikilinks_title_after_pipe = true,
+    );
+}
+
+#[test]
+fn wikilinks_embed_sourcepos_includes_bang() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "a ![[fido.jpg]] b\n",
+        (document (1:1-1:17) [
+            (paragraph (1:1-1:17) [
+                (text (1:1-1:2) "a ")
+                (wikilink (1:3-1:15) [
+                    (text (1:6-1:13) "fido.jpg")
+                ])
+                (text (1:16-1:17) " b")
+            ])
+        ])
+    );
+}

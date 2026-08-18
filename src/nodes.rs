@@ -352,6 +352,12 @@ pub struct NodeLink {
 pub struct NodeWikiLink {
     /// The URL for the link destination.
     pub url: String,
+
+    /// Whether the wikilink is an embed, i.e. it was written with a leading
+    /// `!` (`![[target]]`) as used by Obsidian to embed the target rather than
+    /// link to it. Consumers can inspect this flag to decide how the target
+    /// should be rendered (for example, an image, a transcluded note, and so on).
+    pub embed: bool,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.

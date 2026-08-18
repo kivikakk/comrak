@@ -309,6 +309,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     self.output.write_str(" destination=\"")?;
                     self.escape(&nl.url)?;
                     self.output.write_str("\"")?;
+                    if nl.embed {
+                        self.output.write_str(" embed=\"true\"")?;
+                    }
                 }
                 NodeValue::Underline => {}
                 NodeValue::Subscript => {}

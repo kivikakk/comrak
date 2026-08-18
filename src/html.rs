@@ -1605,6 +1605,31 @@ fn render_wiki_link<T>(
     entering: bool,
     nwl: &NodeWikiLink,
 ) -> Result<ChildRendering, fmt::Error> {
+    if nwl.embed {
+        // An embed (`![[target]]`) is rendered as an image, mirroring how
+        // Obsidian embeds image targets. The wikilink label becomes the alt
+        // text, so the children are rendered as plain text.
+        if entering {
+            context.write_str("<img")?;
+            render_sourcepos(context, node)?;
+            context.write_str(" src=\"")?;
+            let url = &nwl.url;
+            if context.options.render.r#unsafe || !dangerous_url(url) {
+                if let Some(rewriter) = &context.options.extension.image_url_rewriter {
+                    context.escape_href(&rewriter.to_html(url))?;
+                } else {
+                    context.escape_href(url)?;
+                }
+            }
+            context.write_str("\" data-wikilink=\"true\" alt=\"")?;
+            return Ok(ChildRendering::Plain);
+        } else {
+            context.write_str("\" />")?;
+        }
+
+        return Ok(ChildRendering::HTML);
+    }
+
     if entering {
         context.write_str("<a")?;
         render_sourcepos(context, node)?;

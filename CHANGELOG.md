@@ -17,6 +17,17 @@ Behind the scenes:
 
 -->
 
+# [Unreleased]
+
+Parser changes:
+
+* Wikilink embeds (`![[target]]`) are now recognised when a wikilinks extension is enabled, matching Obsidian's embed syntax.
+
+Changed APIs:
+
+* `NodeWikiLink` gained an `embed` field indicating whether the wikilink was written as an embed (`![[target]]`). Embeds are rendered as images in HTML output (respecting `image_url_rewriter`) and round-trip through the CommonMark and XML formatters.
+
+
 # [v0.54.0] - 2026-07-12
 
 Changed APIs:
