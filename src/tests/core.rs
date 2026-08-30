@@ -514,6 +514,22 @@ fn entities() {
 }
 
 #[test]
+fn entities_ecs() {
+    html_opts!(
+        [parse.escaped_char_spans],
+        concat!(
+            "This is &amp;, &copy;, &trade;, \\&trade;, &xyz;, &NotEqualTilde;.\n",
+            "\n",
+            "&#8734; &#x221e;\n"
+        ),
+        concat!(
+            "<p>This is &amp;, ©, ™, &amp;trade;, &amp;xyz;, \u{2242}\u{338}.</p>\n",
+            "<p>∞ ∞</p>\n"
+        ),
+    );
+}
+
+#[test]
 fn links() {
     html(
         concat!(
