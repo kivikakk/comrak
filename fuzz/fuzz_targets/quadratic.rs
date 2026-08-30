@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
+    Options, markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
 use libfuzzer_sys::fuzz_target;
@@ -207,6 +207,7 @@ impl FuzzExtensionOptions {
     fn to_options(&self) -> options::Extension<'_> {
         options::Extension {
             strikethrough: self.strikethrough,
+            #[allow(deprecated)]
             tagfilter: self.tagfilter,
             table: self.table,
             autolink: self.autolink,

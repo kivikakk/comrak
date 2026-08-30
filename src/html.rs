@@ -673,6 +673,7 @@ fn render_html_block<T>(
     if entering {
         context.cr()?;
         let literal = &nhb.literal;
+        #[allow(deprecated)]
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.r#unsafe {
@@ -723,6 +724,7 @@ fn render_html_inline<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     // No sourcepos.
     if entering {
+        #[allow(deprecated)]
         if context.options.render.escape {
             context.escape(literal)?;
         } else if !context.options.render.r#unsafe {
