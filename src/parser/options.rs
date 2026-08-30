@@ -57,6 +57,10 @@ pub struct Extension<'c> {
     ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
+    #[deprecated(
+        since = "0.55.0",
+        note = "poorly designed; will be removed in Comrak 0.56.0"
+    )]
     pub tagfilter: bool,
 
     /// Enables the [table extension](https://github.github.com/gfm/#tables-extension-)

@@ -78,6 +78,7 @@ impl FuzzExtensionOptions {
     ) -> options::Extension<'c> {
         options::Extension {
             strikethrough: self.strikethrough,
+            #[allow(deprecated)]
             tagfilter: self.tagfilter,
             table: self.table,
             autolink: self.autolink,

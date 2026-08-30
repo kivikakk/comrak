@@ -372,6 +372,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         render,
     };
 
+    if exts.contains(&Extension::Tagfilter) {
+        eprintln!(
+            "comrak: tagfilter extension deprecated (poorly designed; will be removed in Comrak 0.56.0)"
+        );
+    } else if cli.gfm {
+        eprintln!(
+            "comrak: tagfilter extension (implied by --gfm) deprecated (poorly designed; will be removed in Comrak 0.56.0)"
+        );
+    }
+
     #[cfg(feature = "syntect")]
     let syntax_highlighter: Option<&dyn SyntaxHighlighterAdapter>;
     #[cfg(feature = "syntect")]
