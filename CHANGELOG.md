@@ -17,6 +17,26 @@ Behind the scenes:
 
 -->
 
+# [v0.55.0] - 2026-09-06
+
+Security:
+
+* Fixed two DoS issues, published as [GHSA-xg9p-p4jc-c46g](https://github.com/kivikakk/comrak/security/advisories/GHSA-xg9p-p4jc-c46g).
+  * Both are in the `autolinks` extension, which are part of the `gfm` option set and fairly widely used, and so you almost certainly want to upgrade if you process untrusted content.
+
+Stability:
+
+* The `tagfilter` extension has been marked deprecated, and will be removed in Comrak 0.56.0. (by @kivikakk in https://github.com/kivikakk/comrak/pull/830)
+  * It's not fit for any purpose; signed, the author.
+
+Dependency updates:
+
+* Bump emojis from 0.8.0 to 0.8.2 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/825, https://github.com/kivikakk/comrak/pull/827)
+* Bump clap from 4.5.60 to 4.6.1 (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/826)
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.54.0...v0.55.0
+
+
 # [v0.54.0] - 2026-07-12
 
 Changed APIs:
