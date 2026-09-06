@@ -1,3 +1,16 @@
+# [v0.55.0] - 2026-09-06
+
+## What's Changed
+* Bump emojis from 0.8.0 to 0.8.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/825
+* Bump clap from 4.5.60 to 4.6.1 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/826
+* Bump emojis from 0.8.1 to 0.8.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/827
+* tagfilter: deprecate. by @kivikakk in https://github.com/kivikakk/comrak/pull/830
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.54.0...v0.55.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
