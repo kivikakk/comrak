@@ -334,32 +334,34 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
     const LINK_END_UNICODE: [u8; 3] = [0xe2, 0x81, 0xa9];
 
     let bytes = data.as_bytes();
+    let mut parentheses = (0, 0);
+    let mut brackets = (0, 0);
+    let mut braces = (0, 0);
     for (i, &b) in bytes.iter().enumerate().take(link_end) {
         if b == b'<' {
             link_end = i;
             break;
         }
+
+        match b {
+            b'(' => parentheses.0 += 1,
+            b')' => parentheses.1 += 1,
+            b'[' => brackets.0 += 1,
+            b']' => brackets.1 += 1,
+            b'{' => braces.0 += 1,
+            b'}' => braces.1 += 1,
+            _ => (),
+        }
     }
 
     while link_end > 0 {
         let cclose = bytes[link_end - 1];
-
-        // Allow any number of matching parentheses (as recognised in copen/cclose)
-        // at the end of the URL.  If there is a greater number of closing
-        // parentheses than opening ones, we remove one character from the end of
-        // the link.
-        let mut copen = if cclose == b')' { Some(b'(') } else { None };
-
-        if relaxed_autolinks && copen.is_none() {
-            // allow balancing of `[]` and `{}` just like `()`
-            copen = if cclose == b']' {
-                Some(b'[')
-            } else if cclose == b'}' {
-                Some(b'{')
-            } else {
-                None
-            };
-        }
+        let counts = match cclose {
+            b')' => Some(parentheses),
+            b']' if relaxed_autolinks => Some(brackets),
+            b'}' if relaxed_autolinks => Some(braces),
+            _ => None,
+        };
 
         if LINK_END_ASSORTMENT[cclose as usize] {
             link_end -= 1;
@@ -375,21 +377,17 @@ fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> u
             } else {
                 link_end -= 1;
             }
-        } else if let Some(copen) = copen {
-            let mut opening = 0;
-            let mut closing = 0;
-            for &b in bytes.iter().take(link_end) {
-                if b == copen {
-                    opening += 1;
-                } else if b == cclose {
-                    closing += 1;
-                }
-            }
-
+        } else if let Some((opening, closing)) = counts {
             if closing <= opening {
                 break;
             }
 
+            match cclose {
+                b')' => parentheses.1 -= 1,
+                b']' => brackets.1 -= 1,
+                b'}' => braces.1 -= 1,
+                _ => unreachable!(),
+            }
             link_end -= 1;
         } else if cclose == LINK_END_UNICODE[2] {
             let slice = &bytes[link_end - LINK_END_UNICODE.len()..link_end];
