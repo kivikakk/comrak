@@ -419,6 +419,21 @@ fn autolink_consecutive_email() {
 }
 
 #[test]
+fn autolink_many_emails() {
+    std::thread::Builder::new()
+        .stack_size(512 * 1024)
+        .spawn(|| {
+            let arena = Arena::new();
+            let mut options = Options::default();
+            options.extension.autolink = true;
+            parse_document(&arena, &"a@b.co ".repeat(10_000), &options);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+#[test]
 fn autolink_consecutive_email_smart() {
     assert_ast_match!(
         [extension.autolink, parse.smart],

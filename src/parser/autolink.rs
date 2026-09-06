@@ -17,95 +17,116 @@ pub(crate) fn process_email_autolinks<'a>(
     sourcepos: &mut Sourcepos,
     spx: &mut Spx,
 ) {
-    let bytes = contents.as_bytes();
-    let len = contents.len();
-    let mut i = 0;
+    let Some((mut post, mut before_len, mut skip)) =
+        find_email_autolink(arena, contents, relaxed_autolinks)
+    else {
+        return;
+    };
 
-    while i < len {
-        let mut post_org = None;
-        let mut bracket_opening = 0;
+    let original = std::mem::take(contents);
+    let mut offset = 0;
+    let mut anchor = node;
+    let mut current_sourcepos = *sourcepos;
+    let mut first = true;
 
-        // cmark-gfm ignores links inside brackets, such as `[[http://example.com]`
-        while i < len {
-            if !relaxed_autolinks {
-                match bytes[i] {
-                    b'[' => {
-                        bracket_opening += 1;
-                    }
-                    b']' => {
-                        bracket_opening -= 1;
-                    }
-                    _ => (),
-                }
+    loop {
+        let initial_end_col = current_sourcepos.end.column;
+        current_sourcepos.end.column = spx.consume(before_len);
+        let nsp_end_col = spx.consume(skip);
 
-                if bracket_opening > 0 {
-                    i += 1;
-                    continue;
-                }
-            }
-
-            if bytes[i] == b'@' {
-                post_org = email_match(arena, contents, i, relaxed_autolinks);
-                if post_org.is_some() {
-                    break;
-                }
-            }
-            i += 1;
+        let before = &original[offset..offset + before_len];
+        if first {
+            *contents = before.to_string().into();
+            *sourcepos = current_sourcepos;
+            first = false;
+        } else {
+            let before = make_inline(
+                arena,
+                NodeValue::Text(before.to_string().into()),
+                current_sourcepos,
+            );
+            anchor.insert_after(before);
+            anchor = before;
         }
 
-        if let Some((post, reverse, skip)) = post_org {
-            i -= reverse;
-            node.insert_after(post);
+        let nsp: Sourcepos = (
+            current_sourcepos.end.line,
+            current_sourcepos.end.column + 1,
+            current_sourcepos.end.line,
+            nsp_end_col,
+        )
+            .into();
+        post.data_mut().sourcepos = nsp;
+        post.first_child().unwrap().data_mut().sourcepos = nsp;
+        anchor.insert_after(post);
+        anchor = post;
 
-            let remain = if i + skip < len {
-                let remain = &contents[i + skip..];
-                assert!(!remain.is_empty());
-                Some(remain.to_string())
-            } else {
-                None
-            };
-            let initial_end_col = sourcepos.end.column;
+        offset += before_len + skip;
+        if offset == original.len() {
+            return;
+        }
 
-            sourcepos.end.column = spx.consume(i);
+        let after_sourcepos: Sourcepos = (
+            current_sourcepos.end.line,
+            nsp.end.column + 1,
+            current_sourcepos.end.line,
+            initial_end_col,
+        )
+            .into();
 
-            let nsp_end_col = spx.consume(skip);
-
-            contents.to_mut().truncate(i);
-
-            let nsp: Sourcepos = (
-                sourcepos.end.line,
-                sourcepos.end.column + 1,
-                sourcepos.end.line,
-                nsp_end_col,
-            )
-                .into();
-            post.data_mut().sourcepos = nsp;
-            // Inner text gets same sourcepos as link, since there's nothing but
-            // the text.
-            post.first_child().unwrap().data_mut().sourcepos = nsp;
-
-            if let Some(remain) = remain {
-                let mut asp: Sourcepos = (
-                    sourcepos.end.line,
-                    nsp.end.column + 1,
-                    sourcepos.end.line,
-                    initial_end_col,
-                )
-                    .into();
-                let after = make_inline(arena, NodeValue::Text(remain.into()), asp);
-                post.insert_after(after);
-
-                let after_ast = &mut after.data_mut();
-                let NodeValue::Text(ref mut text) = after_ast.value else {
-                    unreachable!();
-                };
-                process_email_autolinks(arena, after, text, relaxed_autolinks, &mut asp, spx);
-                after_ast.sourcepos = asp;
-            }
-
+        if let Some((next_post, next_before_len, next_skip)) =
+            find_email_autolink(arena, &original[offset..], relaxed_autolinks)
+        {
+            post = next_post;
+            before_len = next_before_len;
+            skip = next_skip;
+            current_sourcepos = after_sourcepos;
+        } else {
+            let after = make_inline(
+                arena,
+                NodeValue::Text(original[offset..].to_string().into()),
+                after_sourcepos,
+            );
+            anchor.insert_after(after);
             return;
         }
     }
+}
+
+fn find_email_autolink<'a>(
+    arena: &'a Arena<'a>,
+    contents: &str,
+    relaxed_autolinks: bool,
+) -> Option<(Node<'a>, usize, usize)> {
+    let bytes = contents.as_bytes();
+    let len = contents.len();
+    let mut i = 0;
+    let mut bracket_opening = 0;
+
+    while i < len {
+        if !relaxed_autolinks {
+            match bytes[i] {
+                b'[' => bracket_opening += 1,
+                b']' => bracket_opening -= 1,
+                _ => (),
+            }
+
+            if bracket_opening > 0 {
+                i += 1;
+                continue;
+            }
+        }
+
+        if bytes[i] == b'@' {
+            if let Some((post, reverse, skip)) = email_match(arena, contents, i, relaxed_autolinks)
+            {
+                return Some((post, i - reverse, skip));
+            }
+        }
+        i += 1;
+    }
+
+    None
 }
 
 fn email_match<'a>(
