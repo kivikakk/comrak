@@ -8,6 +8,19 @@ use std::fmt;
 
 use crate::nodes::Sourcepos;
 
+/// TODO
+pub trait CodefenceBlockAdapter {
+    /// TODO
+    fn render(
+        &self,
+        output: &mut dyn fmt::Write,
+        lang: &str,
+        meta: &str,
+        literal: &str,
+        sourcepos: Option<Sourcepos>,
+    ) -> std::fmt::Result;
+}
+
 /// Implement this adapter for custom rendering of codefence blocks.
 pub trait CodefenceRendererAdapter: Send + Sync {
     /// Render a codefence block.
