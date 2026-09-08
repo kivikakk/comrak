@@ -46,7 +46,6 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: SmallVec<[Bracket<'a>; 8]>,
-    within_brackets: bool,
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
@@ -89,7 +88,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             delimiter_arena,
             last_delimiter: None,
             brackets: SmallVec::new(),
-            within_brackets: false,
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             no_link_openers: true,
@@ -288,7 +286,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let mut wikilink_inl = None;
 
                 if self.options.extension.wikilinks().is_some()
-                    && !self.within_brackets
+                    && self.brackets.is_empty()
                     && self.peek_byte() == Some(b'[')
                 {
                     wikilink_inl = self.handle_wikilink();
@@ -301,17 +299,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         self.scanner.pos - 1,
                     );
                     self.push_bracket(false, inl);
-                    self.within_brackets = true;
 
                     Some(inl)
                 } else {
                     wikilink_inl
                 }
             }
-            b']' => {
-                self.within_brackets = false;
-                self.handle_close_bracket(&ast.line_offsets)
-            }
+            b']' => self.handle_close_bracket(&ast.line_offsets),
             b'!' => {
                 self.scanner.pos += 1;
                 if self.peek_byte() == Some(b'[') && self.peek_byte_n(1) != Some(b'^') {
@@ -322,7 +316,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         self.scanner.pos - 1,
                     );
                     self.push_bracket(true, inl);
-                    self.within_brackets = true;
                     Some(inl)
                 } else {
                     Some(self.make_inline(
@@ -343,7 +336,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.peek_byte_n(1) == Some(b'[')
                 {
                     self.handle_inline_footnote()
-                } else if self.options.extension.superscript && !self.within_brackets {
+                } else if self.options.extension.superscript && self.brackets.is_empty() {
                     Some(self.handle_delim(b'^'))
                 } else {
                     // Just regular text
@@ -695,7 +688,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         node: Node<'a>,
         f: fn(&mut Subject<'a, '_, '_, '_, '_, '_>) -> Option<(Node<'a>, usize, usize)>,
     ) -> Option<Node<'a>> {
-        if !self.options.parse.relaxed_autolinks && self.within_brackets {
+        // As in cmark-gfm, the autolink extension refuses to match anywhere
+        // inside an open bracket. Consult the bracket stack itself: a flag
+        // cleared on any `]` would allow an autolink to run through an
+        // enclosing link when an inner `]` appears first.
+        if !self.options.parse.relaxed_autolinks && !self.brackets.is_empty() {
             return None;
         }
         let startpos = self.scanner.pos;
@@ -2089,7 +2086,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn is_special_char(&self, value: u8) -> bool {
-        if value == b'^' && self.within_brackets {
+        if value == b'^' && !self.brackets.is_empty() {
             return false;
         }
 

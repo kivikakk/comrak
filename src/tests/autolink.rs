@@ -598,3 +598,88 @@ fn autolink_with_unicode_isolation() {
         "<p>\u{2068}<a href=\"https://www.example.com/\">https://www.example.com/</a>\u{2069}</p>\n",
     );
 }
+
+// As in cmark-gfm, `url_match` allows a domain without a dot; only `www_match`
+// asks for one. See <https://github.com/kivikakk/comrak/issues/832>.
+#[test]
+fn autolink_short_domain() {
+    html_opts!(
+        [extension.autolink],
+        "see http://localhost/x now",
+        "<p>see <a href=\"http://localhost/x\">http://localhost/x</a> now</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "see http://localhost:3000/admin now",
+        "<p>see <a href=\"http://localhost:3000/admin\">http://localhost:3000/admin</a> now</p>\n",
+    );
+
+    // The URL is matched as a whole instead of falling through to the email
+    // matcher partway through.
+    html_opts!(
+        [extension.autolink],
+        "see http://user:pass@www.example.com/ now",
+        "<p>see <a href=\"http://user:pass@www.example.com/\">http://user:pass@www.example.com/</a> now</p>\n",
+    );
+
+    // A bare scheme is still not autolinked.
+    html_opts!(
+        [extension.autolink],
+        "see http:// and http://. now",
+        "<p>see http:// and http://. now</p>\n",
+    );
+}
+
+// As in cmark-gfm's `sd_autolink_issafe`, the scheme is compared
+// case-insensitively. `www.` matching stays case-sensitive. See
+// <https://github.com/kivikakk/comrak/issues/832>.
+#[test]
+fn autolink_scheme_case_insensitive() {
+    html_opts!(
+        [extension.autolink],
+        "see HTTP://www.example.com/ now",
+        "<p>see <a href=\"HTTP://www.example.com/\">HTTP://www.example.com/</a> now</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "see Http://www.example.com/ now",
+        "<p>see <a href=\"Http://www.example.com/\">Http://www.example.com/</a> now</p>\n",
+    );
+
+    html_opts!(
+        [extension.autolink],
+        "Www.example.com",
+        "<p>Www.example.com</p>\n",
+    );
+}
+
+// cmark-gfm refuses an autolink anywhere inside an open bracket, so an inner
+// `]` no longer lets an autolink run through an enclosing link. See
+// <https://github.com/kivikakk/comrak/issues/832>.
+#[test]
+fn autolink_nested_brackets() {
+    html_opts!(
+        [extension.autolink],
+        "see [a [b] http://x.example.com/](y) now",
+        "<p>see <a href=\"y\">a [b] http://x.example.com/</a> now</p>\n",
+        no_roundtrip,
+    );
+
+    // The autolink no longer produces an `<a>` nested inside an `<a>`.
+    html_opts!(
+        [extension.autolink],
+        "see [a [b] http://x.example.com/ ](y) now",
+        "<p>see <a href=\"y\">a [b] http://x.example.com/ </a> now</p>\n",
+        no_roundtrip,
+    );
+
+    // An image in link text (e.g. a README badge) does not break the link.
+    html_opts!(
+        [extension.autolink],
+        "[![badge](b.svg) http://example.com/](http://example.com/)",
+        "<p><a href=\"http://example.com/\"><img src=\"b.svg\" alt=\"badge\" /> http://example.com/</a></p>\n",
+        no_roundtrip,
+    );
+}

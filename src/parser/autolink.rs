@@ -427,13 +427,29 @@ pub fn url_match<'a>(
 
     if !relaxed_autolinks {
         let scheme = &subject.input[i - rewind..i];
-        let cond = |s: &&str| size - i + rewind >= s.len() && &scheme == s;
+        // As in cmark-gfm's `sd_autolink_issafe`, the scheme is compared
+        // case-insensitively.
+        let cond = |s: &&str| size - i + rewind >= s.len() && scheme.eq_ignore_ascii_case(s);
         if !SCHEMES.iter().any(cond) {
+            return None;
+        }
+
+        // `sd_autolink_issafe` additionally requires the first character after
+        // the scheme to be a valid host character. Without this, a bare scheme
+        // such as `http://` would be autolinked now that `check_domain` allows
+        // a dot-less domain at this call site.
+        if !subject.input[i + 3..]
+            .chars()
+            .next()
+            .is_some_and(is_valid_hostchar)
+        {
             return None;
         }
     }
 
-    let mut link_end = check_domain(&subject.input[i + 3..], relaxed_autolinks)? + 3;
+    // Unlike `www_match`, a domain without a dot is allowed here; cmark-gfm
+    // calls `check_domain` with `allow_short = 1` from `url_match`.
+    let mut link_end = check_domain(&subject.input[i + 3..], true)? + 3;
 
     while link_end < size - i && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
