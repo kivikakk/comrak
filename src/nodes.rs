@@ -123,10 +123,10 @@ pub enum NodeValue {
 
     /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
     /// Contains table cells.
-    TableRow(bool),
+    TableRow(TableRowKind),
 
     /// **Block**.  A table cell.  Contains **inlines**.
-    TableCell,
+    TableCell(NodeTableCell),
 
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
@@ -297,6 +297,9 @@ impl TableAlignment {
 /// The metadata of a table
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct NodeTable {
+    /// XXX
+    pub kind: TableKind,
+
     /// The table alignments
     pub alignments: Vec<TableAlignment>,
 
@@ -308,6 +311,44 @@ pub struct NodeTable {
 
     /// Number of non-empty, non-autocompleted cells
     pub num_nonempty_cells: usize,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Copy)]
+/// XXX
+pub enum TableKind {
+    #[default]
+    /// XXX
+    Pipe,
+
+    /// XXX
+    Grid,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Copy)]
+/// XXX
+pub enum TableRowKind {
+    /// XXX
+    Header,
+
+    #[default]
+    /// XXX
+    Body,
+
+    /// XXX
+    Footer,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Copy)]
+/// XXX
+pub struct NodeTableCell {
+    /// XXX
+    pub colspan: usize,
+
+    /// XXX
+    pub rowspan: usize,
+
+    /// XXX
+    pub grid_column: usize,
 }
 
 /// A task list item's contents, and where it was found
@@ -677,7 +718,7 @@ impl NodeValue {
             | NodeValue::ThematicBreak
             | NodeValue::Table(..)
             | NodeValue::TableRow(..)
-            | NodeValue::TableCell
+            | NodeValue::TableCell(..)
             | NodeValue::TaskItem(..)
             | NodeValue::MultilineBlockQuote(_)
             | NodeValue::Alert(_)
@@ -695,7 +736,7 @@ impl NodeValue {
             *self,
             NodeValue::Paragraph
                 | NodeValue::Heading(..)
-                | NodeValue::TableCell
+                | NodeValue::TableCell(..)
                 | NodeValue::Subtext
         )
     }
@@ -743,7 +784,7 @@ impl NodeValue {
             NodeValue::ThematicBreak => "thematic_break",
             NodeValue::Table(..) => "table",
             NodeValue::TableRow(..) => "table_row",
-            NodeValue::TableCell => "table_cell",
+            NodeValue::TableCell(..) => "table_cell",
             NodeValue::Text(..) => "text",
             NodeValue::SoftBreak => "softbreak",
             NodeValue::LineBreak => "linebreak",
@@ -1078,8 +1119,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::EscapedTag(_)
             => !child.block(),
             NodeValue::Table(..) => matches!(*child, NodeValue::TableRow(..)),
-            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell),
-            NodeValue::TableCell => {
+            NodeValue::TableRow(..) => matches!(*child, NodeValue::TableCell(..)),
+            NodeValue::TableCell(..) => {
                 #[cfg(feature = "shortcodes")]
                 if matches!(*child, NodeValue::ShortCode(..)) {
                     return true;
@@ -1090,29 +1131,31 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     return true;
                 }
 
-                matches!(
-                    *child,
-                    NodeValue::Text(..)
-                    | NodeValue::Code(..)
-                    | NodeValue::Emph
-                    | NodeValue::Strong
-                    | NodeValue::Link(..)
-                    | NodeValue::Image(..)
-                    | NodeValue::Strikethrough
-                    | NodeValue::Highlight
-                    | NodeValue::Insert
-                    | NodeValue::HtmlInline(..)
-                    | NodeValue::Math(..)
-                    | NodeValue::WikiLink(..)
-                    | NodeValue::FootnoteReference(..)
-                    | NodeValue::Superscript
-                    | NodeValue::SpoileredText
-                    | NodeValue::Underline
-                    | NodeValue::Subscript
-                    | NodeValue::TaskItem(_)
-                    | NodeValue::Escaped
-                    | NodeValue::EscapedTag(_)
-                )
+                // XXX: only true for grid table cells? :thonk:
+                child.block() ||
+                    matches!(
+                        *child,
+                        NodeValue::Text(..)
+                        | NodeValue::Code(..)
+                        | NodeValue::Emph
+                        | NodeValue::Strong
+                        | NodeValue::Link(..)
+                        | NodeValue::Image(..)
+                        | NodeValue::Strikethrough
+                        | NodeValue::Highlight
+                        | NodeValue::Insert
+                        | NodeValue::HtmlInline(..)
+                        | NodeValue::Math(..)
+                        | NodeValue::WikiLink(..)
+                        | NodeValue::FootnoteReference(..)
+                        | NodeValue::Superscript
+                        | NodeValue::SpoileredText
+                        | NodeValue::Underline
+                        | NodeValue::Subscript
+                        | NodeValue::TaskItem(_)
+                        | NodeValue::Escaped
+                        | NodeValue::EscapedTag(_)
+                    )
             }
             NodeValue::MultilineBlockQuote(_) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
