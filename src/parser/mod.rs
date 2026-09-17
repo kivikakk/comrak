@@ -811,7 +811,7 @@ where
 
         let nbd = NodeBlockDirective {
             fence_length: matched,
-            fence_offset: first_nonspace - offset,
+            fence_offset: self.indent,
             info,
         };
 
@@ -870,7 +870,7 @@ where
             alert_type,
             multiline: fence_length >= 3,
             fence_length,
-            fence_offset: self.first_nonspace - self.offset,
+            fence_offset: self.indent,
             title: if title.is_empty() { None } else { Some(title) },
         };
 
@@ -904,7 +904,7 @@ where
         let offset = self.offset;
         let nmbc = NodeMultilineBlockQuote {
             fence_length: matched,
-            fence_offset: first_nonspace - offset,
+            fence_offset: self.indent,
         };
 
         *container = self.add_child(
@@ -1022,7 +1022,7 @@ where
             fenced: true,
             fence_char: line.as_bytes()[first_nonspace],
             fence_length: matched,
-            fence_offset: first_nonspace - offset,
+            fence_offset: self.indent,
             info: String::new(),
             literal: String::new(),
             closed: false,

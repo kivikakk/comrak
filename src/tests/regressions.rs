@@ -290,3 +290,37 @@ fn hex_entity_digit_limit() {
     // 7 decimal digits: valid (decimal 100 = 'd')
     html("&#0000100;\n", "<p>d</p>\n");
 }
+
+#[test]
+fn tab_indented_fence_in_list_keeps_columns() {
+    // The list marker consumes two of the tab's four columns, so the fence
+    // offset must be measured in columns. Counting bytes used to under-count
+    // it by one and leave the rest of the tab behind as a leading space,
+    // rendering `<pre><code> x`. commonmark.js (the dingus) renders `x`.
+    html(
+        "- a\n\n\t```\n\tx\n\t```\n",
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<p>a</p>\n",
+            "<pre><code>x\n",
+            "</code></pre>\n",
+            "</li>\n",
+            "</ul>\n"
+        ),
+    );
+}
+
+#[test]
+fn tab_indented_fence_in_block_quote_keeps_columns() {
+    // Same partial-tab case, with a block quote instead of a list marker.
+    html(
+        "> \t```\n> \tx\n> \t```\n",
+        concat!(
+            "<blockquote>\n",
+            "<pre><code>x\n",
+            "</code></pre>\n",
+            "</blockquote>\n"
+        ),
+    );
+}
