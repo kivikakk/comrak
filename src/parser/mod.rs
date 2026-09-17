@@ -19,6 +19,7 @@ use std::str;
 use crate::Arena;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
+use crate::matchers::cr_or_lf_matcher;
 use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
@@ -198,7 +199,7 @@ where
         self.total_size = end;
 
         let mut ix = 0;
-        let matcher = jetscii::bytes!(b'\r', b'\n');
+        let matcher = cr_or_lf_matcher();
 
         while ix < end {
             let mut eol = match matcher.find(&sb[ix..]) {

@@ -76,6 +76,7 @@ mod character_set;
 mod cm;
 mod ctype;
 mod entity;
+mod matchers;
 mod parser;
 mod scanners;
 mod strings;
