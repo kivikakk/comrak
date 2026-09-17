@@ -370,7 +370,7 @@ where
                 }
                 NodeValue::Heading(..)
                 | NodeValue::TableRow(..)
-                | NodeValue::TableCell
+                | NodeValue::TableCell(..)
                 | NodeValue::Subtext => {
                     break;
                 }
@@ -2614,7 +2614,7 @@ where
 
         let parent = node.parent().unwrap();
 
-        if node_matches!(parent, NodeValue::TableCell) {
+        if node_matches!(parent, NodeValue::TableCell(..)) {
             if !self.options.parse.tasklist_in_table {
                 return;
             }
