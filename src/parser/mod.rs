@@ -15,7 +15,8 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
 use std::mem;
 use std::str;
-
+use std::sync::OnceLock;
+use memchr_n::MemchrN;
 use crate::Arena;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
@@ -184,6 +185,8 @@ where
     }
 
     fn parse(mut self, mut s: &str) -> Node<'a> {
+        static MATCHER: OnceLock<MemchrN> = OnceLock::new();
+
         if let Some(delimiter) = &self.options.extension.front_matter_delimiter {
             if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
                 self.handle_front_matter(front_matter, delimiter);
@@ -198,7 +201,7 @@ where
         self.total_size = end;
 
         let mut ix = 0;
-        let matcher = jetscii::bytes!(b'\r', b'\n');
+        let matcher = MATCHER.get_or_init(|| MemchrN::new(b"\r\n"));
 
         while ix < end {
             let mut eol = match matcher.find(&sb[ix..]) {
