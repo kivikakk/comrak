@@ -8,10 +8,12 @@
 mod anchorizer;
 mod context;
 
+use memchr_n::MemchrN;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Write};
 use std::str;
+use std::sync::OnceLock;
 
 use crate::adapters::HeadingMeta;
 use crate::character_set::character_set;
@@ -1669,12 +1671,13 @@ pub fn dangerous_url(input: &str) -> bool {
 /// Note that this is appropriate and sufficient for free text, but not for
 /// URLs in attributes.  See escape_href.
 pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
+    static MATCHER: OnceLock<MemchrN> = OnceLock::new();
     let bytes = buffer.as_bytes();
-    let matcher = jetscii::bytes!(b'"', b'&', b'<', b'>', b'\0');
+    let matcher = MATCHER.get_or_init(|| MemchrN::new(b"\"&<>\0"));
 
-    let mut offset = 0;
-    while let Some(i) = matcher.find(&bytes[offset..]) {
-        let esc: &str = match bytes[offset + i] {
+    let mut last = 0;
+    for i in matcher.iter(bytes) {
+        let esc: &str = match bytes[i] {
             b'"' => "&quot;",
             b'&' => "&amp;",
             b'<' => "&lt;",
@@ -1682,11 +1685,11 @@ pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
             b'\0' => "\u{fffd}",
             _ => unreachable!(),
         };
-        output.write_str(&buffer[offset..offset + i])?;
+        output.write_str(&buffer[last..i])?;
         output.write_str(esc)?;
-        offset += i + 1;
+        last = i + 1;
     }
-    output.write_str(&buffer[offset..])?;
+    output.write_str(&buffer[last..])?;
     Ok(())
 }
 
@@ -1720,15 +1723,24 @@ pub fn escape(output: &mut dyn Write, buffer: &str) -> fmt::Result {
 /// `true`, any scheme is permitted for such an address.  Otherwise, only `http`
 /// or `https` are permitted.
 pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> fmt::Result {
+    static MATCHER: OnceLock<MemchrN> = OnceLock::new();
     const HREF_SAFE: [bool; 256] = character_set!(
         b"-_.+!*(),#@?=;:/,+$~",
         b"abcdefghijklmnopqrstuvwxyz",
         b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     );
 
+    let matcher = MATCHER.get_or_init(|| {
+        let mut bytes = Vec::new();
+        for byte in 0..=u8::MAX {
+            if !HREF_SAFE[byte as usize] {
+                bytes.push(byte);
+            }
+        }
+        MemchrN::new(&bytes)
+    });
     let bytes = buffer.as_bytes();
-    let size = buffer.len();
-    let mut i = 0;
+    let mut last = 0;
 
     let possible_ipv6_url_end = if relaxed_ipv6 {
         scanners::ipv6_relaxed_url_start(buffer)
@@ -1737,21 +1749,14 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
     };
     if let Some(ipv6_url_end) = possible_ipv6_url_end {
         output.write_str(&buffer[0..ipv6_url_end])?;
-        i = ipv6_url_end;
+        last = ipv6_url_end;
     }
 
-    while i < size {
-        let org = i;
-        while i < size && HREF_SAFE[bytes[i] as usize] {
-            i += 1;
-        }
-
-        if i > org {
-            output.write_str(&buffer[org..i])?;
-        }
-
-        if i >= size {
-            break;
+    let start = last;
+    for i in matcher.iter(&bytes[start..]) {
+        let mut i = start + i;
+        if i > last {
+            output.write_str(&buffer[last..i])?;
         }
 
         match bytes[i] {
@@ -1778,9 +1783,10 @@ pub fn escape_href(output: &mut dyn Write, buffer: &str, relaxed_ipv6: bool) -> 
             _ => write!(output, "%{:02X}", bytes[i])?,
         }
 
-        i += 1;
+        last = i + 1;
     }
 
+    output.write_str(&buffer[last..])?;
     Ok(())
 }
 
