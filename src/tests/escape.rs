@@ -1,6 +1,36 @@
 use crate::cm::{escape_inline, escape_link_destination};
 use crate::{Arena, Options, entity, format_commonmark, markdown_to_html, parse_document};
 
+#[test]
+fn href_escape_multiple_matches() {
+    for (input, expected) in [
+        ("", ""),
+        ("https://example.com/a?b=c", "https://example.com/a?b=c"),
+        (
+            "é<&\"'>\0尾",
+            "%C3%A9%3C&amp;%22&#x27;%3E%EF%BF%BD%E5%B0%BE",
+        ),
+        ("%20%aF%2%zz%", "%20%aF%252%25zz%25"),
+        (
+            "https://[::1]/é?q=[x]&a=%20",
+            "https://[::1]/%C3%A9?q=%5Bx%5D&amp;a=%20",
+        ),
+    ] {
+        let mut output = String::new();
+        crate::html::escape_href(&mut output, input, false).unwrap();
+        assert_eq!(output, expected, "input: {input:?}");
+    }
+
+    for (relaxed_ipv6, expected) in [
+        (false, "custom://%5B::1%5D/%C3%A9"),
+        (true, "custom://[::1]/%C3%A9"),
+    ] {
+        let mut output = String::new();
+        crate::html::escape_href(&mut output, "custom://[::1]/é", relaxed_ipv6).unwrap();
+        assert_eq!(output, expected);
+    }
+}
+
 /// Assert that the input text escapes to the expected result in inline context,
 /// and that the expected result renders to HTML which displays the input text.
 #[track_caller]

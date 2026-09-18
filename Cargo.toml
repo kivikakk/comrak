@@ -2,7 +2,7 @@
 name = "comrak"
 version = "0.55.0"
 authors = ["Asherah Connor <ashe@kivikakk.ee>", "Brett Walker <github@digitalmoksha.com>", "gjtorikian"]
-rust-version = "1.85"
+rust-version = "1.89"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
 homepage = "https://github.com/kivikakk/comrak"
@@ -47,7 +47,7 @@ arbitrary = { version = "1", optional = true, features = ["derive"] }
 bon = { version = "3", optional = true }
 caseless = "0.2"
 fmt2io = { version = "1.0.0", optional = true }
-jetscii = "0.5.3"
+memchr-n = "0.1.1"
 phf = "0.13"
 rustc-hash = "2"
 smallvec = "1.13"
