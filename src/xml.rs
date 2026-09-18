@@ -1,7 +1,6 @@
 use std::cmp;
 use std::fmt::{self, Write};
 
-use crate::character_set::character_set;
 use crate::node_matches;
 use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
@@ -51,27 +50,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
     }
 
     fn escape(&mut self, buffer: &str) -> fmt::Result {
-        let bytes = buffer.as_bytes();
-        const XML_UNSAFE: [bool; 256] = character_set!(b"&<>\"\0");
-
-        let mut offset = 0;
-        for (i, &byte) in bytes.iter().enumerate() {
-            if XML_UNSAFE[byte as usize] {
-                let esc: &str = match byte {
-                    b'"' => "&quot;",
-                    b'&' => "&amp;",
-                    b'<' => "&lt;",
-                    b'>' => "&gt;",
-                    b'\0' => "\u{fffd}",
-                    _ => unreachable!(),
-                };
-                self.output.write_str(&buffer[offset..i])?;
-                self.output.write_str(esc)?;
-                offset = i + 1;
-            }
-        }
-        self.output.write_str(&buffer[offset..])?;
-        Ok(())
+        crate::html::escape(self.output, buffer)
     }
 
     fn format(&mut self, node: Node<'_>, plain: bool) -> fmt::Result {
