@@ -511,18 +511,18 @@ fn render_code_block<T>(
 
         if lang.eq("math") {
             render_math_code_block(context, node, &ncb.literal)?;
-        } else if !lang.is_empty() {
-            if let Some(adapter) = context.plugins.render.codefence_renderers.get(lang) {
-                context.cr()?;
-                let sourcepos = if context.options.render.sourcepos {
-                    Some(node.data().sourcepos)
-                } else {
-                    None
-                };
+        } else if !lang.is_empty()
+            && let Some(adapter) = context.plugins.render.codefence_renderers.get(lang)
+        {
+            context.cr()?;
+            let sourcepos = if context.options.render.sourcepos {
+                Some(node.data().sourcepos)
+            } else {
+                None
+            };
 
-                adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
-                return Ok(ChildRendering::HTML);
-            }
+            adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
+            return Ok(ChildRendering::HTML);
         }
 
         if !lang.eq("math") {
@@ -916,13 +916,12 @@ fn render_paragraph<T>(
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         } else {
-            if let Some(parent) = node.parent() {
-                if let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value {
-                    if node.next_sibling().is_none() {
-                        context.write_str(" ")?;
-                        put_footnote_backref(context, nfd)?;
-                    }
-                }
+            if let Some(parent) = node.parent()
+                && let NodeValue::FootnoteDefinition(ref nfd) = parent.data().value
+                && node.next_sibling().is_none()
+            {
+                context.write_str(" ")?;
+                put_footnote_backref(context, nfd)?;
             }
             context.write_str("</p>")?;
             context.lf()?;
@@ -1212,11 +1211,11 @@ fn render_table_row<T>(
         if thead {
             context.write_str("<thead>")?;
             context.lf()?;
-        } else if let Some(n) = node.previous_sibling() {
-            if let NodeValue::TableRow(true) = n.data().value {
-                context.write_str("<tbody>")?;
-                context.lf()?;
-            }
+        } else if let Some(n) = node.previous_sibling()
+            && let NodeValue::TableRow(true) = n.data().value
+        {
+            context.write_str("<tbody>")?;
+            context.lf()?;
         }
         context.write_str("<tr")?;
         render_sourcepos(context, node)?;
