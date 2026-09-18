@@ -12,6 +12,7 @@ use smallvec::SmallVec;
 use crate::Arena;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
+use crate::matchers::{backslash_matcher, backtick_matcher, dollar_matcher};
 use crate::nodes::{
     Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
     NodeValue, NodeWikiLink, Sourcepos,
@@ -2100,14 +2101,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let matcher = backtick_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'`') {
-                self.scanner.pos += 1;
-            }
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 self.scanned_for_backticks = true;
                 return None;
-            }
+            };
+            self.scanner.pos += index;
             let numticks = self.take_while(b'`');
             if numticks <= MAXBACKTICKS {
                 self.backticks[numticks] = self.scanner.pos - numticks;
@@ -2128,14 +2129,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let matcher = dollar_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'$') {
-                self.scanner.pos += 1;
-            }
-
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 return None;
-            }
+            };
+            self.scanner.pos += index;
 
             let c = self.input.as_bytes()[self.scanner.pos - 1];
 
@@ -2166,14 +2166,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
         assert!(self.options.extension.math_code);
 
+        let matcher = dollar_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'$') {
-                self.scanner.pos += 1;
-            }
-
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 return None;
-            }
+            };
+            self.scanner.pos += index;
 
             let c = self.input.as_bytes()[self.scanner.pos - 1];
             self.scanner.pos += 1;
@@ -2184,14 +2183,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
-        let mut pos = startpos;
         let bytes = self.input.as_bytes();
+        let input = bytes.get(startpos..)?;
+        let matcher = backslash_matcher();
 
-        while pos + 1 < bytes.len() {
-            if bytes[pos] == b'\\' && bytes[pos + 1] == closing_delimiter {
+        for index in matcher.iter(input) {
+            let pos = startpos + index;
+            if bytes.get(pos + 1) == Some(&closing_delimiter) {
                 return Some(pos);
             }
-            pos += 1;
         }
 
         None
@@ -2708,5 +2708,81 @@ impl Scanner {
 
         self.pos = startpos;
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn closing_backticks_cache_skipped_runs() {
+        let arena = Arena::new();
+        let options = Options::default();
+        let mut refmap = RefMap::new();
+        let mut footnote_defs = FootnoteDefs::new();
+        let delimiter_arena = typed_arena::Arena::new();
+        let input = format!("`{} ``tail`", "語".repeat(32));
+        let double_backtick_pos = input.find("``").unwrap();
+        let mut subject = Subject::new(
+            &arena,
+            &options,
+            input,
+            1,
+            &mut refmap,
+            &mut footnote_defs,
+            &delimiter_arena,
+            0,
+        );
+        subject.scanner.pos = 1;
+
+        assert_eq!(
+            subject.scan_to_closing_backtick(1),
+            Some(subject.input.len())
+        );
+        assert_eq!(subject.backticks[2], double_backtick_pos);
+        assert!(!subject.scanned_for_backticks);
+    }
+
+    #[test]
+    fn closing_backticks_reuse_cached_runs_after_failed_searches() {
+        let arena = Arena::new();
+        let options = Options::default();
+        let mut refmap = RefMap::new();
+        let mut footnote_defs = FootnoteDefs::new();
+        let delimiter_arena = typed_arena::Arena::new();
+        let input = format!("`{} ``tail", "語".repeat(32));
+        let double_backtick_pos = input.find("``").unwrap();
+        let mut subject = Subject::new(
+            &arena,
+            &options,
+            input,
+            1,
+            &mut refmap,
+            &mut footnote_defs,
+            &delimiter_arena,
+            0,
+        );
+        subject.scanner.pos = 1;
+        assert_eq!(subject.scan_to_closing_backtick(1), None);
+        assert_eq!(subject.scanner.pos, subject.input.len());
+        assert_eq!(subject.backticks[2], double_backtick_pos);
+        assert!(subject.scanned_for_backticks);
+
+        subject.scanner.pos = double_backtick_pos;
+        assert_eq!(subject.scan_to_closing_backtick(2), None);
+        assert_eq!(subject.scanner.pos, double_backtick_pos);
+
+        subject.scanner.pos = 1;
+        assert_eq!(
+            subject.scan_to_closing_backtick(2),
+            Some(double_backtick_pos + 2)
+        );
+        assert_eq!(subject.scanner.pos, double_backtick_pos + 2);
+        assert!(subject.scanned_for_backticks);
+
+        subject.scanner.pos = 1;
+        assert_eq!(subject.scan_to_closing_backtick(MAXBACKTICKS + 1), None);
+        assert_eq!(subject.scanner.pos, 1);
     }
 }
