@@ -200,12 +200,10 @@ where
 
         let mut ix = 0;
         let matcher = cr_or_lf_matcher();
+        let mut matches = matcher.iter(sb);
 
         while ix < end {
-            let mut eol = match matcher.find(&sb[ix..]) {
-                Some(offset) => ix + offset,
-                None => end,
-            };
+            let mut eol = matches.next().unwrap_or(end);
             if eol < end {
                 if sb[eol] == b'\r' {
                     eol += 1;
@@ -220,6 +218,7 @@ where
             self.process_line(&s[ix..eol]);
 
             ix = eol;
+            matches.advance_to(ix);
         }
 
         self.finalize_document();
