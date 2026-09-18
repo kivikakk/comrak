@@ -4,6 +4,7 @@ use std::str;
 
 use crate::ctype::{ispunct, isspace, isspace_char};
 use crate::entity;
+use crate::matchers::cr_or_lf_matcher;
 use crate::parser::AutolinkType;
 #[cfg(feature = "phoenix_heex")]
 use crate::scanners;
@@ -422,23 +423,17 @@ pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
 
 pub fn count_newlines(input: &str) -> (usize, usize) {
     let bytes = input.as_bytes();
+    let matcher = cr_or_lf_matcher();
+    let mut matches = matcher.iter(bytes);
     let mut num_lines = 0;
     let mut last_line_start = 0;
-    let mut i = 0;
-    while i < input.len() {
-        match bytes[i] {
-            b'\r' if i + 1 < input.len() && bytes[i + 1] == b'\n' => {
-                i += 1;
-                num_lines += 1;
-                last_line_start = i + 1;
-            }
-            b'\r' | b'\n' => {
-                num_lines += 1;
-                last_line_start = i + 1;
-            }
-            _ => {}
+    while let Some(i) = matches.next() {
+        num_lines += 1;
+        last_line_start = i + 1;
+        if bytes[i] == b'\r' && bytes.get(i + 1) == Some(&b'\n') {
+            last_line_start += 1;
+            matches.advance_to(last_line_start);
         }
-        i += 1;
     }
     let last_line_len = input.len() - last_line_start;
     (num_lines, last_line_len)
@@ -621,5 +616,28 @@ pub mod tests {
         assert_eq!((0, 7), count_newlines("abcdefg"));
         assert_eq!((2, 0), count_newlines("abc\ndefg\n"));
         assert_eq!((3, 2), count_newlines("abc\rde\nfg\nhi"));
+    }
+
+    #[test]
+    fn count_newlines_handles_crlf_and_utf8() {
+        for (input, expected) in [
+            ("", (0, 0)),
+            ("\r", (1, 0)),
+            ("\n", (1, 0)),
+            ("\r\n", (1, 0)),
+            ("\r\r\n\n\r", (4, 0)),
+            ("é\r\n中文", (1, 6)),
+            ("é\r\n中文\r\n", (2, 0)),
+        ] {
+            assert_eq!(count_newlines(input), expected, "{input:?}");
+        }
+    }
+
+    #[test]
+    fn count_newlines_handles_crlf_at_scan_boundaries() {
+        for prefix_len in 0..128 {
+            let input = format!("{}\r\n\r\n\né", "x".repeat(prefix_len));
+            assert_eq!(count_newlines(&input), (3, 2), "{prefix_len}");
+        }
     }
 }
