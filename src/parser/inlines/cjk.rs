@@ -19,7 +19,11 @@ impl FlankingCheckHelper for char {
     /// https://github.com/tats-u/markdown-cjk-friendly/blob/main/ranges.md#cjk-characters
     #[inline]
     fn is_cjk(&self) -> bool {
-        // Snapshot as of Unicode 16
+        // Fast path
+        if *self < '\u{1100}' {
+            return false;
+        }
+        // Snapshot as of Unicode 18
         matches!(
             u32::from(*self),
             0x1100..=0x11ff
@@ -58,20 +62,23 @@ impl FlankingCheckHelper for char {
               | 0xffe8..=0xffee
               | 0x16fe0..=0x16fe4
               | 0x16ff0..=0x16ff6
-              | 0x17000..=0x18cd5
-              | 0x18cff..=0x18d1e
+              | 0x17000..=0x18cda
+              | 0x18cff..=0x18d20
               | 0x18d80..=0x18df2
+              | 0x18e00..=0x19191
+              | 0x191a0..=0x191d2
               | 0x1aff0..=0x1aff3
               | 0x1aff5..=0x1affb
               | 0x1affd..=0x1affe
-              | 0x1b000..=0x1b122
+              | 0x1b000..=0x1b128
               | 0x1b132
               | 0x1b150..=0x1b152
               | 0x1b155
-              | 0x1b164..=0x1b167
+              | 0x1b164..=0x1b168
               | 0x1b170..=0x1b2fb
               | 0x1d300..=0x1d356
               | 0x1d360..=0x1d376
+              | 0x1f1ae
               | 0x1f200
               | 0x1f202
               | 0x1f210..=0x1f219
@@ -81,6 +88,7 @@ impl FlankingCheckHelper for char {
               | 0x1f23b
               | 0x1f240..=0x1f248
               | 0x1f260..=0x1f265
+              | 0x1f7da
               | 0x20000..=0x3fffd
         )
     }
