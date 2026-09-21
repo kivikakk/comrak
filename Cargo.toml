@@ -65,7 +65,7 @@ divan = { version = "4.2.0", package = "codspeed-divan-compat" }
 
 [build-dependencies]
 entities = "1"
-phf_codegen = "0.13"
+phf_codegen = "0.14"
 
 [features]
 default = ["cli", "syntect-onig", "bon"]
