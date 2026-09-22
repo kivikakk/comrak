@@ -48,7 +48,7 @@ bon = { version = "3", optional = true }
 caseless = "0.2"
 fmt2io = { version = "1.0.0", optional = true }
 jetscii = "0.5.3"
-phf = "0.13"
+phf = "0.14"
 rustc-hash = "2"
 smallvec = "1.13"
 finl_unicode = { version = "1.4.0", features = ["categories"] }
@@ -65,7 +65,7 @@ divan = { version = "4.2.0", package = "codspeed-divan-compat" }
 
 [build-dependencies]
 entities = "1"
-phf_codegen = "0.13"
+phf_codegen = "0.14"
 
 [features]
 default = ["cli", "syntect-onig", "bon"]
