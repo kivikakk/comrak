@@ -2,7 +2,10 @@ use std::borrow::Cow;
 use std::cmp::min;
 use std::mem;
 
-use crate::nodes::{Ast, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
+use crate::nodes::{
+    Ast, LineColumn, Node, NodeTable, NodeTableCell, NodeValue, TableAlignment, TableKind,
+    TableRowKind,
+};
 use crate::parser::Parser;
 use crate::scanners;
 use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
@@ -90,6 +93,7 @@ fn try_opening_header<'a>(
     let start = container.data().sourcepos.start;
     let child = Ast::new(
         NodeValue::Table(Box::new(NodeTable {
+            kind: TableKind::Pipe,
             alignments,
             num_columns: header_row.cells.len(),
             num_rows: 0,
@@ -100,7 +104,11 @@ fn try_opening_header<'a>(
     let table = parser.arena.alloc(child.into());
     container.append(table);
 
-    let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
+    let header = parser.add_child(
+        table,
+        NodeValue::TableRow(TableRowKind::Header),
+        start.column,
+    );
     {
         let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
@@ -118,7 +126,11 @@ fn try_opening_header<'a>(
         let cell = &mut header_row.cells[i];
         let ast_cell = parser.add_child(
             header,
-            NodeValue::TableCell,
+            NodeValue::TableCell(NodeTableCell {
+                colspan: 1,
+                rowspan: 1,
+                grid_column: i,
+            }),
             start.column + cell.start_offset - header_row.paragraph_offset,
         );
         let ast = &mut ast_cell.data_mut();
@@ -164,7 +176,7 @@ fn try_opening_row<'a>(
 
     let new_row = parser.add_child(
         container,
-        NodeValue::TableRow(false),
+        NodeValue::TableRow(TableRowKind::Body),
         sourcepos.start.column,
     );
     new_row.data_mut().sourcepos.end.column = parser.curline_end_col;
@@ -176,7 +188,11 @@ fn try_opening_row<'a>(
         let cell = &mut this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
-            NodeValue::TableCell,
+            NodeValue::TableCell(NodeTableCell {
+                colspan: 1,
+                rowspan: 1,
+                grid_column: i,
+            }),
             sourcepos.start.column + cell.start_offset,
         );
         let cell_ast = &mut cell_node.data_mut();
@@ -192,7 +208,15 @@ fn try_opening_row<'a>(
     }
 
     while i < alignments.len() {
-        let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
+        let cell_node = parser.add_child(
+            new_row,
+            NodeValue::TableCell(NodeTableCell {
+                colspan: 1,
+                rowspan: 1,
+                grid_column: i,
+            }),
+            last_column + 1,
+        );
         // for autocompleted (empty) cells, set end column equal to start
         let cell_ast = &mut cell_node.data_mut();
         cell_ast.sourcepos.end.column = last_column + 1;
