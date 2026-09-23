@@ -12,7 +12,6 @@ fn raw_node() {
     let mut options = Options::default();
     options.render.escape = true;
     options.render.r#unsafe = false;
-    options.extension.tagfilter = true;
 
     let arena = Arena::new();
     let root = parse_document(&arena, user_input, &options);

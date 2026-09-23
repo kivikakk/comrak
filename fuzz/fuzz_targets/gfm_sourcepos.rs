@@ -11,8 +11,6 @@ use comrak::{Options, markdown_to_html, options};
 fuzz_target!(|s: &str| {
     let extension = options::Extension {
         strikethrough: true,
-        #[allow(deprecated)]
-        tagfilter: true,
         table: true,
         autolink: true,
         ..Default::default()

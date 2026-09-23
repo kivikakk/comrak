@@ -73,7 +73,6 @@ fn dump(source: &str) -> io::Result<()> {
 
     let extension = options::Extension::builder()
         .strikethrough(true)
-        .tagfilter(true)
         .table(true)
         .autolink(true)
         .tasklist(true)

@@ -183,7 +183,6 @@ impl FuzzOptions {
 #[derive(Arbitrary, Debug)]
 struct FuzzExtensionOptions {
     strikethrough: bool,
-    tagfilter: bool,
     table: bool,
     autolink: bool,
     tasklist: bool,
@@ -207,8 +206,6 @@ impl FuzzExtensionOptions {
     fn to_options(&self) -> options::Extension<'_> {
         options::Extension {
             strikethrough: self.strikethrough,
-            #[allow(deprecated)]
-            tagfilter: self.tagfilter,
             table: self.table,
             autolink: self.autolink,
             tasklist: self.tasklist,
