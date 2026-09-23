@@ -427,13 +427,21 @@ pub fn url_match<'a>(
 
     if !relaxed_autolinks {
         let scheme = &subject.input[i - rewind..i];
-        let cond = |s: &&str| size - i + rewind >= s.len() && &scheme == s;
+        let cond = |s: &&str| size - i + rewind >= s.len() && scheme.eq_ignore_ascii_case(s);
         if !SCHEMES.iter().any(cond) {
+            return None;
+        }
+
+        if !subject.input[i + 3..]
+            .chars()
+            .next()
+            .is_some_and(is_valid_hostchar)
+        {
             return None;
         }
     }
 
-    let mut link_end = check_domain(&subject.input[i + 3..], relaxed_autolinks)? + 3;
+    let mut link_end = check_domain(&subject.input[i + 3..], true)? + 3;
 
     while link_end < size - i && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
