@@ -1,5 +1,5 @@
 use super::*;
-use ntest::timeout;
+use ntest::{test_case, timeout};
 
 #[test]
 fn autolink_www() {
@@ -123,6 +123,22 @@ fn autolink_ignore_links_in_brackets() {
     for example in examples {
         html_opts!([extension.autolink], example[0], example[1], no_roundtrip);
     }
+}
+
+#[test_case(
+    "see [a [b] http://x.example.com/](y) now",
+    "<p>see <a href=\"y\">a [b] http://x.example.com/</a> now</p>\n"
+)]
+#[test_case(
+    "see [a [b] http://x.example.com/ ](y) now",
+    "<p>see <a href=\"y\">a [b] http://x.example.com/ </a> now</p>\n"
+)]
+#[test_case(
+    "[![badge](b.svg) http://example.com/](http://example.com/)",
+    "<p><a href=\"http://example.com/\"><img src=\"b.svg\" alt=\"badge\" /> http://example.com/</a></p>\n"
+)]
+fn autolink_nested_brackets(markdown: &str, html: &str) {
+    html_opts!([extension.autolink], markdown, html);
 }
 
 #[test]
