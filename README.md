@@ -267,14 +267,19 @@ use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammo
 
 ## Extensions
 
-Comrak supports the five extensions to CommonMark defined in the [GitHub Flavored Markdown
-Spec](https://github.github.com/gfm/):
+Comrak supports four (!) of the five extensions to CommonMark defined in the
+[GitHub Flavored Markdown Spec](https://github.github.com/gfm/):
 
 - [Tables](https://github.github.com/gfm/#tables-extension-)
 - [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
 - [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
 - [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
-- [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+
+We [deprecated](https://github.com/kivikakk/comrak/pull/830) the
+[Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
+(a.k.a. `tagfilter`) extension in Comrak 0.55.0, and
+[removed](https://github.com/kivikakk/comrak/pull/845) it in Comrak 0.56.0. It is poorly
+designed, specific to GitHub's CommonMark transition of 2017, and should not be used.
 
 Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
 
