@@ -600,6 +600,46 @@ fn autolink_bare_scheme() {
     );
 }
 
+#[test_case(
+    "see http://localhost/x now",
+    "<p>see <a href=\"http://localhost/x\">http://localhost/x</a> now</p>\n"
+)]
+#[test_case(
+    "see http://localhost:3000/admin now",
+    "<p>see <a href=\"http://localhost:3000/admin\">http://localhost:3000/admin</a> now</p>\n"
+)]
+#[test_case(
+    "see http://user:pass@www.example.com/ now",
+    "<p>see <a href=\"http://user:pass@www.example.com/\">http://user:pass@www.example.com/</a> now</p>\n"
+)]
+#[test_case("http://x", "<p><a href=\"http://x\">http://x</a></p>\n")]
+fn autolink_short_domains(markdown: &str, html: &str) {
+    html_opts!([extension.autolink], markdown, html);
+}
+
+#[test_case("http://-foo.com", "<p>http://-foo.com</p>\n")]
+#[test_case("http://.foo", "<p>http://.foo</p>\n")]
+#[test_case("foo http://. foo", "<p>foo http://. foo</p>\n")]
+fn autolink_domain_leading_invalid_char(markdown: &str, html: &str) {
+    html_opts!([extension.autolink], markdown, html);
+}
+
+#[test_case(
+    "see HTTP://www.example.com/ now",
+    "<p>see <a href=\"HTTP://www.example.com/\">HTTP://www.example.com/</a> now</p>\n"
+)]
+#[test_case(
+    "see Http://www.example.com/ now",
+    "<p>see <a href=\"Http://www.example.com/\">Http://www.example.com/</a> now</p>\n"
+)]
+#[test_case(
+    "FTP://ftp.example.com/file",
+    "<p><a href=\"FTP://ftp.example.com/file\">FTP://ftp.example.com/file</a></p>\n"
+)]
+fn autolink_scheme_case_insensitive(markdown: &str, html: &str) {
+    html_opts!([extension.autolink], markdown, html);
+}
+
 #[test]
 fn autolink_with_unicode_isolation() {
     html_opts!(
