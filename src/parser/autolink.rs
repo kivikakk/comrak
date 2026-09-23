@@ -292,36 +292,57 @@ pub fn www_match<'a>(
     Some((inl, 0, link_end))
 }
 
-fn check_domain(data: &str, allow_short: bool) -> Option<usize> {
-    let mut np = 0;
-    let mut uscore1 = 0;
-    let mut uscore2 = 0;
+const MAX_DOMAIN_DOTS: usize = 10;
+
+struct DomainScan {
+    end: usize,
+    dots: usize,
+    uscored_host: bool,
+}
+
+fn scan_domain(data: &str) -> DomainScan {
+    let mut end = 0;
+    let mut dots = 0;
+    let mut uscores = 0;
+    let mut prev_uscores = 0;
 
     for (i, c) in data.char_indices() {
-        if c == '\\' && i < data.len() - 1 {
-            // Ignore escaped characters per https://github.com/github/cmark-gfm/pull/292.
-            // Not sure I love this, but it tracks upstream ..
-        } else if c == '_' {
-            uscore2 += 1;
-        } else if c == '.' {
-            uscore1 = uscore2;
-            uscore2 = 0;
-            np += 1;
-        } else if !is_valid_hostchar(c) && c != '-' {
-            if uscore1 == 0 && uscore2 == 0 && (allow_short || np > 0) {
-                return Some(i);
+        match c {
+            '\\' if i + 1 < data.len() => {}
+            '_' => uscores += 1,
+            '.' => {
+                prev_uscores = uscores;
+                uscores = 0;
+                dots += 1;
             }
-            return None;
+            c if is_valid_hostchar(c) || c == '-' => {}
+            _ => {
+                end = i;
+                break;
+            }
         }
+        end = i + c.len_utf8();
     }
 
-    if (uscore1 > 0 || uscore2 > 0) && np <= 10 {
-        None
-    } else if allow_short || np > 0 {
-        Some(data.len())
-    } else {
-        None
+    DomainScan {
+        end,
+        dots,
+        uscored_host: uscores > 0 || prev_uscores > 0,
     }
+}
+
+fn check_domain(data: &str, allow_short: bool) -> Option<usize> {
+    let scan = scan_domain(data);
+
+    if scan.dots > MAX_DOMAIN_DOTS {
+        return Some(scan.end);
+    }
+
+    if scan.uscored_host {
+        return None;
+    }
+
+    (allow_short || scan.dots > 0).then_some(scan.end)
 }
 
 fn is_valid_hostchar(ch: char) -> bool {
