@@ -44,25 +44,6 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub strikethrough: bool,
 
-    /// Enables the
-    /// [tagfilter extension](https://github.github.com/gfm/#disallowed-raw-html-extension-)
-    /// from the GFM spec.
-    ///
-    /// ```rust
-    /// # use comrak::{markdown_to_html, Options};
-    /// let mut options = Options::default();
-    /// options.extension.tagfilter = true;
-    /// options.render.r#unsafe = true;
-    /// assert_eq!(markdown_to_html("Hello <xmp>.\n\n<xmp>", &options),
-    ///            "<p>Hello &lt;xmp>.</p>\n&lt;xmp>\n");
-    /// ```
-    #[cfg_attr(feature = "bon", builder(default))]
-    #[deprecated(
-        since = "0.55.0",
-        note = "poorly designed; will be removed in Comrak 0.56.0"
-    )]
-    pub tagfilter: bool,
-
     /// Enables the [table extension](https://github.github.com/gfm/#tables-extension-)
     /// from the GFM spec.
     ///

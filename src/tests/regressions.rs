@@ -147,7 +147,6 @@ fn sourcepos_lone_backtick() {
     );
 }
 
-#[ignore] // This one will require a bit of thinking.
 #[test]
 fn sourcepos_link_items() {
     assert_ast_match!(

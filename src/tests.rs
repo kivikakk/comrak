@@ -51,7 +51,6 @@ mod subscript;
 mod subtext;
 mod supersubscript;
 mod table;
-mod tagfilter;
 mod tasklist;
 mod underline;
 mod wikilinks;

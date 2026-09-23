@@ -678,8 +678,6 @@ fn render_html_block<T>(
             context.escape(literal)?;
         } else if !context.options.render.r#unsafe {
             context.write_str("<!-- raw HTML omitted -->")?;
-        } else if context.options.extension.tagfilter {
-            tagfilter_block(context, literal)?;
         } else {
             context.write_str(literal)?;
         }
@@ -729,9 +727,6 @@ fn render_html_inline<T>(
             context.escape(literal)?;
         } else if !context.options.render.r#unsafe {
             context.write_str("<!-- raw HTML omitted -->")?;
-        } else if context.options.extension.tagfilter && tagfilter(literal) {
-            context.write_str("&lt;")?;
-            context.write_str(&literal[1..])?;
         } else {
             context.write_str(literal)?;
         }
@@ -1653,62 +1648,6 @@ fn put_footnote_backref<T>(
         )?;
     }
     Ok(true)
-}
-
-fn tagfilter(literal: &str) -> bool {
-    let bytes = literal.as_bytes();
-
-    static TAGFILTER_BLACKLIST: [&str; 9] = [
-        "title",
-        "textarea",
-        "style",
-        "xmp",
-        "iframe",
-        "noembed",
-        "noframes",
-        "script",
-        "plaintext",
-    ];
-
-    if bytes.len() < 3 || bytes[0] != b'<' {
-        return false;
-    }
-
-    let mut i = 1;
-    if bytes[i] == b'/' {
-        i += 1;
-    }
-
-    let lc = literal[i..].to_lowercase();
-    for t in TAGFILTER_BLACKLIST.iter() {
-        if lc.starts_with(t) {
-            let j = i + t.len();
-            let Some(&b) = bytes.get(j) else {
-                return false;
-            };
-            return isspace(b) || b == b'>' || (b == b'/' && bytes.get(j + 1) == Some(&b'>'));
-        }
-    }
-
-    false
-}
-
-fn tagfilter_block(output: &mut dyn Write, buffer: &str) -> fmt::Result {
-    let bytes = buffer.as_bytes();
-    let matcher = jetscii::bytes!(b'<');
-
-    let mut offset = 0;
-    while let Some(i) = matcher.find(&bytes[offset..]) {
-        output.write_str(&buffer[offset..offset + i])?;
-        if tagfilter(&buffer[offset + i..]) {
-            output.write_str("&lt;")?;
-        } else {
-            output.write_str("<")?;
-        }
-        offset += i + 1;
-    }
-    output.write_str(&buffer[offset..])?;
-    Ok(())
 }
 
 /// Check if the input would be considered a dangerous url

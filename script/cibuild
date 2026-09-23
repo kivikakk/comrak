@@ -31,11 +31,11 @@ python3 entity_tests.py "$PROGRAM_ARG" \
 python3 spec_tests.py --no-normalize --spec smart_punct.txt "$PROGRAM_ARG --smart" \
 	|| failed=1
 
-python3 spec_tests.py --no-normalize --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink tagfilter footnotes tasklist" \
+python3 spec_tests.py --no-normalize --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
 	|| failed=1
-python3 roundtrip_tests.py --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink tagfilter footnotes tasklist" \
+python3 roundtrip_tests.py --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
 	|| failed=1
-# python3 roundtrip_tests.py --spec extensions-table-prefer-style-attributes.txt "$PROGRAM_ARG --table-prefer-style-attributes" --extensions "table strikethrough autolink tagfilter footnotes tasklist" || failed=1
+# python3 roundtrip_tests.py --spec extensions-table-prefer-style-attributes.txt "$PROGRAM_ARG --table-prefer-style-attributes" --extensions "table strikethrough autolink footnotes tasklist" || failed=1
 python3 roundtrip_tests.py --spec extensions-full-info-string.txt "$PROGRAM_ARG --full-info-string" \
 	|| failed=1
 python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/multiline_blockquote.md "$PROGRAM_ARG -e multiline-block-quotes" \
