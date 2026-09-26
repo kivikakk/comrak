@@ -1160,13 +1160,13 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
 
         while let Some(node) = stack.pop() {
             // Check that this node type is valid wrt to the type of its parent.
-            if let Some(parent) = node.parent() {
-                if !parent.can_contain_type(&node.data().value) {
-                    return Err(ValidationError::InvalidChildType {
-                        parent,
-                        child: node,
-                    });
-                }
+            if let Some(parent) = node.parent()
+                && !parent.can_contain_type(&node.data().value)
+            {
+                return Err(ValidationError::InvalidChildType {
+                    parent,
+                    child: node,
+                });
             }
 
             stack.extend(node.children());

@@ -117,11 +117,10 @@ fn find_email_autolink<'a>(
             }
         }
 
-        if bytes[i] == b'@' {
-            if let Some((post, reverse, skip)) = email_match(arena, contents, i, relaxed_autolinks)
-            {
-                return Some((post, i - reverse, skip));
-            }
+        if bytes[i] == b'@'
+            && let Some((post, reverse, skip)) = email_match(arena, contents, i, relaxed_autolinks)
+        {
+            return Some((post, i - reverse, skip));
         }
         i += 1;
     }
