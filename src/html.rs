@@ -614,13 +614,14 @@ fn render_heading<T>(
 
                     write!(context, r##" id="{prefix}{id}""##)?;
                     context.current_anchorized_id = Some(id);
+                    context.current_heading_text = Some(text_content);
                 };
 
                 render_sourcepos(context, node)?;
                 context.write_str(">")?;
             } else {
                 if let Some(prefix) = &context.options.extension.header_id_prefix {
-                    let text_content = node.collect_text();
+                    let text_content = context.current_heading_text.take().unwrap();
                     let id = context.current_anchorized_id.take().unwrap();
                     let href_prefix = if context.options.extension.header_id_prefix_in_href {
                         prefix.as_str()
@@ -641,13 +642,12 @@ fn render_heading<T>(
             }
         }
         Some(adapter) => {
-            let text_content = node.collect_text();
-            let heading = HeadingMeta {
-                level: nh.level,
-                content: text_content,
-            };
-
             if entering {
+                let heading = HeadingMeta {
+                    level: nh.level,
+                    content: node.collect_text(),
+                };
+
                 context.cr()?;
                 let sp = if context.options.render.sourcepos {
                     Some(node.data().sourcepos)
@@ -655,7 +655,12 @@ fn render_heading<T>(
                     None
                 };
                 adapter.enter(context, &heading, sp)?;
+                context.current_heading_text = Some(heading.content);
             } else {
+                let heading = HeadingMeta {
+                    level: nh.level,
+                    content: context.current_heading_text.take().unwrap(),
+                };
                 adapter.exit(context, &heading)?;
             }
         }
