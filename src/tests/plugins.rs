@@ -359,6 +359,49 @@ fn heading_adapter_plugin() {
 }
 
 #[test]
+fn heading_adapter_plugin_deep_nesting() {
+    struct MockAdapter;
+
+    impl HeadingAdapter for MockAdapter {
+        fn enter(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            heading: &HeadingMeta,
+            _sourcepos: Option<Sourcepos>,
+        ) -> std::fmt::Result {
+            write!(output, "<h{} data-heading=\"true\">", heading.level)
+        }
+
+        fn exit(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            heading: &HeadingMeta,
+        ) -> std::fmt::Result {
+            write!(output, "</h{}>", heading.level)
+        }
+    }
+
+    let input = "# ".to_string() + &"*a _".repeat(60_000) + "x" + &"_ b*".repeat(60_000);
+
+    let adapter = Box::leak(Box::new(MockAdapter {}));
+
+    let handle = std::thread::Builder::new()
+        .stack_size(512 * 1024)
+        .spawn(move || {
+            let options = Options::default();
+            let arena = Arena::new();
+            let root = parse_document(&arena, &input, &options);
+            let mut plugins = options::Plugins::default();
+            plugins.render.heading_adapter = Some(adapter);
+            let mut output = String::new();
+            html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+            assert!(output.contains("<em>"));
+        })
+        .unwrap();
+    handle.join().unwrap();
+}
+
+#[test]
 #[cfg(feature = "syntect")]
 fn syntect_plugin_with_base16_ocean_dark_theme() {
     let adapter = crate::plugins::syntect::SyntectAdapter::new(Some("base16-ocean.dark"));

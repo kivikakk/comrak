@@ -27,6 +27,25 @@ fn header_id_prefix() {
 }
 
 #[test]
+fn header_id_prefix_deep_nesting() {
+    let input = "# ".to_string() + &"*a _".repeat(60_000) + "x" + &"_ b*".repeat(60_000);
+
+    let handle = std::thread::Builder::new()
+        .stack_size(512 * 1024)
+        .spawn(move || {
+            let mut options = Options::default();
+            options.extension.header_id_prefix = Some("user-content-".to_owned());
+            let arena = Arena::new();
+            let root = parse_document(&arena, &input, &options);
+            let mut output = String::new();
+            html::format_document(root, &options, &mut output).unwrap();
+            assert!(output.contains("<em>"));
+        })
+        .unwrap();
+    handle.join().unwrap();
+}
+
+#[test]
 fn header_ids_prefix_in_href() {
     html_opts_i(
         concat!(
