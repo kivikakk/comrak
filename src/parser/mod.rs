@@ -21,6 +21,7 @@ use smallvec::SmallVec;
 use crate::Arena;
 use crate::ctype::{isdigit, isspace};
 use crate::entity;
+use crate::matchers::cr_or_lf_matcher;
 use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
@@ -196,11 +197,11 @@ where
     }
 
     fn parse(mut self, mut s: &str) -> Node<'a> {
-        if let Some(delimiter) = &self.options.extension.front_matter_delimiter {
-            if let Some((front_matter, rest)) = split_off_front_matter(s, delimiter) {
-                self.handle_front_matter(front_matter, delimiter);
-                s = rest;
-            }
+        if let Some(delimiter) = &self.options.extension.front_matter_delimiter
+            && let Some((front_matter, rest)) = split_off_front_matter(s, delimiter)
+        {
+            self.handle_front_matter(front_matter, delimiter);
+            s = rest;
         }
 
         let s = s;
@@ -210,13 +211,11 @@ where
         self.total_size = end;
 
         let mut ix = 0;
-        let matcher = jetscii::bytes!(b'\r', b'\n');
+        let matcher = cr_or_lf_matcher();
+        let mut matches = matcher.iter(sb);
 
         while ix < end {
-            let mut eol = match matcher.find(&sb[ix..]) {
-                Some(offset) => ix + offset,
-                None => end,
-            };
+            let mut eol = matches.next().unwrap_or(end);
             if eol < end {
                 if sb[eol] == b'\r' {
                     eol += 1;
@@ -231,6 +230,7 @@ where
             self.process_line(&s[ix..eol]);
 
             ix = eol;
+            matches.advance_to(ix);
         }
 
         self.finalize_document();
@@ -1531,12 +1531,11 @@ where
     }
 
     fn detect_description_list(&mut self, container: &mut Node<'a>, line: &str) -> Option<usize> {
-        if self.options.extension.description_lists {
-            if let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..]) {
-                if self.parse_desc_list_details(container, matched) {
-                    return Some(matched);
-                }
-            }
+        if self.options.extension.description_lists
+            && let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..])
+            && self.parse_desc_list_details(container, matched)
+        {
+            return Some(matched);
         }
         None
     }
@@ -1844,10 +1843,10 @@ where
     ) {
         self.find_first_nonspace(line);
 
-        if self.blank {
-            if let Some(last_child) = container.last_child() {
-                last_child.data_mut().last_line_blank = true;
-            }
+        if self.blank
+            && let Some(last_child) = container.last_child()
+        {
+            last_child.data_mut().last_line_blank = true;
         }
 
         container.data_mut().last_line_blank = self.blank
@@ -1946,12 +1945,12 @@ where
                         // do nothing
                     } else if container.data().value.accepts_lines() {
                         let mut line = line;
-                        if let NodeValue::Heading(ref mut nh) = container.data_mut().value {
-                            if !nh.setext {
-                                let (new_line, closed) = strings::chop_trailing_hashes(line);
-                                line = new_line;
-                                nh.closed = closed;
-                            }
+                        if let NodeValue::Heading(ref mut nh) = container.data_mut().value
+                            && !nh.setext
+                        {
+                            let (new_line, closed) = strings::chop_trailing_hashes(line);
+                            line = new_line;
+                            nh.closed = closed;
                         };
 
                         #[cfg(feature = "phoenix_heex")]
@@ -2175,10 +2174,10 @@ where
                     strings::unescape(&mut info);
 
                     #[cfg(feature = "attributes")]
-                    if self.options.extension.fenced_code_attributes {
-                        if let Some(attrs) = attributes::parse_off(&mut info) {
-                            ast.attrs = Some(Box::new(attrs));
-                        }
+                    if self.options.extension.fenced_code_attributes
+                        && let Some(attrs) = attributes::parse_off(&mut info)
+                    {
+                        ast.attrs = Some(Box::new(attrs));
                     }
 
                     if info.is_empty() {
@@ -2233,13 +2232,12 @@ where
                     ast.sourcepos.end = candidate_end;
                 }
             }
-            NodeValue::Heading(_) =>
-            {
+            NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]
-                if self.options.extension.header_attributes {
-                    if let Some(attrs) = attributes::parse_off(content) {
-                        ast.attrs = Some(Box::new(attrs));
-                    }
+                if self.options.extension.header_attributes
+                    && let Some(attrs) = attributes::parse_off(content)
+                {
+                    ast.attrs = Some(Box::new(attrs));
                 }
             }
             _ => (),
@@ -2500,18 +2498,18 @@ where
                     }
                 }
 
-                if let Some(after) = target.next_sibling() {
-                    if let Some(after_text) = after.data().value.text() {
-                        let mut target_mut = target.data_mut();
-                        target_mut
-                            .value
-                            .text_mut()
-                            .unwrap()
-                            .to_mut()
-                            .push_str(after_text);
-                        target_mut.sourcepos.end = after.data().sourcepos.end;
-                        after.detach();
-                    }
+                if let Some(after) = target.next_sibling()
+                    && let Some(after_text) = after.data().value.text()
+                {
+                    let mut target_mut = target.data_mut();
+                    target_mut
+                        .value
+                        .text_mut()
+                        .unwrap()
+                        .to_mut()
+                        .push_str(after_text);
+                    target_mut.sourcepos.end = after.data().sourcepos.end;
+                    after.detach();
                 }
             }
 

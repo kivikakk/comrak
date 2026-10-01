@@ -563,12 +563,12 @@ pub fn phoenix_closing_tag_end(s: &str, tag_name: &str) -> Option<usize> {
 
     let mut i = 0;
     while i + 3 < len {
-        if bytes[i] == b'<' && bytes[i + 1] == b'/' {
-            if let Some(tag_name_len) = phoenix_block_closing_tag(&s[i..]) {
-                if &s[i + 2..i + 2 + tag_name_len] == tag_name {
-                    return Some(i + 2 + tag_name_len + 1);
-                }
-            }
+        if bytes[i] == b'<'
+            && bytes[i + 1] == b'/'
+            && let Some(tag_name_len) = phoenix_block_closing_tag(&s[i..])
+            && &s[i + 2..i + 2 + tag_name_len] == tag_name
+        {
+            return Some(i + 2 + tag_name_len + 1);
         }
         i += 1;
     }

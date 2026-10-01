@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::cmp::min;
 use std::mem;
 
+use crate::matchers::backslash_matcher;
 use crate::nodes::{Ast, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
@@ -327,20 +328,17 @@ fn try_inserting_table_header_paragraph<'a>(
 }
 
 fn unescape_pipes(string: &str) -> Cow<'_, str> {
+    let bytes = string.as_bytes();
+    let mut backslashes = backslash_matcher().iter(bytes);
     let mut v = String::new();
     let mut offset = 0;
-    let mut last_was_backslash = false;
 
-    for (i, c) in string.char_indices() {
-        if last_was_backslash {
-            if c == '|' {
-                v.push_str(&string[offset..i - 1]);
-                offset = i;
-            }
-            last_was_backslash = false;
-        } else if c == '\\' {
-            last_was_backslash = true;
+    while let Some(index) = backslashes.next() {
+        if bytes.get(index + 1) == Some(&b'|') {
+            v.push_str(&string[offset..index]);
+            offset = index + 1;
         }
+        backslashes.advance_to(index + 2);
     }
 
     if offset == 0 {
@@ -386,4 +384,36 @@ fn get_num_autocompleted_cells(container: Node<'_>) -> usize {
 
 pub fn matches(line: &str, spoiler: bool) -> bool {
     row(line, spoiler).is_some()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pipe_unescaping_preserves_backslash_pairs_and_utf8() {
+        for count in 0..=6 {
+            let input = format!("{}{}|雪", "語".repeat(32), "\\".repeat(count));
+            let output = unescape_pipes(&input);
+            let expected = format!("{}{}|雪", "語".repeat(32), "\\".repeat(count - count % 2));
+            assert_eq!(output, expected);
+            if count % 2 == 0 {
+                assert!(matches!(output, Cow::Borrowed(_)));
+            } else {
+                assert!(matches!(output, Cow::Owned(_)));
+            }
+        }
+    }
+
+    #[test]
+    fn pipe_unescaping_borrows_unchanged_input() {
+        for input in ["", "雪", "plain | text", r"a\\|b", r"a\雪|b", r"\"] {
+            let output = unescape_pipes(input);
+            assert_eq!(output, input);
+            match output {
+                Cow::Borrowed(_) => (),
+                Cow::Owned(_) => panic!("unchanged input should be borrowed"),
+            }
+        }
+    }
 }

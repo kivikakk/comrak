@@ -12,6 +12,7 @@ use smallvec::SmallVec;
 use crate::Arena;
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
+use crate::matchers::{backslash_matcher, backtick_matcher, dollar_matcher};
 use crate::nodes::{
     Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
     NodeValue, NodeWikiLink, Sourcepos,
@@ -634,29 +635,29 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         self.flags.comment = true;
                     }
                 } else if b == b'[' {
-                    if !self.flags.cdata && self.scanner.pos + 3 <= self.input.len() {
-                        if let Some(m) = scanners::html_cdata(&self.input[self.scanner.pos + 2..]) {
-                            // The regex doesn't require the final "]]>". But if we're not at
-                            // the end of input, it must come after the match. Otherwise,
-                            // disable subsequent scans to avoid quadratic behavior.
+                    if !self.flags.cdata
+                        && self.scanner.pos + 3 <= self.input.len()
+                        && let Some(m) = scanners::html_cdata(&self.input[self.scanner.pos + 2..])
+                    {
+                        // The regex doesn't require the final "]]>". But if we're not at
+                        // the end of input, it must come after the match. Otherwise,
+                        // disable subsequent scans to avoid quadratic behavior.
 
-                            // Adding 5 to matchlen for prefix "![", suffix "]]>"
-                            if self.scanner.pos + m + 5 > self.input.len() {
-                                self.flags.cdata = true;
-                            } else {
-                                matchlen = Some(m + 5);
-                            }
+                        // Adding 5 to matchlen for prefix "![", suffix "]]>"
+                        if self.scanner.pos + m + 5 > self.input.len() {
+                            self.flags.cdata = true;
+                        } else {
+                            matchlen = Some(m + 5);
                         }
                     }
-                } else if !self.flags.declaration {
-                    if let Some(m) = scanners::html_declaration(&self.input[self.scanner.pos + 1..])
-                    {
-                        // Adding 2 to matchlen for prefix "!", suffix ">"
-                        if self.scanner.pos + m + 2 > self.input.len() {
-                            self.flags.declaration = true;
-                        } else {
-                            matchlen = Some(m + 2);
-                        }
+                } else if !self.flags.declaration
+                    && let Some(m) = scanners::html_declaration(&self.input[self.scanner.pos + 1..])
+                {
+                    // Adding 2 to matchlen for prefix "!", suffix ">"
+                    if self.scanner.pos + m + 2 > self.input.len() {
+                        self.flags.declaration = true;
+                    } else {
+                        matchlen = Some(m + 2);
                     }
                 }
             } else if b == b'?' {
@@ -1780,45 +1781,43 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_byte() == Some(b'(') {
             let sps = scanners::spacechars(&self.input[self.scanner.pos + 1..]).unwrap_or(0);
             let offset = self.scanner.pos + 1 + sps;
-            if offset < self.input.len() {
-                if let Some((url, n)) = manual_scan_link_url(&self.input[offset..]) {
-                    let starturl = self.scanner.pos + 1 + sps;
-                    let endurl = starturl + n;
-                    let starttitle =
-                        endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
-                    let endtitle = if starttitle == endurl {
-                        starttitle
+            if offset < self.input.len()
+                && let Some((url, n)) = manual_scan_link_url(&self.input[offset..])
+            {
+                let starturl = self.scanner.pos + 1 + sps;
+                let endurl = starturl + n;
+                let starttitle = endurl + scanners::spacechars(&self.input[endurl..]).unwrap_or(0);
+                let endtitle = if starttitle == endurl {
+                    starttitle
+                } else {
+                    starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
+                };
+                let endall = endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
+
+                if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
+                    let source_end_pos = if endurl < endall
+                        && self.input.as_bytes()[endurl..endall]
+                            .iter()
+                            .any(|&c| strings::is_line_end_char(c))
+                    {
+                        endurl
                     } else {
-                        starttitle + scanners::link_title(&self.input[starttitle..]).unwrap_or(0)
+                        endall + 1
                     };
-                    let endall =
-                        endtitle + scanners::spacechars(&self.input[endtitle..]).unwrap_or(0);
 
-                    if endall < self.input.len() && self.input.as_bytes()[endall] == b')' {
-                        let source_end_pos = if endurl < endall
-                            && self.input.as_bytes()[endurl..endall]
-                                .iter()
-                                .any(|&c| strings::is_line_end_char(c))
-                        {
-                            endurl
-                        } else {
-                            endall + 1
-                        };
-
-                        self.scanner.pos = endall + 1;
-                        let url = strings::clean_url(url);
-                        let title = strings::clean_title(&self.input[starttitle..endtitle]);
-                        self.close_bracket_match(
-                            is_image,
-                            url.into(),
-                            title.into(),
-                            source_end_pos,
-                            parent_line_offsets,
-                        );
-                        return None;
-                    } else {
-                        self.scanner.pos = after_link_text_pos;
-                    }
+                    self.scanner.pos = endall + 1;
+                    let url = strings::clean_url(url);
+                    let title = strings::clean_title(&self.input[starttitle..endtitle]);
+                    self.close_bracket_match(
+                        is_image,
+                        url.into(),
+                        title.into(),
+                        source_end_pos,
+                        parent_line_offsets,
+                    );
+                    return None;
+                } else {
+                    self.scanner.pos = after_link_text_pos;
                 }
             }
         }
@@ -1850,15 +1849,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Attempt to use the provided broken link callback if a reference cannot be resolved
         // Only clone the original label if we actually need to call the callback
-        if reff.is_none() {
-            if let Some(callback) = &self.options.parse.broken_link_callback {
-                reff = callback
-                    .resolve(BrokenLinkReference {
-                        normalized: &normalized_lab,
-                        original: &lab,
-                    })
-                    .map(Cow::Owned);
-            }
+        if reff.is_none()
+            && let Some(callback) = &self.options.parse.broken_link_callback
+        {
+            reff = callback
+                .resolve(BrokenLinkReference {
+                    normalized: &normalized_lab,
+                    original: &lab,
+                })
+                .map(Cow::Owned);
         }
 
         if let Some(reff) = reff {
@@ -2115,14 +2114,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let matcher = backtick_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'`') {
-                self.scanner.pos += 1;
-            }
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 self.scanned_for_backticks = true;
                 return None;
-            }
+            };
+            self.scanner.pos += index;
             let numticks = self.take_while(b'`');
             if numticks <= MAXBACKTICKS {
                 self.backticks[numticks] = self.scanner.pos - numticks;
@@ -2143,14 +2142,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let matcher = dollar_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'$') {
-                self.scanner.pos += 1;
-            }
-
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 return None;
-            }
+            };
+            self.scanner.pos += index;
 
             let c = self.input.as_bytes()[self.scanner.pos - 1];
 
@@ -2181,14 +2179,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
         assert!(self.options.extension.math_code);
 
+        let matcher = dollar_matcher();
         loop {
-            while self.peek_byte().is_some_and(|b| b != b'$') {
-                self.scanner.pos += 1;
-            }
-
-            if self.scanner.pos >= self.input.len() {
+            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
+                self.scanner.pos = self.input.len();
                 return None;
-            }
+            };
+            self.scanner.pos += index;
 
             let c = self.input.as_bytes()[self.scanner.pos - 1];
             self.scanner.pos += 1;
@@ -2199,14 +2196,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
-        let mut pos = startpos;
         let bytes = self.input.as_bytes();
+        let input = bytes.get(startpos..)?;
+        let matcher = backslash_matcher();
 
-        while pos + 1 < bytes.len() {
-            if bytes[pos] == b'\\' && bytes[pos + 1] == closing_delimiter {
+        for index in matcher.iter(input) {
+            let pos = startpos + index;
+            if bytes.get(pos + 1) == Some(&closing_delimiter) {
                 return Some(pos);
             }
-            pos += 1;
         }
 
         None
@@ -2723,5 +2721,85 @@ impl Scanner {
 
         self.pos = startpos;
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn closing_backticks_cache_skipped_runs() {
+        let arena = Arena::new();
+        let options = Options::default();
+        let mut refmap = RefMap::new();
+        let mut footnote_defs = FootnoteDefs::new();
+        let delimiter_arena = typed_arena::Arena::new();
+        let tables = ByteTables::new(&options);
+        let input = format!("`{} ``tail`", "語".repeat(32));
+        let double_backtick_pos = input.find("``").unwrap();
+        let mut subject = Subject::new(
+            &arena,
+            &options,
+            input,
+            1,
+            &mut refmap,
+            &tables,
+            &mut footnote_defs,
+            &delimiter_arena,
+            0,
+        );
+        subject.scanner.pos = 1;
+
+        assert_eq!(
+            subject.scan_to_closing_backtick(1),
+            Some(subject.input.len())
+        );
+        assert_eq!(subject.backticks[2], double_backtick_pos);
+        assert!(!subject.scanned_for_backticks);
+    }
+
+    #[test]
+    fn closing_backticks_reuse_cached_runs_after_failed_searches() {
+        let arena = Arena::new();
+        let options = Options::default();
+        let mut refmap = RefMap::new();
+        let mut footnote_defs = FootnoteDefs::new();
+        let delimiter_arena = typed_arena::Arena::new();
+        let tables = ByteTables::new(&options);
+        let input = format!("`{} ``tail", "語".repeat(32));
+        let double_backtick_pos = input.find("``").unwrap();
+        let mut subject = Subject::new(
+            &arena,
+            &options,
+            input,
+            1,
+            &mut refmap,
+            &tables,
+            &mut footnote_defs,
+            &delimiter_arena,
+            0,
+        );
+        subject.scanner.pos = 1;
+        assert_eq!(subject.scan_to_closing_backtick(1), None);
+        assert_eq!(subject.scanner.pos, subject.input.len());
+        assert_eq!(subject.backticks[2], double_backtick_pos);
+        assert!(subject.scanned_for_backticks);
+
+        subject.scanner.pos = double_backtick_pos;
+        assert_eq!(subject.scan_to_closing_backtick(2), None);
+        assert_eq!(subject.scanner.pos, double_backtick_pos);
+
+        subject.scanner.pos = 1;
+        assert_eq!(
+            subject.scan_to_closing_backtick(2),
+            Some(double_backtick_pos + 2)
+        );
+        assert_eq!(subject.scanner.pos, double_backtick_pos + 2);
+        assert!(subject.scanned_for_backticks);
+
+        subject.scanner.pos = 1;
+        assert_eq!(subject.scan_to_closing_backtick(MAXBACKTICKS + 1), None);
+        assert_eq!(subject.scanner.pos, 1);
     }
 }

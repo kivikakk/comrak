@@ -1,6 +1,8 @@
 use finl_unicode::categories::CharacterCategories;
+use memchr_n::MemchrN;
 use std::borrow::Cow;
 use std::str;
+use std::sync::OnceLock;
 
 use crate::Arena;
 use crate::character_set::character_set;
@@ -98,35 +100,34 @@ fn find_email_autolink<'a>(
     contents: &str,
     relaxed_autolinks: bool,
 ) -> Option<(Node<'a>, usize, usize)> {
+    static MATCHER: OnceLock<MemchrN> = OnceLock::new();
+    static RELAXED_MATCHER: OnceLock<MemchrN> = OnceLock::new();
+
+    let matcher = if relaxed_autolinks {
+        RELAXED_MATCHER.get_or_init(|| MemchrN::new(b"@"))
+    } else {
+        MATCHER.get_or_init(|| MemchrN::new(b"@[]"))
+    };
     let bytes = contents.as_bytes();
     if !bytes.contains(&b'@') {
         return None;
     }
-    let len = contents.len();
-    let mut i = 0;
     let mut bracket_opening = 0;
 
-    while i < len {
-        if !relaxed_autolinks {
-            match bytes[i] {
-                b'[' => bracket_opening += 1,
-                b']' => bracket_opening -= 1,
-                _ => (),
+    for i in matcher.iter(bytes) {
+        match bytes[i] {
+            b'[' if !relaxed_autolinks => bracket_opening += 1,
+            b']' if !relaxed_autolinks => bracket_opening -= 1,
+            b'@' => {
+                if bracket_opening <= 0
+                    && let Some((post, reverse, skip)) =
+                        email_match(arena, contents, i, relaxed_autolinks)
+                {
+                    return Some((post, i - reverse, skip));
+                }
             }
-
-            if bracket_opening > 0 {
-                i += 1;
-                continue;
-            }
+            _ => debug_assert!(false, "matcher will only report @, [, or ]"),
         }
-
-        if bytes[i] == b'@' {
-            if let Some((post, reverse, skip)) = email_match(arena, contents, i, relaxed_autolinks)
-            {
-                return Some((post, i - reverse, skip));
-            }
-        }
-        i += 1;
     }
 
     None
@@ -497,4 +498,34 @@ pub fn url_match<'a>(
         (0, 1, 0, 1).into(),
     ));
     Some((inl, rewind, rewind + link_end))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_email_autolink;
+    use crate::Arena;
+
+    #[test]
+    fn email_autolink_bracket_depth() {
+        let cases = [
+            ("foo@example.com", false, Some((0, 15))),
+            ("☃ foo@example.com", false, Some((4, 15))),
+            ("[foo@example.com]", false, None),
+            ("[[foo@example.com]] bar@example.com", false, Some((20, 15))),
+            ("[foo@example.com]", true, Some((1, 15))),
+            ("]][[foo@example.com", false, Some((4, 15))),
+            ("[foo@example.com", false, None),
+            ("[foo@example.com", true, Some((1, 15))),
+            ("no email or brackets", false, None),
+        ];
+
+        for (contents, relaxed, expected) in cases {
+            let arena = Arena::new();
+            let actual = match find_email_autolink(&arena, contents, relaxed) {
+                Some((_, before_len, skip)) => Some((before_len, skip)),
+                None => None,
+            };
+            assert_eq!(actual, expected, "{contents:?}, relaxed: {relaxed}");
+        }
+    }
 }
