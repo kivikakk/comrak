@@ -6,6 +6,55 @@ use super::*;
 
 type TestCase = (&'static [Sourcepos], &'static str);
 
+#[test]
+fn multiline_inline_sourcepos() {
+    let options = Options {
+        extension: options::Extension {
+            math_dollars: true,
+            math_code: true,
+            math_latex: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    for newline in ["\n", "\r\n", "\r"] {
+        for (open, close) in [
+            ("`a", "b`"),
+            ("$a", "b$"),
+            ("$$a", "b$$"),
+            ("$`a", "b`$"),
+            ("\\(a", "b\\)"),
+            ("<img", "src='x'>"),
+        ] {
+            for first_indent in 0..=3 {
+                for last_indent in 0..=3 {
+                    let input = format!(
+                        "Before{newline}{newline}Lead{newline}{}{open}{newline}{}{close} tail{newline}",
+                        " ".repeat(first_indent),
+                        " ".repeat(last_indent),
+                    );
+                    let arena = Arena::new();
+                    let root = parse_document(&arena, &input, &options);
+                    let inline = root
+                        .descendants()
+                        .find(|node| {
+                            matches!(
+                                node.data().value,
+                                NodeValue::Code(_) | NodeValue::Math(_) | NodeValue::HtmlInline(_)
+                            )
+                        })
+                        .unwrap();
+                    assert_eq!(
+                        inline.data().sourcepos,
+                        (4, first_indent + 1, 5, last_indent + close.len()).into(),
+                        "{input:?}",
+                    );
+                }
+            }
+        }
+    }
+}
+
 const DOCUMENT: TestCase = (&[sourcepos!((1:1-1:1))], "a");
 
 const FRONT_MATTER: TestCase = (
