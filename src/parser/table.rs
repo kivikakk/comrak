@@ -169,10 +169,10 @@ fn try_opening_row<'a>(
     );
     new_row.data_mut().sourcepos.end.column = parser.curline_end_col;
 
-    let mut i = 0;
+    let parsed_cells = min(alignments.len(), this_row.cells.len());
     let mut last_column = sourcepos.start.column;
 
-    while i < min(alignments.len(), this_row.cells.len()) {
+    for i in 0..parsed_cells {
         let cell = &mut this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
@@ -187,22 +187,19 @@ fn try_opening_row<'a>(
             .push(sourcepos.start.column + cell.start_offset - 1 + cell.internal_offset);
 
         last_column = cell_ast.sourcepos.end.column;
-
-        i += 1;
     }
 
-    while i < alignments.len() {
+    for _ in parsed_cells..alignments.len() {
         let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
         // for autocompleted (empty) cells, set end column equal to start
         let cell_ast = &mut cell_node.data_mut();
         cell_ast.sourcepos.end.column = last_column + 1;
-        i += 1;
     }
 
     let offset = line.len() - parser.offset - newlines_of(line);
     parser.advance_offset(line, offset, false);
 
-    adjust_table_counters(container, i, (parser.line_number, offset).into());
+    adjust_table_counters(container, parsed_cells, (parser.line_number, offset).into());
 
     Some((new_row, false, false))
 }
