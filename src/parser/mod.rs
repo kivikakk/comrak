@@ -11,10 +11,12 @@ mod table;
 
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::mem;
 use std::str;
+
+use smallvec::SmallVec;
 
 use crate::Arena;
 use crate::ctype::{isdigit, isspace};
@@ -2530,28 +2532,39 @@ where
         // Record the original list of sourcepos and bytecounts
         // for the post-processing step.
 
-        let mut spxv = VecDeque::new();
-        spxv.push_back((sourcepos, root.len()));
-        while let Some(ns) = node.next_sibling() {
-            match ns.data().value {
-                NodeValue::Text(ref adj) => {
-                    root.to_mut().push_str(adj);
-                    let sp = ns.data().sourcepos;
-                    spxv.push_back((sp, adj.len()));
-                    sourcepos.end.column = sp.end.column;
-                    ns.detach();
-                }
-                _ => break,
-            }
+        let needs_spx = self.options.extension.tasklist
+            || (self.options.extension.autolink && !in_bracket_context);
+
+        let mut spxv = SmallVec::new();
+        if needs_spx {
+            spxv.push((sourcepos, root.len()));
         }
 
-        self.postprocess_text_node_with_context_inner(
-            node,
-            root,
-            &mut sourcepos,
-            spxv,
-            in_bracket_context,
-        );
+        while let Some(ns) = node.next_sibling() {
+            let mut ns_data = ns.data_mut();
+            let sp = ns_data.sourcepos;
+            let NodeValue::Text(ref mut adj) = ns_data.value else {
+                break;
+            };
+            let adj = mem::take(adj);
+            drop(ns_data);
+            root.to_mut().push_str(&adj);
+            if needs_spx {
+                spxv.push((sp, adj.len()));
+            }
+            sourcepos.end.column = sp.end.column;
+            ns.detach();
+        }
+
+        if needs_spx {
+            self.postprocess_text_node_with_context_inner(
+                node,
+                root,
+                &mut sourcepos,
+                spxv,
+                in_bracket_context,
+            );
+        }
 
         sourcepos
     }
@@ -2561,10 +2574,13 @@ where
         node: Node<'a>,
         text: &mut Cow<'static, str>,
         sourcepos: &mut Sourcepos,
-        spxv: VecDeque<(Sourcepos, usize)>,
+        spxv: SmallVec<[(Sourcepos, usize); 4]>,
         in_bracket_context: bool,
     ) {
-        let mut spx = Spx(spxv);
+        let mut spx = Spx {
+            items: spxv,
+            front: 0,
+        };
         if self.options.extension.tasklist {
             self.process_tasklist(node, text, sourcepos, &mut spx);
         }
@@ -2912,7 +2928,10 @@ pub enum AutolinkType {
     Email,
 }
 
-pub(crate) struct Spx(VecDeque<(Sourcepos, usize)>);
+pub(crate) struct Spx {
+    items: SmallVec<[(Sourcepos, usize); 4]>,
+    front: usize,
+}
 
 impl Spx {
     // Sourcepos end column `e` of a node determined by advancing through `spx`
@@ -2933,16 +2952,25 @@ impl Spx {
     //     punctuation in it, or worse.
     //
     //     The one exception is if `i == 0`. Given nothing to consume, we can
-    //     happily restore what we popped, returning `sp.start.column - 1` for the
+    //     happily restore what we read, returning `sp.start.column - 1` for the
     //     end column of the original node.
     pub(crate) fn consume(&mut self, mut rem: usize) -> usize {
-        while let Some((sp, x)) = self.0.pop_front() {
+        loop {
+            let Some(&(sp, x)) = self.items.get(self.front) else {
+                unreachable!();
+            };
             match rem.cmp(&x) {
-                Ordering::Greater => rem -= x,
-                Ordering::Equal => return sp.end.column,
+                Ordering::Greater => {
+                    self.front += 1;
+                    rem -= x;
+                }
+                Ordering::Equal => {
+                    self.front += 1;
+                    return sp.end.column;
+                }
                 Ordering::Less => {
                     assert!((sp.end.column - sp.start.column + 1 == x) || rem == 0);
-                    self.0.push_front((
+                    self.items[self.front] = (
                         (
                             sp.start.line,
                             sp.start.column + rem,
@@ -2951,11 +2979,10 @@ impl Spx {
                         )
                             .into(),
                         x - rem,
-                    ));
+                    );
                     return sp.start.column + rem - 1;
                 }
             }
         }
-        unreachable!();
     }
 }
