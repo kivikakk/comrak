@@ -12,7 +12,7 @@ use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
 const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
 pub fn try_opening_block<'a>(
-    parser: &mut Parser<'a, '_, '_>,
+    parser: &mut Parser<'a, '_, '_, '_>,
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
@@ -29,7 +29,7 @@ pub fn try_opening_block<'a>(
 }
 
 fn try_opening_header<'a>(
-    parser: &mut Parser<'a, '_, '_>,
+    parser: &mut Parser<'a, '_, '_, '_>,
     container: Node<'a>,
     line: &str,
 ) -> Option<(Node<'a>, bool, bool)> {
@@ -145,7 +145,7 @@ fn try_opening_header<'a>(
 }
 
 fn try_opening_row<'a>(
-    parser: &mut Parser<'a, '_, '_>,
+    parser: &mut Parser<'a, '_, '_, '_>,
     container: Node<'a>,
     alignments: &[TableAlignment],
     line: &str,
@@ -280,7 +280,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
 }
 
 fn try_inserting_table_header_paragraph<'a>(
-    parser: &mut Parser<'a, '_, '_>,
+    parser: &mut Parser<'a, '_, '_, '_>,
     container: Node<'a>,
     container_content: &str,
     paragraph_offset: usize,

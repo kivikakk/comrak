@@ -57,7 +57,8 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
         }
         .into(),
     );
-    let document = Parser::new(arena, root, options).parse(md);
+    let delimiter_arena = typed_arena::Arena::new();
+    let document = Parser::new(arena, root, options, &delimiter_arena).parse(md);
     if options.parse.sourcepos_chars {
         convert_sourcepos_columns_to_chars(document, md);
     }
@@ -112,10 +113,12 @@ where
     bytes.get(offset).is_some_and(|&b| predicate(b))
 }
 
-pub struct Parser<'a, 'o, 'c> {
+pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     arena: &'a Arena<'a>,
+    delimiter_arena: &'d typed_arena::Arena<inlines::Delimiter<'a, 'd>>,
     options: &'o Options<'c>,
     refmap: RefMap,
+    inline_tables: inlines::ByteTables,
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
     current: Node<'a>,
@@ -153,15 +156,22 @@ struct FootnoteDefinition<'a> {
     total_references: u32,
 }
 
-impl<'a, 'o, 'c> Parser<'a, 'o, 'c>
+impl<'a: 'd, 'o, 'c, 'd> Parser<'a, 'o, 'c, 'd>
 where
     'c: 'o,
 {
-    fn new(arena: &'a Arena<'a>, root: Node<'a>, options: &'o Options<'c>) -> Self {
+    fn new(
+        arena: &'a Arena<'a>,
+        root: Node<'a>,
+        options: &'o Options<'c>,
+        delimiter_arena: &'d typed_arena::Arena<inlines::Delimiter<'a, 'd>>,
+    ) -> Self {
         Parser {
             arena,
+            delimiter_arena,
             options,
             refmap: RefMap::new(),
+            inline_tables: inlines::ByteTables::new(options),
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
             current: root,
@@ -2276,15 +2286,15 @@ where
 
         let line = node_data.sourcepos.start.line;
 
-        let delimiter_arena = typed_arena::Arena::new();
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
             content,
             line,
             &mut self.refmap,
+            &self.inline_tables,
             &mut self.footnote_defs,
-            &delimiter_arena,
+            self.delimiter_arena,
             0,
         );
 
