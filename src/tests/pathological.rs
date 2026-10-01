@@ -18,6 +18,30 @@ fn pathological_emphases() {
     html(&input, &exp);
 }
 
+#[test]
+#[timeout(4000)]
+fn pathological_emphasis_mod_three_1() {
+    let n = 40_000;
+    let input = "x**x".to_owned() + &" _x".repeat(n) + &"x* ".repeat(n);
+    let exp = format!("<p>{}</p>\n", input.trim_end());
+
+    html(&input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_emphasis_mod_three_2() {
+    let n = 20_000;
+    let input = "*x ".repeat(n) + &".**".repeat(n);
+    let exp = format!(
+        "<p>{}{}</p>\n",
+        "*x ".repeat(n),
+        ".<strong>.</strong>".repeat(n / 2)
+    );
+
+    html(&input, &exp);
+}
+
 // input: python3 -c 'n = 10000; print("|" + "x|" * n + "\n|" + "-|" * n)'
 #[test]
 #[timeout(4000)]

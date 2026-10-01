@@ -1372,7 +1372,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // This array is an important optimization that prevents searching down
         // the stack for openers we've previously searched for and know don't
         // exist, preventing exponential blowup on pathological cases.
-        let mut openers_bottom: [usize; 14] = [stack_bottom; 14];
+        let mut openers_bottom: [usize; 54] = [stack_bottom; 54];
 
         // This is traversing the stack from the top to the bottom, setting `closer` to
         // the delimiter directly above `stack_bottom`. In the case where we are processing
@@ -1393,20 +1393,20 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 let mut opener = c.prev.get();
                 let mut opener_found = false;
-                let mut mod_three_rule_invoked = false;
 
-                let ix = match c.delim_byte {
+                let base = match c.delim_byte {
                     b'|' => 0,
                     b'~' => 1,
                     b'^' => 2,
                     b'"' => 3,
                     b'\'' => 4,
                     b'_' => 5,
-                    b'*' => 6 + (if c.can_open { 3 } else { 0 }) + (c.length % 3),
-                    b'=' => 12,
-                    b'+' => 13,
+                    b'*' => 6,
+                    b'=' => 7,
+                    b'+' => 8,
                     _ => unreachable!(),
                 };
+                let ix = base * 6 + (c.can_open as usize) * 3 + c.length % 3;
 
                 // Here's where we find the opener by searching down the stack,
                 // looking for matching delims with the `can_open` flag.
@@ -1437,8 +1437,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         if !odd_match {
                             opener_found = true;
                             break;
-                        } else {
-                            mod_three_rule_invoked = true;
                         }
                     }
                     opener = o.prev.get();
@@ -1494,9 +1492,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // so that the `opener` search can avoid looking for this
                 // same opener at the bottom of the stack later.
                 if !opener_found {
-                    if !mod_three_rule_invoked {
-                        openers_bottom[ix] = old_c.position;
-                    }
+                    openers_bottom[ix] = old_c.position;
 
                     // Now that we've failed the `opener` search starting from
                     // `old_closer`, future opener searches will be searching it
