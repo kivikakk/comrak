@@ -1,6 +1,24 @@
 use super::*;
 
 #[test]
+fn footnote_label_containing_bracket_is_not_a_reference() {
+    html_opts!(
+        [extension.footnotes, render.r#unsafe],
+        "x [^a[b]<c>] y",
+        "<p>x [^a[b]<c>] y</p>\n",
+    );
+}
+
+#[test]
+fn footnote_label_with_escaped_bracket_is_not_a_reference() {
+    html_opts!(
+        [extension.footnotes, render.r#unsafe],
+        "x [^a\\[b]<c>] y",
+        "<p>x [^a[b]<c>] y</p>\n",
+    );
+}
+
+#[test]
 fn footnotes() {
     html_opts!(
         [extension.footnotes],

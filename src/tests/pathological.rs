@@ -179,6 +179,16 @@ fn pathological_recursion_inline_footnotes() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_footnote_label_reconstruction() {
+    let n = 20_000;
+    let input = "[^".repeat(n) + &"]".repeat(n);
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!([extension.footnotes], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_relaxed_autolink_url_dead_zone() {
     let n = 40_000;
     let input = "://a".repeat(n) + "](";
