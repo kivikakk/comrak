@@ -106,6 +106,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub options: &'o Options<'c>,
     pub input: String,
     line: usize,
+    block_line: usize,
     pub scanner: Scanner,
     column_offset: isize,
     line_offset: usize,
@@ -148,6 +149,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             options,
             input,
             line,
+            block_line: line,
             scanner: Scanner::new(),
             column_offset: 0,
             line_offset: 0,
@@ -2373,7 +2375,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.line += newlines;
             let node_ast = &mut node.data_mut();
             node_ast.sourcepos.end.line += newlines;
-            let adjusted_line = self.line - node_ast.sourcepos.start.line;
+            // `parent_line_offsets` is indexed from the block's first line.
+            let adjusted_line = self.line - self.block_line;
             node_ast.sourcepos.end.column =
                 parent_line_offsets[adjusted_line] + since_newline + extra;
             self.column_offset =
