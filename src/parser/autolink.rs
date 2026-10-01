@@ -99,6 +99,9 @@ fn find_email_autolink<'a>(
     relaxed_autolinks: bool,
 ) -> Option<(Node<'a>, usize, usize)> {
     let bytes = contents.as_bytes();
+    if !bytes.contains(&b'@') {
+        return None;
+    }
     let len = contents.len();
     let mut i = 0;
     let mut bracket_opening = 0;
