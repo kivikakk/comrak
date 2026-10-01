@@ -3,7 +3,7 @@ use std::cmp::min;
 use std::mem;
 
 use crate::matchers::backslash_matcher;
-use crate::nodes::{Ast, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
+use crate::nodes::{Ast, BlockLines, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
 use crate::parser::Parser;
 use crate::scanners;
 use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
@@ -49,17 +49,17 @@ fn try_opening_header<'a>(
         None => return Some((container, false, true)),
     };
 
-    let mut container_content = mem::take(&mut container.data_mut().content);
+    let mut container_content = mem::take(&mut container.data_mut().lines_mut().content);
     let mut header_row = match row(&container_content, spoiler) {
         Some(header_row) => header_row,
         None => {
-            mem::swap(&mut container.data_mut().content, &mut container_content);
+            container.data_mut().lines_mut().content = container_content;
             return Some((container, false, true));
         }
     };
 
     if header_row.cells.len() != delimiter_row.cells.len() {
-        mem::swap(&mut container.data_mut().content, &mut container_content);
+        container.data_mut().lines_mut().content = container_content;
         return Some((container, false, true));
     }
 
@@ -126,8 +126,9 @@ fn try_opening_header<'a>(
         ast.sourcepos.start.line = start.line;
         ast.sourcepos.end =
             start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
-        mem::swap(&mut ast.content, cell.content.to_mut());
-        ast.line_offsets.push(
+        let lines = ast.lines_mut();
+        mem::swap(&mut lines.content, cell.content.to_mut());
+        lines.offsets.push(
             start.column + cell.start_offset - 1 + cell.internal_offset
                 - header_row.paragraph_offset,
         );
@@ -183,9 +184,10 @@ fn try_opening_row<'a>(
         );
         let cell_ast = &mut cell_node.data_mut();
         cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
-        mem::swap(&mut cell_ast.content, cell.content.to_mut());
-        cell_ast
-            .line_offsets
+        let lines = cell_ast.lines_mut();
+        mem::swap(&mut lines.content, cell.content.to_mut());
+        lines
+            .offsets
             .push(sourcepos.start.column + cell.start_offset - 1 + cell.internal_offset);
 
         last_column = cell_ast.sourcepos.end.column;
@@ -300,17 +302,16 @@ fn try_inserting_table_header_paragraph<'a>(
     trim_cow(&mut paragraph_content);
     let paragraph_content = paragraph_content.to_string();
 
-    let container_ast = &mut container.data_mut();
+    let container_ast = &mut *container.data_mut();
     let start = container_ast.sourcepos.start;
 
     let mut paragraph = Ast::new(NodeValue::Paragraph, start);
     paragraph.sourcepos.end.line = start.line + newlines - 1;
 
-    for n in 0..newlines {
-        paragraph.line_offsets.push(container_ast.line_offsets[n]);
-    }
+    let container_offsets = &container_ast.lines.as_ref().unwrap().offsets;
+    let offsets = smallvec::SmallVec::from_slice(&container_offsets[..newlines]);
 
-    let last_line_offset = *paragraph.line_offsets.last().unwrap_or(&0);
+    let last_line_offset = *offsets.last().unwrap_or(&0);
     paragraph.sourcepos.end.column = last_line_offset
         + preface
             .as_bytes()
@@ -321,9 +322,12 @@ fn try_inserting_table_header_paragraph<'a>(
             .count();
 
     container_ast.sourcepos.start.line += newlines;
-    container_ast.sourcepos.start.column = container_ast.line_offsets[newlines] + 1;
+    container_ast.sourcepos.start.column = container_offsets[newlines] + 1;
 
-    paragraph.content = paragraph_content;
+    paragraph.lines = Some(Box::new(BlockLines {
+        content: paragraph_content,
+        offsets,
+    }));
     let node = parser.arena.alloc(paragraph.into());
     container.insert_before(node);
 }

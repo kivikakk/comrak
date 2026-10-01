@@ -186,7 +186,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         let ast = Ast {
             value,
-            content: String::new(),
             sourcepos: (
                 self.line,
                 usize::try_from(start_column).unwrap(),
@@ -199,7 +198,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             open: false,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::new(),
+            lines: None,
         };
         self.arena.alloc(ast.into())
     }
@@ -231,28 +230,33 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     // Parsers //
     /////////////
 
-    pub fn parse_inline(&mut self, node: Node<'a>, ast: &mut Ast) -> bool {
+    pub fn parse_inline(
+        &mut self,
+        node: Node<'a>,
+        start_line: usize,
+        line_offsets: &[usize],
+    ) -> bool {
         let Some(b) = self.peek_byte() else {
             return false;
         };
 
-        let adjusted_line = self.line - ast.sourcepos.start.line;
-        self.line_offset = ast.line_offsets[adjusted_line];
+        let adjusted_line = self.line - start_line;
+        self.line_offset = line_offsets[adjusted_line];
 
         let new_inl: Option<Node<'a>> = match b {
             b'\r' | b'\n' => Some(self.handle_newline()),
-            b'`' => Some(self.handle_backticks(&ast.line_offsets)),
+            b'`' => Some(self.handle_backticks(line_offsets)),
             b'=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             b'+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
-            b'\\' => Some(self.handle_backslash(&ast.line_offsets)),
+            b'\\' => Some(self.handle_backslash(line_offsets)),
             b'&' => Some(self.handle_entity()),
-            b'<' => Some(self.handle_pointy_brace(&ast.line_offsets)),
+            b'<' => Some(self.handle_pointy_brace(line_offsets)),
             #[cfg(feature = "phoenix_heex")]
             b'{' => {
                 let mut res = None;
 
                 if self.options.extension.phoenix_heex {
-                    res = self.handle_heex_inline_expression(&ast.line_offsets);
+                    res = self.handle_heex_inline_expression(line_offsets);
                 }
 
                 if res.is_none() {
@@ -330,7 +334,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     wikilink_inl
                 }
             }
-            b']' => self.handle_close_bracket(&ast.line_offsets),
+            b']' => self.handle_close_bracket(line_offsets),
             b'!' => {
                 self.scanner.pos += 1;
                 if self.peek_byte() == Some(b'[') && self.peek_byte_n(1) != Some(b'^') {
@@ -373,7 +377,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     ))
                 }
             }
-            b'$' => Some(self.handle_dollars(&ast.line_offsets)),
+            b'$' => Some(self.handle_dollars(line_offsets)),
             b'>' if self.options.parse.smart => Some(self.handle_guillemet_close()),
             b'|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
             _ => {
@@ -1190,12 +1194,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         );
 
         // Create a paragraph to hold the inline content
-        let mut para_ast = Ast::new(
+        let para_ast = Ast::new(
             NodeValue::Paragraph,
             (1, 1).into(), // Use line 1 as base
         );
         // Build line_offsets by scanning for newlines in the content
-        para_ast.line_offsets = vec![0];
+        let mut line_offsets = vec![0];
 
         let mut i = 0;
         let bytes = content.as_bytes();
@@ -1204,10 +1208,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             match bytes[i] {
                 b'\r' if i + 1 < len && bytes[i + 1] == b'\n' => {
                     i += 1;
-                    para_ast.line_offsets.push(i + 1);
+                    line_offsets.push(i + 1);
                 }
                 b'\n' | b'\r' => {
-                    para_ast.line_offsets.push(i + 1);
+                    line_offsets.push(i + 1);
                 }
                 _ => {}
             }
@@ -1230,7 +1234,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.inline_footnote_depth + 1,
         );
 
-        while subj.parse_inline(para_node, &mut para_node.data_mut()) {}
+        while subj.parse_inline(para_node, 1, &line_offsets) {}
         subj.process_emphasis(0);
         subj.clear_brackets();
 
@@ -2603,14 +2607,13 @@ pub(crate) fn make_inline<'a>(
 ) -> Node<'a> {
     let ast = Ast {
         value,
-        content: String::new(),
         sourcepos,
         #[cfg(feature = "attributes")]
         attrs: None,
         open: false,
         last_line_blank: false,
         table_visited: false,
-        line_offsets: Vec::new(),
+        lines: None,
     };
     arena.alloc(ast.into())
 }

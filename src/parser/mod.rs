@@ -24,7 +24,7 @@ use crate::entity;
 use crate::matchers::cr_or_lf_matcher;
 use crate::node_matches;
 use crate::nodes::{
-    self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
+    self, AlertType, Ast, BlockLines, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
     NodeCodeBlock, NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock,
     NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
 };
@@ -49,14 +49,13 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
-            content: String::new(),
             sourcepos: (1, 1, 1, 1).into(),
             #[cfg(feature = "attributes")]
             attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::new(),
+            lines: None,
         }
         .into(),
     );
@@ -1297,7 +1296,8 @@ where
 
     #[cfg(feature = "phoenix_heex")]
     fn has_unclosed_heex_directive(&self, node: Node<'a>) -> bool {
-        let content = &node.data().content;
+        let data = node.data();
+        let content = &data.lines.as_ref().unwrap().content;
 
         if !content.as_bytes().contains(&b'<') {
             return false;
@@ -1380,7 +1380,7 @@ where
 
         let has_content = {
             let mut ast = container.data_mut();
-            self.resolve_reference_link_definitions(&mut ast.content)
+            self.resolve_reference_link_definitions(&mut ast.lines_mut().content)
         };
         if has_content {
             container.data_mut().value = NodeValue::Heading(NodeHeading {
@@ -1831,7 +1831,10 @@ where
 
         assert!(start_column > 0);
 
-        let child = Ast::new(value, (self.line_number, start_column).into());
+        let mut child = Ast::new(value, (self.line_number, start_column).into());
+        if child.value.has_block_lines() {
+            child.lines = Some(Box::default());
+        }
         let node = self.arena.alloc(child.into());
         parent.append(node);
         node
@@ -2008,24 +2011,25 @@ where
     fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data_mut();
         assert!(ast.open);
-        if ast.content.capacity() == 0 {
-            mem::swap(&mut ast.content, &mut self.working_content);
+        let lines = ast.lines_mut();
+        if lines.content.capacity() == 0 {
+            mem::swap(&mut lines.content, &mut self.working_content);
         }
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
-            ast.content.reserve(chars_to_tab);
+            lines.content.reserve(chars_to_tab);
             for _ in 0..chars_to_tab {
-                ast.content.push(' ');
+                lines.content.push(' ');
             }
         }
         if self.offset < line.len() {
             // Since whitespace is stripped off the beginning of lines, we need
             // to keep track of how much was stripped off. This allows us to
             // properly calculate inline sourcepos during inline processing.
-            ast.line_offsets.push(self.offset);
+            lines.offsets.push(self.offset);
 
-            ast.content.push_str(&line[self.offset..]);
+            lines.content.push_str(&line[self.offset..]);
         }
     }
 
@@ -2125,7 +2129,6 @@ where
         assert!(ast.open);
         ast.open = false;
 
-        let content = &mut ast.content;
         let parent = node.parent();
 
         if self.curline_len == 0 {
@@ -2155,14 +2158,21 @@ where
                 self.fix_zero_end_columns(node);
             }
             NodeValue::Paragraph => {
-                let has_content = self.resolve_reference_link_definitions(content);
+                let has_content =
+                    self.resolve_reference_link_definitions(&mut ast.lines_mut().content);
                 if has_content {
+                    let content = &mut ast.lines_mut().content;
                     *content = self.take_content(content);
                 } else {
+                    self.working_content = mem::take(&mut ast.lines_mut().content);
+                    self.working_content.clear();
+                    ast.lines = None;
                     node.detach();
                 }
             }
             NodeValue::CodeBlock(ref mut ncb) => {
+                let mut lines = ast.lines.take().unwrap();
+                let content = &mut lines.content;
                 if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
@@ -2210,23 +2220,25 @@ where
                 ncb.literal = self.take_content(content);
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
-                let trimmed = strings::remove_trailing_blank_lines_slice(content);
+                let mut lines = ast.lines.take().unwrap();
+                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
                 ast.sourcepos.end = (end_line, end_col).into();
 
-                nhb.literal = self.take_content(content);
+                nhb.literal = self.take_content(&mut lines.content);
             }
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(ref mut nhb) => {
-                let trimmed = strings::remove_trailing_blank_lines_slice(content);
+                let mut lines = ast.lines.take().unwrap();
+                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
                 let (num_lines, last_line_len) = strings::count_newlines(trimmed);
                 let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
+                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
                 ast.sourcepos.end = (end_line, end_col).into();
 
-                nhb.literal = self.take_content(content);
+                nhb.literal = self.take_content(&mut lines.content);
             }
             NodeValue::List(ref mut nl) => {
                 if let Some(candidate_end) = self.fix_zero_end_columns(node) {
@@ -2242,13 +2254,15 @@ where
             NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]
                 if self.options.extension.header_attributes
-                    && let Some(attrs) = attributes::parse_off(content)
+                    && let Some(attrs) = attributes::parse_off(&mut ast.lines_mut().content)
                 {
                     ast.attrs = Some(Box::new(attrs));
                 }
+                let content = &mut ast.lines_mut().content;
                 *content = self.take_content(content);
             }
             NodeValue::Subtext => {
+                let content = &mut ast.lines_mut().content;
                 *content = self.take_content(content);
             }
             _ => (),
@@ -2297,12 +2311,18 @@ where
     }
 
     fn parse_inlines(&mut self, node: Node<'a>) {
-        let mut node_data = node.data_mut();
-
-        let mut content = mem::take(&mut node_data.content);
+        let (lines, line) = {
+            let mut node_data = node.data_mut();
+            (
+                node_data.lines.take().unwrap(),
+                node_data.sourcepos.start.line,
+            )
+        };
+        let BlockLines {
+            mut content,
+            offsets,
+        } = *lines;
         strings::rtrim(&mut content);
-
-        let line = node_data.sourcepos.start.line;
 
         let mut subj = inlines::Subject::new(
             self.arena,
@@ -2316,7 +2336,7 @@ where
             0,
         );
 
-        while subj.parse_inline(node, &mut node_data) {}
+        while subj.parse_inline(node, line, &offsets) {}
         subj.process_emphasis(0);
         subj.clear_brackets();
     }
