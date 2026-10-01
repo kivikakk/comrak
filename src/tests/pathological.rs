@@ -2,6 +2,7 @@
 
 use super::*;
 use ntest::timeout;
+use pretty_assertions::assert_eq;
 
 // input: python3 -c 'n = 50000; print("*a_ " * n)'
 #[test]
@@ -56,6 +57,43 @@ fn pathological_table_columns_2() {
             ..Default::default()
         },
     );
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_table_autocompleted_cells() {
+    let c = 2_000;
+    let r = 2_000;
+    let input = format!(
+        "{}\n{}\n{}",
+        "|".repeat(c + 1),
+        "|-".repeat(c) + "|",
+        "|a\n".repeat(r)
+    );
+
+    let options = Options {
+        extension: parser::options::Extension {
+            table: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let arena = typed_arena::Arena::new();
+    let root = parse_document(&arena, &input, &options);
+    let table = root
+        .descendants()
+        .find(|n| matches!(n.data().value, NodeValue::Table(..)))
+        .expect("table node missing");
+    let num_rows = table
+        .children()
+        .filter(|n| matches!(n.data().value, NodeValue::TableRow(..)))
+        .count();
+    assert_eq!(num_rows, 252);
+    assert!(matches!(
+        table.next_sibling(),
+        Some(n) if matches!(n.data().value, NodeValue::Paragraph)
+    ));
 }
 
 // input: python3 -c 'n = 10000; print("[^1]:" * n + "\n" * n)'
