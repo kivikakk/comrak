@@ -135,7 +135,8 @@ fn try_opening_header<'a>(
         i += 1;
     }
 
-    mem::swap(&mut container.data_mut().content, &mut container_content);
+    container_content.clear();
+    parser.working_content = container_content;
 
     let offset = line.len() - newlines_of(line) - parser.offset;
     parser.advance_offset(line, offset, false);

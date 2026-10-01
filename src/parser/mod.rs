@@ -134,6 +134,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
+    working_content: String,
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
@@ -187,6 +188,7 @@ where
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
+            working_content: String::new(),
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
@@ -2006,6 +2008,9 @@ where
     fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data_mut();
         assert!(ast.open);
+        if ast.content.capacity() == 0 {
+            mem::swap(&mut ast.content, &mut self.working_content);
+        }
         if self.partially_consumed_tab {
             self.offset += 1;
             let chars_to_tab = TAB_STOP - (self.column % TAB_STOP);
@@ -2151,7 +2156,9 @@ where
             }
             NodeValue::Paragraph => {
                 let has_content = self.resolve_reference_link_definitions(content);
-                if !has_content {
+                if has_content {
+                    *content = self.take_content(content);
+                } else {
                     node.detach();
                 }
             }
@@ -2200,7 +2207,7 @@ where
 
                     strings::remove_from_start(content, pos);
                 }
-                mem::swap(&mut ncb.literal, content);
+                ncb.literal = self.take_content(content);
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
                 let trimmed = strings::remove_trailing_blank_lines_slice(content);
@@ -2209,7 +2216,7 @@ where
                 let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
                 ast.sourcepos.end = (end_line, end_col).into();
 
-                mem::swap(&mut nhb.literal, content);
+                nhb.literal = self.take_content(content);
             }
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(ref mut nhb) => {
@@ -2219,7 +2226,7 @@ where
                 let end_col = ast.line_offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
                 ast.sourcepos.end = (end_line, end_col).into();
 
-                mem::swap(&mut nhb.literal, content);
+                nhb.literal = self.take_content(content);
             }
             NodeValue::List(ref mut nl) => {
                 if let Some(candidate_end) = self.fix_zero_end_columns(node) {
@@ -2239,11 +2246,22 @@ where
                 {
                     ast.attrs = Some(Box::new(attrs));
                 }
+                *content = self.take_content(content);
+            }
+            NodeValue::Subtext => {
+                *content = self.take_content(content);
             }
             _ => (),
         }
 
         parent
+    }
+
+    fn take_content(&mut self, content: &mut String) -> String {
+        let exact = content.clone();
+        self.working_content = mem::take(content);
+        self.working_content.clear();
+        exact
     }
 
     fn determine_list_tight(&self, node: Node<'a>) -> bool {
