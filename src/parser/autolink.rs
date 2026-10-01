@@ -255,6 +255,10 @@ pub fn www_match<'a>(
     let relaxed_autolinks = subject.options.parse.relaxed_autolinks;
     let bytes = subject.input.as_bytes();
 
+    if i < subject.relaxed_autolink_dead_zone_end {
+        return None;
+    }
+
     if i > 0 && !isspace(bytes[i - 1]) && !WWW_DELIMS[bytes[i - 1] as usize] {
         return None;
     }
@@ -269,6 +273,7 @@ pub fn www_match<'a>(
     while i + link_end < subject.input.len() && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
         if relaxed_autolinks && bytes[i + link_end - 1] == b']' && bytes[i + link_end] == b'(' {
+            subject.relaxed_autolink_dead_zone_end = i + link_end;
             return None;
         }
         link_end += 1;
@@ -441,6 +446,10 @@ pub fn url_match<'a>(
     let bytes = subject.input.as_bytes();
     let size = subject.input.len();
 
+    if i < subject.relaxed_autolink_dead_zone_end {
+        return None;
+    }
+
     if size - i < 4 || bytes[i + 1] != b'/' || bytes[i + 2] != b'/' {
         return None;
     }
@@ -475,6 +484,7 @@ pub fn url_match<'a>(
             && bytes[i + link_end - 1] == b']'
             && bytes[i + link_end] == b'('
         {
+            subject.relaxed_autolink_dead_zone_end = i + link_end;
             return None;
         }
         link_end += 1;

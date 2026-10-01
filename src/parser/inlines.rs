@@ -120,6 +120,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
+    pub(crate) relaxed_autolink_dead_zone_end: usize,
 }
 
 #[derive(Default)]
@@ -161,6 +162,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             no_link_openers: true,
+            relaxed_autolink_dead_zone_end: 0,
         }
     }
 
