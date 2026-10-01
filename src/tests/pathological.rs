@@ -176,3 +176,23 @@ fn pathological_recursion_inline_footnotes() {
         no_roundtrip
     );
 }
+
+#[test]
+#[timeout(4000)]
+fn pathological_relaxed_autolink_url_dead_zone() {
+    let n = 40_000;
+    let input = "://a".repeat(n) + "](";
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!([extension.autolink, parse.relaxed_autolinks], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_relaxed_autolink_www_dead_zone() {
+    let n = 40_000;
+    let input = "~www.a".repeat(n) + "](";
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!([extension.autolink, parse.relaxed_autolinks], &input, &exp);
+}
