@@ -34,6 +34,15 @@ fn emojis() {
 }
 
 #[test]
+fn emojis_with_autolink_sourcepos() {
+    html_opts!(
+        [extension.shortcodes, extension.autolink],
+        "x :dog: y http://a.b/c z :// w\n",
+        "<p>x 🐶 y <a href=\"http://a.b/c\">http://a.b/c</a> z :// w</p>\n",
+    );
+}
+
+#[test]
 fn emojis_specials() {
     // Take a quick trip to https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json
     // with `jq -r .[].aliases[] | sort | grep -E '[^a-z_-]'` to see what else there is to see.

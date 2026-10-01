@@ -641,6 +641,153 @@ fn autolink_scheme_case_insensitive(markdown: &str, html: &str) {
 }
 
 #[test]
+fn autolink_non_special_w_colon_dollar_sourcepos() {
+    assert_ast_match!(
+        [extension.autolink],
+        "foo www.example.com bar wwww.example.com xwww.example.com awww w ww www\nsee http://example.com/x and https://a.b/c, ftp://x.y/z; then a: b :// c ://d wa://foo\nhello\\wwa://bar.baz and \\www.x.y plus :// and :/ and http:/ and w\nprice $5 and $$ and $ x [^www] ref [^a:b] and [^$w]\ntail w\ntail w  \nnext :\ntail www.\nend ://\n",
+        (document (1:1-9:7) [
+            (paragraph (1:1-9:7) [
+                (text (1:1-1:4) "foo ")
+                (link (1:5-1:19) "http://www.example.com" [
+                    (text (1:5-1:19) "www.example.com")
+                ])
+                (text (1:20-1:71) " bar wwww.example.com xwww.example.com awww w ww www")
+                (softbreak (1:72-1:72))
+                (text (2:1-2:4) "see ")
+                (link (2:5-2:24) "http://example.com/x" [
+                    (text (2:5-2:24) "http://example.com/x")
+                ])
+                (text (2:25-2:29) " and ")
+                (link (2:30-2:42) "https://a.b/c" [
+                    (text (2:30-2:42) "https://a.b/c")
+                ])
+                (text (2:43-2:44) ", ")
+                (link (2:45-2:55) "ftp://x.y/z" [
+                    (text (2:45-2:55) "ftp://x.y/z")
+                ])
+                (text (2:56-2:86) "; then a: b :// c ://d wa://foo")
+                (softbreak (2:87-2:87))
+                (text (3:1-3:65) "hello\\wwa://bar.baz and \\www.x.y plus :// and :/ and http:/ and w")
+                (softbreak (3:66-3:66))
+                (text (4:1-4:51) "price $5 and $$ and $ x [^www] ref [^a:b] and [^$w]")
+                (softbreak (4:52-4:52))
+                (text (5:1-5:6) "tail w")
+                (softbreak (5:7-5:7))
+                (text (6:1-6:6) "tail w")
+                (linebreak (6:7-6:9))
+                (text (7:1-7:6) "next :")
+                (softbreak (7:7-7:7))
+                (text (8:1-8:9) "tail www.")
+                (softbreak (8:10-8:10))
+                (text (9:1-9:7) "end ://")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.autolink],
+        "end w",
+        (document (1:1-1:5) [
+            (paragraph (1:1-1:5) [
+                (text (1:1-1:5) "end w")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.autolink],
+        "end :",
+        (document (1:1-1:5) [
+            (paragraph (1:1-1:5) [
+                (text (1:1-1:5) "end :")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.autolink],
+        "end $",
+        (document (1:1-1:5) [
+            (paragraph (1:1-1:5) [
+                (text (1:1-1:5) "end $")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.autolink],
+        "a !$ b \\w c w\\ d\n",
+        (document (1:1-1:16) [
+            (paragraph (1:1-1:16) [
+                (text (1:1-1:16) "a !$ b \\w c w\\ d")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn autolink_non_special_w_colon_dollar_no_extensions() {
+    assert_ast_match!(
+        [],
+        "foo www.example.com bar wwww.example.com xwww.example.com awww w ww www\nsee http://example.com/x and https://a.b/c, ftp://x.y/z; then a: b :// c ://d wa://foo\nhello\\wwa://bar.baz and \\www.x.y plus :// and :/ and http:/ and w\nprice $5 and $$ and $ x [^www] ref [^a:b] and [^$w]\ntail w\ntail w  \nnext :\ntail www.\nend ://\n",
+        (document (1:1-9:7) [
+            (paragraph (1:1-9:7) [
+                (text (1:1-1:71) "foo www.example.com bar wwww.example.com xwww.example.com awww w ww www")
+                (softbreak (1:72-1:72))
+                (text (2:1-2:86) "see http://example.com/x and https://a.b/c, ftp://x.y/z; then a: b :// c ://d wa://foo")
+                (softbreak (2:87-2:87))
+                (text (3:1-3:65) "hello\\wwa://bar.baz and \\www.x.y plus :// and :/ and http:/ and w")
+                (softbreak (3:66-3:66))
+                (text (4:1-4:51) "price $5 and $$ and $ x [^www] ref [^a:b] and [^$w]")
+                (softbreak (4:52-4:52))
+                (text (5:1-5:6) "tail w")
+                (softbreak (5:7-5:7))
+                (text (6:1-6:6) "tail w")
+                (linebreak (6:7-6:9))
+                (text (7:1-7:6) "next :")
+                (softbreak (7:7-7:7))
+                (text (8:1-8:9) "tail www.")
+                (softbreak (8:10-8:10))
+                (text (9:1-9:7) "end ://")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn autolink_non_special_w_colon_dollar_footnotes_math() {
+    assert_ast_match!(
+        [extension.autolink, extension.footnotes, extension.math_dollars, parse.relaxed_autolinks],
+        "see [^www] ref [^a:b] and [^$w]\n\n[^www]: one\n[^a:b]: two\n[^$w]: three\n",
+        (document (1:1-5:12) [
+            (paragraph (1:1-1:31) [
+                (text (1:1-1:4) "see ")
+                (footnote_reference (1:5-1:10))
+                (text (1:11-1:15) " ref ")
+                (footnote_reference (1:16-1:21))
+                (text (1:22-1:26) " and ")
+                (footnote_reference (1:27-1:31))
+            ])
+            (footnote_definition (3:1-3:11) [
+                (paragraph (3:9-3:11) [
+                    (text (3:9-3:11) "one")
+                ])
+            ])
+            (footnote_definition (4:1-4:11) [
+                (paragraph (4:9-4:11) [
+                    (text (4:9-4:11) "two")
+                ])
+            ])
+            (footnote_definition (5:1-5:12) [
+                (paragraph (5:8-5:12) [
+                    (text (5:8-5:12) "three")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
 fn autolink_with_unicode_isolation() {
     html_opts!(
         [extension.autolink],

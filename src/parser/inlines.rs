@@ -36,6 +36,7 @@ pub(crate) struct ByteTables {
     pub(crate) special: [bool; 256],
     pub(crate) skip: [bool; 256],
     pub(crate) emph: [bool; 256],
+    pub(crate) colon_needs_slashes: bool,
 }
 
 impl ByteTables {
@@ -44,9 +45,13 @@ impl ByteTables {
             special: [false; 256],
             skip: [false; 256],
             emph: [false; 256],
+            colon_needs_slashes: false,
         };
-        for &b in b"\n\r_*\"`\\&<[]!$" {
+        for &b in b"\n\r_*\"`\\&<[]!" {
             t.special[b as usize] = true;
+        }
+        if options.extension.math_dollars || options.extension.math_code {
+            t.special[b'$' as usize] = true;
         }
         if options.parse.smart {
             for &b in b"\"'.->" {
@@ -56,6 +61,7 @@ impl ByteTables {
         if options.extension.autolink {
             t.special[b':' as usize] = true;
             t.special[b'w' as usize] = true;
+            t.colon_needs_slashes = true;
         }
         if options.extension.strikethrough || options.extension.subscript {
             t.special[b'~' as usize] = true;
@@ -81,6 +87,7 @@ impl ByteTables {
         #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
             t.special[b':' as usize] = true;
+            t.colon_needs_slashes = false;
         }
         if options.extension.underline {
             t.special[b'_' as usize] = true;
@@ -2084,25 +2091,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn find_special_char(&self) -> usize {
-        let input = &self.input.as_bytes()[self.scanner.pos..];
-        let index = input
-            .iter()
-            .position(|&value| self.is_special_char(value))
-            .unwrap_or(input.len());
-
-        self.scanner.pos + index
+        let bytes = self.input.as_bytes();
+        let mut i = self.scanner.pos;
+        while i < bytes.len() {
+            if self.tables.special[bytes[i] as usize] && self.is_special_char_at(i) {
+                return i;
+            }
+            i += 1;
+        }
+        i
     }
 
-    fn is_special_char(&self, value: u8) -> bool {
-        if value == b'^' && !self.brackets.is_empty() {
-            return false;
+    fn is_special_char_at(&self, i: usize) -> bool {
+        let bytes = self.input.as_bytes();
+        match bytes[i] {
+            b'^' => self.brackets.is_empty(),
+            b'w' => bytes[i..].starts_with(b"www."),
+            b':' => !self.tables.colon_needs_slashes || bytes[i + 1..].starts_with(b"//"),
+            _ => true,
         }
-
-        if self.tables.special[value as usize] {
-            return true;
-        }
-
-        false
     }
 
     fn scan_to_closing_backtick(&mut self, openticklength: usize) -> Option<usize> {
