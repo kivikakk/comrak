@@ -21,6 +21,7 @@ pub struct Context<'o, 'c, T = ()> {
     pub user: T,
     /// Current anchorized id being rendered.
     pub current_anchorized_id: Option<String>,
+    pub(super) current_heading_text: Option<String>,
 
     pub(super) footnote_ix: u32,
     pub(super) written_footnote_ix: u32,
@@ -43,6 +44,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
             current_anchorized_id: None,
             footnote_ix: 0,
             written_footnote_ix: 0,
+            current_heading_text: None,
         }
     }
 

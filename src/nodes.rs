@@ -1175,7 +1175,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         Ok(())
     }
 
-    /// Recurses through a node and all of its children in depth-first
+    /// Collects this node and all of its children in depth-first
     /// (document) order, returning the concatenated literal contents of text,
     /// code and math blocks. Line breaks and soft breaks are represented as a
     /// single whitespace character.
@@ -1185,20 +1185,19 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         text
     }
 
-    /// Recurses through a node and all of its children in depth-first
+    /// Collects this node and all of its children in depth-first
     /// (document) order, appending the literal contents of text, code and math
     /// blocks to an output buffer. Line breaks and soft breaks are represented
     /// as a single whitespace character.
     pub fn collect_text_append(&'a self, output: &mut String) {
-        match self.data().value {
-            NodeValue::Text(ref literal) => output.push_str(literal),
-            NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
-            NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
-            NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
-            _ => {
-                for n in self.children() {
-                    n.collect_text_append(output);
-                }
+        let mut stack = vec![self];
+        while let Some(node) = stack.pop() {
+            match node.data().value {
+                NodeValue::Text(ref literal) => output.push_str(literal),
+                NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
+                NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
+                NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
+                _ => stack.extend(node.reverse_children()),
             }
         }
     }
