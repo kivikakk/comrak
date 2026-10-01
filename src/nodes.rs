@@ -779,6 +779,10 @@ impl NodeValue {
         }
     }
 
+    pub(crate) fn has_block_lines(&self) -> bool {
+        self.accepts_lines() || matches!(*self, NodeValue::HtmlBlock(..) | NodeValue::TableCell)
+    }
+
     pub(crate) fn accepts_lines(&self) -> bool {
         match *self {
             NodeValue::Paragraph
@@ -808,11 +812,22 @@ pub struct Ast {
     /// [Attributes] on this node, if any.
     pub attrs: Option<Box<Attributes>>,
 
-    pub(crate) content: String,
     pub(crate) open: bool,
     pub(crate) last_line_blank: bool,
     pub(crate) table_visited: bool,
-    pub(crate) line_offsets: Vec<usize>,
+    pub(crate) lines: Option<Box<BlockLines>>,
+}
+
+#[derive(Clone, Default, PartialEq, Eq)]
+pub(crate) struct BlockLines {
+    pub(crate) content: String,
+    pub(crate) offsets: smallvec::SmallVec<[usize; 4]>,
+}
+
+impl Ast {
+    pub(crate) fn lines_mut(&mut self) -> &mut BlockLines {
+        self.lines.as_mut().unwrap()
+    }
 }
 
 impl std::fmt::Debug for Ast {
@@ -823,9 +838,8 @@ impl std::fmt::Debug for Ast {
 
 #[allow(dead_code)]
 #[cfg(all(target_pointer_width = "64", not(feature = "attributes")))]
-/// Assert the size of Ast is 128 bytes. It's pretty big; let's stop it getting
-/// bigger.
-const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
+/// Assert the size of Ast is 88 bytes. It's big enough; no más.
+const AST_SIZE_ASSERTION: [u8; 88] = [0; std::mem::size_of::<Ast>()];
 
 #[allow(dead_code)]
 #[cfg(all(target_pointer_width = "64", not(feature = "attributes")))]
@@ -834,7 +848,7 @@ const AST_SIZE_ASSERTION: [u8; 128] = [0; std::mem::size_of::<Ast>()];
 /// Note that the size adds to Ast:
 /// * 8 bytes for RefCell.
 /// * 40 bytes for arena_tree::Node's 5 pointers.
-const AST_NODE_SIZE_ASSERTION: [u8; 176] = [0; std::mem::size_of::<AstNode<'_>>()];
+const AST_NODE_SIZE_ASSERTION: [u8; 136] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -931,14 +945,13 @@ impl Ast {
     pub fn new(value: NodeValue, start: LineColumn) -> Self {
         Ast {
             value,
-            content: String::new(),
             sourcepos: (start.line, start.column, start.line, 0).into(),
             #[cfg(feature = "attributes")]
             attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::new(),
+            lines: None,
         }
     }
 
@@ -946,14 +959,13 @@ impl Ast {
     pub fn new_with_sourcepos(value: NodeValue, sourcepos: Sourcepos) -> Self {
         Ast {
             value,
-            content: String::new(),
             sourcepos,
             #[cfg(feature = "attributes")]
             attrs: None,
             open: true,
             last_line_blank: false,
             table_visited: false,
-            line_offsets: Vec::new(),
+            lines: None,
         }
     }
 }
