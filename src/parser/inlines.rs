@@ -31,6 +31,75 @@ const MAX_LINK_LABEL_LENGTH: usize = 1000;
 const MAX_MATH_DOLLARS: usize = 2;
 const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
 
+pub(crate) struct ByteTables {
+    pub(crate) special: [bool; 256],
+    pub(crate) skip: [bool; 256],
+    pub(crate) emph: [bool; 256],
+}
+
+impl ByteTables {
+    pub(crate) fn new(options: &Options) -> Self {
+        let mut t = ByteTables {
+            special: [false; 256],
+            skip: [false; 256],
+            emph: [false; 256],
+        };
+        for &b in b"\n\r_*\"`\\&<[]!$" {
+            t.special[b as usize] = true;
+        }
+        if options.parse.smart {
+            for &b in b"\"'.->" {
+                t.special[b as usize] = true;
+            }
+        }
+        if options.extension.autolink {
+            t.special[b':' as usize] = true;
+            t.special[b'w' as usize] = true;
+        }
+        if options.extension.strikethrough || options.extension.subscript {
+            t.special[b'~' as usize] = true;
+            t.skip[b'~' as usize] = true;
+            t.emph[b'~' as usize] = true;
+        }
+        if options.extension.highlight {
+            t.special[b'=' as usize] = true;
+            t.skip[b'=' as usize] = true;
+            t.emph[b'=' as usize] = true;
+        }
+        if options.extension.insert {
+            t.special[b'+' as usize] = true;
+            t.skip[b'+' as usize] = true;
+            t.emph[b'+' as usize] = true;
+        }
+        if options.extension.superscript || options.extension.inline_footnotes {
+            t.special[b'^' as usize] = true;
+        }
+        if options.extension.superscript {
+            t.emph[b'^' as usize] = true;
+        }
+        #[cfg(feature = "shortcodes")]
+        if options.extension.shortcodes {
+            t.special[b':' as usize] = true;
+        }
+        if options.extension.underline {
+            t.special[b'_' as usize] = true;
+        }
+        if options.extension.spoiler {
+            t.special[b'|' as usize] = true;
+            t.emph[b'|' as usize] = true;
+        }
+        #[cfg(feature = "phoenix_heex")]
+        if options.extension.phoenix_heex {
+            t.special[b'{' as usize] = true;
+            t.special[b'<' as usize] = true;
+        }
+        for &b in b"*_" {
+            t.emph[b as usize] = true;
+        }
+        t
+    }
+}
+
 pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub arena: &'a Arena<'a>,
     pub options: &'o Options<'c>,
@@ -42,6 +111,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     inline_footnote_depth: usize,
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
+    tables: &'r ByteTables,
     footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
@@ -49,9 +119,6 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub backticks: [usize; MAXBACKTICKS + 1],
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
-    special_char_bytes: [bool; 256],
-    skip_char_bytes: [bool; 256],
-    emph_delim_bytes: [bool; 256],
 }
 
 #[derive(Default)]
@@ -69,11 +136,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         input: String,
         line: usize,
         refmap: &'r mut RefMap,
+        tables: &'r ByteTables,
         footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
         inline_footnote_depth: usize,
     ) -> Self {
-        let mut s = Subject {
+        Subject {
             arena,
             options,
             input,
@@ -84,6 +152,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             inline_footnote_depth,
             flags: HtmlSkipFlags::default(),
             refmap,
+            tables,
             footnote_defs,
             delimiter_arena,
             last_delimiter: None,
@@ -91,63 +160,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             backticks: [0; MAXBACKTICKS + 1],
             scanned_for_backticks: false,
             no_link_openers: true,
-            special_char_bytes: [false; 256],
-            skip_char_bytes: [false; 256],
-            emph_delim_bytes: [false; 256],
-        };
-        for &b in b"\n\r_*\"`\\&<[]!$" {
-            s.special_char_bytes[b as usize] = true;
         }
-        if options.parse.smart {
-            for &b in b"\"'.->" {
-                s.special_char_bytes[b as usize] = true;
-            }
-        }
-        if options.extension.autolink {
-            s.special_char_bytes[b':' as usize] = true;
-            s.special_char_bytes[b'w' as usize] = true;
-        }
-        if options.extension.strikethrough || options.extension.subscript {
-            s.special_char_bytes[b'~' as usize] = true;
-            s.skip_char_bytes[b'~' as usize] = true;
-            s.emph_delim_bytes[b'~' as usize] = true;
-        }
-        if options.extension.highlight {
-            s.special_char_bytes[b'=' as usize] = true;
-            s.skip_char_bytes[b'=' as usize] = true;
-            s.emph_delim_bytes[b'=' as usize] = true;
-        }
-        if options.extension.insert {
-            s.special_char_bytes[b'+' as usize] = true;
-            s.skip_char_bytes[b'+' as usize] = true;
-            s.emph_delim_bytes[b'+' as usize] = true;
-        }
-        if options.extension.superscript || options.extension.inline_footnotes {
-            s.special_char_bytes[b'^' as usize] = true;
-        }
-        if options.extension.superscript {
-            s.emph_delim_bytes[b'^' as usize] = true;
-        }
-        #[cfg(feature = "shortcodes")]
-        if options.extension.shortcodes {
-            s.special_char_bytes[b':' as usize] = true;
-        }
-        if options.extension.underline {
-            s.special_char_bytes[b'_' as usize] = true;
-        }
-        if options.extension.spoiler {
-            s.special_char_bytes[b'|' as usize] = true;
-            s.emph_delim_bytes[b'|' as usize] = true;
-        }
-        #[cfg(feature = "phoenix_heex")]
-        if options.extension.phoenix_heex {
-            s.special_char_bytes[b'{' as usize] = true;
-            s.special_char_bytes[b'<' as usize] = true;
-        }
-        for &b in b"*_" {
-            s.emph_delim_bytes[b as usize] = true;
-        }
-        s
     }
 
     //////////////////
@@ -1193,15 +1206,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         def_node.append(para_node);
 
         // Parse the content recursively as inlines
-        let delimiter_arena = typed_arena::Arena::new();
         let mut subj = Subject::new(
             self.arena,
             self.options,
             content.into(),
             1, // Use line 1 to match the paragraph's sourcepos
             self.refmap,
+            self.tables,
             self.footnote_defs,
-            &delimiter_arena,
+            self.delimiter_arena,
             self.inline_footnote_depth + 1,
         );
 
@@ -1435,7 +1448,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // There's a case here for every possible delimiter. If we found
                 // a matching opening delimiter for our closing delimiter, they
                 // both get passed.
-                if self.emph_delim_bytes[c.delim_byte as usize] {
+                if self.tables.emph[c.delim_byte as usize] {
                     if opener_found {
                         // Finally, here's the happy case where the delimiters
                         // match and they are inserted. We get a new closer
@@ -2086,7 +2099,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return false;
         }
 
-        if self.special_char_bytes[value as usize] {
+        if self.tables.special[value as usize] {
             return true;
         }
 
@@ -2206,13 +2219,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let mut before_char_pos = pos - 1;
         while before_char_pos > 0
             && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.skip_char_bytes[self.input.as_bytes()[before_char_pos] as usize])
+                || self.tables.skip[self.input.as_bytes()[before_char_pos] as usize])
         {
             before_char_pos -= 1;
         }
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
-                if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
+                if (x as usize) < 256 && self.tables.skip[x as usize] {
                     ('\n', None)
                 } else {
                     (x, Some(before_char_pos))
@@ -2241,13 +2254,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         } else {
             let mut after_char_pos = self.scanner.pos;
             while after_char_pos < self.input.len() - 1
-                && self.skip_char_bytes[self.input.as_bytes()[after_char_pos] as usize]
+                && self.tables.skip[self.input.as_bytes()[after_char_pos] as usize]
             {
                 after_char_pos += 1;
             }
             match self.input[after_char_pos..].chars().next() {
                 Some(x) => {
-                    if (x as usize) < 256 && self.skip_char_bytes[x as usize] {
+                    if (x as usize) < 256 && self.tables.skip[x as usize] {
                         '\n'
                     } else {
                         x
