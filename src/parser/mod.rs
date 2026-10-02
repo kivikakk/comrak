@@ -240,18 +240,10 @@ where
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
-        let lines = front_matter
-            .as_bytes()
-            .iter()
-            .filter(|b| **b == b'\n')
-            .count();
+        let (lines, _) = strings::count_newlines(front_matter);
 
         let stripped_front_matter = strings::remove_trailing_blank_lines_slice(front_matter);
-        let stripped_lines = stripped_front_matter
-            .as_bytes()
-            .iter()
-            .filter(|b| **b == b'\n')
-            .count();
+        let (stripped_lines, _) = strings::count_newlines(stripped_front_matter);
 
         let node = self.add_child(
             self.root,
