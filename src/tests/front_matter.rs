@@ -76,6 +76,36 @@ fn ast_carriage_return() {
 }
 
 #[test]
+fn ast_lone_carriage_returns() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\n\r\r\r\u{fffd}\n---\n<details>\n<d\u{fffd}\u{fffd}\u{fffd}\n\r\r</details>",
+        (document (1:1-11:10) [
+            (frontmatter (1:1-6:3) "---\n\r\r\r\u{fffd}\n---\n")
+            (html_block (7:1-8:11) "<details>\n<d\u{fffd}\u{fffd}\u{fffd}\n")
+            (html_block (11:1-11:10) "</details>")
+        ])
+    );
+}
+
+#[test]
+fn ast_mixed_line_endings_with_blank_line() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\r\none\rtwo\nthree\r\n---\r\n\r\n# 中文\n\nTail\n",
+        (document (1:1-9:4) [
+            (frontmatter (1:1-5:3) "---\r\none\rtwo\nthree\r\n---\r\n\r\n")
+            (heading (7:1-7:8) [
+                (text (7:3-7:8) "中文")
+            ])
+            (paragraph (9:1-9:4) [
+                (text (9:1-9:4) "Tail")
+            ])
+        ])
+    );
+}
+
+#[test]
 fn ast_wide_delimiter() {
     assert_ast_match!(
         [extension.front_matter_delimiter = Some("\u{04fc}".to_owned())],
