@@ -401,6 +401,57 @@ fn sourcepos_with_preceding_para_spaces_before_both() {
 }
 
 #[test]
+fn sourcepos_with_preceding_para_mixed_line_endings() {
+    assert_ast_match!(
+        [extension.table],
+        "|-\r\nb\n|-",
+        (document (1:1-3:2) [
+            (paragraph (1:1-1:2) [
+                (text (1:1-1:2) "|-")
+            ])
+            (table (2:1-3:2) [
+                (table_row (2:1-2:1) [
+                    (table_cell (2:1-2:1) [
+                        (text (2:1-2:1) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_with_preceding_para_line_endings() {
+    let mut options = Options::default();
+    options.extension.table = true;
+
+    for line_ending in ["\n", "\r", "\r\n"] {
+        for (input, expected) in [
+            ("a|b\nc\n ---:|\n", (1, 1, 1, 3)),
+            ("  abc\nc\n|-", (1, 3, 1, 5)),
+            ("abc\n  xyz\nc\n|-", (1, 1, 2, 5)),
+            ("é中文\nc\n|-", (1, 1, 1, 8)),
+            ("> abc\n> c\n> |-", (1, 3, 1, 5)),
+            ("    code\n\nabc\nc\n|-", (3, 1, 3, 3)),
+        ] {
+            let input = input.replace('\n', line_ending);
+            let arena = Arena::new();
+            let root = parse_document(&arena, &input, &options);
+            let paragraph = root
+                .descendants()
+                .find(|node| matches!(node.data().value, NodeValue::Paragraph))
+                .unwrap();
+
+            assert_eq!(paragraph.data().sourcepos, expected.into(), "{input:?}");
+            assert!(matches!(
+                paragraph.next_sibling().unwrap().data().value,
+                NodeValue::Table(..)
+            ));
+        }
+    }
+}
+
+#[test]
 fn table_crlf() {
     assert_ast_match!(
         [extension.table],
