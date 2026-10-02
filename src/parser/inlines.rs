@@ -1888,6 +1888,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let bracket_inl_text = last.inl_text;
 
         if self.options.extension.footnotes
+            && !last.bracket_after
             && bracket_inl_text.next_sibling().is_some_and(|n| {
                 n.data()
                     .value
