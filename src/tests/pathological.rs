@@ -216,3 +216,28 @@ fn pathological_relaxed_autolink_www_dead_zone() {
 
     html_opts!([extension.autolink, parse.relaxed_autolinks], &input, &exp);
 }
+
+#[test]
+#[timeout(4000)]
+fn pathological_header_ids() {
+    let n = 20_000;
+    let input = "# a\n".repeat(n);
+    let mut exp = String::new();
+    for i in 0..n {
+        let id = if i == 0 {
+            "a".to_string()
+        } else {
+            format!("a-{}", i)
+        };
+        exp.push_str(&format!(
+            "<h1 id=\"{id}\">a<a href=\"#{id}\" aria-label=\"Link to heading 'a'\" data-heading-content=\"a\" class=\"anchor\"></a></h1>\n"
+        ));
+    }
+
+    html_opts!(
+        [extension.header_id_prefix = Some("".to_owned())],
+        &input,
+        &exp,
+        no_roundtrip
+    );
+}

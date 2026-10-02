@@ -1,6 +1,6 @@
 use finl_unicode::categories::CharacterCategories;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Converts header strings to canonical, unique, but still human-readable,
 /// anchors.
@@ -20,12 +20,18 @@ use std::collections::HashSet;
 /// ```
 #[derive(Debug, Default)]
 #[doc(hidden)]
-pub struct Anchorizer(HashSet<String>);
+pub struct Anchorizer {
+    ids: HashSet<String>,
+    next_suffix: HashMap<String, usize>,
+}
 
 impl Anchorizer {
     /// Construct a new anchorizer.
     pub fn new() -> Self {
-        Anchorizer(HashSet::new())
+        Anchorizer {
+            ids: HashSet::new(),
+            next_suffix: HashMap::new(),
+        }
     }
 
     /// Returns a String that has been converted into an anchor using the
@@ -56,21 +62,22 @@ impl Anchorizer {
             .map(|c| if c == ' ' { '-' } else { c })
             .collect();
 
-        let mut uniq = 0;
-        id = loop {
+        let mut uniq = self.next_suffix.get(&id).copied().unwrap_or(0);
+        let chosen = loop {
             let anchor = if uniq == 0 {
                 Cow::from(&id)
             } else {
                 Cow::from(format!("{}-{}", id, uniq))
             };
 
-            if !self.0.contains(&*anchor) {
+            if !self.ids.contains(&*anchor) {
                 break anchor.into_owned();
             }
 
             uniq += 1;
         };
-        self.0.insert(id.clone());
-        id
+        self.ids.insert(chosen.clone());
+        self.next_suffix.insert(id, uniq + 1);
+        chosen
     }
 }
