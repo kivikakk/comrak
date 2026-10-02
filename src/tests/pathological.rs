@@ -189,6 +189,16 @@ fn pathological_footnote_label_reconstruction() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_description_lists() {
+    let n = 20_000;
+    let input = "t\n: d\n\n".repeat(n);
+    let exp = format!("<dl>\n{}</dl>\n", "<dt>t</dt>\n<dd>d</dd>\n".repeat(n));
+
+    html_opts!([extension.description_lists], &input, &exp, no_roundtrip);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_relaxed_autolink_url_dead_zone() {
     let n = 40_000;
     let input = "://a".repeat(n) + "](";
