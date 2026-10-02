@@ -281,6 +281,67 @@ fn closed_list_before_fenced_codeblocks_sourcepos() {
 }
 
 #[test]
+fn list_ending_in_table_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "- | a | b |\n"
+        "  |---|---|\n"
+        "  | c | dd |\n"
+        "\n"
+        "foo\n",
+        (document (1:1-5:3) [
+            (list (1:1-3:12) [
+                (item (1:1-3:11) [
+                    (table (1:3-3:12) [
+                        (table_row (1:3-1:11) [
+                            (table_cell (1:4-1:6) [
+                                (text (1:5-1:5) "a")
+                            ])
+                            (table_cell (1:8-1:10) [
+                                (text (1:9-1:9) "b")
+                            ])
+                        ])
+                        (table_row (3:3-3:12) [
+                            (table_cell (3:4-3:6) [
+                                (text (3:5-3:5) "c")
+                            ])
+                            (table_cell (3:8-3:11) [
+                                (text (3:9-3:10) "dd")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:3) [
+                (text (5:1-5:3) "foo")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_ending_in_unclosed_multiline_block_quote_sourcepos() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        "- >>>\n"
+        "foo\n"
+        "bar\n",
+        (document (1:1-3:3) [
+            (list (1:1-2:3) [
+                (item (1:1-1:5) [
+                    (multiline_block_quote (1:3-2:3))
+                ])
+            ])
+            (paragraph (2:1-3:3) [
+                (text (2:1-2:3) "foo")
+                (softbreak (2:4-2:4))
+                (text (3:1-3:3) "bar")
+            ])
+        ])
+    );
+}
+
+#[test]
 fn closed_list_after_fenced_codeblocks_sourcepos() {
     assert_ast_match!(
         [],
