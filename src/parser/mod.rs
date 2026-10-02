@@ -690,6 +690,15 @@ where
         Some(())
     }
 
+    fn deepest_last_end(node: Node<'a>) -> Option<nodes::LineColumn> {
+        let mut last = node.last_child()?;
+        while let Some(ld) = last.last_child() {
+            last = ld;
+        }
+        let pos = last.data().sourcepos.end;
+        (pos.column != 0).then_some(pos)
+    }
+
     // Walk the subtree rooted at each child of `container` in post-order
     // and, where a node's end column is zero, attempt to adopt a
     // non-zero end column from its deepest-last descendant; otherwise
@@ -711,19 +720,12 @@ where
                 } else {
                     let end_col = node.data().sourcepos.end.column;
                     if end_col == 0 {
-                        if let Some(mut last_desc) = node.last_child() {
-                            while let Some(ld) = last_desc.last_child() {
-                                last_desc = ld;
-                            }
-                            let pos = last_desc.data().sourcepos.end;
-                            if pos.column != 0 {
-                                node.data_mut().sourcepos.end = pos;
-                                continue;
-                            }
+                        if let Some(pos) = Self::deepest_last_end(node) {
+                            node.data_mut().sourcepos.end = pos;
+                        } else {
+                            let mut ast = node.data_mut();
+                            ast.sourcepos.end = ast.sourcepos.start;
                         }
-                        // fallback to start position (better than column 0)
-                        let mut ast = node.data_mut();
-                        ast.sourcepos.end = ast.sourcepos.start;
                     }
                 }
             }
@@ -2151,11 +2153,14 @@ where
         }
 
         match ast.value {
-            NodeValue::DescriptionList
-            | NodeValue::DescriptionItem(..)
+            NodeValue::DescriptionList => {}
+            NodeValue::DescriptionItem(..)
             | NodeValue::DescriptionTerm
             | NodeValue::DescriptionDetails => {
                 self.fix_zero_end_columns(node);
+                if ast.sourcepos.end.column == 0 {
+                    ast.sourcepos.end = Self::deepest_last_end(node).unwrap_or(ast.sourcepos.start);
+                }
             }
             NodeValue::Paragraph => {
                 let has_content =
