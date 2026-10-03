@@ -291,7 +291,7 @@ fn list_ending_in_table_sourcepos() {
         "foo\n",
         (document (1:1-5:3) [
             (list (1:1-3:12) [
-                (item (1:1-3:11) [
+                (item (1:1-3:12) [
                     (table (1:3-3:12) [
                         (table_row (1:3-1:11) [
                             (table_cell (1:4-1:6) [

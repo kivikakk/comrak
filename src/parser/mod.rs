@@ -686,16 +686,31 @@ where
 
     fn deepest_last_end(node: Node<'a>) -> Option<nodes::LineColumn> {
         let mut last = node.last_child()?;
-        while let Some(ld) = last.last_child() {
-            last = ld;
+        let mut best: Option<nodes::LineColumn> = None;
+
+        loop {
+            let end = last.data().sourcepos.end;
+            if end.column != 0 {
+                let wider = match best {
+                    None => true,
+                    Some(b) => end.line > b.line || (end.line == b.line && end.column > b.column),
+                };
+                if wider {
+                    best = Some(end);
+                }
+            }
+            match last.last_child() {
+                Some(child) => last = child,
+                None => break,
+            }
         }
-        let pos = last.data().sourcepos.end;
-        (pos.column != 0).then_some(pos)
+
+        best
     }
 
     // Walk the subtree rooted at each child of `container` in post-order
-    // and, where a node's end column is zero, attempt to adopt a
-    // non-zero end column from its deepest-last descendant; otherwise
+    // and, where a node's end column is zero, attempt to adopt the widest
+    // non-zero end column along its deepest-last path; otherwise
     // fall back to the node's start position.
     // Returns a candidate end position for `container` if found.
     fn fix_zero_end_columns(&mut self, container: Node<'a>) -> Option<nodes::LineColumn> {
