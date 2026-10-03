@@ -133,6 +133,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
+    saw_list: bool,
     working_content: String,
     curline_len: usize,
     curline_end_col: usize,
@@ -187,6 +188,7 @@ where
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
+            saw_list: false,
             working_content: String::new(),
             curline_len: 0,
             curline_end_col: 0,
@@ -1681,6 +1683,7 @@ where
             NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
             _ => true,
         } {
+            self.saw_list = true;
             *container = self.add_child(container, NodeValue::List(nl), self.first_nonspace + 1);
         }
 
@@ -2054,42 +2057,27 @@ where
         self.propagate_list_sourcepos(self.root);
     }
 
-    // Walk the tree and fix lists using their
-    // deepest-last descendant end where available.
     fn propagate_list_sourcepos(&mut self, root: Node<'a>) {
-        // Post-order traversal using an explicit stack: (node, visited)
-        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
-        stack.push((root, false));
-
-        while let Some((node, visited)) = stack.pop() {
-            if !visited {
-                stack.push((node, true));
-                for ch in node.children() {
-                    stack.push((ch, false));
+        if !self.saw_list {
+            return;
+        }
+        for node in root.descendants() {
+            if !matches!(node.data().value, NodeValue::List(..)) {
+                continue;
+            }
+            let mut max_end = node.data().sourcepos.end;
+            for d in node.descendants() {
+                let de = d.data().sourcepos.end;
+                if de.column == 0 {
+                    continue;
                 }
-            } else {
-                // Use a short-lived shared borrow to inspect descendants,
-                // then take a mutable borrow only when we need to update the
-                // node. This avoids RefCell borrow conflicts.
-                if matches!(node.data().value, NodeValue::List(..)) {
-                    let mut max_end = node.data().sourcepos.end;
-                    for d in node.descendants() {
-                        let de = d.data().sourcepos.end;
-                        if de.column == 0 {
-                            continue;
-                        }
-                        if de.line > max_end.line
-                            || (de.line == max_end.line && de.column > max_end.column)
-                        {
-                            max_end = de;
-                        }
-                    }
-
-                    if max_end.column != 0 {
-                        let mut ast = node.data_mut();
-                        ast.sourcepos.end = max_end;
-                    }
+                if de.line > max_end.line || (de.line == max_end.line && de.column > max_end.column)
+                {
+                    max_end = de;
                 }
+            }
+            if max_end.column != 0 {
+                node.data_mut().sourcepos.end = max_end;
             }
         }
     }
