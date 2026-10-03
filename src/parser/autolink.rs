@@ -531,10 +531,8 @@ mod tests {
 
         for (contents, relaxed, expected) in cases {
             let arena = Arena::new();
-            let actual = match find_email_autolink(&arena, contents, relaxed) {
-                Some((_, before_len, skip)) => Some((before_len, skip)),
-                None => None,
-            };
+            let actual = find_email_autolink(&arena, contents, relaxed)
+                .map(|(_, before_len, skip)| (before_len, skip));
             assert_eq!(actual, expected, "{contents:?}, relaxed: {relaxed}");
         }
     }

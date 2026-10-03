@@ -273,7 +273,7 @@ macro_rules! sourcepos {
 pub(crate) use sourcepos;
 
 macro_rules! ast {
-    (($name:tt $sp:tt $( $content:tt )*)) => ({
+    (($name:tt $sp:tt $( $content:tt )*)) => (#[allow(clippy::vec_init_then_push)] {
         #[allow(unused_mut)]
         let mut matches = vec![];
         $crate::tests::ast_content!(matches ~ $( $content )*);
