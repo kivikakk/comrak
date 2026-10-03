@@ -142,7 +142,11 @@ fn try_opening_header<'a>(
     let offset = line.len() - newlines_of(line) - parser.offset;
     parser.advance_offset(line, offset, false);
 
-    adjust_table_counters(table, i, (parser.line_number, offset).into());
+    adjust_table_counters(
+        table,
+        i,
+        (parser.line_number, parser.curline_end_col).into(),
+    );
 
     Some((table, true, false))
 }
@@ -161,34 +165,30 @@ fn try_opening_row<'a>(
         return None;
     }
 
-    let sourcepos = container.data().sourcepos;
+    let start_column = parser.first_nonspace + 1;
     let spoiler = parser.options.extension.spoiler;
     let mut this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
-    let new_row = parser.add_child(
-        container,
-        NodeValue::TableRow(false),
-        sourcepos.start.column,
-    );
+    let new_row = parser.add_child(container, NodeValue::TableRow(false), start_column);
     new_row.data_mut().sourcepos.end.column = parser.curline_end_col;
 
     let parsed_cells = min(alignments.len(), this_row.cells.len());
-    let mut last_column = sourcepos.start.column;
+    let mut last_column = start_column;
 
     for i in 0..parsed_cells {
         let cell = &mut this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
             NodeValue::TableCell,
-            sourcepos.start.column + cell.start_offset,
+            start_column + cell.start_offset,
         );
         let cell_ast = &mut cell_node.data_mut();
-        cell_ast.sourcepos.end.column = sourcepos.start.column + cell.end_offset;
+        cell_ast.sourcepos.end.column = start_column + cell.end_offset;
         let lines = cell_ast.lines_mut();
         mem::swap(&mut lines.content, cell.content.to_mut());
         lines
             .offsets
-            .push(sourcepos.start.column + cell.start_offset - 1 + cell.internal_offset);
+            .push(start_column + cell.start_offset - 1 + cell.internal_offset);
 
         last_column = cell_ast.sourcepos.end.column;
     }
@@ -203,7 +203,11 @@ fn try_opening_row<'a>(
     let offset = line.len() - parser.offset - newlines_of(line);
     parser.advance_offset(line, offset, false);
 
-    adjust_table_counters(container, parsed_cells, (parser.line_number, offset).into());
+    adjust_table_counters(
+        container,
+        parsed_cells,
+        (parser.line_number, parser.curline_end_col).into(),
+    );
 
     Some((new_row, false, false))
 }
