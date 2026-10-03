@@ -122,6 +122,6 @@ jobs:
     - name: Obtain Rust
       run: rustup override set $MSRV
     - name: Check clippy
-      run: rustup component add clippy && cargo clippy -- -Dwarnings
+      run: rustup component add clippy && cargo clippy --lib --bin comrak --tests -- -Dwarnings
     - name: Check formatting
       run: rustup component add rustfmt && cargo fmt -- --check
