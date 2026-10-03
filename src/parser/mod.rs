@@ -2005,6 +2005,10 @@ where
     fn add_line(&mut self, node: Node<'a>, line: &str) {
         let mut ast = node.data_mut();
         assert!(ast.open);
+        // Keep the original end column before expanding tabs or trimming trailing blanks.
+        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(ref ncb) if !ncb.fenced) {
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+        }
         let lines = ast.lines_mut();
         if lines.content.capacity() == 0 {
             mem::swap(&mut lines.content, &mut self.working_content);
@@ -2124,6 +2128,7 @@ where
         ast.open = false;
 
         let parent = node.parent();
+        let last_content_end = ast.sourcepos.end;
 
         if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
@@ -2171,6 +2176,7 @@ where
                 let mut lines = ast.lines.take().unwrap();
                 let content = &mut lines.content;
                 if !ncb.fenced {
+                    ast.sourcepos.end = last_content_end;
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
                 } else {
