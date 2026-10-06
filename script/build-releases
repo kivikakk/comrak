@@ -26,7 +26,6 @@ function build {
 }
 
 build aarch64-apple-darwin packages.aarch64-darwin.comrak-static
-build x86_64-apple-darwin packages.x86_64-darwin.comrak-static
 build aarch64-unknown-linux-musl packages.aarch64-linux.comrak-static
 build x86_64-unknown-linux-musl packages.x86_64-linux.comrak-static
 
