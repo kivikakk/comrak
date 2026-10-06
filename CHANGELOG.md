@@ -1,3 +1,47 @@
+# [v0.56.0] - 2026-10-06
+
+## What's Changed
+* Bump bon from 3.9.0 to 3.9.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/834
+* Measure fenced block offset in columns, not bytes by @szdytom in https://github.com/kivikakk/comrak/pull/836
+* Update ranges for is_cjk to Unicode 18 & add fast path by @tats-u in https://github.com/kivikakk/comrak/pull/838
+* Bump emojis from 0.8.2 to 0.9.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/841
+* Bump smallvec from 1.15.1 to 1.15.2 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/835
+* Bump phf and phf_codegen from 0.13.1 to 0.14.0 by @kivikakk in https://github.com/kivikakk/comrak/pull/842
+* we already have brackets at home. by @kivikakk in https://github.com/kivikakk/comrak/pull/843
+* permit dot-less url autolinks per cmark-gfm. by @kivikakk in https://github.com/kivikakk/comrak/pull/844
+* remove tagfilter. by @kivikakk in https://github.com/kivikakk/comrak/pull/845
+* make check_domain make sense. by @kivikakk in https://github.com/kivikakk/comrak/pull/846
+* address Node::collect_text recursion and some wastefulness. by @kivikakk in https://github.com/kivikakk/comrak/pull/847
+* fix table row counter (!). by @kivikakk in https://github.com/kivikakk/comrak/pull/848
+* one delimiter arena + byte scan table set per doc. by @kivikakk in https://github.com/kivikakk/comrak/pull/849
+* autolink/sourcepos optimisations. by @kivikakk in https://github.com/kivikakk/comrak/pull/850
+* fix pathological emphasis. by @kivikakk in https://github.com/kivikakk/comrak/pull/851
+* fix pathological relaxed autolink scan. by @kivikakk in https://github.com/kivikakk/comrak/pull/852
+* store exact-sized content in nodes during block phase. by @kivikakk in https://github.com/kivikakk/comrak/pull/853
+* bench against GFM too. by @kivikakk in https://github.com/kivikakk/comrak/pull/854
+* fix multiline inline source positions by @szdytom in https://github.com/kivikakk/comrak/pull/855
+* is_special_char considers context. by @kivikakk in https://github.com/kivikakk/comrak/pull/856
+* move 40 bytes of block-only data out of arena. by @kivikakk in https://github.com/kivikakk/comrak/pull/857
+* fix pathological footnote parse. by @kivikakk in https://github.com/kivikakk/comrak/pull/858
+* fix description list n^2. by @kivikakk in https://github.com/kivikakk/comrak/pull/859
+* remove n^2 in Anchorizer. by @kivikakk in https://github.com/kivikakk/comrak/pull/860
+* Count lone carriage returns in front matter source positions by @szdytom in https://github.com/kivikakk/comrak/pull/861
+* clarify the LLM policy. by @kivikakk in https://github.com/kivikakk/comrak/pull/865
+* fix table row source positions for differing indents by @szdytom in https://github.com/kivikakk/comrak/pull/862
+* fix indented code block source positions after trailing blanks by @szdytom in https://github.com/kivikakk/comrak/pull/863
+* fix paragraph source positions before tables with crlf by @szdytom in https://github.com/kivikakk/comrak/pull/864
+* double test timeouts in CI. by @kivikakk in https://github.com/kivikakk/comrak/pull/867
+* list sourcepos optimisations. by @kivikakk in https://github.com/kivikakk/comrak/pull/866
+* zero-end columns: adopt the *widest* end position in the path. by @kivikakk in https://github.com/kivikakk/comrak/pull/868
+* Bump rustc-hash from 2.1.2 to 2.1.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/869
+
+## New Contributors
+* @szdytom made their first contribution in https://github.com/kivikakk/comrak/pull/836
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.55.0...v0.56.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:

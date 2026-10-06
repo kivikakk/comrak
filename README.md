@@ -17,10 +17,10 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.55"
+comrak = "0.56"
 ```
 
-Comrak's library supports Rust <span class="msrv">1.85</span>+.
+Comrak's library supports Rust <span class="msrv">1.89</span>+.
 
 ### CLI
 
@@ -80,8 +80,8 @@ Options:
           Include words following the code block info string in a data-meta attribute
 
       --gfm
-          Enable GitHub-flavored markdown extensions: strikethrough, tagfilter, table, autolink, and
-          tasklist. Also enables --github-pre-lang and --gfm-quirks
+          Enable GitHub-flavored markdown extensions: strikethrough, table, autolink, and tasklist.
+          Also enables --github-pre-lang and --gfm-quirks
 
       --gfm-quirks
           Use GFM-style quirks in output HTML, such as not nesting <strong> tags, which otherwise
@@ -118,10 +118,10 @@ Options:
           Multiple extensions can be delimited with ",", e.g. '--extension strikethrough,table', or
           you can pass --extension/-e multiple times
           
-          [possible values: strikethrough, tagfilter, table, autolink, tasklist, superscript,
-          footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
-          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline,
-          subscript, spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
+          [possible values: strikethrough, table, autolink, tasklist, superscript, footnotes,
+          inline-footnotes, description-lists, multiline-block-quotes, math-dollars, math-latex,
+          math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
+          spoiler, greentext, alerts, cjk-friendly-emphasis, subtext, highlight, insert,
           phoenix-heex, block-directive, header-attributes, fenced-code-attributes,
           inline-code-attributes, link-attributes]
 
