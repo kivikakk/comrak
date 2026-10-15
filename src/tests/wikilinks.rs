@@ -1,3 +1,5 @@
+use pretty_assertions::assert_eq;
+
 use super::*;
 
 #[test]
@@ -247,4 +249,159 @@ fn sourcepos() {
             ])
         ])
     );
+}
+
+fn collect_text<'a>(node: Node<'a>) -> String {
+    let mut text = String::new();
+    for descendant in node.descendants() {
+        if let NodeValue::Text(ref value) = descendant.data().value {
+            text.push_str(value);
+        }
+    }
+    text
+}
+
+fn assert_single_wikilink(
+    input: &str,
+    options: &Options<'_>,
+    expected_url: &str,
+    expected_embed: bool,
+    expected_label: &str,
+) {
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, options);
+    let paragraph = root.first_child().expect("expected a paragraph");
+    let mut children = paragraph.children();
+    let wikilink = children.next().expect("expected a wikilink");
+    assert!(
+        children.next().is_none(),
+        "expected the paragraph to contain only one node"
+    );
+
+    let data = wikilink.data();
+    let wikilink_data = match &data.value {
+        NodeValue::WikiLink(wikilink) => wikilink,
+        other => panic!("expected WikiLink, got {other:?}"),
+    };
+    assert_eq!(wikilink_data.url, expected_url);
+    assert_eq!(wikilink_data.embed, expected_embed);
+    assert_eq!(collect_text(wikilink), expected_label);
+}
+
+fn assert_no_wikilink(input: &str, options: &Options<'_>) {
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, options);
+    assert_eq!(collect_text(root), input);
+    assert!(
+        root.descendants()
+            .all(|node| !matches!(&node.data().value, NodeValue::WikiLink(_))),
+        "expected no WikiLink nodes for {input:?}"
+    );
+}
+
+#[test]
+fn wikilinks_ast_url_and_embed() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+
+    assert_single_wikilink("[[x]]", &options, "x", false, "x");
+    assert_single_wikilink("![[x]]", &options, "x", true, "x");
+}
+
+#[test]
+fn wikilinks_ast_embed_title_after_pipe() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+
+    assert_single_wikilink("![[x|640x400]]", &options, "x", true, "640x400");
+}
+
+#[test]
+fn wikilinks_ast_embed_title_before_pipe() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_before_pipe = true;
+
+    assert_single_wikilink("![[640x400|x]]", &options, "x", true, "640x400");
+}
+
+#[test]
+fn wikilinks_ast_embed_requires_wikilinks_option() {
+    let options = Options::default();
+
+    assert_no_wikilink("![[x]]", &options);
+}
+
+#[test]
+fn wikilinks_ast_embed_unclosed_is_text() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+
+    for input in ["![[x", "![[x|label]"] {
+        assert_no_wikilink(input, &options);
+    }
+}
+
+#[test]
+fn wikilinks_ast_embed_does_not_break_image() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "![x](u)",
+        "<p><img src=\"u\" alt=\"x\" /></p>\n",
+    );
+}
+
+#[test]
+fn sourcepos_embed() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "![[x]]",
+        (document (1:1-1:6) [
+            (paragraph (1:1-1:6) [
+                (wikilink (1:1-1:6) [
+                    (text (1:4-1:4) "x")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "![[x|label]]",
+        (document (1:1-1:12) [
+            (paragraph (1:1-1:12) [
+                (wikilink (1:1-1:12) [
+                    (text (1:6-1:10) "label")
+                ])
+            ])
+        ])
+    );
+}
+
+fn assert_embed_roundtrip(
+    input: &str,
+    options: &Options<'_>,
+    expected_url: &str,
+    expected_label: &str,
+) {
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, options);
+
+    let mut markdown = String::new();
+    cm::format_document(root, options, &mut markdown).unwrap();
+
+    assert_single_wikilink(&markdown, options, expected_url, true, expected_label);
+}
+
+#[test]
+fn wikilinks_embed_semantic_roundtrip() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+
+    assert_embed_roundtrip("![[x]]", &options, "x", "x");
+    assert_embed_roundtrip("![[x|640x400]]", &options, "x", "640x400");
+
+    let mut options = Options::default();
+    options.extension.wikilinks_title_before_pipe = true;
+
+    assert_embed_roundtrip("![[640x400|x]]", &options, "x", "640x400");
 }

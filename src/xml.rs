@@ -288,6 +288,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     self.output.write_str(" destination=\"")?;
                     self.escape(&nl.url)?;
                     self.output.write_str("\"")?;
+                    self.output.write_str(" embed=\"")?;
+                    if nl.embed {
+                        self.output.write_str("true")?;
+                    } else {
+                        self.output.write_str("false")?;
+                    }
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::Underline => {}
                 NodeValue::Subscript => {}

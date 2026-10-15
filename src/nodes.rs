@@ -348,10 +348,13 @@ pub struct NodeLink {
 }
 
 /// The details of a wikilink's destination.
+/// For both `[[link]]` and `![[embed]]` syntax
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeWikiLink {
     /// The URL for the link destination.
     pub url: String,
+    /// If true, this is an embed link, otherwise a normal link.
+    pub embed: bool,
 }
 
 /// The metadata of a list; the kind of list, the delimiter used and so on.

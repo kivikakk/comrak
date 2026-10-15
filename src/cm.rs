@@ -1013,6 +1013,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_wikilink(&mut self, nl: &NodeWikiLink, entering: bool) -> fmt::Result {
         if entering {
+            if nl.embed {
+                write!(self, "!")?;
+            }
             write!(self, "[[")?;
             if self.options.extension.wikilinks() == Some(WikiLinksMode::UrlFirst) {
                 self.output(&nl.url, false, Escaping::Url)?;
