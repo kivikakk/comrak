@@ -483,6 +483,24 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub greentext: bool,
 
+    /// Enables the Obsidian Flavored Markdown's comments extension.
+    /// This allows comments as `%%comment%%` to be used in the markdown.
+    ///
+    /// ```md
+    /// This is an %%inline%% comment.
+    ///
+    /// %%
+    /// This is a block comment.
+    ///
+    /// Block comments can span multiple lines.
+    /// %%
+    /// ```
+    ///
+    /// An inline comment can appear anywhere in a line, including in a heading, a list item, or bold text.
+    /// A block comment starts when a line begins with %%, and ends at the next %%. A block comment can include blank lines and Markdown, such as headings and lists. Obsidian hides all of it in Reading view.
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub ofm_comments: bool,
+
     /// Wraps embedded image URLs using a function or custom trait object.
     ///
     /// ```rust

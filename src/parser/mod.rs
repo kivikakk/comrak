@@ -25,8 +25,8 @@ use crate::matchers::cr_or_lf_matcher;
 use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, BlockLines, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
-    NodeCodeBlock, NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock,
-    NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
+    NodeCodeBlock, NodeCommentBlock, NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading,
+    NodeHtmlBlock, NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -768,7 +768,7 @@ where
 
         while !node_matches!(
             container,
-            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..)
+            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MultilineComment(..)
         ) && !{
             #[cfg(feature = "phoenix_heex")]
             {
@@ -790,6 +790,7 @@ where
                     || self.handle_blockquote(container, line)
                     || self.handle_atx_heading(container, line)
                     || self.handle_atx_subtext(container, line)
+                    || self.handle_ofm_comment(container, line)
                     || self.handle_code_fence(container, line)
                     || self.handle_heex_directive_block(container, line)
                     || self.handle_heex_expression_block(container, line)
@@ -1033,6 +1034,27 @@ where
         } else {
             None
         }
+    }
+
+    fn handle_ofm_comment(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !self.options.extension.ofm_comments
+            || !line[self.first_nonspace..].starts_with("%%")
+            || line[self.first_nonspace + 2..].contains('%')
+        {
+            return false;
+        }
+
+        let nbc = NodeCommentBlock {
+            literal: String::new(),
+            closed: false,
+        };
+        *container = self.add_child(
+            container,
+            NodeValue::MultilineComment(nbc),
+            self.first_nonspace + 1,
+        );
+        self.advance_offset(line, self.first_nonspace + 2 - self.offset, false);
+        true
     }
 
     fn handle_code_fence(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1866,21 +1888,26 @@ where
             last_child.data_mut().last_line_blank = true;
         }
 
-        container.data_mut().last_line_blank = self.blank
-            && match container.data().value {
-                NodeValue::BlockQuote
-                | NodeValue::Heading(..)
-                | NodeValue::ThematicBreak
-                | NodeValue::Subtext => false,
-                NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
-                NodeValue::Item(..) => {
-                    container.first_child().is_some()
-                        || container.data().sourcepos.start.line != self.line_number
-                }
-                NodeValue::MultilineBlockQuote(..) => false,
-                NodeValue::Alert(..) => false,
-                _ => true,
-            };
+        let comment_blank = node_matches!(container, NodeValue::MultilineComment(..))
+            && container.data().sourcepos.start.line != self.line_number
+            && (self.blank || container.data().last_line_blank);
+        container.data_mut().last_line_blank = comment_blank
+            || self.blank
+                && match container.data().value {
+                    NodeValue::BlockQuote
+                    | NodeValue::Heading(..)
+                    | NodeValue::ThematicBreak
+                    | NodeValue::MultilineComment(..)
+                    | NodeValue::Subtext => false,
+                    NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
+                    NodeValue::Item(..) => {
+                        container.first_child().is_some()
+                            || container.data().sourcepos.start.line != self.line_number
+                    }
+                    NodeValue::MultilineBlockQuote(..) => false,
+                    NodeValue::Alert(..) => false,
+                    _ => true,
+                };
 
         let mut tmp = container;
         while let Some(parent) = tmp.parent() {
@@ -1906,6 +1933,7 @@ where
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 #[cfg(feature = "phoenix_heex")]
                 NodeValue::HeexBlock(ref nhb) => AddTextResult::HeexBlock(nhb.clone()),
+                NodeValue::MultilineComment(..) => AddTextResult::CommentBlock,
                 _ => AddTextResult::Otherwise,
             };
 
@@ -1955,6 +1983,35 @@ where
 
                     if matches_end {
                         container = self.finalize(container).unwrap();
+                    }
+                }
+                AddTextResult::CommentBlock => {
+                    let end_marker = line[self.offset..].find("%%");
+                    if let Some(idx) = end_marker {
+                        let end_offset = idx + self.offset;
+                        self.add_line(container, &line[..end_offset]);
+                        self.advance_offset(line, end_offset + 2 - self.offset, false);
+                        {
+                            let mut ast = container.data_mut();
+                            if let NodeValue::MultilineComment(ref mut ncb) = ast.value {
+                                ncb.closed = true;
+                            }
+                            ast.sourcepos.end = (self.line_number, self.offset).into();
+                        }
+                        container = self.finalize(container).unwrap();
+                        self.current = container;
+                        self.find_first_nonspace(line);
+                        if self.blank {
+                            return;
+                        }
+                        let last_matched = container;
+                        self.open_new_blocks(&mut container, line, true);
+                        self.add_text_to_container(container, last_matched, line);
+                        return;
+                    } else {
+                        self.add_line(container, line);
+                        container.data_mut().sourcepos.end =
+                            (self.line_number, self.curline_end_col).into();
                     }
                 }
                 _ => {
@@ -2145,7 +2202,10 @@ where
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else if matches!(
             ast.value,
-            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+            NodeValue::ThematicBreak
+                | NodeValue::TableRow(..)
+                | NodeValue::Table(..)
+                | NodeValue::MultilineComment(..)
         ) {
             // sourcepos.end set by itself or managed below.
         } else {
@@ -2270,6 +2330,11 @@ where
             NodeValue::Subtext => {
                 let content = &mut ast.lines_mut().content;
                 *content = self.take_content(content);
+            }
+            NodeValue::MultilineComment(ref mut ncb) => {
+                let mut lines = ast.lines.take().unwrap();
+                let content = &mut lines.content;
+                ncb.literal = self.take_content(content);
             }
             _ => (),
         }
@@ -2828,6 +2893,7 @@ enum AddTextResult {
     HtmlBlock(u8),
     #[cfg(feature = "phoenix_heex")]
     HeexBlock(Box<phoenix_heex::NodeHeexBlock>),
+    CommentBlock,
     Otherwise,
 }
 

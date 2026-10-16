@@ -302,6 +302,18 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::EscapedTag(data) => {
                     self.output.write_str(data)?;
                 }
+                NodeValue::MultilineComment(ref nmc) => {
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&nmc.literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
+                NodeValue::CommentInline(ref nci) => {
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&nci.literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
                 NodeValue::Alert(ref alert) => {
                     self.output.write_str(" type=\"")?;
                     self.output

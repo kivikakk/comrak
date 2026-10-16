@@ -413,6 +413,7 @@ pub fn format_node_default<T>(
         NodeValue::WikiLink(ref nwl) => render_wiki_link(context, node, entering, nwl),
         NodeValue::Subtext => render_subtext(context, node, entering),
         NodeValue::BlockDirective(ref nbd) => render_block_directive(context, node, entering, nbd),
+        NodeValue::CommentInline(_) | NodeValue::MultilineComment(_) => Ok(ChildRendering::Skip),
     }
 }
 
@@ -931,6 +932,14 @@ fn render_paragraph<T>(
             context.write_str("</p>")?;
             context.lf()?;
         }
+    } else if entering
+        && node
+            .preceding_siblings()
+            .skip(1)
+            .find(|previous| !node_matches!(previous, NodeValue::MultilineComment(..)))
+            .is_some_and(|previous| node_matches!(previous, NodeValue::Paragraph))
+    {
+        context.write_str("\n")?;
     }
 
     Ok(ChildRendering::HTML)
