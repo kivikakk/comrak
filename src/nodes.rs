@@ -265,6 +265,12 @@ pub enum NodeValue {
     /// :::
     /// ```
     BlockDirective(Box<NodeBlockDirective>),
+
+    /// **Inline**. An inline comment span. Enabled with `ofm_comments` option.
+    CommentInline(NodeComment),
+
+    /// **Block**. A block comment span. Enabled with `ofm_comments` option.
+    MultilineComment(NodeCommentBlock),
 }
 
 /// Alignment of a single table cell.
@@ -538,6 +544,30 @@ pub struct NodeMath {
     pub literal: String,
 }
 
+/// An inline comment span
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeComment {
+    /// The literal contents of the comment span.
+    /// As the contents are not interpreted as Markdown at all,
+    /// they are contained within this structure,
+    /// rather than inserted into a child inline of any kind.
+    /// The %% markers are not included in the literal.
+    pub literal: String,
+}
+
+/// A block comment span
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeCommentBlock {
+    /// The literal contents of the comment block.
+    /// As the contents are not interpreted as Markdown at all,
+    /// they are contained within this structure,
+    /// rather than inserted into a child inline of any kind.
+    pub literal: String,
+
+    /// Whether this comment block was explicitly closed by a closing fence.
+    pub closed: bool,
+}
+
 /// The metadata of an Alert node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAlert {
@@ -683,6 +713,7 @@ impl NodeValue {
             | NodeValue::TableCell
             | NodeValue::TaskItem(..)
             | NodeValue::MultilineBlockQuote(_)
+            | NodeValue::MultilineComment(_)
             | NodeValue::Alert(_)
             | NodeValue::Subtext => true,
             NodeValue::BlockDirective(_) => true,
@@ -776,6 +807,7 @@ impl NodeValue {
             NodeValue::Subscript => "subscript",
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
+            NodeValue::CommentInline(_) | NodeValue::MultilineComment(_) => "comment",
             NodeValue::Alert(_) => "alert",
             NodeValue::Subtext => "subtext",
             NodeValue::BlockDirective(_) => "block_directive",
@@ -791,6 +823,7 @@ impl NodeValue {
             NodeValue::Paragraph
             | NodeValue::Heading(..)
             | NodeValue::CodeBlock(..)
+            | NodeValue::MultilineComment(..)
             | NodeValue::Subtext => true,
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(..) => true,
@@ -1055,6 +1088,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         }
 
         match self.data().value {
+            NodeValue::CommentInline(..) | NodeValue::MultilineComment(_) => false,
             NodeValue::Document
             | NodeValue::BlockQuote
             | NodeValue::FootnoteDefinition(_)
@@ -1127,6 +1161,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::TaskItem(_)
                     | NodeValue::Escaped
                     | NodeValue::EscapedTag(_)
+                    | NodeValue::CommentInline(_)
                 )
             }
             NodeValue::MultilineBlockQuote(_) => {

@@ -210,6 +210,7 @@ enum Extension {
     Subscript,
     Spoiler,
     Greentext,
+    OfmComments,
     Alerts,
     CjkFriendlyEmphasis,
     Subtext,
@@ -315,6 +316,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subscript(exts.contains(&Extension::Subscript))
         .spoiler(exts.contains(&Extension::Spoiler))
         .greentext(exts.contains(&Extension::Greentext))
+        .ofm_comments(exts.contains(&Extension::OfmComments))
         .alerts(exts.contains(&Extension::Alerts))
         .maybe_front_matter_delimiter(cli.front_matter_delimiter)
         .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis))

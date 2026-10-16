@@ -303,6 +303,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '~'
                     || c == '!'
                     || (self.options.extension.autolink && c == '@')
+                    || (self.options.extension.ofm_comments
+                        && c == '%'
+                        && (nextb == b'%'
+                            || (nextb == 0 && self.next_inline_starts_with_percent())))
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
@@ -346,6 +350,27 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
 
         Ok(())
+    }
+
+    fn next_inline_starts_with_percent(&self) -> bool {
+        let next = self.node.next_sibling().or_else(|| {
+            self.node
+                .parent()
+                .filter(|parent| node_matches!(parent, NodeValue::Escaped))
+                .and_then(|parent| parent.next_sibling())
+        });
+        next.is_some_and(|next| {
+            let next = if node_matches!(next, NodeValue::Escaped) {
+                next.first_child().unwrap_or(next)
+            } else {
+                next
+            };
+            match &next.data().value {
+                NodeValue::Text(text) => text.starts_with('%'),
+                NodeValue::CommentInline(_) => true,
+                _ => false,
+            }
+        })
     }
 
     fn cr(&mut self) {
@@ -514,6 +539,26 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::Alert(ref alert) => self.format_alert(alert, entering)?,
             NodeValue::Subtext => self.format_subtext(entering)?,
             NodeValue::BlockDirective(ref nbd) => self.format_block_directive(nbd, entering)?,
+            NodeValue::CommentInline(ref comment) => {
+                if entering {
+                    write!(self, "%%{}%%", comment.literal)?;
+                }
+            }
+            NodeValue::MultilineComment(ref comment) => {
+                if entering {
+                    let first_in_list_item = node.previous_sibling().is_none()
+                        && parent_node.is_some_and(|parent| {
+                            node_matches!(parent, NodeValue::Item(..) | NodeValue::TaskItem(..))
+                        });
+                    if !first_in_list_item {
+                        self.blankline();
+                    }
+                    write!(self, "%%{}", comment.literal)?;
+                    if comment.closed {
+                        write!(self, "%%")?;
+                    }
+                }
+            }
         };
         Ok(true)
     }
@@ -1321,7 +1366,8 @@ fn minimize_commonmark(text: &mut String, original_options: &Options) {
 pub fn escape_inline(text: &str) -> String {
     let mut result = String::with_capacity(text.len() * 3 / 2);
 
-    for c in text.chars() {
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
         if c < '\x20'
             || c == '*'
             || c == '_'
@@ -1335,6 +1381,7 @@ pub fn escape_inline(text: &str) -> String {
             || c == '~'
             || c == '!'
             || c == '&'
+            || (c == '%' && chars.peek() == Some(&'%'))
             || c == '!'
             || c == '-'
             || c == '+'

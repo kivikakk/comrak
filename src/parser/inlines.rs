@@ -14,8 +14,8 @@ use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::matchers::{backslash_matcher, backtick_matcher, dollar_matcher};
 use crate::nodes::{
-    Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
-    NodeValue, NodeWikiLink, Sourcepos,
+    Ast, Node, NodeCode, NodeComment, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
+    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 #[cfg(feature = "attributes")]
 use crate::parser::attributes;
@@ -72,6 +72,9 @@ impl ByteTables {
             t.special[b'=' as usize] = true;
             t.skip[b'=' as usize] = true;
             t.emph[b'=' as usize] = true;
+        }
+        if options.extension.ofm_comments {
+            t.special[b'%' as usize] = true;
         }
         if options.extension.insert {
             t.special[b'+' as usize] = true;
@@ -392,6 +395,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             b'$' => Some(self.handle_dollars(line_offsets)),
             b'>' if self.options.parse.smart => Some(self.handle_guillemet_close()),
             b'|' if self.options.extension.spoiler => Some(self.handle_delim(b'|')),
+            b'%' if self.options.extension.ofm_comments => Some(self.handle_ofm_comment()),
             _ => {
                 let mut endpos = self.find_special_char();
                 let startpos = self.scanner.pos;
@@ -430,6 +434,43 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         true
+    }
+
+    fn handle_ofm_comment(&mut self) -> Node<'a> {
+        let range_start = self.scanner.pos;
+        self.scanner.pos += 1;
+        if self.peek_byte() == Some(b'%') {
+            let mut end_pos_opt = None;
+            for i in range_start + 2..self.input.len() - 1 {
+                if self.input.as_bytes()[i] == b'\n' || self.input.as_bytes()[i] == b'\r' {
+                    // Mismatched comment, treat as text
+                    break;
+                }
+
+                if self.input.as_bytes()[i] == b'%' && self.input.as_bytes()[i + 1] == b'%' {
+                    end_pos_opt = Some(i + 1);
+                    break;
+                }
+            }
+
+            if let Some(end_pos) = end_pos_opt {
+                let comment_content = &self.input[range_start + 2..end_pos - 1];
+                self.scanner.pos = end_pos + 1;
+                return self.make_inline(
+                    NodeValue::CommentInline(NodeComment {
+                        literal: comment_content.into(),
+                    }),
+                    range_start,
+                    end_pos,
+                );
+            }
+        }
+
+        self.make_inline(
+            NodeValue::Text("%".into()),
+            self.scanner.pos - 1,
+            self.scanner.pos - 1,
+        )
     }
 
     fn handle_newline(&mut self) -> Node<'a> {
