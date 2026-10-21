@@ -1,3 +1,17 @@
+# [v0.57.0] - 2026-10-21
+
+## What's Changed
+* Bump toml from 1.1.2+spec-1.1.0 to 1.1.3+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/871
+* Bump time from 0.3.45 to 0.3.55 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/872
+* Support embed wikilink by @szdytom in https://github.com/kivikakk/comrak/pull/874
+* Support OFM `%%` comment syntax by @szdytom in https://github.com/kivikakk/comrak/pull/876
+* Bump clap from 4.6.1 to 4.6.3 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/877
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.56.0...v0.57.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
