@@ -11,6 +11,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       fenix,
       ...
@@ -22,41 +23,33 @@
         "x86_64-linux"
       ];
       eachSystem = nixpkgs.lib.genAttrs systems;
-    in
-    {
-
-      packages = eachSystem (
+      pkgsFor = eachSystem (
         system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-          cargoToml = pkgs.lib.importTOML ./Cargo.toml;
-
-          mkComrak =
-            pkgs:
-            pkgs.rustPlatform.buildRustPackage {
-              pname = "comrak";
-              inherit (cargoToml.package) version;
-
-              src = ./.;
-              cargoLock.lockFile = ./Cargo.lock;
-
-              doCheck = false;
-            };
-        in
-        rec {
-          default = comrak;
-
-          comrak = mkComrak pkgs;
-          comrak-static = mkComrak pkgs.pkgsStatic;
+        import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
         }
       );
+    in
+    {
+      overlays.default = final: prev: {
+        comrak = final.callPackage ./nix/package.nix { };
+      };
 
-      formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt);
+      packages = eachSystem (system: {
+        default = pkgsFor.${system}.comrak;
+
+        inherit (pkgsFor.${system}) comrak;
+
+        comrak-static = pkgsFor.${system}.pkgsStatic.comrak;
+      });
+
+      formatter = eachSystem (system: pkgsFor.${system}.nixfmt);
 
       devShells = eachSystem (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = pkgsFor.${system};
           fenixPkgs = fenix.packages.${system};
 
           mkShell =
