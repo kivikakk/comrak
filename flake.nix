@@ -32,9 +32,7 @@
       );
     in
     {
-      overlays.default = final: prev: {
-        comrak = final.callPackage ./nix/package.nix { };
-      };
+      overlays.default = import ./nix/overlay.nix;
 
       packages = eachSystem (system: {
         default = pkgsFor.${system}.comrak;
