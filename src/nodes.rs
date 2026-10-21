@@ -249,6 +249,16 @@ pub enum NodeValue {
     /// Enabled with the `alerts` option.
     Alert(Box<NodeAlert>),
 
+    /// **Block**. An Obsidian style callout.  Contains other **blocks**.
+    /// The first child may be a [`NodeValue::CalloutTitle`] container holding
+    /// the custom title; all remaining children are the callout body.
+    Callout(Box<NodeCallout>),
+
+    /// **Block**. A container for a callout's custom title.  Contains other
+    /// **blocks**, which may include inlines themselves (e.g. a `Paragraph`).
+    /// Never has inlines directly.
+    CalloutTitle,
+
     /// **Block**. Block scoped subscript that acts similar to a header.
     /// Enabled with `subtext` option.
     Subtext,
@@ -587,6 +597,61 @@ pub struct NodeAlert {
     pub fence_offset: usize,
 }
 
+/// The initial fold state of a callout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CalloutFold {
+    /// The callout is not foldable.
+    None,
+
+    /// The callout is foldable and initially expanded.
+    Expanded,
+
+    /// The callout is foldable and initially collapsed.
+    Collapsed,
+}
+
+/// The metadata of a callout node.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NodeCallout {
+    /// The normalized callout type.
+    pub callout_type: String,
+
+    /// The raw metadata after the `|` separator, if any.
+    pub metadata: Option<String>,
+
+    /// The initial fold state.
+    pub fold: CalloutFold,
+}
+
+impl NodeCallout {
+    /// Returns the default title for a callout type.
+    ///
+    /// Hyphens are replaced with spaces, the result is lowercased, and the
+    /// first UTF-16 code unit is uppercased.
+    pub fn default_title(&self) -> String {
+        let spaced: String = self
+            .callout_type
+            .chars()
+            .map(|c| if c == '-' { ' ' } else { c })
+            .collect();
+        let lower = spaced.to_lowercase();
+        if let Some(first) = lower.chars().next() {
+            let first_len = first.len_utf8();
+            let rest = &lower[first_len..];
+            if first.len_utf16() == 1 {
+                // BMP: uppercase may expand (e.g. ß -> SS).
+                let upper_first: String = first.to_uppercase().collect();
+                format!("{}{}", upper_first, rest)
+            } else {
+                // Non-BMP: keep as-is (lowercase).
+                lower
+            }
+        } else {
+            lower
+        }
+    }
+}
+
 /// The type of alert.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AlertType {
@@ -715,6 +780,8 @@ impl NodeValue {
             | NodeValue::MultilineBlockQuote(_)
             | NodeValue::MultilineComment(_)
             | NodeValue::Alert(_)
+            | NodeValue::Callout(_)
+            | NodeValue::CalloutTitle
             | NodeValue::Subtext => true,
             NodeValue::BlockDirective(_) => true,
             #[cfg(feature = "phoenix_heex")]
@@ -809,6 +876,8 @@ impl NodeValue {
             NodeValue::EscapedTag(_) => "escaped_tag",
             NodeValue::CommentInline(_) | NodeValue::MultilineComment(_) => "comment",
             NodeValue::Alert(_) => "alert",
+            NodeValue::Callout(_) => "callout",
+            NodeValue::CalloutTitle => "callout_title",
             NodeValue::Subtext => "subtext",
             NodeValue::BlockDirective(_) => "block_directive",
         }
@@ -1084,6 +1153,9 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             NodeValue::FrontMatter(_) => {
                 return node_matches!(self, NodeValue::Document);
             }
+            NodeValue::CalloutTitle => {
+                return node_matches!(self, NodeValue::Callout(_));
+            }
             _ => {}
         }
 
@@ -1168,6 +1240,10 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
             NodeValue::Alert(_) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+            NodeValue::Callout(_)
+            | NodeValue::CalloutTitle => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
             NodeValue::BlockDirective(_) => {

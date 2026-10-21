@@ -199,6 +199,7 @@ struct FuzzExtensionOptions {
     spoiler: bool,
     greentext: bool,
     alerts: bool,
+    ofm_callouts: bool,
     inline_footnotes: bool,
 }
 
@@ -223,6 +224,7 @@ impl FuzzExtensionOptions {
             spoiler: self.spoiler,
             greentext: self.greentext,
             alerts: self.alerts,
+            ofm_callouts: self.ofm_callouts,
             front_matter_delimiter: None,
             header_id_prefix: None,
             ..Default::default()

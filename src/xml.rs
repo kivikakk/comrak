@@ -2,7 +2,7 @@ use std::cmp;
 use std::fmt::{self, Write};
 
 use crate::node_matches;
-use crate::nodes::{ListType, NodeCode, NodeMath, NodeValue};
+use crate::nodes::{CalloutFold, ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::options::{Options, Plugins};
 
@@ -51,6 +51,19 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
 
     fn escape(&mut self, buffer: &str) -> fmt::Result {
         crate::html::escape(self.output, buffer)
+    }
+
+    fn escape_attr(&mut self, buffer: &str) -> fmt::Result {
+        let mut last = 0;
+        for (i, byte) in buffer.as_bytes().iter().enumerate() {
+            if *byte == b'\t' {
+                crate::html::escape(self.output, &buffer[last..i])?;
+                self.output.write_str("&#9;")?;
+                last = i + 1;
+            }
+        }
+        crate::html::escape(self.output, &buffer[last..])?;
+        Ok(())
     }
 
     fn format(&mut self, node: Node<'_>, plain: bool) -> fmt::Result {
@@ -330,6 +343,23 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     }
                 }
                 NodeValue::Subtext => {}
+                NodeValue::Callout(ref nc) => {
+                    self.output.write_str(" type=\"")?;
+                    self.escape_attr(&nc.callout_type)?;
+                    self.output.write_str("\"")?;
+                    if let Some(meta) = &nc.metadata {
+                        self.output.write_str(" metadata=\"")?;
+                        self.escape_attr(meta)?;
+                        self.output.write_str("\"")?;
+                    }
+                    let fold = match nc.fold {
+                        CalloutFold::None => "none",
+                        CalloutFold::Expanded => "expanded",
+                        CalloutFold::Collapsed => "collapsed",
+                    };
+                    write!(self.output, " fold=\"{}\"", fold)?;
+                }
+                NodeValue::CalloutTitle => {}
                 NodeValue::BlockDirective(ref nbd) => {
                     self.output.write_str(" info=\"")?;
                     self.escape(&nbd.info)?;

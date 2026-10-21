@@ -21,9 +21,9 @@ use crate::ctype::isspace;
 #[cfg(feature = "shortcodes")]
 use crate::nodes::NodeShortCode;
 use crate::nodes::{
-    ListType, Node, NodeAlert, NodeBlockDirective, NodeCode, NodeCodeBlock, NodeFootnoteDefinition,
-    NodeFootnoteReference, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
-    NodeValue, NodeWikiLink, TableAlignment,
+    CalloutFold, ListType, Node, NodeAlert, NodeBlockDirective, NodeCallout, NodeCode,
+    NodeCodeBlock, NodeFootnoteDefinition, NodeFootnoteReference, NodeHeading, NodeHtmlBlock,
+    NodeLink, NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
@@ -394,6 +394,8 @@ pub fn format_node_default<T>(
 
         // Extensions
         NodeValue::Alert(ref alert) => render_alert(context, node, entering, alert),
+        NodeValue::Callout(ref nc) => render_callout(context, node, entering, nc),
+        NodeValue::CalloutTitle => render_callout_title(context, node, entering),
         NodeValue::DescriptionDetails => render_description_details(context, node, entering),
         NodeValue::DescriptionItem(_) => Ok(ChildRendering::HTML),
         NodeValue::DescriptionList => render_description_list(context, node, entering),
@@ -903,6 +905,14 @@ fn render_paragraph<T>(
     node: Node<'_>,
     entering: bool,
 ) -> Result<ChildRendering, fmt::Error> {
+    // Skip <p> tags when inside a CalloutTitle.
+    if node
+        .parent()
+        .is_some_and(|p| node_matches!(p, NodeValue::CalloutTitle))
+    {
+        return Ok(ChildRendering::HTML);
+    }
+
     let tight = node
         .parent()
         .and_then(|n| n.parent())
@@ -1349,6 +1359,74 @@ fn render_description_details<T>(
         context.lf()?;
     }
 
+    Ok(ChildRendering::HTML)
+}
+
+fn render_callout<T>(
+    context: &mut Context<T>,
+    node: Node<'_>,
+    entering: bool,
+    nc: &NodeCallout,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.cr()?;
+        write!(context, "<div class=\"callout\" data-callout=\"")?;
+        context.escape(&nc.callout_type)?;
+        write!(context, "\"")?;
+        if let Some(meta) = &nc.metadata {
+            write!(context, " data-callout-metadata=\"")?;
+            context.escape(meta)?;
+            write!(context, "\"")?;
+        }
+        let fold = match nc.fold {
+            CalloutFold::None => "none",
+            CalloutFold::Expanded => "expanded",
+            CalloutFold::Collapsed => "collapsed",
+        };
+        write!(context, " data-callout-fold=\"{}\"", fold)?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+        context.lf()?;
+
+        // If first child is not a CalloutTitle, emit a default title then open content.
+        let has_title = node
+            .first_child()
+            .is_some_and(|ch| node_matches!(ch, NodeValue::CalloutTitle));
+        if !has_title {
+            context.write_str("<div class=\"callout-title\">")?;
+            context.escape(&nc.default_title())?;
+            context.write_str("</div>")?;
+            context.lf()?;
+            context.write_str("<div class=\"callout-content\">")?;
+            context.lf()?;
+        }
+    } else {
+        context.cr()?;
+        context.write_str("</div>")?;
+        context.lf()?;
+        context.write_str("</div>")?;
+        context.lf()?;
+    }
+    Ok(ChildRendering::HTML)
+}
+
+fn render_callout_title<T>(
+    context: &mut Context<T>,
+    node: Node<'_>,
+    entering: bool,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.write_str("<div class=\"callout-title\"")?;
+        render_sourcepos(context, node)?;
+        context.write_str(">")?;
+        context.lf()?;
+    } else {
+        context.cr()?;
+        context.write_str("</div>")?;
+        context.lf()?;
+        context.write_str("<div class=\"callout-content\">")?;
+        context.lf()?;
+    }
     Ok(ChildRendering::HTML)
 }
 

@@ -281,6 +281,17 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub alerts: bool,
 
+    /// Enables Obsidian style callouts.
+    ///
+    /// A callout starts with a block quote marker followed by `[!type]`
+    ///
+    /// ```markdown
+    /// > [!warning]
+    /// > Watch out
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub ofm_callouts: bool,
+
     /// Enables math using dollar syntax.
     ///
     /// ```markdown

@@ -212,6 +212,7 @@ enum Extension {
     Greentext,
     OfmComments,
     Alerts,
+    OfmCallouts,
     CjkFriendlyEmphasis,
     Subtext,
     Highlight,
@@ -318,6 +319,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .greentext(exts.contains(&Extension::Greentext))
         .ofm_comments(exts.contains(&Extension::OfmComments))
         .alerts(exts.contains(&Extension::Alerts))
+        .ofm_callouts(exts.contains(&Extension::OfmCallouts))
         .maybe_front_matter_delimiter(cli.front_matter_delimiter)
         .cjk_friendly_emphasis(exts.contains(&Extension::CjkFriendlyEmphasis))
         .subtext(exts.contains(&Extension::Subtext))

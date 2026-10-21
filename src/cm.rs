@@ -6,9 +6,9 @@ use std::str;
 use crate::Arena;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
-    ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective, NodeCodeBlock, NodeHeading,
-    NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink,
-    TableAlignment,
+    CalloutFold, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective, NodeCallout,
+    NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
+    NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "phoenix_heex")]
@@ -87,6 +87,8 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     footnote_ix: u32,
     ol_stack: Vec<usize>,
     allow_wrap: bool,
+    callout_title_depth: usize,
+    callout_title_state_stack: Vec<(bool, bool, usize, bool, u8)>,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -123,6 +125,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             footnote_ix: 0,
             ol_stack: vec![],
             allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
+            callout_title_depth: 0,
+            callout_title_state_stack: Vec::new(),
         }
     }
 
@@ -374,11 +378,51 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn cr(&mut self) {
+        if self.callout_title_depth > 0 {
+            return;
+        }
         self.need_cr = max(self.need_cr, 1);
     }
 
     fn blankline(&mut self) {
+        if self.callout_title_depth > 0 {
+            return;
+        }
         self.need_cr = max(self.need_cr, 2);
+    }
+
+    /// Encode an info string for single-line title output in code fences or
+    /// block directive fences.
+    ///
+    /// Re-escapes `&` and `\` to counteract the parser's `unescape_html`
+    /// and `unescape` passes, encodes newlines as character references to
+    /// keep the output single-line without altering the value, and optionally
+    /// encodes `:` as `&#58;` (for directive fences, since the scanner
+    /// rejects literal colons before unescaping).
+    fn write_title_info(&mut self, info: &str, escape_colon: bool) -> fmt::Result {
+        for c in info.chars() {
+            match c {
+                '\n' => {
+                    write!(self, "&#10;")?;
+                }
+                '\r' => {
+                    write!(self, "&#13;")?;
+                }
+                '&' => {
+                    write!(self, "&amp;")?;
+                }
+                '\\' => {
+                    write!(self, "\\\\")?;
+                }
+                ':' if escape_colon => {
+                    write!(self, "&#58;")?;
+                }
+                _ => {
+                    write!(self, "{}", c)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn format(&mut self, root: Node<'a>) -> fmt::Result {
@@ -537,6 +581,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::SpoileredText => self.format_spoiler()?,
             NodeValue::EscapedTag(net) => self.format_escaped_tag(net)?,
             NodeValue::Alert(ref alert) => self.format_alert(alert, entering)?,
+            NodeValue::Callout(ref nc) => self.format_callout(node, nc, entering)?,
+            NodeValue::CalloutTitle => self.format_callout_title(entering)?,
             NodeValue::Subtext => self.format_subtext(entering)?,
             NodeValue::BlockDirective(ref nbd) => self.format_block_directive(nbd, entering)?,
             NodeValue::CommentInline(ref comment) => {
@@ -734,33 +780,52 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         let info = ncb.info.as_bytes();
         let literal = ncb.literal.as_bytes();
 
-        #[allow(clippy::len_zero)]
-        if !(info.len() > 0
-            || literal.len() <= 2
-            || isspace(literal[0])
-            || first_in_list_item
-            || self.options.render.prefer_fenced
-            || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
-        {
-            write!(self, "    ")?;
-            write!(self.prefix, "    ")?;
-            self.write_str(&ncb.literal)?;
-            let new_len = self.prefix.len() - 4;
-            self.prefix.truncate(new_len);
+        if self.callout_title_depth > 0 {
+            if ncb.fenced {
+                let fence_byte = if info.contains(&b'`') { b'~' } else { b'`' };
+                let numticks = max(3, longest_byte_sequence(literal, fence_byte) + 1);
+                let fence_str = (fence_byte as char).to_string().repeat(numticks);
+                write!(self, "{}", fence_str)?;
+                if !ncb.info.is_empty() {
+                    self.write_title_info(&ncb.info, false)?;
+                }
+            } else {
+                write!(self, "    ")?;
+                let mut content = ncb.literal.clone();
+                if content.ends_with('\n') {
+                    content.pop();
+                }
+                self.write_str(&content)?;
+            }
         } else {
-            let fence_byte = if info.contains(&b'`') { b'~' } else { b'`' };
-            let numticks = max(3, longest_byte_sequence(literal, fence_byte) + 1);
-            for _ in 0..numticks {
-                write!(self, "{}", fence_byte as char)?;
-            }
-            if !info.is_empty() {
-                self.write_str(&ncb.info)?;
-            }
-            self.cr();
-            self.write_str(&ncb.literal)?;
-            self.cr();
-            for _ in 0..numticks {
-                write!(self, "{}", fence_byte as char)?;
+            #[allow(clippy::len_zero)]
+            if !(info.len() > 0
+                || literal.len() <= 2
+                || isspace(literal[0])
+                || first_in_list_item
+                || self.options.render.prefer_fenced
+                || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
+            {
+                write!(self, "    ")?;
+                write!(self.prefix, "    ")?;
+                self.write_str(&ncb.literal)?;
+                let new_len = self.prefix.len() - 4;
+                self.prefix.truncate(new_len);
+            } else {
+                let fence_byte = if info.contains(&b'`') { b'~' } else { b'`' };
+                let numticks = max(3, longest_byte_sequence(literal, fence_byte) + 1);
+                for _ in 0..numticks {
+                    write!(self, "{}", fence_byte as char)?;
+                }
+                if !info.is_empty() {
+                    self.write_str(&ncb.info)?;
+                }
+                self.cr();
+                self.write_str(&ncb.literal)?;
+                self.cr();
+                for _ in 0..numticks {
+                    write!(self, "{}", fence_byte as char)?;
+                }
             }
         }
         self.blankline();
@@ -771,7 +836,15 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_html_block(&mut self, nhb: &NodeHtmlBlock, entering: bool) -> fmt::Result {
         if entering {
             self.blankline();
-            self.write_str(&nhb.literal)?;
+            if self.callout_title_depth > 0 {
+                let mut content = nhb.literal.clone();
+                if content.ends_with('\n') {
+                    content.pop();
+                }
+                self.write_str(&content)?;
+            } else {
+                self.write_str(&nhb.literal)?;
+            }
             self.blankline();
         }
         Ok(())
@@ -1225,6 +1298,80 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
+    fn format_callout(&mut self, node: Node<'a>, nc: &NodeCallout, entering: bool) -> fmt::Result {
+        if entering {
+            let mut header = String::from("> [!");
+            header.push_str(&nc.callout_type);
+            match &nc.metadata {
+                Some(meta) => {
+                    header.push('|');
+                    header.push_str(meta);
+                }
+                None => {
+                    if nc.callout_type.is_empty() {
+                        header.push(' ');
+                    }
+                }
+            }
+            header.push(']');
+            match nc.fold {
+                CalloutFold::Expanded => header.push('+'),
+                CalloutFold::Collapsed => header.push('-'),
+                CalloutFold::None => {}
+            }
+            self.output(&header, false, Escaping::Literal)?;
+            self.begin_content = true;
+            write!(self.prefix, "> ")?;
+            // No title container: body starts on the next line.
+            let has_title = node
+                .first_child()
+                .is_some_and(|ch| node_matches!(ch, NodeValue::CalloutTitle));
+            if !has_title {
+                self.cr();
+            }
+        } else {
+            let new_len = self.prefix.len() - 2;
+            self.prefix.truncate(new_len);
+            self.blankline();
+        }
+        Ok(())
+    }
+
+    fn format_callout_title(&mut self, entering: bool) -> fmt::Result {
+        if entering {
+            // Save state and enter single-line title mode.
+            self.callout_title_state_stack.push((
+                self.no_linebreaks,
+                self.in_tight_list_item,
+                self.last_breakable,
+                self.allow_wrap,
+                self.need_cr,
+            ));
+            self.callout_title_depth += 1;
+            self.no_linebreaks = true;
+            self.allow_wrap = false;
+            self.last_breakable = 0;
+            self.need_cr = 0;
+            write!(self, " ")?;
+            self.begin_content = true;
+        } else {
+            self.callout_title_depth -= 1;
+            if let Some((no_lb, tight, lb, wrap, cr)) = self.callout_title_state_stack.pop() {
+                self.no_linebreaks = no_lb;
+                self.in_tight_list_item = tight;
+                self.last_breakable = lb;
+                self.allow_wrap = wrap;
+                self.need_cr = cr;
+            }
+            if self.callout_title_depth > 0 {
+                // Still inside an outer title; stay on the same line.
+            } else {
+                self.cr();
+            }
+        }
+        Ok(())
+    }
+
     fn format_subtext(&mut self, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "-# ")?;
@@ -1240,13 +1387,20 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_block_directive(&mut self, nbd: &NodeBlockDirective, entering: bool) -> fmt::Result {
         if entering {
             let fence = ":".repeat(nbd.fence_length.max(3));
-            if nbd.info.is_empty() {
+            if self.callout_title_depth > 0 {
+                if nbd.info.is_empty() {
+                    write!(self, "{fence}")?;
+                } else {
+                    write!(self, "{fence}")?;
+                    self.write_title_info(&nbd.info, true)?;
+                }
+            } else if nbd.info.is_empty() {
                 writeln!(self, "{fence}")?;
             } else {
                 writeln!(self, "{fence}{}", nbd.info)?;
             }
             self.begin_content = true;
-        } else {
+        } else if self.callout_title_depth == 0 {
             let fence = ":".repeat(nbd.fence_length.max(3));
             write!(self, "{fence}")?;
             self.blankline();
