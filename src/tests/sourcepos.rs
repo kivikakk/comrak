@@ -521,6 +521,9 @@ const COMMENT_INLINE: TestCase = (&[sourcepos!((1:3-1:8))], "x %%aa%% tail");
 
 const MULTILINE_COMMENT: TestCase = (&[sourcepos!((1:1-2:4))], "%%\naa%%bb");
 
+const CALLOUT: TestCase = (&[sourcepos!((1:1-2:6))], "> [!note]\n> Body\n");
+const CALLOUT_TITLE: TestCase = (&[sourcepos!((1:11-1:15))], "> [!note] Title\n> Body\n");
+
 fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
     use NodeValueDiscriminants::*;
 
@@ -573,6 +576,8 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 SpoileredText => SPOILERED_TEXT,
                 EscapedTag => ESCAPED_TAG,
                 Alert => ALERT,
+                Callout => CALLOUT,
+                CalloutTitle => CALLOUT_TITLE,
                 Subtext => SUBTEXT,
                 BlockDirective => BLOCK_DIRECTIVE,
                 CommentInline => COMMENT_INLINE,
@@ -625,8 +630,17 @@ fn sourcepos() {
     }
 
     for (kind, (expecteds, text)) in node_values {
+        // Only enable ofm_callouts for Callout/CalloutTitle kinds so that
+        // the shared options don't cause `[!note]` to be parsed as a callout
+        // in every other node's test case.
+        let mut case_options = options.clone();
+        case_options.extension.ofm_callouts = matches!(
+            kind,
+            NodeValueDiscriminants::Callout | NodeValueDiscriminants::CalloutTitle
+        );
+
         let arena = Arena::new();
-        let root = parse_document(&arena, text, &options);
+        let root = parse_document(&arena, text, &case_options);
         let asts: Vec<_> = root
             .descendants()
             .filter(|d| NodeValueDiscriminants::from(&d.data().value) == kind)

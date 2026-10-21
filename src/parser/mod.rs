@@ -1,6 +1,7 @@
 #[cfg(feature = "attributes")]
 mod attributes;
 mod autolink;
+mod callouts;
 mod inlines;
 pub mod options;
 #[cfg(feature = "phoenix_heex")]
@@ -25,8 +26,9 @@ use crate::matchers::cr_or_lf_matcher;
 use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, BlockLines, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
-    NodeCodeBlock, NodeCommentBlock, NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading,
-    NodeHtmlBlock, NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue, Sourcepos,
+    NodeCallout, NodeCodeBlock, NodeCommentBlock, NodeDescriptionItem, NodeFootnoteDefinition,
+    NodeHeading, NodeHtmlBlock, NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue,
+    Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -139,6 +141,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     curline_end_col: usize,
     last_line_length: usize,
     total_size: usize,
+    pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
 }
@@ -194,6 +197,7 @@ where
             curline_end_col: 0,
             last_line_length: 0,
             total_size: 0,
+            pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
         }
@@ -294,11 +298,14 @@ where
         if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
             let mut container = last_matched_container;
             let current = self.current;
-            self.open_new_blocks(&mut container, line, all_matched);
+            let lazy_callout = self.lazy_callout_candidate(all_matched);
+            self.open_new_blocks(&mut container, line, all_matched, lazy_callout.is_some());
 
             if current.same_node(self.current) {
-                self.add_text_to_container(container, last_matched_container, line);
+                self.add_text_to_container(container, last_matched_container, line, lazy_callout);
             }
+
+            self.finish_callout_titles();
         }
 
         self.last_line_length = self.curline_end_col;
@@ -339,7 +346,7 @@ where
             self.find_first_nonspace(line);
 
             match ast.value {
-                NodeValue::BlockQuote => {
+                NodeValue::BlockQuote | NodeValue::Callout(_) => {
                     if !self.parse_block_quote_prefix(line) {
                         break;
                     }
@@ -762,8 +769,35 @@ where
     // Open new blocks //
     /////////////////////
 
-    fn open_new_blocks(&mut self, container: &mut Node<'a>, line: &str, all_matched: bool) {
-        let mut maybe_lazy = node_matches!(self.current, NodeValue::Paragraph);
+    fn lazy_callout_candidate(&self, all_matched: bool) -> Option<Node<'a>> {
+        if all_matched || self.blank {
+            return None;
+        }
+        if !node_matches!(self.current, NodeValue::Callout(_)) {
+            return None;
+        }
+        let callout = self.current;
+        if callout.data().sourcepos.start.line != self.line_number - 1 {
+            return None;
+        }
+        let no_body = callout
+            .children()
+            .all(|ch| node_matches!(ch, NodeValue::CalloutTitle));
+        if !no_body {
+            return None;
+        }
+        Some(callout)
+    }
+
+    fn open_new_blocks(
+        &mut self,
+        container: &mut Node<'a>,
+        line: &str,
+        all_matched: bool,
+        allow_lazy_callout: bool,
+    ) {
+        let mut maybe_lazy =
+            node_matches!(self.current, NodeValue::Paragraph) || allow_lazy_callout;
         let mut depth = 0;
 
         while !node_matches!(
@@ -785,6 +819,7 @@ where
 
             if !((!indented
                 && (self.handle_block_directive(container, line)
+                    || self.handle_callout(container, line)
                     || self.handle_alert(container, line)
                     || self.handle_multiline_blockquote(container, line)
                     || self.handle_blockquote(container, line)
@@ -857,6 +892,67 @@ where
             scanners::open_block_directive_fence(&line[self.first_nonspace..])
         } else {
             None
+        }
+    }
+
+    fn handle_callout(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !self.options.extension.ofm_callouts {
+            return false;
+        }
+
+        let quote_start = self.first_nonspace;
+        let bytes = line.as_bytes();
+        if bytes.get(quote_start) != Some(&b'>') {
+            return false;
+        }
+
+        let mut content_start = quote_start + 1;
+        if bytes.get(content_start) == Some(&b' ') {
+            content_start += 1;
+        }
+
+        let line_end = self.curline_end_col;
+        let header_input = &line[content_start..line_end];
+        let Some(header) = callouts::parse_callout_header(header_input) else {
+            return false;
+        };
+
+        let nc = NodeCallout {
+            callout_type: callouts::normalize_callout_type(header.raw_type),
+            metadata: header.metadata.map(str::to_owned),
+            fold: header.fold,
+        };
+
+        // Absolute title start in the original line.
+        let title_start = content_start + header.title_start;
+
+        self.advance_offset(line, title_start - self.offset, false);
+
+        let callout = self.add_child(container, NodeValue::Callout(Box::new(nc)), quote_start + 1);
+
+        if title_start < line_end {
+            let title = self.add_child(callout, NodeValue::CalloutTitle, title_start + 1);
+            self.pending_callout_titles.push(title);
+            *container = title;
+        } else {
+            *container = callout;
+        }
+
+        true
+    }
+
+    fn finish_callout_titles(&mut self) {
+        while let Some(title) = self.pending_callout_titles.last().copied() {
+            while !self.current.same_node(title) {
+                self.current = self.finalize(self.current).unwrap();
+            }
+            self.current = self.finalize(self.current).unwrap();
+            self.pending_callout_titles.pop();
+
+            // Remove empty title containers (no block children were produced).
+            if title.first_child().is_none() {
+                title.detach();
+            }
         }
     }
 
@@ -1456,7 +1552,7 @@ where
         *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
 
         let adv = line.len() - strings::newlines_of(line) - self.offset;
-        container.data_mut().sourcepos.end = (self.line_number, adv).into();
+        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
         self.advance_offset(line, adv, false);
 
         true
@@ -1879,6 +1975,7 @@ where
         mut container: Node<'a>,
         last_matched_container: Node<'a>,
         line: &str,
+        lazy_callout: Option<Node<'a>>,
     ) {
         self.find_first_nonspace(line);
 
@@ -1895,6 +1992,8 @@ where
             || self.blank
                 && match container.data().value {
                     NodeValue::BlockQuote
+                    | NodeValue::Callout(_)
+                    | NodeValue::CalloutTitle
                     | NodeValue::Heading(..)
                     | NodeValue::ThematicBreak
                     | NodeValue::MultilineComment(..)
@@ -1920,9 +2019,17 @@ where
             && !self.blank
             && (!self.options.extension.greentext
                 || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
-            && node_matches!(self.current, NodeValue::Paragraph)
+            && (node_matches!(self.current, NodeValue::Paragraph)
+                || lazy_callout.is_some_and(|c| c.same_node(self.current)))
         {
-            self.add_line(self.current, line);
+            if let Some(callout) = lazy_callout.filter(|c| c.same_node(self.current)) {
+                let para = self.add_child(callout, NodeValue::Paragraph, self.first_nonspace + 1);
+                self.advance_offset(line, self.first_nonspace - self.offset, false);
+                self.add_line(para, line);
+                self.current = para;
+            } else {
+                self.add_line(self.current, line);
+            }
         } else {
             while !self.current.same_node(last_matched_container) {
                 self.current = self.finalize(self.current).unwrap();
@@ -2005,8 +2112,8 @@ where
                             return;
                         }
                         let last_matched = container;
-                        self.open_new_blocks(&mut container, line, true);
-                        self.add_text_to_container(container, last_matched, line);
+                        self.open_new_blocks(&mut container, line, true, false);
+                        self.add_text_to_container(container, last_matched, line, None);
                         return;
                     } else {
                         self.add_line(container, line);
@@ -2208,6 +2315,10 @@ where
                 | NodeValue::MultilineComment(..)
         ) {
             // sourcepos.end set by itself or managed below.
+        } else if !self.pending_callout_titles.is_empty()
+            && ast.sourcepos.start.line == self.line_number
+        {
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else {
             ast.sourcepos.end = (self.line_number - 1, self.last_line_length).into();
         }
