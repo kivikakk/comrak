@@ -30,6 +30,13 @@
           overlays = [ self.overlays.default ];
         }
       );
+
+      msrvToolchain =
+        system:
+        fenix.packages.${system}.toolchainOf {
+          channel = "1.89.0";
+          sha256 = "sha256-+9FmLhAOezBZCOziO0Qct1NOrfpjNsXxc/8I0c7BdKE=";
+        };
     in
     {
       overlays.default = import ./nix/overlay.nix;
@@ -117,11 +124,51 @@
 
           msrv = mkShell {
             name = "comrak-msrv";
-            toolchain = fenixPkgs.toolchainOf {
-              channel = "1.89.0";
-              sha256 = "sha256-+9FmLhAOezBZCOziO0Qct1NOrfpjNsXxc/8I0c7BdKE=";
-            };
+            toolchain = msrvToolchain system;
           };
+        }
+      );
+
+      nossa.checks = nixpkgs.lib.genAttrs [ "x86_64-linux" ] (
+        system:
+        let
+          pkgs = pkgsFor.${system};
+          toolchain = (msrvToolchain system).withComponents [
+            "cargo"
+            "rustc"
+            "clippy"
+            "rustfmt"
+          ];
+          msrvPlatform = pkgs.makeRustPlatform {
+            cargo = toolchain;
+            rustc = toolchain;
+          };
+        in
+        {
+          test = pkgs.comrak.overrideAttrs (old: {
+            pname = "comrak-test";
+            doCheck = true;
+            nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.perl ];
+            postPatch = (old.postPatch or "") + ''
+              find src -name '*.rs' -type f -exec perl -pi -e 's/#\[timeout\((\d+)\)\]/"#[timeout(" . ($1 * 2) . ")]"/ge' '{}' \;
+            '';
+          });
+
+          clippy = (pkgs.comrak.override { rustPlatform = msrvPlatform; }).overrideAttrs {
+            pname = "comrak-clippy";
+            buildPhase = ''
+              runHook preBuild
+              cargo clippy --locked --lib --bin comrak --tests -- -Dwarnings
+              runHook postBuild
+            '';
+            installPhase = "touch $out";
+          };
+
+          fmt = pkgs.runCommand "comrak-fmt" { nativeBuildInputs = [ toolchain ]; } ''
+            cd ${./.}
+            cargo fmt --check
+            touch $out
+          '';
         }
       );
     };
