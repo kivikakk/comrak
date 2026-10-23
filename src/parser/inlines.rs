@@ -23,7 +23,7 @@ use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 #[cfg(feature = "shortcodes")]
 use crate::parser::shortcodes::NodeShortCode;
-use crate::parser::{AutolinkType, Options, ResolvedReference, autolink};
+use crate::parser::{AutolinkType, Cancellation, Options, ResolvedReference, autolink};
 use crate::scanners;
 use crate::strings::{self, Case, count_newlines, is_blank};
 
@@ -126,6 +126,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     tables: &'r ByteTables,
     footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
+    cancellation: &'r Cancellation<'o>,
     last_delimiter: Option<&'d Delimiter<'a, 'd>>,
     brackets: SmallVec<[Bracket<'a>; 8]>,
     pub backticks: [usize; MAXBACKTICKS + 1],
@@ -152,6 +153,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         tables: &'r ByteTables,
         footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
+        cancellation: &'r Cancellation<'o>,
         inline_footnote_depth: usize,
     ) -> Self {
         Subject {
@@ -169,6 +171,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             tables,
             footnote_defs,
             delimiter_arena,
+            cancellation,
             last_delimiter: None,
             brackets: SmallVec::new(),
             backticks: [0; MAXBACKTICKS + 1],
@@ -1302,10 +1305,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.tables,
             self.footnote_defs,
             self.delimiter_arena,
+            self.cancellation,
             self.inline_footnote_depth + 1,
         );
 
-        while subj.parse_inline(para_node, 1, &line_offsets) {}
+        while subj.parse_inline(para_node, 1, &line_offsets) && !self.cancellation.step() {}
         subj.process_emphasis(0);
         subj.clear_brackets();
 
@@ -1472,6 +1476,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
 
         while let Some(c) = closer {
+            if self.cancellation.step() {
+                break;
+            }
             if c.can_close {
                 // Each time through the outer `closer` loop we reset the opener
                 // to the element below the closer, and search down the stack
@@ -1506,6 +1513,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // failed to find, avoiding repeatedly rescanning the bottom of
                 // the stack, using the openers_bottom array.
                 while opener.is_some_and(|o| o.position >= openers_bottom[ix]) {
+                    if self.cancellation.step() {
+                        break;
+                    }
                     let o = opener.unwrap();
                     if o.can_open && o.delim_byte == c.delim_byte {
                         // This is a bit convoluted; see points 9 and 10 here:
@@ -2819,6 +2829,7 @@ mod tests {
         let mut footnote_defs = FootnoteDefs::new();
         let delimiter_arena = typed_arena::Arena::new();
         let tables = ByteTables::new(&options);
+        let cancellation = Cancellation::new(None);
         let input = format!("`{} ``tail`", "語".repeat(32));
         let double_backtick_pos = input.find("``").unwrap();
         let mut subject = Subject::new(
@@ -2830,6 +2841,7 @@ mod tests {
             &tables,
             &mut footnote_defs,
             &delimiter_arena,
+            &cancellation,
             0,
         );
         subject.scanner.pos = 1;
@@ -2850,6 +2862,7 @@ mod tests {
         let mut footnote_defs = FootnoteDefs::new();
         let delimiter_arena = typed_arena::Arena::new();
         let tables = ByteTables::new(&options);
+        let cancellation = Cancellation::new(None);
         let input = format!("`{} ``tail", "語".repeat(32));
         let double_backtick_pos = input.find("``").unwrap();
         let mut subject = Subject::new(
@@ -2861,6 +2874,7 @@ mod tests {
             &tables,
             &mut footnote_defs,
             &delimiter_arena,
+            &cancellation,
             0,
         );
         subject.scanner.pos = 1;

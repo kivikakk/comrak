@@ -11,6 +11,7 @@ pub mod shortcodes;
 mod table;
 
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::cmp::{Ordering, min};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -48,6 +49,37 @@ const MAX_LIST_DEPTH: usize = 100;
 ///
 /// See the documentation of the crate root for an example.
 pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> Node<'a> {
+    parse_cancellable(arena, md, options, None).unwrap()
+}
+
+/// Like [`parse_document`], but returns [`ParseCancelled`] once `should_cancel`
+/// returns `true`. It's called every 256 steps, where a step is a line, an
+/// inline or a node.
+///
+/// ```rust
+/// # use std::time::{Duration, Instant};
+/// # use comrak::{Arena, Options, try_parse_document};
+/// let arena = Arena::new();
+/// let deadline = Instant::now() + Duration::from_secs(1);
+/// let past_deadline = || Instant::now() >= deadline;
+/// let root = try_parse_document(&arena, "Hello, *world*!", &Options::default(), &past_deadline);
+/// assert!(root.is_ok());
+/// ```
+pub fn try_parse_document<'a>(
+    arena: &'a Arena<'a>,
+    md: &str,
+    options: &Options,
+    should_cancel: &dyn Fn() -> bool,
+) -> Result<Node<'a>, ParseCancelled> {
+    parse_cancellable(arena, md, options, Some(should_cancel))
+}
+
+fn parse_cancellable<'a>(
+    arena: &'a Arena<'a>,
+    md: &str,
+    options: &Options,
+    should_cancel: Option<&dyn Fn() -> bool>,
+) -> Result<Node<'a>, ParseCancelled> {
     let root = arena.alloc(
         Ast {
             value: NodeValue::Document,
@@ -62,15 +94,78 @@ pub fn parse_document<'a>(arena: &'a Arena<'a>, md: &str, options: &Options) -> 
         .into(),
     );
     let delimiter_arena = typed_arena::Arena::new();
-    let document = Parser::new(arena, root, options, &delimiter_arena).parse(md);
-    if options.parse.sourcepos_chars {
-        convert_sourcepos_columns_to_chars(document, md);
+    Parser::new(arena, root, options, should_cancel, &delimiter_arena).parse(md)
+}
+
+/// Returned by [`try_parse_document`] when the parse is cancelled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseCancelled;
+
+impl std::fmt::Display for ParseCancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("parse cancelled")
     }
-    document
+}
+
+impl std::error::Error for ParseCancelled {}
+
+const CANCEL_CHECK_INTERVAL: u32 = 256;
+
+pub(crate) struct Cancellation<'o> {
+    callback: Option<&'o dyn Fn() -> bool>,
+    countdown: Cell<u32>,
+    cancelled: Cell<bool>,
+}
+
+impl<'o> Cancellation<'o> {
+    pub(crate) fn new(callback: Option<&'o dyn Fn() -> bool>) -> Self {
+        Cancellation {
+            callback,
+            countdown: Cell::new(0),
+            cancelled: Cell::new(false),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn step(&self) -> bool {
+        if self.callback.is_none() {
+            return false;
+        }
+        let countdown = self.countdown.get();
+        if countdown > 0 {
+            self.countdown.set(countdown - 1);
+            return false;
+        }
+        self.ask()
+    }
+
+    #[inline(never)]
+    fn ask(&self) -> bool {
+        if !self.cancelled.get() {
+            let cancel = self.callback.is_some_and(|callback| callback());
+            self.cancelled.set(cancel);
+            if !cancel {
+                self.countdown.set(CANCEL_CHECK_INTERVAL - 1);
+            }
+        }
+        self.cancelled.get()
+    }
+
+    pub(crate) fn check(&self) -> Result<(), ParseCancelled> {
+        if self.cancelled.get() {
+            Err(ParseCancelled)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
-fn convert_sourcepos_columns_to_chars(document: Node<'_>, md: &str) {
+fn convert_sourcepos_columns_to_chars(
+    document: Node<'_>,
+    md: &str,
+    cancellation: &Cancellation<'_>,
+) {
     let lines: Vec<&str> = md.lines().collect();
 
     let convert = |lc: &mut nodes::LineColumn| {
@@ -83,6 +178,9 @@ fn convert_sourcepos_columns_to_chars(document: Node<'_>, md: &str) {
     };
 
     for node in document.descendants() {
+        if cancellation.step() {
+            return;
+        }
         let mut ast = node.data_mut();
         convert(&mut ast.sourcepos.start);
         convert(&mut ast.sourcepos.end);
@@ -144,6 +242,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
+    cancellation: Cancellation<'o>,
 }
 
 /// A reference link's resolved details.
@@ -171,6 +270,7 @@ where
         arena: &'a Arena<'a>,
         root: Node<'a>,
         options: &'o Options<'c>,
+        should_cancel: Option<&'o dyn Fn() -> bool>,
         delimiter_arena: &'d typed_arena::Arena<inlines::Delimiter<'a, 'd>>,
     ) -> Self {
         Parser {
@@ -200,10 +300,12 @@ where
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
+            cancellation: Cancellation::new(should_cancel),
         }
     }
 
-    fn parse(mut self, mut s: &str) -> Node<'a> {
+    fn parse(mut self, md: &str) -> Result<Node<'a>, ParseCancelled> {
+        let mut s = md;
         if let Some(delimiter) = &self.options.extension.front_matter_delimiter
             && let Some((front_matter, rest)) = split_off_front_matter(s, delimiter)
         {
@@ -222,6 +324,10 @@ where
         let mut matches = matcher.iter(sb);
 
         while ix < end {
+            if self.cancellation.step() {
+                return Err(ParseCancelled);
+            }
+
             let mut eol = matches.next().unwrap_or(end);
             if eol < end {
                 if sb[eol] == b'\r' {
@@ -240,9 +346,14 @@ where
             matches.advance_to(ix);
         }
 
-        self.finalize_document();
+        self.finalize_document()?;
         self.postprocess_text_nodes(self.root);
-        self.root
+        self.cancellation.check()?;
+        if self.options.parse.sourcepos_chars {
+            convert_sourcepos_columns_to_chars(self.root, md, &self.cancellation);
+            self.cancellation.check()?;
+        }
+        Ok(self.root)
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
@@ -728,6 +839,9 @@ where
             stack.push((ch, false));
 
             while let Some((node, visited)) = stack.pop() {
+                if self.cancellation.step() {
+                    return None;
+                }
                 if !visited {
                     stack.push((node, true));
                     for c in node.children() {
@@ -813,6 +927,9 @@ where
                 false
             }
         } {
+            if self.cancellation.step() {
+                break;
+            }
             depth += 1;
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
@@ -2213,16 +2330,21 @@ where
         }
     }
 
-    fn finalize_document(&mut self) {
+    fn finalize_document(&mut self) -> Result<(), ParseCancelled> {
         while !self.current.same_node(self.root) {
+            if self.cancellation.step() {
+                return Err(ParseCancelled);
+            }
             self.current = self.finalize(self.current).unwrap();
         }
 
         self.finalize(self.root);
+        self.cancellation.check()?;
 
         self.refmap.max_ref_size = self.total_size.min(100000);
 
         self.process_inlines();
+        self.cancellation.check()?;
 
         if self.options.extension.footnotes {
             // Append auto-generated inline footnote definitions
@@ -2231,9 +2353,11 @@ where
             }
 
             self.process_footnotes();
+            self.cancellation.check()?;
         }
 
         self.propagate_list_sourcepos(self.root);
+        self.cancellation.check()
     }
 
     fn propagate_list_sourcepos(&mut self, root: Node<'a>) {
@@ -2241,11 +2365,17 @@ where
             return;
         }
         for node in root.descendants() {
+            if self.cancellation.step() {
+                return;
+            }
             if !matches!(node.data().value, NodeValue::List(..)) {
                 continue;
             }
             let mut max_end = node.data().sourcepos.end;
             for d in node.descendants() {
+                if self.cancellation.step() {
+                    return;
+                }
                 let de = d.data().sourcepos.end;
                 if de.column == 0 {
                     continue;
@@ -2271,6 +2401,9 @@ where
 
         let bytes = content.as_bytes();
         while pos < content.len() && bytes[pos] == b'[' {
+            if self.cancellation.step() {
+                break;
+            }
             if let Some((offset, rr)) = self.parse_reference_inline(&content[pos..]) {
                 pos += offset;
                 rrs.extend(rr);
@@ -2486,6 +2619,9 @@ where
 
     fn process_inlines(&mut self) {
         for node in self.root.descendants() {
+            if self.cancellation.step() {
+                return;
+            }
             if node.data().value.contains_inlines() {
                 self.parse_inlines(node);
             }
@@ -2515,10 +2651,11 @@ where
             &self.inline_tables,
             &mut self.footnote_defs,
             self.delimiter_arena,
+            &self.cancellation,
             0,
         );
 
-        while subj.parse_inline(node, line, &offsets) {}
+        while subj.parse_inline(node, line, &offsets) && !self.cancellation.step() {}
         subj.process_emphasis(0);
         subj.clear_brackets();
     }
@@ -2526,10 +2663,13 @@ where
     fn process_footnotes(&mut self) {
         // TODO: combine find_footnote_definitions and find_footnote_references into one pass!
         let mut fd_map = HashMap::new();
-        Self::find_footnote_definitions(self.root, &mut fd_map);
+        Self::find_footnote_definitions(self.root, &mut fd_map, &self.cancellation);
 
         let mut next_ix = 0;
         self.find_footnote_references(&mut fd_map, &mut next_ix);
+        if self.cancellation.check().is_err() {
+            return;
+        }
 
         let mut fds = fd_map.into_values().collect::<Vec<_>>();
         fds.sort_unstable_by(|a, b| a.ix.cmp(&b.ix));
@@ -2552,9 +2692,13 @@ where
     fn find_footnote_definitions(
         root: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
+        cancellation: &Cancellation<'_>,
     ) {
         let mut stack = vec![root];
         while let Some(node) = stack.pop() {
+            if cancellation.step() {
+                return;
+            }
             match node.data().value {
                 NodeValue::FootnoteDefinition(ref nfd) => {
                     map.insert(
@@ -2581,6 +2725,9 @@ where
     ) {
         let mut stack = vec![self.root];
         while let Some(node) = stack.pop() {
+            if self.cancellation.step() {
+                return;
+            }
             let mut ast = node.data_mut();
             let sp = ast.sourcepos;
             match ast.value {
@@ -2651,10 +2798,16 @@ where
             !(self.options.parse.escaped_char_spans || self.options.render.escaped_char_spans);
 
         while let Some((parent, in_bracket_context)) = stack.pop() {
+            if self.cancellation.step() {
+                return;
+            }
             let mut it = parent.first_child();
             let mut escaped_to_coalesce = vec![];
 
             while let Some(node) = it {
+                if self.cancellation.step() {
+                    return;
+                }
                 let mut child_in_bracket_context = in_bracket_context;
                 let mut emptied = false;
                 let ast = &mut node.data_mut();
@@ -2697,6 +2850,9 @@ where
 
             // Remove Escaped from the tree, coalescing with adjacent nodes.
             for node in escaped_to_coalesce {
+                if self.cancellation.step() {
+                    return;
+                }
                 let escaped_text = node.first_child().unwrap();
                 node.insert_before(escaped_text);
                 node.detach();
@@ -2759,6 +2915,9 @@ where
         }
 
         while let Some(ns) = node.next_sibling() {
+            if self.cancellation.step() {
+                return sourcepos;
+            }
             let mut ns_data = ns.data_mut();
             let sp = ns_data.sourcepos;
             let NodeValue::Text(ref mut adj) = ns_data.value else {
@@ -2811,6 +2970,7 @@ where
                 self.options.parse.relaxed_autolinks,
                 sourcepos,
                 &mut spx,
+                &self.cancellation,
             );
         }
     }
