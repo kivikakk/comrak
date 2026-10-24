@@ -116,6 +116,9 @@ fn try_opening_header<'a>(
     let mut i = 0;
 
     while i < header_row.cells.len() {
+        if parser.cancellation.step() {
+            break;
+        }
         let cell = &mut header_row.cells[i];
         let ast_cell = parser.add_child(
             header,
@@ -176,6 +179,9 @@ fn try_opening_row<'a>(
     let mut last_column = start_column;
 
     for i in 0..parsed_cells {
+        if parser.cancellation.step() {
+            break;
+        }
         let cell = &mut this_row.cells[i];
         let cell_node = parser.add_child(
             new_row,
@@ -194,6 +200,9 @@ fn try_opening_row<'a>(
     }
 
     for _ in parsed_cells..alignments.len() {
+        if parser.cancellation.step() {
+            break;
+        }
         let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
         // for autocompleted (empty) cells, set end column equal to start
         let cell_ast = &mut cell_node.data_mut();
