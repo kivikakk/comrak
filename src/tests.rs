@@ -13,6 +13,7 @@ mod attributes;
 mod autolink;
 mod block_directive;
 mod callouts;
+mod cancel;
 mod cjk_friendly_emphasis;
 mod code;
 mod commonmark;

@@ -94,7 +94,7 @@ pub use html::format_document as format_html;
 pub use html::format_document_with_plugins as format_html_with_plugins;
 pub use nodes::Node;
 pub use parser::options;
-pub use parser::{Options, ResolvedReference, parse_document};
+pub use parser::{Options, ParseCancelled, ResolvedReference, parse_document, try_parse_document};
 pub use xml::format_document as format_xml;
 pub use xml::format_document_with_plugins as format_xml_with_plugins;
 

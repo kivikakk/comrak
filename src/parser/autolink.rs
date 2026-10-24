@@ -8,8 +8,8 @@ use crate::Arena;
 use crate::character_set::character_set;
 use crate::ctype::{isalnum, isalpha, isspace};
 use crate::nodes::{Node, NodeLink, NodeValue, Sourcepos};
-use crate::parser::Spx;
 use crate::parser::inlines::{Subject, make_inline};
+use crate::parser::{Cancellation, Spx};
 
 pub(crate) fn process_email_autolinks<'a>(
     arena: &'a Arena<'a>,
@@ -18,6 +18,7 @@ pub(crate) fn process_email_autolinks<'a>(
     relaxed_autolinks: bool,
     sourcepos: &mut Sourcepos,
     spx: &mut Spx,
+    cancellation: &Cancellation<'_>,
 ) {
     let Some((mut post, mut before_len, mut skip)) =
         find_email_autolink(arena, contents, relaxed_autolinks)
@@ -32,6 +33,9 @@ pub(crate) fn process_email_autolinks<'a>(
     let mut first = true;
 
     loop {
+        if cancellation.step() {
+            return;
+        }
         let initial_end_col = current_sourcepos.end.column;
         current_sourcepos.end.column = spx.consume(before_len);
         let nsp_end_col = spx.consume(skip);
