@@ -7,6 +7,7 @@
 
 mod anchorizer;
 mod context;
+mod table_cell_indexer;
 
 use memchr_n::MemchrN;
 use std::borrow::Cow;
@@ -31,6 +32,7 @@ use crate::{node_matches, scanners};
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;
 pub use context::Context;
+pub(crate) use table_cell_indexer::TableCellIndexer;
 
 /// Formats an AST as HTML, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
@@ -1194,14 +1196,7 @@ fn render_table_cell<T>(
             render_sourcepos(context, node)?;
         }
 
-        let mut start = row_node.first_child().unwrap(); // guaranteed to exist because `node' itself does!
-        let mut i = 0;
-        while !start.same_node(node) {
-            i += 1;
-            start = start.next_sibling().unwrap();
-        }
-
-        match alignments[i] {
+        match alignments[context.table_cell_indexer.index(node)] {
             TableAlignment::Left => {
                 context.write_str(" align=\"left\"")?;
             }
