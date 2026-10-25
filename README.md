@@ -121,9 +121,9 @@ Options:
           [possible values: strikethrough, table, autolink, tasklist, superscript, footnotes,
           inline-footnotes, description-lists, multiline-block-quotes, math-dollars, math-latex,
           math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
-          spoiler, greentext, ofm-comments, alerts, cjk-friendly-emphasis, subtext, highlight,
-          insert, phoenix-heex, block-directive, header-attributes, fenced-code-attributes,
-          inline-code-attributes, link-attributes]
+          spoiler, greentext, ofm-comments, alerts, ofm-callouts, cjk-friendly-emphasis, subtext,
+          highlight, insert, phoenix-heex, block-directive, header-attributes,
+          fenced-code-attributes, inline-code-attributes, link-attributes]
 
   -t, --to <FORMAT>
           Specify output format
