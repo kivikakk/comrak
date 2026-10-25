@@ -1,6 +1,7 @@
 use std::cmp;
 use std::fmt::{self, Write};
 
+use crate::html::TableCellIndexer;
 use crate::node_matches;
 use crate::nodes::{CalloutFold, ListType, NodeCode, NodeMath, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
@@ -37,6 +38,7 @@ struct XmlFormatter<'o, 'c> {
     options: &'o Options<'c>,
     _plugins: &'o Plugins<'o>,
     indent: u32,
+    table_cell_indexer: TableCellIndexer,
 }
 
 impl<'o, 'c> XmlFormatter<'o, 'c> {
@@ -46,6 +48,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
             output,
             _plugins: plugins,
             indent: 0,
+            table_cell_indexer: TableCellIndexer::default(),
         }
     }
 
@@ -254,7 +257,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     let table = &ancestors.next().unwrap().data().value;
 
                     if let (NodeValue::TableRow(true), NodeValue::Table(nt)) = (header_row, table) {
-                        let ix = node.preceding_siblings().count() - 1;
+                        let ix = self.table_cell_indexer.index(node);
                         if let Some(xml_align) = nt.alignments[ix].xml_name() {
                             write!(self.output, " align=\"{}\"", xml_align)?;
                         }

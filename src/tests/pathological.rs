@@ -85,6 +85,56 @@ fn pathological_table_columns_2() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_table_cell_alignment_html() {
+    let (arena, options) = (Arena::new(), wide_table_options());
+    let root = parse_wide_table(&arena, &options);
+
+    let mut output = String::new();
+    html::format_document(root, &options, &mut output).unwrap();
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_table_cell_alignment_xml() {
+    let (arena, options) = (Arena::new(), wide_table_options());
+    let root = parse_wide_table(&arena, &options);
+
+    let mut output = String::new();
+    crate::xml::format_document(root, &options, &mut output).unwrap();
+}
+
+fn wide_table_options() -> Options<'static> {
+    Options {
+        extension: parser::options::Extension {
+            table: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+fn parse_wide_table<'a>(arena: &'a Arena<'a>, options: &Options) -> Node<'a> {
+    let n = u16::MAX as usize - 1;
+    let r = 7;
+    let input = format!(
+        "{}|\n{}|\n{}",
+        "|a".repeat(n),
+        "|-".repeat(n),
+        "a\n".repeat(r)
+    );
+
+    let root = parse_document(arena, &input, options);
+    let table = root.first_child().unwrap();
+    assert!(matches!(table.data().value, NodeValue::Table(..)));
+    assert_eq!(table.children().count(), 1 + r);
+    for row in table.children() {
+        assert_eq!(row.children().count(), n);
+    }
+    root
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_table_autocompleted_cells() {
     let c = 2_000;
     let r = 2_000;

@@ -675,3 +675,54 @@ fn table_missing_cells_sourcepos() {
         ])
     );
 }
+
+#[test]
+#[allow(dead_code)]
+fn alignments_with_custom_cell_formatter() {
+    crate::create_formatter!(SkipXCells, {
+        NodeValue::TableCell => |context, node, entering| {
+            let is_x = node
+                .first_child()
+                .is_some_and(|c| matches!(c.data().value, NodeValue::Text(ref t) if t == "x"));
+            if !is_x {
+                return html::format_node_default(context, node, entering);
+            }
+            if entering {
+                std::fmt::Write::write_str(context, "<x/>")?;
+            }
+            return Ok(html::ChildRendering::Skip);
+        },
+    });
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.table = true;
+    let root = parse_document(
+        &arena,
+        concat!("|x|b|x|x|e|\n", "|:-|:-:|-|-:|:-:|\n", "|f|x|x|i|\n"),
+        &options,
+    );
+
+    let mut output = String::new();
+    SkipXCells::format_document(root, &options, &mut output).unwrap();
+    assert_eq!(
+        output,
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr><x/>\n",
+            "<th align=\"center\">b</th><x/><x/>\n",
+            "<th align=\"center\">e</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td align=\"left\">f</td><x/><x/>\n",
+            "<td align=\"right\">i</td>\n",
+            "<td align=\"center\"></td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n"
+        )
+    );
+}
