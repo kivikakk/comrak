@@ -17,6 +17,34 @@ Behind the scenes:
 
 -->
 
+# [v0.58.0] - 2026-10-25
+
+Thanks to @richardguenther for reporting a quadratic case in the HTML table cell
+renderer.  Updating is advised if you deal with user-controlled input.
+
+Security:
+
+* Fix quadratic case in HTML table cell rendering. (by @kivikakk in https://github.com/kivikakk/comrak/pull/884)
+
+New APIs:
+
+* Support Obsidian callouts, with the `ofm_callouts` extension. (by @szdytom in https://github.com/kivikakk/comrak/pull/878)
+* Let callers stop a parse with a cancel callback. (by @ericmj in https://github.com/kivikakk/comrak/pull/883)
+
+Documentation:
+
+* Add `@jeremy-code/comrak-wasm` to README.md. (by @jeremy-code in https://github.com/kivikakk/comrak/pull/882)
+
+
+## New Contributors
+
+* @jeremy-code made their first contribution in https://github.com/kivikakk/comrak/pull/882
+* @ericmj made their first contribution in https://github.com/kivikakk/comrak/pull/883
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.57.0...v0.58.0
+
+
 # [v0.57.0] - 2026-10-21
 
 New APIs:
