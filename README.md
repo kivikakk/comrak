@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.57"
+comrak = "0.58"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.89</span>+.
