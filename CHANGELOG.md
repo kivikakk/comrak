@@ -17,6 +17,19 @@ Behind the scenes:
 
 -->
 
+
+# [v0.59.0] - 2026-10-26
+
+Two Comrak releases in one day? You must be lucky!
+
+New APIs:
+
+* Add `wikilinks_ignore_embeds`, to disable parsing embed-type wikilinks. (by @kivikakk in https://github.com/kivikakk/comrak/pull/887)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.58.0...v0.59.0
+
+
 # [v0.58.0] - 2026-10-25
 
 Thanks to @richardguenther for reporting a quadratic case in the HTML table cell
