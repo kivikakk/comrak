@@ -410,6 +410,24 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub wikilinks_title_before_pipe: bool,
 
+    /// Ignore wikilink-style embeds.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.wikilinks_title_after_pipe = true;
+    /// let input = "![[url]]";
+    ///
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><a href=\"url\" data-wikilink=\"true\">url</a></p>\n");
+    ///
+    /// options.extension.wikilinks_ignore_embeds = true;
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p>![[url]]</p>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub wikilinks_ignore_embeds: bool,
+
     /// Enables underlines using double underscores
     ///
     /// ```md

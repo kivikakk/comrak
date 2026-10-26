@@ -405,3 +405,55 @@ fn wikilinks_embed_semantic_roundtrip() {
 
     assert_embed_roundtrip("![[640x400|x]]", &options, "x", "640x400");
 }
+
+#[test]
+fn wikilinks_ast_ignore_embeds() {
+    for title_before_pipe in [false, true] {
+        let mut options = Options::default();
+        options.extension.wikilinks_title_after_pipe = !title_before_pipe;
+        options.extension.wikilinks_title_before_pipe = title_before_pipe;
+        options.extension.wikilinks_ignore_embeds = true;
+
+        for input in ["![[x]]", "![[x|label]]", "a ![[x]] b"] {
+            assert_no_wikilink(input, &options);
+        }
+
+        assert_single_wikilink("[[x]]", &options, "x", false, "x");
+    }
+}
+
+#[test]
+fn wikilinks_ignore_embeds_image() {
+    html_opts!(
+        [
+            extension.wikilinks_title_before_pipe,
+            extension.wikilinks_ignore_embeds
+        ],
+        "![[a]](b)",
+        "<p><img src=\"b\" alt=\"[a]\" /></p>\n",
+    );
+}
+
+#[test]
+fn wikilinks_ignore_embeds_reference() {
+    html_opts!(
+        [
+            extension.wikilinks_title_before_pipe,
+            extension.wikilinks_ignore_embeds
+        ],
+        "![[a]]\n\n[a]: b\n",
+        "<p>![<a href=\"b\">a</a>]</p>\n",
+    );
+}
+
+#[test]
+fn wikilinks_ignore_embeds_alongside_wikilink() {
+    html_opts!(
+        [
+            extension.wikilinks_title_before_pipe,
+            extension.wikilinks_ignore_embeds
+        ],
+        "![[x]] [[y]]",
+        "<p>![[x]] <a href=\"y\" data-wikilink=\"true\">y</a></p>\n",
+    );
+}

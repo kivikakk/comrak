@@ -346,6 +346,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 let mut wikilink_inl = None;
                 if self.options.extension.wikilinks().is_some()
+                    && !self.options.extension.wikilinks_ignore_embeds
                     && self.brackets.is_empty()
                     && self.peek_byte() == Some(b'[')
                     && self.peek_byte_n(1) == Some(b'[')
