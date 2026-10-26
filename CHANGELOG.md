@@ -1,3 +1,13 @@
+# [v0.59.0] - 2026-10-26
+
+## What's Changed
+* add `wikilinks_ignore_embeds`. by @kivikakk in https://github.com/kivikakk/comrak/pull/887
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.58.0...v0.59.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
