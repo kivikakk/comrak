@@ -82,8 +82,8 @@ $\text{\$}$
 <p><span data-math-style="inline">\text{\$}</span></p>
 ````````````````````````````````
 
-Everything inside the math construction is treated
-as math, and not given its normal commonmark meaning.
+Everything inside the math construct is treated as math, and not given its
+normal CommonMark meaning:
 
 ```````````````````````````````` example -e math-dollars
 $b<a>c$
@@ -91,7 +91,7 @@ $b<a>c$
 <p><span data-math-style="inline">b&lt;a&gt;c</span></p>
 ````````````````````````````````
 
-Block math can directly follow a paragraph.
+Block math can directly follow a paragraph:
 
 ```````````````````````````````` example -e math-dollars
 This is inline display math
