@@ -18,6 +18,8 @@ rustPlatform.buildRustPackage {
       ../src
       ../benches
       ../examples
+      ../www/Cargo.toml
+      ../www/src
     ];
   };
   cargoLock.lockFile = ../Cargo.lock;

@@ -7,7 +7,7 @@ based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions
 
 GitHub style alerts look like this:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!NOTE]
 > Highlights information that users should take into account, even when skimming.
 .
@@ -20,7 +20,7 @@ GitHub style alerts look like this:
 It shouldn't matter if there's a soft break or hard break after
 the `[!NOTE]`:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!NOTE]  
 > Highlights information that users should take into account, even when skimming.
 .
@@ -32,7 +32,7 @@ the `[!NOTE]`:
 
 Uppercase isn't required:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!note]
 > Highlights information that users should take into account, even when skimming.
 .
@@ -45,7 +45,7 @@ Uppercase isn't required:
 
 Alerts can contain multiple blocks:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!NOTE]
 > Highlights information that users should take into account, even when skimming.
 >
@@ -60,7 +60,7 @@ Alerts can contain multiple blocks:
 
 Other kinds of alerts:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!TIP]
 > Optional information to help a user be more successful.
 .
@@ -70,7 +70,7 @@ Other kinds of alerts:
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!IMPORTANT]
 > Crucial information necessary for users to succeed.
 .
@@ -80,7 +80,7 @@ Other kinds of alerts:
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!WARNING]
 > Critical content demanding immediate user attention due to potential risks.
 .
@@ -90,7 +90,7 @@ Other kinds of alerts:
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!CAUTION]
 > Negative potential consequences of an action.
 .
@@ -102,7 +102,7 @@ Other kinds of alerts:
 
 A title can be specified to override the default title:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!NOTE] Pay attention
 > Highlights information that users should take into account, even when skimming.
 .
@@ -114,7 +114,7 @@ A title can be specified to override the default title:
 
 The title does not process markdown and is escaped:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 > [!NOTE] **Pay** attention <script>
 > Highlights information that users should take into account, even when skimming.
 .
@@ -126,7 +126,7 @@ The title does not process markdown and is escaped:
 
 They work in the same places as a normal blockquote would, such as in a list item:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts
 - Item one
 
   > [!NOTE]

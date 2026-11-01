@@ -1,5 +1,5 @@
 ---
-title: Code Math
+title: Code span-based math
 version: 0.1
 date: '2024-03-22'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
@@ -11,7 +11,7 @@ based_on: https://docs.gitlab.com/ee/user/markdown.html#math
 Inline math goes between `` $` `` characters, and display math
 use the code block ``` ```math ````:
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 Let $`x`$ and $`y`$ be integers such that
 
 ```math
@@ -26,7 +26,7 @@ x=y + 2
 
 In inline math, it behaves just like inline code.
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 This is math:$`2000`$.
 .
 <p>This is math:<code data-math-style="inline">2000</code>.</p>
@@ -37,7 +37,7 @@ Note that math can contain embedded math.  In scanning
 for a closing delimiter, we do not need to skip material in balanced
 curly braces:
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 This is display math:
 
 ```math
@@ -58,7 +58,7 @@ Dollar signs not required to be backslashed. It may be
 required to render the math properly, but it's not required
 for parsing:
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 $`\text{$}`$
 .
 <p><code data-math-style="inline">\text{$}</code></p>
@@ -67,7 +67,7 @@ $`\text{$}`$
 Everything inside the math construction is treated
 as math, and not given its normal commonmark meaning.
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 $`b<a>c`$
 .
 <p><code data-math-style="inline">b&lt;a&gt;c</code></p>
@@ -75,7 +75,7 @@ $`b<a>c`$
 
 Double dollar signs are not supported
 
-```````````````````````````````` example
+```````````````````````````````` example -e math-code
 $$`1 + 2`$$
 .
 <p>$$<code>1 + 2</code>$$</p>

@@ -1,0 +1,12 @@
+[package]
+name = "comrak-www"
+version = "0.0.0"
+rust-version = "1.89"
+edition = "2024"
+publish = false
+
+[dependencies]
+clap = "4"
+comrak = { path = "..", default-features = false, features = ["cli"] }
+shell-words = "1.1"
+yaml-rust = "0.4"

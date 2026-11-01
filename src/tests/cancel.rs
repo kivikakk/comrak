@@ -19,14 +19,14 @@ fn parse_stopping_on_call<'a>(
 
 fn mixed_input() -> String {
     [
-        include_str!("fixtures/alerts.md"),
-        include_str!("fixtures/description_lists.md"),
-        include_str!("fixtures/math_code.md"),
-        include_str!("fixtures/math_dollars.md"),
-        include_str!("fixtures/multiline_alerts.md"),
-        include_str!("fixtures/multiline_blockquote.md"),
-        include_str!("fixtures/wikilinks_title_after_pipe.md"),
-        include_str!("fixtures/wikilinks_title_before_pipe.md"),
+        include_str!("../../docs/extensions/alerts.md"),
+        include_str!("../../docs/extensions/description-lists.md"),
+        include_str!("../../docs/extensions/math-code.md"),
+        include_str!("../../docs/extensions/math-dollars.md"),
+        include_str!("../../docs/combinations/multiline-alerts.md"),
+        include_str!("../../docs/extensions/multiline-block-quotes.md"),
+        include_str!("../../docs/extensions/wikilinks-title-after-pipe.md"),
+        include_str!("../../docs/extensions/wikilinks-title-before-pipe.md"),
         "| a | b |\n|---|---|\n| [ ] c | d@e.com |\n\n",
         "- [x] www.example.com[^1] ^[inline *note*]\n  - é **ü** \"smart\" --- ok\n\n",
         "[^1]: The *footnote*.\n\n[ref]: /url 'title'\n\n[ref] and [missing]\n",

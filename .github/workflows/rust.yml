@@ -29,7 +29,7 @@ jobs:
     - name: Build examples
       run: cargo build --locked --verbose --examples
     - name: Run unit tests
-      run: cargo test --locked --verbose
+      run: cargo test --locked --verbose --workspace
     - name: "Run README sample"
       run: cargo run --locked --example sample
   build_bin_spec:
@@ -122,6 +122,6 @@ jobs:
     - name: Obtain Rust
       run: rustup override set $MSRV
     - name: Check clippy
-      run: rustup component add clippy && cargo clippy --lib --bin comrak --tests -- -Dwarnings
+      run: rustup component add clippy && cargo clippy --workspace --lib --bins --tests -- -Dwarnings
     - name: Check formatting
       run: rustup component add rustfmt && cargo fmt -- --check

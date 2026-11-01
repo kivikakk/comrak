@@ -1,5 +1,6 @@
 ---
-title: GitLab Flavored Markdown Spec
+title: Multi-line alerts
+original_title: GitLab Flavored Markdown Spec
 version: 0.1
 date: '2023-12-18'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
@@ -9,7 +10,7 @@ license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
 
 Simple container
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!NOTE]
 *content*
 >>>
@@ -22,7 +23,7 @@ Simple container
 
 Other kinds of alerts:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!TIP]
 Optional information to help a user be more successful.
 >>>
@@ -33,7 +34,7 @@ Optional information to help a user be more successful.
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!IMPORTANT]
 Crucial information necessary for users to succeed.
 >>>
@@ -44,7 +45,7 @@ Crucial information necessary for users to succeed.
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!WARNING]
 Critical content demanding immediate user attention due to potential risks.
 >>>
@@ -55,7 +56,7 @@ Critical content demanding immediate user attention due to potential risks.
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!CAUTION]
 Negative potential consequences of an action.
 >>>
@@ -68,7 +69,7 @@ Negative potential consequences of an action.
 
 A title can be specified to override the default title:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!NOTE] Pay attention
 Highlights information that users should take into account, even when skimming.
 >>>
@@ -81,7 +82,7 @@ Highlights information that users should take into account, even when skimming.
 
 Can contain block elements
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!NOTE]
 ### heading
 
@@ -98,7 +99,7 @@ Can contain block elements
 
 Ending marker can be longer
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>>>>> [!NOTE]
   hello world
 >>>>>>>>>>>
@@ -114,7 +115,7 @@ normal
 
 Nested alerts
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>>>> [!NOTE]
 >>>> [!CAUTION]
 foo
@@ -132,7 +133,7 @@ foo
 
 Incorrectly nested alerts
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>>> [!NOTE]
 this block is closed with 5 markers below
 
@@ -156,7 +157,7 @@ auto-closed blocks
 
 Marker can be indented up to 3 spaces
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
    >>>> [!NOTE]
    first-level blockquote
     >>> [!CAUTION]
@@ -179,7 +180,7 @@ Marker can be indented up to 3 spaces
 
 Fours spaces makes it a code block
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
     >>>
     content
     >>>
@@ -195,7 +196,7 @@ Detection of embedded 4 spaces code block starts in the
 column the alert starts, not from the beginning of
 the line.
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
   >>> [!NOTE]
       code block
   >>>
@@ -207,7 +208,7 @@ the line.
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
    >>>> [!NOTE]
    content
     >>> [!CAUTION]
@@ -228,7 +229,7 @@ the line.
 
 Closing marker can't have text on the same line
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!NOTE]
 foo
 >>> arg=123
@@ -249,7 +250,7 @@ foo
 
 Alerts self-close at the end of the document
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 >>> [!NOTE]
 foo
 .
@@ -262,7 +263,7 @@ foo
 
 They should terminate paragraphs
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 blah blah
 >>> [!NOTE]
 content
@@ -278,7 +279,7 @@ content
 
 They can be nested in lists
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
  -  >>> [!NOTE]
     - foo
     >>>
@@ -298,7 +299,7 @@ They can be nested in lists
 
 Or in blockquotes
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 > >>> [!NOTE]
 > foo
 >> bar
@@ -320,7 +321,7 @@ baz</p>
 
 List indentation
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
  -  >>> [!NOTE]
     foo
     bar
@@ -352,7 +353,7 @@ bar</p>
 
 Ignored inside code blocks:
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 ```txt
 # Code
 >>> [!NOTE]
@@ -372,7 +373,7 @@ Ignored inside code blocks:
 
 Does not require a leading or trailing blank line
 
-```````````````````````````````` example
+```````````````````````````````` example -e alerts -e multiline-block-quotes
 Some text
 >>> [!NOTE]
 A quote

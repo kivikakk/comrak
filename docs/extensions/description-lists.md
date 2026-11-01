@@ -1,5 +1,5 @@
 ---
-title: Description / definition lists
+title: Description/definition lists
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/definition_lists.md
 ---
 
@@ -14,7 +14,7 @@ continuations.
 The list is tight if there is no blank line between
 the term and the first definition, otherwise loose.
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 :   red fruit
 
@@ -31,7 +31,7 @@ orange
 
 Loose:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 
 :   red fruit
@@ -54,7 +54,7 @@ orange
 
 Indented marker:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
   : red fruit
 
@@ -69,7 +69,7 @@ orange
 </dl>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 
  : red fruit
@@ -92,7 +92,7 @@ orange
 
 Multiple blocks in a definition:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 *apple*
 
 :   red fruit
@@ -129,7 +129,7 @@ crisp, pleasant to taste</p>
 
 Nested lists:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 term
 
 :   1. Para one
@@ -151,7 +151,7 @@ term
 
 Multiple definitions, tight:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 :   red fruit
 :   computer company
@@ -172,7 +172,7 @@ orange
 
 Multiple definitions, loose:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 
 :   red fruit
@@ -204,7 +204,7 @@ orange
 
 Lazy line continuations:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
 
 :   red fruit
@@ -242,7 +242,7 @@ fruit</p>
 
 `~` may be used as a marker instead of `:`:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 apple
   ~ red fruit
 
@@ -259,7 +259,7 @@ orange
 
 Definition terms may span multiple lines:
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 a
 b\
 c
@@ -279,7 +279,7 @@ c</dt>
 Definition list with preceding paragraph
 (<https://github.com/jgm/commonmark-hs/issues/35>):
 
-```````````````````````````````` example
+```````````````````````````````` example -e description-lists
 Foo
 
 bar

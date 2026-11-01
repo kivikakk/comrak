@@ -38,22 +38,6 @@ python3 roundtrip_tests.py --spec extensions.txt "$PROGRAM_ARG" --extensions "ta
 # python3 roundtrip_tests.py --spec extensions-table-prefer-style-attributes.txt "$PROGRAM_ARG --table-prefer-style-attributes" --extensions "table strikethrough autolink footnotes tasklist" || failed=1
 python3 roundtrip_tests.py --spec extensions-full-info-string.txt "$PROGRAM_ARG --full-info-string" \
 	|| failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/multiline_blockquote.md "$PROGRAM_ARG -e multiline-block-quotes" \
-	|| failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_dollars.md "$PROGRAM_ARG -e math-dollars" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/math_code.md "$PROGRAM_ARG -e math-code" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/wikilinks_title_after_pipe.md "$PROGRAM_ARG -e wikilinks-title-after-pipe" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/wikilinks_title_before_pipe.md "$PROGRAM_ARG -e wikilinks-title-before-pipe" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/description_lists.md "$PROGRAM_ARG -e description-lists" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/alerts.md "$PROGRAM_ARG -e alerts" \
-  || failed=1
-python3 spec_tests.py --no-normalize --spec ../../../src/tests/fixtures/multiline_alerts.md "$PROGRAM_ARG -e alerts -e multiline-block-quotes" \
-  || failed=1
 
 python3 spec_tests.py --no-normalize --spec regression.txt "$PROGRAM_ARG" \
 	|| failed=1

@@ -47,6 +47,8 @@
         inherit (pkgsFor.${system}) comrak;
 
         comrak-static = pkgsFor.${system}.pkgsStatic.comrak;
+
+        www = pkgsFor.${system}.comrak-www;
       });
 
       formatter = eachSystem (system: pkgsFor.${system}.nixfmt);

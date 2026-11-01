@@ -117,3 +117,37 @@ section.footnotes li:target {
         background-color: inherit;
     }
 }
+
+.example {
+    margin: 1em 0;
+
+    pre {
+        margin: 0;
+        padding: 0.5em;
+        overflow-x: auto;
+        background-color: light-dark(
+            oklch(from var(--light-bg) calc(l - 0.05) c h),
+            oklch(from var(--dark-bg) calc(l + 0.05) c h)
+        );
+    }
+
+    pre code {
+        font-size: 0.8rem;
+        display: block;
+
+        &::before, &::after { content: none; }
+    }
+}
+
+.example-panes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5em;
+    margin-top: 0.5em;
+}
+
+@media only screen and (max-width: 600px) {
+    .example-panes {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

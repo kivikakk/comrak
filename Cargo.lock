@@ -344,6 +344,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "comrak-www"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "comrak",
+ "shell-words",
+ "yaml-rust",
+]
+
+[[package]]
 name = "condtype"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

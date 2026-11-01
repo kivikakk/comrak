@@ -1,5 +1,6 @@
 ---
-title: GitLab Flavored Markdown Spec
+title: Multi-line block quotes
+original_title: GitLab Flavored Markdown Spec
 version: 0.1
 date: '2023-12-18'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
@@ -9,7 +10,7 @@ license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'
 
 Simple container
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>
 *content*
 >>>
@@ -22,7 +23,7 @@ Simple container
 
 Can contain block elements
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>
 ### heading
 
@@ -38,7 +39,7 @@ Can contain block elements
 
 Ending marker can be longer
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>>>>
   hello world
 >>>>>>>>>>>
@@ -53,7 +54,7 @@ normal
 
 Nested blockquotes
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>>>
 >>>>
 foo
@@ -69,7 +70,7 @@ foo
 
 Incorrectly nested blockquotes
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>>
 this block is closed with 5 markers below
 
@@ -92,7 +93,7 @@ auto-closed blocks
 
 Marker can be indented up to 3 spaces
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
    >>>>
    first-level blockquote
     >>>
@@ -113,7 +114,7 @@ Marker can be indented up to 3 spaces
 
 Fours spaces makes it a code block
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
     >>>
     content
     >>>
@@ -129,7 +130,7 @@ Detection of embedded 4 spaces code block starts in the
 column the blockquote starts, not from the beginning of
 the line.
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
   >>>
       code block
   >>>
@@ -140,7 +141,7 @@ the line.
 </blockquote>
 ````````````````````````````````
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
    >>>>
    content
     >>>
@@ -159,7 +160,7 @@ the line.
 
 Closing marker can't have text on the same line
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>
 foo
 >>> arg=123
@@ -179,7 +180,7 @@ foo
 
 Blockquotes self-close at the end of the document
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 >>>
 foo
 .
@@ -191,7 +192,7 @@ foo
 
 They should terminate paragraphs
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 blah blah
 >>>
 content
@@ -206,7 +207,7 @@ content
 
 They can be nested in lists
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
  -  >>>
     - foo
     >>>
@@ -225,7 +226,7 @@ They can be nested in lists
 
 Or in blockquotes
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 > >>>
 > foo
 >> bar
@@ -246,7 +247,7 @@ baz</p>
 
 List indentation
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
  -  >>>
     foo
     bar
@@ -276,7 +277,7 @@ bar</p>
 
 Ignored inside code blocks:
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 ```txt
 # Code
 >>>
@@ -296,7 +297,7 @@ Ignored inside code blocks:
 
 Does not require a leading or trailing blank line
 
-```````````````````````````````` example
+```````````````````````````````` example -e multiline-block-quotes
 Some text
 >>>
 A quote

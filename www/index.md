@@ -37,24 +37,23 @@ Comrak can be used directly on the command-line or as part of a batch processing
 
 It can also be used as a library in Rust as a Cargo dependency, or with [bindings to other languages].
 The WASM target lets it be used [directly in webpages].
-
-This webpage is [created with Comrak] by stitching together three elements:
-
-* [`header.html`]
-* [`index.md`] converted with `--header-id-prefix "" --smart -e footnotes`
-* [`footer.html`]
+This webpage is [created with Comrak]!
 
 The CLI help for the latest version is available in the [README], and the Rust documentation is on [docs.rs].
 
 [many platforms]: https://github.com/kivikakk/comrak#cli
 [bindings to other languages]: #bindings
 [directly in webpages]: https://gitlab-org.gitlab.io/ruby/gems/gitlab-glfm-markdown/
-[created with Comrak]: Makefile
-[`header.html`]: https://github.com/kivikakk/comrak/blob/main/www/header.html
-[`index.md`]: https://github.com/kivikakk/comrak/blob/main/www/index.md?plain=1
-[`footer.html`]: https://github.com/kivikakk/comrak/blob/main/www/footer.html
+[created with Comrak]: https://github.com/kivikakk/comrak/tree/main/www
 [README]: https://github.com/kivikakk/comrak#usage
 [docs.rs]: https://docs.rs/comrak/latest/comrak/
+
+
+## Docs
+
+Enjoy the robust flavour of our fixture-based documentation:
+
+{{docs}}
 
 
 ## Bindings
