@@ -119,16 +119,18 @@ section.footnotes li:target {
 }
 
 .example {
+    --example-bg: light-dark(
+        oklab(from var(--light-bg) calc(l - 0.05) a b),
+        oklab(from var(--dark-bg)  calc(l + 0.05) a b)
+    );
+
     margin: 1em 0;
 
     pre {
         margin: 0;
         padding: 0.5em;
         overflow-x: auto;
-        background-color: light-dark(
-            oklab(from var(--light-bg) calc(l - 0.05) a b),
-            oklab(from var(--dark-bg)  calc(l + 0.05) a b)
-        );
+        background-color: var(--example-bg);
     }
 
     pre code {
@@ -156,18 +158,39 @@ section.footnotes li:target {
     font-size: 0.9rem;
 }
 
-.example-html {
-    margin-top: 0.5em;
+.example-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: 1em;
+    background-color: var(--example-bg);
 
-    summary {
-        cursor: pointer;
-        font-family: monospace;
-        font-size: 0.8rem;
-        opacity: var(--md-opacity);
+    .example-invocation {
+        background-color: transparent;
     }
+}
 
-    pre {
-        margin-top: 0.25em;
+.example-tabs {
+    display: flex;
+    gap: 0.75em;
+    padding: 0 0.5em 0.5em;
+    font-family: monospace;
+    font-size: 0.8rem;
+
+    button {
+        padding: 0;
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        opacity: var(--md-opacity);
+
+        &[aria-pressed="true"] {
+            opacity: 1;
+            text-decoration: underline;
+        }
     }
 }
 

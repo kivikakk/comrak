@@ -22,3 +22,40 @@ for (const host of document.querySelectorAll(".example-rendered")) {
     }
   });
 }
+
+const VIEW_KEY = "comrak-example-view";
+
+function selectView(view) {
+  for (const el of document.querySelectorAll(".example-view, .example-flag")) {
+    el.hidden = el.dataset.view !== view;
+  }
+  for (const button of document.querySelectorAll(".example-tabs button")) {
+    button.setAttribute("aria-pressed", button.dataset.view === view);
+  }
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {}
+}
+
+for (const tabs of document.querySelectorAll(".example-tabs")) {
+  tabs.hidden = false;
+
+  tabs.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+
+    const before = tabs.getBoundingClientRect().top;
+    selectView(button.dataset.view);
+    window.scrollBy(0, tabs.getBoundingClientRect().top - before);
+  });
+}
+
+let saved = null;
+try {
+  saved = localStorage.getItem(VIEW_KEY);
+} catch {}
+selectView(
+  document.querySelector(`.example-tabs button[data-view="${saved}"]`)
+    ? saved
+    : "rendered",
+);

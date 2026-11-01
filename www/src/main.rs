@@ -16,9 +16,12 @@ const ASSETS: &[&str] = &[
     "comrak.png",
     "favicon.png",
 ];
-const DOC_HEAD: &str = "<link rel=\"stylesheet\" href=\"/katex/katex.min.css\">\n\
-                        <script defer src=\"/katex/katex.min.js\"></script>\n\
-                        <script defer src=\"/examples.js\"></script>\n";
+const DOC_HEAD: &str = r#"
+    <link rel="stylesheet" href="/katex/katex.min.css">
+    <script defer src="/katex/katex.min.js"></script>
+    <script defer src="/examples.js"></script>
+    <noscript><style>.example-view[hidden] { display: block; }</style></noscript>
+"#;
 const DOCS_MARKER: &str = "{{docs}}";
 
 struct Templates {

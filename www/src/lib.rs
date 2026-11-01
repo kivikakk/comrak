@@ -10,7 +10,8 @@ use comrak::nodes::{NodeHtmlBlock, NodeValue};
 use comrak::options::Plugins;
 use comrak::plugins::syntect::SyntectAdapter;
 use comrak::{
-    Arena, Node, Options, format_html_with_plugins, markdown_to_html_with_plugins, parse_document,
+    Arena, Node, Options, format_commonmark, format_html_with_plugins, format_xml,
+    markdown_to_html_with_plugins, parse_document,
 };
 use yaml_rust::YamlLoader;
 
@@ -204,49 +205,106 @@ impl Example {
         }
     }
 
-    pub fn render(&self) -> Result<String, String> {
+    fn options(&self) -> Result<Options<'static>, String> {
         let args = shell_words::split(&self.flags).map_err(|e| e.to_string())?;
         let option_args = OptionArgs::try_parse_from(std::iter::once("comrak".into()).chain(args))
             .map_err(|e| e.to_string())?;
+        Ok(option_args.to_options())
+    }
+
+    pub fn render(&self) -> Result<String, String> {
         Ok(markdown_to_html_with_plugins(
             &self.input,
-            &option_args.to_options(),
+            &self.options()?,
             &plugins(),
         ))
     }
 
+    fn formatted(&self, formatter: Formatter) -> String {
+        let options = self.options().unwrap();
+        let arena = Arena::new();
+        let document = parse_document(&arena, &self.input, &options);
+        let mut out = String::new();
+        formatter(document, &options, &mut out).unwrap();
+        out
+    }
+
     fn html(&self) -> String {
+        let views = [
+            (
+                "rendered",
+                "",
+                format!(
+                    r#"<div class="example-rendered"><template shadowrootmode="open">
+                        <link rel="stylesheet" href="/katex/katex.min.css">
+                        <link rel="stylesheet" href="/reference.css">
+                        <link rel="stylesheet" href="/syntax.css">
+                        {}
+                    </template></div>"#,
+                    self.expected
+                ),
+            ),
+            ("html", "", pre(&highlight("html", &self.expected))),
+            (
+                "commonmark",
+                " -t commonmark",
+                pre(&highlight("markdown", &self.formatted(format_commonmark))),
+            ),
+            (
+                "xml",
+                " -t xml",
+                pre(&highlight("xml", &self.formatted(format_xml))),
+            ),
+        ];
+
         let mut invocation = String::from("$ comrak");
         if !self.flags.is_empty() {
             invocation.push(' ');
             invocation.push_str(&self.flags);
         }
+        let mut invocation = escape(&invocation);
+        let mut tabs = String::new();
+        let mut panes = String::new();
+        for (i, (view, flag, body)) in views.iter().enumerate() {
+            let hidden = if i == 0 { "" } else { " hidden" };
+            if !flag.is_empty() {
+                invocation.push_str(&format!(
+                    r#"<span class="example-flag" data-view="{view}" hidden>{flag}</span>"#
+                ));
+            }
+            tabs.push_str(&format!(
+                r#"<button type="button" data-view="{view}" aria-pressed="{}">{view}</button>"#,
+                i == 0
+            ));
+            panes.push_str(&format!(
+                r#"<div class="example-view" data-view="{view}"{hidden}>{body}</div>"#
+            ));
+        }
+
         format!(
             r#"
             <div class="example">
-                <pre class="example-invocation"><code>{}</code></pre>
+                <div class="example-header">
+                    <pre class="example-invocation"><code>{invocation}</code></pre>
+                    <div class="example-tabs" hidden>{tabs}</div>
+                </div>
 
                 <div class="example-panes">
                     <pre class="example-markdown"><code>{}</code></pre>
-                    <div class="example-rendered"><template shadowrootmode="open">
-                        <link rel="stylesheet" href="/katex/katex.min.css">
-                        <link rel="stylesheet" href="/reference.css">
-                        <link rel="stylesheet" href="/syntax.css">
-                        {}
-                    </template></div>
+                    <div class="example-output">
+                        {panes}
+                    </div>
                 </div>
-
-                <details class="example-html">
-                    <summary>HTML</summary>
-                    <pre><code>{}</code></pre>
-                </details>
             </div>"#,
-            escape(&invocation),
             highlight("markdown", &self.input),
-            self.expected,
-            highlight("html", &self.expected),
         )
     }
+}
+
+type Formatter = for<'a> fn(Node<'a>, &Options, &mut dyn std::fmt::Write) -> std::fmt::Result;
+
+fn pre(code: &str) -> String {
+    format!("<pre><code>{code}</code></pre>")
 }
 
 fn highlight(lang: &str, code: &str) -> String {
