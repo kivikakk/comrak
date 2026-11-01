@@ -68,6 +68,9 @@
 
 pub mod adapters;
 pub mod arena_tree;
+#[cfg(feature = "cli")]
+#[doc(hidden)]
+pub mod cli;
 pub mod html;
 pub mod nodes;
 pub mod plugins;
