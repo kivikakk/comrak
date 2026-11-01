@@ -213,11 +213,11 @@ impl Example {
     }
 
     pub fn render(&self) -> Result<String, String> {
-        Ok(markdown_to_html_with_plugins(
-            &self.input,
-            &self.options()?,
-            &plugins(),
-        ))
+        let mut html = markdown_to_html_with_plugins(&self.input, &self.options()?, &plugins());
+        if !html.is_empty() && !html.ends_with('\n') {
+            html.push('\n');
+        }
+        Ok(html)
     }
 
     fn formatted(&self, formatter: Formatter) -> String {
