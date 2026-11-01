@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use clap::Parser;
+use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::cli::OptionArgs;
 use comrak::nodes::{NodeHtmlBlock, NodeValue};
 use comrak::options::Plugins;
@@ -241,11 +242,19 @@ impl Example {
                 </details>
             </div>"#,
             escape(&invocation),
-            escape(&self.input),
+            highlight("markdown", &self.input),
             self.expected,
-            escape(&self.expected),
+            highlight("html", &self.expected),
         )
     }
+}
+
+fn highlight(lang: &str, code: &str) -> String {
+    let mut out = String::new();
+    HIGHLIGHTER
+        .write_highlighted(&mut out, Some(lang), code)
+        .unwrap();
+    out
 }
 
 pub fn escape(text: &str) -> String {
