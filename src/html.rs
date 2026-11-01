@@ -11,7 +11,7 @@ mod table_cell_indexer;
 
 use memchr_n::MemchrN;
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt::{self, Write};
 use std::str;
 use std::sync::OnceLock;
@@ -533,8 +533,8 @@ fn render_code_block<T>(
         if !lang.eq("math") {
             context.cr()?;
 
-            let mut pre_attributes: HashMap<&str, Cow<str>> = HashMap::new();
-            let mut code_attributes: HashMap<&str, Cow<str>> = HashMap::new();
+            let mut pre_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
+            let mut code_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
             let code_attr: String;
 
             let literal = &ncb.literal;

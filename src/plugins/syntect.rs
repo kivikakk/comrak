@@ -1,7 +1,7 @@
 //! Adapter for the Syntect syntax highlighter plugin.
 
 use std::borrow::Cow;
-use std::collections::{HashMap, hash_map};
+use std::collections::{BTreeMap, btree_map};
 use std::fmt::{self, Write};
 use syntect::Error;
 use syntect::easy::HighlightLines;
@@ -108,7 +108,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<&'static str, Cow<'_, str>>,
+        mut attributes: BTreeMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
@@ -120,67 +120,28 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
                     colour.r, colour.g, colour.b
                 );
 
-                let mut pre_attributes = SyntectPreAttributes::new(attributes, &style);
-                html::write_opening_tag(output, "pre", pre_attributes.iter_mut())
+                match attributes.entry("style") {
+                    btree_map::Entry::Occupied(mut entry) => {
+                        entry.get_mut().to_mut().insert_str(0, &style)
+                    }
+                    btree_map::Entry::Vacant(entry) => {
+                        entry.insert(style.into());
+                    }
+                }
             }
-            None => html::write_opening_tag(output, "pre", vec![("class", "syntax-highlighting")]),
+            None => {
+                attributes.insert("class", "syntax-highlighting".into());
+            }
         }
+        html::write_opening_tag(output, "pre", attributes)
     }
 
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<&'static str, Cow<'_, str>>,
+        attributes: BTreeMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
-    }
-}
-
-struct SyntectPreAttributes<'s> {
-    syntect_style: String,
-    attributes: HashMap<&'static str, Cow<'s, str>>,
-}
-
-impl<'s> SyntectPreAttributes<'s> {
-    fn new(attributes: HashMap<&'static str, Cow<'s, str>>, syntect_style: &str) -> Self {
-        Self {
-            syntect_style: syntect_style.into(),
-            attributes,
-        }
-    }
-
-    fn iter_mut(&mut self) -> SyntectPreAttributesIter<'_, 's> {
-        SyntectPreAttributesIter {
-            iter_mut: self.attributes.iter_mut(),
-            syntect_style: &self.syntect_style,
-            style_written: false,
-        }
-    }
-}
-
-struct SyntectPreAttributesIter<'a, 's> {
-    iter_mut: hash_map::IterMut<'a, &'static str, Cow<'s, str>>,
-    syntect_style: &'a str,
-    style_written: bool,
-}
-
-impl<'a> Iterator for SyntectPreAttributesIter<'a, '_> {
-    type Item = (&'a str, &'a str);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.iter_mut.next() {
-            Some((k, v)) if *k == "style" && !self.style_written => {
-                self.style_written = true;
-                v.to_mut().insert_str(0, self.syntect_style);
-                Some((k, v))
-            }
-            Some((k, v)) => Some((k, v)),
-            None if !self.style_written => {
-                self.style_written = true;
-                Some(("style", self.syntect_style))
-            }
-            None => None,
-        }
     }
 }
 

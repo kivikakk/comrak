@@ -24,7 +24,7 @@ fn syntax_highlighter_plugin() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -32,7 +32,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
@@ -115,7 +115,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -123,7 +123,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
@@ -215,7 +215,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -223,7 +223,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: HashMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&'static str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
@@ -476,4 +476,32 @@ fn syntect_plugin_with_prefixed_css_classes() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+}
+
+#[test]
+#[cfg(feature = "syntect")]
+fn syntect_plugin_keeps_pre_attributes() {
+    let mut options = Options::default();
+    options.render.github_pre_lang = true;
+    options.render.full_info_string = true;
+    options.render.sourcepos = true;
+    let input = "```rust title=x\nfn main() {}\n```\n";
+
+    let cases = [
+        (
+            crate::plugins::syntect::SyntectAdapter::new(None),
+            "<pre class=\"syntax-highlighting\" data-meta=\"title=x\" data-sourcepos=\"1:1-3:3\" lang=\"rust\"><code>",
+        ),
+        (
+            crate::plugins::syntect::SyntectAdapter::new(Some("base16-ocean.dark")),
+            "<pre data-meta=\"title=x\" data-sourcepos=\"1:1-3:3\" lang=\"rust\" style=\"background-color:#2b303b;\"><code>",
+        ),
+    ];
+
+    for (adapter, expected_prefix) in &cases {
+        let mut plugins = options::Plugins::default();
+        plugins.render.codefence_syntax_highlighter = Some(adapter);
+        let html = crate::markdown_to_html_with_plugins(input, &options, &plugins);
+        assert!(html.starts_with(expected_prefix), "{html}");
+    }
 }

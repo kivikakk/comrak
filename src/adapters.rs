@@ -3,7 +3,7 @@
 //! Each plugin implements one or more of the traits available in this module.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use crate::nodes::Sourcepos;
@@ -44,7 +44,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_pre_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<&'static str, Cow<'_, str>>,
+        attributes: BTreeMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result;
 
     /// Generates the opening `<code>` tag. Some syntax highlighter libraries might include their own
@@ -54,7 +54,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_code_tag(
         &self,
         output: &mut dyn fmt::Write,
-        attributes: HashMap<&'static str, Cow<'_, str>>,
+        attributes: BTreeMap<&'static str, Cow<'_, str>>,
     ) -> fmt::Result;
 }
 

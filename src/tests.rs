@@ -1,5 +1,5 @@
 use pretty_assertions::assert_eq;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::panic;
 
 #[cfg(feature = "attributes")]
