@@ -5,7 +5,6 @@ authors = ["Asherah Connor <ashe@kivikakk.ee>", "Brett Walker <github@digitalmok
 rust-version = "1.89"
 description = "A 100% CommonMark-compatible GitHub Flavored Markdown parser and formatter"
 documentation = "https://docs.rs/comrak"
-homepage = "https://github.com/kivikakk/comrak"
 repository = "https://github.com/kivikakk/comrak"
 readme = "README.md"
 keywords = ["markdown", "commonmark"]
