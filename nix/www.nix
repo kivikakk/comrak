@@ -3,6 +3,7 @@
   rustPlatform,
   runCommand,
   comrak,
+  katex,
 }:
 let
   generator = rustPlatform.buildRustPackage {
@@ -29,4 +30,6 @@ let
 in
 runCommand "comrak.ee" { } ''
   ${lib.getExe generator} ${docs} ${www} $out
+  mkdir $out/katex
+  cp -r ${katex}/lib/node_modules/katex/dist/{katex.min.css,katex.min.js,fonts} $out/katex/
 ''

@@ -204,15 +204,27 @@ impl Example {
             invocation.push_str(&self.flags);
         }
         format!(
-            "<div class=\"example\">\n\
-             <pre class=\"example-invocation\"><code>{}</code></pre>\n\
-             <div class=\"example-panes\">\n\
-             <pre class=\"example-markdown\"><code>{}</code></pre>\n\
-             <pre class=\"example-html\"><code>{}</code></pre>\n\
-             </div>\n\
-             </div>\n",
+            r#"
+            <div class="example">
+                <pre class="example-invocation"><code>{}</code></pre>
+
+                <div class="example-panes">
+                    <pre class="example-markdown"><code>{}</code></pre>
+                    <div class="example-rendered"><template shadowrootmode="open">
+                        <link rel="stylesheet" href="/katex/katex.min.css">
+                        <link rel="stylesheet" href="/reference.css">
+                        {}
+                    </template></div>
+                </div>
+
+                <details class="example-html">
+                    <summary>HTML</summary>
+                    <pre><code>{}</code></pre>
+                </details>
+            </div>"#,
             escape(&invocation),
             escape(&self.input),
+            self.expected,
             escape(&self.expected),
         )
     }

@@ -108,8 +108,8 @@ section.footnotes li:target {
 @keyframes highlight {
     10%, 90% {
         background-color: light-dark(
-            oklch(from var(--light-bg) calc(l - 0.1) c h),
-            oklch(from var(--dark-bg) calc(l + 0.1) c h)
+            oklab(from var(--light-bg) calc(l - 0.1) a b),
+            oklab(from var(--dark-bg)  calc(l + 0.1) a b)
         );
     }
 
@@ -126,8 +126,8 @@ section.footnotes li:target {
         padding: 0.5em;
         overflow-x: auto;
         background-color: light-dark(
-            oklch(from var(--light-bg) calc(l - 0.05) c h),
-            oklch(from var(--dark-bg) calc(l + 0.05) c h)
+            oklab(from var(--light-bg) calc(l - 0.05) a b),
+            oklab(from var(--dark-bg)  calc(l + 0.05) a b)
         );
     }
 
@@ -144,6 +144,31 @@ section.footnotes li:target {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.5em;
     margin-top: 0.5em;
+}
+
+.example-rendered {
+    padding: 0 0.75em;
+    overflow-x: auto;
+    border: 1px solid light-dark(
+        oklab(from var(--light-bg) calc(l - 0.15) a b),
+        oklab(from var(--dark-bg)  calc(l + 0.15) a b)
+    );
+    font-size: 0.9rem;
+}
+
+.example-html {
+    margin-top: 0.5em;
+
+    summary {
+        cursor: pointer;
+        font-family: monospace;
+        font-size: 0.8rem;
+        opacity: var(--md-opacity);
+    }
+
+    pre {
+        margin-top: 0.25em;
+    }
 }
 
 @media only screen and (max-width: 600px) {

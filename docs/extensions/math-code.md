@@ -8,8 +8,8 @@ based_on: https://docs.gitlab.com/ee/user/markdown.html#math
 
 # TeX Math
 
-Inline math goes between `` $` `` characters, and display math
-use the code block ``` ```math ````:
+Inline math goes between `` $` `` characters, and display math in fenced code
+blocks with the info string `math`:
 
 ```````````````````````````````` example -e math-code
 Let $`x`$ and $`y`$ be integers such that
@@ -24,7 +24,7 @@ x=y + 2
 ````````````````````````````````
 
 
-In inline math, it behaves just like inline code.
+In inline math, it behaves just like inline code:
 
 ```````````````````````````````` example -e math-code
 This is math:$`2000`$.
@@ -33,9 +33,7 @@ This is math:$`2000`$.
 ````````````````````````````````
 
 
-Note that math can contain embedded math.  In scanning
-for a closing delimiter, we do not need to skip material in balanced
-curly braces:
+Note that math can contain embedded math:
 
 ```````````````````````````````` example -e math-code
 This is display math:
@@ -54,9 +52,8 @@ $`\text{Hello $x$ there!}`$
 ````````````````````````````````
 
 
-Dollar signs not required to be backslashed. It may be
-required to render the math properly, but it's not required
-for parsing:
+Dollar signs are not required to be escaped with backslashes. They may be
+required to render the math properly, but it's not required for parsing:
 
 ```````````````````````````````` example -e math-code
 $`\text{$}`$
@@ -64,8 +61,8 @@ $`\text{$}`$
 <p><code data-math-style="inline">\text{$}</code></p>
 ````````````````````````````````
 
-Everything inside the math construction is treated
-as math, and not given its normal commonmark meaning.
+Everything inside the math construct is treated as math, and not given its
+normal CommonMark meaning:
 
 ```````````````````````````````` example -e math-code
 $`b<a>c`$
@@ -73,7 +70,7 @@ $`b<a>c`$
 <p><code data-math-style="inline">b&lt;a&gt;c</code></p>
 ````````````````````````````````
 
-Double dollar signs are not supported
+Double dollar signs are not supported:
 
 ```````````````````````````````` example -e math-code
 $$`1 + 2`$$

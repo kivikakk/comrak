@@ -1,0 +1,107 @@
+:root, :host {
+    --comrak-border:  color-mix(in oklab, currentColor 25%, transparent);
+    --comrak-muted:   color-mix(in oklab, currentColor 70%, transparent);
+    --comrak-code-bg: color-mix(in oklab, currentColor 8%, transparent);
+
+    --comrak-note:      light-dark(#0969DA, #4493F8);
+    --comrak-tip:       light-dark(#1A7F37, #3FB950);
+    --comrak-important: light-dark(#8250DF, #AB7DF8);
+    --comrak-warning:   light-dark(#9A6700, #D29922);
+    --comrak-caution:   light-dark(#D1242F, #F85149);
+}
+
+pre {
+    padding: 0.5em;
+    overflow-x: auto;
+    background-color: var(--comrak-code-bg);
+}
+
+pre:has(> code[data-math-style]) {
+    white-space: normal;
+    background-color: transparent;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.25em 0.5em;
+    border: 1px solid var(--comrak-border);
+}
+
+li:has(> input[type="checkbox"]:first-child) {
+    list-style-type: none;
+}
+
+dt {
+    font-weight: bold;
+}
+
+dd {
+    margin-left: 1.5em;
+}
+
+blockquote {
+    margin-left: 0;
+    padding-left: 1em;
+    border-left: 0.25em solid var(--comrak-border);
+    color: var(--comrak-muted);
+}
+
+.spoiler {
+    border-radius: 0.2em;
+    background-color: currentColor;
+
+    &:hover {
+        background-color: transparent;
+    }
+}
+
+a[data-wikilink] {
+    text-decoration-style: dotted;
+}
+
+.markdown-alert, .admonition, .callout {
+    --comrak-alert: var(--comrak-note);
+
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    border-left: 0.25em solid var(--comrak-alert);
+
+    & > :first-child {
+        margin-top: 0;
+    }
+
+    & > :last-child, .callout-content > :last-child {
+        margin-bottom: 0;
+    }
+}
+
+.markdown-alert-title, .admonition-title, .callout-title {
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    color: var(--comrak-alert);
+}
+
+.markdown-alert-tip, .admonition.tip, .callout[data-callout="tip"] {
+    --comrak-alert: var(--comrak-tip);
+}
+
+.markdown-alert-important, .admonition.important, .callout[data-callout="important"] {
+    --comrak-alert: var(--comrak-important);
+}
+
+.markdown-alert-warning, .admonition.warning, .callout[data-callout="warning"] {
+    --comrak-alert: var(--comrak-warning);
+}
+
+.markdown-alert-caution, .admonition.caution, .callout[data-callout="caution"] {
+    --comrak-alert: var(--comrak-caution);
+}
+
+.footnotes {
+    margin-top: 2em;
+    border-top: 1px solid var(--comrak-border);
+    font-size: 0.9em;
+}

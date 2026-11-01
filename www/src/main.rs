@@ -7,7 +7,16 @@ use std::process;
 use comrak::{escape_commonmark_inline, markdown_to_html};
 use comrak_www::{Doc, SNAP, escape, page_options};
 
-const ASSETS: &[&str] = &["styles.css", "comrak.png", "favicon.png"];
+const ASSETS: &[&str] = &[
+    "styles.css",
+    "reference.css",
+    "examples.js",
+    "comrak.png",
+    "favicon.png",
+];
+const DOC_HEAD: &str = "<link rel=\"stylesheet\" href=\"/katex/katex.min.css\">\n\
+                        <script defer src=\"/katex/katex.min.js\"></script>\n\
+                        <script defer src=\"/examples.js\"></script>\n";
 const DOCS_MARKER: &str = "{{docs}}";
 
 struct Templates {
@@ -77,7 +86,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     for doc in &docs {
         let html_path = doc.html_path();
         let title = format!("{} · Comrak", doc.title);
-        let body = format!("<nav><a href=\"/\">Comrak</a></nav>\n{}", doc.render_page());
+        let body = format!(
+            "{DOC_HEAD}<nav><a href=\"/\">Comrak</a></nav>\n{}",
+            doc.render_page()
+        );
         let out = out_dir.join(&html_path);
         fs::create_dir_all(out.parent().unwrap())?;
         fs::write(out, templates.page(&title, &title, &html_path, &body))?;

@@ -46,7 +46,7 @@ e=mc^2
 </span></p>
 ````````````````````````````````
 
-Unlike in `commonmark-hs`, inline math cannot contain embadded math:
+Unlike in `commonmark-hs`, inline math cannot contain embedded math:
 
 ```````````````````````````````` example -e math-dollars
 This is display math:
