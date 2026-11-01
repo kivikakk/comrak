@@ -47,8 +47,8 @@ This is regular content.
 <li id="fn-longnote">
 <p>Here's one with multiple blocks.</p>
 <p>Subsequent paragraphs are indented.</p>
-<pre><code>code
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">code
+</span></code></pre>
 <a href="#fnref-longnote" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a> <a href="#fnref-longnote-2" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2-2" aria-label="Back to reference 2-2">↩<sup class="footnote-ref">2</sup></a>
 </li>
 <li id="fn-note">

@@ -350,6 +350,7 @@ dependencies = [
  "clap",
  "comrak",
  "shell-words",
+ "syntect",
  "yaml-rust",
 ]
 

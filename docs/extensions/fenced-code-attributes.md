@@ -7,8 +7,8 @@ title: Fenced code attributes
 const fn dogs() -> ! { yay }
 ```
 .
-<pre><code class="language-rust">const fn dogs() -&gt; ! { yay }
-</code></pre>
+<pre class="syntax-highlighting"><code class="language-rust"><span class="source rust"><span class="storage type rust">const</span> <span class="meta function rust"><span class="meta function rust"><span class="storage type function rust">fn</span> </span><span class="entity name function rust">dogs</span></span><span class="meta function rust"><span class="meta function parameters rust"><span class="punctuation section parameters begin rust">(</span></span><span class="meta function rust"><span class="meta function parameters rust"><span class="punctuation section parameters end rust">)</span></span></span></span><span class="meta function rust"> <span class="meta function return-type rust"><span class="punctuation separator rust">-&gt;</span> </span></span><span class="keyword operator rust">!</span> <span class="meta block rust"><span class="punctuation section block begin rust">{</span> yay </span><span class="meta block rust"><span class="punctuation section block end rust">}</span></span>
+</span></code></pre>
 ````````````````````````````````
 
 ```````````````````````````````` example -e fenced-code-attributes
@@ -16,8 +16,8 @@ const fn dogs() -> ! { yay }
 Ähm... egal.
 ```
 .
-<pre><code class="language-german">Ähm... egal.
-</code></pre>
+<pre class="syntax-highlighting"><code class="language-german"><span class="text plain">Ähm... egal.
+</span></code></pre>
 ````````````````````````````````
 
 ```````````````````````````````` example -e fenced-code-attributes
@@ -25,6 +25,6 @@ const fn dogs() -> ! { yay }
 fn cats() noreturn { yay_too }
 ```
 .
-<pre><code>fn cats() noreturn { yay_too }
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">fn cats() noreturn { yay_too }
+</span></code></pre>
 ````````````````````````````````

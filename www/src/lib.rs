@@ -1,14 +1,21 @@
 use std::fs;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 use clap::Parser;
 use comrak::cli::OptionArgs;
 use comrak::nodes::{NodeHtmlBlock, NodeValue};
-use comrak::{Arena, Node, Options, format_html, markdown_to_html, parse_document};
+use comrak::options::Plugins;
+use comrak::plugins::syntect::SyntectAdapter;
+use comrak::{
+    Arena, Node, Options, format_html_with_plugins, markdown_to_html_with_plugins, parse_document,
+};
 use yaml_rust::YamlLoader;
 
 pub const SNAP: &str = "COMRAK_SNAP";
+
+static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| SyntectAdapter::new(None));
 
 #[derive(Debug)]
 pub struct Doc {
@@ -34,6 +41,12 @@ pub fn page_options() -> Options<'static> {
     options.extension.footnotes = true;
     options.parse.smart = true;
     options
+}
+
+pub fn plugins() -> Plugins<'static> {
+    let mut plugins = Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&*HIGHLIGHTER);
+    plugins
 }
 
 fn example_flags(node: Node<'_>) -> Option<String> {
@@ -130,7 +143,7 @@ impl Doc {
         }
 
         let mut html = String::new();
-        format_html(document, &options, &mut html).unwrap();
+        format_html_with_plugins(document, &options, &mut html, &plugins()).unwrap();
         html
     }
 }
@@ -194,7 +207,11 @@ impl Example {
         let args = shell_words::split(&self.flags).map_err(|e| e.to_string())?;
         let option_args = OptionArgs::try_parse_from(std::iter::once("comrak".into()).chain(args))
             .map_err(|e| e.to_string())?;
-        Ok(markdown_to_html(&self.input, &option_args.to_options()))
+        Ok(markdown_to_html_with_plugins(
+            &self.input,
+            &option_args.to_options(),
+            &plugins(),
+        ))
     }
 
     fn html(&self) -> String {
@@ -213,6 +230,7 @@ impl Example {
                     <div class="example-rendered"><template shadowrootmode="open">
                         <link rel="stylesheet" href="/katex/katex.min.css">
                         <link rel="stylesheet" href="/reference.css">
+                        <link rel="stylesheet" href="/syntax.css">
                         {}
                     </template></div>
                 </div>

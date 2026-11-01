@@ -4,8 +4,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
 
-use comrak::{escape_commonmark_inline, markdown_to_html};
-use comrak_www::{Doc, SNAP, escape, page_options};
+use comrak::{escape_commonmark_inline, markdown_to_html_with_plugins};
+use comrak_www::{Doc, SNAP, escape, page_options, plugins};
+use syntect::highlighting::ThemeSet;
+use syntect::html::{ClassStyle, css_for_theme_with_class_style};
 
 const ASSETS: &[&str] = &[
     "styles.css",
@@ -36,14 +38,15 @@ impl Templates {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let [_, docs_dir, www_dir, out_dir]: [PathBuf; 4] = std::env::args_os()
-        .map(PathBuf::from)
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap_or_else(|_| {
-            eprintln!("usage: comrak-www DOCS WWW OUT");
-            process::exit(2);
-        });
+    let [_, docs_dir, www_dir, light_theme, dark_theme, out_dir]: [PathBuf; 6] =
+        std::env::args_os()
+            .map(PathBuf::from)
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| {
+                eprintln!("usage: comrak-www DOCS WWW LIGHT-THEME DARK-THEME OUT");
+                process::exit(2);
+            });
 
     let docs = Doc::load_all(&docs_dir);
 
@@ -65,6 +68,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     for asset in ASSETS {
         fs::copy(www_dir.join(asset), out_dir.join(asset))?;
     }
+    fs::write(
+        out_dir.join("syntax.css"),
+        syntax_css(&light_theme, &dark_theme)?,
+    )?;
 
     let index = fs::read_to_string(www_dir.join("index.md"))?;
     assert_eq!(
@@ -79,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Comrak · Markdown parser and renderer",
             "Comrak",
             Path::new(""),
-            &markdown_to_html(&index, &page_options()),
+            &markdown_to_html_with_plugins(&index, &page_options(), &plugins()),
         ),
     )?;
 
@@ -119,4 +126,42 @@ fn docs_list(docs: &[Doc]) -> Result<String, Box<dyn Error>> {
         )?;
     }
     Ok(list)
+}
+
+fn syntax_css(light: &Path, dark: &Path) -> Result<String, Box<dyn Error>> {
+    let css = |path: &Path| -> Result<String, Box<dyn Error>> {
+        let css = css_for_theme_with_class_style(&ThemeSet::get_theme(path)?, ClassStyle::Spaced)?;
+        let (_, body) = css.split_once("*/\n").unwrap();
+        Ok(body.replacen(".code {", ".syntax-highlighting {", 1))
+    };
+    let (light, dark) = (css(light)?, css(dark)?);
+    let (light_text, light_colours) = split_colours(&light);
+    let (dark_text, dark_colours) = split_colours(&dark);
+    assert_eq!(
+        light_text, dark_text,
+        "light and dark syntax themes must differ only in colours"
+    );
+
+    let mut merged = String::new();
+    for ((text, light), dark) in light_text.iter().zip(&light_colours).zip(&dark_colours) {
+        write!(merged, "{text}light-dark({light}, {dark})")?;
+    }
+    merged.push_str(light_text.last().unwrap());
+    Ok(merged)
+}
+
+fn split_colours(css: &str) -> (Vec<&str>, Vec<&str>) {
+    let mut text = vec![];
+    let mut colours = vec![];
+    let mut rest = css;
+    while let Some(start) = rest.find('#') {
+        let end = rest[start + 1..]
+            .find(|c: char| !c.is_ascii_hexdigit())
+            .map_or(rest.len(), |n| start + 1 + n);
+        text.push(&rest[..start]);
+        colours.push(&rest[start..end]);
+        rest = &rest[end..];
+    }
+    text.push(rest);
+    (text, colours)
 }

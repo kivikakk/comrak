@@ -50,10 +50,10 @@ bb
 ```
 .
 <p><code>%%inline%%</code></p>
-<pre><code>%%
+<pre class="syntax-highlighting"><code><span class="text plain">%%
 # text
 %%
-</code></pre>
+</span></code></pre>
 ````````````````````````````````
 
 ```````````````````````````````` example -e ofm-comments -e table

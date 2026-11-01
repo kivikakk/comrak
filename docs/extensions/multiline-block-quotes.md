@@ -119,10 +119,10 @@ Fours spaces makes it a code block
     content
     >>>
 .
-<pre><code>&gt;&gt;&gt;
+<pre class="syntax-highlighting"><code><span class="text plain">&gt;&gt;&gt;
 content
 &gt;&gt;&gt;
-</code></pre>
+</span></code></pre>
 ````````````````````````````````
 
 
@@ -136,8 +136,8 @@ the line.
   >>>
 .
 <blockquote>
-<pre><code>code block
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">code block
+</span></code></pre>
 </blockquote>
 ````````````````````````````````
 
@@ -152,8 +152,8 @@ the line.
 <blockquote>
 <p>content</p>
 <blockquote>
-<pre><code>code block
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">code block
+</span></code></pre>
 </blockquote>
 </blockquote>
 ````````````````````````````````
@@ -286,12 +286,12 @@ Ignored inside code blocks:
 # Code
 ```
 .
-<pre><code class="language-txt"># Code
+<pre class="syntax-highlighting"><code class="language-txt"><span class="text plain"># Code
 &gt;&gt;&gt;
 # Code
 &gt;&gt;&gt;
 # Code
-</code></pre>
+</span></code></pre>
 ````````````````````````````````
 
 

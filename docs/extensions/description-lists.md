@@ -118,8 +118,8 @@ crisp, pleasant to taste</p>
 <dt><em>orange</em></dt>
 <dd>
 <p>orange fruit</p>
-<pre><code>{ orange code block }
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">{ orange code block }
+</span></code></pre>
 <blockquote>
 <p>orange block quote</p>
 </blockquote>

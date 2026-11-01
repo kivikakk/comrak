@@ -185,10 +185,10 @@ Fours spaces makes it a code block
     content
     >>>
 .
-<pre><code>&gt;&gt;&gt;
+<pre class="syntax-highlighting"><code><span class="text plain">&gt;&gt;&gt;
 content
 &gt;&gt;&gt;
-</code></pre>
+</span></code></pre>
 ````````````````````````````````
 
 
@@ -203,8 +203,8 @@ the line.
 .
 <div class="markdown-alert markdown-alert-note">
 <p class="markdown-alert-title">Note</p>
-<pre><code>code block
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">code block
+</span></code></pre>
 </div>
 ````````````````````````````````
 
@@ -221,8 +221,8 @@ the line.
 <p>content</p>
 <div class="markdown-alert markdown-alert-caution">
 <p class="markdown-alert-title">Caution</p>
-<pre><code>code block
-</code></pre>
+<pre class="syntax-highlighting"><code><span class="text plain">code block
+</span></code></pre>
 </div>
 </div>
 ````````````````````````````````
@@ -362,12 +362,12 @@ Ignored inside code blocks:
 # Code
 ```
 .
-<pre><code class="language-txt"># Code
+<pre class="syntax-highlighting"><code class="language-txt"><span class="text plain"># Code
 &gt;&gt;&gt; [!NOTE]
 # Code
 &gt;&gt;&gt;
 # Code
-</code></pre>
+</span></code></pre>
 ````````````````````````````````
 
 
