@@ -32,9 +32,13 @@ pub struct OptionArgs {
     #[arg(long)]
     pub gfm_quirks: bool,
 
-    /// Permit any character inside a tasklist item, not just " ", "x" or "X"
+    /// Permit any character inside a tasklist item, not just " ", "x", or "X"
     #[arg(long)]
     pub relaxed_tasklist_character: bool,
+
+    /// Allow task list items in table cells
+    #[arg(long)]
+    pub tasklist_in_table: bool,
 
     /// Relax autolink parsing: allows links to be recognised when in brackets,
     /// permits all URL schemes, and permits domains without a TLD (like "http://localhost")
@@ -244,6 +248,7 @@ impl OptionArgs {
             .smart(self.smart)
             .maybe_default_info_string(self.default_info_string.clone())
             .relaxed_tasklist_matching(self.relaxed_tasklist_character)
+            .tasklist_in_table(self.tasklist_in_table)
             .relaxed_autolinks(self.relaxed_autolinks)
             .ignore_setext(self.ignore_setext)
             .sourcepos_chars(self.sourcepos_chars)
