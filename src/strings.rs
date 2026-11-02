@@ -79,11 +79,12 @@ pub fn normalize_code(v: &str) -> Cow<'_, str> {
     while i < b.len() {
         match b[i] {
             b'\r' => {
+                // A CR is dropped from a CRLF; the LF becomes the space.
+                r.push_str(&v[offset..i]);
                 if i + 1 == v.len() || b[i + 1] != b'\n' {
-                    r.push_str(&v[offset..i]);
                     r.push(' ');
-                    offset = i + 1;
                 }
+                offset = i + 1;
             }
             b'\n' => {
                 r.push_str(&v[offset..i]);
@@ -542,6 +543,13 @@ pub mod tests {
     #[test]
     fn normalize_code_handles_lone_newline() {
         assert_eq!(normalize_code("\n"), " ");
+    }
+
+    #[test]
+    fn normalize_code_handles_crlf() {
+        assert_eq!(normalize_code("a\r\nb"), "a b");
+        assert_eq!(normalize_code("\r\n"), " ");
+        assert_eq!(normalize_code(" a\r\n"), "a");
     }
 
     #[test]

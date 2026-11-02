@@ -443,6 +443,16 @@ fn backticks_empty_with_newline_should_be_space() {
 }
 
 #[test]
+fn backticks_line_endings_become_spaces() {
+    for newline in ["\n", "\r\n", "\r"] {
+        html(
+            &format!("`a{newline}b` `{newline}c`"),
+            "<p><code>a b</code> <code> c</code></p>\n",
+        );
+    }
+}
+
+#[test]
 fn blockquote_hard_linebreak_space() {
     html(">\\\n A", "<blockquote>\n<p><br />\nA</p>\n</blockquote>\n");
 }
