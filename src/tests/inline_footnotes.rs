@@ -513,3 +513,164 @@ fn in_table_cell() {
         ),
     );
 }
+
+#[test]
+fn inline_footnote_sourcepos() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "a^[b *c* d] e\n",
+        (document (1:1-1:13) [
+            (paragraph (1:1-1:13) [
+                (text (1:1-1:1) "a")
+                (footnote_reference (1:2-1:11))
+                (text (1:12-1:13) " e")
+            ])
+            (footnote_definition (1:2-1:11) [
+                (paragraph (1:4-1:10) [
+                    (text (1:4-1:5) "b ")
+                    (emph (1:6-1:8) [
+                        (text (1:7-1:7) "c")
+                    ])
+                    (text (1:9-1:10) " d")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn inline_footnote_sourcepos_multiline() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "a^[b\nc] d\n",
+        (document (1:1-2:4) [
+            (paragraph (1:1-2:4) [
+                (text (1:1-1:1) "a")
+                (footnote_reference (1:2-2:2))
+                (text (2:3-2:4) " d")
+            ])
+            (footnote_definition (1:2-2:2) [
+                (paragraph (1:4-2:1) [
+                    (text (1:4-1:4) "b")
+                    (softbreak (1:5-1:5))
+                    (text (2:1-2:1) "c")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn inline_footnote_sourcepos_multiline_indented() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "> a^[b\n> c] d\n",
+        (document (1:1-2:6) [
+            (block_quote (1:1-2:6) [
+                (paragraph (1:3-2:6) [
+                    (text (1:3-1:3) "a")
+                    (footnote_reference (1:4-2:4))
+                    (text (2:5-2:6) " d")
+                ])
+            ])
+            (footnote_definition (1:4-2:4) [
+                (paragraph (1:6-2:3) [
+                    (text (1:6-1:6) "b")
+                    (softbreak (1:7-1:7))
+                    (text (2:3-2:3) "c")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn inline_footnote_sourcepos_nested_multiline() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "a^[b ^[c\nd] e\nf] g\n",
+        (document (1:1-3:4) [
+            (paragraph (1:1-3:4) [
+                (text (1:1-1:1) "a")
+                (footnote_reference (1:2-3:2))
+                (text (3:3-3:4) " g")
+            ])
+            (footnote_definition (1:2-3:2) [
+                (paragraph (1:4-3:1) [
+                    (text (1:4-1:5) "b ")
+                    (footnote_reference (1:6-2:2))
+                    (text (2:3-2:4) " e")
+                    (softbreak (2:5-2:5))
+                    (text (3:1-3:1) "f")
+                ])
+            ])
+            (footnote_definition (1:6-2:2) [
+                (paragraph (1:8-2:1) [
+                    (text (1:8-1:8) "c")
+                    (softbreak (1:9-1:9))
+                    (text (2:1-2:1) "d")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn inline_footnote_sourcepos_chars() {
+    assert_ast_match!(
+        [
+            extension.footnotes,
+            extension.inline_footnotes,
+            parse.sourcepos_chars
+        ],
+        "ä^[b *c* d] e\n",
+        (document (1:1-1:13) [
+            (paragraph (1:1-1:13) [
+                (text (1:1-1:1) "ä")
+                (footnote_reference (1:2-1:11))
+                (text (1:12-1:13) " e")
+            ])
+            (footnote_definition (1:2-1:11) [
+                (paragraph (1:4-1:10) [
+                    (text (1:4-1:5) "b ")
+                    (emph (1:6-1:8) [
+                        (text (1:7-1:7) "c")
+                    ])
+                    (text (1:9-1:10) " d")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn inline_footnote_sourcepos_table() {
+    assert_ast_match!(
+        [
+            extension.footnotes,
+            extension.inline_footnotes,
+            extension.table
+        ],
+        "| H |\n| - |\n| c ^[cell] |\n",
+        (document (1:1-3:13) [
+            (table (1:1-3:13) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "H")
+                    ])
+                ])
+                (table_row (3:1-3:13) [
+                    (table_cell (3:2-3:12) [
+                        (text (3:3-3:4) "c ")
+                        (footnote_reference (3:5-3:11))
+                    ])
+                ])
+            ])
+            (footnote_definition (3:5-3:11) [
+                (paragraph (3:7-3:10) [
+                    (text (3:7-3:10) "cell")
+                ])
+            ])
+        ])
+    );
+}

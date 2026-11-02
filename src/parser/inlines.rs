@@ -383,7 +383,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.inline_footnote_depth < MAX_INLINE_FOOTNOTE_DEPTH
                     && self.peek_byte_n(1) == Some(b'[')
                 {
-                    self.handle_inline_footnote()
+                    self.handle_inline_footnote(line_offsets)
                 } else if self.options.extension.superscript && self.brackets.is_empty() {
                     Some(self.handle_delim(b'^'))
                 } else {
@@ -1202,7 +1202,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn handle_inline_footnote(&mut self) -> Option<Node<'a>> {
+    fn handle_inline_footnote(&mut self, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
         let startpos = self.scanner.pos;
 
         // We're at ^, next should be [
@@ -1269,39 +1269,29 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         );
 
         // Create a paragraph to hold the inline content
-        let para_ast = Ast::new(
-            NodeValue::Paragraph,
-            (1, 1).into(), // Use line 1 as base
-        );
-        // Build line_offsets by scanning for newlines in the content
-        let mut line_offsets = vec![0];
-
-        let mut i = 0;
-        let bytes = content.as_bytes();
-        let len = content.len();
-        while i < len {
-            match bytes[i] {
-                b'\r' if i + 1 < len && bytes[i + 1] == b'\n' => {
-                    i += 1;
-                    line_offsets.push(i + 1);
-                }
-                b'\n' | b'\r' => {
-                    line_offsets.push(i + 1);
-                }
-                _ => {}
-            }
-            i += 1;
-        }
-
-        let para_node = self.arena.alloc(para_ast.into());
+        let para_node = self
+            .arena
+            .alloc(Ast::new(NodeValue::Paragraph, (self.line, 1).into()).into());
         def_node.append(para_node);
+
+        let (newlines, _) = count_newlines(content);
+        let adjusted_line = self.line - self.block_line;
+        let mut line_offsets = Vec::with_capacity(newlines + 1);
+        line_offsets.push(
+            usize::try_from(
+                self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
+            )
+            .unwrap(),
+        );
+        line_offsets
+            .extend_from_slice(&parent_line_offsets[adjusted_line + 1..=adjusted_line + newlines]);
 
         // Parse the content recursively as inlines
         let mut subj = Subject::new(
             self.arena,
             self.options,
             content.into(),
-            1, // Use line 1 to match the paragraph's sourcepos
+            self.line,
             self.refmap,
             self.tables,
             self.footnote_defs,
@@ -1310,7 +1300,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.inline_footnote_depth + 1,
         );
 
-        while subj.parse_inline(para_node, 1, &line_offsets) && !self.cancellation.step() {}
+        while subj.parse_inline(para_node, self.line, &line_offsets) && !self.cancellation.step() {}
         subj.process_emphasis(0);
         subj.clear_brackets();
 
@@ -1336,6 +1326,17 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         // Move position past the closing ]
         self.scanner.pos = endpos + 1;
+        self.adjust_node_newlines(ref_node, endpos + 1 - startpos, 0, parent_line_offsets);
+
+        let sourcepos = ref_node.data().sourcepos;
+        def_node.data_mut().sourcepos = sourcepos;
+        para_node.data_mut().sourcepos = (
+            sourcepos.start.line,
+            sourcepos.start.column + 2,
+            sourcepos.end.line,
+            sourcepos.end.column - 1,
+        )
+            .into();
 
         Some(ref_node)
     }
