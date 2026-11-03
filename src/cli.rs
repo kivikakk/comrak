@@ -160,6 +160,7 @@ pub enum Extension {
     Spoiler,
     Greentext,
     OfmComments,
+    OfmBlockIds,
     Alerts,
     OfmCallouts,
     CjkFriendlyEmphasis,
@@ -232,6 +233,7 @@ impl OptionArgs {
             .spoiler(ext(Extension::Spoiler))
             .greentext(ext(Extension::Greentext))
             .ofm_comments(ext(Extension::OfmComments))
+            .ofm_block_ids(ext(Extension::OfmBlockIds))
             .alerts(ext(Extension::Alerts))
             .ofm_callouts(ext(Extension::OfmCallouts))
             .maybe_front_matter_delimiter(self.front_matter_delimiter.clone())

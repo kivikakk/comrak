@@ -517,6 +517,8 @@ hello world
 after"#,
 );
 
+const BLOCK_ID: TestCase = (&[sourcepos!((1:7-1:10))], "hello ^abc\n");
+
 const COMMENT_INLINE: TestCase = (&[sourcepos!((1:3-1:8))], "x %%aa%% tail");
 
 const MULTILINE_COMMENT: TestCase = (&[sourcepos!((1:1-2:4))], "%%\naa%%bb");
@@ -580,6 +582,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 CalloutTitle => CALLOUT_TITLE,
                 Subtext => SUBTEXT,
                 BlockDirective => BLOCK_DIRECTIVE,
+                BlockId => BLOCK_ID,
                 CommentInline => COMMENT_INLINE,
                 MultilineComment => MULTILINE_COMMENT,
                 Raw => unreachable!(),
@@ -638,6 +641,7 @@ fn sourcepos() {
             kind,
             NodeValueDiscriminants::Callout | NodeValueDiscriminants::CalloutTitle
         );
+        case_options.extension.ofm_block_ids = matches!(kind, NodeValueDiscriminants::BlockId);
 
         let arena = Arena::new();
         let root = parse_document(&arena, text, &case_options);

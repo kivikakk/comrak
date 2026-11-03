@@ -421,6 +421,7 @@ pub fn format_node_default<T>(
         NodeValue::Subtext => render_subtext(context, node, entering),
         NodeValue::BlockDirective(ref nbd) => render_block_directive(context, node, entering, nbd),
         NodeValue::CommentInline(_) | NodeValue::MultilineComment(_) => Ok(ChildRendering::Skip),
+        NodeValue::BlockId(_) => Ok(ChildRendering::Skip),
     }
 }
 
@@ -536,6 +537,67 @@ fn extend_with_attributes<'a, T>(
     }
 }
 
+/// Renders the `id` attribute of a block labelled by a trailing Obsidian block
+/// identifier, e.g. `id="^abc123"`.
+pub fn render_block_id<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Result {
+    let Some(name) = block_id(context.options, node) else {
+        return Ok(());
+    };
+
+    context.write_str(" id=\"^")?;
+    context.escape(&name)?;
+    context.write_str("\"")
+}
+
+fn block_id(options: &Options<'_>, node: Node<'_>) -> Option<String> {
+    if !options.extension.ofm_block_ids
+        || (options.extension.header_id_prefix.is_some()
+            && node_matches!(node, NodeValue::Heading(_)))
+    {
+        return None;
+    }
+
+    let name = trailing_marker(node)?;
+    let mut ancestor = node.parent();
+    while let Some(a) = ancestor {
+        if is_labelled_container(a) && trailing_marker(a).as_deref() == Some(&name) {
+            return None;
+        }
+        ancestor = a.parent();
+    }
+
+    Some(name)
+}
+
+fn is_labelled_container(node: Node<'_>) -> bool {
+    node_matches!(
+        node,
+        NodeValue::BlockQuote
+            | NodeValue::MultilineBlockQuote(_)
+            | NodeValue::Table(_)
+            | NodeValue::Callout(_)
+            | NodeValue::Alert(_)
+            | NodeValue::DescriptionList
+            | NodeValue::Subtext
+            | NodeValue::BlockDirective(_)
+            | NodeValue::Item(_)
+            | NodeValue::TaskItem(_)
+    )
+}
+
+fn trailing_marker(node: Node<'_>) -> Option<String> {
+    let mut current = node;
+    while let Some(last) = current.last_child() {
+        match last.data().value {
+            NodeValue::BlockId(ref n) => return Some(n.name.clone()),
+            NodeValue::List(_) | NodeValue::Item(_) | NodeValue::TaskItem(_) => return None,
+            _ => current = last,
+        }
+    }
+
+    None
+}
+
 fn render_block_directive<T>(
     context: &mut Context<T>,
     node: Node<'_>,
@@ -547,6 +609,7 @@ fn render_block_directive<T>(
         context.write_str("<div class=\"")?;
         context.escape(&nbd.info)?;
         context.write_str("\"")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
@@ -566,6 +629,7 @@ fn render_block_quote<T>(
     if entering {
         context.cr()?;
         context.write_str("<blockquote")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -735,6 +799,7 @@ fn render_heading<T>(
                     context.current_heading_text = Some(text_content);
                 };
 
+                render_block_id(context, node)?;
                 render_sourcepos(context, node)?;
                 #[cfg(feature = "attributes")]
                 write_attributes(
@@ -917,6 +982,7 @@ fn render_item<T>(
     if entering {
         context.cr()?;
         context.write_str("<li")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
@@ -1054,6 +1120,7 @@ fn render_paragraph<T>(
         if entering {
             context.cr()?;
             context.write_str("<p")?;
+            render_block_id(context, node)?;
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         } else {
@@ -1263,6 +1330,7 @@ fn render_table<T>(
     if entering {
         context.cr()?;
         context.write_str("<table")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -1392,6 +1460,7 @@ fn render_task_item<T>(
             if context.options.render.tasklist_classes {
                 context.write_str(" class=\"task-list-item\"")?;
             }
+            render_block_id(context, node)?;
             render_sourcepos(context, node)?;
             context.write_str(">")?;
         }
@@ -1434,6 +1503,7 @@ fn render_alert<T>(
                 .css_class(context.options.render.alert_style),
         )?;
         context.write_str("\"")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -1502,6 +1572,7 @@ fn render_callout<T>(
             CalloutFold::Collapsed => "collapsed",
         };
         write!(context, " data-callout-fold=\"{}\"", fold)?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -1556,6 +1627,7 @@ fn render_description_list<T>(
     if entering {
         context.cr()?;
         context.write_str("<dl")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -1686,6 +1758,7 @@ fn render_multiline_block_quote<T>(
     if entering {
         context.cr()?;
         context.write_str("<blockquote")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
         context.lf()?;
@@ -1765,6 +1838,7 @@ fn render_subtext<T>(
     if entering {
         context.cr()?;
         context.write_str("<p><sub")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {

@@ -10,6 +10,7 @@ use crate::nodes::{
     NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
     NodeValue, NodeWikiLink, TableAlignment,
 };
+use crate::parser::block_ids;
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
 #[cfg(feature = "phoenix_heex")]
 use crate::parser::phoenix_heex::NodeHeexBlock;
@@ -585,6 +586,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::CalloutTitle => self.format_callout_title(entering)?,
             NodeValue::Subtext => self.format_subtext(entering)?,
             NodeValue::BlockDirective(ref nbd) => self.format_block_directive(nbd, entering)?,
+            NodeValue::BlockId(ref n) => {
+                if entering {
+                    write!(self, "^{}", n.name)?;
+                }
+            }
             NodeValue::CommentInline(ref comment) => {
                 if entering {
                     write!(self, "%%{}%%", comment.literal)?;
@@ -926,12 +932,19 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 }
             }
 
-            self.output(
-                &literal[leading.map_or(0, char::len_utf8)
-                    ..literal.len() - trailing.map_or(0, char::len_utf8)],
-                wrap,
-                Escaping::Normal,
-            )?;
+            let body = &literal[leading.map_or(0, char::len_utf8)
+                ..literal.len() - trailing.map_or(0, char::len_utf8)];
+            match block_ids::trailing_marker_caret(body).filter(|_| {
+                self.options.extension.ofm_block_ids
+                    && node.parent().is_some_and(|p| p.data().value.block())
+            }) {
+                Some(caret) => {
+                    self.output(&body[..caret], wrap, Escaping::Normal)?;
+                    self.output("\\^", wrap, Escaping::Literal)?;
+                    self.output(&body[caret + 1..], wrap, Escaping::Normal)?;
+                }
+                None => self.output(body, wrap, Escaping::Normal)?,
+            }
 
             if let Some(trailing) = trailing {
                 write!(self, "&#{};", trailing as u32)?;
