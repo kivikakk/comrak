@@ -736,9 +736,7 @@ where
             self.fix_zero_end_columns(container);
 
             self.current = self.finalize_borrowed(container, ast).unwrap();
-            if matches!(ast.value, NodeValue::MultilineBlockQuote(..)) {
-                ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-            }
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
         }
 

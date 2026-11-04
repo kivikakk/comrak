@@ -94,7 +94,7 @@ fn sourcepos_multiline() {
         "Pay attention\n"
         ">>>\n",
         (document (1:1-3:3) [
-            (alert (1:1-2:13) [
+            (alert (1:1-3:3) [
                 (paragraph (2:1-2:13) [
                     (text (2:1-2:13) "Pay attention")
                 ])
