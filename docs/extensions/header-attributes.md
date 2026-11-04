@@ -58,3 +58,13 @@ Yeww {x=y x=y #a #b}
 <h1 id="user-content-greeting" class="wave">Hi!<a href="#greeting" aria-label="Link to heading 'Hi!'" data-heading-content="Hi!" class="anchor"></a></h1>
 <h1 id="user-content-hi">Hi!<a href="#hi" aria-label="Link to heading 'Hi!'" data-heading-content="Hi!" class="anchor"></a></h1>
 ````````````````````````````````
+
+```````````````````````````````` example -e header-attributes --header-id-prefix user-content- --attributes --unsafe
+# Hi!
+# Hi! {#hi}
+# Hi!
+.
+<h1 id="user-content-hi-1">Hi!<a href="#hi-1" aria-label="Link to heading 'Hi!'" data-heading-content="Hi!" class="anchor"></a></h1>
+<h1 id="user-content-hi">Hi!<a href="#hi" aria-label="Link to heading 'Hi!'" data-heading-content="Hi!" class="anchor"></a></h1>
+<h1 id="user-content-hi-2">Hi!<a href="#hi-2" aria-label="Link to heading 'Hi!'" data-heading-content="Hi!" class="anchor"></a></h1>
+````````````````````````````````

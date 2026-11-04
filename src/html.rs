@@ -290,6 +290,9 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
 
     let mut context = Context::new(output, options, plugins, user);
 
+    #[cfg(feature = "attributes")]
+    reserve_explicit_heading_ids(&mut context, root);
+
     enum Phase {
         Pre,
         Post,
@@ -489,6 +492,24 @@ fn explicit_id<T>(context: &Context<T>, node: Node<'_>) -> Option<String> {
 #[cfg(not(feature = "attributes"))]
 fn explicit_id<T>(_context: &Context<T>, _node: Node<'_>) -> Option<String> {
     None
+}
+
+#[cfg(feature = "attributes")]
+fn reserve_explicit_heading_ids<T>(context: &mut Context<T>, root: Node<'_>) {
+    if !(context.options.extension.header_attributes
+        && context.options.extension.header_id_prefix.is_some()
+        && attributes_enabled(context))
+    {
+        return;
+    }
+    for node in root.descendants() {
+        if !node_matches!(node, NodeValue::Heading(..)) {
+            continue;
+        }
+        if let Some(id) = explicit_id(context, node) {
+            context.anchorizer.reserve(id);
+        }
+    }
 }
 
 #[cfg(feature = "attributes")]

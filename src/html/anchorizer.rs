@@ -80,4 +80,9 @@ impl Anchorizer {
         self.next_suffix.insert(id, uniq + 1);
         chosen
     }
+
+    #[cfg(feature = "attributes")]
+    pub(crate) fn reserve(&mut self, id: String) {
+        self.ids.insert(id);
+    }
 }

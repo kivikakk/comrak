@@ -337,3 +337,39 @@ fn render_code_block_attrs_syntect() {
         "{output}"
     );
 }
+
+#[test]
+fn explicit_heading_ids_are_reserved() {
+    html_opts_i(
+        "# Hi!\n\n# Hi! {#hi}\n\n# Hi!\n",
+        concat!(
+            "<h1 id=\"user-content-hi-1\">Hi!<a href=\"#hi-1\" aria-label=\"Link to heading 'Hi!'\" data-heading-content=\"Hi!\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"user-content-hi\">Hi!<a href=\"#hi\" aria-label=\"Link to heading 'Hi!'\" data-heading-content=\"Hi!\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"user-content-hi-2\">Hi!<a href=\"#hi-2\" aria-label=\"Link to heading 'Hi!'\" data-heading-content=\"Hi!\" class=\"anchor\"></a></h1>\n",
+        ),
+        false,
+        |opts| {
+            opts.extension.header_attributes = true;
+            opts.extension.header_id_prefix = Some("user-content-".to_owned());
+            opts.render.attributes = true;
+            opts.render.r#unsafe = true;
+        },
+    );
+}
+
+#[test]
+fn explicit_heading_ids_need_unsafe_to_be_reserved() {
+    html_opts_i(
+        "# Hi!\n\n# Hi! {#hi}\n",
+        concat!(
+            "<h1 id=\"user-content-hi\">Hi!<a href=\"#hi\" aria-label=\"Link to heading 'Hi!'\" data-heading-content=\"Hi!\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"user-content-hi-1\">Hi!<a href=\"#hi-1\" aria-label=\"Link to heading 'Hi!'\" data-heading-content=\"Hi!\" class=\"anchor\"></a></h1>\n",
+        ),
+        false,
+        |opts| {
+            opts.extension.header_attributes = true;
+            opts.extension.header_id_prefix = Some("user-content-".to_owned());
+            opts.render.attributes = true;
+        },
+    );
+}
