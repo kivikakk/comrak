@@ -276,6 +276,11 @@ pub enum NodeValue {
     /// ```
     BlockDirective(Box<NodeBlockDirective>),
 
+    /// **Inline**. An Obsidian block identifier marker (`^abc123`).  Enabled with
+    /// the `ofm_block_ids` option.  Has no children, and is never rendered as
+    /// visible text; it labels the block whose content ends with it.
+    BlockId(Box<NodeBlockId>),
+
     /// **Inline**. An inline comment span. Enabled with `ofm_comments` option.
     CommentInline(NodeComment),
 
@@ -552,6 +557,14 @@ pub struct NodeMath {
     /// they are contained within this structure,
     /// rather than inserted into a child inline of any kind.
     pub literal: String,
+}
+
+/// The metadata of an Obsidian block identifier marker.
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeBlockId {
+    /// The identifier itself, without the leading `^` and with the original
+    /// casing preserved.
+    pub name: String,
 }
 
 /// An inline comment span
@@ -874,6 +887,7 @@ impl NodeValue {
             NodeValue::Subscript => "subscript",
             NodeValue::SpoileredText => "spoiler",
             NodeValue::EscapedTag(_) => "escaped_tag",
+            NodeValue::BlockId(..) => "block_id",
             NodeValue::CommentInline(_) | NodeValue::MultilineComment(_) => "comment",
             NodeValue::Alert(_) => "alert",
             NodeValue::Callout(_) => "callout",
@@ -1234,6 +1248,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     | NodeValue::Escaped
                     | NodeValue::EscapedTag(_)
                     | NodeValue::CommentInline(_)
+                    | NodeValue::BlockId(_)
                 )
             }
             NodeValue::MultilineBlockQuote(_) => {
@@ -1263,7 +1278,8 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::HtmlInline(_)
             | NodeValue::Raw(_)
             | NodeValue::FootnoteReference(_)
-            | NodeValue::Math(_) => false,
+            | NodeValue::Math(_)
+            | NodeValue::BlockId(_) => false,
 
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(_) | NodeValue::HeexInline(_) => false,

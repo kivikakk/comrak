@@ -330,6 +330,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
+                NodeValue::BlockId(ref nb) => {
+                    self.output.write_str(" name=\"")?;
+                    self.escape(&nb.name)?;
+                    self.output.write_str("\"")?;
+                }
                 NodeValue::Alert(ref alert) => {
                     self.output.write_str(" type=\"")?;
                     self.output

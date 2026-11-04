@@ -530,6 +530,22 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub ofm_comments: bool,
 
+    /// Enables the Obsidian Flavored Markdown's block identifier extension.
+    ///
+    /// A block is labelled by appending `^identifier` to its last line, where the
+    /// identifier is the ASCII letters, numbers and hyphens following the caret:
+    ///
+    /// ```markdown
+    /// Some paragraph ^abc123
+    /// ```
+    ///
+    /// The marker is a `NodeValue::BlockId` node, never
+    /// rendered as text; the labelled block gets an `id` attribute starting with
+    /// the caret.  With [`superscript`][Extension::superscript] enabled a caret
+    /// that has a closing partner belongs to the superscript instead.
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub ofm_block_ids: bool,
+
     /// Wraps embedded image URLs using a function or custom trait object.
     ///
     /// ```rust

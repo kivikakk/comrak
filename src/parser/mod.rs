@@ -1,6 +1,7 @@
 #[cfg(feature = "attributes")]
 mod attributes;
 mod autolink;
+pub(crate) mod block_ids;
 mod callouts;
 mod inlines;
 pub mod options;
@@ -2611,7 +2612,24 @@ where
             mut content,
             offsets,
         } = *lines;
+        let may_label =
+            self.options.extension.ofm_block_ids && !block_ids::ends_with_whitespace(&content);
         strings::rtrim(&mut content);
+
+        let marker = if may_label {
+            block_ids::take_trailing_marker(&mut content)
+        } else {
+            None
+        }
+        .map(|m| {
+            let line = node.data().sourcepos.start.line + m.line;
+            let column = offsets.get(m.line).copied().unwrap_or(0) + m.column;
+            let sourcepos = Sourcepos {
+                start: (line, column).into(),
+                end: (line, column + m.name.len()).into(),
+            };
+            block_ids::marker_node(self.arena, &m.name, sourcepos)
+        });
 
         let mut subj = inlines::Subject::new(
             self.arena,
@@ -2629,6 +2647,10 @@ where
         while subj.parse_inline(node, line, &offsets) && !self.cancellation.step() {}
         subj.process_emphasis(0);
         subj.clear_brackets();
+
+        if let Some(marker) = marker {
+            node.append(marker);
+        }
     }
 
     fn process_footnotes(&mut self) {

@@ -35,6 +35,7 @@ mod inline_footnotes;
 mod insert;
 mod math;
 mod multiline_block_quotes;
+mod ofm_block_ids;
 mod ofm_comments;
 #[path = "tests/options.rs"]
 mod options_;
