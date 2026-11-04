@@ -1,6 +1,6 @@
 #![cfg(feature = "attributes")]
 
-use crate::tests::assert_ast_match;
+use crate::tests::{assert_ast_match, html_opts, html_opts_i};
 
 #[test]
 fn heading_with_attrs() {
@@ -175,5 +175,165 @@ fn multiline_inline_code_attrs_sourcepos() {
                 (text (3:7-3:8) " b")
             ])
         ])
+    );
+}
+
+#[test]
+fn render_inline_attrs() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            extension.inline_code_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "[a](u \"t\"){#i .c .d k=v} ![b](s \"t\"){.c k=\"v w\"} `x`{#y .c}\n",
+        "<p><a href=\"u\" title=\"t\" id=\"i\" class=\"c d\" k=\"v\">a</a> <img src=\"s\" alt=\"b\" title=\"t\" class=\"c\" k=\"v w\" /> <code id=\"y\" class=\"c\">x</code></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_attrs_after_own() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "![b](s){src=\"javascript:alert(1)\"} [a](u){href=v}\n",
+        "<p><img src=\"s\" alt=\"b\" src=\"javascript:alert(1)\" /> <a href=\"u\" href=\"v\">a</a></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_attrs_escaped() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "[a](u){title=\"x\\\"<y>&\" .\"p&q\"}\n",
+        "<p><a href=\"u\" class=\"p&amp;q\" title=\"x&quot;&lt;y&gt;&amp;\">a</a></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_attrs_needs_unsafe() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            extension.inline_code_attributes,
+            extension.header_attributes,
+            extension.fenced_code_attributes,
+            render.attributes
+        ],
+        "# H {#h .c}\n\n[a](u){.c k=v} `x`{.c}\n\n```rust {.c}\nx\n```\n",
+        "<h1>H</h1>\n<p><a href=\"u\">a</a> <code>x</code></p>\n<pre><code class=\"language-rust\">x\n</code></pre>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_attrs_needs_render_option() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            extension.inline_code_attributes,
+            render.r#unsafe
+        ],
+        "[a](u){.c k=v} `x`{.c}\n",
+        "<p><a href=\"u\">a</a> <code>x</code></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_heading_attrs() {
+    html_opts!(
+        [
+            extension.header_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "# Hi {#greeting .c k=v}\n",
+        "<h1 id=\"greeting\" class=\"c\" k=\"v\">Hi</h1>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_heading_attrs_with_id_prefix() {
+    html_opts_i(
+        "# Hi {#greeting .c}\n\n# Hi\n\n# Hey {#\"a\\\"b\"}\n",
+        concat!(
+            "<h1 id=\"user-content-greeting\" class=\"c\">Hi<a href=\"#greeting\" aria-label=\"Link to heading 'Hi'\" data-heading-content=\"Hi\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"user-content-hi\">Hi<a href=\"#hi\" aria-label=\"Link to heading 'Hi'\" data-heading-content=\"Hi\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"user-content-a&quot;b\">Hey<a href=\"#a&quot;b\" aria-label=\"Link to heading 'Hey'\" data-heading-content=\"Hey\" class=\"anchor\"></a></h1>\n",
+        ),
+        false,
+        |opts| {
+            opts.extension.header_attributes = true;
+            opts.extension.header_id_prefix = Some("user-content-".to_owned());
+            opts.render.attributes = true;
+            opts.render.r#unsafe = true;
+        },
+    );
+}
+
+#[test]
+fn render_code_block_attrs() {
+    html_opts!(
+        [
+            extension.fenced_code_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "```rust {#ex .c .d k=v}\nx\n```\n",
+        "<pre class=\"c d\" id=\"ex\" k=\"v\"><code class=\"language-rust\">x\n</code></pre>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_code_block_attrs_own_win() {
+    html_opts!(
+        [
+            extension.fenced_code_attributes,
+            render.github_pre_lang,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "```rust {lang=evil k=v}\nx\n```\n",
+        "<pre k=\"v\" lang=\"rust\"><code>x\n</code></pre>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+#[cfg(feature = "syntect")]
+fn render_code_block_attrs_syntect() {
+    let adapter = crate::plugins::syntect::SyntectAdapter::new(None);
+    let mut plugins = crate::options::Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    let mut options = crate::Options::default();
+    options.extension.fenced_code_attributes = true;
+    options.render.attributes = true;
+    options.render.r#unsafe = true;
+
+    let arena = crate::Arena::new();
+    let root = crate::parse_document(&arena, "```rust {#ex .c}\nx\n```\n", &options);
+    let mut output = String::new();
+    crate::format_html_with_plugins(root, &options, &mut output, &plugins).unwrap();
+
+    assert!(
+        output.starts_with(
+            "<pre class=\"syntax-highlighting c\" id=\"ex\"><code class=\"language-rust\">"
+        ),
+        "{output}"
     );
 }

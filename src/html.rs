@@ -438,6 +438,83 @@ pub fn render_sourcepos<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Res
     Ok(())
 }
 
+/// Write attributes for the given [`Node`] out to the supplied [`Context`].
+/// Each attribute written is preceded by a space; if no attributes are present,
+/// nothing is written.
+#[cfg(feature = "attributes")]
+pub fn render_attributes<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Result {
+    write_attributes(context, node, true)
+}
+
+#[cfg(feature = "attributes")]
+fn attributes_enabled<T>(context: &Context<T>) -> bool {
+    context.options.render.attributes && context.options.render.r#unsafe
+}
+
+#[cfg(feature = "attributes")]
+fn write_attributes<T>(context: &mut Context<T>, node: Node<'_>, with_id: bool) -> fmt::Result {
+    if !attributes_enabled(context) {
+        return Ok(());
+    }
+    let ast = node.data();
+    let Some(attrs) = &ast.attrs else {
+        return Ok(());
+    };
+    if with_id && let Some(id) = &attrs.id {
+        context.write_str(" id=\"")?;
+        context.escape(id)?;
+        context.write_str("\"")?;
+    }
+    if !attrs.classes.is_empty() {
+        context.write_str(" class=\"")?;
+        context.escape(&attrs.classes.join(" "))?;
+        context.write_str("\"")?;
+    }
+    for (key, value) in &attrs.pairs {
+        write!(context, " {key}=\"")?;
+        context.escape(value)?;
+        context.write_str("\"")?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "attributes")]
+fn explicit_id<T>(context: &Context<T>, node: Node<'_>) -> Option<String> {
+    if !attributes_enabled(context) {
+        return None;
+    }
+    node.data().attrs.as_ref()?.id.clone()
+}
+
+#[cfg(not(feature = "attributes"))]
+fn explicit_id<T>(_context: &Context<T>, _node: Node<'_>) -> Option<String> {
+    None
+}
+
+#[cfg(feature = "attributes")]
+fn extend_with_attributes<'a, T>(
+    context: &Context<T>,
+    ast: &'a crate::nodes::Ast,
+    map: &mut BTreeMap<&'a str, Cow<'a, str>>,
+) {
+    if !attributes_enabled(context) {
+        return;
+    }
+    let Some(attrs) = &ast.attrs else {
+        return;
+    };
+    if let Some(id) = &attrs.id {
+        map.entry("id").or_insert(id.into());
+    }
+    if !attrs.classes.is_empty() {
+        map.entry("class")
+            .or_insert(Cow::Owned(attrs.classes.join(" ")));
+    }
+    for (key, value) in &attrs.pairs {
+        map.entry(key.as_str()).or_insert(value.into());
+    }
+}
+
 fn render_block_directive<T>(
     context: &mut Context<T>,
     node: Node<'_>,
@@ -488,6 +565,8 @@ fn render_code<T>(
     if entering {
         context.write_str("<code")?;
         render_sourcepos(context, node)?;
+        #[cfg(feature = "attributes")]
+        render_attributes(context, node)?;
         context.write_str(">")?;
         context.escape(&nc.literal)?;
         context.write_str("</code>")?;
@@ -533,6 +612,8 @@ fn render_code_block<T>(
         if !lang.eq("math") {
             context.cr()?;
 
+            #[cfg(feature = "attributes")]
+            let ast = node.data();
             let mut pre_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
             let mut code_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
             let code_attr: String;
@@ -560,6 +641,9 @@ fn render_code_block<T>(
                 let ast = node.data();
                 pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
             }
+
+            #[cfg(feature = "attributes")]
+            extend_with_attributes(context, &ast, &mut pre_attributes);
 
             match context.plugins.render.codefence_syntax_highlighter {
                 None => {
@@ -617,14 +701,26 @@ fn render_heading<T>(
 
                 if let Some(prefix) = &context.options.extension.header_id_prefix {
                     let text_content = node.collect_text();
-                    let id = context.anchorizer.anchorize(&text_content);
+                    let id = match explicit_id(context, node) {
+                        Some(id) => id,
+                        None => context.anchorizer.anchorize(&text_content),
+                    };
 
-                    write!(context, r##" id="{prefix}{id}""##)?;
+                    context.write_str(" id=\"")?;
+                    context.escape(prefix)?;
+                    context.escape(&id)?;
+                    context.write_str("\"")?;
                     context.current_anchorized_id = Some(id);
                     context.current_heading_text = Some(text_content);
                 };
 
                 render_sourcepos(context, node)?;
+                #[cfg(feature = "attributes")]
+                write_attributes(
+                    context,
+                    node,
+                    context.options.extension.header_id_prefix.is_none(),
+                )?;
                 context.write_str(">")?;
             } else {
                 if let Some(prefix) = &context.options.extension.header_id_prefix {
@@ -635,10 +731,10 @@ fn render_heading<T>(
                     } else {
                         ""
                     };
-                    write!(
-                        context,
-                        r##"<a href="#{href_prefix}{id}" aria-label="Link to heading '"##
-                    )?;
+                    context.write_str("<a href=\"#")?;
+                    context.escape(href_prefix)?;
+                    context.escape(&id)?;
+                    context.write_str("\" aria-label=\"Link to heading '")?;
                     context.escape(&text_content)?;
                     context.write_str(r#"'" data-heading-content=""#)?;
                     context.escape(&text_content)?;
@@ -775,7 +871,10 @@ fn render_image<T>(
             context.write_str("\" title=\"")?;
             context.escape(&nl.title)?;
         }
-        context.write_str("\" />")?;
+        context.write_str("\"")?;
+        #[cfg(feature = "attributes")]
+        render_attributes(context, node)?;
+        context.write_str(" />")?;
         if context.options.render.figure_with_caption {
             if !nl.title.is_empty() {
                 context.write_str("<figcaption>")?;
@@ -849,7 +948,10 @@ fn render_link<T>(
                 context.write_str("\" title=\"")?;
                 context.escape(&nl.title)?;
             }
-            context.write_str("\">")?;
+            context.write_str("\"")?;
+            #[cfg(feature = "attributes")]
+            render_attributes(context, node)?;
+            context.write_str(">")?;
         } else {
             context.write_str("</a>")?;
         }

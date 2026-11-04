@@ -24,7 +24,7 @@ fn syntax_highlighter_plugin() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -32,7 +32,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
@@ -115,7 +115,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -123,7 +123,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
@@ -215,7 +215,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
         }
@@ -223,7 +223,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
-            attributes: BTreeMap<&'static str, Cow<str>>,
+            attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
         }
