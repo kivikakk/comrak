@@ -283,3 +283,50 @@ fn mbq_as_list_item_with_list_item() {
         ),
     );
 }
+
+#[test]
+fn sourcepos_unclosed_in_list() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        "- >>>\n"
+        "  a\n"
+        "\n"
+        "bar\n",
+        (document (1:1-4:3) [
+            (list (1:1-2:3) [
+                (item (1:1-2:3) [
+                    (multiline_block_quote (1:3-2:3) [
+                        (paragraph (2:3-2:3) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (4:1-4:3) [
+                (text (4:1-4:3) "bar")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        "- >>>\n"
+        "  a\n"
+        "  >>>\n"
+        "bar\n",
+        (document (1:1-4:3) [
+            (list (1:1-3:5) [
+                (item (1:1-3:5) [
+                    (multiline_block_quote (1:3-3:5) [
+                        (paragraph (2:3-2:3) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (4:1-4:3) [
+                (text (4:1-4:3) "bar")
+            ])
+        ])
+    );
+}

@@ -138,3 +138,44 @@ fn sourcepos_in_blockquote() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_unclosed_in_list() {
+    assert_ast_match!(
+        [extension.block_directive],
+        "- :::foo\n"
+        "bar\n",
+        (document (1:1-2:3) [
+            (list (1:1-1:8) [
+                (item (1:1-1:8) [
+                    (block_directive (1:3-1:8))
+                ])
+            ])
+            (paragraph (2:1-2:3) [
+                (text (2:1-2:3) "bar")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.block_directive],
+        "- :::foo\n"
+        "  a\n"
+        "\n"
+        "bar\n",
+        (document (1:1-4:3) [
+            (list (1:1-2:3) [
+                (item (1:1-2:3) [
+                    (block_directive (1:3-2:3) [
+                        (paragraph (2:3-2:3) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (4:1-4:3) [
+                (text (4:1-4:3) "bar")
+            ])
+        ])
+    );
+}

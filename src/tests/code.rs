@@ -426,9 +426,9 @@ fn list_ending_in_unclosed_multiline_block_quote_sourcepos() {
         "foo\n"
         "bar\n",
         (document (1:1-3:3) [
-            (list (1:1-2:3) [
+            (list (1:1-1:5) [
                 (item (1:1-1:5) [
-                    (multiline_block_quote (1:3-2:3))
+                    (multiline_block_quote (1:3-1:5))
                 ])
             ])
             (paragraph (2:1-3:3) [
