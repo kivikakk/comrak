@@ -224,6 +224,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
     current: Node<'a>,
+    last_matched_container: Node<'a>,
     line_number: usize,
     offset: usize,
     column: usize,
@@ -282,6 +283,7 @@ where
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
             current: root,
+            last_matched_container: root,
             line_number: 0,
             offset: 0,
             column: 0,
@@ -407,14 +409,11 @@ where
         self.line_number += 1;
 
         if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
+            self.last_matched_container = last_matched_container;
             let mut container = last_matched_container;
-            let current = self.current;
             let lazy_callout = self.lazy_callout_candidate(all_matched);
             self.open_new_blocks(&mut container, line, all_matched, lazy_callout.is_some());
-
-            if current.same_node(self.current) {
-                self.add_text_to_container(container, last_matched_container, line, lazy_callout);
-            }
+            self.add_text_to_container(container, line, lazy_callout);
 
             self.finish_callout_titles();
         }
@@ -2073,6 +2072,7 @@ where
         start_column: usize,
     ) -> Node<'a> {
         while !parent.can_contain_type(&value) {
+            self.close_unmatched_blocks();
             parent = self.finalize(parent).unwrap();
         }
 
@@ -2087,10 +2087,15 @@ where
         node
     }
 
+    fn close_unmatched_blocks(&mut self) {
+        while !self.current.same_node(self.last_matched_container) {
+            self.current = self.finalize(self.current).unwrap();
+        }
+    }
+
     fn add_text_to_container(
         &mut self,
         mut container: Node<'a>,
-        last_matched_container: Node<'a>,
         line: &str,
         lazy_callout: Option<Node<'a>>,
     ) {
@@ -2131,8 +2136,8 @@ where
             tmp = parent;
         }
 
-        if !self.current.same_node(last_matched_container)
-            && container.same_node(last_matched_container)
+        if !self.current.same_node(self.last_matched_container)
+            && container.same_node(self.last_matched_container)
             && !self.blank
             && (!self.options.extension.greentext
                 || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
@@ -2148,9 +2153,7 @@ where
                 self.add_line(self.current, line);
             }
         } else {
-            while !self.current.same_node(last_matched_container) {
-                self.current = self.finalize(self.current).unwrap();
-            }
+            self.close_unmatched_blocks();
 
             let add_text_result = match container.data().value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
@@ -2228,9 +2231,9 @@ where
                         if self.blank {
                             return;
                         }
-                        let last_matched = container;
+                        self.last_matched_container = container;
                         self.open_new_blocks(&mut container, line, true, false);
-                        self.add_text_to_container(container, last_matched, line, None);
+                        self.add_text_to_container(container, line, None);
                         return;
                     } else {
                         self.add_line(container, line);
