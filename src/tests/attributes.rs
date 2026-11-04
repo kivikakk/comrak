@@ -132,3 +132,48 @@ fn links_and_images_with_attrs() {
         ])
     );
 }
+
+#[test]
+fn multiline_link_attrs_sourcepos() {
+    assert_ast_match!(
+        [extension.link_attributes, extension.inline_code_attributes],
+        "a\n"
+        "b ![](x){w=1\n"
+        "   h=2} c `d` e\n"
+        "f *g*\n",
+        (document (1:1-4:5) [
+            (paragraph (1:1-4:5) [
+                (text (1:1-1:1) "a")
+                (softbreak (1:2-1:2))
+                (text (2:1-2:2) "b ")
+                (image (2:3-3:7) {w="1" h="2"} "x")
+                (text (3:8-3:10) " c ")
+                (code (3:11-3:13) "d")
+                (text (3:14-3:15) " e")
+                (softbreak (3:16-3:16))
+                (text (4:1-4:2) "f ")
+                (emph (4:3-4:5) [
+                    (text (4:4-4:4) "g")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn multiline_inline_code_attrs_sourcepos() {
+    assert_ast_match!(
+        [extension.inline_code_attributes],
+        "a\n"
+        "`x`{w=1\n"
+        "  h=2} b\n",
+        (document (1:1-3:8) [
+            (paragraph (1:1-3:8) [
+                (text (1:1-1:1) "a")
+                (softbreak (1:2-1:2))
+                (code (2:1-3:6) {w="1" h="2"} "x")
+                (text (3:7-3:8) " b")
+            ])
+        ])
+    );
+}
