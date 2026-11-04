@@ -200,6 +200,7 @@ struct FuzzRenderOptions {
     ol_width: usize,
     experimental_minimize_commonmark: bool,
     compact_html: bool,
+    attributes: bool,
 }
 
 impl FuzzRenderOptions {
@@ -223,6 +224,7 @@ impl FuzzRenderOptions {
             ol_width: self.ol_width,
             experimental_minimize_commonmark: self.experimental_minimize_commonmark,
             compact_html: self.compact_html,
+            attributes: self.attributes,
         }
     }
 }

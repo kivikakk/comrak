@@ -113,6 +113,10 @@ pub struct OptionArgs {
     #[arg(long)]
     pub sourcepos: bool,
 
+    /// Render parsed attributes in HTML output (requires --unsafe)
+    #[arg(long)]
+    pub attributes: bool,
+
     /// Do not parse setext headers
     #[arg(long)]
     pub ignore_setext: bool,
@@ -264,6 +268,7 @@ impl OptionArgs {
             .list_style(self.list_style.into())
             .alert_style(self.alert_style.into())
             .sourcepos(self.sourcepos)
+            .attributes(self.attributes)
             .experimental_minimize_commonmark(self.experimental_minimize_commonmark)
             .compact_html(self.compact)
             .escaped_char_spans(self.escaped_char_spans)

@@ -108,7 +108,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        mut attributes: BTreeMap<&'static str, Cow<'_, str>>,
+        mut attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         match &self.theme {
             Some(theme) => {
@@ -129,9 +129,15 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
                     }
                 }
             }
-            None => {
-                attributes.insert("class", "syntax-highlighting".into());
-            }
+            None => match attributes.entry("class") {
+                btree_map::Entry::Occupied(mut entry) => entry
+                    .get_mut()
+                    .to_mut()
+                    .insert_str(0, "syntax-highlighting "),
+                btree_map::Entry::Vacant(entry) => {
+                    entry.insert("syntax-highlighting".into());
+                }
+            },
         }
         html::write_opening_tag(output, "pre", attributes)
     }
@@ -139,7 +145,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: BTreeMap<&'static str, Cow<'_, str>>,
+        attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }

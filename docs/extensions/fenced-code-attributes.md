@@ -28,3 +28,21 @@ fn cats() noreturn { yay_too }
 <pre class="syntax-highlighting"><code><span class="text plain">fn cats() noreturn { yay_too }
 </span></code></pre>
 ````````````````````````````````
+
+```````````````````````````````` example -e fenced-code-attributes --attributes --unsafe
+```{.zig #truism}
+fn cats() noreturn { yay_too }
+```
+.
+<pre class="syntax-highlighting zig" id="truism"><code><span class="text plain">fn cats() noreturn { yay_too }
+</span></code></pre>
+````````````````````````````````
+
+```````````````````````````````` example -e fenced-code-attributes --github-pre-lang --attributes --unsafe
+```german {#beispel lang=fr}
+Ähm... egal.
+```
+.
+<pre class="syntax-highlighting" id="beispel" lang="german"><code><span class="text plain">Ähm... egal.
+</span></code></pre>
+````````````````````````````````

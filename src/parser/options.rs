@@ -1234,6 +1234,40 @@ pub struct Render {
     #[cfg_attr(feature = "bon", builder(default))]
     pub sourcepos: bool,
 
+    /// Pass attributes to default HTML formatters.
+    ///
+    /// This option requires `unsafe` to be turned on to have any effect.
+    ///
+    /// With `unsafe`, the default HTML formatters include attributes in
+    /// their output, and override any attributes that they'd normally output.
+    ///
+    /// Without `unsafe`, this option does nothing.  This is because you can
+    /// produce real security vulnerabilities with any kind of custom attribute,
+    /// be it an id, class, or arbitrary pair.  Ask me how I know!  You must
+    /// be prepared to use a real sanitiser with this feature.
+    ///
+    /// Heading adapters, codefence renderers, and math renderers don't respect
+    /// attributes, because they are headstrong and think little of others.
+    ///
+    /// Note that attributes are parsed into the AST when enabled, regardless
+    /// of this option, such that custom formatters always see them, but if a
+    /// custom formatter passes anything back to a default HTML formatter, the
+    /// above paragraph applies.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.link_attributes = true;
+    /// options.render.attributes = true;
+    /// options.render.r#unsafe = true;
+    /// let input = "![Comrak](comrak.png){width=100 .logo}";
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><img src=\"comrak.png\" alt=\"Comrak\" class=\"logo\" width=\"100\" /></p>\n");
+    /// ```
+    #[cfg(feature = "attributes")]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub attributes: bool,
+
     /// Wrap escaped characters in a `<span>` to allow any
     /// post-processing to recognize them.
     ///
@@ -1484,11 +1518,11 @@ pub struct RenderPlugins<'p> {
     ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
     ///     }
     ///
-    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&'static str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&'static str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }
