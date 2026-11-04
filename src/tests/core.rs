@@ -869,6 +869,72 @@ fn listitem_sourcepos_multiline_2() {
 }
 
 #[test]
+fn listitem_sourcepos_blank_line_before_block() {
+    assert_ast_match!(
+        [],
+        "- a\n"
+        "\n"
+        "# h\n",
+        (document (1:1-3:3) [
+            (list (1:1-1:3) [
+                (item (1:1-1:3) [
+                    (paragraph (1:3-1:3) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+            (heading (3:1-3:3) [
+                (text (3:3-3:3) "h")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- > q\n"
+        "\n"
+        "---\n",
+        (document (1:1-3:3) [
+            (list (1:1-1:5) [
+                (item (1:1-1:5) [
+                    (block_quote (1:3-1:5) [
+                        (paragraph (1:5-1:5) [
+                            (text (1:5-1:5) "q")
+                        ])
+                    ])
+                ])
+            ])
+            (thematic_break (3:1-3:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "1. a\n"
+        "   - b\n"
+        "\n"
+        "<div>\n",
+        (document (1:1-4:5) [
+            (list (1:1-2:6) [
+                (item (1:1-2:6) [
+                    (paragraph (1:4-1:4) [
+                        (text (1:4-1:4) "a")
+                    ])
+                    (list (2:4-2:6) [
+                        (item (2:4-2:6) [
+                            (paragraph (2:6-2:6) [
+                                (text (2:6-2:6) "b")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+            (html_block (4:1-4:5) "<div>\n")
+        ])
+    );
+}
+
+#[test]
 fn emphasis_sourcepos_double_1() {
     assert_ast_match!(
         [],

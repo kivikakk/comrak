@@ -224,6 +224,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     footnote_defs: inlines::FootnoteDefs<'a>,
     root: Node<'a>,
     current: Node<'a>,
+    last_matched_container: Node<'a>,
     line_number: usize,
     offset: usize,
     column: usize,
@@ -233,7 +234,6 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     indent: usize,
     blank: bool,
     partially_consumed_tab: bool,
-    saw_list: bool,
     working_content: String,
     curline_len: usize,
     curline_end_col: usize,
@@ -282,6 +282,7 @@ where
             footnote_defs: inlines::FootnoteDefs::new(),
             root,
             current: root,
+            last_matched_container: root,
             line_number: 0,
             offset: 0,
             column: 0,
@@ -291,7 +292,6 @@ where
             indent: 0,
             blank: false,
             partially_consumed_tab: false,
-            saw_list: false,
             working_content: String::new(),
             curline_len: 0,
             curline_end_col: 0,
@@ -407,14 +407,11 @@ where
         self.line_number += 1;
 
         if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
+            self.last_matched_container = last_matched_container;
             let mut container = last_matched_container;
-            let current = self.current;
             let lazy_callout = self.lazy_callout_candidate(all_matched);
             self.open_new_blocks(&mut container, line, all_matched, lazy_callout.is_some());
-
-            if current.same_node(self.current) {
-                self.add_text_to_container(container, last_matched_container, line, lazy_callout);
-            }
+            self.add_text_to_container(container, line, lazy_callout);
 
             self.finish_callout_titles();
         }
@@ -739,6 +736,7 @@ where
             self.fix_zero_end_columns(container);
 
             self.current = self.finalize_borrowed(container, ast).unwrap();
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
         }
 
@@ -791,6 +789,7 @@ where
             self.fix_zero_end_columns(container);
 
             self.current = self.finalize_borrowed(container, ast).unwrap();
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
         }
 
@@ -1291,6 +1290,7 @@ where
             NodeValue::CodeBlock(Box::new(ncb)),
             self.first_nonspace + 1,
         );
+        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
         self.advance_offset(line, first_nonspace + matched - offset, false);
 
         true
@@ -1933,7 +1933,6 @@ where
             NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
             _ => true,
         } {
-            self.saw_list = true;
             *container = self.add_child(container, NodeValue::List(nl), self.first_nonspace + 1);
         }
 
@@ -2073,6 +2072,7 @@ where
         start_column: usize,
     ) -> Node<'a> {
         while !parent.can_contain_type(&value) {
+            self.close_unmatched_blocks();
             parent = self.finalize(parent).unwrap();
         }
 
@@ -2087,10 +2087,15 @@ where
         node
     }
 
+    fn close_unmatched_blocks(&mut self) {
+        while !self.current.same_node(self.last_matched_container) {
+            self.current = self.finalize(self.current).unwrap();
+        }
+    }
+
     fn add_text_to_container(
         &mut self,
         mut container: Node<'a>,
-        last_matched_container: Node<'a>,
         line: &str,
         lazy_callout: Option<Node<'a>>,
     ) {
@@ -2131,8 +2136,8 @@ where
             tmp = parent;
         }
 
-        if !self.current.same_node(last_matched_container)
-            && container.same_node(last_matched_container)
+        if !self.current.same_node(self.last_matched_container)
+            && container.same_node(self.last_matched_container)
             && !self.blank
             && (!self.options.extension.greentext
                 || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
@@ -2148,9 +2153,7 @@ where
                 self.add_line(self.current, line);
             }
         } else {
-            while !self.current.same_node(last_matched_container) {
-                self.current = self.finalize(self.current).unwrap();
-            }
+            self.close_unmatched_blocks();
 
             let add_text_result = match container.data().value {
                 NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
@@ -2228,9 +2231,9 @@ where
                         if self.blank {
                             return;
                         }
-                        let last_matched = container;
+                        self.last_matched_container = container;
                         self.open_new_blocks(&mut container, line, true, false);
-                        self.add_text_to_container(container, last_matched, line, None);
+                        self.add_text_to_container(container, line, None);
                         return;
                     } else {
                         self.add_line(container, line);
@@ -2305,7 +2308,7 @@ where
         let mut ast = node.data_mut();
         assert!(ast.open);
         // Keep the original end column before expanding tabs or trimming trailing blanks.
-        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(ref ncb) if !ncb.fenced) {
+        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(..)) {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         }
         let lines = ast.lines_mut();
@@ -2356,39 +2359,7 @@ where
             self.cancellation.check()?;
         }
 
-        self.propagate_list_sourcepos(self.root);
-        self.cancellation.check()
-    }
-
-    fn propagate_list_sourcepos(&mut self, root: Node<'a>) {
-        if !self.saw_list {
-            return;
-        }
-        for node in root.descendants() {
-            if self.cancellation.step() {
-                return;
-            }
-            if !matches!(node.data().value, NodeValue::List(..)) {
-                continue;
-            }
-            let mut max_end = node.data().sourcepos.end;
-            for d in node.descendants() {
-                if self.cancellation.step() {
-                    return;
-                }
-                let de = d.data().sourcepos.end;
-                if de.column == 0 {
-                    continue;
-                }
-                if de.line > max_end.line || (de.line == max_end.line && de.column > max_end.column)
-                {
-                    max_end = de;
-                }
-            }
-            if max_end.column != 0 {
-                node.data_mut().sourcepos.end = max_end;
-            }
-        }
+        Ok(())
     }
 
     fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
@@ -2435,8 +2406,6 @@ where
         } else if match ast.value {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
-            NodeValue::MultilineBlockQuote(..) => true,
-            NodeValue::BlockDirective(..) => true,
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
@@ -2482,8 +2451,10 @@ where
             NodeValue::CodeBlock(ref mut ncb) => {
                 let mut lines = ast.lines.take().unwrap();
                 let content = &mut lines.content;
-                if !ncb.fenced {
+                if !ncb.fenced || !ncb.closed {
                     ast.sourcepos.end = last_content_end;
+                }
+                if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
                 } else {

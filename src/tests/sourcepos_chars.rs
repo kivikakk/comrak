@@ -338,7 +338,7 @@ fn sourcepos_chars_alerts() {
         "𐀀\n"
         ">>>\n",
         (document (1:1-3:3) [
-            (alert (1:1-2:4) [
+            (alert (1:1-3:3) [
                 (paragraph (2:1-2:4) [
                     (text (2:1-2:4) "𐀀")
                 ])
@@ -352,7 +352,7 @@ fn sourcepos_chars_alerts() {
         "𐀀\n"
         ">>>\n",
         (document (1:1-3:3) [
-            (alert (1:1-2:1) [
+            (alert (1:1-3:3) [
                 (paragraph (2:1-2:1) [
                     (text (2:1-2:1) "𐀀")
                 ])
