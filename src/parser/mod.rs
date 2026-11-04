@@ -1290,6 +1290,7 @@ where
             NodeValue::CodeBlock(Box::new(ncb)),
             self.first_nonspace + 1,
         );
+        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
         self.advance_offset(line, first_nonspace + matched - offset, false);
 
         true
@@ -2308,7 +2309,7 @@ where
         let mut ast = node.data_mut();
         assert!(ast.open);
         // Keep the original end column before expanding tabs or trimming trailing blanks.
-        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(ref ncb) if !ncb.fenced) {
+        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(..)) {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         }
         let lines = ast.lines_mut();
@@ -2485,8 +2486,10 @@ where
             NodeValue::CodeBlock(ref mut ncb) => {
                 let mut lines = ast.lines.take().unwrap();
                 let content = &mut lines.content;
-                if !ncb.fenced {
+                if !ncb.fenced || !ncb.closed {
                     ast.sourcepos.end = last_content_end;
+                }
+                if !ncb.fenced {
                     strings::remove_trailing_blank_lines(content);
                     content.push('\n');
                 } else {

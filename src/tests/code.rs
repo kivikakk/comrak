@@ -235,6 +235,105 @@ fn fenced_codeblock_unclosed_sourcepos() {
 }
 
 #[test]
+fn fenced_codeblock_unclosed_trailing_blank_lines_sourcepos() {
+    assert_ast_match!(
+        [],
+        "```\ncode\n\n",
+        (document (1:1-3:0) [
+            (code_block (1:1-2:4) "code\n\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "```\ncode\n  \n",
+        (document (1:1-3:2) [
+            (code_block (1:1-2:4) "code\n  \n")
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> ```\n> code\n>\ntext\n",
+        (document (1:1-4:4) [
+            (block_quote (1:1-3:1) [
+                (code_block (1:3-2:6) "code\n\n")
+            ])
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "text")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- ```\n  code\n\ntext\n",
+        (document (1:1-4:4) [
+            (list (1:1-2:6) [
+                (item (1:1-2:6) [
+                    (code_block (1:3-2:6) "code\n\n")
+                ])
+            ])
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "text")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- ```\n  code\n  \ntext\n",
+        (document (1:1-4:4) [
+            (list (1:1-3:2) [
+                (item (1:1-3:2) [
+                    (code_block (1:3-2:6) "code\n\n")
+                ])
+            ])
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "text")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- ```sh  \n\ntext\n",
+        (document (1:1-3:4) [
+            (list (1:1-1:9) [
+                (item (1:1-1:9) [
+                    (code_block (1:3-1:9) info:"sh" "\n")
+                ])
+            ])
+            (paragraph (3:1-3:4) [
+                (text (3:1-3:4) "text")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "1. Install:\n"
+        "   ```sh\n"
+        "   pip install x\n"
+        "\n"
+        "```\n"
+        "\n"
+        "Next.\n",
+        (document (1:1-7:5) [
+            (list (1:1-3:16) [
+                (item (1:1-3:16) [
+                    (paragraph (1:4-1:11) [
+                        (text (1:4-1:11) "Install:")
+                    ])
+                    (code_block (2:4-3:16) info:"sh" "pip install x\n\n")
+                ])
+            ])
+            (code_block (5:1-7:5) "\nNext.\n")
+        ])
+    );
+}
+
+#[test]
 fn closed_list_between_fenced_codeblocks_sourcepos() {
     assert_ast_match!(
         [],
