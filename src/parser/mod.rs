@@ -46,6 +46,8 @@ const CODE_INDENT: usize = 4;
 // be nested this deeply.
 const MAX_LIST_DEPTH: usize = 100;
 
+const MAX_REF_SIZE_FLOOR: usize = 100_000;
+
 /// Parse a Markdown document to an AST.
 ///
 /// See the documentation of the crate root for an example.
@@ -239,7 +241,6 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
-    total_size: usize,
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
@@ -297,7 +298,6 @@ where
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
-            total_size: 0,
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
@@ -318,7 +318,7 @@ where
         let sb = s.as_bytes();
 
         let end = s.len();
-        self.total_size = end;
+        self.refmap.max_ref_size = end.max(MAX_REF_SIZE_FLOOR);
 
         let mut ix = 0;
         let matcher = cr_or_lf_matcher();
@@ -2345,8 +2345,6 @@ where
         self.finalize(self.root);
         self.cancellation.check()?;
 
-        self.refmap.max_ref_size = self.total_size.max(100000);
-
         self.process_inlines();
         self.cancellation.check()?;
 
@@ -2385,7 +2383,7 @@ where
         }
 
         for (lab, rr) in rrs {
-            self.refmap.map.entry(lab).or_insert(rr);
+            self.refmap.insert(lab, rr);
         }
 
         if pos != 0 {
@@ -3139,7 +3137,7 @@ where
 
         lab = strings::normalize_label(&lab, Case::Fold);
         let mut rr = None;
-        if !lab.is_empty() && !self.refmap.map.contains_key(&lab) {
+        if !lab.is_empty() && !self.refmap.contains(&lab) {
             rr = Some((
                 lab,
                 ResolvedReference {

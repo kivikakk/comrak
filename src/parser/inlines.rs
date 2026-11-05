@@ -1945,6 +1945,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // Only clone the original label if we actually need to call the callback
         if reff.is_none()
             && let Some(callback) = &self.options.parse.broken_link_callback
+            && !self.refmap.contains(&normalized_lab)
         {
             reff = callback
                 .resolve(BrokenLinkReference {
@@ -2505,9 +2506,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 }
 
 pub struct RefMap {
-    pub map: FxHashMap<String, ResolvedReference>,
+    map: FxHashMap<String, RefMapEntry>,
     pub(crate) max_ref_size: usize,
     ref_size: Cell<usize>,
+}
+
+struct RefMapEntry {
+    reference: ResolvedReference,
+    size: usize,
 }
 
 impl RefMap {
@@ -2519,21 +2525,32 @@ impl RefMap {
         }
     }
 
+    pub fn contains(&self, lab: &str) -> bool {
+        self.map.contains_key(lab)
+    }
+
+    pub fn insert(&mut self, lab: String, reference: ResolvedReference) {
+        let size =
+            size_with_nul_replaced(&reference.url) + size_with_nul_replaced(&reference.title);
+        self.map
+            .entry(lab)
+            .or_insert(RefMapEntry { reference, size });
+    }
+
     fn lookup(&self, lab: &str) -> Option<&ResolvedReference> {
-        match self.map.get(lab) {
-            Some(entry) => {
-                let size = entry.url.len() + entry.title.len();
-                let ref_size = self.ref_size.get();
-                if size > self.max_ref_size - ref_size {
-                    None
-                } else {
-                    self.ref_size.set(ref_size + size);
-                    Some(entry)
-                }
-            }
-            None => None,
+        let entry = self.map.get(lab)?;
+        let ref_size = self.ref_size.get();
+        if entry.size > self.max_ref_size - ref_size {
+            None
+        } else {
+            self.ref_size.set(ref_size + entry.size);
+            Some(&entry.reference)
         }
     }
+}
+
+fn size_with_nul_replaced(s: &str) -> usize {
+    s.len() + s.bytes().filter(|&b| b == 0).count() * ('\u{fffd}'.len_utf8() - 1)
 }
 
 pub struct FootnoteDefs<'a> {
