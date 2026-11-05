@@ -179,3 +179,85 @@ fn sourcepos_unclosed_in_list() {
         ])
     );
 }
+
+#[test]
+fn list_contents_finalized_on_close() {
+    html_opts!(
+        [extension.block_directive],
+        concat!(":::\n", "- ```rust\n", "  code\n", ":::\n"),
+        concat!(
+            "<div class=\"\">\n",
+            "<ul>\n",
+            "<li>\n",
+            "<pre><code class=\"language-rust\">code\n",
+            "</code></pre>\n",
+            "</li>\n",
+            "</ul>\n",
+            "</div>\n",
+        ),
+        no_roundtrip,
+    );
+
+    html_opts!(
+        [extension.block_directive],
+        concat!(":::\n", "- [a]: /u\n", ":::\n", "\n", "[a]\n"),
+        concat!(
+            "<div class=\"\">\n",
+            "<ul>\n",
+            "<li></li>\n",
+            "</ul>\n",
+            "</div>\n",
+            "<p><a href=\"/u\">a</a></p>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn sourcepos_list_contents_finalized_on_close() {
+    assert_ast_match!(
+        [extension.block_directive],
+        ":::\n"
+        "1. foo\n"
+        "2. bar\n"
+        ":::\n",
+        (document (1:1-4:3) [
+            (block_directive (1:1-4:3) [
+                (list (2:1-3:6) [
+                    (item (2:1-2:6) [
+                        (paragraph (2:4-2:6) [
+                            (text (2:4-2:6) "foo")
+                        ])
+                    ])
+                    (item (3:1-3:6) [
+                        (paragraph (3:4-3:6) [
+                            (text (3:4-3:6) "bar")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_table_cells_untouched_on_close() {
+    assert_ast_match!(
+        [extension.block_directive, extension.table],
+        ":::\n"
+        "| a |\n"
+        "| - |\n"
+        ":::\n",
+        (document (1:1-4:3) [
+            (block_directive (1:1-4:3) [
+                (table (2:1-3:5) [
+                    (table_row (2:1-2:5) [
+                        (table_cell (2:2-2:4) [
+                            (text (2:3-2:3) "a")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}

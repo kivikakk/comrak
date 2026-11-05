@@ -87,6 +87,26 @@ fn sourcepos_in_list() {
 }
 
 #[test]
+fn multiline_list_contents_finalized_on_close() {
+    html_opts!(
+        [extension.alerts, extension.multiline_block_quotes],
+        concat!(">>> [!note]\n", "- ```rust\n", "  code\n", ">>>\n"),
+        concat!(
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">Note</p>\n",
+            "<ul>\n",
+            "<li>\n",
+            "<pre><code class=\"language-rust\">code\n",
+            "</code></pre>\n",
+            "</li>\n",
+            "</ul>\n",
+            "</div>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
 fn sourcepos_multiline() {
     assert_ast_match!(
         [extension.alerts, extension.multiline_block_quotes],
