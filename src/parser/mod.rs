@@ -2600,6 +2600,7 @@ where
         let BlockLines {
             mut content,
             offsets,
+            escaped_pipes,
         } = *lines;
         let may_label =
             self.options.extension.ofm_block_ids && !block_ids::ends_with_whitespace(&content);
@@ -2620,6 +2621,7 @@ where
             block_ids::marker_node(self.arena, &m.name, sourcepos)
         });
 
+        let footnote_defs_before = self.footnote_defs.len();
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -2639,6 +2641,20 @@ where
 
         if let Some(marker) = marker {
             node.append(marker);
+        }
+
+        if !escaped_pipes.is_empty() {
+            let nodes = node
+                .descendants()
+                .skip(1)
+                .chain(
+                    self.footnote_defs
+                        .added_since(footnote_defs_before)
+                        .iter()
+                        .flat_map(|def| def.descendants()),
+                )
+                .collect();
+            table::restore_escaped_pipes(self.arena, nodes, &escaped_pipes);
         }
     }
 

@@ -1,3 +1,4 @@
+use super::invariants::is_inline_footnote_paragraph;
 use super::model::{children, hash, subtree_end, Finding, Rec, Source};
 use super::options::TOGGLES;
 use comrak::nodes::{LineColumn, NodeValue, Sourcepos};
@@ -468,7 +469,7 @@ fn same_tree(
                 && x.depth - old_base == y.depth - new_base
                 && normalised(trial.normalise, &x.fingerprint)
                     == normalised(trial.normalise, &y.fingerprint)
-                && (family != "line-indent"
+                && (!matches!(family, "line-indent" | "option-toggle")
                     || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
         })
 }
@@ -482,6 +483,7 @@ fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
     match family {
         "crlf" => is_break,
         "trailing-space" => is_break || rec.value.block(),
+        "option-toggle" => is_inline_footnote_paragraph(old, index),
         "line-indent" | "tab-for-spaces" => {
             matches!(&rec.value, NodeValue::CodeBlock(c) if !c.fenced)
         }

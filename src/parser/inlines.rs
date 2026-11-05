@@ -2580,6 +2580,14 @@ impl<'a> FootnoteDefs<'a> {
     pub fn take(&mut self) -> Vec<Node<'a>> {
         mem::take(&mut self.defs)
     }
+
+    pub fn len(&self) -> usize {
+        self.defs.len()
+    }
+
+    pub fn added_since(&self, len: usize) -> &[Node<'a>] {
+        &self.defs[len..]
+    }
 }
 
 pub struct Delimiter<'a: 'd, 'd> {

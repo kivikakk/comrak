@@ -16,7 +16,7 @@ fn is_task_item_paragraph(recs: &[Rec], index: usize) -> bool {
             .is_some_and(|p| matches!(recs[p].value, NodeValue::TaskItem(_)))
 }
 
-fn is_inline_footnote_paragraph(recs: &[Rec], index: usize) -> bool {
+pub fn is_inline_footnote_paragraph(recs: &[Rec], index: usize) -> bool {
     matches!(recs[index].value, NodeValue::Paragraph)
         && recs[index].parent.is_some_and(|p| {
             matches!(&recs[p].value, NodeValue::FootnoteDefinition(d) if d.name.starts_with("__inline_"))
@@ -467,7 +467,7 @@ fn close_fits(rec: &Rec, close: &[u8]) -> bool {
         NodeValue::Insert => close == b"++",
         NodeValue::Superscript => close.iter().all(|&b| b == b'^'),
         NodeValue::SpoileredText => close == b"||",
-        NodeValue::EscapedTag(tag) => close == tag.as_bytes(),
+        NodeValue::EscapedTag(tag) => close.strip_prefix(b"\\").unwrap_or(close) == tag.as_bytes(),
         NodeValue::Link(_) => {
             strip_container_prefix(close).starts_with(b"]") || close == b">" || close.is_empty()
         }

@@ -941,6 +941,7 @@ pub struct Ast {
 pub(crate) struct BlockLines {
     pub(crate) content: String,
     pub(crate) offsets: smallvec::SmallVec<[usize; 4]>,
+    pub(crate) escaped_pipes: Vec<LineColumn>,
 }
 
 impl Ast {
