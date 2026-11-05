@@ -16,6 +16,12 @@ fn is_task_item_paragraph(recs: &[Rec], index: usize) -> bool {
             .is_some_and(|p| matches!(recs[p].value, NodeValue::TaskItem(_)))
 }
 
+fn is_in_wikilink(recs: &[Rec], index: usize) -> bool {
+    recs[index]
+        .parent
+        .is_some_and(|p| matches!(recs[p].value, NodeValue::WikiLink(_)))
+}
+
 fn is_footnote_definition(rec: &Rec) -> bool {
     matches!(rec.value, NodeValue::FootnoteDefinition(_))
 }
@@ -79,7 +85,7 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
             {
                 flag("start-at-eol");
             }
-            if end >= source.content_ends[sp.end.line - 1] {
+            if end >= source.content_ends[sp.end.line - 1] && !is_in_wikilink(recs, index) {
                 flag("end-at-eol");
             }
         }
@@ -267,6 +273,7 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
             bad(!(s.starts_with(b"[^") || s.starts_with(b"^[")), "no-open")
         }
         NodeValue::Table(_) | NodeValue::TableRow(_) => bad(is_ws(first), "leading-ws"),
+        NodeValue::Text(_) if is_in_wikilink(recs, index) => None,
         NodeValue::Text(t) => bad(rec.sp.start.line != rec.sp.end.line, "multiline")
             .or(bad(!text_matches(s, t.as_bytes(), &mut 20000), "mismatch")),
         NodeValue::SoftBreak => bad(!s.iter().all(|&b| is_ws(b)), "non-ws")

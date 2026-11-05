@@ -3,6 +3,7 @@ mod cjk;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::convert::TryFrom;
+use std::ops::Range;
 use std::str;
 use std::{mem, ptr};
 
@@ -14,8 +15,8 @@ use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::matchers::{backslash_matcher, backtick_matcher, dollar_matcher};
 use crate::nodes::{
-    Ast, Node, NodeCode, NodeComment, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
-    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
+    Ast, LineColumn, Node, NodeCode, NodeComment, NodeFootnoteDefinition, NodeFootnoteReference,
+    NodeLink, NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 #[cfg(feature = "attributes")]
 use crate::parser::attributes;
@@ -324,7 +325,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.brackets.is_empty()
                     && self.peek_byte() == Some(b'[')
                 {
-                    wikilink_inl = self.handle_wikilink(false);
+                    wikilink_inl = self.handle_wikilink(false, line_offsets);
                 }
 
                 if wikilink_inl.is_none() {
@@ -351,7 +352,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.peek_byte() == Some(b'[')
                     && self.peek_byte_n(1) == Some(b'[')
                 {
-                    wikilink_inl = self.handle_wikilink(true);
+                    wikilink_inl = self.handle_wikilink(true, line_offsets);
                 }
 
                 if wikilink_inl.is_some() {
@@ -1012,29 +1013,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     //   [[url|link text]]
     //   ![[link text|url]]
     //   ![[url|link text]]
-    fn handle_wikilink(&mut self, embed: bool) -> Option<Node<'a>> {
+    fn handle_wikilink(&mut self, embed: bool, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
         let range_start = self.scanner.pos;
 
         self.scanner.pos += if embed { 1 } else { 0 };
-        let startpos = self.scanner.pos;
 
         if let Some(component) = self.wikilink_url_link_label() {
-            let url_clean = strings::clean_url(&component.url);
-            let (link_label, link_label_start_column, _link_label_end_column): (
-                Cow<'_, str>,
-                _,
-                _,
-            ) = match &component.link_label {
-                Some((label, sc, ec)) => (entity::unescape_html(label), *sc, *ec),
-                None => (
-                    entity::unescape_html(&component.url),
-                    startpos + 1,
-                    self.scanner.pos - 3,
-                ),
-            };
-
             let nl = NodeWikiLink {
-                url: url_clean.into(),
+                url: strings::clean_url(&component.url).into(),
                 embed,
             };
             let inl = self.make_inline(
@@ -1043,7 +1029,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 self.scanner.pos - 1,
             );
 
-            self.label_backslash_escapes(inl, &link_label, link_label_start_column);
+            self.append_wikilink_label(inl, component.label, range_start, parent_line_offsets);
+            self.adjust_node_newlines(inl, self.scanner.pos - range_start, 0, parent_line_offsets);
 
             Some(inl)
         } else {
@@ -1066,14 +1053,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
-        let left =
-            strings::trim_slice(&self.input[left_startpos + 1..self.scanner.pos]).to_string();
+        let left = self.trimmed_range(left_startpos + 1, self.scanner.pos);
 
         if self.peek_byte() == Some(b']') && self.peek_byte_n(1) == Some(b']') {
             self.scanner.pos += 2;
             return Some(WikilinkComponents {
-                url: left,
-                link_label: None,
+                url: self.input[left.clone()].to_string(),
+                label: left,
             });
         } else if self.peek_byte() != Some(b'|') {
             self.scanner.pos = left_startpos;
@@ -1088,26 +1074,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
-        let right = strings::trim_slice(&self.input[right_startpos + 1..self.scanner.pos]);
+        let right = self.trimmed_range(right_startpos + 1, self.scanner.pos);
 
         if self.peek_byte() == Some(b']') && self.peek_byte_n(1) == Some(b']') {
             self.scanner.pos += 2;
 
-            match self.options.extension.wikilinks() {
-                Some(WikiLinksMode::UrlFirst) => Some(WikilinkComponents {
-                    url: left,
-                    link_label: Some((right.into(), right_startpos + 1, self.scanner.pos - 3)),
-                }),
-                Some(WikiLinksMode::TitleFirst) => Some(WikilinkComponents {
-                    url: right.into(),
-                    link_label: Some((left, left_startpos + 1, right_startpos - 1)),
-                }),
+            let (url, label) = match self.options.extension.wikilinks() {
+                Some(WikiLinksMode::UrlFirst) => (left, right),
+                Some(WikiLinksMode::TitleFirst) => (right, left),
                 None => unreachable!(),
-            }
+            };
+            Some(WikilinkComponents {
+                url: self.input[url].to_string(),
+                label,
+            })
         } else {
             self.scanner.pos = left_startpos;
             None
         }
+    }
+
+    fn trimmed_range(&self, start: usize, end: usize) -> Range<usize> {
+        let slice = &self.input[start..end];
+        let trimmed_start = start + slice.len() - strings::ltrim_slice(slice).len();
+        trimmed_start..trimmed_start + strings::trim_slice(slice).len()
     }
 
     // Locates the edge of a wikilink component (link label or url), and sets the
@@ -1147,59 +1137,78 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         true
     }
 
-    // Given a label, handles backslash escaped characters. Appends the resulting
-    // nodes to the container
-    fn label_backslash_escapes(&mut self, container: Node<'a>, label: &str, start_column: usize) {
-        let mut startpos = 0;
-        let mut offset = 0;
-        let bytes = label.as_bytes();
-        let len = label.len();
+    fn source_span(
+        &self,
+        origin: usize,
+        range: Range<usize>,
+        parent_line_offsets: &[usize],
+    ) -> Sourcepos {
+        let position = |pos: usize| -> LineColumn {
+            let (newlines, since_newline) = count_newlines(&self.input[origin..pos]);
+            if newlines == 0 {
+                let column = pos as isize + 1 + self.column_offset + self.line_offset as isize;
+                (self.line, usize::try_from(column).unwrap()).into()
+            } else {
+                let line = self.line + newlines;
+                let column = parent_line_offsets[line - self.block_line] + since_newline + 1;
+                (line, column).into()
+            }
+        };
+        let last_char_len = self.input[range.clone()]
+            .chars()
+            .next_back()
+            .unwrap()
+            .len_utf8();
+        let last_char = position(range.end - last_char_len);
+        (
+            position(range.start),
+            last_char.column_add(last_char_len as isize - 1),
+        )
+            .into()
+    }
 
-        while offset < len {
-            let b = bytes[offset];
+    fn append_wikilink_label(
+        &self,
+        container: Node<'a>,
+        label: Range<usize>,
+        origin: usize,
+        parent_line_offsets: &[usize],
+    ) {
+        let bytes = self.input.as_bytes();
+        let append_text = |range: Range<usize>| {
+            if !range.is_empty() {
+                let text = entity::unescape_html(&self.input[range.clone()]).into_owned();
+                let span = self.source_span(origin, range, parent_line_offsets);
+                container.append(make_inline(self.arena, NodeValue::Text(text.into()), span));
+            }
+        };
+        let mut text_start = label.start;
+        let mut offset = label.start;
 
-            if b == b'\\' && (offset + 1) < len && ispunct(bytes[offset + 1]) {
-                let preceding_text = self.make_inline(
-                    NodeValue::Text(label[startpos..offset].to_string().into()),
-                    start_column + startpos,
-                    start_column + offset - 1,
-                );
+        while offset < label.end {
+            if bytes[offset] == b'\\' && offset + 1 < label.end && ispunct(bytes[offset + 1]) {
+                append_text(text_start..offset);
 
-                container.append(preceding_text);
-
-                let inline_text = self.make_inline(
-                    NodeValue::Text(label[offset + 1..offset + 2].to_string().into()),
-                    start_column + offset,
-                    start_column + offset + 1,
-                );
+                let span = self.source_span(origin, offset..offset + 2, parent_line_offsets);
+                let escaped = self.input[offset + 1..offset + 2].to_string();
+                let text = make_inline(self.arena, NodeValue::Text(escaped.into()), span);
 
                 if self.options.render.escaped_char_spans {
-                    let span = self.make_inline(
-                        NodeValue::Escaped,
-                        start_column + offset,
-                        start_column + offset + 1,
-                    );
-
-                    span.append(inline_text);
-                    container.append(span);
+                    let escaped_span = make_inline(self.arena, NodeValue::Escaped, span);
+                    escaped_span.append(text);
+                    container.append(escaped_span);
                 } else {
-                    container.append(inline_text);
+                    container.append(text);
                 }
 
                 offset += 2;
-                startpos = offset;
+                text_start = offset;
             } else {
                 offset += 1;
             }
         }
 
-        if startpos != offset {
-            container.append(self.make_inline(
-                NodeValue::Text(label[startpos..offset].to_string().into()),
-                start_column + startpos,
-                start_column + offset - 1,
-            ));
-        }
+        append_text(text_start..offset);
     }
 
     fn handle_inline_footnote(&mut self, parent_line_offsets: &[usize]) -> Option<Node<'a>> {
@@ -2625,7 +2634,7 @@ struct Bracket<'a> {
 #[derive(Clone)]
 struct WikilinkComponents {
     url: String,
-    link_label: Option<(String, usize, usize)>,
+    label: Range<usize>,
 }
 
 pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
