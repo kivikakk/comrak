@@ -43,6 +43,7 @@ mod pathological;
 mod phoenix_heex;
 mod plugins;
 mod raw;
+mod reference_limit;
 mod regressions;
 mod rewriter;
 mod shortcodes;
