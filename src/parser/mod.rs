@@ -2268,6 +2268,8 @@ where
                         if have_line_text {
                             if !preserve_heex_whitespace {
                                 self.advance_offset(line, count, false);
+                            } else if self.partially_consumed_tab {
+                                self.advance_offset(line, 1, false);
                             }
                             self.add_line(container, line);
                         }
