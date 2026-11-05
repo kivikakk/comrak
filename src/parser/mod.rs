@@ -717,22 +717,7 @@ where
         if matched >= fence_length {
             self.advance_offset(line, matched, false);
 
-            // The last child, like an indented codeblock, could be left open.
-            // Make sure it's finalized.
-            if container.last_child_is_open() {
-                let mut child = container.last_child().unwrap();
-                // Descend to the deepest-last open child before finalizing it.
-                // Stop descending when encountering a `List` node because
-                // list structure must be finalized at the item level. This
-                // ensures nested open children (e.g. indented code blocks)
-                // are closed first while avoiding descending into lists.
-                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
-                    child = child.last_child().unwrap();
-                }
-                let child_ast = &mut child.data_mut();
-
-                self.finalize_borrowed(child, child_ast).unwrap();
-            }
+            self.close_blocks_down_to(container);
 
             self.fix_zero_end_columns(container);
 
@@ -770,22 +755,7 @@ where
         if matched >= fence_length {
             self.advance_offset(line, matched, false);
 
-            // The last child, like an indented codeblock, could be left open.
-            // Make sure it's finalized.
-            if container.last_child_is_open() {
-                let mut child = container.last_child().unwrap();
-                // Descend to the deepest-last open child before finalizing it.
-                // Stop descending when encountering a `List` node because
-                // list structure must be finalized at the item level. This
-                // ensures nested open children (e.g. indented code blocks)
-                // are closed first while avoiding descending into lists.
-                while child.last_child_is_open() && !node_matches!(child, NodeValue::List(..)) {
-                    child = child.last_child().unwrap();
-                }
-                let child_ast = &mut child.data_mut();
-
-                self.finalize_borrowed(child, child_ast).unwrap();
-            }
+            self.close_blocks_down_to(container);
 
             self.fix_zero_end_columns(container);
 
@@ -2089,7 +2059,11 @@ where
     }
 
     fn close_unmatched_blocks(&mut self) {
-        while !self.current.same_node(self.last_matched_container) {
+        self.close_blocks_down_to(self.last_matched_container);
+    }
+
+    fn close_blocks_down_to(&mut self, container: Node<'a>) {
+        while !self.current.same_node(container) {
             self.current = self.finalize(self.current).unwrap();
         }
     }
