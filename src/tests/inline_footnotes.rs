@@ -713,3 +713,23 @@ fn inline_footnote_sourcepos_closing_bracket_on_its_own_line() {
         ])
     );
 }
+
+#[test]
+fn inline_footnote_sourcepos_leading_break() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "^[\t\n"
+        "a]\n",
+        (document (1:1-2:2) [
+            (paragraph (1:1-2:2) [
+                (footnote_reference (1:1-2:2))
+            ])
+            (footnote_definition (1:1-2:2) [
+                (paragraph (1:3-2:1) [
+                    (softbreak (1:4-1:4))
+                    (text (2:1-2:1) "a")
+                ])
+            ])
+        ])
+    );
+}

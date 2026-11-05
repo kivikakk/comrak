@@ -560,7 +560,9 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
             String::from_utf8_lossy(open),
             String::from_utf8_lossy(close),
         );
-        if !open_fits(parent, unescaped_open) && !is_task_item_paragraph(recs, index) {
+        let verbatim_open =
+            has_verbatim_bounds(recs, index) && unescaped_open.iter().all(|&b| is_ws(b));
+        if !open_fits(parent, unescaped_open) && !verbatim_open {
             out.push(Finding::new("tiling", kind, "open", detail.clone()));
         }
         if !parent.has_attrs && !close_fits(parent, close) {
