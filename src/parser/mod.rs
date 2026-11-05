@@ -2345,7 +2345,7 @@ where
         self.finalize(self.root);
         self.cancellation.check()?;
 
-        self.refmap.max_ref_size = self.total_size.min(100000);
+        self.refmap.max_ref_size = self.total_size.max(100000);
 
         self.process_inlines();
         self.cancellation.check()?;
