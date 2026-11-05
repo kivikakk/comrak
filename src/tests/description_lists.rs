@@ -192,3 +192,56 @@ fn sourcepos() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_term_directly_before_details() {
+    assert_ast_match!(
+        [extension.description_lists],
+        "abc *d*\n"
+        ": details\n",
+        (document (1:1-2:9) [
+            (description_list (1:1-2:9) [
+                (description_item (1:1-2:9) [
+                    (description_term (1:1-1:7) [
+                        (paragraph (1:1-1:7) [
+                            (text (1:1-1:4) "abc ")
+                            (emph (1:5-1:7) [
+                                (text (1:6-1:6) "d")
+                            ])
+                        ])
+                    ])
+                    (description_details (2:1-2:9) [
+                        (paragraph (2:3-2:9) [
+                            (text (2:3-2:9) "details")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.description_lists],
+        "abc\n"
+        "def\n"
+        ": details\n",
+        (document (1:1-3:9) [
+            (description_list (1:1-3:9) [
+                (description_item (1:1-3:9) [
+                    (description_term (1:1-2:3) [
+                        (paragraph (1:1-2:3) [
+                            (text (1:1-1:3) "abc")
+                            (softbreak (1:4-1:4))
+                            (text (2:1-2:3) "def")
+                        ])
+                    ])
+                    (description_details (3:1-3:9) [
+                        (paragraph (3:3-3:9) [
+                            (text (3:3-3:9) "details")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}

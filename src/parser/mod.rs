@@ -1805,6 +1805,10 @@ where
             // is added to it. If not, create a new list.
 
             last_child.detach();
+            if tight {
+                last_child.data_mut().sourcepos.end =
+                    (self.line_number - 1, self.last_line_length).into();
+            }
             let last_child_sourcepos = last_child.data().sourcepos;
 
             let list = match container.last_child() {
@@ -1839,7 +1843,7 @@ where
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
-            term.data_mut().sourcepos.start = last_child_sourcepos.start;
+            term.data_mut().sourcepos = last_child_sourcepos;
 
             term.append(last_child);
 
