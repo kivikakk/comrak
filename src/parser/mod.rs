@@ -367,8 +367,6 @@ where
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
-        let (lines, _) = strings::count_newlines(front_matter);
-
         let stripped_front_matter = strings::remove_trailing_blank_lines_slice(front_matter);
         let (stripped_lines, _) = strings::count_newlines(stripped_front_matter);
 
@@ -386,7 +384,11 @@ where
                 column: delimiter.len(),
             },
         };
-        self.line_number += lines;
+        let without_final_newline =
+            &front_matter[..front_matter.len() - strings::newlines_of(front_matter)];
+        let (newlines, last_line_length) = strings::count_newlines(without_final_newline);
+        self.line_number += newlines + 1;
+        self.last_line_length = last_line_length;
     }
 
     fn process_line(&mut self, line: &str) {
