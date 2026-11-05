@@ -421,6 +421,10 @@ fn is_inline_container(rec: &Rec) -> bool {
     )
 }
 
+fn without_backslashes(delimiter: &[u8]) -> Vec<u8> {
+    delimiter.iter().copied().filter(|&b| b != b'\\').collect()
+}
+
 fn open_fits(rec: &Rec, open: &[u8]) -> bool {
     match &rec.value {
         NodeValue::Paragraph => open.is_empty(),
@@ -441,8 +445,8 @@ fn open_fits(rec: &Rec, open: &[u8]) -> bool {
         NodeValue::Highlight => open == b"==",
         NodeValue::Insert => open == b"++",
         NodeValue::Superscript => open.iter().all(|&b| b == b'^'),
-        NodeValue::SpoileredText => open == b"||",
-        NodeValue::EscapedTag(tag) => open == tag.as_bytes(),
+        NodeValue::SpoileredText => without_backslashes(open) == b"||",
+        NodeValue::EscapedTag(tag) => without_backslashes(open) == tag.as_bytes(),
         NodeValue::Link(_) => open == b"[" || open == b"<" || open.is_empty(),
         NodeValue::Image(_) => open == b"![",
         NodeValue::Escaped => open == b"\\",
@@ -466,8 +470,8 @@ fn close_fits(rec: &Rec, close: &[u8]) -> bool {
         NodeValue::Highlight => close == b"==",
         NodeValue::Insert => close == b"++",
         NodeValue::Superscript => close.iter().all(|&b| b == b'^'),
-        NodeValue::SpoileredText => close == b"||",
-        NodeValue::EscapedTag(tag) => close.strip_prefix(b"\\").unwrap_or(close) == tag.as_bytes(),
+        NodeValue::SpoileredText => without_backslashes(close) == b"||",
+        NodeValue::EscapedTag(tag) => without_backslashes(close) == tag.as_bytes(),
         NodeValue::Link(_) => {
             strip_container_prefix(close).starts_with(b"]") || close == b">" || close.is_empty()
         }
