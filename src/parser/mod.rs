@@ -174,6 +174,21 @@ fn is_literal_block(value: &NodeValue) -> bool {
     }
 }
 
+fn ends_with_its_contents(value: &NodeValue) -> bool {
+    match value {
+        NodeValue::List(..)
+        | NodeValue::Item(..)
+        | NodeValue::DescriptionList
+        | NodeValue::DescriptionItem(..)
+        | NodeValue::DescriptionDetails
+        | NodeValue::FootnoteDefinition(..)
+        | NodeValue::MultilineBlockQuote(..)
+        | NodeValue::BlockDirective(..) => true,
+        NodeValue::Alert(alert) => alert.multiline,
+        _ => false,
+    }
+}
+
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
 fn convert_sourcepos_columns_to_chars(
     document: Node<'_>,
@@ -252,6 +267,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
+    last_content_line_end: nodes::LineColumn,
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
@@ -309,6 +325,7 @@ where
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
+            last_content_line_end: nodes::LineColumn::default(),
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
@@ -431,6 +448,9 @@ where
         }
 
         self.last_line_length = self.curline_end_col;
+        if !self.blank {
+            self.last_content_line_end = (self.line_number, self.curline_end_col).into();
+        }
 
         self.curline_len = 0;
         self.curline_end_col = 0;
@@ -732,8 +752,6 @@ where
 
             self.close_blocks_down_to(container);
 
-            self.fix_zero_end_columns(container);
-
             self.current = self.finalize_borrowed(container, ast).unwrap();
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
@@ -770,8 +788,6 @@ where
 
             self.close_blocks_down_to(container);
 
-            self.fix_zero_end_columns(container);
-
             self.current = self.finalize_borrowed(container, ast).unwrap();
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
@@ -783,83 +799,6 @@ where
             i -= 1;
         }
         Some(())
-    }
-
-    fn deepest_last_end(node: Node<'a>) -> Option<nodes::LineColumn> {
-        let mut last = node.last_child()?;
-        let mut best: Option<nodes::LineColumn> = None;
-
-        loop {
-            let end = last.data().sourcepos.end;
-            if end.column != 0 {
-                let wider = match best {
-                    None => true,
-                    Some(b) => end.line > b.line || (end.line == b.line && end.column > b.column),
-                };
-                if wider {
-                    best = Some(end);
-                }
-            }
-            match last.last_child() {
-                Some(child) => last = child,
-                None => break,
-            }
-        }
-
-        best
-    }
-
-    // Walk the subtree rooted at each child of `container` in post-order
-    // and, where a node's end column is zero, attempt to adopt the widest
-    // non-zero end column along its deepest-last path; otherwise
-    // fall back to the node's start position.
-    // Returns a candidate end position for `container` if found.
-    fn fix_zero_end_columns(&mut self, container: Node<'a>) -> Option<nodes::LineColumn> {
-        // explicit stack for post-order traversal: (node, visited)
-        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
-
-        for ch in container.children() {
-            stack.push((ch, false));
-
-            while let Some((node, visited)) = stack.pop() {
-                if self.cancellation.step() {
-                    return None;
-                }
-                if !visited {
-                    stack.push((node, true));
-                    for c in node.children() {
-                        stack.push((c, false));
-                    }
-                } else {
-                    let end_col = node.data().sourcepos.end.column;
-                    if end_col == 0 {
-                        if let Some(pos) = Self::deepest_last_end(node) {
-                            node.data_mut().sourcepos.end = pos;
-                        } else {
-                            let mut ast = node.data_mut();
-                            ast.sourcepos.end = ast.sourcepos.start;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Compute a candidate end position for the container by looking at
-        // its last child. Return it only if it has a non-zero column; the
-        // caller can fall back to the container's start position if desired.
-        //
-        // We originally looked at the deepest-last descendant, but there
-        // may be intermediate containers that are larger than it, which we
-        // should use instead. If looking just at the last child isn't
-        // enough in some circumstances, we should consider using the widest
-        // of the last descendants.
-        if let Some(last_desc) = container.last_child() {
-            let last_end = last_desc.data().sourcepos.end;
-            if last_end.column != 0 {
-                return Some(last_end);
-            }
-        }
-        None
     }
 
     /////////////////////
@@ -1249,7 +1188,6 @@ where
             NodeValue::MultilineComment(nbc),
             self.first_nonspace + 1,
         );
-        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
         self.advance_offset(line, self.first_nonspace + 2 - self.offset, false);
         true
     }
@@ -2068,6 +2006,7 @@ where
         assert!(start_column > 0);
 
         let mut child = Ast::new(value, (self.line_number, start_column).into());
+        child.sourcepos.end = (self.line_number, self.curline_end_col).into();
         if child.value.has_block_lines() {
             child.lines = Some(Box::default());
         }
@@ -2413,6 +2352,11 @@ where
                 | NodeValue::MultilineComment(..)
         ) {
             // sourcepos.end set by itself or managed below.
+        } else if ends_with_its_contents(&ast.value) {
+            ast.sourcepos.end = match node.last_child() {
+                Some(last_child) => last_child.data().sourcepos.end,
+                None => last_content_end.max(self.last_content_line_end),
+            };
         } else if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
@@ -2428,15 +2372,6 @@ where
         }
 
         match ast.value {
-            NodeValue::DescriptionList => {}
-            NodeValue::DescriptionItem(..)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails => {
-                self.fix_zero_end_columns(node);
-                if ast.sourcepos.end.column == 0 {
-                    ast.sourcepos.end = Self::deepest_last_end(node).unwrap_or(ast.sourcepos.start);
-                }
-            }
             NodeValue::Paragraph => {
                 let has_content = self.resolve_reference_link_definitions(ast);
                 if has_content {
@@ -2515,15 +2450,7 @@ where
                 nhb.literal = self.take_content(&mut lines.content);
             }
             NodeValue::List(ref mut nl) => {
-                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
-                    ast.sourcepos.end = candidate_end;
-                }
                 nl.tight = self.determine_list_tight(node);
-            }
-            NodeValue::FootnoteDefinition(_) => {
-                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
-                    ast.sourcepos.end = candidate_end;
-                }
             }
             NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]

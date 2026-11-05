@@ -543,3 +543,26 @@ fn sourcepos_table_cells_untouched_on_close() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_unclosed_ends_with_its_contents() {
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        ">>>\n"
+        "\n",
+        (document (1:1-2:0) [
+            (multiline_block_quote (1:1-1:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.multiline_block_quotes],
+        "> >>>\n"
+        "> \n",
+        (document (1:1-2:2) [
+            (block_quote (1:1-2:2) [
+                (multiline_block_quote (1:3-1:5))
+            ])
+        ])
+    );
+}

@@ -284,8 +284,8 @@ fn fenced_codeblock_unclosed_trailing_blank_lines_sourcepos() {
         [],
         "- ```\n  code\n  \ntext\n",
         (document (1:1-4:4) [
-            (list (1:1-3:2) [
-                (item (1:1-3:2) [
+            (list (1:1-2:6) [
+                (item (1:1-2:6) [
                     (code_block (1:3-2:6) "code\n\n")
                 ])
             ])

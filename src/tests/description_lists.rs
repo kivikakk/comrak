@@ -245,3 +245,34 @@ fn sourcepos_term_directly_before_details() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_list_ends_with_its_contents() {
+    assert_ast_match!(
+        [extension.description_lists],
+        "t\n"
+        "\n"
+        ": d\n"
+        "\n"
+        "z\n",
+        (document (1:1-5:1) [
+            (description_list (1:1-3:3) [
+                (description_item (1:1-3:3) [
+                    (description_term (1:1-1:1) [
+                        (paragraph (1:1-1:1) [
+                            (text (1:1-1:1) "t")
+                        ])
+                    ])
+                    (description_details (3:1-3:3) [
+                        (paragraph (3:3-3:3) [
+                            (text (3:3-3:3) "d")
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "z")
+            ])
+        ])
+    );
+}

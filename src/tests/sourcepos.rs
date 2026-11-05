@@ -969,3 +969,163 @@ fn table_before_trailing_blank_lines() {
         ])
     );
 }
+
+#[test]
+fn list_items_end_at_their_last_child() {
+    assert_ast_match!(
+        [],
+        "- x\n"
+        "  \n"
+        "y\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:3) [
+                (item (1:1-1:3) [
+                    (paragraph (1:3-1:3) [
+                        (text (1:3-1:3) "x")
+                    ])
+                ])
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "y")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> - x\n"
+        ">\n",
+        (document (1:1-2:1) [
+            (block_quote (1:1-2:1) [
+                (list (1:3-1:5) [
+                    (item (1:3-1:5) [
+                        (paragraph (1:5-1:5) [
+                            (text (1:5-1:5) "x")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "1. a\n"
+        "   \n"
+        "2. b\n"
+        "   \n",
+        (document (1:1-4:3) [
+            (list (1:1-3:4) [
+                (item (1:1-1:4) [
+                    (paragraph (1:4-1:4) [
+                        (text (1:4-1:4) "a")
+                    ])
+                ])
+                (item (3:1-3:4) [
+                    (paragraph (3:4-3:4) [
+                        (text (3:4-3:4) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- > x\n"
+        "  >\n",
+        (document (1:1-2:3) [
+            (list (1:1-2:3) [
+                (item (1:1-2:3) [
+                    (block_quote (1:3-2:3) [
+                        (paragraph (1:5-1:5) [
+                            (text (1:5-1:5) "x")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_items_without_children_end_at_their_last_content_line() {
+    assert_ast_match!(
+        [],
+        "-\n"
+        "  \n",
+        (document (1:1-2:2) [
+            (list (1:1-1:1) [
+                (item (1:1-1:1))
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* [r]: /u\n"
+        "\n"
+        "z\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:9) [
+                (item (1:1-1:9))
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "z")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* [r]:\n"
+        "  /u\n"
+        "\n"
+        "z\n",
+        (document (1:1-4:1) [
+            (list (1:1-2:4) [
+                (item (1:1-2:4))
+            ])
+            (paragraph (4:1-4:1) [
+                (text (4:1-4:1) "z")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_item_end_ignores_autocompleted_table_cells() {
+    assert_ast_match!(
+        [extension.table],
+        "- a|b\n"
+        "  -|-\n"
+        "  c\n"
+        "\n"
+        "z\n",
+        (document (1:1-5:1) [
+            (list (1:1-3:3) [
+                (item (1:1-3:3) [
+                    (table (1:3-3:3) [
+                        (table_row (1:3-1:5) [
+                            (table_cell (1:3-1:3) [
+                                (text (1:3-1:3) "a")
+                            ])
+                            (table_cell (1:5-1:5) [
+                                (text (1:5-1:5) "b")
+                            ])
+                        ])
+                        (table_row (3:3-3:3) [
+                            (table_cell (3:3-3:3) [
+                                (text (3:3-3:3) "c")
+                            ])
+                            (table_cell (3:4-3:4))
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "z")
+            ])
+        ])
+    );
+}
