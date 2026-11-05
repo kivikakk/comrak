@@ -5,8 +5,8 @@ use libfuzzer_sys::fuzz_target;
 use std::sync::Arc;
 
 use comrak::{
-    Options, ResolvedReference, markdown_to_commonmark, markdown_to_commonmark_xml,
-    markdown_to_html, options,
+    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
+    ResolvedReference,
 };
 
 #[derive(Arbitrary, Debug)]

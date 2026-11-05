@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 #![no_main]
 use comrak::{
-    Options, markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options,
+    markdown_to_commonmark, markdown_to_commonmark_xml, markdown_to_html, options, Options,
 };
 use libfuzzer_sys::arbitrary::{self, Arbitrary};
 use libfuzzer_sys::fuzz_target;

@@ -244,6 +244,7 @@ version = "0.0.0"
 dependencies = [
  "arbitrary",
  "comrak",
+ "fastrand",
  "libfuzzer-sys",
 ]
 
