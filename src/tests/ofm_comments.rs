@@ -118,3 +118,42 @@ fn tight_list_separator_survives_compact_html() {
         "<ul><li>before\nafter</li><li>next</li></ul>",
     );
 }
+
+#[test]
+fn sourcepos_unclosed_before_trailing_blank_lines() {
+    assert_ast_match!(
+        [extension.ofm_comments],
+        "%%\n"
+        "\n",
+        (document (1:1-2:0) [
+            (comment (1:1-1:2))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.ofm_comments],
+        "%%\n"
+        "abc\n"
+        "\n",
+        (document (1:1-3:0) [
+            (comment (1:1-2:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.ofm_comments],
+        "* %%\n"
+        "\n"
+        "=\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:4) [
+                (item (1:1-1:4) [
+                    (comment (1:3-1:4))
+                ])
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "=")
+            ])
+        ])
+    );
+}

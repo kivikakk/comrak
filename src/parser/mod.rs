@@ -165,7 +165,9 @@ impl<'o> Cancellation<'o> {
 
 fn is_literal_block(value: &NodeValue) -> bool {
     match value {
-        NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) => true,
+        NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MultilineComment(..) => {
+            true
+        }
         #[cfg(feature = "phoenix_heex")]
         NodeValue::HeexBlock(..) => true,
         _ => false,
@@ -1247,6 +1249,7 @@ where
             NodeValue::MultilineComment(nbc),
             self.first_nonspace + 1,
         );
+        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
         self.advance_offset(line, self.first_nonspace + 2 - self.offset, false);
         true
     }
@@ -2223,8 +2226,6 @@ where
                         return;
                     } else {
                         self.add_line(container, line);
-                        container.data_mut().sourcepos.end =
-                            (self.line_number, self.curline_end_col).into();
                     }
                 }
                 _ => {
@@ -2402,7 +2403,10 @@ where
 
         if matches!(
             ast.value,
-            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+            NodeValue::ThematicBreak
+                | NodeValue::TableRow(..)
+                | NodeValue::Table(..)
+                | NodeValue::MultilineComment(..)
         ) {
             // sourcepos.end set by itself or managed below.
         } else if self.curline_len == 0 {
@@ -2411,12 +2415,8 @@ where
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
             _ => false,
-        } {
-            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if matches!(ast.value, NodeValue::MultilineComment(..)) {
-            // sourcepos.end set by itself or managed below.
-        } else if !self.pending_callout_titles.is_empty()
-            && ast.sourcepos.start.line == self.line_number
+        } || (!self.pending_callout_titles.is_empty()
+            && ast.sourcepos.start.line == self.line_number)
         {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else {
