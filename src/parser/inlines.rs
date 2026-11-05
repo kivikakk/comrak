@@ -1339,13 +1339,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
         let sourcepos = ref_node.data().sourcepos;
         def_node.data_mut().sourcepos = sourcepos;
-        para_node.data_mut().sourcepos = (
-            sourcepos.start.line,
-            sourcepos.start.column + 2,
-            sourcepos.end.line,
-            sourcepos.end.column - 1,
-        )
-            .into();
+        let content_end = para_node.last_child().unwrap().data().sourcepos.end;
+        para_node.data_mut().sourcepos = (sourcepos.start.column_add(2), content_end).into();
 
         Some(ref_node)
     }

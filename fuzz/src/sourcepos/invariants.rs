@@ -16,6 +16,17 @@ fn is_task_item_paragraph(recs: &[Rec], index: usize) -> bool {
             .is_some_and(|p| matches!(recs[p].value, NodeValue::TaskItem(_)))
 }
 
+fn is_inline_footnote_paragraph(recs: &[Rec], index: usize) -> bool {
+    matches!(recs[index].value, NodeValue::Paragraph)
+        && recs[index].parent.is_some_and(|p| {
+            matches!(&recs[p].value, NodeValue::FootnoteDefinition(d) if d.name.starts_with("__inline_"))
+        })
+}
+
+fn has_verbatim_bounds(recs: &[Rec], index: usize) -> bool {
+    is_task_item_paragraph(recs, index) || is_inline_footnote_paragraph(recs, index)
+}
+
 fn is_in_wikilink(recs: &[Rec], index: usize) -> bool {
     recs[index]
         .parent
@@ -80,12 +91,14 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
             flag("splits-utf8");
         }
         if !is_break(rec) {
-            if start >= source.content_ends[sp.start.line - 1]
-                && !is_task_item_paragraph(recs, index)
+            if start >= source.content_ends[sp.start.line - 1] && !has_verbatim_bounds(recs, index)
             {
                 flag("start-at-eol");
             }
-            if end >= source.content_ends[sp.end.line - 1] && !is_in_wikilink(recs, index) {
+            if end >= source.content_ends[sp.end.line - 1]
+                && !is_in_wikilink(recs, index)
+                && !is_inline_footnote_paragraph(recs, index)
+            {
                 flag("end-at-eol");
             }
         }
@@ -251,7 +264,7 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
             .or(bad(!same_last_line(s, trim(literal)), "last-line"))
         }
         NodeValue::Paragraph => bad(
-            is_ws(first) && !is_task_item_paragraph(recs, index),
+            is_ws(first) && !has_verbatim_bounds(recs, index),
             "leading-ws",
         ),
         NodeValue::Heading(h) if h.setext => {
