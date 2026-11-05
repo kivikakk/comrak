@@ -178,7 +178,7 @@ fn convert_sourcepos_columns_to_chars(
     md: &str,
     cancellation: &Cancellation<'_>,
 ) {
-    let lines: Vec<&str> = md.lines().collect();
+    let lines = strings::lines_with_endings(md);
 
     let convert = |lc: &mut nodes::LineColumn| {
         if lc.column == 0 {

@@ -439,6 +439,27 @@ pub fn count_newlines(input: &str) -> (usize, usize) {
     (num_lines, last_line_len)
 }
 
+pub fn lines_with_endings(input: &str) -> Vec<&str> {
+    let bytes = input.as_bytes();
+    let matcher = cr_or_lf_matcher();
+    let mut matches = matcher.iter(bytes);
+    let mut lines = vec![];
+    let mut line_start = 0;
+    while let Some(i) = matches.next() {
+        let mut line_end = i + 1;
+        if bytes[i] == b'\r' && bytes.get(line_end) == Some(&b'\n') {
+            line_end += 1;
+            matches.advance_to(line_end);
+        }
+        lines.push(&input[line_start..line_end]);
+        line_start = line_end;
+    }
+    if line_start < input.len() {
+        lines.push(&input[line_start..]);
+    }
+    lines
+}
+
 pub fn newlines_of(s: &str) -> usize {
     if s.ends_with("\r\n") {
         2
