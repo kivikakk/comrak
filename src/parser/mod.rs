@@ -163,6 +163,15 @@ impl<'o> Cancellation<'o> {
     }
 }
 
+fn is_literal_block(value: &NodeValue) -> bool {
+    match value {
+        NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) => true,
+        #[cfg(feature = "phoenix_heex")]
+        NodeValue::HeexBlock(..) => true,
+        _ => false,
+    }
+}
+
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
 fn convert_sourcepos_columns_to_chars(
     document: Node<'_>,
@@ -2283,7 +2292,7 @@ where
         let mut ast = node.data_mut();
         assert!(ast.open);
         // Keep the original end column before expanding tabs or trimming trailing blanks.
-        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(..)) {
+        if !self.blank && is_literal_block(&ast.value) {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         }
         let lines = ast.lines_mut();
@@ -2475,22 +2484,14 @@ where
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
                 let mut lines = ast.lines.take().unwrap();
-                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
-                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
-                let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
-                ast.sourcepos.end = (end_line, end_col).into();
+                ast.sourcepos.end = last_content_end;
 
                 nhb.literal = self.take_content(&mut lines.content);
             }
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(ref mut nhb) => {
                 let mut lines = ast.lines.take().unwrap();
-                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
-                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
-                let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
-                ast.sourcepos.end = (end_line, end_col).into();
+                ast.sourcepos.end = last_content_end;
 
                 nhb.literal = self.take_content(&mut lines.content);
             }

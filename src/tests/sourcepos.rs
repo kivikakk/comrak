@@ -713,3 +713,42 @@ fn table_header_on_indented_lazy_line() {
         ])
     );
 }
+
+#[test]
+fn html_block_with_partially_consumed_tab() {
+    assert_ast_match!(
+        [],
+        "*\n"
+        "\t<v>\n",
+        (document (1:1-2:4) [
+            (list (1:1-2:4) [
+                (item (1:1-2:4) [
+                    (html_block (2:2-2:4) "  <v>\n")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* <o>\n"
+        "\t>\n",
+        (document (1:1-2:2) [
+            (list (1:1-2:2) [
+                (item (1:1-2:2) [
+                    (html_block (1:3-2:2) "<o>\n  >\n")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        ">\t<v>\n",
+        (document (1:1-1:5) [
+            (block_quote (1:1-1:5) [
+                (html_block (1:3-1:5) "  <v>\n")
+            ])
+        ])
+    );
+}
