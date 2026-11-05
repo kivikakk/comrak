@@ -752,3 +752,94 @@ fn html_block_with_partially_consumed_tab() {
         ])
     );
 }
+
+#[test]
+fn reference_definitions_before_content() {
+    assert_ast_match!(
+        [],
+        "[a]: /u\n"
+        "foo *bar*\n"
+        "baz\n",
+        (document (1:1-3:3) [
+            (paragraph (2:1-3:3) [
+                (text (2:1-2:4) "foo ")
+                (emph (2:5-2:9) [
+                    (text (2:6-2:8) "bar")
+                ])
+                (softbreak (2:10-2:10))
+                (text (3:1-3:3) "baz")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "[a]: /u\n"
+        "[b]: /v\n"
+        "\"t\"\n"
+        "foo\n"
+        "===\n",
+        (document (1:1-5:3) [
+            (heading (4:1-5:3) [
+                (text (4:1-4:3) "foo")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        ">   foo\n",
+        (document (1:1-2:7) [
+            (block_quote (1:1-2:7) [
+                (paragraph (2:5-2:7) [
+                    (text (2:5-2:7) "foo")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        "   foo\n",
+        (document (1:1-2:6) [
+            (block_quote (1:1-2:6) [
+                (paragraph (2:4-2:6) [
+                    (text (2:4-2:6) "foo")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- [a]: /u\n"
+        "  foo\n",
+        (document (1:1-2:5) [
+            (list (1:1-2:5) [
+                (item (1:1-2:5) [
+                    (paragraph (2:3-2:5) [
+                        (text (2:3-2:5) "foo")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn reference_definition_then_setext_underline_is_paragraph() {
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        "> ===\n",
+        (document (1:1-2:5) [
+            (block_quote (1:1-2:5) [
+                (paragraph (2:3-2:5) [
+                    (text (2:3-2:5) "===")
+                ])
+            ])
+        ])
+    );
+}

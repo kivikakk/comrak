@@ -1606,7 +1606,7 @@ where
 
         let has_content = {
             let mut ast = container.data_mut();
-            self.resolve_reference_link_definitions(&mut ast.lines_mut().content)
+            self.resolve_reference_link_definitions(&mut ast)
         };
         if has_content {
             container.data_mut().value = NodeValue::Heading(NodeHeading {
@@ -2348,7 +2348,10 @@ where
         self.finalize_borrowed(node, &mut node.data_mut())
     }
 
-    fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
+    fn resolve_reference_link_definitions(&mut self, ast: &mut Ast) -> bool {
+        let start_line = ast.sourcepos.start.line;
+        let lines = ast.lines_mut();
+        let content = &mut lines.content;
         let mut pos = 0;
         let mut rrs = vec![];
 
@@ -2369,11 +2372,21 @@ where
             self.refmap.insert(lab, rr);
         }
 
-        if pos != 0 {
-            strings::remove_from_start(content, pos);
+        if pos == 0 {
+            return !strings::is_blank(content);
         }
 
-        !strings::is_blank(content)
+        let (consumed_lines, _) = strings::count_newlines(&content[..pos]);
+        strings::remove_from_start(content, pos);
+        let has_content = !strings::is_blank(content);
+        lines.offsets.drain(..consumed_lines);
+        let column = lines
+            .offsets
+            .first()
+            .copied()
+            .unwrap_or(self.first_nonspace);
+        ast.sourcepos.start = (start_line + consumed_lines, column + 1).into();
+        has_content
     }
 
     fn finalize_borrowed(&mut self, node: Node<'a>, ast: &mut Ast) -> Option<Node<'a>> {
@@ -2418,8 +2431,7 @@ where
                 }
             }
             NodeValue::Paragraph => {
-                let has_content =
-                    self.resolve_reference_link_definitions(&mut ast.lines_mut().content);
+                let has_content = self.resolve_reference_link_definitions(ast);
                 if has_content {
                     let content = &mut ast.lines_mut().content;
                     *content = self.take_content(content);
