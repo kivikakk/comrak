@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
 
-use comrak::{escape_commonmark_inline, markdown_to_html_with_plugins};
+use comrak::markdown_to_html_with_plugins;
 use comrak_www::{Doc, SNAP, escape, page_options, plugins};
 use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
@@ -22,7 +22,6 @@ const DOC_HEAD: &str = r#"
     <script defer src="/examples.js"></script>
     <noscript><style>.example-view[hidden] { display: block; }</style></noscript>
 "#;
-const DOCS_MARKER: &str = "{{docs}}";
 
 struct Templates {
     header: String,
@@ -77,12 +76,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     let index = fs::read_to_string(www_dir.join("index.md"))?;
-    assert_eq!(
-        index.matches(DOCS_MARKER).count(),
-        1,
-        "index.md must contain {DOCS_MARKER} exactly once"
-    );
-    let index = index.replace(DOCS_MARKER, &docs_list(&docs)?);
     fs::write(
         out_dir.join("index.html"),
         templates.page(
@@ -93,12 +86,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         ),
     )?;
 
-    for doc in &docs {
+    let landing = fs::read_to_string(www_dir.join("docs.md"))?;
+    let title = "Docs · Comrak";
+    let body = format!(
+        "<nav class=\"breadcrumb\"><a href=\"/\">Comrak</a> / Docs</nav>\n{}{}",
+        markdown_to_html_with_plugins(&landing, &page_options(), &plugins()),
+        docs_nav(&docs, None)?,
+    );
+    fs::write(
+        out_dir.join("docs.html"),
+        templates.page(title, title, Path::new("docs.html"), &body),
+    )?;
+
+    for (i, doc) in docs.iter().enumerate() {
         let html_path = doc.html_path();
         let title = format!("{} · Comrak", doc.title);
+        let prev = i.checked_sub(1).map(|i| &docs[i]);
+        let next = docs.get(i + 1);
         let body = format!(
-            "{DOC_HEAD}<nav><a href=\"/\">Comrak</a></nav>\n{}",
-            doc.render_page()
+            r#"{DOC_HEAD}<div class="docs-layout">
+{}<main>
+<nav class="breadcrumb"><a href="/">Comrak</a> / <a href="/docs.html">Docs</a> / {}</nav>
+{}{}</main>
+</div>
+"#,
+            docs_nav(&docs, Some(doc))?,
+            escape(&doc.title),
+            doc.render_page(),
+            pager(prev, next),
         );
         let out = out_dir.join(&html_path);
         fs::create_dir_all(out.parent().unwrap())?;
@@ -108,27 +123,50 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn docs_list(docs: &[Doc]) -> Result<String, Box<dyn Error>> {
-    let mut list = String::new();
-    let mut group = None;
-    for doc in docs {
-        let dir = doc.path.parent().unwrap();
-        if group != Some(dir) {
+fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error>> {
+    let mut nav = String::from("<nav class=\"docs-nav\"><ul>\n");
+    for group in docs.chunk_by(|a, b| a.path.parent() == b.path.parent()) {
+        let dir = group[0].path.parent().unwrap().to_str().unwrap();
+        writeln!(nav, "<li>{}<ul>", escape(dir))?;
+        for doc in group {
+            let aria_current = if current.is_some_and(|current| current.path == doc.path) {
+                r#" aria-current="page""#
+            } else {
+                ""
+            };
             writeln!(
-                list,
-                "* {}",
-                escape_commonmark_inline(dir.to_str().unwrap())
+                nav,
+                r#"<li><a href="{}"{aria_current}>{}</a></li>"#,
+                href(doc),
+                escape(&doc.title)
             )?;
-            group = Some(dir);
         }
-        writeln!(
-            list,
-            "  * [{}](/{})",
-            escape_commonmark_inline(&doc.title),
-            doc.html_path().display()
-        )?;
+        writeln!(nav, "</ul></li>")?;
     }
-    Ok(list)
+    nav.push_str("</ul></nav>\n");
+    Ok(nav)
+}
+
+fn pager(prev: Option<&Doc>, next: Option<&Doc>) -> String {
+    let prev = prev.map_or(String::new(), |doc| {
+        format!(
+            r#"<a rel="prev" href="{}">← {}</a>"#,
+            href(doc),
+            escape(&doc.title)
+        )
+    });
+    let next = next.map_or(String::new(), |doc| {
+        format!(
+            r#"<a rel="next" href="{}">{} →</a>"#,
+            href(doc),
+            escape(&doc.title)
+        )
+    });
+    format!("<nav class=\"docs-pager\">{prev}{next}</nav>\n")
+}
+
+fn href(doc: &Doc) -> String {
+    format!("/{}", doc.html_path().display())
 }
 
 fn syntax_css(light: &Path, dark: &Path) -> Result<String, Box<dyn Error>> {

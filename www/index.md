@@ -51,9 +51,7 @@ The CLI help for the latest version is available in the [README], and the Rust d
 
 ## Docs
 
-Enjoy the robust flavour of our fixture-based documentation:
-
-{{docs}}
+Enjoy the robust flavour of our [fixture-based documentation](/docs.html).
 
 
 ## Bindings

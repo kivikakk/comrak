@@ -17,6 +17,8 @@ use yaml_rust::YamlLoader;
 
 pub const SNAP: &str = "COMRAK_SNAP";
 
+const GROUPS: [&str; 3] = ["extensions", "options", "combinations"];
+
 static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| SyntectAdapter::new(None));
 
 #[derive(Debug)]
@@ -63,7 +65,7 @@ impl Doc {
     pub fn load_all(root: &Path) -> Vec<Doc> {
         let mut paths = vec![];
         collect_markdown(root, Path::new(""), &mut paths);
-        paths.sort();
+        paths.sort_by_cached_key(|path| (group_rank(path), path.clone()));
         paths
             .into_iter()
             .map(|path| Doc::load(root, path))
@@ -148,6 +150,13 @@ impl Doc {
         format_html_with_plugins(document, &options, &mut html, &plugins()).unwrap();
         html
     }
+}
+
+fn group_rank(path: &Path) -> usize {
+    GROUPS
+        .iter()
+        .position(|group| path.parent() == Some(Path::new(group)))
+        .unwrap_or_else(|| panic!("{}: directory not in GROUPS", path.display()))
 }
 
 fn collect_markdown(root: &Path, dir: &Path, paths: &mut Vec<PathBuf>) {

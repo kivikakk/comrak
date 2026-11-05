@@ -199,3 +199,78 @@ section.footnotes li:target {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+.docs-nav {
+    a {
+        white-space: normal;
+    }
+
+    a[aria-current] {
+        color: inherit;
+        font-weight: bold;
+    }
+
+    > ul {
+        padding-left: 0;
+    }
+}
+
+body > .docs-nav > ul {
+    columns: 16em;
+
+    > li {
+        break-inside: avoid;
+    }
+}
+
+.docs-layout > .docs-nav {
+    display: none;
+}
+
+.docs-pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5em 1em;
+    margin: 2em 0 1em;
+
+    a {
+        white-space: normal;
+    }
+
+    a[rel="next"] {
+        margin-left: auto;
+    }
+}
+
+@media only screen and (min-width: 1200px) {
+    body:has(> .docs-layout) {
+        max-width: none;
+        margin-inline: 2em;
+    }
+
+    .docs-layout {
+        display: grid;
+        grid-template-columns: 17rem minmax(0, 1000px);
+        column-gap: 2em;
+    }
+
+    .docs-layout > .docs-nav {
+        display: block;
+        position: sticky;
+        top: 1.25rem;
+        align-self: start;
+        max-height: calc(100vh - 2.5rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        font-size: 1rem;
+
+        > ul {
+            margin-block: 0;
+        }
+    }
+
+    .docs-pager {
+        display: none;
+    }
+}

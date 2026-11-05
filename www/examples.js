@@ -59,3 +59,8 @@ selectView(
     ? saved
     : "rendered",
 );
+
+const sidebar = document.querySelector(".docs-nav");
+const current = sidebar.querySelector('[aria-current="page"]');
+sidebar.scrollTop =
+  current.offsetTop - (sidebar.clientHeight - current.offsetHeight) / 2;
