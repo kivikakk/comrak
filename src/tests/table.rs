@@ -828,6 +828,57 @@ fn escaped_pipe_sourcepos_before_autolink() {
 }
 
 #[test]
+fn escaped_pipe_sourcepos_after_email_autolink() {
+    assert_ast_match!(
+        [extension.table, extension.autolink],
+        "| a@b.cd\\|e@f.gh\\|i |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:21) [
+                    (table_cell (1:2-1:20) [
+                        (link (1:3-1:8) "mailto:a@b.cd" [
+                            (text (1:3-1:8) "a@b.cd")
+                        ])
+                        (text (1:10-1:10) "|")
+                        (link (1:11-1:16) "mailto:e@f.gh" [
+                            (text (1:11-1:16) "e@f.gh")
+                        ])
+                        (text (1:18-1:19) "|i")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn escaped_pipe_sourcepos_after_tasklist_marker() {
+    assert_ast_match!(
+        [extension.table, extension.tasklist],
+        "- [ ] \\|b\n"
+        "  | a |\n"
+        "  | - |\n",
+        (document (1:1-3:7) [
+            (list (1:1-3:7) [
+                (taskitem (1:1-3:7) [
+                    (paragraph (1:7-1:9) [
+                        (text (1:8-1:9) "|b")
+                    ])
+                    (table (2:3-3:7) [
+                        (table_row (2:3-2:7) [
+                            (table_cell (2:4-2:6) [
+                                (text (2:5-2:5) "a")
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
 fn escaped_pipe_sourcepos_in_preface_paragraph() {
     assert_ast_match!(
         [extension.table],

@@ -3002,7 +3002,7 @@ where
             if sourcepos.end.column < adjust && node.next_sibling().is_none() {
                 parent.detach();
             } else {
-                sourcepos.start.column = adjust;
+                sourcepos.start.column = spx.next_column().unwrap_or(adjust);
                 parent.data_mut().sourcepos.start.column = adjust;
             }
 
@@ -3291,5 +3291,9 @@ impl Spx {
                 }
             }
         }
+    }
+
+    pub(crate) fn next_column(&self) -> Option<usize> {
+        self.items.get(self.front).map(|(sp, _)| sp.start.column)
     }
 }
