@@ -669,3 +669,47 @@ fn sourcepos() {
         }
     }
 }
+
+#[test]
+fn lazy_continuation_after_partial_tab() {
+    assert_ast_match!(
+        [],
+        ">\t>a\n"
+        ">\tb\n",
+        (document (1:1-2:3) [
+            (block_quote (1:1-2:3) [
+                (block_quote (1:3-2:3) [
+                    (paragraph (1:4-2:3) [
+                        (text (1:4-1:4) "a")
+                        (softbreak (1:5-1:5))
+                        (text (2:3-2:3) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_header_on_indented_lazy_line() {
+    assert_ast_match!(
+        [extension.table],
+        ">b\n"
+        " }\n"
+        ">:-\n",
+        (document (1:1-3:3) [
+            (block_quote (1:1-3:3) [
+                (paragraph (1:2-1:2) [
+                    (text (1:2-1:2) "b")
+                ])
+                (table (2:2-3:3) [
+                    (table_row (2:2-2:2) [
+                        (table_cell (2:2-2:2) [
+                            (text (2:2-2:2) "}")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}

@@ -2119,9 +2119,9 @@ where
             && (node_matches!(self.current, NodeValue::Paragraph)
                 || lazy_callout.is_some_and(|c| c.same_node(self.current)))
         {
+            self.advance_offset(line, self.first_nonspace - self.offset, false);
             if let Some(callout) = lazy_callout.filter(|c| c.same_node(self.current)) {
                 let para = self.add_child(callout, NodeValue::Paragraph, self.first_nonspace + 1);
-                self.advance_offset(line, self.first_nonspace - self.offset, false);
                 self.add_line(para, line);
                 self.current = para;
             } else {
