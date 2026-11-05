@@ -330,9 +330,11 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
         ),
         NodeValue::Link(_) if first == b'<' => bad(!s.ends_with(b">"), "angle-close"),
         NodeValue::Link(link) => {
-            let raw = String::from_utf8_lossy(s).replace("\\|", "|");
+            let raw = String::from_utf8_lossy(s);
             bad(
-                !(link.url.contains(&raw) || s.contains(&b'&')),
+                !(link.url.contains(raw.as_ref())
+                    || link.url.contains(&raw.replace("\\|", "|"))
+                    || s.contains(&b'&')),
                 "autolink-mismatch",
             )
         }

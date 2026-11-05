@@ -622,3 +622,20 @@ fn sourcepos_crossing_lines() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_escape_on_a_later_line() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[w\n"
+        "\\]]] x\n",
+        (document (1:1-2:6) [
+            (paragraph (1:1-2:6) [
+                (wikilink (1:1-2:4) [
+                    (text (1:3-2:2) "w\n]")
+                ])
+                (text (2:5-2:6) " x")
+            ])
+        ])
+    );
+}

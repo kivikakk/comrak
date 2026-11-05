@@ -2857,7 +2857,7 @@ where
             if needs_spx {
                 spxv.push((sp, adj.len()));
             }
-            sourcepos.end.column = sp.end.column;
+            sourcepos.end = sp.end;
             ns.detach();
         }
 
