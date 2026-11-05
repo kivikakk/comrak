@@ -2257,3 +2257,36 @@ fn block_level_expression_with_string_concatenation() {
         concat!("{\n", "  \"a\"\n", "  <>\n", "  \"b\"\n", "}\n",),
     );
 }
+
+#[test]
+fn sourcepos_unclosed_directive_with_partially_consumed_tab() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "><%\n"
+        ">\tx\n",
+        (document (1:1-2:3) [
+            (block_quote (1:1-2:3) [
+                (paragraph (1:2-2:3) [
+                    (text (1:2-1:3) "<%")
+                    (softbreak (1:4-1:4))
+                    (text (2:3-2:3) "x")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "><%\n"
+        ">   x\n",
+        (document (1:1-2:5) [
+            (block_quote (1:1-2:5) [
+                (paragraph (1:2-2:5) [
+                    (text (1:2-1:3) "<%")
+                    (softbreak (1:4-1:4))
+                    (text (2:5-2:5) "x")
+                ])
+            ])
+        ])
+    );
+}

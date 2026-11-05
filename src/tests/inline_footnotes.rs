@@ -674,3 +674,42 @@ fn inline_footnote_sourcepos_table() {
         ])
     );
 }
+
+#[test]
+fn inline_footnote_sourcepos_closing_bracket_on_its_own_line() {
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "^[a\n"
+        "] b\n",
+        (document (1:1-2:3) [
+            (paragraph (1:1-2:3) [
+                (footnote_reference (1:1-2:1))
+                (text (2:2-2:3) " b")
+            ])
+            (footnote_definition (1:1-2:1) [
+                (paragraph (1:3-1:4) [
+                    (text (1:3-1:3) "a")
+                    (softbreak (1:4-1:4))
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.footnotes, extension.inline_footnotes],
+        "^[a\r\n"
+        "] b\n",
+        (document (1:1-2:3) [
+            (paragraph (1:1-2:3) [
+                (footnote_reference (1:1-2:1))
+                (text (2:2-2:3) " b")
+            ])
+            (footnote_definition (1:1-2:1) [
+                (paragraph (1:3-1:5) [
+                    (text (1:3-1:3) "a")
+                    (softbreak (1:4-1:5))
+                ])
+            ])
+        ])
+    );
+}

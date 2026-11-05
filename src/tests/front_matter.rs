@@ -230,3 +230,38 @@ fn fm_only_without_trailing_newline() {
 
     assert!(found.is_some(), "front matter expected");
 }
+
+#[test]
+fn document_end_with_only_front_matter() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\na: b\n---",
+        (document (1:1-3:3) [
+            (frontmatter (1:1-3:3) "---\na: b\n---")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\na: b\n---\n",
+        (document (1:1-3:3) [
+            (frontmatter (1:1-3:3) "---\na: b\n---\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\r\na: b\r\n---\r\n",
+        (document (1:1-3:3) [
+            (frontmatter (1:1-3:3) "---\r\na: b\r\n---\r\n")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\na: b\n---\n\n",
+        (document (1:1-4:0) [
+            (frontmatter (1:1-3:3) "---\na: b\n---\n\n")
+        ])
+    );
+}

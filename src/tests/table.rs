@@ -726,3 +726,152 @@ fn alignments_with_custom_cell_formatter() {
         )
     );
 }
+
+#[test]
+fn escaped_pipe_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "| a\\|b *c* |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:12) [
+                    (table_cell (1:2-1:11) [
+                        (text (1:3-1:7) "a|b ")
+                        (emph (1:8-1:10) [
+                            (text (1:9-1:9) "c")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.table],
+        "| `x\\|y` |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:10) [
+                    (table_cell (1:2-1:9) [
+                        (code (1:3-1:8) "x|y")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.table],
+        "| \\|a |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:7) [
+                    (table_cell (1:2-1:6) [
+                        (text (1:4-1:5) "|a")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.table],
+        "| a\\|b\\|c | d |\n"
+        "| - | - |\n"
+        "| é\\|f | g |\n",
+        (document (1:1-3:13) [
+            (table (1:1-3:13) [
+                (table_row (1:1-1:15) [
+                    (table_cell (1:2-1:10) [
+                        (text (1:3-1:9) "a|b|c")
+                    ])
+                    (table_cell (1:12-1:14) [
+                        (text (1:13-1:13) "d")
+                    ])
+                ])
+                (table_row (3:1-3:13) [
+                    (table_cell (3:2-3:8) [
+                        (text (3:3-3:7) "é|f")
+                    ])
+                    (table_cell (3:10-3:12) [
+                        (text (3:11-3:11) "g")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn escaped_pipe_sourcepos_before_autolink() {
+    assert_ast_match!(
+        [extension.table, extension.autolink],
+        "| a\\|b www.x.yz c |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:19) [
+                    (table_cell (1:2-1:18) [
+                        (text (1:3-1:7) "a|b ")
+                        (link (1:8-1:15) "http://www.x.yz" [
+                            (text (1:8-1:15) "www.x.yz")
+                        ])
+                        (text (1:16-1:17) " c")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn escaped_pipe_sourcepos_in_preface_paragraph() {
+    assert_ast_match!(
+        [extension.table],
+        "a\\|b\n"
+        "  c\\|d\n"
+        "| h |\n"
+        "| - |\n",
+        (document (1:1-4:5) [
+            (paragraph (1:1-2:6) [
+                (text (1:1-1:4) "a|b")
+                (softbreak (1:5-1:5))
+                (text (2:3-2:6) "c|d")
+            ])
+            (table (3:1-4:5) [
+                (table_row (3:1-3:5) [
+                    (table_cell (3:2-3:4) [
+                        (text (3:3-3:3) "h")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn escaped_pipe_sourcepos_before_inline_footnote() {
+    assert_ast_match!(
+        [extension.table, extension.footnotes, extension.inline_footnotes],
+        "| a\\|b ^[c\\|d] |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:16) [
+                    (table_cell (1:2-1:15) [
+                        (text (1:3-1:7) "a|b ")
+                        (footnote_reference (1:8-1:14))
+                    ])
+                ])
+            ])
+            (footnote_definition (1:8-1:14) [
+                (paragraph (1:10-1:13) [
+                    (text (1:10-1:13) "c|d")
+                ])
+            ])
+        ])
+    );
+}

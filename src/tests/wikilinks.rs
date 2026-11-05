@@ -457,3 +457,185 @@ fn wikilinks_ignore_embeds_alongside_wikilink() {
         "<p>![[x]] <a href=\"y\" data-wikilink=\"true\">y</a></p>\n",
     );
 }
+
+#[test]
+fn sourcepos_label_with_entity() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[&mp;]]\n",
+        (document (1:1-1:8) [
+            (paragraph (1:1-1:8) [
+                (wikilink (1:1-1:8) [
+                    (text (1:3-1:6) "∓")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_before_pipe],
+        "[[a&amp;b|c]] d\n",
+        (document (1:1-1:15) [
+            (paragraph (1:1-1:15) [
+                (wikilink (1:1-1:13) [
+                    (text (1:3-1:9) "a&b")
+                ])
+                (text (1:14-1:15) " d")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[x|y&amp;z]] w\n",
+        (document (1:1-1:15) [
+            (paragraph (1:1-1:15) [
+                (wikilink (1:1-1:13) [
+                    (text (1:5-1:11) "y&z")
+                ])
+                (text (1:14-1:15) " w")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_label_with_surrounding_whitespace() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[ a ]]\n",
+        (document (1:1-1:7) [
+            (paragraph (1:1-1:7) [
+                (wikilink (1:1-1:7) [
+                    (text (1:4-1:4) "a")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[x | y ]]\n",
+        (document (1:1-1:10) [
+            (paragraph (1:1-1:10) [
+                (wikilink (1:1-1:10) [
+                    (text (1:7-1:7) "y")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_multibyte_label() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[w|好的]] x\n",
+        (document (1:1-1:14) [
+            (paragraph (1:1-1:14) [
+                (wikilink (1:1-1:12) [
+                    (text (1:5-1:10) "好的")
+                ])
+                (text (1:13-1:14) " x")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_label_with_escape_after_entity() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[x|&amp;\\*y]] z\n",
+        (document (1:1-1:16) [
+            (paragraph (1:1-1:16) [
+                (wikilink (1:1-1:14) [
+                    (text (1:5-1:12) "&*y")
+                ])
+                (text (1:15-1:16) " z")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_crossing_lines() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "x [[a\n"
+        "b]] *y*\n",
+        (document (1:1-2:7) [
+            (paragraph (1:1-2:7) [
+                (text (1:1-1:2) "x ")
+                (wikilink (1:3-2:3) [
+                    (text (1:5-2:1) "a\nb")
+                ])
+                (text (2:4-2:4) " ")
+                (emph (2:5-2:7) [
+                    (text (2:6-2:6) "y")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "> [[a|b\n"
+        ">  c]] d\n",
+        (document (1:1-2:8) [
+            (block_quote (1:1-2:8) [
+                (paragraph (1:3-2:8) [
+                    (wikilink (1:3-2:6) [
+                        (text (1:7-2:4) "b\nc")
+                    ])
+                    (text (2:7-2:8) " d")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[a|\n"
+        "b]] c\n",
+        (document (1:1-2:5) [
+            (paragraph (1:1-2:5) [
+                (wikilink (1:1-2:3) [
+                    (text (2:1-2:1) "b")
+                ])
+                (text (2:4-2:5) " c")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "![[a\n"
+        "b]] c\n",
+        (document (1:1-2:5) [
+            (paragraph (1:1-2:5) [
+                (wikilink (1:1-2:3) [
+                    (text (1:4-2:1) "a\nb")
+                ])
+                (text (2:4-2:5) " c")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_escape_on_a_later_line() {
+    assert_ast_match!(
+        [extension.wikilinks_title_after_pipe],
+        "[[w\n"
+        "\\]]] x\n",
+        (document (1:1-2:6) [
+            (paragraph (1:1-2:6) [
+                (wikilink (1:1-2:4) [
+                    (text (1:3-2:2) "w\n]")
+                ])
+                (text (2:5-2:6) " x")
+            ])
+        ])
+    );
+}

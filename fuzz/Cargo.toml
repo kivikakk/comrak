@@ -11,6 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
 comrak = { path = "..", features = ["arbitrary", "shortcodes", "phoenix_heex"] }
+fastrand = "2"
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -18,6 +19,9 @@ members = ["."]
 
 [profile.release]
 debug = 1
+
+[profile.test]
+opt-level = 3
 
 [[bin]]
 name = "all_options"
@@ -70,5 +74,11 @@ doc = false
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sourcepos"
+path = "fuzz_targets/sourcepos.rs"
 test = false
 doc = false

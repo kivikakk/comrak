@@ -261,3 +261,52 @@ fn sourcepos_table_cells_untouched_on_close() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_unclosed_ends_with_its_contents() {
+    assert_ast_match!(
+        [extension.block_directive],
+        ":::\n"
+        "\n",
+        (document (1:1-2:0) [
+            (block_directive (1:1-1:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.block_directive],
+        ":::warn\n"
+        "\n",
+        (document (1:1-2:0) [
+            (block_directive (1:1-1:7))
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.block_directive],
+        "> :::\n"
+        "> \n",
+        (document (1:1-2:2) [
+            (block_quote (1:1-2:2) [
+                (block_directive (1:3-1:5))
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.block_directive],
+        "* :::\n"
+        "\n"
+        "z\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:5) [
+                (item (1:1-1:5) [
+                    (block_directive (1:3-1:5))
+                ])
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "z")
+            ])
+        ])
+    );
+}

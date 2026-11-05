@@ -6,6 +6,7 @@
 
 use crate::Arena;
 use crate::nodes::{Ast, Node, NodeBlockId, NodeValue, Sourcepos};
+use crate::strings;
 
 /// An identifier ending a block's raw content, with where it sat in that content.
 pub(crate) struct TrailingMarker {
@@ -35,7 +36,7 @@ pub(crate) fn is_id_byte(b: u8) -> bool {
 /// also cut off `content` so that it doesn't end up in the block's text.
 pub(crate) fn take_trailing_marker(content: &mut String) -> Option<TrailingMarker> {
     let end = content.trim_end_matches(['\r', '\n']).len();
-    let start = content[..end].rfind('\n').map_or(0, |i| i + 1);
+    let start = content[..end].rfind(['\r', '\n']).map_or(0, |i| i + 1);
     let bytes = content.as_bytes();
 
     let mut name_start = end;
@@ -56,7 +57,7 @@ pub(crate) fn take_trailing_marker(content: &mut String) -> Option<TrailingMarke
 
     let marker = TrailingMarker {
         name: content[name_start..end].to_string(),
-        line: content[..start].matches('\n').count(),
+        line: strings::count_newlines(&content[..start]).0,
         column: caret - start + 1,
     };
     content.truncate(caret);

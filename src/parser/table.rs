@@ -2,9 +2,13 @@ use std::borrow::Cow;
 use std::cmp::min;
 use std::mem;
 
+use crate::Arena;
 use crate::matchers::backslash_matcher;
-use crate::nodes::{Ast, BlockLines, LineColumn, Node, NodeTable, NodeValue, TableAlignment};
+use crate::nodes::{
+    Ast, BlockLines, LineColumn, Node, NodeTable, NodeValue, Sourcepos, TableAlignment,
+};
 use crate::parser::Parser;
+use crate::parser::inlines::make_inline;
 use crate::scanners;
 use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
 
@@ -135,6 +139,12 @@ fn try_opening_header<'a>(
             start.column + cell.start_offset - 1 + cell.internal_offset
                 - header_row.paragraph_offset,
         );
+        lines.escaped_pipes = escaped_pipe_positions(
+            &lines.content,
+            &cell.escaped_pipes,
+            start.line,
+            &lines.offsets,
+        );
 
         i += 1;
     }
@@ -195,6 +205,12 @@ fn try_opening_row<'a>(
         lines
             .offsets
             .push(start_column + cell.start_offset - 1 + cell.internal_offset);
+        lines.escaped_pipes = escaped_pipe_positions(
+            &lines.content,
+            &cell.escaped_pipes,
+            parser.line_number,
+            &lines.offsets,
+        );
 
         last_column = cell_ast.sourcepos.end.column;
     }
@@ -231,6 +247,7 @@ struct Cell<'t> {
     end_offset: usize,
     internal_offset: usize,
     content: Cow<'t, str>,
+    escaped_pipes: Vec<usize>,
 }
 
 fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
@@ -247,7 +264,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
         let pipe_matched = scanners::table_cell_end(&string[offset + cell_matched..]).unwrap_or(0);
 
         if cell_matched > 0 || pipe_matched > 0 {
-            let mut cell = unescape_pipes(&string[offset..offset + cell_matched]);
+            let (mut cell, escaped_pipes) = unescape_pipes(&string[offset..offset + cell_matched]);
             trim_cow(&mut cell);
 
             let mut start_offset = offset;
@@ -267,6 +284,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
                 end_offset: offset + cell_matched - 1,
                 internal_offset,
                 content: cell,
+                escaped_pipes,
             });
         }
 
@@ -310,7 +328,7 @@ fn try_inserting_table_header_paragraph<'a>(
     }
 
     let preface = &container_content[..paragraph_offset];
-    let mut paragraph_content = unescape_pipes(preface);
+    let (mut paragraph_content, escaped_pipes) = unescape_pipes(preface);
     let (newlines, _since_newline) = count_newlines(&paragraph_content);
     trim_cow(&mut paragraph_content);
     let paragraph_content = paragraph_content.to_string();
@@ -337,33 +355,92 @@ fn try_inserting_table_header_paragraph<'a>(
     container_ast.sourcepos.start.line += newlines;
     container_ast.sourcepos.start.column = container_offsets[newlines] + 1;
 
+    let escaped_pipes =
+        escaped_pipe_positions(&paragraph_content, &escaped_pipes, start.line, &offsets);
     paragraph.lines = Some(Box::new(BlockLines {
         content: paragraph_content,
         offsets,
+        escaped_pipes,
     }));
     let node = parser.arena.alloc(paragraph.into());
     container.insert_before(node);
 }
 
-fn unescape_pipes(string: &str) -> Cow<'_, str> {
+fn unescape_pipes(string: &str) -> (Cow<'_, str>, Vec<usize>) {
     let bytes = string.as_bytes();
     let mut backslashes = backslash_matcher().iter(bytes);
     let mut v = String::new();
     let mut offset = 0;
+    let mut escaped_pipes = vec![];
 
     while let Some(index) = backslashes.next() {
         if bytes.get(index + 1) == Some(&b'|') {
             v.push_str(&string[offset..index]);
             offset = index + 1;
+            escaped_pipes.push(v.len());
         }
         backslashes.advance_to(index + 2);
     }
 
     if offset == 0 {
-        string.into()
+        (string.into(), escaped_pipes)
     } else {
         v.push_str(&string[offset..]);
-        v.into()
+        (v.into(), escaped_pipes)
+    }
+}
+
+fn escaped_pipe_positions(
+    content: &str,
+    escaped_pipes: &[usize],
+    start_line: usize,
+    offsets: &[usize],
+) -> Vec<LineColumn> {
+    escaped_pipes
+        .iter()
+        .map(|&index| {
+            let (newlines, since_newline) = count_newlines(&content[..index]);
+            (start_line + newlines, offsets[newlines] + since_newline + 1).into()
+        })
+        .collect()
+}
+
+pub(crate) fn restore_escaped_pipes<'a>(
+    arena: &'a Arena<'a>,
+    nodes: Vec<Node<'a>>,
+    escaped_pipes: &[LineColumn],
+) {
+    let restore = |position: LineColumn| {
+        let preceding = escaped_pipes
+            .iter()
+            .filter(|escaped| escaped.line == position.line && escaped.column <= position.column)
+            .count();
+        position.column_add(preceding as isize)
+    };
+
+    for node in nodes {
+        let mut ast = node.data_mut();
+        let Sourcepos { start, end: last } = ast.sourcepos;
+        let mut end = last;
+        if let NodeValue::Text(ref mut text) = ast.value
+            && start.line == last.line
+            && text.len() == last.column - start.column + 1
+        {
+            for escaped in escaped_pipes.iter().rev().filter(|escaped| {
+                escaped.line == start.line
+                    && start.column < escaped.column
+                    && escaped.column <= last.column
+            }) {
+                let tail = text.to_mut().split_off(escaped.column - start.column);
+                node.insert_after(make_inline(
+                    arena,
+                    NodeValue::Text(tail.into()),
+                    (restore(*escaped), restore(end)).into(),
+                ));
+                end = escaped.column_add(-1);
+            }
+        }
+        ast.sourcepos = (restore(start), restore(end)).into();
     }
 }
 
@@ -412,7 +489,7 @@ mod tests {
     fn pipe_unescaping_preserves_backslash_pairs_and_utf8() {
         for count in 0..=6 {
             let input = format!("{}{}|雪", "語".repeat(32), "\\".repeat(count));
-            let output = unescape_pipes(&input);
+            let (output, _) = unescape_pipes(&input);
             let expected = format!("{}{}|雪", "語".repeat(32), "\\".repeat(count - count % 2));
             assert_eq!(output, expected);
             if count % 2 == 0 {
@@ -426,7 +503,8 @@ mod tests {
     #[test]
     fn pipe_unescaping_borrows_unchanged_input() {
         for input in ["", "雪", "plain | text", r"a\\|b", r"a\雪|b", r"\"] {
-            let output = unescape_pipes(input);
+            let (output, escaped_pipes) = unescape_pipes(input);
+            assert!(escaped_pipes.is_empty());
             assert_eq!(output, input);
             match output {
                 Cow::Borrowed(_) => (),

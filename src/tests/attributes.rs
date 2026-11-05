@@ -373,3 +373,20 @@ fn explicit_heading_ids_need_unsafe_to_be_reserved() {
         },
     );
 }
+
+#[test]
+fn link_tail_crossing_lines_sourcepos() {
+    assert_ast_match!(
+        [extension.link_attributes],
+        "[a](\n"
+        "/u){.c} x\n",
+        (document (1:1-2:9) [
+            (paragraph (1:1-2:9) [
+                (link (1:1-2:7) {.c} "/u" [
+                    (text (1:2-1:2) "a")
+                ])
+                (text (2:8-2:9) " x")
+            ])
+        ])
+    );
+}

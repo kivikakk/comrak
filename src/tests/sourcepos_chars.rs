@@ -872,3 +872,33 @@ fn sourcepos_chars_thematic_break() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_chars_lone_carriage_return() {
+    assert_ast_match!(
+        [parse.sourcepos_chars],
+        "x\ré\n",
+        (document (1:1-2:1) [
+            (paragraph (1:1-2:1) [
+                (text (1:1-1:1) "x")
+                (softbreak (1:2-1:2))
+                (text (2:1-2:1) "é")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn sourcepos_chars_carriage_return_line_feed() {
+    assert_ast_match!(
+        [parse.sourcepos_chars],
+        "é\r\nb\n",
+        (document (1:1-2:1) [
+            (paragraph (1:1-2:1) [
+                (text (1:1-1:1) "é")
+                (softbreak (1:2-1:3))
+                (text (2:1-2:1) "b")
+            ])
+        ])
+    );
+}

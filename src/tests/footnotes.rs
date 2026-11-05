@@ -332,3 +332,41 @@ fn leave_footnote_definitions() {
         ])
     );
 }
+
+#[test]
+fn sourcepos_definition_ends_with_its_contents() {
+    assert_ast_match!(
+        [extension.footnotes, parse.leave_footnote_definitions],
+        "[^b]:\n"
+        "\n"
+        "z\n",
+        (document (1:1-3:1) [
+            (footnote_definition (1:1-1:5))
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "z")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.footnotes, parse.leave_footnote_definitions],
+        "[^b]: a\n"
+        "\n"
+        "    c\n"
+        "\n"
+        "z\n",
+        (document (1:1-5:1) [
+            (footnote_definition (1:1-3:5) [
+                (paragraph (1:7-1:7) [
+                    (text (1:7-1:7) "a")
+                ])
+                (paragraph (3:5-3:5) [
+                    (text (3:5-3:5) "c")
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "z")
+            ])
+        ])
+    );
+}

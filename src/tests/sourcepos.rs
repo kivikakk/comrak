@@ -669,3 +669,463 @@ fn sourcepos() {
         }
     }
 }
+
+#[test]
+fn lazy_continuation_after_partial_tab() {
+    assert_ast_match!(
+        [],
+        ">\t>a\n"
+        ">\tb\n",
+        (document (1:1-2:3) [
+            (block_quote (1:1-2:3) [
+                (block_quote (1:3-2:3) [
+                    (paragraph (1:4-2:3) [
+                        (text (1:4-1:4) "a")
+                        (softbreak (1:5-1:5))
+                        (text (2:3-2:3) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_header_on_indented_lazy_line() {
+    assert_ast_match!(
+        [extension.table],
+        ">b\n"
+        " }\n"
+        ">:-\n",
+        (document (1:1-3:3) [
+            (block_quote (1:1-3:3) [
+                (paragraph (1:2-1:2) [
+                    (text (1:2-1:2) "b")
+                ])
+                (table (2:2-3:3) [
+                    (table_row (2:2-2:2) [
+                        (table_cell (2:2-2:2) [
+                            (text (2:2-2:2) "}")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn html_block_with_partially_consumed_tab() {
+    assert_ast_match!(
+        [],
+        "*\n"
+        "\t<v>\n",
+        (document (1:1-2:4) [
+            (list (1:1-2:4) [
+                (item (1:1-2:4) [
+                    (html_block (2:2-2:4) "  <v>\n")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* <o>\n"
+        "\t>\n",
+        (document (1:1-2:2) [
+            (list (1:1-2:2) [
+                (item (1:1-2:2) [
+                    (html_block (1:3-2:2) "<o>\n  >\n")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        ">\t<v>\n",
+        (document (1:1-1:5) [
+            (block_quote (1:1-1:5) [
+                (html_block (1:3-1:5) "  <v>\n")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn reference_definitions_before_content() {
+    assert_ast_match!(
+        [],
+        "[a]: /u\n"
+        "foo *bar*\n"
+        "baz\n",
+        (document (1:1-3:3) [
+            (paragraph (2:1-3:3) [
+                (text (2:1-2:4) "foo ")
+                (emph (2:5-2:9) [
+                    (text (2:6-2:8) "bar")
+                ])
+                (softbreak (2:10-2:10))
+                (text (3:1-3:3) "baz")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "[a]: /u\n"
+        "[b]: /v\n"
+        "\"t\"\n"
+        "foo\n"
+        "===\n",
+        (document (1:1-5:3) [
+            (heading (4:1-5:3) [
+                (text (4:1-4:3) "foo")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        ">   foo\n",
+        (document (1:1-2:7) [
+            (block_quote (1:1-2:7) [
+                (paragraph (2:5-2:7) [
+                    (text (2:5-2:7) "foo")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        "   foo\n",
+        (document (1:1-2:6) [
+            (block_quote (1:1-2:6) [
+                (paragraph (2:4-2:6) [
+                    (text (2:4-2:6) "foo")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- [a]: /u\n"
+        "  foo\n",
+        (document (1:1-2:5) [
+            (list (1:1-2:5) [
+                (item (1:1-2:5) [
+                    (paragraph (2:3-2:5) [
+                        (text (2:3-2:5) "foo")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn reference_definition_then_setext_underline_is_paragraph() {
+    assert_ast_match!(
+        [],
+        "> [a]: /u\n"
+        "> ===\n",
+        (document (1:1-2:5) [
+            (block_quote (1:1-2:5) [
+                (paragraph (2:3-2:5) [
+                    (text (2:3-2:5) "===")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn link_tail_crossing_lines() {
+    assert_ast_match!(
+        [],
+        "[a](\n"
+        "/u\n"
+        "\"t\"\n"
+        ") *x*\n",
+        (document (1:1-4:5) [
+            (paragraph (1:1-4:5) [
+                (link (1:1-4:1) "/u" [
+                    (text (1:2-1:2) "a")
+                ])
+                (text (4:2-4:2) " ")
+                (emph (4:3-4:5) [
+                    (text (4:4-4:4) "x")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "![a](/u\n"
+        "\"t\nv\") x\n",
+        (document (1:1-3:5) [
+            (paragraph (1:1-3:5) [
+                (image (1:1-3:3) "/u" [
+                    (text (1:3-1:3) "a")
+                ])
+                (text (3:4-3:5) " x")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "[a][\n"
+        "r] x\n"
+        "\n"
+        "[r]: /u\n",
+        (document (1:1-4:7) [
+            (paragraph (1:1-2:4) [
+                (link (1:1-2:2) "/u" [
+                    (text (1:2-1:2) "a")
+                ])
+                (text (2:3-2:4) " x")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> *[a](\n"
+        ">    /u\n"
+        "> )* x\n",
+        (document (1:1-3:6) [
+            (block_quote (1:1-3:6) [
+                (paragraph (1:3-3:6) [
+                    (emph (1:3-3:4) [
+                        (link (1:4-3:3) "/u" [
+                            (text (1:5-1:5) "a")
+                        ])
+                    ])
+                    (text (3:5-3:6) " x")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn thematic_break_before_trailing_blank_lines() {
+    assert_ast_match!(
+        [],
+        "***\n"
+        "\n",
+        (document (1:1-2:0) [
+            (thematic_break (1:1-1:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- ***\n"
+        "\n",
+        (document (1:1-2:0) [
+            (list (1:1-1:5) [
+                (item (1:1-1:5) [
+                    (thematic_break (1:3-1:5))
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> ***\n"
+        ">\n",
+        (document (1:1-2:1) [
+            (block_quote (1:1-2:1) [
+                (thematic_break (1:3-1:5))
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_before_trailing_blank_lines() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |\n"
+        "\n",
+        (document (1:1-3:0) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_items_end_at_their_last_child() {
+    assert_ast_match!(
+        [],
+        "- x\n"
+        "  \n"
+        "y\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:3) [
+                (item (1:1-1:3) [
+                    (paragraph (1:3-1:3) [
+                        (text (1:3-1:3) "x")
+                    ])
+                ])
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "y")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> - x\n"
+        ">\n",
+        (document (1:1-2:1) [
+            (block_quote (1:1-2:1) [
+                (list (1:3-1:5) [
+                    (item (1:3-1:5) [
+                        (paragraph (1:5-1:5) [
+                            (text (1:5-1:5) "x")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "1. a\n"
+        "   \n"
+        "2. b\n"
+        "   \n",
+        (document (1:1-4:3) [
+            (list (1:1-3:4) [
+                (item (1:1-1:4) [
+                    (paragraph (1:4-1:4) [
+                        (text (1:4-1:4) "a")
+                    ])
+                ])
+                (item (3:1-3:4) [
+                    (paragraph (3:4-3:4) [
+                        (text (3:4-3:4) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- > x\n"
+        "  >\n",
+        (document (1:1-2:3) [
+            (list (1:1-2:3) [
+                (item (1:1-2:3) [
+                    (block_quote (1:3-2:3) [
+                        (paragraph (1:5-1:5) [
+                            (text (1:5-1:5) "x")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_items_without_children_end_at_their_last_content_line() {
+    assert_ast_match!(
+        [],
+        "-\n"
+        "  \n",
+        (document (1:1-2:2) [
+            (list (1:1-1:1) [
+                (item (1:1-1:1))
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* [r]: /u\n"
+        "\n"
+        "z\n",
+        (document (1:1-3:1) [
+            (list (1:1-1:9) [
+                (item (1:1-1:9))
+            ])
+            (paragraph (3:1-3:1) [
+                (text (3:1-3:1) "z")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "* [r]:\n"
+        "  /u\n"
+        "\n"
+        "z\n",
+        (document (1:1-4:1) [
+            (list (1:1-2:4) [
+                (item (1:1-2:4))
+            ])
+            (paragraph (4:1-4:1) [
+                (text (4:1-4:1) "z")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn list_item_end_ignores_autocompleted_table_cells() {
+    assert_ast_match!(
+        [extension.table],
+        "- a|b\n"
+        "  -|-\n"
+        "  c\n"
+        "\n"
+        "z\n",
+        (document (1:1-5:1) [
+            (list (1:1-3:3) [
+                (item (1:1-3:3) [
+                    (table (1:3-3:3) [
+                        (table_row (1:3-1:5) [
+                            (table_cell (1:3-1:3) [
+                                (text (1:3-1:3) "a")
+                            ])
+                            (table_cell (1:5-1:5) [
+                                (text (1:5-1:5) "b")
+                            ])
+                        ])
+                        (table_row (3:3-3:3) [
+                            (table_cell (3:3-3:3) [
+                                (text (3:3-3:3) "c")
+                            ])
+                            (table_cell (3:4-3:4))
+                        ])
+                    ])
+                ])
+            ])
+            (paragraph (5:1-5:1) [
+                (text (5:1-5:1) "z")
+            ])
+        ])
+    );
+}

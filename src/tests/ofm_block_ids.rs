@@ -173,3 +173,23 @@ fn xml_ofm_block_ids() {
         |opts| opts.extension.ofm_block_ids = true,
     );
 }
+
+#[test]
+fn ofm_block_ids_sourcepos_across_line_endings() {
+    for (input, expected) in [
+        ("$\nf ^a", sourcepos!((2:3-2:4))),
+        ("$\r\nf ^a", sourcepos!((2:3-2:4))),
+        ("$\rf ^a", sourcepos!((2:3-2:4))),
+        ("x\r\ny\rz ^a\r", sourcepos!((3:3-3:4))),
+    ] {
+        let mut options = Options::default();
+        options.extension.ofm_block_ids = true;
+        let arena = Arena::new();
+        let root = parse_document(&arena, input, &options);
+        let marker = root
+            .descendants()
+            .find(|node| matches!(node.data().value, NodeValue::BlockId(_)))
+            .unwrap();
+        assert_eq!(marker.data().sourcepos, expected, "{input:?}");
+    }
+}

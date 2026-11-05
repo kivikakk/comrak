@@ -163,13 +163,39 @@ impl<'o> Cancellation<'o> {
     }
 }
 
+fn is_literal_block(value: &NodeValue) -> bool {
+    match value {
+        NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MultilineComment(..) => {
+            true
+        }
+        #[cfg(feature = "phoenix_heex")]
+        NodeValue::HeexBlock(..) => true,
+        _ => false,
+    }
+}
+
+fn ends_with_its_contents(value: &NodeValue) -> bool {
+    match value {
+        NodeValue::List(..)
+        | NodeValue::Item(..)
+        | NodeValue::DescriptionList
+        | NodeValue::DescriptionItem(..)
+        | NodeValue::DescriptionDetails
+        | NodeValue::FootnoteDefinition(..)
+        | NodeValue::MultilineBlockQuote(..)
+        | NodeValue::BlockDirective(..) => true,
+        NodeValue::Alert(alert) => alert.multiline,
+        _ => false,
+    }
+}
+
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
 fn convert_sourcepos_columns_to_chars(
     document: Node<'_>,
     md: &str,
     cancellation: &Cancellation<'_>,
 ) {
-    let lines: Vec<&str> = md.lines().collect();
+    let lines = strings::lines_with_endings(md);
 
     let convert = |lc: &mut nodes::LineColumn| {
         if lc.column == 0 {
@@ -241,6 +267,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
+    last_content_line_end: nodes::LineColumn,
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
@@ -298,6 +325,7 @@ where
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
+            last_content_line_end: nodes::LineColumn::default(),
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
@@ -358,8 +386,6 @@ where
     }
 
     fn handle_front_matter(&mut self, front_matter: &str, delimiter: &str) {
-        let (lines, _) = strings::count_newlines(front_matter);
-
         let stripped_front_matter = strings::remove_trailing_blank_lines_slice(front_matter);
         let (stripped_lines, _) = strings::count_newlines(stripped_front_matter);
 
@@ -377,7 +403,11 @@ where
                 column: delimiter.len(),
             },
         };
-        self.line_number += lines;
+        let without_final_newline =
+            &front_matter[..front_matter.len() - strings::newlines_of(front_matter)];
+        let (newlines, last_line_length) = strings::count_newlines(without_final_newline);
+        self.line_number += newlines + 1;
+        self.last_line_length = last_line_length;
     }
 
     fn process_line(&mut self, line: &str) {
@@ -418,6 +448,9 @@ where
         }
 
         self.last_line_length = self.curline_end_col;
+        if !self.blank {
+            self.last_content_line_end = (self.line_number, self.curline_end_col).into();
+        }
 
         self.curline_len = 0;
         self.curline_end_col = 0;
@@ -719,8 +752,6 @@ where
 
             self.close_blocks_down_to(container);
 
-            self.fix_zero_end_columns(container);
-
             self.current = self.finalize_borrowed(container, ast).unwrap();
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
@@ -757,8 +788,6 @@ where
 
             self.close_blocks_down_to(container);
 
-            self.fix_zero_end_columns(container);
-
             self.current = self.finalize_borrowed(container, ast).unwrap();
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
             return None;
@@ -770,83 +799,6 @@ where
             i -= 1;
         }
         Some(())
-    }
-
-    fn deepest_last_end(node: Node<'a>) -> Option<nodes::LineColumn> {
-        let mut last = node.last_child()?;
-        let mut best: Option<nodes::LineColumn> = None;
-
-        loop {
-            let end = last.data().sourcepos.end;
-            if end.column != 0 {
-                let wider = match best {
-                    None => true,
-                    Some(b) => end.line > b.line || (end.line == b.line && end.column > b.column),
-                };
-                if wider {
-                    best = Some(end);
-                }
-            }
-            match last.last_child() {
-                Some(child) => last = child,
-                None => break,
-            }
-        }
-
-        best
-    }
-
-    // Walk the subtree rooted at each child of `container` in post-order
-    // and, where a node's end column is zero, attempt to adopt the widest
-    // non-zero end column along its deepest-last path; otherwise
-    // fall back to the node's start position.
-    // Returns a candidate end position for `container` if found.
-    fn fix_zero_end_columns(&mut self, container: Node<'a>) -> Option<nodes::LineColumn> {
-        // explicit stack for post-order traversal: (node, visited)
-        let mut stack: Vec<(Node<'a>, bool)> = Vec::new();
-
-        for ch in container.children() {
-            stack.push((ch, false));
-
-            while let Some((node, visited)) = stack.pop() {
-                if self.cancellation.step() {
-                    return None;
-                }
-                if !visited {
-                    stack.push((node, true));
-                    for c in node.children() {
-                        stack.push((c, false));
-                    }
-                } else {
-                    let end_col = node.data().sourcepos.end.column;
-                    if end_col == 0 {
-                        if let Some(pos) = Self::deepest_last_end(node) {
-                            node.data_mut().sourcepos.end = pos;
-                        } else {
-                            let mut ast = node.data_mut();
-                            ast.sourcepos.end = ast.sourcepos.start;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Compute a candidate end position for the container by looking at
-        // its last child. Return it only if it has a non-zero column; the
-        // caller can fall back to the container's start position if desired.
-        //
-        // We originally looked at the deepest-last descendant, but there
-        // may be intermediate containers that are larger than it, which we
-        // should use instead. If looking just at the last child isn't
-        // enough in some circumstances, we should consider using the widest
-        // of the last descendants.
-        if let Some(last_desc) = container.last_child() {
-            let last_end = last_desc.data().sourcepos.end;
-            if last_end.column != 0 {
-                return Some(last_end);
-            }
-        }
-        None
     }
 
     /////////////////////
@@ -1597,7 +1549,7 @@ where
 
         let has_content = {
             let mut ast = container.data_mut();
-            self.resolve_reference_link_definitions(&mut ast.lines_mut().content)
+            self.resolve_reference_link_definitions(&mut ast)
         };
         if has_content {
             container.data_mut().value = NodeValue::Heading(NodeHeading {
@@ -1791,6 +1743,10 @@ where
             // is added to it. If not, create a new list.
 
             last_child.detach();
+            if tight {
+                last_child.data_mut().sourcepos.end =
+                    (self.line_number - 1, self.last_line_length).into();
+            }
             let last_child_sourcepos = last_child.data().sourcepos;
 
             let list = match container.last_child() {
@@ -1825,7 +1781,7 @@ where
             let details =
                 self.add_child(item, NodeValue::DescriptionDetails, self.first_nonspace + 1);
 
-            term.data_mut().sourcepos.start = last_child_sourcepos.start;
+            term.data_mut().sourcepos = last_child_sourcepos;
 
             term.append(last_child);
 
@@ -2050,6 +2006,7 @@ where
         assert!(start_column > 0);
 
         let mut child = Ast::new(value, (self.line_number, start_column).into());
+        child.sourcepos.end = (self.line_number, self.curline_end_col).into();
         if child.value.has_block_lines() {
             child.lines = Some(Box::default());
         }
@@ -2119,9 +2076,9 @@ where
             && (node_matches!(self.current, NodeValue::Paragraph)
                 || lazy_callout.is_some_and(|c| c.same_node(self.current)))
         {
+            self.advance_offset(line, self.first_nonspace - self.offset, false);
             if let Some(callout) = lazy_callout.filter(|c| c.same_node(self.current)) {
                 let para = self.add_child(callout, NodeValue::Paragraph, self.first_nonspace + 1);
-                self.advance_offset(line, self.first_nonspace - self.offset, false);
                 self.add_line(para, line);
                 self.current = para;
             } else {
@@ -2212,8 +2169,6 @@ where
                         return;
                     } else {
                         self.add_line(container, line);
-                        container.data_mut().sourcepos.end =
-                            (self.line_number, self.curline_end_col).into();
                     }
                 }
                 _ => {
@@ -2259,6 +2214,8 @@ where
                         if have_line_text {
                             if !preserve_heex_whitespace {
                                 self.advance_offset(line, count, false);
+                            } else if self.partially_consumed_tab {
+                                self.advance_offset(line, 1, false);
                             }
                             self.add_line(container, line);
                         }
@@ -2283,7 +2240,7 @@ where
         let mut ast = node.data_mut();
         assert!(ast.open);
         // Keep the original end column before expanding tabs or trimming trailing blanks.
-        if !self.blank && matches!(ast.value, NodeValue::CodeBlock(..)) {
+        if !self.blank && is_literal_block(&ast.value) {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         }
         let lines = ast.lines_mut();
@@ -2339,7 +2296,10 @@ where
         self.finalize_borrowed(node, &mut node.data_mut())
     }
 
-    fn resolve_reference_link_definitions(&mut self, content: &mut String) -> bool {
+    fn resolve_reference_link_definitions(&mut self, ast: &mut Ast) -> bool {
+        let start_line = ast.sourcepos.start.line;
+        let lines = ast.lines_mut();
+        let content = &mut lines.content;
         let mut pos = 0;
         let mut rrs = vec![];
 
@@ -2360,11 +2320,21 @@ where
             self.refmap.insert(lab, rr);
         }
 
-        if pos != 0 {
-            strings::remove_from_start(content, pos);
+        if pos == 0 {
+            return !strings::is_blank(content);
         }
 
-        !strings::is_blank(content)
+        let (consumed_lines, _) = strings::count_newlines(&content[..pos]);
+        strings::remove_from_start(content, pos);
+        let has_content = !strings::is_blank(content);
+        lines.offsets.drain(..consumed_lines);
+        let column = lines
+            .offsets
+            .first()
+            .copied()
+            .unwrap_or(self.first_nonspace);
+        ast.sourcepos.start = (start_line + consumed_lines, column + 1).into();
+        has_content
     }
 
     fn finalize_borrowed(&mut self, node: Node<'a>, ast: &mut Ast) -> Option<Node<'a>> {
@@ -2374,15 +2344,7 @@ where
         let parent = node.parent();
         let last_content_end = ast.sourcepos.end;
 
-        if self.curline_len == 0 {
-            ast.sourcepos.end = (self.line_number, self.last_line_length).into();
-        } else if match ast.value {
-            NodeValue::Document => true,
-            NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
-            _ => false,
-        } {
-            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if matches!(
+        if matches!(
             ast.value,
             NodeValue::ThematicBreak
                 | NodeValue::TableRow(..)
@@ -2390,8 +2352,19 @@ where
                 | NodeValue::MultilineComment(..)
         ) {
             // sourcepos.end set by itself or managed below.
-        } else if !self.pending_callout_titles.is_empty()
-            && ast.sourcepos.start.line == self.line_number
+        } else if ends_with_its_contents(&ast.value) {
+            ast.sourcepos.end = match node.last_child() {
+                Some(last_child) => last_child.data().sourcepos.end,
+                None => last_content_end.max(self.last_content_line_end),
+            };
+        } else if self.curline_len == 0 {
+            ast.sourcepos.end = (self.line_number, self.last_line_length).into();
+        } else if match ast.value {
+            NodeValue::Document => true,
+            NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
+            _ => false,
+        } || (!self.pending_callout_titles.is_empty()
+            && ast.sourcepos.start.line == self.line_number)
         {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
         } else {
@@ -2399,18 +2372,8 @@ where
         }
 
         match ast.value {
-            NodeValue::DescriptionList => {}
-            NodeValue::DescriptionItem(..)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails => {
-                self.fix_zero_end_columns(node);
-                if ast.sourcepos.end.column == 0 {
-                    ast.sourcepos.end = Self::deepest_last_end(node).unwrap_or(ast.sourcepos.start);
-                }
-            }
             NodeValue::Paragraph => {
-                let has_content =
-                    self.resolve_reference_link_definitions(&mut ast.lines_mut().content);
+                let has_content = self.resolve_reference_link_definitions(ast);
                 if has_content {
                     let content = &mut ast.lines_mut().content;
                     *content = self.take_content(content);
@@ -2475,35 +2438,19 @@ where
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
                 let mut lines = ast.lines.take().unwrap();
-                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
-                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
-                let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
-                ast.sourcepos.end = (end_line, end_col).into();
+                ast.sourcepos.end = last_content_end;
 
                 nhb.literal = self.take_content(&mut lines.content);
             }
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(ref mut nhb) => {
                 let mut lines = ast.lines.take().unwrap();
-                let trimmed = strings::remove_trailing_blank_lines_slice(&lines.content);
-                let (num_lines, last_line_len) = strings::count_newlines(trimmed);
-                let end_line = ast.sourcepos.start.line + num_lines;
-                let end_col = lines.offsets.get(num_lines).copied().unwrap_or(0) + last_line_len;
-                ast.sourcepos.end = (end_line, end_col).into();
+                ast.sourcepos.end = last_content_end;
 
                 nhb.literal = self.take_content(&mut lines.content);
             }
             NodeValue::List(ref mut nl) => {
-                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
-                    ast.sourcepos.end = candidate_end;
-                }
                 nl.tight = self.determine_list_tight(node);
-            }
-            NodeValue::FootnoteDefinition(_) => {
-                if let Some(candidate_end) = self.fix_zero_end_columns(node) {
-                    ast.sourcepos.end = candidate_end;
-                }
             }
             NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]
@@ -2583,6 +2530,7 @@ where
         let BlockLines {
             mut content,
             offsets,
+            escaped_pipes,
         } = *lines;
         let may_label =
             self.options.extension.ofm_block_ids && !block_ids::ends_with_whitespace(&content);
@@ -2603,6 +2551,7 @@ where
             block_ids::marker_node(self.arena, &m.name, sourcepos)
         });
 
+        let footnote_defs_before = self.footnote_defs.len();
         let mut subj = inlines::Subject::new(
             self.arena,
             self.options,
@@ -2622,6 +2571,20 @@ where
 
         if let Some(marker) = marker {
             node.append(marker);
+        }
+
+        if !escaped_pipes.is_empty() {
+            let nodes = node
+                .descendants()
+                .skip(1)
+                .chain(
+                    self.footnote_defs
+                        .added_since(footnote_defs_before)
+                        .iter()
+                        .flat_map(|def| def.descendants()),
+                )
+                .collect();
+            table::restore_escaped_pipes(self.arena, nodes, &escaped_pipes);
         }
     }
 
@@ -2894,7 +2857,7 @@ where
             if needs_spx {
                 spxv.push((sp, adj.len()));
             }
-            sourcepos.end.column = sp.end.column;
+            sourcepos.end = sp.end;
             ns.detach();
         }
 

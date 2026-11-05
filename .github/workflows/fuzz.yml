@@ -13,3 +13,4 @@ jobs:
         run: rustup override set nightly
       - run: cargo install cargo-fuzz
       - run: cargo fuzz build
+      - run: cargo test --locked --manifest-path fuzz/Cargo.toml --lib
