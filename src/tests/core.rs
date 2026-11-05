@@ -696,7 +696,7 @@ fn link_sourcepos_newline_n_between_dest_and_title() {
         "[link](   /uri\n  \"title\"  )\n",
         (document (1:1-2:12) [
             (paragraph (1:1-2:12) [
-                (link (1:1-1:14) "/uri" [
+                (link (1:1-2:12) "/uri" [
                     (text (1:2-1:5) "link")
                 ])
             ])
@@ -711,7 +711,7 @@ fn link_sourcepos_newline_r_between_dest_and_title() {
         "[link](   /uri\r  \"title\"  )\r",
         (document (1:1-2:12) [
             (paragraph (1:1-2:12) [
-                (link (1:1-1:14) "/uri" [
+                (link (1:1-2:12) "/uri" [
                     (text (1:2-1:5) "link")
                 ])
             ])
@@ -726,7 +726,7 @@ fn link_sourcepos_newline_rn_between_dest_and_title() {
         "[link](   /uri\r\n  \"title\"  )\r\n",
         (document (1:1-2:12) [
             (paragraph (1:1-2:12) [
-                (link (1:1-1:14) "/uri" [
+                (link (1:1-2:12) "/uri" [
                     (text (1:2-1:5) "link")
                 ])
             ])

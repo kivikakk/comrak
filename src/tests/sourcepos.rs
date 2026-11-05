@@ -843,3 +843,74 @@ fn reference_definition_then_setext_underline_is_paragraph() {
         ])
     );
 }
+
+#[test]
+fn link_tail_crossing_lines() {
+    assert_ast_match!(
+        [],
+        "[a](\n"
+        "/u\n"
+        "\"t\"\n"
+        ") *x*\n",
+        (document (1:1-4:5) [
+            (paragraph (1:1-4:5) [
+                (link (1:1-4:1) "/u" [
+                    (text (1:2-1:2) "a")
+                ])
+                (text (4:2-4:2) " ")
+                (emph (4:3-4:5) [
+                    (text (4:4-4:4) "x")
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "![a](/u\n"
+        "\"t\nv\") x\n",
+        (document (1:1-3:5) [
+            (paragraph (1:1-3:5) [
+                (image (1:1-3:3) "/u" [
+                    (text (1:3-1:3) "a")
+                ])
+                (text (3:4-3:5) " x")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "[a][\n"
+        "r] x\n"
+        "\n"
+        "[r]: /u\n",
+        (document (1:1-4:7) [
+            (paragraph (1:1-2:4) [
+                (link (1:1-2:2) "/u" [
+                    (text (1:2-1:2) "a")
+                ])
+                (text (2:3-2:4) " x")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> *[a](\n"
+        ">    /u\n"
+        "> )* x\n",
+        (document (1:1-3:6) [
+            (block_quote (1:1-3:6) [
+                (paragraph (1:3-3:6) [
+                    (emph (1:3-3:4) [
+                        (link (1:4-3:3) "/u" [
+                            (text (1:5-1:5) "a")
+                        ])
+                    ])
+                    (text (3:5-3:6) " x")
+                ])
+            ])
+        ])
+    );
+}
