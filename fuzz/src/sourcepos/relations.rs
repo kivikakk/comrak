@@ -163,6 +163,7 @@ struct Trial {
     new_view: View,
     normalise: Normalise,
     options: Option<Options<'static>>,
+    same_lines: bool,
 }
 
 fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
@@ -172,6 +173,7 @@ fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
         new_view,
         normalise,
         options: None,
+        same_lines: false,
     }
 }
 
@@ -261,11 +263,14 @@ fn is_single_line(doc: &str) -> bool {
 fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
     let source = Source::new(doc);
     let wrap = |first: &str, rest: &str, blank: &str, path: &'static [usize]| {
-        vec![trial(
-            prefix_lines(&source, first, rest, blank),
-            View::Path(path),
-            Normalise::Exact,
-        )]
+        vec![Trial {
+            same_lines: doc.contains('\t') && (first.len() % 4 != 0 || rest.len() % 4 != 0),
+            ..trial(
+                prefix_lines(&source, first, rest, blank),
+                View::Path(path),
+                Normalise::Exact,
+            )
+        }]
     };
     let non_empty_lines =
         || (0..source.line_count().min(16)).filter(|&line| !source.line_content(line).is_empty());
@@ -339,8 +344,9 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
             )]
         }
         "line-indent" => non_empty_lines()
-            .map(|line| {
-                trial(
+            .map(|line| Trial {
+                same_lines: true,
+                ..trial(
                     vec![insert(source.line_starts[line], " ")],
                     View::Whole,
                     Normalise::Whitespace,
@@ -428,6 +434,7 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
                 apply_toggle(&mut toggled);
                 Trial {
                     options: Some(toggled),
+                    same_lines: true,
                     ..trial(vec![], View::Whole, Normalise::Exact)
                 }
             })
@@ -469,7 +476,7 @@ fn same_tree(
                 && x.depth - old_base == y.depth - new_base
                 && normalised(trial.normalise, &x.fingerprint)
                     == normalised(trial.normalise, &y.fingerprint)
-                && (!matches!(family, "line-indent" | "option-toggle")
+                && (!trial.same_lines
                     || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
         })
 }
