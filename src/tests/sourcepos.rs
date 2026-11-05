@@ -914,3 +914,58 @@ fn link_tail_crossing_lines() {
         ])
     );
 }
+
+#[test]
+fn thematic_break_before_trailing_blank_lines() {
+    assert_ast_match!(
+        [],
+        "***\n"
+        "\n",
+        (document (1:1-2:0) [
+            (thematic_break (1:1-1:3))
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "- ***\n"
+        "\n",
+        (document (1:1-2:0) [
+            (list (1:1-1:5) [
+                (item (1:1-1:5) [
+                    (thematic_break (1:3-1:5))
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [],
+        "> ***\n"
+        ">\n",
+        (document (1:1-2:1) [
+            (block_quote (1:1-2:1) [
+                (thematic_break (1:3-1:5))
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_before_trailing_blank_lines() {
+    assert_ast_match!(
+        [extension.table],
+        "| a |\n"
+        "| - |\n"
+        "\n",
+        (document (1:1-3:0) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:2-1:4) [
+                        (text (1:3-1:3) "a")
+                    ])
+                ])
+            ])
+        ])
+    );
+}

@@ -2400,7 +2400,12 @@ where
         let parent = node.parent();
         let last_content_end = ast.sourcepos.end;
 
-        if self.curline_len == 0 {
+        if matches!(
+            ast.value,
+            NodeValue::ThematicBreak | NodeValue::TableRow(..) | NodeValue::Table(..)
+        ) {
+            // sourcepos.end set by itself or managed below.
+        } else if self.curline_len == 0 {
             ast.sourcepos.end = (self.line_number, self.last_line_length).into();
         } else if match ast.value {
             NodeValue::Document => true,
@@ -2408,13 +2413,7 @@ where
             _ => false,
         } {
             ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
-        } else if matches!(
-            ast.value,
-            NodeValue::ThematicBreak
-                | NodeValue::TableRow(..)
-                | NodeValue::Table(..)
-                | NodeValue::MultilineComment(..)
-        ) {
+        } else if matches!(ast.value, NodeValue::MultilineComment(..)) {
             // sourcepos.end set by itself or managed below.
         } else if !self.pending_callout_titles.is_empty()
             && ast.sourcepos.start.line == self.line_number
