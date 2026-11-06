@@ -413,15 +413,17 @@ pub(crate) struct EscapedPipes<'a> {
 
 impl<'a> EscapedPipes<'a> {
     pub(crate) fn restore(self, arena: &'a Arena<'a>) {
-        let restore = |position: LineColumn| {
+        let restore_block_start = |position: LineColumn| {
             let preceding = self
                 .positions
                 .iter()
-                .filter(|escaped| {
-                    escaped.line == position.line && escaped.column <= position.column
-                })
+                .filter(|escaped| escaped.line == position.line && escaped.column < position.column)
                 .count();
             position.column_add(preceding as isize)
+        };
+        let restore = |position: LineColumn| {
+            let at_pipe = self.positions.contains(&position);
+            restore_block_start(position).column_add(at_pipe as isize)
         };
 
         let nodes: Vec<_> = self
@@ -453,7 +455,12 @@ impl<'a> EscapedPipes<'a> {
                     end = escaped.column_add(-1);
                 }
             }
-            ast.sourcepos = (restore(start), restore(end)).into();
+            let restored_start = if ast.value.block() {
+                restore_block_start(start)
+            } else {
+                restore(start)
+            };
+            ast.sourcepos = (restored_start, restore(end)).into();
         }
     }
 }
