@@ -853,6 +853,43 @@ fn escaped_pipe_sourcepos_after_email_autolink() {
 }
 
 #[test]
+fn escaped_pipe_sourcepos_in_unresolved_footnote() {
+    assert_ast_match!(
+        [extension.table, extension.footnotes],
+        "| ?[^b\\|c] |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:12) [
+                    (table_cell (1:2-1:11) [
+                        (text (1:3-1:10) "?[^b|c]")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.table, extension.footnotes, extension.autolink, parse.relaxed_autolinks],
+        "| [^a\\|b@c.de] |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:16) [
+                    (table_cell (1:2-1:15) [
+                        (text (1:3-1:7) "[^a|")
+                        (link (1:8-1:13) "mailto:b@c.de" [
+                            (text (1:8-1:13) "b@c.de")
+                        ])
+                        (text (1:14-1:14) "]")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
 fn escaped_pipe_sourcepos_after_tasklist_marker() {
     assert_ast_match!(
         [extension.table, extension.tasklist],
