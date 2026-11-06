@@ -73,6 +73,7 @@ fn try_opening_header<'a>(
             container,
             &container_content,
             header_row.paragraph_offset,
+            header_row.row_start,
         );
     }
 
@@ -110,10 +111,8 @@ fn try_opening_header<'a>(
         let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
         header_ast.sourcepos.end = start.column_add(
-            (container_content.len()
-                - newlines_of(&container_content)
-                - 1
-                - header_row.paragraph_offset) as isize,
+            (container_content.len() - newlines_of(&container_content) - 1 - header_row.row_start)
+                as isize,
         );
     }
 
@@ -127,17 +126,15 @@ fn try_opening_header<'a>(
         let ast_cell = parser.add_child(
             header,
             NodeValue::TableCell,
-            start.column + cell.start_offset - header_row.paragraph_offset,
+            start.column + cell.start_offset - header_row.row_start,
         );
         let ast = &mut ast_cell.data_mut();
         ast.sourcepos.start.line = start.line;
-        ast.sourcepos.end =
-            start.column_add((cell.end_offset - header_row.paragraph_offset) as isize);
+        ast.sourcepos.end = start.column_add((cell.end_offset - header_row.row_start) as isize);
         let lines = ast.lines_mut();
         mem::swap(&mut lines.content, cell.content.to_mut());
         lines.offsets.push(
-            start.column + cell.start_offset - 1 + cell.internal_offset
-                - header_row.paragraph_offset,
+            start.column + cell.start_offset - 1 + cell.internal_offset - header_row.row_start,
         );
         lines.escaped_pipes = escaped_pipe_positions(
             &lines.content,
@@ -239,6 +236,7 @@ fn try_opening_row<'a>(
 
 struct Row<'t> {
     paragraph_offset: usize,
+    row_start: usize,
     cells: Vec<Cell<'t>>,
 }
 
@@ -258,6 +256,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
     let mut offset = scanners::table_cell_end(string).unwrap_or(0);
 
     let mut paragraph_offset = 0;
+    let mut row_start = 0;
 
     while offset < len {
         let cell_matched = scanners::table_cell(&string[offset..], spoiler).unwrap_or(0);
@@ -270,7 +269,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
             let mut start_offset = offset;
             let mut internal_offset = 0;
 
-            while start_offset > paragraph_offset && bytes[start_offset - 1] != b'|' {
+            while start_offset > row_start && bytes[start_offset - 1] != b'|' {
                 start_offset -= 1;
                 internal_offset += 1;
             }
@@ -299,6 +298,12 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
             }
 
             paragraph_offset = offset;
+            row_start = offset
+                + bytes[offset..]
+                    .iter()
+                    .take_while(|&&b| b == b' ' || b == b'\t')
+                    .count();
+            offset = row_start;
             cells.clear();
             offset += scanners::table_cell_end(&string[offset..]).unwrap_or(0);
         }
@@ -309,6 +314,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
     } else {
         Some(Row {
             paragraph_offset,
+            row_start,
             cells,
         })
     }
@@ -319,6 +325,7 @@ fn try_inserting_table_header_paragraph<'a>(
     container: Node<'a>,
     container_content: &str,
     paragraph_offset: usize,
+    row_start: usize,
 ) {
     if container
         .parent()
@@ -353,7 +360,8 @@ fn try_inserting_table_header_paragraph<'a>(
             .count();
 
     container_ast.sourcepos.start.line += newlines;
-    container_ast.sourcepos.start.column = container_offsets[newlines] + 1;
+    container_ast.sourcepos.start.column =
+        container_offsets[newlines] + 1 + row_start - paragraph_offset;
 
     let escaped_pipes =
         escaped_pipe_positions(&paragraph_content, &escaped_pipes, start.line, &offsets);
