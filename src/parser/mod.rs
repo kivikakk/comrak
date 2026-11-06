@@ -2307,6 +2307,7 @@ where
         let lines = ast.lines_mut();
         let content = &mut lines.content;
         let mut pos = 0;
+        let mut indent = 0;
         let mut rrs = vec![];
 
         let bytes = content.as_bytes();
@@ -2317,6 +2318,11 @@ where
             if let Some((offset, rr)) = self.parse_reference_inline(&content[pos..]) {
                 pos += offset;
                 rrs.extend(rr);
+                indent = bytes[pos..]
+                    .iter()
+                    .take_while(|&&b| b == b' ' || b == b'\t')
+                    .count();
+                pos += indent;
             } else {
                 break;
             }
@@ -2336,8 +2342,11 @@ where
         lines.offsets.drain(..consumed_lines);
         let column = lines
             .offsets
-            .first()
-            .copied()
+            .first_mut()
+            .map(|offset| {
+                *offset += indent;
+                *offset
+            })
             .unwrap_or(self.first_nonspace);
         ast.sourcepos.start = (start_line + consumed_lines, column + 1).into();
         has_content

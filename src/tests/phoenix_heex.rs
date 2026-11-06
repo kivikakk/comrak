@@ -2331,3 +2331,29 @@ fn table_header_after_unclosed_directive_sourcepos() {
         ])
     );
 }
+
+#[test]
+fn paragraph_after_reference_with_unclosed_directive_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "[a<%]: /u\n"
+        " b\n",
+        (document (1:1-2:2) [
+            (paragraph (2:2-2:2) [
+                (text (2:2-2:2) "b")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "[a<%]: /u\n"
+        " [b]: /v\n"
+        " c\n",
+        (document (1:1-3:2) [
+            (paragraph (3:2-3:2) [
+                (text (3:2-3:2) "c")
+            ])
+        ])
+    );
+}
