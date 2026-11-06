@@ -33,6 +33,7 @@ pub const FAMILIES: &[&str] = &[
     "table-header-cell",
     "table-body-cell",
     "table-pipe",
+    "table-preface",
     "option-toggle",
 ];
 
@@ -132,6 +133,7 @@ enum View {
     Path(&'static [usize]),
     DropFirst(usize),
     DropLast(usize),
+    LastParagraph,
 }
 
 fn view(recs: &[Rec], view: View) -> Option<(usize, Vec<usize>)> {
@@ -156,6 +158,15 @@ fn view(recs: &[Rec], view: View) -> Option<(usize, Vec<usize>)> {
             let keep = kids.len().checked_sub(count)?;
             let to = kids.get(keep).copied().unwrap_or(recs.len());
             Some((0, (1..to).collect()))
+        }
+        View::LastParagraph => {
+            let current = recs
+                .iter()
+                .rposition(|rec| matches!(rec.value, NodeValue::Paragraph))?;
+            Some((
+                recs[current].depth,
+                (current..subtree_end(recs, current)).collect(),
+            ))
         }
     }
 }
@@ -278,6 +289,32 @@ fn table_cell_edits(doc: &str, head: &str, tail: &str, inner: Option<Edit>) -> V
     edits.extend(inner);
     edits.push(replace(body_len, doc.len() - body_len, tail));
     edits
+}
+
+fn continuation_prefix(line: &[u8]) -> String {
+    let mut prefix = String::new();
+    let mut rest = line;
+    loop {
+        let digits = rest.iter().take_while(|b| b.is_ascii_digit()).count();
+        let marker = match rest {
+            [b'>', ..] | [b' ' | b'\t', ..] => 1,
+            [b'-' | b'+' | b'*', b' ' | b'\t', ..] => 1,
+            _ if digits > 0
+                && matches!(rest.get(digits), Some(b'.' | b')'))
+                && matches!(rest.get(digits + 1), Some(b' ' | b'\t')) =>
+            {
+                digits + 1
+            }
+            _ => return prefix,
+        };
+        for &b in &rest[..marker] {
+            prefix.push(match b {
+                b'>' | b'\t' => b as char,
+                _ => ' ',
+            });
+        }
+        rest = &rest[marker..];
+    }
 }
 
 fn has_bare_pipe(doc: &str) -> bool {
@@ -480,7 +517,28 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
                 })
                 .collect()
         }
-        "heading" | "table-header-cell" | "table-body-cell" | "table-pipe" => vec![],
+        "table-preface" if options.extension.table => {
+            let prefix = continuation_prefix(source.line_content(source.line_count() - 1));
+            let eol = if doc.ends_with(['\n', '\r']) {
+                ""
+            } else {
+                "\n"
+            };
+            vec![Trial {
+                old_view: View::LastParagraph,
+                ..trial(
+                    vec![insert(
+                        doc.len(),
+                        &format!("{eol}{prefix}| a |\n{prefix}| - |\n"),
+                    )],
+                    View::LastParagraph,
+                    Normalise::Exact,
+                )
+            }]
+        }
+        "heading" | "table-header-cell" | "table-body-cell" | "table-pipe" | "table-preface" => {
+            vec![]
+        }
         "option-toggle" => TOGGLES
             .iter()
             .map(|(_, apply_toggle)| {
