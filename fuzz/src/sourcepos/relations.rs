@@ -32,6 +32,7 @@ pub const FAMILIES: &[&str] = &[
     "heading",
     "table-header-cell",
     "table-body-cell",
+    "table-pipe",
     "option-toggle",
 ];
 
@@ -106,6 +107,7 @@ enum Normalise {
     InsertedLetter,
     Multibyte,
     Nul,
+    Pipe,
 }
 
 fn normalised(how: Normalise, fingerprint: &str) -> String {
@@ -120,6 +122,7 @@ fn normalised(how: Normalise, fingerprint: &str) -> String {
         Normalise::InsertedLetter => fingerprint.replace('Q', ""),
         Normalise::Multibyte => fingerprint.replace('é', "e").replace('好', "a"),
         Normalise::Nul => fingerprint.replace('\u{fffd}', "x"),
+        Normalise::Pipe => fingerprint.replace('|', ""),
     }
 }
 
@@ -164,6 +167,7 @@ struct Trial {
     normalise: Normalise,
     options: Option<Options<'static>>,
     same_lines: bool,
+    inserted_at: Option<usize>,
 }
 
 fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
@@ -174,6 +178,7 @@ fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
         normalise,
         options: None,
         same_lines: false,
+        inserted_at: None,
     }
 }
 
@@ -259,6 +264,38 @@ fn is_single_line(doc: &str) -> bool {
         && !doc.starts_with([' ', '\t'])
         && !doc.trim_end_matches(['\n', '\r']).contains(['\n', '\r'])
 }
+
+fn letter_sites(doc: &str) -> Vec<usize> {
+    let bytes = doc.as_bytes();
+    (1..bytes.len())
+        .filter(|&i| bytes[i - 1].is_ascii_alphanumeric() && bytes[i].is_ascii_alphanumeric())
+        .collect()
+}
+
+fn table_cell_edits(doc: &str, head: &str, tail: &str, inner: Option<Edit>) -> Vec<Edit> {
+    let body_len = doc.trim_end_matches(['\n', '\r']).len();
+    let mut edits = vec![insert(0, head)];
+    edits.extend(inner);
+    edits.push(replace(body_len, doc.len() - body_len, tail));
+    edits
+}
+
+fn has_bare_pipe(doc: &str) -> bool {
+    let mut bytes = doc.bytes();
+    while let Some(b) = bytes.next() {
+        match b {
+            b'\\' => {
+                bytes.next();
+            }
+            b'|' => return true,
+            _ => {}
+        }
+    }
+    false
+}
+
+const HEADER_CELL: (&str, &str, &[usize]) = ("| ", " |\n| - |\n", &[0, 0, 0]);
+const BODY_CELL: (&str, &str, &[usize]) = ("| a |\n| - |\n| ", " |\n", &[0, 1, 0]);
 
 fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
     let source = Source::new(doc);
@@ -363,20 +400,19 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
             })
             .collect(),
         "insert-letter" => {
-            let bytes = doc.as_bytes();
-            let sites: Vec<usize> = (1..bytes.len())
-                .filter(|&i| {
-                    bytes[i - 1].is_ascii_alphanumeric() && bytes[i].is_ascii_alphanumeric()
-                })
-                .collect();
+            let sites = letter_sites(doc);
             let mut rng = Rng::with_seed(hash(doc));
             (0..sites.len().min(12))
                 .map(|_| {
-                    trial(
-                        vec![insert(sites[rng.usize(..sites.len())], "Q")],
-                        View::Whole,
-                        Normalise::InsertedLetter,
-                    )
+                    let site = sites[rng.usize(..sites.len())];
+                    Trial {
+                        inserted_at: Some(site),
+                        ..trial(
+                            vec![insert(site, "Q")],
+                            View::Whole,
+                            Normalise::InsertedLetter,
+                        )
+                    }
                 })
                 .collect()
         }
@@ -407,26 +443,44 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
         "table-header-cell" | "table-body-cell"
             if options.extension.table && is_single_line(doc) =>
         {
-            let body_len = doc.trim_end_matches(['\n', '\r']).len();
-            let (head, tail, path): (&str, &str, &'static [usize]) =
-                if family == "table-header-cell" {
-                    ("| ", " |\n| - |\n", &[0, 0, 0])
-                } else {
-                    ("| a |\n| - |\n| ", " |\n", &[0, 1, 0])
-                };
+            let (head, tail, path) = if family == "table-header-cell" {
+                HEADER_CELL
+            } else {
+                BODY_CELL
+            };
             vec![Trial {
                 old_view: View::Path(&[0]),
                 ..trial(
-                    vec![
-                        insert(0, head),
-                        replace(body_len, doc.len() - body_len, tail),
-                    ],
+                    table_cell_edits(doc, head, tail, None),
                     View::Path(path),
                     Normalise::Exact,
                 )
             }]
         }
-        "heading" | "table-header-cell" | "table-body-cell" => vec![],
+        "table-pipe" if options.extension.table && is_single_line(doc) && !has_bare_pipe(doc) => {
+            let sites = letter_sites(doc);
+            let mut rng = Rng::with_seed(hash(doc));
+            (0..sites.len().min(12))
+                .map(|attempt| {
+                    let site = sites[rng.usize(..sites.len())];
+                    let (head, tail, path) = if attempt % 2 == 0 {
+                        HEADER_CELL
+                    } else {
+                        BODY_CELL
+                    };
+                    Trial {
+                        old_view: View::Path(&[0]),
+                        inserted_at: Some(site),
+                        ..trial(
+                            table_cell_edits(doc, head, tail, Some(insert(site, "\\|"))),
+                            View::Path(path),
+                            Normalise::Pipe,
+                        )
+                    }
+                })
+                .collect()
+        }
+        "heading" | "table-header-cell" | "table-body-cell" | "table-pipe" => vec![],
         "option-toggle" => TOGGLES
             .iter()
             .map(|(_, apply_toggle)| {
@@ -462,7 +516,10 @@ fn same_tree(
     let (new_base, new_ids) = new_view;
     let nothing_outside_view = match trial.new_view {
         View::Path(path)
-            if !matches!(family, "table-header-cell" | "table-body-cell" | "heading") =>
+            if !matches!(
+                family,
+                "table-header-cell" | "table-body-cell" | "table-pipe" | "heading"
+            ) =>
         {
             new.len() == new_ids.len() + path.len() + 1
         }
@@ -540,8 +597,9 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
                 {
                     return;
                 }
-                if family == "insert-letter"
-                    && (trial.edits[0].offset == start || trial.edits[0].offset == end + 1)
+                if trial
+                    .inserted_at
+                    .is_some_and(|site| site == start || site == end + 1)
                 {
                     return;
                 }
