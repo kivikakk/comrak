@@ -2949,18 +2949,6 @@ where
             return;
         }
 
-        let mut symbol_spx = spx.clone();
-        symbol_spx.consume(symbol_range.start);
-        let symbol_start = symbol_spx.next_column().unwrap();
-        let symbol_end = symbol_spx.consume(symbol_range.end - symbol_range.start);
-        let symbol_sourcepos: Sourcepos = (
-            sourcepos.start.line,
-            symbol_start,
-            sourcepos.start.line,
-            symbol_end,
-        )
-            .into();
-
         let parent = node.parent().unwrap();
 
         if node_matches!(parent, NodeValue::TableCell) {
@@ -2978,6 +2966,7 @@ where
                 return;
             }
 
+            let symbol_sourcepos = spx.peek_sourcepos(sourcepos.start.line, symbol_range);
             strings::remove_from_start(text.to_mut(), end);
             parent.prepend(
                 self.arena.alloc(
@@ -3009,6 +2998,7 @@ where
             // These are sound only because the exact text that we've matched and
             // the count thereof (i.e. "end") will precisely map to characters in
             // the source document.
+            let symbol_sourcepos = spx.peek_sourcepos(sourcepos.start.line, symbol_range);
             strings::remove_from_start(text.to_mut(), end);
 
             let adjust = spx.consume(end) + 1;
@@ -3313,5 +3303,13 @@ impl Spx {
 
     pub(crate) fn next_column(&self) -> Option<usize> {
         self.items.get(self.front).map(|(sp, _)| sp.start.column)
+    }
+
+    fn peek_sourcepos(&self, line: usize, range: std::ops::Range<usize>) -> Sourcepos {
+        let mut spx = self.clone();
+        spx.consume(range.start);
+        let start = spx.next_column().unwrap();
+        let end = spx.consume(range.len());
+        (line, start, line, end).into()
     }
 }

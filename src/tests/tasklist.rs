@@ -592,6 +592,22 @@ fn tasklist_symbol_sourcepos_transformed() {
 }
 
 #[test]
+fn tasklist_marker_after_email_autolink_with_smart_punctuation() {
+    assert_ast_match!(
+        [extension.tasklist, extension.autolink, parse.smart],
+        "a@b.cd [ ] ''\n",
+        (document (1:1-1:13) [
+            (paragraph (1:1-1:13) [
+                (link (1:1-1:6) "mailto:a@b.cd" [
+                    (text (1:1-1:6) "a@b.cd")
+                ])
+                (text (1:7-1:13) " [ ] \u{2018}\u{2019}")
+            ])
+        ])
+    );
+}
+
+#[test]
 fn tasklist_symbol_sourcepos_relaxed() {
     let mut options = Options::default();
     options.extension.tasklist = true;
