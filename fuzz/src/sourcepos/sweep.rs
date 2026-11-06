@@ -311,6 +311,27 @@ fn conventions_are_not_findings() {
 }
 
 #[test]
+fn inline_footnote_docs_stay_comparable() {
+    let doc = "^[a]\n";
+    let options = options::named("ofm");
+    let recs = snapshot(doc, &options);
+    for family in [
+        "blockquote",
+        "blockquote-nested",
+        "bullet-item",
+        "ordered-item",
+        "blockquote-item",
+        "heading",
+        "table-header-cell",
+        "table-body-cell",
+        "table-preface",
+    ] {
+        let outcome = relations::run(family, doc, &options, &recs);
+        assert_eq!((outcome.tried, outcome.failed), (1, 0), "{family}");
+    }
+}
+
+#[test]
 fn checks_catch_corrupted_positions() {
     let doc = "para *emph* `code`\nmore\n\n- item\n";
     let options = options::named("cm");

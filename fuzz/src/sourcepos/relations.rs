@@ -136,37 +136,53 @@ enum View {
     LastParagraph,
 }
 
-fn view(recs: &[Rec], view: View) -> Option<(usize, Vec<usize>)> {
+fn subtree(recs: &[Rec], index: usize, base: usize) -> impl Iterator<Item = (usize, usize)> + '_ {
+    (index..subtree_end(recs, index)).map(move |i| (i, recs[i].depth - base))
+}
+
+fn with_root_definitions(
+    recs: &[Rec],
+    after: usize,
+    mut viewed: Vec<(usize, usize)>,
+) -> Vec<(usize, usize)> {
+    for kid in children(recs, 0) {
+        if kid > after && matches!(recs[kid].value, NodeValue::FootnoteDefinition(_)) {
+            viewed.extend(subtree(recs, kid, 0));
+        }
+    }
+    viewed
+}
+
+fn view(recs: &[Rec], view: View) -> Option<Vec<(usize, usize)>> {
     match view {
-        View::Whole => Some((0, (1..recs.len()).collect())),
+        View::Whole => Some(subtree(recs, 0, 0).skip(1).collect()),
         View::Path(path) => {
             let mut current = 0;
             for &index in path {
                 current = *children(recs, current).get(index)?;
             }
-            Some((
-                recs[current].depth,
-                (current + 1..subtree_end(recs, current)).collect(),
-            ))
+            let viewed = subtree(recs, current, recs[current].depth)
+                .skip(1)
+                .collect();
+            Some(with_root_definitions(recs, current, viewed))
         }
         View::DropFirst(count) => {
             let from = *children(recs, 0).get(count)?;
-            Some((0, (from..recs.len()).collect()))
+            Some((from..recs.len()).map(|i| (i, recs[i].depth)).collect())
         }
         View::DropLast(count) => {
             let kids = children(recs, 0);
             let keep = kids.len().checked_sub(count)?;
             let to = kids.get(keep).copied().unwrap_or(recs.len());
-            Some((0, (1..to).collect()))
+            Some((1..to).map(|i| (i, recs[i].depth)).collect())
         }
         View::LastParagraph => {
-            let current = recs
-                .iter()
-                .rposition(|rec| matches!(rec.value, NodeValue::Paragraph))?;
-            Some((
-                recs[current].depth,
-                (current..subtree_end(recs, current)).collect(),
-            ))
+            let current = (0..recs.len()).rev().find(|&i| {
+                matches!(recs[i].value, NodeValue::Paragraph)
+                    && !is_inline_footnote_paragraph(recs, i)
+            })?;
+            let viewed = subtree(recs, current, recs[current].depth).collect();
+            Some(with_root_definitions(recs, current, viewed))
         }
     }
 }
@@ -567,11 +583,9 @@ fn same_tree(
     trial: &Trial,
     old: &[Rec],
     new: &[Rec],
-    old_view: &(usize, Vec<usize>),
-    new_view: &(usize, Vec<usize>),
+    old_view: &[(usize, usize)],
+    new_view: &[(usize, usize)],
 ) -> bool {
-    let (old_base, old_ids) = old_view;
-    let (new_base, new_ids) = new_view;
     let nothing_outside_view = match trial.new_view {
         View::Path(path)
             if !matches!(
@@ -579,21 +593,24 @@ fn same_tree(
                 "table-header-cell" | "table-body-cell" | "table-pipe" | "heading"
             ) =>
         {
-            new.len() == new_ids.len() + path.len() + 1
+            new.len() == new_view.len() + path.len() + 1
         }
         _ => true,
     };
     nothing_outside_view
-        && old_ids.len() == new_ids.len()
-        && old_ids.iter().zip(new_ids).all(|(&a, &b)| {
-            let (x, y) = (&old[a], &new[b]);
-            x.kind == y.kind
-                && x.depth - old_base == y.depth - new_base
-                && normalised(trial.normalise, &x.fingerprint)
-                    == normalised(trial.normalise, &y.fingerprint)
-                && (!trial.same_lines
-                    || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
-        })
+        && old_view.len() == new_view.len()
+        && old_view
+            .iter()
+            .zip(new_view)
+            .all(|(&(a, a_depth), &(b, b_depth))| {
+                let (x, y) = (&old[a], &new[b]);
+                x.kind == y.kind
+                    && a_depth == b_depth
+                    && normalised(trial.normalise, &x.fingerprint)
+                        == normalised(trial.normalise, &y.fingerprint)
+                    && (!trial.same_lines
+                        || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
+            })
 }
 
 fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
@@ -635,7 +652,7 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
             outcome.failed += 1;
             continue;
         }
-        for (&a, &b) in old_view.1.iter().zip(&new_view.1) {
+        for (&(a, _), &(b, _)) in old_view.iter().zip(&new_view) {
             if is_exempt(family, old, a) {
                 continue;
             }
