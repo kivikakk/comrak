@@ -2949,10 +2949,15 @@ where
             return;
         }
 
+        let mut symbol_spx = spx.clone();
+        symbol_spx.consume(symbol_range.start);
+        let symbol_start = symbol_spx.next_column().unwrap();
+        let symbol_end = symbol_spx.consume(symbol_range.end - symbol_range.start);
         let symbol_sourcepos: Sourcepos = (
-            sourcepos.start.column_add(symbol_range.start as isize),
-            // `- 1`: symbol_range is end-exclusive, but sourcepos are inclusive.
-            sourcepos.start.column_add(symbol_range.end as isize - 1),
+            sourcepos.start.line,
+            symbol_start,
+            sourcepos.start.line,
+            symbol_end,
         )
             .into();
 
@@ -3247,6 +3252,7 @@ pub enum AutolinkType {
     Email,
 }
 
+#[derive(Clone)]
 pub(crate) struct Spx {
     items: SmallVec<[(Sourcepos, usize); 4]>,
     front: usize,

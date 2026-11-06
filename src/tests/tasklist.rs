@@ -562,6 +562,36 @@ fn tasklist_symbol_sourcepos() {
 }
 
 #[test]
+fn tasklist_symbol_sourcepos_transformed() {
+    let mut options = Options::default();
+    options.extension.tasklist = true;
+    options.parse.relaxed_tasklist_matching = true;
+    options.parse.smart = true;
+
+    let arena = Arena::new();
+    let md = "- [\"] a\n- [&amp;] b\n- [&#x3042;] c\n";
+    let root = parse_document(&arena, md, &options);
+
+    let sourceposes = root
+        .descendants()
+        .filter_map(|n| {
+            let NodeValue::TaskItem(ref nti) = n.data().value else {
+                return None;
+            };
+            Some(nti.symbol_sourcepos)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sourceposes,
+        vec![
+            (1, 4, 1, 4).into(),
+            (2, 4, 2, 8).into(),
+            (3, 4, 3, 11).into()
+        ]
+    );
+}
+
+#[test]
 fn tasklist_symbol_sourcepos_relaxed() {
     let mut options = Options::default();
     options.extension.tasklist = true;
