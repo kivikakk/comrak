@@ -265,3 +265,93 @@ fn document_end_with_only_front_matter() {
         ])
     );
 }
+
+#[test]
+fn closer_at_eof_after_line_starting_with_delimiter() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\nkey: a\n---extra\n---",
+        (document (1:1-4:3) [
+            (frontmatter (1:1-4:3) "---\nkey: a\n---extra\n---")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\nkey: a\n---x\nbody\n---",
+        (document (1:1-5:3) [
+            (frontmatter (1:1-5:3) "---\nkey: a\n---x\nbody\n---")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\nkey: a\n---x\n---y\n---",
+        (document (1:1-5:3) [
+            (frontmatter (1:1-5:3) "---\nkey: a\n---x\n---y\n---")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\r\nkey: a\r\n---extra\r\n---",
+        (document (1:1-4:3) [
+            (frontmatter (1:1-4:3) "---\r\nkey: a\r\n---extra\r\n---")
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\na\n--- \n---",
+        (document (1:1-4:3) [
+            (frontmatter (1:1-4:3) "---\na\n--- \n---")
+        ])
+    );
+}
+
+#[test]
+fn earliest_closer_taken_across_line_endings() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\na\n---\nbody\n\n---\r\nrest",
+        (document (1:1-7:4) [
+            (frontmatter (1:1-3:3) "---\na\n---\n")
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "body")
+            ])
+            (thematic_break (6:1-6:3))
+            (paragraph (7:1-7:4) [
+                (text (7:1-7:4) "rest")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\r\na\r\n---\nbody\r\n\r\n---\r\nrest",
+        (document (1:1-7:4) [
+            (frontmatter (1:1-3:3) "---\r\na\r\n---\n")
+            (paragraph (4:1-4:4) [
+                (text (4:1-4:4) "body")
+            ])
+            (thematic_break (6:1-6:3))
+            (paragraph (7:1-7:4) [
+                (text (7:1-7:4) "rest")
+            ])
+        ])
+    );
+}
+
+#[test]
+fn line_starting_with_delimiter_without_closer_is_not_front_matter() {
+    assert_ast_match!(
+        [extension.front_matter_delimiter = Some("---".to_owned())],
+        "---\n\n---x\n",
+        (document (1:1-3:4) [
+            (thematic_break (1:1-1:3))
+            (paragraph (3:1-3:4) [
+                (text (3:1-3:4) "---x")
+            ])
+        ])
+    );
+}

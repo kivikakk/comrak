@@ -385,36 +385,34 @@ pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'
         return None;
     }
 
-    start += match s[start..]
-        .find(&("\n".to_string() + delimiter + "\r\n"))
-        .or_else(|| s[start..].find(&("\n".to_string() + delimiter + "\n")))
-        .or_else(|| s[start..].find(&("\n".to_string() + delimiter))) // delimiter followed by EOF
-    {
-        Some(n) => n + 1 + delimiter.len(),
-        None => return None,
-    };
+    let closer = "\n".to_string() + delimiter;
+    s[start..]
+        .match_indices(&closer)
+        .find_map(|(n, _)| split_after_front_matter_closer(s, start + n + closer.len()))
+}
 
-    if start == s.len() {
+fn split_after_front_matter_closer(s: &str, mut end: usize) -> Option<(&str, &str)> {
+    if end == s.len() {
         return Some((s, ""));
     }
 
-    start += if s[start..].starts_with('\n') {
+    end += if s[end..].starts_with('\n') {
         1
-    } else if s[start..].starts_with("\r\n") {
+    } else if s[end..].starts_with("\r\n") {
         2
     } else {
         return None;
     };
 
-    start += if s[start..].starts_with('\n') {
+    end += if s[end..].starts_with('\n') {
         1
-    } else if s[start..].starts_with("\r\n") {
+    } else if s[end..].starts_with("\r\n") {
         2
     } else {
         0
     };
 
-    Some((&s[..start], &s[start..]))
+    Some((&s[..end], &s[end..]))
 }
 
 pub fn trim_start_match<'s>(s: &'s str, pat: &str) -> &'s str {
