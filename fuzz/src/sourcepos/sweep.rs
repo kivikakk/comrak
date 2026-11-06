@@ -304,8 +304,30 @@ fn conventions_are_not_findings() {
         "![ \na]()\n",
         "- [x]\t\n  a\n",
         "| a |\n| - |\n|||\\|r||\n",
+        "jjj|",
     ] {
         super::assert_clean(doc);
+    }
+}
+
+#[test]
+fn inline_footnote_docs_stay_comparable() {
+    let doc = "^[a]\n";
+    let options = options::named("ofm");
+    let recs = snapshot(doc, &options);
+    for family in [
+        "blockquote",
+        "blockquote-nested",
+        "bullet-item",
+        "ordered-item",
+        "blockquote-item",
+        "heading",
+        "table-header-cell",
+        "table-body-cell",
+        "table-preface",
+    ] {
+        let outcome = relations::run(family, doc, &options, &recs);
+        assert_eq!((outcome.tried, outcome.failed), (1, 0), "{family}");
     }
 }
 

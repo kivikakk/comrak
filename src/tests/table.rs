@@ -941,6 +941,29 @@ fn escaped_pipe_sourcepos_in_preface_paragraph() {
 }
 
 #[test]
+fn escaped_pipe_sourcepos_at_inline_footnote_start() {
+    assert_ast_match!(
+        [extension.table, extension.footnotes, extension.inline_footnotes],
+        "| ^[\\|a] |\n"
+        "| - |\n",
+        (document (1:1-2:5) [
+            (table (1:1-2:5) [
+                (table_row (1:1-1:10) [
+                    (table_cell (1:2-1:9) [
+                        (footnote_reference (1:3-1:8))
+                    ])
+                ])
+            ])
+            (footnote_definition (1:3-1:8) [
+                (paragraph (1:5-1:7) [
+                    (text (1:6-1:7) "|a")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
 fn escaped_pipe_sourcepos_before_inline_footnote() {
     assert_ast_match!(
         [extension.table, extension.footnotes, extension.inline_footnotes],

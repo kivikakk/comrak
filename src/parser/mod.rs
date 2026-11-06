@@ -2307,6 +2307,7 @@ where
         let lines = ast.lines_mut();
         let content = &mut lines.content;
         let mut pos = 0;
+        let mut indent = 0;
         let mut rrs = vec![];
 
         let bytes = content.as_bytes();
@@ -2317,6 +2318,11 @@ where
             if let Some((offset, rr)) = self.parse_reference_inline(&content[pos..]) {
                 pos += offset;
                 rrs.extend(rr);
+                indent = bytes[pos..]
+                    .iter()
+                    .take_while(|&&b| b == b' ' || b == b'\t')
+                    .count();
+                pos += indent;
             } else {
                 break;
             }
@@ -2336,8 +2342,11 @@ where
         lines.offsets.drain(..consumed_lines);
         let column = lines
             .offsets
-            .first()
-            .copied()
+            .first_mut()
+            .map(|offset| {
+                *offset += indent;
+                *offset
+            })
             .unwrap_or(self.first_nonspace);
         ast.sourcepos.start = (start_line + consumed_lines, column + 1).into();
         has_content
@@ -2940,13 +2949,6 @@ where
             return;
         }
 
-        let symbol_sourcepos: Sourcepos = (
-            sourcepos.start.column_add(symbol_range.start as isize),
-            // `- 1`: symbol_range is end-exclusive, but sourcepos are inclusive.
-            sourcepos.start.column_add(symbol_range.end as isize - 1),
-        )
-            .into();
-
         let parent = node.parent().unwrap();
 
         if node_matches!(parent, NodeValue::TableCell) {
@@ -2964,6 +2966,7 @@ where
                 return;
             }
 
+            let symbol_sourcepos = spx.peek_sourcepos(sourcepos.start.line, symbol_range);
             strings::remove_from_start(text.to_mut(), end);
             parent.prepend(
                 self.arena.alloc(
@@ -2995,6 +2998,7 @@ where
             // These are sound only because the exact text that we've matched and
             // the count thereof (i.e. "end") will precisely map to characters in
             // the source document.
+            let symbol_sourcepos = spx.peek_sourcepos(sourcepos.start.line, symbol_range);
             strings::remove_from_start(text.to_mut(), end);
 
             let adjust = spx.consume(end) + 1;
@@ -3238,6 +3242,7 @@ pub enum AutolinkType {
     Email,
 }
 
+#[derive(Clone)]
 pub(crate) struct Spx {
     items: SmallVec<[(Sourcepos, usize); 4]>,
     front: usize,
@@ -3298,5 +3303,13 @@ impl Spx {
 
     pub(crate) fn next_column(&self) -> Option<usize> {
         self.items.get(self.front).map(|(sp, _)| sp.start.column)
+    }
+
+    fn peek_sourcepos(&self, line: usize, range: std::ops::Range<usize>) -> Sourcepos {
+        let mut spx = self.clone();
+        spx.consume(range.start);
+        let start = spx.next_column().unwrap();
+        let end = spx.consume(range.len());
+        (line, start, line, end).into()
     }
 }

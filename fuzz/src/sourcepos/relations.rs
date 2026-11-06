@@ -32,6 +32,8 @@ pub const FAMILIES: &[&str] = &[
     "heading",
     "table-header-cell",
     "table-body-cell",
+    "table-pipe",
+    "table-preface",
     "option-toggle",
 ];
 
@@ -106,6 +108,7 @@ enum Normalise {
     InsertedLetter,
     Multibyte,
     Nul,
+    Pipe,
 }
 
 fn normalised(how: Normalise, fingerprint: &str) -> String {
@@ -120,6 +123,7 @@ fn normalised(how: Normalise, fingerprint: &str) -> String {
         Normalise::InsertedLetter => fingerprint.replace('Q', ""),
         Normalise::Multibyte => fingerprint.replace('é', "e").replace('好', "a"),
         Normalise::Nul => fingerprint.replace('\u{fffd}', "x"),
+        Normalise::Pipe => fingerprint.replace('|', ""),
     }
 }
 
@@ -129,30 +133,56 @@ enum View {
     Path(&'static [usize]),
     DropFirst(usize),
     DropLast(usize),
+    LastParagraph,
 }
 
-fn view(recs: &[Rec], view: View) -> Option<(usize, Vec<usize>)> {
+fn subtree(recs: &[Rec], index: usize, base: usize) -> impl Iterator<Item = (usize, usize)> + '_ {
+    (index..subtree_end(recs, index)).map(move |i| (i, recs[i].depth - base))
+}
+
+fn with_root_definitions(
+    recs: &[Rec],
+    after: usize,
+    mut viewed: Vec<(usize, usize)>,
+) -> Vec<(usize, usize)> {
+    for kid in children(recs, 0) {
+        if kid > after && matches!(recs[kid].value, NodeValue::FootnoteDefinition(_)) {
+            viewed.extend(subtree(recs, kid, 0));
+        }
+    }
+    viewed
+}
+
+fn view(recs: &[Rec], view: View) -> Option<Vec<(usize, usize)>> {
     match view {
-        View::Whole => Some((0, (1..recs.len()).collect())),
+        View::Whole => Some(subtree(recs, 0, 0).skip(1).collect()),
         View::Path(path) => {
             let mut current = 0;
             for &index in path {
                 current = *children(recs, current).get(index)?;
             }
-            Some((
-                recs[current].depth,
-                (current + 1..subtree_end(recs, current)).collect(),
-            ))
+            let viewed = subtree(recs, current, recs[current].depth)
+                .skip(1)
+                .collect();
+            Some(with_root_definitions(recs, current, viewed))
         }
         View::DropFirst(count) => {
             let from = *children(recs, 0).get(count)?;
-            Some((0, (from..recs.len()).collect()))
+            Some((from..recs.len()).map(|i| (i, recs[i].depth)).collect())
         }
         View::DropLast(count) => {
             let kids = children(recs, 0);
             let keep = kids.len().checked_sub(count)?;
             let to = kids.get(keep).copied().unwrap_or(recs.len());
-            Some((0, (1..to).collect()))
+            Some((1..to).map(|i| (i, recs[i].depth)).collect())
+        }
+        View::LastParagraph => {
+            let current = (0..recs.len()).rev().find(|&i| {
+                matches!(recs[i].value, NodeValue::Paragraph)
+                    && !is_inline_footnote_paragraph(recs, i)
+            })?;
+            let viewed = subtree(recs, current, recs[current].depth).collect();
+            Some(with_root_definitions(recs, current, viewed))
         }
     }
 }
@@ -164,6 +194,7 @@ struct Trial {
     normalise: Normalise,
     options: Option<Options<'static>>,
     same_lines: bool,
+    inserted_at: Option<usize>,
 }
 
 fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
@@ -174,6 +205,7 @@ fn trial(edits: Vec<Edit>, new_view: View, normalise: Normalise) -> Trial {
         normalise,
         options: None,
         same_lines: false,
+        inserted_at: None,
     }
 }
 
@@ -259,6 +291,64 @@ fn is_single_line(doc: &str) -> bool {
         && !doc.starts_with([' ', '\t'])
         && !doc.trim_end_matches(['\n', '\r']).contains(['\n', '\r'])
 }
+
+fn letter_sites(doc: &str) -> Vec<usize> {
+    let bytes = doc.as_bytes();
+    (1..bytes.len())
+        .filter(|&i| bytes[i - 1].is_ascii_alphanumeric() && bytes[i].is_ascii_alphanumeric())
+        .collect()
+}
+
+fn table_cell_edits(doc: &str, head: &str, tail: &str, inner: Option<Edit>) -> Vec<Edit> {
+    let body_len = doc.trim_end_matches(['\n', '\r']).len();
+    let mut edits = vec![insert(0, head)];
+    edits.extend(inner);
+    edits.push(replace(body_len, doc.len() - body_len, tail));
+    edits
+}
+
+fn continuation_prefix(line: &[u8]) -> String {
+    let mut prefix = String::new();
+    let mut rest = line;
+    loop {
+        let digits = rest.iter().take_while(|b| b.is_ascii_digit()).count();
+        let marker = match rest {
+            [b'>', ..] | [b' ' | b'\t', ..] => 1,
+            [b'-' | b'+' | b'*', b' ' | b'\t', ..] => 1,
+            _ if digits > 0
+                && matches!(rest.get(digits), Some(b'.' | b')'))
+                && matches!(rest.get(digits + 1), Some(b' ' | b'\t')) =>
+            {
+                digits + 1
+            }
+            _ => return prefix,
+        };
+        for &b in &rest[..marker] {
+            prefix.push(match b {
+                b'>' | b'\t' => b as char,
+                _ => ' ',
+            });
+        }
+        rest = &rest[marker..];
+    }
+}
+
+fn has_bare_pipe(doc: &str) -> bool {
+    let mut bytes = doc.bytes();
+    while let Some(b) = bytes.next() {
+        match b {
+            b'\\' => {
+                bytes.next();
+            }
+            b'|' => return true,
+            _ => {}
+        }
+    }
+    false
+}
+
+const HEADER_CELL: (&str, &str, &[usize]) = ("| ", " |\n| - |\n", &[0, 0, 0]);
+const BODY_CELL: (&str, &str, &[usize]) = ("| a |\n| - |\n| ", " |\n", &[0, 1, 0]);
 
 fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
     let source = Source::new(doc);
@@ -363,20 +453,19 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
             })
             .collect(),
         "insert-letter" => {
-            let bytes = doc.as_bytes();
-            let sites: Vec<usize> = (1..bytes.len())
-                .filter(|&i| {
-                    bytes[i - 1].is_ascii_alphanumeric() && bytes[i].is_ascii_alphanumeric()
-                })
-                .collect();
+            let sites = letter_sites(doc);
             let mut rng = Rng::with_seed(hash(doc));
             (0..sites.len().min(12))
                 .map(|_| {
-                    trial(
-                        vec![insert(sites[rng.usize(..sites.len())], "Q")],
-                        View::Whole,
-                        Normalise::InsertedLetter,
-                    )
+                    let site = sites[rng.usize(..sites.len())];
+                    Trial {
+                        inserted_at: Some(site),
+                        ..trial(
+                            vec![insert(site, "Q")],
+                            View::Whole,
+                            Normalise::InsertedLetter,
+                        )
+                    }
                 })
                 .collect()
         }
@@ -407,26 +496,65 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
         "table-header-cell" | "table-body-cell"
             if options.extension.table && is_single_line(doc) =>
         {
-            let body_len = doc.trim_end_matches(['\n', '\r']).len();
-            let (head, tail, path): (&str, &str, &'static [usize]) =
-                if family == "table-header-cell" {
-                    ("| ", " |\n| - |\n", &[0, 0, 0])
-                } else {
-                    ("| a |\n| - |\n| ", " |\n", &[0, 1, 0])
-                };
+            let (head, tail, path) = if family == "table-header-cell" {
+                HEADER_CELL
+            } else {
+                BODY_CELL
+            };
             vec![Trial {
                 old_view: View::Path(&[0]),
                 ..trial(
-                    vec![
-                        insert(0, head),
-                        replace(body_len, doc.len() - body_len, tail),
-                    ],
+                    table_cell_edits(doc, head, tail, None),
                     View::Path(path),
                     Normalise::Exact,
                 )
             }]
         }
-        "heading" | "table-header-cell" | "table-body-cell" => vec![],
+        "table-pipe" if options.extension.table && is_single_line(doc) && !has_bare_pipe(doc) => {
+            let sites = letter_sites(doc);
+            let mut rng = Rng::with_seed(hash(doc));
+            (0..sites.len().min(12))
+                .map(|attempt| {
+                    let site = sites[rng.usize(..sites.len())];
+                    let (head, tail, path) = if attempt % 2 == 0 {
+                        HEADER_CELL
+                    } else {
+                        BODY_CELL
+                    };
+                    Trial {
+                        old_view: View::Path(&[0]),
+                        inserted_at: Some(site),
+                        ..trial(
+                            table_cell_edits(doc, head, tail, Some(insert(site, "\\|"))),
+                            View::Path(path),
+                            Normalise::Pipe,
+                        )
+                    }
+                })
+                .collect()
+        }
+        "table-preface" if options.extension.table => {
+            let prefix = continuation_prefix(source.line_content(source.line_count() - 1));
+            let eol = if doc.ends_with(['\n', '\r']) {
+                ""
+            } else {
+                "\n"
+            };
+            vec![Trial {
+                old_view: View::LastParagraph,
+                ..trial(
+                    vec![insert(
+                        doc.len(),
+                        &format!("{eol}{prefix}| a |\n{prefix}| - |\n"),
+                    )],
+                    View::LastParagraph,
+                    Normalise::Exact,
+                )
+            }]
+        }
+        "heading" | "table-header-cell" | "table-body-cell" | "table-pipe" | "table-preface" => {
+            vec![]
+        }
         "option-toggle" => TOGGLES
             .iter()
             .map(|(_, apply_toggle)| {
@@ -455,30 +583,34 @@ fn same_tree(
     trial: &Trial,
     old: &[Rec],
     new: &[Rec],
-    old_view: &(usize, Vec<usize>),
-    new_view: &(usize, Vec<usize>),
+    old_view: &[(usize, usize)],
+    new_view: &[(usize, usize)],
 ) -> bool {
-    let (old_base, old_ids) = old_view;
-    let (new_base, new_ids) = new_view;
     let nothing_outside_view = match trial.new_view {
         View::Path(path)
-            if !matches!(family, "table-header-cell" | "table-body-cell" | "heading") =>
+            if !matches!(
+                family,
+                "table-header-cell" | "table-body-cell" | "table-pipe" | "heading"
+            ) =>
         {
-            new.len() == new_ids.len() + path.len() + 1
+            new.len() == new_view.len() + path.len() + 1
         }
         _ => true,
     };
     nothing_outside_view
-        && old_ids.len() == new_ids.len()
-        && old_ids.iter().zip(new_ids).all(|(&a, &b)| {
-            let (x, y) = (&old[a], &new[b]);
-            x.kind == y.kind
-                && x.depth - old_base == y.depth - new_base
-                && normalised(trial.normalise, &x.fingerprint)
-                    == normalised(trial.normalise, &y.fingerprint)
-                && (!trial.same_lines
-                    || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
-        })
+        && old_view.len() == new_view.len()
+        && old_view
+            .iter()
+            .zip(new_view)
+            .all(|(&(a, a_depth), &(b, b_depth))| {
+                let (x, y) = (&old[a], &new[b]);
+                x.kind == y.kind
+                    && a_depth == b_depth
+                    && normalised(trial.normalise, &x.fingerprint)
+                        == normalised(trial.normalise, &y.fingerprint)
+                    && (!trial.same_lines
+                        || (x.sp.start.line == y.sp.start.line && x.sp.end.line == y.sp.end.line))
+            })
 }
 
 fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
@@ -520,7 +652,7 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
             outcome.failed += 1;
             continue;
         }
-        for (&a, &b) in old_view.1.iter().zip(&new_view.1) {
+        for (&(a, _), &(b, _)) in old_view.iter().zip(&new_view) {
             if is_exempt(family, old, a) {
                 continue;
             }
@@ -540,8 +672,9 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
                 {
                     return;
                 }
-                if family == "insert-letter"
-                    && (trial.edits[0].offset == start || trial.edits[0].offset == end + 1)
+                if trial
+                    .inserted_at
+                    .is_some_and(|site| site == start || site == end + 1)
                 {
                     return;
                 }

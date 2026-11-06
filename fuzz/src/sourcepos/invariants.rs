@@ -391,7 +391,10 @@ pub fn kind(recs: &[Rec], source: &Source) -> Vec<Finding> {
         if let (Some(symbol_sp), NodeValue::TaskItem(item)) = (rec.symbol_sp, &rec.value) {
             let mut buf = [0; 4];
             let symbol = item.symbol.unwrap().encode_utf8(&mut buf).as_bytes();
-            if source.slice(symbol_sp) != Some(symbol) {
+            if !source
+                .slice(symbol_sp)
+                .is_some_and(|slice| text_matches(slice, symbol, &mut 20000))
+            {
                 out.push(Finding::new(
                     "kind",
                     &rec.kind,

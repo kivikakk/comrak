@@ -2290,3 +2290,70 @@ fn sourcepos_unclosed_directive_with_partially_consumed_tab() {
         ])
     );
 }
+
+#[test]
+fn table_header_after_unclosed_directive_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex, extension.table],
+        "a<%\n"
+        " b|\n"
+        "-|\n",
+        (document (1:1-3:2) [
+            (paragraph (1:1-1:3) [
+                (text (1:1-1:3) "a<%")
+            ])
+            (table (2:2-3:2) [
+                (table_row (2:2-2:3) [
+                    (table_cell (2:2-2:2) [
+                        (text (2:2-2:2) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.phoenix_heex, extension.table],
+        "a<%\n"
+        " | b |\n"
+        "| - |\n",
+        (document (1:1-3:5) [
+            (paragraph (1:1-1:3) [
+                (text (1:1-1:3) "a<%")
+            ])
+            (table (2:2-3:5) [
+                (table_row (2:2-2:6) [
+                    (table_cell (2:3-2:5) [
+                        (text (2:4-2:4) "b")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn paragraph_after_reference_with_unclosed_directive_sourcepos() {
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "[a<%]: /u\n"
+        " b\n",
+        (document (1:1-2:2) [
+            (paragraph (2:2-2:2) [
+                (text (2:2-2:2) "b")
+            ])
+        ])
+    );
+
+    assert_ast_match!(
+        [extension.phoenix_heex],
+        "[a<%]: /u\n"
+        " [b]: /v\n"
+        " c\n",
+        (document (1:1-3:2) [
+            (paragraph (3:2-3:2) [
+                (text (3:2-3:2) "c")
+            ])
+        ])
+    );
+}

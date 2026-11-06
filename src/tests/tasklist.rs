@@ -562,6 +562,52 @@ fn tasklist_symbol_sourcepos() {
 }
 
 #[test]
+fn tasklist_symbol_sourcepos_transformed() {
+    let mut options = Options::default();
+    options.extension.tasklist = true;
+    options.parse.relaxed_tasklist_matching = true;
+    options.parse.smart = true;
+
+    let arena = Arena::new();
+    let md = "- [\"] a\n- [&amp;] b\n- [&#x3042;] c\n";
+    let root = parse_document(&arena, md, &options);
+
+    let sourceposes = root
+        .descendants()
+        .filter_map(|n| {
+            let NodeValue::TaskItem(ref nti) = n.data().value else {
+                return None;
+            };
+            Some(nti.symbol_sourcepos)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sourceposes,
+        vec![
+            (1, 4, 1, 4).into(),
+            (2, 4, 2, 8).into(),
+            (3, 4, 3, 11).into()
+        ]
+    );
+}
+
+#[test]
+fn tasklist_marker_after_email_autolink_with_smart_punctuation() {
+    assert_ast_match!(
+        [extension.tasklist, extension.autolink, parse.smart],
+        "a@b.cd [ ] ''\n",
+        (document (1:1-1:13) [
+            (paragraph (1:1-1:13) [
+                (link (1:1-1:6) "mailto:a@b.cd" [
+                    (text (1:1-1:6) "a@b.cd")
+                ])
+                (text (1:7-1:13) " [ ] \u{2018}\u{2019}")
+            ])
+        ])
+    );
+}
+
+#[test]
 fn tasklist_symbol_sourcepos_relaxed() {
     let mut options = Options::default();
     options.extension.tasklist = true;

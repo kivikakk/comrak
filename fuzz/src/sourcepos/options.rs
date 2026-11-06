@@ -1,4 +1,5 @@
 use comrak::Options;
+use fastrand::Rng;
 
 type Toggle = (&'static str, fn(&mut Options<'static>));
 
@@ -166,20 +167,35 @@ pub const COMPOSITES: &[(&str, &[&str])] = &[
     ),
 ];
 
+fn with_toggles(toggles: &[&str]) -> Options<'static> {
+    let mut options = Options::default();
+    for toggle in toggles {
+        let (_, apply) = TOGGLES
+            .iter()
+            .find(|(candidate, _)| candidate == toggle)
+            .unwrap();
+        apply(&mut options);
+    }
+    options
+}
+
 pub fn named(name: &str) -> Options<'static> {
     let toggles = COMPOSITES
         .iter()
         .find(|(composite, _)| *composite == name)
         .map_or(vec![name], |(_, toggles)| toggles.to_vec());
-    let mut options = Options::default();
-    for toggle in toggles {
-        let (_, apply) = TOGGLES
-            .iter()
-            .find(|(candidate, _)| *candidate == toggle)
-            .unwrap();
-        apply(&mut options);
-    }
-    options
+    with_toggles(&toggles)
+}
+
+pub fn subset(seed: u64) -> (Vec<&'static str>, Options<'static>) {
+    let mut rng = Rng::with_seed(seed);
+    let toggles: Vec<&'static str> = TOGGLES
+        .iter()
+        .map(|(name, _)| *name)
+        .filter(|_| rng.u8(..4) == 0)
+        .collect();
+    let options = with_toggles(&toggles);
+    (toggles, options)
 }
 
 pub fn composite_names() -> Vec<&'static str> {

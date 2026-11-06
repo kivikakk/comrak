@@ -6,6 +6,13 @@ src/scanners.rs: src/scanners.re
 	re2rust -W -Werror -i --no-generation-date -o $@ $<
 	cargo fmt
 
+FUZZ_JOBS:=6
+FUZZ_ARGS:=
+
+fuzz-sourcepos:
+	cd ${ROOT}/fuzz && \
+	cargo fuzz run -j${FUZZ_JOBS} --sanitizer none sourcepos -- -dict=${ROOT}/fuzz/sourcepos.dict ${FUZZ_ARGS}
+
 bench:
 	cargo build --release
 	(cd vendor/cmark-gfm/; make bench PROG=../../target/release/comrak)
