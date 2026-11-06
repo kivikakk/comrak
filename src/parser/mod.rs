@@ -251,6 +251,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     refmap: RefMap,
     inline_tables: inlines::ByteTables,
     footnote_defs: inlines::FootnoteDefs<'a>,
+    escaped_pipes: Vec<table::EscapedPipes<'a>>,
     root: Node<'a>,
     current: Node<'a>,
     last_matched_container: Node<'a>,
@@ -309,6 +310,7 @@ where
             refmap: RefMap::new(),
             inline_tables: inlines::ByteTables::new(options),
             footnote_defs: inlines::FootnoteDefs::new(),
+            escaped_pipes: vec![],
             root,
             current: root,
             last_matched_container: root,
@@ -2289,6 +2291,10 @@ where
             self.cancellation.check()?;
         }
 
+        for escaped_pipes in mem::take(&mut self.escaped_pipes) {
+            escaped_pipes.restore(self.arena);
+        }
+
         Ok(())
     }
 
@@ -2574,17 +2580,14 @@ where
         }
 
         if !escaped_pipes.is_empty() {
-            let nodes = node
-                .descendants()
-                .skip(1)
-                .chain(
-                    self.footnote_defs
-                        .added_since(footnote_defs_before)
-                        .iter()
-                        .flat_map(|def| def.descendants()),
-                )
-                .collect();
-            table::restore_escaped_pipes(self.arena, nodes, &escaped_pipes);
+            self.escaped_pipes.push(table::EscapedPipes {
+                block: node,
+                footnote_defs: self
+                    .footnote_defs
+                    .added_since(footnote_defs_before)
+                    .to_vec(),
+                positions: escaped_pipes,
+            });
         }
     }
 
@@ -3002,7 +3005,7 @@ where
             if sourcepos.end.column < adjust && node.next_sibling().is_none() {
                 parent.detach();
             } else {
-                sourcepos.start.column = adjust;
+                sourcepos.start.column = spx.next_column().unwrap_or(adjust);
                 parent.data_mut().sourcepos.start.column = adjust;
             }
 
@@ -3291,5 +3294,9 @@ impl Spx {
                 }
             }
         }
+    }
+
+    pub(crate) fn next_column(&self) -> Option<usize> {
+        self.items.get(self.front).map(|(sp, _)| sp.start.column)
     }
 }

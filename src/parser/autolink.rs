@@ -38,6 +38,7 @@ pub(crate) fn process_email_autolinks<'a>(
         }
         let initial_end_col = current_sourcepos.end.column;
         current_sourcepos.end.column = spx.consume(before_len);
+        let nsp_start_col = spx.next_column().unwrap();
         let nsp_end_col = spx.consume(skip);
 
         let before = &original[offset..offset + before_len];
@@ -57,7 +58,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
         let nsp: Sourcepos = (
             current_sourcepos.end.line,
-            current_sourcepos.end.column + 1,
+            nsp_start_col,
             current_sourcepos.end.line,
             nsp_end_col,
         )
@@ -74,7 +75,7 @@ pub(crate) fn process_email_autolinks<'a>(
 
         let after_sourcepos: Sourcepos = (
             current_sourcepos.end.line,
-            nsp.end.column + 1,
+            spx.next_column().unwrap(),
             current_sourcepos.end.line,
             initial_end_col,
         )

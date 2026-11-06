@@ -296,6 +296,20 @@ fn sweep() {
 }
 
 #[test]
+fn conventions_are_not_findings() {
+    for doc in [
+        "^[\t\n;\n\0]\n",
+        "*\n\t[a]: b\n",
+        "[\t\na]()\n",
+        "![ \na]()\n",
+        "- [x]\t\n  a\n",
+        "| a |\n| - |\n|||\\|r||\n",
+    ] {
+        super::assert_clean(doc);
+    }
+}
+
+#[test]
 fn checks_catch_corrupted_positions() {
     let doc = "para *emph* `code`\nmore\n\n- item\n";
     let options = options::named("cm");

@@ -405,42 +405,56 @@ fn escaped_pipe_positions(
         .collect()
 }
 
-pub(crate) fn restore_escaped_pipes<'a>(
-    arena: &'a Arena<'a>,
-    nodes: Vec<Node<'a>>,
-    escaped_pipes: &[LineColumn],
-) {
-    let restore = |position: LineColumn| {
-        let preceding = escaped_pipes
-            .iter()
-            .filter(|escaped| escaped.line == position.line && escaped.column <= position.column)
-            .count();
-        position.column_add(preceding as isize)
-    };
+pub(crate) struct EscapedPipes<'a> {
+    pub(crate) block: Node<'a>,
+    pub(crate) footnote_defs: Vec<Node<'a>>,
+    pub(crate) positions: Vec<LineColumn>,
+}
 
-    for node in nodes {
-        let mut ast = node.data_mut();
-        let Sourcepos { start, end: last } = ast.sourcepos;
-        let mut end = last;
-        if let NodeValue::Text(ref mut text) = ast.value
-            && start.line == last.line
-            && text.len() == last.column - start.column + 1
-        {
-            for escaped in escaped_pipes.iter().rev().filter(|escaped| {
-                escaped.line == start.line
-                    && start.column < escaped.column
-                    && escaped.column <= last.column
-            }) {
-                let tail = text.to_mut().split_off(escaped.column - start.column);
-                node.insert_after(make_inline(
-                    arena,
-                    NodeValue::Text(tail.into()),
-                    (restore(*escaped), restore(end)).into(),
-                ));
-                end = escaped.column_add(-1);
+impl<'a> EscapedPipes<'a> {
+    pub(crate) fn restore(self, arena: &'a Arena<'a>) {
+        let restore = |position: LineColumn| {
+            let preceding = self
+                .positions
+                .iter()
+                .filter(|escaped| {
+                    escaped.line == position.line && escaped.column <= position.column
+                })
+                .count();
+            position.column_add(preceding as isize)
+        };
+
+        let nodes: Vec<_> = self
+            .block
+            .descendants()
+            .skip(1)
+            .chain(self.footnote_defs.iter().flat_map(|def| def.descendants()))
+            .collect();
+
+        for node in nodes {
+            let mut ast = node.data_mut();
+            let Sourcepos { start, end: last } = ast.sourcepos;
+            let mut end = last;
+            if let NodeValue::Text(ref mut text) = ast.value
+                && start.line == last.line
+                && text.len() == last.column - start.column + 1
+            {
+                for escaped in self.positions.iter().rev().filter(|escaped| {
+                    escaped.line == start.line
+                        && start.column < escaped.column
+                        && escaped.column <= last.column
+                }) {
+                    let tail = text.to_mut().split_off(escaped.column - start.column);
+                    node.insert_after(make_inline(
+                        arena,
+                        NodeValue::Text(tail.into()),
+                        (restore(*escaped), restore(end)).into(),
+                    ));
+                    end = escaped.column_add(-1);
+                }
             }
+            ast.sourcepos = (restore(start), restore(end)).into();
         }
-        ast.sourcepos = (restore(start), restore(end)).into();
     }
 }
 
