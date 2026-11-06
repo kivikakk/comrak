@@ -303,6 +303,7 @@ fn conventions_are_not_findings() {
         "[\t\na]()\n",
         "![ \na]()\n",
         "- [x]\t\n  a\n",
+        "| a |\n| - |\n|||\\|r||\n",
     ] {
         super::assert_clean(doc);
     }

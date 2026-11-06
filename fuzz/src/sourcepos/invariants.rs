@@ -326,8 +326,8 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
         NodeValue::Insert => bad(!delimited_by(s, "++"), "delim"),
         NodeValue::Superscript => bad(!delimited_by(s, "^"), "delim"),
         NodeValue::Underline => bad(!delimited_by(s, "__"), "delim"),
-        NodeValue::SpoileredText => bad(!delimited_by(s, "||"), "delim"),
-        NodeValue::EscapedTag(tag) => bad(!delimited_by(s, tag), "delim"),
+        NodeValue::SpoileredText => bad(!delimited_by(&without_backslashes(s), "||"), "delim"),
+        NodeValue::EscapedTag(tag) => bad(!delimited_by(&without_backslashes(s), tag), "delim"),
         NodeValue::Link(_) if first == b'[' => bad(
             !(rec.has_attrs || s.ends_with(b"]") || s.ends_with(b")")),
             "bracket-close",
