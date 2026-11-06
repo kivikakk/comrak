@@ -123,13 +123,7 @@ fn is_cell_padding(b: u8) -> bool {
     is_ws(b) || matches!(b, 0x0b | 0x0c)
 }
 
-fn trim(mut s: &[u8]) -> &[u8] {
-    while let [first, rest @ ..] = s {
-        if !is_ws(*first) {
-            break;
-        }
-        s = rest;
-    }
+fn trim_end(mut s: &[u8]) -> &[u8] {
     while let [rest @ .., last] = s {
         if !is_ws(*last) {
             break;
@@ -137,6 +131,16 @@ fn trim(mut s: &[u8]) -> &[u8] {
         s = rest;
     }
     s
+}
+
+fn trim(mut s: &[u8]) -> &[u8] {
+    while let [first, rest @ ..] = s {
+        if !is_ws(*first) {
+            break;
+        }
+        s = rest;
+    }
+    trim_end(s)
 }
 
 fn first_line(s: &[u8]) -> &[u8] {
@@ -551,6 +555,8 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
         let close = &source.bytes[last_end + 1..=parent_end];
         let unescaped_open = if matches!(parent.value, NodeValue::Escaped) {
             open
+        } else if is_break(first) {
+            trim_end(open)
         } else {
             open.strip_suffix(b"\\").unwrap_or(open)
         };
@@ -560,9 +566,7 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
             String::from_utf8_lossy(open),
             String::from_utf8_lossy(close),
         );
-        let verbatim_open =
-            has_verbatim_bounds(recs, index) && unescaped_open.iter().all(|&b| is_ws(b));
-        if !open_fits(parent, unescaped_open) && !verbatim_open {
+        if !open_fits(parent, unescaped_open) {
             out.push(Finding::new("tiling", kind, "open", detail.clone()));
         }
         if !parent.has_attrs && !close_fits(parent, close) {
