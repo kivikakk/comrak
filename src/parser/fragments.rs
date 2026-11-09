@@ -15,7 +15,13 @@ impl<'a: 'd, 'o, 'c, 'd> Parser<'a, 'o, 'c, 'd>
 where
     'c: 'o,
 {
-    pub(crate) fn parse_fragments(&mut self, container: Node<'a>, fragments: &[Fragment<'_>]) {
+    pub(crate) fn parse_fragments(
+        &mut self,
+        container: Node<'a>,
+        fragments: &[Fragment<'_>],
+        suppress_grid_tables: bool,
+    ) {
+        assert!(container.parent().is_none());
         let sourcepos = container.data().sourcepos;
 
         let mut text = String::with_capacity(fragments.iter().map(|f| f.text.len() + 1).sum());
@@ -34,6 +40,7 @@ where
             self.delimiter_arena,
         );
         child.refmap = mem::replace(&mut self.refmap, RefMap::new());
+        child.grid_table_suppressed = suppress_grid_tables;
 
         let mut start = 0;
         for (fragment, &end) in fragments.iter().zip(&ends) {
@@ -135,11 +142,10 @@ mod tests {
             )
             .into(),
         );
-        root.append(cell);
-
         let delimiter_arena = typed_arena::Arena::new();
         let mut parser = Parser::new(&arena, root, options, None, &delimiter_arena);
-        parser.parse_fragments(cell, fragments);
+        parser.parse_fragments(cell, fragments, false);
+        root.append(cell);
         let root = parser.parse(md).unwrap();
 
         let rest = root

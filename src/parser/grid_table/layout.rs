@@ -26,6 +26,7 @@ pub(crate) struct Row {
 
 pub(crate) struct Cell {
     pub(crate) value: NodeGridTableCell,
+    pub(crate) left: usize,
     pub(crate) content: Vec<Range<usize>>,
 }
 
@@ -288,6 +289,7 @@ impl Grid {
                 })
                 .collect();
             rows[row].cells.push(Cell {
+                left: rect.left,
                 value: NodeGridTableCell {
                     column,
                     colspan: index(&col_bounds, rect.right) - column,
@@ -308,11 +310,11 @@ fn bounds(it: impl Iterator<Item = usize>) -> Vec<usize> {
     v
 }
 
-fn trim_end(text: &str) -> &str {
+pub(crate) fn trim_end(text: &str) -> &str {
     text.trim_end_matches([' ', '\t'])
 }
 
-fn is_rule(text: &str, fill: u8) -> bool {
+pub(crate) fn is_rule(text: &str, fill: u8) -> bool {
     let bytes = text.as_bytes();
     let Some((&b'+', mut rest)) = bytes.split_first() else {
         return false;

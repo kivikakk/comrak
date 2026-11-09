@@ -276,6 +276,10 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
+    #[cfg(feature = "grid_table")]
+    grid_table: Option<grid_table::Pending>,
+    #[cfg(feature = "grid_table")]
+    grid_table_suppressed: bool,
     cancellation: Cancellation<'o>,
 }
 
@@ -335,6 +339,10 @@ where
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
+            #[cfg(feature = "grid_table")]
+            grid_table: None,
+            #[cfg(feature = "grid_table")]
+            grid_table_suppressed: false,
             cancellation: Cancellation::new(should_cancel),
         }
     }
@@ -553,6 +561,12 @@ where
                 }
                 NodeValue::BlockDirective(..) => {
                     self.parse_block_directive_prefix(line, container, ast)?;
+                }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(..) => {
+                    if !self.grid_table_continues(line) {
+                        break;
+                    }
                 }
                 _ => {}
             }
@@ -854,6 +868,15 @@ where
             {
                 false
             }
+        } && !{
+            #[cfg(feature = "grid_table")]
+            {
+                node_matches!(container, NodeValue::GridTable(..))
+            }
+            #[cfg(not(feature = "grid_table"))]
+            {
+                false
+            }
         } {
             if self.cancellation.step() {
                 break;
@@ -882,6 +905,7 @@ where
                     || self.handle_description_list(container, line)))
                 || self.handle_list(container, line, indented, depth)
                 || self.handle_code_block(container, line, indented, maybe_lazy)
+                || self.handle_grid_table(container, line, indented, maybe_lazy)
                 || self.handle_table(container, line, indented))
             {
                 break;
@@ -1929,6 +1953,17 @@ where
         indented && !maybe_lazy && !self.blank
     }
 
+    #[cfg(not(feature = "grid_table"))]
+    fn handle_grid_table(
+        &mut self,
+        _container: &mut Node<'a>,
+        _line: &str,
+        _indented: bool,
+        _maybe_lazy: bool,
+    ) -> bool {
+        false
+    }
+
     fn handle_table(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
         let Some((new_container, replace, mark_visited)) =
             self.detect_table(container, line, indented)
@@ -2099,12 +2134,18 @@ where
                 #[cfg(feature = "phoenix_heex")]
                 NodeValue::HeexBlock(ref nhb) => AddTextResult::HeexBlock(nhb.clone()),
                 NodeValue::MultilineComment(..) => AddTextResult::CommentBlock,
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(..) => AddTextResult::GridTable,
                 _ => AddTextResult::Otherwise,
             };
 
             match add_text_result {
                 AddTextResult::LiteralText => {
                     self.add_line(container, line);
+                }
+                #[cfg(feature = "grid_table")]
+                AddTextResult::GridTable => {
+                    self.add_grid_table_line(line);
                 }
                 AddTextResult::HtmlBlock(block_type) => {
                     self.add_line(container, line);
@@ -2493,6 +2534,10 @@ where
                 let mut lines = ast.lines.take().unwrap();
                 let content = &mut lines.content;
                 ncb.literal = self.take_content(content);
+            }
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..) => {
+                self.finalize_grid_table(node, ast);
             }
             _ => (),
         }
@@ -3107,6 +3152,8 @@ enum AddTextResult {
     HtmlBlock(u8),
     #[cfg(feature = "phoenix_heex")]
     HeexBlock(Box<phoenix_heex::NodeHeexBlock>),
+    #[cfg(feature = "grid_table")]
+    GridTable,
     CommentBlock,
     Otherwise,
 }
