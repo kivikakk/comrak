@@ -128,6 +128,18 @@ pub enum NodeValue {
     /// **Block**.  A table cell.  Contains **inlines**.
     TableCell,
 
+    #[cfg(feature = "grid_table")]
+    /// **Block**.  A grid table.  Contains `GridTableRow`s.
+    GridTable(Box<NodeGridTable>),
+
+    #[cfg(feature = "grid_table")]
+    /// **Block**. A row of a grid table.  Contains `GridTableCell`s.
+    GridTableRow(GridTableSection),
+
+    #[cfg(feature = "grid_table")]
+    /// **Block**. A cell in a grid table row.  Contains **blocks**.
+    GridTableCell(NodeGridTableCell),
+
     /// **Inline**.  [Textual content](https://github.github.com/gfm/#textual-content).  All text
     /// in a document will be contained in a `Text` node.
     Text(Cow<'static, str>),
@@ -329,6 +341,53 @@ pub struct NodeTable {
 
     /// Number of non-empty, non-autocompleted cells
     pub num_nonempty_cells: usize,
+}
+
+#[cfg(feature = "grid_table")]
+/// A grid table.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeGridTable {
+    /// The table's column definitions.
+    pub columns: Vec<GridTableColumn>,
+}
+
+#[cfg(feature = "grid_table")]
+/// A column in a grid table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GridTableColumn {
+    /// The alignment of this column, if any.
+    pub alignment: TableAlignment,
+
+    /// The column's width, in terms of display columns inside the borders.  Excludes the border characters themselves.  Wide characters (e.g. CJK) count as 2.
+    pub width: usize,
+}
+
+#[cfg(feature = "grid_table")]
+/// The type of a grid table section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GridTableSection {
+    /// Like HTML `<thead>`.
+    Head,
+
+    /// Like HTML `<tbody>`.
+    Body,
+
+    /// Like HTML `<tfoot>`.
+    Foot,
+}
+
+#[cfg(feature = "grid_table")]
+/// A cell in a grid table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NodeGridTableCell {
+    /// The cell's starting column index; 0-based.
+    pub column: usize,
+
+    /// The cell's span in columns.
+    pub colspan: usize,
+
+    /// The cell's span in rows.
+    pub rowspan: usize,
 }
 
 /// A task list item's contents, and where it was found
@@ -797,6 +856,10 @@ impl NodeValue {
             | NodeValue::CalloutTitle
             | NodeValue::Subtext => true,
             NodeValue::BlockDirective(_) => true,
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..)
+            | NodeValue::GridTableRow(..)
+            | NodeValue::GridTableCell(..) => true,
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(..) => true,
             _ => false,
@@ -858,6 +921,12 @@ impl NodeValue {
             NodeValue::Table(..) => "table",
             NodeValue::TableRow(..) => "table_row",
             NodeValue::TableCell => "table_cell",
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..) => "grid_table",
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableRow(..) => "grid_table_row",
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableCell(..) => "grid_table_cell",
             NodeValue::Text(..) => "text",
             NodeValue::SoftBreak => "softbreak",
             NodeValue::LineBreak => "linebreak",
@@ -1263,6 +1332,14 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
             NodeValue::BlockDirective(_) => {
+                child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
+            }
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..) => matches!(*child, NodeValue::GridTableRow(..)),
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableRow(..) => matches!(*child, NodeValue::GridTableCell(..)),
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableCell(..) => {
                 child.block() && !matches!(*child, NodeValue::Item(..) | NodeValue::TaskItem(..))
             }
 

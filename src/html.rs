@@ -395,6 +395,10 @@ pub fn format_node_default<T>(
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
+        #[cfg(feature = "grid_table")]
+        NodeValue::GridTable(..) | NodeValue::GridTableRow(..) | NodeValue::GridTableCell(..) => {
+            todo!()
+        }
         NodeValue::TaskItem(ref nti) => render_task_item(context, node, entering, nti),
 
         // Extensions

@@ -564,6 +564,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering)?,
             NodeValue::TableCell => self.format_table_cell(node, entering)?,
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..)
+            | NodeValue::GridTableRow(..)
+            | NodeValue::GridTableCell(..) => {
+                todo!()
+            }
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)?
             }

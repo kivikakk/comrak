@@ -250,6 +250,12 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::TableRow(..) => {
                     // noop
                 }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(..)
+                | NodeValue::GridTableRow(..)
+                | NodeValue::GridTableCell(..) => {
+                    todo!()
+                }
                 NodeValue::TableCell => {
                     let mut ancestors = node.ancestors().skip(1);
 

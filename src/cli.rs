@@ -143,6 +143,7 @@ pub struct OptionArgs {
 pub enum Extension {
     Strikethrough,
     Table,
+    GridTable,
     Autolink,
     Tasklist,
     Superscript,
@@ -214,6 +215,7 @@ impl OptionArgs {
         let extension = options::Extension::builder()
             .strikethrough(ext(Extension::Strikethrough) || self.gfm)
             .table(ext(Extension::Table) || self.gfm)
+            .grid_table(ext(Extension::GridTable))
             .autolink(ext(Extension::Autolink) || self.gfm)
             .tasklist(ext(Extension::Tasklist) || self.gfm)
             .superscript(ext(Extension::Superscript))

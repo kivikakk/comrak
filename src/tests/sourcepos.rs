@@ -558,6 +558,8 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Table => TABLE,
                 TableRow => TABLE_ROW,
                 TableCell => TABLE_CELL,
+                #[cfg(feature = "grid_table")]
+                GridTable | GridTableRow | GridTableCell => todo!(),
                 Text => TEXT,
                 SoftBreak => SOFT_BREAK,
                 LineBreak => LINE_BREAK,

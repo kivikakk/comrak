@@ -58,6 +58,30 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub table: bool,
 
+    /// Enables Pandoc-style [grid tables](https://pandoc.org/MANUAL.html#extension-grid_tables).
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.grid_table = true;
+    /// assert_eq!(
+    ///     markdown_to_html(
+    ///         "+---+---+\n\
+    ///          | a | b |\n\
+    ///          +===+===+\n\
+    ///          | c     |\n\
+    ///          +---+---+\n",
+    ///         &options
+    ///     ),
+    ///     "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n\
+    ///      <tbody>\n<tr>\n<td colspan=\"2\">c</td>\n</tr>\n</tbody>\n</table>\n"
+    /// );
+    /// ```
+    #[cfg(feature = "grid_table")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "grid_table")))]
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub grid_table: bool,
+
     /// Enables the [autolink extension](https://github.github.com/gfm/#autolinks-extension-)
     /// from the GFM spec.
     ///
