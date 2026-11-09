@@ -27,6 +27,8 @@ mod footnotes;
 mod front_matter;
 mod fuzz;
 mod greentext;
+#[cfg(feature = "grid_table")]
+mod grid_table;
 mod header_id_prefix;
 mod highlight;
 #[path = "tests/html.rs"]

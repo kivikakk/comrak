@@ -377,6 +377,17 @@ pub enum GridTableSection {
 }
 
 #[cfg(feature = "grid_table")]
+impl GridTableSection {
+    pub(crate) fn xml_name(&self) -> &'static str {
+        match *self {
+            GridTableSection::Head => "head",
+            GridTableSection::Body => "body",
+            GridTableSection::Foot => "foot",
+        }
+    }
+}
+
+#[cfg(feature = "grid_table")]
 /// A cell in a grid table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NodeGridTableCell {
