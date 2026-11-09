@@ -3,6 +3,8 @@ mod attributes;
 mod autolink;
 pub(crate) mod block_ids;
 mod callouts;
+#[cfg(feature = "grid_table")]
+mod grid_table;
 mod inlines;
 pub mod options;
 #[cfg(feature = "phoenix_heex")]
