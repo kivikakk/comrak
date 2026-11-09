@@ -4,6 +4,8 @@ mod autolink;
 pub(crate) mod block_ids;
 mod callouts;
 #[cfg(feature = "grid_table")]
+mod fragments;
+#[cfg(feature = "grid_table")]
 mod grid_table;
 mod inlines;
 pub mod options;
@@ -373,7 +375,7 @@ where
                 }
             }
 
-            self.process_line(&s[ix..eol]);
+            self.process_line(&s[ix..eol], 0);
 
             ix = eol;
             matches.advance_to(ix);
@@ -414,7 +416,7 @@ where
         self.last_line_length = last_line_length;
     }
 
-    fn process_line(&mut self, line: &str) {
+    fn process_line(&mut self, line: &str, column: usize) {
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -427,7 +429,7 @@ where
         }
 
         self.offset = 0;
-        self.column = 0;
+        self.column = column;
         self.first_nonspace = 0;
         self.first_nonspace_column = 0;
         self.indent = 0;
@@ -2270,15 +2272,7 @@ where
     }
 
     fn finalize_document(&mut self) -> Result<(), ParseCancelled> {
-        while !self.current.same_node(self.root) {
-            if self.cancellation.step() {
-                return Err(ParseCancelled);
-            }
-            self.current = self.finalize(self.current).unwrap();
-        }
-
-        self.finalize(self.root);
-        self.cancellation.check()?;
+        self.finalize_blocks()?;
 
         self.process_inlines();
         self.cancellation.check()?;
@@ -2298,6 +2292,18 @@ where
         }
 
         Ok(())
+    }
+
+    fn finalize_blocks(&mut self) -> Result<(), ParseCancelled> {
+        while !self.current.same_node(self.root) {
+            if self.cancellation.step() {
+                return Err(ParseCancelled);
+            }
+            self.current = self.finalize(self.current).unwrap();
+        }
+
+        self.finalize(self.root);
+        self.cancellation.check()
     }
 
     fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
