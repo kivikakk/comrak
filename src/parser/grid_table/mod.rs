@@ -37,6 +37,11 @@ impl CellLineEnd {
     }
 }
 
+struct LineEnds {
+    ends: Vec<(usize, usize)>,
+    parents: Vec<Option<usize>>,
+}
+
 struct PendingLine {
     start: usize,
     end: usize,
@@ -277,10 +282,29 @@ where
             return;
         }
 
-        let mut by_line: HashMap<usize, Vec<&CellLineEnd>> = HashMap::new();
+        let mut by_line: HashMap<usize, Vec<(usize, usize)>> = HashMap::new();
         for end in &self.cell_line_ends {
-            by_line.entry(end.line).or_default().push(end);
+            by_line
+                .entry(end.line)
+                .or_default()
+                .push((end.start, end.eol));
         }
+        let by_line: HashMap<usize, LineEnds> = by_line
+            .into_iter()
+            .map(|(line, mut ends)| {
+                ends.sort_unstable();
+                let mut parents = vec![None; ends.len()];
+                let mut open: Vec<usize> = vec![];
+                for (i, &(start, _)) in ends.iter().enumerate() {
+                    while open.last().is_some_and(|&j| ends[j].1 < start) {
+                        open.pop();
+                    }
+                    parents[i] = open.last().copied();
+                    open.push(i);
+                }
+                (line, LineEnds { ends, parents })
+            })
+            .collect();
 
         for node in self.root.descendants() {
             let mut ast = node.data_mut();
@@ -290,14 +314,21 @@ where
                 _ => continue,
             };
             let start = ast.sourcepos.start;
-            let Some(eol) = by_line.get(&start.line).and_then(|ends| {
-                ends.iter()
-                    .filter(|end| end.start <= start.column && start.column <= end.eol)
-                    .max_by_key(|end| end.start)
-                    .map(|end| end.eol)
-            }) else {
+            let Some(LineEnds { ends, parents }) = by_line.get(&start.line) else {
                 continue;
             };
+            let mut candidate = ends
+                .partition_point(|&(s, _)| s <= start.column)
+                .checked_sub(1);
+            while let Some(i) = candidate
+                && ends[i].1 < start.column
+            {
+                candidate = parents[i];
+            }
+            let Some(i) = candidate else {
+                continue;
+            };
+            let eol = ends[i].1;
             if soft {
                 ast.sourcepos.start.column = eol;
             }

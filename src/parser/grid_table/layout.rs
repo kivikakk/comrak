@@ -86,7 +86,7 @@ impl Grid {
 
         let width = top.len();
         let height = lines.len();
-        let mut slots = Vec::with_capacity(width * height);
+        let mut slots = vec![];
         let mut part_separators = vec![];
 
         for (r, line) in lines.iter().enumerate() {

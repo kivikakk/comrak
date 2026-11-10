@@ -357,3 +357,45 @@ fn pathological_grid_table_rejections() {
     let html = markdown_to_html(&input, &grid_table_options());
     assert!(!html.contains("<table>"));
 }
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_ragged_lines() {
+    let n = 100_000;
+    let input = format!("+{}+\n{}", "-".repeat(n), "|\n".repeat(n));
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert!(!html.contains("<table>"));
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_breaks_on_one_line() {
+    let n = 40_000;
+    let separator = format!("+{}\n", "-+".repeat(n));
+    let row = format!("|{}\n", "a|".repeat(n));
+    let input = format!("{separator}{row}{row}{separator}");
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert_eq!(html.matches("<td>a\na</td>").count(), n);
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_consecutive_in_tight_list() {
+    let n = 20_000;
+    let mut input = String::from("- +-+\n  |a|\n  +-+\n");
+    for i in 1..n {
+        let indent = if i % 2 == 1 { "   " } else { "  " };
+        input.push_str(&format!("{indent}+-+\n{indent}|a|\n{indent}+-+\n"));
+    }
+    input.push_str("- b\n");
+
+    let options = grid_table_options();
+    let commonmark = markdown_to_commonmark(&input, &options);
+    let html = markdown_to_html(&commonmark, &options);
+    assert_eq!(html.matches("<table>").count(), n);
+}

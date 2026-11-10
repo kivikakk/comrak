@@ -88,6 +88,8 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     no_linebreaks: bool,
     in_tight_list_item: bool,
     tight_stack: Vec<bool>,
+    #[cfg(feature = "grid_table")]
+    grid_table_indent: usize,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
@@ -127,6 +129,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             no_linebreaks: false,
             in_tight_list_item: false,
             tight_stack: vec![],
+            #[cfg(feature = "grid_table")]
+            grid_table_indent: 0,
             custom_escape: None,
             footnote_ix: 0,
             ol_stack: vec![],

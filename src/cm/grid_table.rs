@@ -197,16 +197,14 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
             && table
                 .parent()
                 .is_some_and(|p| node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)));
-        let indent = if direct_tight {
-            1 + table
-                .preceding_siblings()
-                .skip(1)
-                .take_while(|n| node_matches!(n, NodeValue::GridTable(..)))
-                .count()
-                % 2
-        } else {
-            0
+        let indent = match table.previous_sibling() {
+            _ if !direct_tight => 0,
+            Some(previous) if node_matches!(previous, NodeValue::GridTable(..)) => {
+                3 - self.grid_table_indent
+            }
+            _ => 1,
         };
+        self.grid_table_indent = indent;
         let origin = self.prefix.len() + indent;
         for cell in &cells {
             for (i, line) in cell.lines.iter().enumerate() {
