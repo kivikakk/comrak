@@ -879,11 +879,22 @@ fn commonmark_separates_tables_in_tight_lists() {
 
 #[test]
 fn commonmark_blank_line_after_absorbing_blocks() {
-    let mut options = grid_options();
-    options.extension.description_lists = true;
-    commonmark(
+    html_opts!(
+        [extension.grid_table, extension.description_lists],
         "- a\n\n  : b\n\n  +---+\n  | c |\n  +---+\n- d\n",
-        "- a\n  : b\n  \n   +---+\n   | c |\n   +---+\n- d\n",
-        Some(&options),
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>\n<p>b</p>\n</dd>\n",
+            "</dl>\n",
+            "<table>\n",
+            "<tbody>\n<tr>\n<td>c</td>\n</tr>\n</tbody>\n",
+            "</table>\n",
+            "</li>\n",
+            "<li>d</li>\n",
+            "</ul>\n",
+        ),
     );
 }

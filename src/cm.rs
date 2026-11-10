@@ -525,6 +525,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 | NodeValue::Callout(..)
                 | NodeValue::BlockDirective(..)
                 | NodeValue::FootnoteDefinition(..)
+                | NodeValue::DescriptionList
         ) {
             if entering {
                 if self.in_tight_list_item && self.need_cr > 1 {
@@ -551,7 +552,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::DescriptionList => (),
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
-            NodeValue::DescriptionDetails => self.format_description_details(entering)?,
+            NodeValue::DescriptionDetails => self.format_description_details(node, entering)?,
             NodeValue::Heading(ref nh) => self.format_heading(nh, entering)?,
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
@@ -772,8 +773,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_description_details(&mut self, entering: bool) -> fmt::Result {
+    fn format_description_details(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
+            if let NodeValue::DescriptionItem(item) = node.parent().unwrap().data().value
+                && item.tight
+            {
+                self.need_cr = self.need_cr.min(1);
+            }
             write!(self, ": ")?
         }
         Ok(())
