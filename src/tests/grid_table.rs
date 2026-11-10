@@ -576,3 +576,158 @@ fn sourcepos_of_breaks_rows_and_placeholders() {
         |o| o.render.sourcepos = true,
     );
 }
+
+#[test]
+fn html_spans() {
+    html_opts!(
+        [extension.grid_table],
+        concat!(
+            "+---+---+---+\n",
+            "| AAAAA | B |\n",
+            "+---+---+ B +\n",
+            "| D | E | B |\n",
+            "+ D +---+---+\n",
+            "| D | CCCCC |\n",
+            "+---+---+---+\n",
+        ),
+        concat!(
+            "<table>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td colspan=\"2\">AAAAA</td>\n",
+            "<td rowspan=\"2\">B\nB\nB</td>\n",
+            "</tr>\n",
+            "<tr>\n",
+            "<td rowspan=\"2\">D\nD\nD</td>\n",
+            "<td>E</td>\n",
+            "</tr>\n",
+            "<tr>\n",
+            "<td colspan=\"2\">CCCCC</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn html_sections_and_alignment() {
+    html_opts!(
+        [extension.grid_table],
+        concat!(
+            "+-----+-----+-----+\n",
+            "| a   | b   | c   |\n",
+            "+:====+====:+:===:+\n",
+            "| d   | e   | f   |\n",
+            "+=====+=====+=====+\n",
+            "| g   | h   | i   |\n",
+            "+=====+=====+=====+\n",
+        ),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th align=\"left\">a</th>\n",
+            "<th align=\"right\">b</th>\n",
+            "<th align=\"center\">c</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td align=\"left\">d</td>\n",
+            "<td align=\"right\">e</td>\n",
+            "<td align=\"center\">f</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "<tfoot>\n",
+            "<tr>\n",
+            "<td align=\"left\">g</td>\n",
+            "<td align=\"right\">h</td>\n",
+            "<td align=\"center\">i</td>\n",
+            "</tr>\n",
+            "</tfoot>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn html_without_body() {
+    html_opts!(
+        [extension.grid_table],
+        "+---+\n| a |\n+===+\n",
+        "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n</table>\n",
+        no_roundtrip,
+    );
+    html_opts!(
+        [extension.grid_table],
+        "+---+\n| a |\n+===+\n| b |\n+===+\n",
+        concat!(
+            "<table>\n",
+            "<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n",
+            "<tfoot>\n<tr>\n<td>b</td>\n</tr>\n</tfoot>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn html_blocks_in_cells() {
+    html_opts!(
+        [extension.grid_table],
+        concat!(
+            "+-------+-----+---+\n",
+            "| - a   | b   |   |\n",
+            "| - c   |     |   |\n",
+            "|       | d   |   |\n",
+            "+-------+-----+---+\n",
+        ),
+        concat!(
+            "<table>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>\n",
+            "<ul>\n",
+            "<li>a</li>\n",
+            "<li>c</li>\n",
+            "</ul>\n",
+            "</td>\n",
+            "<td>\n",
+            "<p>b</p>\n",
+            "<p>d</p>\n",
+            "</td>\n",
+            "<td></td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn html_sourcepos() {
+    html_opts!(
+        [extension.grid_table, render.sourcepos],
+        "+---+---+\n| a | b |\n+===+===+\n| c     |\n+---+---+\n",
+        concat!(
+            "<table data-sourcepos=\"1:1-5:9\">\n",
+            "<thead>\n",
+            "<tr data-sourcepos=\"2:1-2:9\">\n",
+            "<th data-sourcepos=\"2:2-2:4\">a</th>\n",
+            "<th data-sourcepos=\"2:6-2:8\">b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr data-sourcepos=\"4:1-4:9\">\n",
+            "<td data-sourcepos=\"4:2-4:8\" colspan=\"2\">c</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}
