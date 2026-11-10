@@ -2,16 +2,19 @@ mod layout;
 
 use std::ops::Range;
 
+use crate::node_matches;
 use crate::nodes::{Ast, Node, NodeGridTable, NodeValue, Sourcepos};
 use crate::parser::fragments::Fragment;
 use crate::parser::{Parser, TAB_STOP};
 
 use layout::{Layout, Line};
 
-pub(crate) struct Pending {
+pub(crate) struct Pending<'a> {
+    node: Node<'a>,
     indent: usize,
     text: String,
     lines: Vec<PendingLine>,
+    layout: Option<Layout>,
 }
 
 struct PendingLine {
@@ -24,9 +27,33 @@ struct PendingLine {
     table_column: usize,
 }
 
-impl Pending {
+impl Pending<'_> {
     fn text(&self, line: &PendingLine) -> &str {
         &self.text[line.start..line.end]
+    }
+
+    fn layout(&self) -> Option<Layout> {
+        let lines: Vec<Line<'_>> = self
+            .lines
+            .iter()
+            .map(|line| Line {
+                text: self.table_text(line),
+                column: line.table_column,
+            })
+            .collect();
+        layout::layout(&lines)
+    }
+
+    fn replay_fragments(&self) -> Vec<Fragment<'_>> {
+        self.lines
+            .iter()
+            .map(|line| Fragment {
+                text: self.text(line),
+                line: line.line,
+                byte: line.byte,
+                column: line.column,
+            })
+            .collect()
     }
 
     fn table_text(&self, line: &PendingLine) -> &str {
@@ -53,6 +80,7 @@ where
             || self.grid_table_suppressed
             || indented
             || maybe_lazy
+            || node_matches!(container, NodeValue::Table(..))
             || !layout::is_rule(
                 layout::trim_end(&line[self.first_nonspace..self.curline_end_col]),
                 b'-',
@@ -68,9 +96,11 @@ where
             self.first_nonspace + 1,
         );
         self.grid_table = Some(Pending {
+            node: container,
             indent: self.indent,
             text: String::new(),
             lines: vec![],
+            layout: None,
         });
         true
     }
@@ -98,20 +128,41 @@ where
         });
     }
 
-    pub(super) fn finalize_grid_table(&mut self, table: Node<'a>, ast: &mut Ast) {
-        let pending = self.grid_table.take().unwrap();
-        let lines: Vec<Line<'_>> = pending
-            .lines
-            .iter()
-            .map(|line| Line {
-                text: pending.table_text(line),
-                column: line.table_column,
-            })
-            .collect();
+    pub(super) fn reject_ended_grid_table(&mut self, matched: Node<'a>) -> bool {
+        let Some(pending) = self.grid_table.as_mut() else {
+            return false;
+        };
+        if matched.same_node(pending.node) {
+            return false;
+        }
 
-        match layout::layout(&lines) {
+        pending.layout = pending.layout();
+        if pending.layout.is_some() {
+            return false;
+        }
+
+        let pending = self.grid_table.take().unwrap();
+        let parent = pending.node.parent().unwrap();
+        let holder = self.replay_holder(&pending);
+        let current = self.open_fragments(holder, &pending.replay_fragments(), true);
+        graft(holder, pending.node);
+        self.current = if current.same_node(holder) {
+            parent
+        } else {
+            current
+        };
+        true
+    }
+
+    pub(super) fn finalize_grid_table(&mut self, table: Node<'a>, ast: &mut Ast) {
+        let mut pending = self.grid_table.take().unwrap();
+        match pending.layout.take().or_else(|| pending.layout()) {
             Some(layout) => self.build_grid_table(table, ast, &pending, layout),
-            None => self.replay_grid_table(table, &pending),
+            None => {
+                let holder = self.replay_holder(&pending);
+                self.parse_fragments(holder, &pending.replay_fragments(), true);
+                graft(holder, table);
+            }
         }
     }
 
@@ -119,7 +170,7 @@ where
         &mut self,
         table: Node<'a>,
         ast: &mut Ast,
-        pending: &Pending,
+        pending: &Pending<'a>,
         layout: Layout,
     ) {
         let first = &pending.lines[0];
@@ -181,27 +232,9 @@ where
         }
     }
 
-    fn replay_grid_table(&mut self, table: Node<'a>, pending: &Pending) {
-        let fragments: Vec<Fragment<'_>> = pending
-            .lines
-            .iter()
-            .map(|line| Fragment {
-                text: pending.text(line),
-                line: line.line,
-                byte: line.byte,
-                column: line.column,
-            })
-            .collect();
-
-        let holder = self
-            .arena
-            .alloc(Ast::new(NodeValue::Document, (pending.lines[0].line, 1).into()).into());
-        self.parse_fragments(holder, &fragments, true);
-
-        while let Some(child) = holder.first_child() {
-            table.insert_before(child);
-        }
-        table.detach();
+    fn replay_holder(&self, pending: &Pending<'a>) -> Node<'a> {
+        self.arena
+            .alloc(Ast::new(NodeValue::Document, (pending.lines[0].line, 1).into()).into())
     }
 
     fn closed_node(&self, value: NodeValue, sourcepos: Sourcepos) -> Node<'a> {
@@ -211,8 +244,15 @@ where
     }
 }
 
+fn graft<'a>(holder: Node<'a>, table: Node<'a>) {
+    while let Some(child) = holder.first_child() {
+        table.insert_before(child);
+    }
+    table.detach();
+}
+
 fn cell_fragment<'t>(
-    pending: &'t Pending,
+    pending: &'t Pending<'_>,
     line: &PendingLine,
     range: Range<usize>,
     left: usize,

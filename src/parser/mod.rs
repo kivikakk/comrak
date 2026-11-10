@@ -277,7 +277,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
     #[cfg(feature = "grid_table")]
-    grid_table: Option<grid_table::Pending>,
+    grid_table: Option<grid_table::Pending<'a>>,
     #[cfg(feature = "grid_table")]
     grid_table_suppressed: bool,
     cancellation: Cancellation<'o>,
@@ -436,14 +436,7 @@ where
             self.curline_end_col -= 1;
         }
 
-        self.offset = 0;
-        self.column = column;
-        self.first_nonspace = 0;
-        self.first_nonspace_column = 0;
-        self.indent = 0;
-        self.thematic_break_kill_pos = 0;
-        self.blank = false;
-        self.partially_consumed_tab = false;
+        self.start_line(column);
 
         if self.line_number == 0 && line.len() >= 3 && line.starts_with('\u{feff}') {
             self.offset += 3;
@@ -451,7 +444,9 @@ where
 
         self.line_number += 1;
 
-        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
+        if let Some((last_matched_container, all_matched)) =
+            self.check_open_blocks_resolving(line, column)
+        {
             self.last_matched_container = last_matched_container;
             let mut container = last_matched_container;
             let lazy_callout = self.lazy_callout_candidate(all_matched);
@@ -470,9 +465,33 @@ where
         self.curline_end_col = 0;
     }
 
+    fn start_line(&mut self, column: usize) {
+        self.offset = 0;
+        self.column = column;
+        self.first_nonspace = 0;
+        self.first_nonspace_column = 0;
+        self.indent = 0;
+        self.thematic_break_kill_pos = 0;
+        self.blank = false;
+        self.partially_consumed_tab = false;
+    }
+
     ///////////////////////
     // Check open blocks //
     ///////////////////////
+
+    fn check_open_blocks_resolving(
+        &mut self,
+        line: &str,
+        column: usize,
+    ) -> Option<(Node<'a>, bool)> {
+        let matched = self.check_open_blocks(line)?;
+        if self.reject_ended_grid_table(matched.0) {
+            self.start_line(column);
+            return self.check_open_blocks(line);
+        }
+        Some(matched)
+    }
 
     fn check_open_blocks(&mut self, line: &str) -> Option<(Node<'a>, bool)> {
         let (all_matched, mut container) = self.check_open_blocks_inner(self.root, line)?;
@@ -1951,6 +1970,11 @@ where
 
     fn detect_code_block(&self, indented: bool, maybe_lazy: bool) -> bool {
         indented && !maybe_lazy && !self.blank
+    }
+
+    #[cfg(not(feature = "grid_table"))]
+    fn reject_ended_grid_table(&mut self, _matched: Node<'a>) -> bool {
+        false
     }
 
     #[cfg(not(feature = "grid_table"))]

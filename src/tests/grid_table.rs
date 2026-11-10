@@ -380,25 +380,69 @@ fn does_not_interrupt_a_paragraph() {
     );
 }
 
-#[test]
-fn invalid_tables_are_ordinary_blocks() {
-    grid_xml(
-        "+---+\n| a |\n+ b +\n",
-        concat!(
-            "<paragraph>\n",
-            "  <text xml:space=\"preserve\">+---+</text>\n",
-            "  <softbreak />\n",
-            "  <text xml:space=\"preserve\">| a |</text>\n",
-            "</paragraph>\n",
-            "<list type=\"bullet\" tight=\"true\">\n",
-            "  <item>\n",
-            "    <paragraph>\n",
-            "      <text xml:space=\"preserve\">b +</text>\n",
-            "    </paragraph>\n",
-            "  </item>\n",
-            "</list>\n",
-        ),
+#[track_caller]
+fn same_as_extension_off<F>(input: &str, opts: F)
+where
+    F: Fn(&mut Options),
+{
+    let arena = Arena::new();
+    let mut off = Options::default();
+    off.render.sourcepos = true;
+    opts(&mut off);
+    let mut on = off.clone();
+    on.extension.grid_table = true;
+
+    let root = parse_document(&arena, input, &on);
+    assert!(
+        root.descendants()
+            .all(|n| !node_matches!(n, NodeValue::GridTable(..))),
+        "{input:?} has a grid table"
     );
+    let mut with = String::new();
+    crate::xml::format_document(root, &on, &mut with).unwrap();
+
+    let root = parse_document(&arena, input, &off);
+    let mut without = String::new();
+    crate::xml::format_document(root, &off, &mut without).unwrap();
+
+    compare_strs(&with, &without, "extension off", input);
+}
+
+#[test]
+fn invalid_tables_parse_as_without_the_extension() {
+    for input in [
+        "+---+\n| a |\n",
+        "+---+\n| a |\n+ b +\n",
+        "+---+\n| a |\n+---+ x\n",
+        "+---+\n| a\n===\n",
+        "+---+\n| a\n---\n",
+        "+---+\n| a\nb\n",
+        "+---+\n| a\n\nb\n",
+        "> +---+\n| a |\n+---+\n",
+        "> +---+\n> | a\nb\n",
+        "- +---+\n  | a\nb\n",
+        "- +---+\n  | a\n- b\n",
+        "  +---+\n  | a |\n   +---+\n",
+        "+---+\n | a |\n+---+\n",
+        "+---+\n| a |\n+ ```\n  x\n  ```\n",
+        "+---+\n| a |\n+ ```\nx\n",
+        "+---+\n|\ta\n+---+\n",
+        "+---+\n| [x]: /u\n\n[x]\n",
+        "+-----+\n| a  |\n+-----+\n",
+        "+---+\n| 日 |\n+---+\n",
+    ] {
+        same_as_extension_off(input, |_| ());
+    }
+
+    same_as_extension_off("+---+---+\n| a | b |\n|---|---|\n| c | d |\n", |o| {
+        o.extension.table = true
+    });
+    same_as_extension_off("| a |\n|---|\n+---+\n| b |\n+---+\n", |o| {
+        o.extension.table = true
+    });
+    same_as_extension_off(">>>\n+---+\n| a |\n>>>\nb\n", |o| {
+        o.extension.multiline_block_quotes = true
+    });
 }
 
 #[test]

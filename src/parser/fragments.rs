@@ -21,8 +21,38 @@ where
         fragments: &[Fragment<'_>],
         suppress_grid_tables: bool,
     ) {
-        assert!(container.parent().is_none());
         let sourcepos = container.data().sourcepos;
+        let mut child = self.fragment_parser(container, fragments, suppress_grid_tables);
+        child.finalize_blocks().ok();
+        self.reclaim(child);
+        container.data_mut().sourcepos = sourcepos;
+        remap(container, fragments);
+    }
+
+    pub(crate) fn open_fragments(
+        &mut self,
+        container: Node<'a>,
+        fragments: &[Fragment<'_>],
+        suppress_grid_tables: bool,
+    ) -> Node<'a> {
+        let child = self.fragment_parser(container, fragments, suppress_grid_tables);
+        let current = child.current;
+        #[cfg(feature = "phoenix_heex")]
+        {
+            self.heex_block_depth = child.heex_block_depth;
+        }
+        self.reclaim(child);
+        remap(container, fragments);
+        current
+    }
+
+    fn fragment_parser(
+        &mut self,
+        container: Node<'a>,
+        fragments: &[Fragment<'_>],
+        suppress_grid_tables: bool,
+    ) -> Parser<'a, 'o, 'c, 'd> {
+        assert!(container.parent().is_none());
 
         let mut text = String::with_capacity(fragments.iter().map(|f| f.text.len() + 1).sum());
         let mut ends = Vec::with_capacity(fragments.len());
@@ -50,15 +80,14 @@ where
             child.process_line(&text[start..end], fragment.column);
             start = end;
         }
-        let finished = child.finalize_blocks();
+        child
+    }
 
+    fn reclaim(&mut self, child: Parser<'a, 'o, 'c, 'd>) {
         self.refmap = child.refmap;
-        if finished.is_err() {
+        if child.cancellation.check().is_err() {
             self.cancellation.cancelled.set(true);
         }
-
-        container.data_mut().sourcepos = sourcepos;
-        remap(container, fragments);
     }
 }
 
