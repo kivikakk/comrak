@@ -48,10 +48,6 @@ fn indented_codeblock_content_end_sourcepos() {
     ];
     for (input, literal, sourcepos, blank_prefix) in cases {
         for newline in ["\n", "\r\n", "\r"] {
-            let expected_literal = format!(
-                "{}\n",
-                literal.strip_suffix('\n').unwrap().replace('\n', newline)
-            );
             for blanks in [0, 1, 3] {
                 for suffix in ["", "next"] {
                     let input = format!(
@@ -69,7 +65,7 @@ fn indented_codeblock_content_end_sourcepos() {
                     let NodeValue::CodeBlock(code) = &data.value else {
                         unreachable!();
                     };
-                    assert_eq!(code.literal, expected_literal, "{input:?}");
+                    assert_eq!(code.literal, literal, "{input:?}");
                     assert_eq!(data.sourcepos, sourcepos, "{input:?}");
                 }
             }

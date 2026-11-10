@@ -1,6 +1,7 @@
 use super::model::{snapshot, Source};
 use super::{all_checks, generate, invariants, options, relations, run_check};
 use super::{MAX_DOC_LEN, STATIC_CHECKS};
+use comrak::nodes::NodeValue;
 use comrak::Options;
 use std::collections::{BTreeMap, BTreeSet};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -352,5 +353,32 @@ fn checks_catch_corrupted_positions() {
             || !invariants::kind(&corrupted, &source).is_empty()
             || !invariants::tiling(&corrupted, &source).is_empty();
         assert!(caught, "didn't catch shifted {}", clean[index].kind);
+    }
+}
+
+#[test]
+fn checks_catch_breaks_short_of_crlf() {
+    let doc = "a\r\nb  \r\nc\\\r\nd\r\n";
+    let options = options::named("cm");
+    let clean = snapshot(doc, &options);
+    let source = Source::new(doc);
+    assert!(invariants::kind(&clean, &source).is_empty());
+    let breaks: Vec<usize> = (1..clean.len())
+        .filter(|&index| {
+            matches!(
+                clean[index].value,
+                NodeValue::SoftBreak | NodeValue::LineBreak
+            )
+        })
+        .collect();
+    assert_eq!(breaks.len(), 3);
+    for index in breaks {
+        let mut corrupted = clean.clone();
+        corrupted[index].sp.end.column -= 1;
+        assert!(
+            !invariants::kind(&corrupted, &source).is_empty(),
+            "didn't catch short {}",
+            clean[index].kind
+        );
     }
 }
