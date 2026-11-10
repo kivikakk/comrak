@@ -12,6 +12,38 @@ fn commonmark_removes_redundant_strong() {
     commonmark(input, output, None);
 }
 
+#[test_case("**_a_**", "**_a_**\n", "<p><strong><em>a</em></strong></p>\n")]
+#[test_case("_**a**_", "***a***\n", "<p><em><strong>a</strong></em></p>\n")]
+#[test_case("*_a_*", "*_a_*\n", "<p><em><em>a</em></em></p>\n")]
+#[test_case(
+    "**_**a**_**",
+    "**_**a**_**\n",
+    "<p><strong><em><strong>a</strong></em></strong></p>\n"
+)]
+#[test_case(
+    "***_a_***",
+    "***_a_***\n",
+    "<p><em><strong><em>a</em></strong></em></p>\n"
+)]
+#[test_case("**_a_ b**", "***a* b**\n", "<p><strong><em>a</em> b</strong></p>\n")]
+#[test_case(
+    "foo***bar***baz",
+    "foo***bar***baz\n",
+    "<p>foo<em><strong>bar</strong></em>baz</p>\n"
+)]
+#[test_case("*a*_b_", "*a*_b_\n", "<p><em>a</em><em>b</em></p>\n")]
+#[test_case(
+    "**a**__b__",
+    "**a**__b__\n",
+    "<p><strong>a</strong><strong>b</strong></p>\n"
+)]
+#[test_case("*a*__b__", "*a*__b__\n", "<p><em>a</em><strong>b</strong></p>\n")]
+#[test_case("*a.*_b_", "*a.*_b_\n", "<p><em>a.</em><em>b</em></p>\n")]
+fn commonmark_emphasis_delimiters_remain_apart(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();

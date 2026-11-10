@@ -88,6 +88,8 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     no_linebreaks: bool,
     in_tight_list_item: bool,
     tight_stack: Vec<bool>,
+    emphasis_delims: Vec<char>,
+    last_emphasis: Option<(Node<'a>, char)>,
     #[cfg(feature = "grid_table")]
     grid_table_indent: usize,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
@@ -129,6 +131,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             no_linebreaks: false,
             in_tight_list_item: false,
             tight_stack: vec![],
+            emphasis_delims: vec![],
+            last_emphasis: None,
             #[cfg(feature = "grid_table")]
             grid_table_indent: 0,
             custom_escape: None,
@@ -574,13 +578,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(ref literal) => self.format_heex_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
-            NodeValue::Strong => {
-                if parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong)
-                {
-                    self.format_strong()?;
-                }
-            }
-            NodeValue::Emph => self.format_emph(node)?,
+            NodeValue::Strong => self.format_emphasis(node, entering, true)?,
+            NodeValue::Emph => self.format_emphasis(node, entering, false)?,
             NodeValue::TaskItem(ref nti) => self.format_task_item(nti, node, entering)?,
             NodeValue::Strikethrough => self.format_strikethrough()?,
             NodeValue::Highlight => self.format_highlight()?,
@@ -1080,24 +1079,55 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_strong(&mut self) -> fmt::Result {
-        write!(self, "**")
+    fn format_emphasis(&mut self, node: Node<'a>, entering: bool, strong: bool) -> fmt::Result {
+        let written = !(strong
+            && node
+                .parent()
+                .is_some_and(|p| node_matches!(p, NodeValue::Strong)));
+        let delim = if entering {
+            let delim = if written {
+                self.emphasis_delimiter(node, strong)
+            } else {
+                *self.emphasis_delims.last().unwrap()
+            };
+            self.emphasis_delims.push(delim);
+            delim
+        } else {
+            let delim = self.emphasis_delims.pop().unwrap();
+            if written {
+                self.last_emphasis = Some((node, delim));
+            }
+            delim
+        };
+        if written {
+            self.write_char(delim)?;
+            if strong {
+                self.write_char(delim)?;
+            }
+        }
+        Ok(())
     }
 
-    fn format_emph(&mut self, node: Node<'a>) -> fmt::Result {
-        let emph_delim = if match node.parent() {
-            Some(parent) => matches!(parent.data().value, NodeValue::Emph),
-            _ => false,
-        } && node.next_sibling().is_none()
-            && node.previous_sibling().is_none()
-        {
-            "_"
-        } else {
-            "*"
+    fn emphasis_delimiter(&self, node: Node<'a>, strong: bool) -> char {
+        let adjacent = match node.previous_sibling() {
+            Some(prev) => self
+                .last_emphasis
+                .filter(|&(last, _)| last.same_node(prev))
+                .map(|(_, delim)| delim),
+            None if !strong
+                && node.next_sibling().is_none()
+                && node
+                    .parent()
+                    .is_some_and(|p| node_matches!(p, NodeValue::Emph | NodeValue::Strong)) =>
+            {
+                self.emphasis_delims.last().copied()
+            }
+            None => None,
         };
-
-        self.write_str(emph_delim)?;
-        Ok(())
+        match adjacent {
+            Some('*') if !(strong && self.options.extension.underline) => '_',
+            _ => '*',
+        }
     }
 
     fn format_task_item(
