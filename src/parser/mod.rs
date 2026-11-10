@@ -2140,8 +2140,7 @@ where
         if !self.current.same_node(self.last_matched_container)
             && container.same_node(self.last_matched_container)
             && !self.blank
-            && (!self.options.extension.greentext
-                || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
+            && !self.options.extension.greentext
             && (node_matches!(self.current, NodeValue::Paragraph)
                 || lazy_callout.is_some_and(|c| c.same_node(self.current)))
         {
