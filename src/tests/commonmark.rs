@@ -210,3 +210,21 @@ fn entity_roundtrips_fooled_by_whitespace(markdown: &str) {
 
     assert_eq!(original_html, roundtripped_html);
 }
+
+#[test]
+fn commonmark_keeps_blank_lines_in_containers_in_tight_lists() {
+    commonmark(
+        "- > a\n  >\n  > b\n- c\n",
+        "- > a\n  > \n  > b\n- c\n",
+        None,
+    );
+    commonmark("- a\n  > b\n- c\n", "- a\n  > b\n- c\n", None);
+
+    let mut options = Options::default();
+    options.extension.alerts = true;
+    commonmark(
+        "1. > [!note]\n   > a\n   >\n   > b\n2. c\n",
+        "1. > [!NOTE]\n   > a\n   > \n   > b\n2. c\n",
+        Some(&options),
+    );
+}

@@ -87,6 +87,7 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
+    tight_stack: Vec<bool>,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
@@ -125,6 +126,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
+            tight_stack: vec![],
             custom_escape: None,
             footnote_ix: 0,
             ol_stack: vec![],
@@ -514,6 +516,25 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     NodeValue::Item(..) | NodeValue::TaskItem(..)
                 )
                 && self.get_in_tight_list_item(node);
+        }
+        if node_matches!(
+            node,
+            NodeValue::BlockQuote
+                | NodeValue::MultilineBlockQuote(..)
+                | NodeValue::Alert(..)
+                | NodeValue::Callout(..)
+                | NodeValue::BlockDirective(..)
+                | NodeValue::FootnoteDefinition(..)
+        ) {
+            if entering {
+                if self.in_tight_list_item && self.need_cr > 1 {
+                    self.need_cr = 1;
+                }
+                self.tight_stack.push(self.in_tight_list_item);
+                self.in_tight_list_item = false;
+            } else {
+                self.in_tight_list_item = self.tight_stack.pop().unwrap();
+            }
         }
         let next_is_block = node
             .next_sibling()
