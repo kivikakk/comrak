@@ -1,9 +1,10 @@
-use super::invariants::is_inline_footnote_paragraph;
+use super::invariants::{is_inline_footnote_paragraph, is_placeholder};
 use super::model::{children, hash, subtree_end, Finding, Rec, Source};
 use super::options::TOGGLES;
 use comrak::nodes::{LineColumn, NodeValue, Sourcepos};
 use comrak::Options;
 use fastrand::Rng;
+use unicode_width::UnicodeWidthChar;
 
 pub const FAMILIES: &[&str] = &[
     "crlf",
@@ -34,6 +35,8 @@ pub const FAMILIES: &[&str] = &[
     "table-body-cell",
     "table-pipe",
     "table-preface",
+    "grid-cell",
+    "grid-second-cell",
     "option-toggle",
 ];
 
@@ -347,6 +350,49 @@ fn has_bare_pipe(doc: &str) -> bool {
     false
 }
 
+fn is_grid_wrap(family: &str) -> bool {
+    matches!(family, "grid-cell" | "grid-second-cell")
+}
+
+fn grid_wrap(doc: &str, source: &Source, second: bool) -> Vec<Edit> {
+    let widths: Vec<usize> = (0..source.line_count())
+        .map(|line| {
+            String::from_utf8_lossy(source.line_content(line))
+                .chars()
+                .map(|c| c.width().unwrap_or(0))
+                .sum()
+        })
+        .collect();
+    let width = widths.iter().copied().max().unwrap_or(0) + 2;
+    let border = format!(
+        "{}+{}+\n",
+        if second { "+---" } else { "" },
+        "-".repeat(width)
+    );
+
+    let mut edits = vec![insert(0, &border)];
+    for (line, &w) in widths.iter().enumerate() {
+        let prefix = match (second, line) {
+            (false, _) => "| ",
+            (true, 0) => "| x | ",
+            (true, _) => "|   | ",
+        };
+        edits.push(insert(source.line_starts[line], prefix));
+        edits.push(insert(
+            source.content_ends[line],
+            &format!("{}|", " ".repeat(width - 1 - w)),
+        ));
+    }
+    let last = source.line_count() - 1;
+    let eol = if source.line_ends[last] > source.content_ends[last] {
+        ""
+    } else {
+        "\n"
+    };
+    edits.push(insert(doc.len(), &format!("{eol}{border}")));
+    edits
+}
+
 const HEADER_CELL: (&str, &str, &[usize]) = ("| ", " |\n| - |\n", &[0, 0, 0]);
 const BODY_CELL: (&str, &str, &[usize]) = ("| a |\n| - |\n| ", " |\n", &[0, 1, 0]);
 
@@ -555,6 +601,21 @@ fn trials(family: &str, doc: &str, options: &Options<'static>) -> Vec<Trial> {
         "heading" | "table-header-cell" | "table-body-cell" | "table-pipe" | "table-preface" => {
             vec![]
         }
+        "grid-cell" | "grid-second-cell"
+            if options.extension.grid_table
+                && !doc.is_empty()
+                && !doc.contains('\t')
+                && (0..source.line_count())
+                    .all(|line| !source.line_content(line).ends_with(b" ")) =>
+        {
+            let second = family == "grid-second-cell";
+            vec![trial(
+                grid_wrap(doc, &source, second),
+                View::Path(if second { &[0, 0, 1] } else { &[0, 0, 0] }),
+                Normalise::Exact,
+            )]
+        }
+        "grid-cell" | "grid-second-cell" => vec![],
         "option-toggle" => TOGGLES
             .iter()
             .map(|(_, apply_toggle)| {
@@ -590,7 +651,11 @@ fn same_tree(
         View::Path(path)
             if !matches!(
                 family,
-                "table-header-cell" | "table-body-cell" | "table-pipe" | "heading"
+                "table-header-cell"
+                    | "table-body-cell"
+                    | "table-pipe"
+                    | "heading"
+                    | "grid-second-cell"
             ) =>
         {
             new.len() == new_view.len() + path.len() + 1
@@ -615,14 +680,16 @@ fn same_tree(
 
 fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
     let rec = &old[index];
-    if matches!(rec.value, NodeValue::TableCell) && children(old, index).is_empty() {
+    if is_placeholder(old, index) {
         return true;
     }
     let is_break = matches!(rec.value, NodeValue::SoftBreak | NodeValue::LineBreak);
     match family {
         "crlf" => is_break,
         "trailing-space" => is_break || rec.value.block(),
-        "option-toggle" => is_inline_footnote_paragraph(old, index),
+        "option-toggle" | "grid-cell" | "grid-second-cell" => {
+            is_inline_footnote_paragraph(old, index)
+        }
         "line-indent" | "tab-for-spaces" => {
             matches!(&rec.value, NodeValue::CodeBlock(c) if !c.fenced)
         }
@@ -678,8 +745,19 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
                 {
                     return;
                 }
-                let want_start = edited_source.position(map_start(&trial.edits, start));
-                let want_end = edited_source.position(map_end(&trial.edits, end));
+                let at_eol = |offset: usize, line: usize| {
+                    let content_end = source.content_ends[line - 1];
+                    (is_grid_wrap(family) && offset >= content_end)
+                        .then(|| map_start(&trial.edits, content_end))
+                };
+                let want_start = edited_source.position(
+                    at_eol(start, old_sp.start.line)
+                        .map_or_else(|| map_start(&trial.edits, start), |eol| eol - 1),
+                );
+                let want_end = edited_source.position(
+                    at_eol(end, old_sp.end.line)
+                        .map_or_else(|| map_end(&trial.edits, end), |eol| eol - 2),
+                );
                 let which = match (new_sp.start != want_start, new_sp.end != want_end) {
                     (false, false) => return,
                     (true, true) => "both",

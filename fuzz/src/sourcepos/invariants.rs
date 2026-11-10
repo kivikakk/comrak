@@ -5,8 +5,47 @@ fn is_break(rec: &Rec) -> bool {
     matches!(rec.value, NodeValue::SoftBreak | NodeValue::LineBreak)
 }
 
-fn is_placeholder_cell(recs: &[Rec], index: usize) -> bool {
-    matches!(recs[index].value, NodeValue::TableCell) && children(recs, index).is_empty()
+pub fn is_placeholder(recs: &[Rec], index: usize) -> bool {
+    match recs[index].value {
+        NodeValue::TableCell | NodeValue::GridTableCell(_) => children(recs, index).is_empty(),
+        NodeValue::GridTableRow(_) => recs[index].sp.start > recs[index].sp.end,
+        _ => false,
+    }
+}
+
+fn in_grid_cell(recs: &[Rec], index: usize) -> bool {
+    let mut current = recs[index].parent;
+    while let Some(parent) = current {
+        if matches!(recs[parent].value, NodeValue::GridTableCell(_)) {
+            return true;
+        }
+        current = recs[parent].parent;
+    }
+    false
+}
+
+fn is_zero_width_cell_break(recs: &[Rec], index: usize, source: &Source) -> bool {
+    let sp = recs[index].sp;
+    is_break(&recs[index])
+        && sp.start.line == sp.end.line
+        && sp.start.column == sp.end.column + 1
+        && source
+            .offset(sp.start)
+            .is_some_and(|at| matches!(source.bytes.get(at), Some(b'|' | b'+')))
+}
+
+fn within_cell(close: &[u8]) -> Vec<u8> {
+    let is_border = |c: &u8| *c == b'|' || *c == b'+';
+    match close.iter().position(|&c| c == b'\n' || c == b'\r') {
+        None => close.to_vec(),
+        Some(eol) => {
+            let first = &close[..eol];
+            let first = &first[..first.iter().position(is_border).unwrap_or(first.len())];
+            let last = last_line(close);
+            let last = last.rsplit(is_border).next().unwrap();
+            [first, b"\n", last].concat()
+        }
+    }
 }
 
 fn is_task_item_paragraph(recs: &[Rec], index: usize) -> bool {
@@ -37,13 +76,35 @@ fn is_footnote_definition(rec: &Rec) -> bool {
     matches!(rec.value, NodeValue::FootnoteDefinition(_))
 }
 
+fn grid_row_order(recs: &[Rec], parent: usize, out: &mut Vec<Finding>) {
+    let cells: Vec<usize> = children(recs, parent)
+        .into_iter()
+        .filter(|&cell| !is_placeholder(recs, cell))
+        .collect();
+    for pair in cells.windows(2) {
+        let (a, b) = (&recs[pair[0]], &recs[pair[1]]);
+        if a.sp.start.line != b.sp.start.line || a.sp.start.column >= b.sp.start.column {
+            out.push(Finding::new(
+                "structure",
+                &b.kind,
+                &format!("row-order:{}", a.kind),
+                format!("{} @ {} then {} @ {}", a.kind, a.sp, b.kind, b.sp),
+            ));
+        }
+    }
+}
+
 fn sibling_order(recs: &[Rec], parent: usize, out: &mut Vec<Finding>) {
+    if matches!(recs[parent].value, NodeValue::GridTableRow(_)) {
+        grid_row_order(recs, parent, out);
+        return;
+    }
     for pair in children(recs, parent).windows(2) {
         let (a, b) = (&recs[pair[0]], &recs[pair[1]]);
         if is_footnote_definition(a) || is_footnote_definition(b) {
             continue;
         }
-        if is_placeholder_cell(recs, pair[1]) {
+        if is_placeholder(recs, pair[1]) {
             continue;
         }
         if a.sp.end >= b.sp.start {
@@ -62,7 +123,7 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
     sibling_order(recs, 0, &mut out);
     for (index, rec) in recs.iter().enumerate().skip(1) {
         sibling_order(recs, index, &mut out);
-        if is_placeholder_cell(recs, index) {
+        if is_placeholder(recs, index) {
             continue;
         }
         let sp = rec.sp;
@@ -75,7 +136,7 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
             flag("zero");
             continue;
         }
-        if sp.start > sp.end {
+        if sp.start > sp.end && !is_zero_width_cell_break(recs, index, source) {
             flag("inverted");
             continue;
         }
@@ -103,7 +164,15 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
             }
         }
         let parent = &recs[rec.parent.unwrap()];
-        if rec.parent != Some(0) && (sp.start < parent.sp.start || sp.end > parent.sp.end) {
+        let bound = match rec.value {
+            NodeValue::GridTableCell(cell)
+                if cell.rowspan > 1 || is_placeholder(recs, rec.parent.unwrap()) =>
+            {
+                (parent.sp.start, recs[parent.parent.unwrap()].sp.end)
+            }
+            _ => (parent.sp.start, parent.sp.end),
+        };
+        if rec.parent != Some(0) && (sp.start < bound.0 || sp.end > bound.1) {
             out.push(Finding::new(
                 "structure",
                 kind,
@@ -290,6 +359,12 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
             bad(!(s.starts_with(b"[^") || s.starts_with(b"^[")), "no-open")
         }
         NodeValue::Table(_) | NodeValue::TableRow(_) => bad(is_ws(first), "leading-ws"),
+        NodeValue::GridTable(_) => bad(first != b'+', "no-corner"),
+        NodeValue::GridTableRow(_) => bad(!matches!(first, b'|' | b'+'), "no-border"),
+        NodeValue::LineBreak if in_grid_cell(recs, index) => bad(
+            !(first == b'\\' && s[1..].iter().all(|&b| b == b' ')),
+            "not-break",
+        ),
         NodeValue::Text(_) if is_in_wikilink(recs, index) => None,
         NodeValue::Text(t) => bad(rec.sp.start.line != rec.sp.end.line, "multiline")
             .or(bad(!text_matches(s, t.as_bytes(), &mut 20000), "mismatch")),
@@ -375,6 +450,9 @@ pub fn kind(recs: &[Rec], source: &Source) -> Vec<Finding> {
         let Some(s) = source.slice(rec.sp) else {
             continue;
         };
+        if rec.sp.start.line != rec.sp.end.line && in_grid_cell(recs, index) {
+            continue;
+        }
         if let Some(reason) = kind_problem(recs, index, s) {
             out.push(Finding::new(
                 "kind",
@@ -518,6 +596,11 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
                 let line_start = source.line_starts[b.sp.start.line - 1];
                 let lead = &source.bytes[line_start..b_start.max(line_start)];
                 let lead = lead.strip_suffix(b"\\").unwrap_or(lead);
+                let lead = if in_grid_cell(recs, pair[0]) {
+                    lead.rsplit(|&c| c == b'|' || c == b'+').next().unwrap()
+                } else {
+                    lead
+                };
                 if b.sp.start.line != a.sp.end.line + 1 {
                     Some("break-line")
                 } else if !lead.iter().all(|&c| is_ws(c) || c == b'>') {
@@ -556,6 +639,13 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
         }
         let open = &source.bytes[parent_start..first_start];
         let close = &source.bytes[last_end + 1..=parent_end];
+        let cell_close;
+        let close = if in_grid_cell(recs, index) {
+            cell_close = within_cell(close);
+            &cell_close[..]
+        } else {
+            close
+        };
         let unescaped_open = if matches!(parent.value, NodeValue::Escaped) {
             open
         } else if is_break(first) {

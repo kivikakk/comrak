@@ -34,6 +34,7 @@ impl FuzzOptions {
 struct FuzzExtensionOptions {
     strikethrough: bool,
     table: bool,
+    grid_table: bool,
     autolink: bool,
     tasklist: bool,
     superscript: bool,
@@ -82,6 +83,7 @@ impl FuzzExtensionOptions {
         options::Extension {
             strikethrough: self.strikethrough,
             table: self.table,
+            grid_table: self.grid_table,
             autolink: self.autolink,
             tasklist: self.tasklist,
             superscript: self.superscript,

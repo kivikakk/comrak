@@ -280,6 +280,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     grid_table: Option<grid_table::Pending<'a>>,
     #[cfg(feature = "grid_table")]
     grid_table_suppressed: bool,
+    #[cfg(feature = "grid_table")]
+    cell_line_ends: Vec<grid_table::CellLineEnd>,
     cancellation: Cancellation<'o>,
 }
 
@@ -343,6 +345,8 @@ where
             grid_table: None,
             #[cfg(feature = "grid_table")]
             grid_table_suppressed: false,
+            #[cfg(feature = "grid_table")]
+            cell_line_ends: vec![],
             cancellation: Cancellation::new(should_cancel),
         }
     }
@@ -2355,6 +2359,9 @@ where
         for escaped_pipes in mem::take(&mut self.escaped_pipes) {
             escaped_pipes.restore(self.arena);
         }
+
+        #[cfg(feature = "grid_table")]
+        self.place_cell_line_ends();
 
         Ok(())
     }

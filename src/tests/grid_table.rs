@@ -430,6 +430,9 @@ fn invalid_tables_parse_as_without_the_extension() {
         "+---+\n| [x]: /u\n\n[x]\n",
         "+-----+\n| a  |\n+-----+\n",
         "+---+\n| 日 |\n+---+\n",
+        "+-+\r\nb",
+        "+-+\n|\r\n+",
+        "+-+\r| a\rb\r",
     ] {
         same_as_extension_off(input, |_| ());
     }
@@ -504,7 +507,7 @@ fn sourcepos() {
         concat!(
             "<block_quote sourcepos=\"1:1-3:13\">\n",
             "  <grid_table sourcepos=\"1:3-3:13\" alignments=\"none none\" widths=\"5 3\">\n",
-            "    <grid_table_row sourcepos=\"1:3-2:13\" section=\"body\">\n",
+            "    <grid_table_row sourcepos=\"2:3-2:13\" section=\"body\">\n",
             "      <grid_table_cell sourcepos=\"2:4-2:8\" column=\"0\" colspan=\"1\" rowspan=\"1\">\n",
             "        <paragraph sourcepos=\"2:5-2:7\">\n",
             "          <emph sourcepos=\"2:5-2:7\">\n",
@@ -532,5 +535,44 @@ fn extension_off() {
     assert!(
         root.descendants()
             .all(|n| !node_matches!(n, NodeValue::GridTable(..)))
+    );
+}
+
+#[test]
+fn sourcepos_of_breaks_rows_and_placeholders() {
+    grid_xml_opts(
+        concat!(
+            "+-------+---+\n",
+            "| a     | c |\n",
+            "| b\\    |   |\n",
+            "| d     |   |\n",
+            "+-------+---+\n",
+            "+-------+---+\n",
+        ),
+        concat!(
+            "<grid_table sourcepos=\"1:1-6:13\" alignments=\"none none\" widths=\"7 3\">\n",
+            "  <grid_table_row sourcepos=\"2:1-4:13\" section=\"body\">\n",
+            "    <grid_table_cell sourcepos=\"2:2-4:8\" column=\"0\" colspan=\"1\" rowspan=\"1\">\n",
+            "      <paragraph sourcepos=\"2:3-4:3\">\n",
+            "        <text sourcepos=\"2:3-2:3\" xml:space=\"preserve\">a</text>\n",
+            "        <softbreak sourcepos=\"2:9-2:8\" />\n",
+            "        <text sourcepos=\"3:3-3:3\" xml:space=\"preserve\">b</text>\n",
+            "        <linebreak sourcepos=\"3:4-3:8\" />\n",
+            "        <text sourcepos=\"4:3-4:3\" xml:space=\"preserve\">d</text>\n",
+            "      </paragraph>\n",
+            "    </grid_table_cell>\n",
+            "    <grid_table_cell sourcepos=\"2:10-4:12\" column=\"1\" colspan=\"1\" rowspan=\"1\">\n",
+            "      <paragraph sourcepos=\"2:11-2:11\">\n",
+            "        <text sourcepos=\"2:11-2:11\" xml:space=\"preserve\">c</text>\n",
+            "      </paragraph>\n",
+            "    </grid_table_cell>\n",
+            "  </grid_table_row>\n",
+            "  <grid_table_row sourcepos=\"5:1-5:0\" section=\"body\">\n",
+            "    <grid_table_cell sourcepos=\"5:1-5:0\" column=\"0\" colspan=\"1\" rowspan=\"1\" />\n",
+            "    <grid_table_cell sourcepos=\"5:1-5:0\" column=\"1\" colspan=\"1\" rowspan=\"1\" />\n",
+            "  </grid_table_row>\n",
+            "</grid_table>\n",
+        ),
+        |o| o.render.sourcepos = true,
     );
 }

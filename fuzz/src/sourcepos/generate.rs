@@ -1,4 +1,5 @@
 use fastrand::Rng;
+use unicode_width::UnicodeWidthChar;
 
 const WORDS: &[&str] = &[
     "a", "foo", "bar", "baz", "x", "été", "好的", "𐀀z", "1", "word", "a_b", "c*d", "e-f",
@@ -218,6 +219,207 @@ fn table(rng: &mut Rng) -> Vec<String> {
     lines
 }
 
+fn display_width(s: &str) -> usize {
+    s.chars().map(|c| c.width().unwrap_or(0)).sum()
+}
+
+fn grid_cell_content(rng: &mut Rng) -> Vec<String> {
+    match rng.usize(..12) {
+        0..=5 => {
+            let atoms = 1 + rng.usize(..3);
+            vec![inline(rng, 1, atoms)]
+        }
+        6 => paragraph_lines(rng),
+        7 => vec![format!("- {}", word(rng)), format!("- {}", word(rng))],
+        8 => vec!["```".to_string(), word(rng), "```".to_string()],
+        9 => vec![],
+        10 => vec![format!("> {}", word(rng))],
+        _ => vec![word(rng), String::new(), format!("    {}", word(rng))],
+    }
+}
+
+struct GridCell {
+    top: usize,
+    left: usize,
+    bottom: usize,
+    right: usize,
+    lines: Vec<String>,
+}
+
+fn grid_table(rng: &mut Rng) -> Vec<String> {
+    let columns = 1 + rng.usize(..3);
+    let rows = 1 + rng.usize(..3);
+    let mut taken = vec![vec![false; columns]; rows];
+    let mut cells = vec![];
+    for r in 0..rows {
+        for c in 0..columns {
+            if taken[r][c] {
+                continue;
+            }
+            let right = if c + 1 < columns && !taken[r][c + 1] && rng.usize(..4) == 0 {
+                c + 2
+            } else {
+                c + 1
+            };
+            let bottom =
+                if r + 1 < rows && (c..right).all(|c| !taken[r + 1][c]) && rng.usize(..4) == 0 {
+                    r + 2
+                } else {
+                    r + 1
+                };
+            for row in taken.iter_mut().take(bottom).skip(r) {
+                for slot in row.iter_mut().take(right).skip(c) {
+                    *slot = true;
+                }
+            }
+            cells.push(GridCell {
+                top: r,
+                left: c,
+                bottom,
+                right,
+                lines: grid_cell_content(rng),
+            });
+        }
+    }
+
+    let mut widths = vec![3; columns];
+    let mut heights = vec![1; rows];
+    for cell in cells.iter().filter(|cell| cell.right == cell.left + 1) {
+        let need = cell
+            .lines
+            .iter()
+            .map(|l| display_width(l))
+            .max()
+            .unwrap_or(0)
+            + 2;
+        widths[cell.left] = widths[cell.left].max(need);
+    }
+    for cell in cells.iter().filter(|cell| cell.bottom == cell.top + 1) {
+        heights[cell.top] = heights[cell.top].max(cell.lines.len());
+    }
+    for cell in &cells {
+        let need = cell
+            .lines
+            .iter()
+            .map(|l| display_width(l))
+            .max()
+            .unwrap_or(0)
+            + 2;
+        let have: usize =
+            widths[cell.left..cell.right].iter().sum::<usize>() + cell.right - cell.left - 1;
+        if have < need {
+            widths[cell.right - 1] += need - have;
+        }
+        let have: usize =
+            heights[cell.top..cell.bottom].iter().sum::<usize>() + cell.bottom - cell.top - 1;
+        if have < cell.lines.len() {
+            heights[cell.bottom - 1] += cell.lines.len() - have;
+        }
+    }
+
+    let mut xs = vec![0];
+    for w in &widths {
+        xs.push(xs.last().unwrap() + w + 1);
+    }
+    let mut ys = vec![0];
+    for h in &heights {
+        ys.push(ys.last().unwrap() + h + 1);
+    }
+    let (width, height) = (*xs.last().unwrap() + 1, *ys.last().unwrap() + 1);
+    let mut canvas = vec![vec![Some(' '); width]; height];
+
+    for cell in &cells {
+        let (x0, x1, y0, y1) = (xs[cell.left], xs[cell.right], ys[cell.top], ys[cell.bottom]);
+        for x in x0 + 1..x1 {
+            canvas[y0][x] = Some('-');
+            canvas[y1][x] = Some('-');
+        }
+        for row in canvas.iter_mut().take(y1).skip(y0 + 1) {
+            row[x0] = Some('|');
+            row[x1] = Some('|');
+        }
+    }
+    for cell in &cells {
+        let (x0, x1, y0, y1) = (xs[cell.left], xs[cell.right], ys[cell.top], ys[cell.bottom]);
+        for (y, x) in [(y0, x0), (y0, x1), (y1, x0), (y1, x1)] {
+            canvas[y][x] = Some('+');
+        }
+        for (i, line) in cell.lines.iter().enumerate() {
+            let mut x = x0 + 2;
+            for ch in line.chars() {
+                let w = ch.width().unwrap_or(0);
+                if w == 0 {
+                    continue;
+                }
+                canvas[y0 + 1 + i][x] = Some(ch);
+                for slot in &mut canvas[y0 + 1 + i][x + 1..x + w] {
+                    *slot = None;
+                }
+                x += w;
+            }
+        }
+    }
+
+    let unspanned = |boundary: usize| {
+        cells
+            .iter()
+            .all(|cell| cell.top >= boundary || cell.bottom <= boundary)
+    };
+    let mut rules = vec![];
+    if rows > 1 && rng.usize(..2) == 0 {
+        let boundary = 1 + rng.usize(..rows - 1);
+        if unspanned(boundary) {
+            rules.push(ys[boundary]);
+        }
+    }
+    if rng.usize(..4) == 0 {
+        if rows > 1 && unspanned(rows - 1) {
+            rules.push(ys[rows - 1]);
+        }
+        rules.push(height - 1);
+    }
+    for &y in &rules {
+        for slot in canvas[y].iter_mut().filter(|s| **s == Some('-')) {
+            *slot = Some('=');
+        }
+    }
+    let alignment_line = rules.first().copied().unwrap_or(0);
+    let pluses: Vec<usize> = (0..width)
+        .filter(|&x| canvas[alignment_line][x] == Some('+'))
+        .collect();
+    for pair in pluses.windows(2) {
+        if pair[1] - pair[0] >= 4 {
+            if rng.usize(..3) == 0 {
+                canvas[alignment_line][pair[0] + 1] = Some(':');
+            }
+            if rng.usize(..3) == 0 {
+                canvas[alignment_line][pair[1] - 1] = Some(':');
+            }
+        }
+    }
+
+    let indentation = pick(rng, &["", "", "", " ", "   "]);
+    let mut lines: Vec<String> = canvas
+        .into_iter()
+        .map(|row| {
+            format!(
+                "{indentation}{}",
+                row.into_iter().flatten().collect::<String>()
+            )
+        })
+        .collect();
+    if rng.usize(..8) == 0 {
+        let line = rng.usize(..lines.len());
+        if let Some((at, _)) = lines[line]
+            .char_indices()
+            .nth(rng.usize(..lines[line].chars().count()))
+        {
+            lines[line].remove(at);
+        }
+    }
+    lines
+}
+
 fn fenced_code(rng: &mut Rng) -> Vec<String> {
     let fence = pick(rng, &["```", "~~~~"]);
     let info = pick(rng, &["", "rust", " rust x", "rust {.c}"]);
@@ -236,7 +438,7 @@ fn fenced_code(rng: &mut Rng) -> Vec<String> {
 }
 
 fn leaf_block(rng: &mut Rng) -> Vec<String> {
-    match rng.usize(..24) {
+    match rng.usize(..26) {
         0..=5 => {
             let lines = paragraph_lines(rng);
             with_first_indent(rng, lines.iter().map(String::as_str))
@@ -313,6 +515,7 @@ fn leaf_block(rng: &mut Rng) -> Vec<String> {
         20 => vec![format!(">{}", word(rng))],
         21 => vec!["$$".to_string(), "x".to_string(), "$$".to_string()],
         22 => vec![format!("{}<.c a=\"b\">x</.c>", indent(rng))],
+        23 | 24 => grid_table(rng),
         _ => vec![word(rng), String::new(), format!(": {}", word(rng))],
     }
 }

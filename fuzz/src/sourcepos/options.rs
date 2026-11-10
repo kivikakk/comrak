@@ -6,6 +6,7 @@ type Toggle = (&'static str, fn(&mut Options<'static>));
 pub const TOGGLES: &[Toggle] = &[
     ("strikethrough", |o| o.extension.strikethrough = true),
     ("table", |o| o.extension.table = true),
+    ("grid_table", |o| o.extension.grid_table = true),
     ("autolink", |o| o.extension.autolink = true),
     ("tasklist", |o| o.extension.tasklist = true),
     ("superscript", |o| o.extension.superscript = true),
@@ -99,6 +100,7 @@ pub const COMPOSITES: &[(&str, &[&str])] = &[
         &[
             "strikethrough",
             "table",
+            "grid_table",
             "autolink",
             "tasklist",
             "superscript",
@@ -160,6 +162,7 @@ pub const COMPOSITES: &[(&str, &[&str])] = &[
             "footnotes",
             "leave_footnote_definitions",
             "table",
+            "grid_table",
             "tasklist",
             "ofm_comments",
             "subtext",

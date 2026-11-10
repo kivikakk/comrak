@@ -1,5 +1,6 @@
 mod layout;
 
+use std::collections::HashMap;
 use std::ops::Range;
 
 use crate::node_matches;
@@ -17,9 +18,27 @@ pub(crate) struct Pending<'a> {
     layout: Option<Layout>,
 }
 
+pub(crate) struct CellLineEnd {
+    line: usize,
+    start: usize,
+    eol: usize,
+}
+
+impl CellLineEnd {
+    pub(crate) fn remap(self, fragments: &[Fragment<'_>]) -> Self {
+        let fragment = &fragments[self.line - 1];
+        CellLineEnd {
+            line: fragment.line,
+            start: fragment.byte + self.start,
+            eol: fragment.byte + self.eol,
+        }
+    }
+}
+
 struct PendingLine {
     start: usize,
     end: usize,
+    eol: usize,
     line: usize,
     byte: usize,
     column: usize,
@@ -49,6 +68,7 @@ impl Pending<'_> {
             .iter()
             .map(|line| Fragment {
                 text: self.text(line),
+                eol: &self.text[line.end..line.eol],
                 line: line.line,
                 byte: line.byte,
                 column: line.column,
@@ -80,6 +100,7 @@ where
             || self.grid_table_suppressed
             || indented
             || maybe_lazy
+            || self.blank
             || node_matches!(container, NodeValue::Table(..))
             || !layout::is_rule(
                 layout::trim_end(&line[self.first_nonspace..self.curline_end_col]),
@@ -117,9 +138,12 @@ where
         pending
             .text
             .push_str(&line[self.offset..self.curline_end_col]);
+        let end = pending.text.len();
+        pending.text.push_str(&line[self.curline_end_col..]);
         pending.lines.push(PendingLine {
             start,
-            end: pending.text.len(),
+            end,
+            eol: pending.text.len(),
             line: self.line_number,
             byte: self.offset,
             column: self.column,
@@ -188,17 +212,20 @@ where
 
         for row in &layout.rows {
             let top = &pending.lines[row.top];
-            let bottom = &pending.lines[row.bottom - 1];
-            let row_node = self.closed_node(
-                NodeValue::GridTableRow(row.section),
+            let sourcepos = if row.bottom > row.top + 1 {
+                let first = &pending.lines[row.top + 1];
+                let last = &pending.lines[row.bottom - 1];
                 (
-                    top.line,
-                    top.table_byte + 1,
-                    bottom.line,
-                    pending.table_end(bottom),
+                    first.line,
+                    first.table_byte + 1,
+                    last.line,
+                    pending.table_end(last),
                 )
-                    .into(),
-            );
+                    .into()
+            } else {
+                (top.line, top.table_byte + 1, top.line, top.table_byte).into()
+            };
+            let row_node = self.closed_node(NodeValue::GridTableRow(row.section), sourcepos);
             table.append(row_node);
 
             for cell in &row.cells {
@@ -227,8 +254,51 @@ where
                     Ast::new_with_sourcepos(NodeValue::GridTableCell(cell.value), sourcepos).into(),
                 );
                 self.parse_fragments(cell_node, &fragments, false);
+                self.cell_line_ends.extend(
+                    cell.content
+                        .iter()
+                        .zip(&pending.lines[row.top + 1..])
+                        .map(|(range, line)| CellLineEnd {
+                            line: line.line,
+                            start: line.table_byte + range.start + 1,
+                            eol: line.table_byte + range.end + 1,
+                        }),
+                );
                 row_node.append(cell_node);
             }
+        }
+    }
+
+    pub(super) fn place_cell_line_ends(&mut self) {
+        if self.cell_line_ends.is_empty() {
+            return;
+        }
+
+        let mut by_line: HashMap<usize, Vec<&CellLineEnd>> = HashMap::new();
+        for end in &self.cell_line_ends {
+            by_line.entry(end.line).or_default().push(end);
+        }
+
+        for node in self.root.descendants() {
+            let mut ast = node.data_mut();
+            let soft = match ast.value {
+                NodeValue::SoftBreak => true,
+                NodeValue::LineBreak => false,
+                _ => continue,
+            };
+            let start = ast.sourcepos.start;
+            let Some(eol) = by_line.get(&start.line).and_then(|ends| {
+                ends.iter()
+                    .filter(|end| end.start <= start.column && start.column <= end.eol)
+                    .max_by_key(|end| end.start)
+                    .map(|end| end.eol)
+            }) else {
+                continue;
+            };
+            if soft {
+                ast.sourcepos.start.column = eol;
+            }
+            ast.sourcepos.end = (start.line, eol - 1).into();
         }
     }
 
@@ -281,6 +351,7 @@ fn cell_fragment<'t>(
 
     Fragment {
         text,
+        eol: "\n",
         line: line.line,
         byte,
         column,

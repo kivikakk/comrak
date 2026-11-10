@@ -6,6 +6,7 @@ use crate::parser::inlines::RefMap;
 
 pub(crate) struct Fragment<'s> {
     pub(crate) text: &'s str,
+    pub(crate) eol: &'s str,
     pub(crate) line: usize,
     pub(crate) byte: usize,
     pub(crate) column: usize,
@@ -24,7 +25,7 @@ where
         let sourcepos = container.data().sourcepos;
         let mut child = self.fragment_parser(container, fragments, suppress_grid_tables);
         child.finalize_blocks().ok();
-        self.reclaim(child);
+        self.reclaim(child, fragments);
         container.data_mut().sourcepos = sourcepos;
         remap(container, fragments);
     }
@@ -41,7 +42,7 @@ where
         {
             self.heex_block_depth = child.heex_block_depth;
         }
-        self.reclaim(child);
+        self.reclaim(child, fragments);
         remap(container, fragments);
         current
     }
@@ -54,11 +55,12 @@ where
     ) -> Parser<'a, 'o, 'c, 'd> {
         assert!(container.parent().is_none());
 
-        let mut text = String::with_capacity(fragments.iter().map(|f| f.text.len() + 1).sum());
+        let mut text =
+            String::with_capacity(fragments.iter().map(|f| f.text.len() + f.eol.len()).sum());
         let mut ends = Vec::with_capacity(fragments.len());
         for fragment in fragments {
             text.push_str(fragment.text);
-            text.push('\n');
+            text.push_str(fragment.eol);
             ends.push(text.len());
         }
 
@@ -83,8 +85,14 @@ where
         child
     }
 
-    fn reclaim(&mut self, child: Parser<'a, 'o, 'c, 'd>) {
+    fn reclaim(&mut self, child: Parser<'a, 'o, 'c, 'd>, fragments: &[Fragment<'_>]) {
         self.refmap = child.refmap;
+        self.cell_line_ends.extend(
+            child
+                .cell_line_ends
+                .into_iter()
+                .map(|end| end.remap(fragments)),
+        );
         if child.cancellation.check().is_err() {
             self.cancellation.cancelled.set(true);
         }
@@ -199,6 +207,7 @@ mod tests {
             .enumerate()
             .map(|(i, &text)| Fragment {
                 text,
+                eol: "\n",
                 line: first_line + i,
                 byte,
                 column: byte,
@@ -247,6 +256,7 @@ mod tests {
         let at = |column| {
             let fragment = Fragment {
                 text: "\tx",
+                eol: "\n",
                 line: 1,
                 byte: 2,
                 column,
