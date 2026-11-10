@@ -20,6 +20,9 @@ use crate::scanners;
 use crate::strings::trim_start_match;
 use crate::{node_matches, strings};
 
+#[cfg(feature = "grid_table")]
+mod grid_table;
+
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
@@ -565,11 +568,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::TableRow(..) => self.format_table_row(entering)?,
             NodeValue::TableCell => self.format_table_cell(node, entering)?,
             #[cfg(feature = "grid_table")]
-            NodeValue::GridTable(..)
-            | NodeValue::GridTableRow(..)
-            | NodeValue::GridTableCell(..) => {
-                todo!()
+            NodeValue::GridTable(..) => {
+                self.format_grid_table(node)?;
+                return Ok(false);
             }
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableRow(..) => unreachable!(),
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableCell(..) => (),
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)?
             }

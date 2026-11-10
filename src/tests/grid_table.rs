@@ -607,7 +607,6 @@ fn html_spans() {
             "</tbody>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -649,7 +648,6 @@ fn html_sections_and_alignment() {
             "</tfoot>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -659,7 +657,6 @@ fn html_without_body() {
         [extension.grid_table],
         "+---+\n| a |\n+===+\n",
         "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n</table>\n",
-        no_roundtrip,
     );
     html_opts!(
         [extension.grid_table],
@@ -670,7 +667,6 @@ fn html_without_body() {
             "<tfoot>\n<tr>\n<td>b</td>\n</tr>\n</tfoot>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -704,7 +700,6 @@ fn html_blocks_in_cells() {
             "</tbody>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -728,7 +723,6 @@ fn html_sourcepos() {
             "</tbody>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -753,11 +747,10 @@ fn html_widths() {
             "</tbody>\n",
             "</table>\n",
         ),
-        no_roundtrip,
     );
     html_opts!(
         [extension.grid_table, render.grid_table_widths],
-        "+--+-+\n|a |b|\n+--+-+\n",
+        "+----+--+\n| a  | b|\n+----+--+\n",
         concat!(
             "<table>\n",
             "<colgroup>\n",
@@ -772,6 +765,125 @@ fn html_widths() {
             "</tbody>\n",
             "</table>\n",
         ),
-        no_roundtrip,
+    );
+}
+
+fn grid_options() -> Options<'static> {
+    let mut options = Options::default();
+    options.extension.grid_table = true;
+    options
+}
+
+#[test]
+fn commonmark_spans() {
+    commonmark(
+        concat!(
+            "+---+---+---+\n",
+            "| AAAAA | B |\n",
+            "+---+---+ B +\n",
+            "| D | E | B |\n",
+            "+ D +---+---+\n",
+            "| D | CCCCC |\n",
+            "+---+---+---+\n",
+        ),
+        concat!(
+            "+-------+---+\n",
+            "| AAAAA | B |\n",
+            "+---+---+ B |\n",
+            "| D | E | B |\n",
+            "| D +---+---+\n",
+            "| D | CCCCC |\n",
+            "+---+-------+\n",
+        ),
+        Some(&grid_options()),
+    );
+}
+
+#[test]
+fn commonmark_sections_and_alignment() {
+    commonmark(
+        concat!(
+            "+-----+---+\n",
+            "| a   | b |\n",
+            "+====:+:==+\n",
+            "| - c | d |\n",
+            "|     | e |\n",
+            "+=====+===+\n",
+            "| f   |   |\n",
+            "+=====+===+\n",
+        ),
+        concat!(
+            "+-----+---+\n",
+            "| a   | b |\n",
+            "+====:+:==+\n",
+            "| - c | d |\n",
+            "|     | e |\n",
+            "+=====+===+\n",
+            "| f   |   |\n",
+            "+=====+===+\n",
+        ),
+        Some(&grid_options()),
+    );
+}
+
+#[test]
+fn commonmark_blank_rows_keep_spans() {
+    html_opts!(
+        [extension.grid_table],
+        "+---+---+\n|       |\n+===+===+\n| a | b |\n+---+---+\n",
+        concat!(
+            "<table>\n",
+            "<thead>\n<tr>\n<th colspan=\"2\"></th>\n</tr>\n</thead>\n",
+            "<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n</tr>\n</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
+fn commonmark_separates_tables_in_tight_lists() {
+    let options = grid_options();
+    commonmark(
+        "- +---+\n  | a |\n  +---+\n    +---+\n    | b |\n    +---+\n- c\n",
+        concat!(
+            "- \n",
+            "   +---+\n",
+            "   | a |\n",
+            "   +---+\n",
+            "    +---+\n",
+            "    | b |\n",
+            "    +---+\n",
+            "- c\n",
+        ),
+        Some(&options),
+    );
+    html_opts!(
+        [extension.grid_table],
+        "- > x\n  >\n  > +---+\n  > | a |\n  > +---+\n  >\n  > | b | c |\n- e\n",
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<blockquote>\n",
+            "<p>x</p>\n",
+            "<table>\n",
+            "<tbody>\n<tr>\n<td>a</td>\n</tr>\n</tbody>\n",
+            "</table>\n",
+            "<p>| b | c |</p>\n",
+            "</blockquote>\n",
+            "</li>\n",
+            "<li>e</li>\n",
+            "</ul>\n",
+        ),
+    );
+}
+
+#[test]
+fn commonmark_blank_line_after_absorbing_blocks() {
+    let mut options = grid_options();
+    options.extension.description_lists = true;
+    commonmark(
+        "- a\n\n  : b\n\n  +---+\n  | c |\n  +---+\n- d\n",
+        "- a\n  : b\n  \n   +---+\n   | c |\n   +---+\n- d\n",
+        Some(&options),
     );
 }

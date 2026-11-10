@@ -41,7 +41,7 @@ pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, Case, split_off_front_matter};
 
-const TAB_STOP: usize = 4;
+pub(crate) const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 // Very deeply nested lists can cause quadratic performance issues.
