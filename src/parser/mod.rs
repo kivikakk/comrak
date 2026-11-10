@@ -269,6 +269,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     blank: bool,
     partially_consumed_tab: bool,
     working_content: String,
+    crlf_lines: Vec<usize>,
     curline_len: usize,
     curline_end_col: usize,
     last_line_length: usize,
@@ -336,6 +337,7 @@ where
             blank: false,
             partially_consumed_tab: false,
             working_content: String::new(),
+            crlf_lines: Vec::new(),
             curline_len: 0,
             curline_end_col: 0,
             last_line_length: 0,
@@ -385,6 +387,7 @@ where
                     eol += 1;
                     if eol < end && sb[eol] == b'\n' {
                         eol += 1;
+                        self.crlf_lines.push(self.line_number + 1);
                     }
                 } else if sb[eol] == b'\n' {
                     eol += 1;
@@ -2339,7 +2342,17 @@ where
             // properly calculate inline sourcepos during inline processing.
             lines.offsets.push(self.offset);
 
-            lines.content.push_str(&line[self.offset..]);
+            let rest = &line[self.offset..];
+            match rest
+                .strip_suffix("\r\n")
+                .or_else(|| rest.strip_suffix('\r'))
+            {
+                Some(body) => {
+                    lines.content.push_str(body);
+                    lines.content.push('\n');
+                }
+                None => lines.content.push_str(rest),
+            }
         }
     }
 
@@ -2523,9 +2536,6 @@ where
                         ncb.info = info;
                     }
 
-                    if content.as_bytes().get(pos) == Some(&b'\r') {
-                        pos += 1;
-                    }
                     if content.as_bytes().get(pos) == Some(&b'\n') {
                         pos += 1;
                     }
@@ -2661,6 +2671,7 @@ where
             line,
             &mut self.refmap,
             &self.inline_tables,
+            &self.crlf_lines,
             &mut self.footnote_defs,
             self.delimiter_arena,
             &self.cancellation,

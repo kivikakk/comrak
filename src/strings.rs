@@ -78,13 +78,6 @@ pub fn normalize_code(v: &str) -> Cow<'_, str> {
 
     while i < b.len() {
         match b[i] {
-            b'\r' => {
-                if i + 1 == v.len() || b[i + 1] != b'\n' {
-                    r.push_str(&v[offset..i]);
-                    r.push(' ');
-                    offset = i + 1;
-                }
-            }
             b'\n' => {
                 r.push_str(&v[offset..i]);
                 r.push(' ');

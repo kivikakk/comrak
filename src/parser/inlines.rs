@@ -48,7 +48,7 @@ impl ByteTables {
             emph: [false; 256],
             colon_needs_slashes: false,
         };
-        for &b in b"\n\r_*\"`\\&<[]!" {
+        for &b in b"\n_*\"`\\&<[]!" {
             t.special[b as usize] = true;
         }
         if options.extension.math_dollars || options.extension.math_code {
@@ -125,6 +125,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     flags: HtmlSkipFlags,
     pub refmap: &'r mut RefMap,
     tables: &'r ByteTables,
+    crlf_lines: &'r [usize],
     footnote_defs: &'p mut FootnoteDefs<'a>,
     delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
     cancellation: &'r Cancellation<'o>,
@@ -152,6 +153,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         line: usize,
         refmap: &'r mut RefMap,
         tables: &'r ByteTables,
+        crlf_lines: &'r [usize],
         footnote_defs: &'p mut FootnoteDefs<'a>,
         delimiter_arena: &'d typed_arena::Arena<Delimiter<'a, 'd>>,
         cancellation: &'r Cancellation<'o>,
@@ -170,6 +172,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             flags: HtmlSkipFlags::default(),
             refmap,
             tables,
+            crlf_lines,
             footnote_defs,
             delimiter_arena,
             cancellation,
@@ -251,7 +254,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         self.line_offset = line_offsets[adjusted_line];
 
         let new_inl: Option<Node<'a>> = match b {
-            b'\r' | b'\n' => Some(self.handle_newline()),
+            b'\n' => Some(self.handle_newline()),
             b'`' => Some(self.handle_backticks(line_offsets)),
             b'=' if self.options.extension.highlight => Some(self.handle_delim(b'=')),
             b'+' if self.options.extension.insert => Some(self.handle_delim(b'+')),
@@ -447,7 +450,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_byte() == Some(b'%') {
             let mut end_pos_opt = None;
             for i in range_start + 2..self.input.len() - 1 {
-                if self.input.as_bytes()[i] == b'\n' || self.input.as_bytes()[i] == b'\r' {
+                if self.input.as_bytes()[i] == b'\n' {
                     // Mismatched comment, treat as text
                     break;
                 }
@@ -480,21 +483,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn handle_newline(&mut self) -> Node<'a> {
         let nlpos = self.scanner.pos;
-        if self.peek_byte() == Some(b'\r') {
-            self.scanner.pos += 1;
-        }
-        if self.peek_byte() == Some(b'\n') {
-            self.scanner.pos += 1;
-        }
-        assert_ne!(nlpos, self.scanner.pos);
+        self.scanner.pos += 1;
+        let eol_end = self.eol_end(nlpos);
 
         let inl = if nlpos > 1
             && self.input.as_bytes()[nlpos - 1] == b' '
             && self.input.as_bytes()[nlpos - 2] == b' '
         {
-            self.make_inline(NodeValue::LineBreak, nlpos - 2, self.scanner.pos - 1)
+            self.make_inline(NodeValue::LineBreak, nlpos - 2, eol_end)
         } else {
-            self.make_inline(NodeValue::SoftBreak, nlpos, self.scanner.pos - 1)
+            self.make_inline(NodeValue::SoftBreak, nlpos, eol_end)
         };
         self.line += 1;
         self.column_offset = -(self.scanner.pos as isize);
@@ -566,8 +564,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             );
             inl.append(inline_text);
             inl
-        } else if !self.eof() && self.skip_line_end() {
-            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.scanner.pos - 1);
+        } else if self.peek_byte() == Some(b'\n') {
+            self.scanner.pos += 1;
+            let inl = self.make_inline(NodeValue::LineBreak, startpos, self.eol_end(startpos + 1));
             self.line += 1;
             self.column_offset = -(self.scanner.pos as isize);
             self.skip_spaces();
@@ -1303,6 +1302,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.line,
             self.refmap,
             self.tables,
+            self.crlf_lines,
             self.footnote_defs,
             self.delimiter_arena,
             self.cancellation,
@@ -2166,8 +2166,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     #[inline]
-    fn skip_line_end(&mut self) -> bool {
-        self.scanner.skip_line_end(&self.input)
+    fn eol_end(&self, nlpos: usize) -> usize {
+        nlpos + usize::from(self.crlf_lines.binary_search(&self.line).is_ok())
     }
 
     #[inline]
@@ -2654,7 +2654,7 @@ pub(crate) fn manual_scan_link_url(input: &str) -> Option<(&str, usize)> {
                 break;
             } else if b == b'\\' {
                 i += 2;
-            } else if b == b'\n' || b == b'\r' || b == b'<' {
+            } else if b == b'\n' || b == b'<' {
                 return None;
             } else {
                 i += 1;
@@ -2777,9 +2777,6 @@ impl Scanner {
 
     pub fn skip_line_end(&mut self, input: &str) -> bool {
         let old_pos = self.pos;
-        if self.peek_byte(input) == Some(b'\r') {
-            self.pos += 1;
-        }
         if self.peek_byte(input) == Some(b'\n') {
             self.pos += 1;
         }
@@ -2866,6 +2863,7 @@ mod tests {
             1,
             &mut refmap,
             &tables,
+            &[],
             &mut footnote_defs,
             &delimiter_arena,
             &cancellation,
@@ -2899,6 +2897,7 @@ mod tests {
             1,
             &mut refmap,
             &tables,
+            &[],
             &mut footnote_defs,
             &delimiter_arena,
             &cancellation,

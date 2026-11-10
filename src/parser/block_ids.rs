@@ -23,9 +23,7 @@ pub(crate) struct TrailingMarker {
 /// the newline that ends its last line.  Obsidian won't recognise a marker with
 /// whitespace after it, so `hello ^id  ` is just text.
 pub(crate) fn ends_with_whitespace(content: &str) -> bool {
-    content
-        .trim_end_matches(['\r', '\n'])
-        .ends_with([' ', '\t'])
+    content.trim_end_matches('\n').ends_with([' ', '\t'])
 }
 
 pub(crate) fn is_id_byte(b: u8) -> bool {
@@ -35,8 +33,8 @@ pub(crate) fn is_id_byte(b: u8) -> bool {
 /// The identifier ending a block's raw content, if it ends with one, which is
 /// also cut off `content` so that it doesn't end up in the block's text.
 pub(crate) fn take_trailing_marker(content: &mut String) -> Option<TrailingMarker> {
-    let end = content.trim_end_matches(['\r', '\n']).len();
-    let start = content[..end].rfind(['\r', '\n']).map_or(0, |i| i + 1);
+    let end = content.trim_end_matches('\n').len();
+    let start = content[..end].rfind('\n').map_or(0, |i| i + 1);
     let bytes = content.as_bytes();
 
     let mut name_start = end;

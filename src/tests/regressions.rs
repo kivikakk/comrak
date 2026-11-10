@@ -1,4 +1,5 @@
 use super::*;
+use ntest::test_case;
 
 #[test]
 fn pointy_brace() {
@@ -276,6 +277,31 @@ fn sourcepos_newline_kinds() {
             ])
         ])
     );
+}
+
+#[test_case("```\na\nb\n```\n", "<pre><code>a\nb\n</code></pre>\n")]
+#[test_case(
+    "``` a\nb\n```\n",
+    "<pre><code class=\"language-a\">b\n</code></pre>\n"
+)]
+#[test_case("    a\n    b\n", "<pre><code>a\nb\n</code></pre>\n")]
+#[test_case(
+    "> ```\n> a\n> ```\n",
+    "<blockquote>\n<pre><code>a\n</code></pre>\n</blockquote>\n"
+)]
+#[test_case("`a\nb`\n", "<p><code>a b</code></p>\n")]
+#[test_case("<div>\na\n</div>\n", "<div>\na\n</div>\n")]
+#[test_case("<!--\na\n-->\n", "<!--\na\n-->\n")]
+#[test_case("x <span\nid=\"a\">\n", "<p>x <span\nid=\"a\"></p>\n")]
+#[test_case("[a](/u \"t\nu\")\n", "<p><a href=\"/u\" title=\"t\nu\">a</a></p>\n")]
+#[test_case(
+    "[a]: /u \"t\nu\"\n\n[a]\n",
+    "<p><a href=\"/u\" title=\"t\nu\">a</a></p>\n"
+)]
+fn literal_line_endings(markdown: &str, expected: &str) {
+    for eol in ["\n", "\r\n", "\r"] {
+        html_opts!([render.r#unsafe], &markdown.replace('\n', eol), expected);
+    }
 }
 
 #[test]

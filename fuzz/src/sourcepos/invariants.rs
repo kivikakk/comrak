@@ -293,7 +293,7 @@ fn text_matches(slice: &[u8], literal: &[u8], fuel: &mut usize) -> bool {
     false
 }
 
-fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
+fn kind_problem(recs: &[Rec], index: usize, s: &[u8], ends_line: bool) -> Option<&'static str> {
     let rec = &recs[index];
     let first = s[0];
     let bad = |condition: bool, reason: &'static str| condition.then_some(reason);
@@ -368,8 +368,9 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
         NodeValue::Text(_) if is_in_wikilink(recs, index) => None,
         NodeValue::Text(t) => bad(rec.sp.start.line != rec.sp.end.line, "multiline")
             .or(bad(!text_matches(s, t.as_bytes(), &mut 20000), "mismatch")),
-        NodeValue::SoftBreak => bad(!s.iter().all(|&b| is_ws(b)), "non-ws")
-            .or(bad(!matches!(s.last(), Some(b'\n' | b'\r')), "no-eol")),
+        NodeValue::SoftBreak => {
+            bad(!s.iter().all(|&b| is_ws(b)), "non-ws").or(bad(!ends_line, "no-eol"))
+        }
         NodeValue::LineBreak => {
             let body_len = s.iter().rposition(|&b| b != b'\n' && b != b'\r');
             let body = body_len.map_or(&s[..0], |i| &s[..=i]);
@@ -377,7 +378,7 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8]) -> Option<&'static str> {
                 !(body == b"\\" || (body.len() >= 2 && body.iter().all(|&b| b == b' '))),
                 "not-break",
             )
-            .or(bad(!matches!(s.last(), Some(b'\n' | b'\r')), "no-eol"))
+            .or(bad(!ends_line, "no-eol"))
         }
         NodeValue::Code(_) => {
             let ticks = s.iter().take_while(|&&b| b == b'`').count();
@@ -453,7 +454,10 @@ pub fn kind(recs: &[Rec], source: &Source) -> Vec<Finding> {
         if rec.sp.start.line != rec.sp.end.line && in_grid_cell(recs, index) {
             continue;
         }
-        if let Some(reason) = kind_problem(recs, index, s) {
+        let ends_line = source
+            .span(rec.sp)
+            .is_some_and(|(_, end)| end + 1 == source.line_ends[rec.sp.end.line - 1]);
+        if let Some(reason) = kind_problem(recs, index, s, ends_line) {
             out.push(Finding::new(
                 "kind",
                 &rec.kind,
