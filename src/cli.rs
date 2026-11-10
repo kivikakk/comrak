@@ -137,12 +137,17 @@ pub struct OptionArgs {
     /// Suppress pretty-printing newlines between block-level HTML elements
     #[arg(long)]
     pub compact: bool,
+
+    /// Write <colgroup> in HTML output
+    #[arg(long)]
+    pub grid_table_widths: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Extension {
     Strikethrough,
     Table,
+    GridTable,
     Autolink,
     Tasklist,
     Superscript,
@@ -214,6 +219,7 @@ impl OptionArgs {
         let extension = options::Extension::builder()
             .strikethrough(ext(Extension::Strikethrough) || self.gfm)
             .table(ext(Extension::Table) || self.gfm)
+            .grid_table(ext(Extension::GridTable))
             .autolink(ext(Extension::Autolink) || self.gfm)
             .tasklist(ext(Extension::Tasklist) || self.gfm)
             .superscript(ext(Extension::Superscript))
@@ -277,6 +283,7 @@ impl OptionArgs {
             .ignore_empty_links(self.ignore_empty_links)
             .gfm_quirks(self.gfm_quirks || self.gfm)
             .tasklist_classes(self.tasklist_classes)
+            .grid_table_widths(self.grid_table_widths)
             .build();
 
         Options {

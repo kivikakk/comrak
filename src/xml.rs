@@ -250,6 +250,37 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::TableRow(..) => {
                     // noop
                 }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(ref ngt) => {
+                    self.output.write_str(" alignments=\"")?;
+                    for (i, column) in ngt.columns.iter().enumerate() {
+                        if i > 0 {
+                            self.output.write_str(" ")?;
+                        }
+                        self.output
+                            .write_str(column.alignment.xml_name().unwrap_or("none"))?;
+                    }
+                    self.output.write_str("\" widths=\"")?;
+                    for (i, column) in ngt.columns.iter().enumerate() {
+                        if i > 0 {
+                            self.output.write_str(" ")?;
+                        }
+                        write!(self.output, "{}", column.width)?;
+                    }
+                    self.output.write_str("\"")?;
+                }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTableRow(section) => {
+                    write!(self.output, " section=\"{}\"", section.xml_name())?;
+                }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTableCell(ref ngtc) => {
+                    write!(
+                        self.output,
+                        " column=\"{}\" colspan=\"{}\" rowspan=\"{}\"",
+                        ngtc.column, ngtc.colspan, ngtc.rowspan
+                    )?;
+                }
                 NodeValue::TableCell => {
                     let mut ancestors = node.ancestors().skip(1);
 

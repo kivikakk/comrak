@@ -3,6 +3,10 @@ mod attributes;
 mod autolink;
 pub(crate) mod block_ids;
 mod callouts;
+#[cfg(feature = "grid_table")]
+mod fragments;
+#[cfg(feature = "grid_table")]
+mod grid_table;
 mod inlines;
 pub mod options;
 #[cfg(feature = "phoenix_heex")]
@@ -37,7 +41,7 @@ pub use crate::parser::options::Options;
 use crate::scanners;
 use crate::strings::{self, Case, split_off_front_matter};
 
-const TAB_STOP: usize = 4;
+pub(crate) const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 // Very deeply nested lists can cause quadratic performance issues.
@@ -272,6 +276,14 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
+    #[cfg(feature = "grid_table")]
+    grid_table: Option<grid_table::Pending<'a>>,
+    #[cfg(feature = "grid_table")]
+    grid_table_suppressed: bool,
+    #[cfg(feature = "grid_table")]
+    grid_table_depth: usize,
+    #[cfg(feature = "grid_table")]
+    cell_line_ends: Vec<grid_table::CellLineEnd>,
     cancellation: Cancellation<'o>,
 }
 
@@ -331,6 +343,14 @@ where
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
+            #[cfg(feature = "grid_table")]
+            grid_table: None,
+            #[cfg(feature = "grid_table")]
+            grid_table_suppressed: false,
+            #[cfg(feature = "grid_table")]
+            grid_table_depth: 0,
+            #[cfg(feature = "grid_table")]
+            cell_line_ends: vec![],
             cancellation: Cancellation::new(should_cancel),
         }
     }
@@ -371,7 +391,7 @@ where
                 }
             }
 
-            self.process_line(&s[ix..eol]);
+            self.process_line(&s[ix..eol], 0);
 
             ix = eol;
             matches.advance_to(ix);
@@ -412,7 +432,7 @@ where
         self.last_line_length = last_line_length;
     }
 
-    fn process_line(&mut self, line: &str) {
+    fn process_line(&mut self, line: &str, column: usize) {
         let bytes = line.as_bytes();
 
         self.curline_len = line.len();
@@ -424,14 +444,7 @@ where
             self.curline_end_col -= 1;
         }
 
-        self.offset = 0;
-        self.column = 0;
-        self.first_nonspace = 0;
-        self.first_nonspace_column = 0;
-        self.indent = 0;
-        self.thematic_break_kill_pos = 0;
-        self.blank = false;
-        self.partially_consumed_tab = false;
+        self.start_line(column);
 
         if self.line_number == 0 && line.len() >= 3 && line.starts_with('\u{feff}') {
             self.offset += 3;
@@ -439,7 +452,9 @@ where
 
         self.line_number += 1;
 
-        if let Some((last_matched_container, all_matched)) = self.check_open_blocks(line) {
+        if let Some((last_matched_container, all_matched)) =
+            self.check_open_blocks_resolving(line, column)
+        {
             self.last_matched_container = last_matched_container;
             let mut container = last_matched_container;
             let lazy_callout = self.lazy_callout_candidate(all_matched);
@@ -458,9 +473,33 @@ where
         self.curline_end_col = 0;
     }
 
+    fn start_line(&mut self, column: usize) {
+        self.offset = 0;
+        self.column = column;
+        self.first_nonspace = 0;
+        self.first_nonspace_column = 0;
+        self.indent = 0;
+        self.thematic_break_kill_pos = 0;
+        self.blank = false;
+        self.partially_consumed_tab = false;
+    }
+
     ///////////////////////
     // Check open blocks //
     ///////////////////////
+
+    fn check_open_blocks_resolving(
+        &mut self,
+        line: &str,
+        column: usize,
+    ) -> Option<(Node<'a>, bool)> {
+        let matched = self.check_open_blocks(line)?;
+        if self.reject_ended_grid_table(matched.0) {
+            self.start_line(column);
+            return self.check_open_blocks(line);
+        }
+        Some(matched)
+    }
 
     fn check_open_blocks(&mut self, line: &str) -> Option<(Node<'a>, bool)> {
         let (all_matched, mut container) = self.check_open_blocks_inner(self.root, line)?;
@@ -549,6 +588,12 @@ where
                 }
                 NodeValue::BlockDirective(..) => {
                     self.parse_block_directive_prefix(line, container, ast)?;
+                }
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(..) => {
+                    if !self.grid_table_continues(line) {
+                        break;
+                    }
                 }
                 _ => {}
             }
@@ -850,6 +895,15 @@ where
             {
                 false
             }
+        } && !{
+            #[cfg(feature = "grid_table")]
+            {
+                node_matches!(container, NodeValue::GridTable(..))
+            }
+            #[cfg(not(feature = "grid_table"))]
+            {
+                false
+            }
         } {
             if self.cancellation.step() {
                 break;
@@ -878,6 +932,7 @@ where
                     || self.handle_description_list(container, line)))
                 || self.handle_list(container, line, indented, depth)
                 || self.handle_code_block(container, line, indented, maybe_lazy)
+                || self.handle_grid_table(container, line, indented, maybe_lazy)
                 || self.handle_table(container, line, indented))
             {
                 break;
@@ -1925,6 +1980,22 @@ where
         indented && !maybe_lazy && !self.blank
     }
 
+    #[cfg(not(feature = "grid_table"))]
+    fn reject_ended_grid_table(&mut self, _matched: Node<'a>) -> bool {
+        false
+    }
+
+    #[cfg(not(feature = "grid_table"))]
+    fn handle_grid_table(
+        &mut self,
+        _container: &mut Node<'a>,
+        _line: &str,
+        _indented: bool,
+        _maybe_lazy: bool,
+    ) -> bool {
+        false
+    }
+
     fn handle_table(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
         let Some((new_container, replace, mark_visited)) =
             self.detect_table(container, line, indented)
@@ -2073,8 +2144,7 @@ where
         if !self.current.same_node(self.last_matched_container)
             && container.same_node(self.last_matched_container)
             && !self.blank
-            && (!self.options.extension.greentext
-                || !node_matches!(container, NodeValue::BlockQuote | NodeValue::Document))
+            && !self.options.extension.greentext
             && (node_matches!(self.current, NodeValue::Paragraph)
                 || lazy_callout.is_some_and(|c| c.same_node(self.current)))
         {
@@ -2095,12 +2165,18 @@ where
                 #[cfg(feature = "phoenix_heex")]
                 NodeValue::HeexBlock(ref nhb) => AddTextResult::HeexBlock(nhb.clone()),
                 NodeValue::MultilineComment(..) => AddTextResult::CommentBlock,
+                #[cfg(feature = "grid_table")]
+                NodeValue::GridTable(..) => AddTextResult::GridTable,
                 _ => AddTextResult::Otherwise,
             };
 
             match add_text_result {
                 AddTextResult::LiteralText => {
                     self.add_line(container, line);
+                }
+                #[cfg(feature = "grid_table")]
+                AddTextResult::GridTable => {
+                    self.add_grid_table_line(line);
                 }
                 AddTextResult::HtmlBlock(block_type) => {
                     self.add_line(container, line);
@@ -2268,15 +2344,7 @@ where
     }
 
     fn finalize_document(&mut self) -> Result<(), ParseCancelled> {
-        while !self.current.same_node(self.root) {
-            if self.cancellation.step() {
-                return Err(ParseCancelled);
-            }
-            self.current = self.finalize(self.current).unwrap();
-        }
-
-        self.finalize(self.root);
-        self.cancellation.check()?;
+        self.finalize_blocks()?;
 
         self.process_inlines();
         self.cancellation.check()?;
@@ -2295,7 +2363,22 @@ where
             escaped_pipes.restore(self.arena);
         }
 
+        #[cfg(feature = "grid_table")]
+        self.place_cell_line_ends();
+
         Ok(())
+    }
+
+    fn finalize_blocks(&mut self) -> Result<(), ParseCancelled> {
+        while !self.current.same_node(self.root) {
+            if self.cancellation.step() {
+                return Err(ParseCancelled);
+            }
+            self.current = self.finalize(self.current).unwrap();
+        }
+
+        self.finalize(self.root);
+        self.cancellation.check()
     }
 
     fn finalize(&mut self, node: Node<'a>) -> Option<Node<'a>> {
@@ -2485,6 +2568,10 @@ where
                 let mut lines = ast.lines.take().unwrap();
                 let content = &mut lines.content;
                 ncb.literal = self.take_content(content);
+            }
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..) => {
+                self.finalize_grid_table(node, ast);
             }
             _ => (),
         }
@@ -3099,6 +3186,8 @@ enum AddTextResult {
     HtmlBlock(u8),
     #[cfg(feature = "phoenix_heex")]
     HeexBlock(Box<phoenix_heex::NodeHeexBlock>),
+    #[cfg(feature = "grid_table")]
+    GridTable,
     CommentBlock,
     Otherwise,
 }

@@ -235,6 +235,7 @@ dependencies = [
  "smallvec",
  "syntect",
  "typed-arena",
+ "unicode-width",
  "xdg",
 ]
 
@@ -246,6 +247,7 @@ dependencies = [
  "comrak",
  "fastrand",
  "libfuzzer-sys",
+ "unicode-width",
 ]
 
 [[package]]
@@ -935,6 +937,12 @@ checksum = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-width"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca718471876992059f251e33aafc334346ada08042b7661dd1fe313a9bced557"
 
 [[package]]
 name = "utf8parse"

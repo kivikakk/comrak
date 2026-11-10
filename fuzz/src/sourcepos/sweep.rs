@@ -305,6 +305,10 @@ fn conventions_are_not_findings() {
         "- [x]\t\n  a\n",
         "| a |\n| - |\n|||\\|r||\n",
         "jjj|",
+        "+---+---+---+\n| AAAAA | B |\n+---+---+ B +\n| D | E | B |\n+ D +---+---+\n| D | CCCCC |\n+---+---+---+\n",
+        "+-----+\n| a\\  |\n| b   |\n+-----+\n",
+        "+-----+\n| ^[a |\n| b]  |\n+-----+\n",
+        "+---+---+\n+---+---+\n",
     ] {
         super::assert_clean(doc);
     }

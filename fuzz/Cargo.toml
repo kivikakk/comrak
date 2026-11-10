@@ -10,8 +10,9 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
-comrak = { path = "..", features = ["arbitrary", "shortcodes", "phoenix_heex"] }
+comrak = { path = "..", features = ["arbitrary", "shortcodes", "phoenix_heex", "grid_table"] }
 fastrand = "2"
+unicode-width = { version = "0.2", default-features = false }
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -80,5 +81,11 @@ doc = false
 [[bin]]
 name = "sourcepos"
 path = "fuzz_targets/sourcepos.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "grid_table_fallback"
+path = "fuzz_targets/grid_table_fallback.rs"
 test = false
 doc = false

@@ -110,3 +110,17 @@ fn greentext_enabled_blockquote_alerts() {
         ),
     );
 }
+
+#[test]
+fn no_lazy_continuation_inside_other_containers() {
+    html_opts!(
+        [extension.greentext],
+        "- > a\n  b\n",
+        "<ul>\n<li>\n<blockquote>\n<p>a</p>\n</blockquote>\nb</li>\n</ul>\n"
+    );
+    html_opts!(
+        [extension.greentext],
+        "> - a\n> b\n",
+        "<blockquote>\n<ul>\n<li>a</li>\n</ul>\n<p>b</p>\n</blockquote>\n"
+    );
+}

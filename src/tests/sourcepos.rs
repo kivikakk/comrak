@@ -287,6 +287,39 @@ hello world
 "#,
 );
 
+#[cfg(feature = "grid_table")]
+const GRID_TABLE_TEXT: &str = r#"stuff before
+
++-------+-------+
+| Hello | World |
++=======+=======+
+| cell1 | cell2 |
+| more  |       |
++-------+-------+
+
+hello world
+"#;
+
+#[cfg(feature = "grid_table")]
+const GRID_TABLE: TestCase = (&[sourcepos!((3:1-8:17))], GRID_TABLE_TEXT);
+
+#[cfg(feature = "grid_table")]
+const GRID_TABLE_ROW: TestCase = (
+    &[sourcepos!((4:1-4:17)), sourcepos!((6:1-7:17))],
+    GRID_TABLE_TEXT,
+);
+
+#[cfg(feature = "grid_table")]
+const GRID_TABLE_CELL: TestCase = (
+    &[
+        sourcepos!((4:2-4:8)),
+        sourcepos!((4:10-4:16)),
+        sourcepos!((6:2-7:8)),
+        sourcepos!((6:10-7:16)),
+    ],
+    GRID_TABLE_TEXT,
+);
+
 const TABLE_CELL: TestCase = (
     &[
         sourcepos!((3:2-3:8)),
@@ -558,6 +591,12 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Table => TABLE,
                 TableRow => TABLE_ROW,
                 TableCell => TABLE_CELL,
+                #[cfg(feature = "grid_table")]
+                GridTable => GRID_TABLE,
+                #[cfg(feature = "grid_table")]
+                GridTableRow => GRID_TABLE_ROW,
+                #[cfg(feature = "grid_table")]
+                GridTableCell => GRID_TABLE_CELL,
                 Text => TEXT,
                 SoftBreak => SOFT_BREAK,
                 LineBreak => LINE_BREAK,
@@ -630,6 +669,10 @@ fn sourcepos() {
     #[cfg(feature = "phoenix_heex")]
     {
         options.extension.phoenix_heex = true;
+    }
+    #[cfg(feature = "grid_table")]
+    {
+        options.extension.grid_table = true;
     }
 
     for (kind, (expecteds, text)) in node_values {

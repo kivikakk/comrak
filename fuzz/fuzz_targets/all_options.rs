@@ -34,6 +34,7 @@ impl FuzzOptions {
 struct FuzzExtensionOptions {
     strikethrough: bool,
     table: bool,
+    grid_table: bool,
     autolink: bool,
     tasklist: bool,
     superscript: bool,
@@ -82,6 +83,7 @@ impl FuzzExtensionOptions {
         options::Extension {
             strikethrough: self.strikethrough,
             table: self.table,
+            grid_table: self.grid_table,
             autolink: self.autolink,
             tasklist: self.tasklist,
             superscript: self.superscript,
@@ -203,6 +205,7 @@ struct FuzzRenderOptions {
     experimental_minimize_commonmark: bool,
     compact_html: bool,
     attributes: bool,
+    grid_table_widths: bool,
 }
 
 impl FuzzRenderOptions {
@@ -227,6 +230,7 @@ impl FuzzRenderOptions {
             experimental_minimize_commonmark: self.experimental_minimize_commonmark,
             compact_html: self.compact_html,
             attributes: self.attributes,
+            grid_table_widths: self.grid_table_widths,
         }
     }
 }

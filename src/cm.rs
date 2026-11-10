@@ -20,6 +20,9 @@ use crate::scanners;
 use crate::strings::trim_start_match;
 use crate::{node_matches, strings};
 
+#[cfg(feature = "grid_table")]
+mod grid_table;
+
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
@@ -84,6 +87,9 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
+    tight_stack: Vec<bool>,
+    #[cfg(feature = "grid_table")]
+    grid_table_indent: usize,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
@@ -122,6 +128,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
+            tight_stack: vec![],
+            #[cfg(feature = "grid_table")]
+            grid_table_indent: 0,
             custom_escape: None,
             footnote_ix: 0,
             ol_stack: vec![],
@@ -512,6 +521,26 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 )
                 && self.get_in_tight_list_item(node);
         }
+        if node_matches!(
+            node,
+            NodeValue::BlockQuote
+                | NodeValue::MultilineBlockQuote(..)
+                | NodeValue::Alert(..)
+                | NodeValue::Callout(..)
+                | NodeValue::BlockDirective(..)
+                | NodeValue::FootnoteDefinition(..)
+                | NodeValue::DescriptionList
+        ) {
+            if entering {
+                if self.in_tight_list_item && self.need_cr > 1 {
+                    self.need_cr = 1;
+                }
+                self.tight_stack.push(self.in_tight_list_item);
+                self.in_tight_list_item = false;
+            } else {
+                self.in_tight_list_item = self.tight_stack.pop().unwrap();
+            }
+        }
         let next_is_block = node
             .next_sibling()
             .is_none_or(|next| next.data().value.block());
@@ -527,7 +556,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::DescriptionList => (),
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
-            NodeValue::DescriptionDetails => self.format_description_details(entering)?,
+            NodeValue::DescriptionDetails => self.format_description_details(node, entering)?,
             NodeValue::Heading(ref nh) => self.format_heading(nh, entering)?,
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
@@ -564,6 +593,15 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::Table(..) => self.format_table(entering),
             NodeValue::TableRow(..) => self.format_table_row(entering)?,
             NodeValue::TableCell => self.format_table_cell(node, entering)?,
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTable(..) => {
+                self.format_grid_table(node)?;
+                return Ok(false);
+            }
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableRow(..) => unreachable!(),
+            #[cfg(feature = "grid_table")]
+            NodeValue::GridTableCell(..) => (),
             NodeValue::FootnoteDefinition(ref nfd) => {
                 self.format_footnote_definition(&nfd.name, entering)?
             }
@@ -739,8 +777,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_description_details(&mut self, entering: bool) -> fmt::Result {
+    fn format_description_details(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
+            if let NodeValue::DescriptionItem(item) = node.parent().unwrap().data().value
+                && item.tight
+            {
+                self.need_cr = self.need_cr.min(1);
+            }
             write!(self, ": ")?
         }
         Ok(())

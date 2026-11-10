@@ -276,3 +276,20 @@ fn sourcepos_list_ends_with_its_contents() {
         ])
     );
 }
+
+#[test]
+fn commonmark_keeps_details_tightness() {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(
+        "a\n\n: b\n\nc\n: d\n",
+        "a\n\n: b\n\nc\n: d\n",
+        Some(&options),
+    );
+    commonmark(
+        "- a\n\n  : b\n- d\n",
+        "- a\n  \n  : b\n- d\n",
+        Some(&options),
+    );
+    commonmark("- a\n  : b\n- d\n", "- a\n  : b\n- d\n", Some(&options));
+}

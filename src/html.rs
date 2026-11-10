@@ -7,6 +7,8 @@
 
 mod anchorizer;
 mod context;
+#[cfg(feature = "grid_table")]
+mod grid_table;
 mod table_cell_indexer;
 
 use memchr_n::MemchrN;
@@ -395,6 +397,16 @@ pub fn format_node_default<T>(
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
         NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
+        #[cfg(feature = "grid_table")]
+        NodeValue::GridTable(_) => grid_table::render_grid_table(context, node, entering),
+        #[cfg(feature = "grid_table")]
+        NodeValue::GridTableRow(section) => {
+            grid_table::render_grid_table_row(context, node, entering, section)
+        }
+        #[cfg(feature = "grid_table")]
+        NodeValue::GridTableCell(cell) => {
+            grid_table::render_grid_table_cell(context, node, entering, cell)
+        }
         NodeValue::TaskItem(ref nti) => render_task_item(context, node, entering, nti),
 
         // Extensions
@@ -1114,7 +1126,8 @@ fn render_paragraph<T>(
         })
         || node
             .parent()
-            .is_some_and(|n| node_matches!(n, NodeValue::DescriptionTerm));
+            .is_some_and(|n| node_matches!(n, NodeValue::DescriptionTerm))
+        || is_sole_grid_table_cell_child(node);
 
     if !tight {
         if entering {
@@ -1145,6 +1158,19 @@ fn render_paragraph<T>(
     }
 
     Ok(ChildRendering::HTML)
+}
+
+#[cfg(feature = "grid_table")]
+fn is_sole_grid_table_cell_child(node: Node<'_>) -> bool {
+    node.parent()
+        .is_some_and(|n| node_matches!(n, NodeValue::GridTableCell(..)))
+        && node.previous_sibling().is_none()
+        && node.next_sibling().is_none()
+}
+
+#[cfg(not(feature = "grid_table"))]
+fn is_sole_grid_table_cell_child(_node: Node<'_>) -> bool {
+    false
 }
 
 fn render_soft_break<T>(
@@ -1387,18 +1413,8 @@ fn render_table_cell<T>(
             render_sourcepos(context, node)?;
         }
 
-        match alignments[context.table_cell_indexer.index(node)] {
-            TableAlignment::Left => {
-                context.write_str(" align=\"left\"")?;
-            }
-            TableAlignment::Right => {
-                context.write_str(" align=\"right\"")?;
-            }
-            TableAlignment::Center => {
-                context.write_str(" align=\"center\"")?;
-            }
-            TableAlignment::None => (),
-        }
+        let alignment = alignments[context.table_cell_indexer.index(node)];
+        render_alignment(context, alignment)?;
 
         context.write_str(">")?;
     } else if in_header {
@@ -1408,6 +1424,15 @@ fn render_table_cell<T>(
     }
 
     Ok(ChildRendering::HTML)
+}
+
+fn render_alignment<T>(context: &mut Context<T>, alignment: TableAlignment) -> fmt::Result {
+    match alignment {
+        TableAlignment::Left => context.write_str(" align=\"left\""),
+        TableAlignment::Right => context.write_str(" align=\"right\""),
+        TableAlignment::Center => context.write_str(" align=\"center\""),
+        TableAlignment::None => Ok(()),
+    }
 }
 
 fn render_table_row<T>(
