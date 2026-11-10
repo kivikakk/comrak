@@ -1490,6 +1490,33 @@ pub struct Render {
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub compact_html: bool,
+
+    #[cfg(feature = "grid_table")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "grid_table")))]
+    /// Output `<colgroup>` with column widths for grid tables in HTML.
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.grid_table = true;
+    /// let input = "+---+-----+--+\n\
+    ///              | a | b   | c|\n\
+    ///              +---+-----+--+\n";
+    /// assert_eq!(
+    ///     markdown_to_html(input, &options),
+    ///     "<table>\n<tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n<td>c</td>\n</tr>\n</tbody>\n</table>\n"
+    /// );
+    ///
+    /// options.render.grid_table_widths = true;
+    /// assert_eq!(
+    ///     markdown_to_html(input, &options),
+    ///     "<table>\n<colgroup>\n<col style=\"width:30%\" />\n<col style=\"width:50%\" />\n\
+    ///      <col style=\"width:20%\" />\n</colgroup>\n\
+    ///      <tbody>\n<tr>\n<td>a</td>\n<td>b</td>\n<td>c</td>\n</tr>\n</tbody>\n</table>\n"
+    /// );
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub grid_table_widths: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default)]

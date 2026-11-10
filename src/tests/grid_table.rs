@@ -731,3 +731,47 @@ fn html_sourcepos() {
         no_roundtrip,
     );
 }
+
+#[test]
+fn html_widths() {
+    html_opts!(
+        [extension.grid_table, render.grid_table_widths],
+        "+---+-----+--+\n| a | b   | c|\n+---+-----+--+\n",
+        concat!(
+            "<table>\n",
+            "<colgroup>\n",
+            "<col style=\"width:30%\" />\n",
+            "<col style=\"width:50%\" />\n",
+            "<col style=\"width:20%\" />\n",
+            "</colgroup>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>a</td>\n",
+            "<td>b</td>\n",
+            "<td>c</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+    html_opts!(
+        [extension.grid_table, render.grid_table_widths],
+        "+--+-+\n|a |b|\n+--+-+\n",
+        concat!(
+            "<table>\n",
+            "<colgroup>\n",
+            "<col style=\"width:66.67%\" />\n",
+            "<col style=\"width:33.33%\" />\n",
+            "</colgroup>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>a</td>\n",
+            "<td>b</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+        no_roundtrip,
+    );
+}

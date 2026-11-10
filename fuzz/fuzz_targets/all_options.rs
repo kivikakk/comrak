@@ -205,6 +205,7 @@ struct FuzzRenderOptions {
     experimental_minimize_commonmark: bool,
     compact_html: bool,
     attributes: bool,
+    grid_table_widths: bool,
 }
 
 impl FuzzRenderOptions {
@@ -229,6 +230,7 @@ impl FuzzRenderOptions {
             experimental_minimize_commonmark: self.experimental_minimize_commonmark,
             compact_html: self.compact_html,
             attributes: self.attributes,
+            grid_table_widths: self.grid_table_widths,
         }
     }
 }

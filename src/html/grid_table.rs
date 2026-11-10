@@ -14,11 +14,30 @@ pub(super) fn render_grid_table<T>(
         render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
+        if context.options.render.grid_table_widths {
+            render_colgroup(context, node)?;
+        }
     } else {
         context.write_str("</table>")?;
     }
     context.lf()?;
     Ok(ChildRendering::HTML)
+}
+
+fn render_colgroup<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Result {
+    let NodeValue::GridTable(ref table) = node.data().value else {
+        unreachable!()
+    };
+    let total: usize = table.columns.iter().map(|c| c.width).sum();
+    context.lf()?;
+    context.write_str("<colgroup>")?;
+    for column in &table.columns {
+        let percent = (column.width as f64 * 10000.0 / total as f64).round() / 100.0;
+        context.lf()?;
+        write!(context, "<col style=\"width:{percent}%\" />")?;
+    }
+    context.lf()?;
+    context.write_str("</colgroup>")
 }
 
 fn section_tag(section: GridTableSection) -> &'static str {
