@@ -281,6 +281,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     #[cfg(feature = "grid_table")]
     grid_table_suppressed: bool,
     #[cfg(feature = "grid_table")]
+    grid_table_depth: usize,
+    #[cfg(feature = "grid_table")]
     cell_line_ends: Vec<grid_table::CellLineEnd>,
     cancellation: Cancellation<'o>,
 }
@@ -345,6 +347,8 @@ where
             grid_table: None,
             #[cfg(feature = "grid_table")]
             grid_table_suppressed: false,
+            #[cfg(feature = "grid_table")]
+            grid_table_depth: 0,
             #[cfg(feature = "grid_table")]
             cell_line_ends: vec![],
             cancellation: Cancellation::new(should_cancel),

@@ -83,3 +83,9 @@ name = "sourcepos"
 path = "fuzz_targets/sourcepos.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "grid_table_fallback"
+path = "fuzz_targets/grid_table_fallback.rs"
+test = false
+doc = false

@@ -10,6 +10,8 @@ use crate::parser::{Parser, TAB_STOP};
 
 use layout::{Layout, Line};
 
+const MAX_GRID_TABLE_DEPTH: usize = 5;
+
 pub(crate) struct Pending<'a> {
     node: Node<'a>,
     indent: usize,
@@ -98,6 +100,7 @@ where
     ) -> bool {
         if !self.options.extension.grid_table
             || self.grid_table_suppressed
+            || self.grid_table_depth >= MAX_GRID_TABLE_DEPTH
             || indented
             || maybe_lazy
             || self.blank

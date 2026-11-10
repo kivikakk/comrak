@@ -73,6 +73,7 @@ where
         );
         child.refmap = mem::replace(&mut self.refmap, RefMap::new());
         child.grid_table_suppressed = suppress_grid_tables;
+        child.grid_table_depth = self.grid_table_depth + 1;
 
         let mut start = 0;
         for (fragment, &end) in fragments.iter().zip(&ends) {

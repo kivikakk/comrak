@@ -291,3 +291,69 @@ fn pathological_header_ids() {
         no_roundtrip
     );
 }
+
+#[cfg(feature = "grid_table")]
+fn grid_table_options() -> Options<'static> {
+    let mut options = Options::default();
+    options.extension.grid_table = true;
+    options
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_cells() {
+    let n = 200;
+    let separator = format!("+{}\n", "-+".repeat(n));
+    let row = format!("|{}\n", "a|".repeat(n));
+    let input = format!("{separator}{}", format!("{row}{separator}").repeat(n));
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert_eq!(html.matches("<td>a</td>").count(), n * n);
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_tracing() {
+    let n = 200;
+    let separator = format!("+{}\n", "-+".repeat(n));
+    let row = format!("|{}\n", "a|".repeat(n));
+    let bars = format!("|{}\n", " |".repeat(n));
+    let blank = format!("|{}|\n", " ".repeat(2 * n - 1));
+    let band = format!("{row}{separator}{}{blank}{separator}", bars.repeat(4));
+    let input = format!("{separator}{}", band.repeat(n / 4));
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert_eq!(html.matches("<tr>").count(), n / 2);
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_nesting() {
+    let mut lines = vec!["x".to_string()];
+    for _ in 0..200 {
+        let width = lines.iter().map(String::len).max().unwrap();
+        let border = format!("+{}+", "-".repeat(width + 2));
+        let mut nested = vec![border.clone()];
+        nested.extend(lines.iter().map(|l| format!("| {l:width$} |")));
+        nested.push(border);
+        lines = nested;
+    }
+    let input = lines.join("\n");
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert_eq!(html.matches("<table>").count(), 5);
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_rejections() {
+    let n = 50_000;
+    let input = format!("{}{}", "+-+\n|\n\n".repeat(n), "+-+\n|\n".repeat(n));
+
+    let html = markdown_to_html(&input, &grid_table_options());
+    assert!(!html.contains("<table>"));
+}
