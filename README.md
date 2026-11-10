@@ -284,6 +284,7 @@ designed, specific to GitHub's CommonMark transition of 2017, and should not be 
 Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
 
 - Superscript
+- Subscript
 - Header IDs
 - Footnotes
 - Inline footnotes
@@ -298,6 +299,16 @@ Comrak additionally supports its own extensions, which are yet to be specced out
 - "Greentext"
 - Alerts
 - [CJK friendly emphasis](https://github.com/tats-u/markdown-cjk-friendly)
+- Subtext
+- Highlight
+- Insert
+- Block directives
+- Obsidian callouts
+- Obsidian comments
+- Obsidian block IDs
+- Phoenix HEEx
+- Attributes
+- Grid tables
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`options::Extension` struct](https://docs.rs/comrak/latest/comrak/options/struct.Extension.html).
