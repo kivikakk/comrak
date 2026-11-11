@@ -1081,6 +1081,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_emphasis(&mut self, node: Node<'a>, entering: bool, strong: bool) -> fmt::Result {
         let written = !(strong
+            && self.options.render.gfm_quirks
             && node
                 .parent()
                 .is_some_and(|p| node_matches!(p, NodeValue::Strong)));

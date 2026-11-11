@@ -9,7 +9,29 @@ use super::*;
 fn commonmark_removes_redundant_strong() {
     let input = "This is **something **even** better**";
     let output = "This is **something even better**\n";
-    commonmark(input, output, None);
+    let mut options = Options::default();
+    options.render.gfm_quirks = true;
+    commonmark(input, output, Some(&options));
+}
+
+#[test_case(
+    "This is **something **even** better**",
+    "This is **something **even** better**\n",
+    "<p>This is <strong>something <strong>even</strong> better</strong></p>\n"
+)]
+#[test_case(
+    "****a****",
+    "****a****\n",
+    "<p><strong><strong>a</strong></strong></p>\n"
+)]
+#[test_case(
+    "**__a__**",
+    "****a****\n",
+    "<p><strong><strong>a</strong></strong></p>\n"
+)]
+fn commonmark_keeps_nested_strong(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
 }
 
 #[test_case("**_a_**", "**_a_**\n", "<p><strong><em>a</em></strong></p>\n")]
