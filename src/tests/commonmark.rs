@@ -66,6 +66,33 @@ fn commonmark_emphasis_delimiters_remain_apart(input: &str, cm: &str, expected: 
     html(input, expected);
 }
 
+#[test_case(
+    "-   a\n\n  <div>\n",
+    "-  a\n\n  <div>\n",
+    "<ul>\n<li>a</li>\n</ul>\n  <div>\n"
+)]
+#[test_case(
+    "1.  a\n\n   <!-- x -->\n",
+    "1.  a\n\n   <!-- x -->\n",
+    "<ol>\n<li>a</li>\n</ol>\n   <!-- x -->\n"
+)]
+#[test_case(
+    "> -   a\n>\n>   <div>\n",
+    "> -  a\n> \n>   <div>\n",
+    "<blockquote>\n<ul>\n<li>a</li>\n</ul>\n  <div>\n</blockquote>\n"
+)]
+#[test_case(
+    "- a\n-   b\n\n  <div>\n",
+    "- a\n-  b\n\n  <div>\n",
+    "<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n  <div>\n"
+)]
+fn commonmark_indented_html_block_remains_after_list(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.render.r#unsafe = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([render.r#unsafe], input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();

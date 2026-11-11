@@ -712,9 +712,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         };
 
         let mut listmarker = String::new();
+        let min_width = following_html_block_indent(node) + 1;
 
         let marker_width = if parent.list_type == ListType::Bullet {
-            2
+            min_width.max(2)
         } else {
             let list_number = if let Some(last_stack) = self.ol_stack.last_mut() {
                 let list_number = *last_stack;
@@ -744,7 +745,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             )?;
             let mut current_len = listmarker.len();
 
-            while current_len < self.options.render.ol_width.min(12) {
+            while current_len < self.options.render.ol_width.min(12).max(min_width) {
                 write!(listmarker, " ").unwrap();
                 current_len += 1;
             }
@@ -755,7 +756,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if entering {
             if parent.list_type == ListType::Bullet {
                 let bullet = char::from(self.options.render.list_style as u8);
-                write!(self, "{} ", bullet).unwrap();
+                write!(self, "{}{}", bullet, " ".repeat(marker_width - 1)).unwrap();
             } else {
                 self.write_str(&listmarker)?;
             }
@@ -1667,6 +1668,19 @@ pub fn escape_link_destination(url: &str) -> String {
     result.push('>');
 
     result
+}
+
+fn following_html_block_indent(item: Node<'_>) -> usize {
+    if item.next_sibling().is_some() {
+        return 0;
+    }
+    match item.parent().and_then(|list| list.next_sibling()) {
+        Some(next) => match next.data().value {
+            NodeValue::HtmlBlock(ref nhb) => nhb.literal.bytes().take_while(|&b| b == b' ').count(),
+            _ => 0,
+        },
+        None => 0,
+    }
 }
 
 #[inline]
