@@ -578,6 +578,33 @@ fn sourcepos_of_breaks_rows_and_placeholders() {
 }
 
 #[test]
+fn sourcepos_paragraph_starting_with_a_break() {
+    grid_xml_opts(
+        concat!("+-------+\n", "| + [ ] |\n", "| --    |\n", "+-------+\n",),
+        concat!(
+            "<grid_table sourcepos=\"1:1-4:9\" alignments=\"none\" widths=\"7\">\n",
+            "  <grid_table_row sourcepos=\"2:1-3:9\" section=\"body\">\n",
+            "    <grid_table_cell sourcepos=\"2:2-3:8\" column=\"0\" colspan=\"1\" rowspan=\"1\">\n",
+            "      <list sourcepos=\"2:3-3:4\" type=\"bullet\" tasklist=\"true\" tight=\"true\">\n",
+            "        <taskitem sourcepos=\"2:3-3:4\" completed=\"false\">\n",
+            "          <paragraph sourcepos=\"2:9-3:4\">\n",
+            "            <softbreak sourcepos=\"2:9-2:8\" />\n",
+            "            <text sourcepos=\"3:3-3:4\" xml:space=\"preserve\">--</text>\n",
+            "          </paragraph>\n",
+            "        </taskitem>\n",
+            "      </list>\n",
+            "    </grid_table_cell>\n",
+            "  </grid_table_row>\n",
+            "</grid_table>\n",
+        ),
+        |o| {
+            o.extension.tasklist = true;
+            o.render.sourcepos = true;
+        },
+    );
+}
+
+#[test]
 fn html_spans() {
     html_opts!(
         [extension.grid_table],
