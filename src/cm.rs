@@ -319,6 +319,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '~'
                     || c == '!'
                     || (self.options.extension.autolink && c == '@')
+                    || ((self.options.extension.math_dollars
+                        || self.options.extension.math_code)
+                        && c == '$')
                     || (self.options.extension.ofm_comments
                         && c == '%'
                         && (nextb == b'%'

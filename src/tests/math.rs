@@ -236,3 +236,26 @@ fn math_latex_text_brackets_stay_text(markdown: &str, cm: &str, html: &str) {
     commonmark(markdown, cm, Some(&options));
     html_opts!([extension.math_latex], markdown, html);
 }
+
+#[test_case("a \\$x$ b", "a \\$x\\$ b\n", "<p>a $x$ b</p>\n")]
+#[test_case(
+    "$x$ and \\$5",
+    "$x$ and \\$5\n",
+    "<p><span data-math-style=\"inline\">x</span> and $5</p>\n"
+)]
+#[test_case("\\$`x`\\$", "\\$`x`\\$\n", "<p>$<code>x</code>$</p>\n")]
+fn math_dollars_text_dollars_stay_text(markdown: &str, cm: &str, html: &str) {
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+    commonmark(markdown, cm, Some(&options));
+    html_opts!([extension.math_dollars], markdown, html);
+}
+
+#[test_case("a \\$x$ b", "a \\$x\\$ b\n", "<p>a $x$ b</p>\n")]
+#[test_case("\\$`x`\\$", "\\$`x`\\$\n", "<p>$<code>x</code>$</p>\n")]
+fn math_code_text_dollars_stay_text(markdown: &str, cm: &str, html: &str) {
+    let mut options = Options::default();
+    options.extension.math_code = true;
+    commonmark(markdown, cm, Some(&options));
+    html_opts!([extension.math_code], markdown, html);
+}
