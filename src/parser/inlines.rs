@@ -7,6 +7,7 @@ use std::ops::Range;
 use std::str;
 use std::{mem, ptr};
 
+use memchr_n::{ByteSet, MemchrN};
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
@@ -34,7 +35,7 @@ const MAX_MATH_DOLLARS: usize = 2;
 const MAX_INLINE_FOOTNOTE_DEPTH: usize = 5;
 
 pub(crate) struct ByteTables {
-    pub(crate) special: [bool; 256],
+    pub(crate) special: MemchrN,
     pub(crate) skip: [bool; 256],
     pub(crate) emph: [bool; 256],
     pub(crate) colon_needs_slashes: bool,
@@ -42,73 +43,71 @@ pub(crate) struct ByteTables {
 
 impl ByteTables {
     pub(crate) fn new(options: &Options) -> Self {
-        let mut t = ByteTables {
-            special: [false; 256],
-            skip: [false; 256],
-            emph: [false; 256],
-            colon_needs_slashes: false,
-        };
-        for &b in b"\n_*\"`\\&<[]!" {
-            t.special[b as usize] = true;
-        }
+        let mut special = ByteSet::from_bytes(b"\n_*\"`\\&<[]!");
+        let mut skip = [false; 256];
+        let mut emph = [false; 256];
+        let mut colon_needs_slashes = false;
         if options.extension.math_dollars || options.extension.math_code {
-            t.special[b'$' as usize] = true;
+            special.add(b'$');
         }
         if options.parse.smart {
-            for &b in b"\"'.->" {
-                t.special[b as usize] = true;
-            }
+            special.add_all(b"\"'.->");
         }
         if options.extension.autolink {
-            t.special[b':' as usize] = true;
-            t.special[b'w' as usize] = true;
-            t.colon_needs_slashes = true;
+            special.add(b':');
+            special.add(b'w');
+            colon_needs_slashes = true;
         }
         if options.extension.strikethrough || options.extension.subscript {
-            t.special[b'~' as usize] = true;
-            t.skip[b'~' as usize] = true;
-            t.emph[b'~' as usize] = true;
+            special.add(b'~');
+            skip[b'~' as usize] = true;
+            emph[b'~' as usize] = true;
         }
         if options.extension.highlight {
-            t.special[b'=' as usize] = true;
-            t.skip[b'=' as usize] = true;
-            t.emph[b'=' as usize] = true;
+            special.add(b'=');
+            skip[b'=' as usize] = true;
+            emph[b'=' as usize] = true;
         }
         if options.extension.ofm_comments {
-            t.special[b'%' as usize] = true;
+            special.add(b'%');
         }
         if options.extension.insert {
-            t.special[b'+' as usize] = true;
-            t.skip[b'+' as usize] = true;
-            t.emph[b'+' as usize] = true;
+            special.add(b'+');
+            skip[b'+' as usize] = true;
+            emph[b'+' as usize] = true;
         }
         if options.extension.superscript || options.extension.inline_footnotes {
-            t.special[b'^' as usize] = true;
+            special.add(b'^');
         }
         if options.extension.superscript {
-            t.emph[b'^' as usize] = true;
+            emph[b'^' as usize] = true;
         }
         #[cfg(feature = "shortcodes")]
         if options.extension.shortcodes {
-            t.special[b':' as usize] = true;
-            t.colon_needs_slashes = false;
+            special.add(b':');
+            colon_needs_slashes = false;
         }
         if options.extension.underline {
-            t.special[b'_' as usize] = true;
+            special.add(b'_');
         }
         if options.extension.spoiler {
-            t.special[b'|' as usize] = true;
-            t.emph[b'|' as usize] = true;
+            special.add(b'|');
+            emph[b'|' as usize] = true;
         }
         #[cfg(feature = "phoenix_heex")]
         if options.extension.phoenix_heex {
-            t.special[b'{' as usize] = true;
-            t.special[b'<' as usize] = true;
+            special.add(b'{');
+            special.add(b'<');
         }
         for &b in b"*_" {
-            t.emph[b as usize] = true;
+            emph[b as usize] = true;
         }
-        t
+        ByteTables {
+            special: MemchrN::from_byte_set(special),
+            skip,
+            emph,
+            colon_needs_slashes,
+        }
     }
 }
 
@@ -2182,14 +2181,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     fn find_special_char(&self) -> usize {
         let bytes = self.input.as_bytes();
-        let mut i = self.scanner.pos;
-        while i < bytes.len() {
-            if self.tables.special[bytes[i] as usize] && self.is_special_char_at(i) {
-                return i;
+        let mut pos = self.scanner.pos;
+        while let Some(i) = self.tables.special.find(&bytes[pos..]) {
+            if self.is_special_char_at(pos + i) {
+                return pos + i;
             }
-            i += 1;
+            pos += i + 1;
         }
-        i
+        bytes.len()
     }
 
     fn is_special_char_at(&self, i: usize) -> bool {
