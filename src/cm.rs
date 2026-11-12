@@ -721,17 +721,19 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_description_details(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+        let item = node.parent().unwrap();
+        let width = (following_html_block_indent(item) + 1).max(2);
         if entering {
-            if let NodeValue::DescriptionItem(item) = node.parent().unwrap().data().value
-                && item.tight
+            if let NodeValue::DescriptionItem(ref ndi) = item.data().value
+                && ndi.tight
             {
                 self.need_cr = self.need_cr.min(1);
             }
-            write!(self, ": ")?;
+            write!(self, ":{}", " ".repeat(width - 1))?;
             self.begin_content = true;
-            self.prefix.push_str("  ");
+            self.prefix.push_str(&" ".repeat(width));
         } else {
-            self.prefix.truncate(self.prefix.len() - 2);
+            self.prefix.truncate(self.prefix.len() - width);
         }
         Ok(())
     }
@@ -810,7 +812,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 || isspace(literal[0])
                 || first_in_list_item
                 || node.previous_sibling().is_some_and(|previous| {
-                    self.in_tight_list_item || node_matches!(previous, NodeValue::CodeBlock(..))
+                    self.in_tight_list_item
+                        || node_matches!(
+                            previous,
+                            NodeValue::CodeBlock(..) | NodeValue::DescriptionList
+                        )
                 })
                 || self.options.render.prefer_fenced
                 || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
