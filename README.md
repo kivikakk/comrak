@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "0.59"
+comrak = "1.0.0-rc"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.89</span>+.
@@ -67,6 +67,21 @@ Options:
   -i, --inplace
           Reformat CommonMark files in-place
 
+  -t, --to <FORMAT>
+          Specify output format
+          
+          [default: html]
+          [possible values: html, xml, commonmark]
+
+  -o, --output <FILE>
+          Write output to FILE instead of stdout
+
+      --syntax-highlighting <THEME>
+          Syntax highlighting for fenced code blocks; 'css' for CSS classes (default), a theme name
+          for inline styles, or 'none' to disable
+          
+          [default: css]
+
       --hardbreaks
           Treat newlines as hard line breaks
 
@@ -88,7 +103,10 @@ Options:
           breaks CommonMark compatibility
 
       --relaxed-tasklist-character
-          Permit any character inside a tasklist item, not just " ", "x" or "X"
+          Permit any character inside a tasklist item, not just " ", "x", or "X"
+
+      --tasklist-in-table
+          Allow task list items in table cells
 
       --relaxed-autolinks
           Relax autolink parsing: allows links to be recognised when in brackets, permits all URL
@@ -118,21 +136,12 @@ Options:
           Multiple extensions can be delimited with ",", e.g. '--extension strikethrough,table', or
           you can pass --extension/-e multiple times
           
-          [possible values: strikethrough, table, autolink, tasklist, superscript, footnotes,
-          inline-footnotes, description-lists, multiline-block-quotes, math-dollars, math-latex,
-          math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline, subscript,
-          spoiler, greentext, ofm-comments, alerts, ofm-callouts, cjk-friendly-emphasis, subtext,
-          highlight, insert, phoenix-heex, block-directive, header-attributes,
-          fenced-code-attributes, inline-code-attributes, link-attributes]
-
-  -t, --to <FORMAT>
-          Specify output format
-          
-          [default: html]
-          [possible values: html, xml, commonmark]
-
-  -o, --output <FILE>
-          Write output to FILE instead of stdout
+          [possible values: strikethrough, table, grid-table, autolink, tasklist, superscript,
+          footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
+          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline,
+          subscript, spoiler, greentext, ofm-comments, ofm-block-ids, alerts, ofm-callouts,
+          cjk-friendly-emphasis, subtext, highlight, insert, phoenix-heex, block-directive,
+          header-attributes, fenced-code-attributes, inline-code-attributes, link-attributes]
 
       --width <WIDTH>
           Specify wrap width for output CommonMark, or '0' to disable wrapping
@@ -149,12 +158,6 @@ Options:
           Detect frontmatter that starts and ends with the given string, and do not include it in
           the resulting document
 
-      --syntax-highlighting <THEME>
-          Syntax highlighting for fenced code blocks; 'css' for CSS classes (default), a theme name
-          for inline styles, or 'none' to disable
-          
-          [default: css]
-
       --list-style <LIST_STYLE>
           Specify bullet character for lists ("-", "+", "*") in CommonMark output
           
@@ -169,6 +172,9 @@ Options:
 
       --sourcepos
           Include source position attributes in HTML and XML output
+
+      --attributes
+          Render parsed attributes in HTML output (requires --unsafe)
 
       --ignore-setext
           Do not parse setext headers
@@ -185,6 +191,9 @@ Options:
 
       --compact
           Suppress pretty-printing newlines between block-level HTML elements
+
+      --grid-table-widths
+          Write <colgroup> in HTML output
 
   -h, --help
           Print help (see a summary with '-h')

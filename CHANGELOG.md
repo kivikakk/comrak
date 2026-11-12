@@ -1,3 +1,37 @@
+# [v1.0.0-rc.1] - 2026-11-12
+
+## What's Changed
+* Bump clap from 4.6.3 to 4.6.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/890
+* Bump glob from 0.3.3 to 0.3.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/889
+* inlines: use paragraph per-line offsets for inline footnotes. by @kivikakk in https://github.com/kivikakk/comrak/pull/895
+* Bump toml from 1.1.3+spec-1.1.0 to 1.1.4+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/897
+* Bump clap from 4.6.4 to 4.6.5 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/896
+* Sourcepos bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/901
+* fix attr sourcepos across lines. by @kivikakk in https://github.com/kivikakk/comrak/pull/902
+* `attributes` render option. by @kivikakk in https://github.com/kivikakk/comrak/pull/903
+* Support OFM block id markers by @szdytom in https://github.com/kivikakk/comrak/pull/900
+* parser: use 100000 as the minimum for max_ref_size by @sventmueller in https://github.com/kivikakk/comrak/pull/905
+* count refmap size once, correctly. by @kivikakk in https://github.com/kivikakk/comrak/pull/906
+* finalise list contents when closing fenced containers. by @kivikakk in https://github.com/kivikakk/comrak/pull/907
+* fuzz: sourcepos. by @kivikakk in https://github.com/kivikakk/comrak/pull/908
+* Sourcepos bonanza Ⅱ by @kivikakk in https://github.com/kivikakk/comrak/pull/910
+* Sourcepos bonanza Ⅲ by @kivikakk in https://github.com/kivikakk/comrak/pull/911
+* strings: find frontmatter closers more methodically. by @kivikakk in https://github.com/kivikakk/comrak/pull/912
+* build(deps): bump clap from 4.6.5 to 4.6.6 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/914
+* grid tables. by @kivikakk in https://github.com/kivikakk/comrak/pull/820
+* crlf normalisation. by @kivikakk in https://github.com/kivikakk/comrak/pull/915
+* inlines: search for special chars with memchr-n. by @FalkWoldmann in https://github.com/kivikakk/comrak/pull/916
+* Roundtrip bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/917
+* roundtrip Escaped. by @kivikakk in https://github.com/kivikakk/comrak/pull/680
+
+## New Contributors
+* @sventmueller made their first contribution in https://github.com/kivikakk/comrak/pull/905
+* @FalkWoldmann made their first contribution in https://github.com/kivikakk/comrak/pull/916
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.59.0...v1.0.0-rc.1
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
