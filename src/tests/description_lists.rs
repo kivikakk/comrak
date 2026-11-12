@@ -316,3 +316,16 @@ fn commonmark_indents_details_continuation(input: &str, cm: &str, expected: &str
     commonmark(input, cm, Some(&options));
     html_opts!([extension.description_lists], input, expected);
 }
+
+#[test_case("- i\n: d\n", "- i\n  \\: d\n", "<ul>\n<li>i\n: d</li>\n</ul>\n")]
+#[test_case(
+    "> k\n: d\n",
+    "> k\n> \\: d\n",
+    "<blockquote>\n<p>k\n: d</p>\n</blockquote>\n"
+)]
+fn commonmark_escapes_leading_colon(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([extension.description_lists], input, expected);
+}

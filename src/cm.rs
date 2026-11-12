@@ -328,7 +328,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
-                        && self.options.extension.block_directive
+                        && (self.options.extension.block_directive
+                            || self.options.extension.description_lists)
                         && c == ':')
                     || (self.begin_content
                         && (c == '-' || c == '+' || c == '=')
