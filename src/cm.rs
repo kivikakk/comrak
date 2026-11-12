@@ -564,7 +564,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
             NodeValue::DescriptionDetails => self.format_description_details(node, entering)?,
-            NodeValue::Heading(ref nh) => self.format_heading(nh, entering)?,
+            NodeValue::Heading(ref nh) => self.format_heading(nh, node, entering)?,
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             #[cfg(feature = "phoenix_heex")]
@@ -796,15 +796,25 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_heading(&mut self, nh: &NodeHeading, entering: bool) -> fmt::Result {
+    fn format_heading(&mut self, nh: &NodeHeading, node: Node<'a>, entering: bool) -> fmt::Result {
+        let setext = nh.level <= 2
+            && node
+                .descendants()
+                .any(|n| node_matches!(n, NodeValue::SoftBreak | NodeValue::LineBreak));
         if entering {
-            for _ in 0..nh.level {
-                write!(self, "#")?;
+            if !setext {
+                for _ in 0..nh.level {
+                    write!(self, "#")?;
+                }
+                write!(self, " ")?;
+                self.no_linebreaks = true;
             }
-            write!(self, " ")?;
             self.begin_content = true;
-            self.no_linebreaks = true;
         } else {
+            if setext {
+                self.cr();
+                self.write_str(if nh.level == 1 { "===" } else { "---" })?;
+            }
             self.no_linebreaks = false;
             self.blankline();
         }

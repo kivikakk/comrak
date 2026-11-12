@@ -93,6 +93,19 @@ fn commonmark_indented_html_block_remains_after_list(input: &str, cm: &str, expe
     html_opts!([render.r#unsafe], input, expected);
 }
 
+#[test_case("a\nb\n-\n", "a\nb\n---\n", "<h2>a\nb</h2>\n")]
+#[test_case("a  \nb\n===\n", "a\\\nb\n===\n", "<h1>a<br />\nb</h1>\n")]
+#[test_case(
+    "> a\n> b\n> ---\n",
+    "> a\n> b\n> ---\n",
+    "<blockquote>\n<h2>a\nb</h2>\n</blockquote>\n"
+)]
+#[test_case("a\n===\n", "# a\n", "<h1>a</h1>\n")]
+fn commonmark_multiline_heading_stays_setext(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();
