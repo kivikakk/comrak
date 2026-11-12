@@ -58,7 +58,6 @@ fn wikilinks_title_escape_chars() {
         ],
         "[[Name \\[of\\] page|http://example.com]]",
         "<p><a href=\"http://example.com\" data-wikilink=\"true\">Name <span data-escaped-char>[</span>of<span data-escaped-char>]</span> page</a></p>\n",
-        no_roundtrip,
     );
 }
 

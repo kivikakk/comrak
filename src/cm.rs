@@ -301,7 +301,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         // Any use of nextb must be conditional on asserting c is a single byte character.
         let follows_digit = self.window.last().is_some_and(|&b| isdigit(b));
 
-        let nextb = nextb.map_or(0, |&c| c);
+        let nextb = match nextb {
+            Some(&b) => b,
+            None if escaping == Escaping::Normal => self.next_inline_first_byte(),
+            None => 0,
+        };
 
         let needs_escaping = (c as u64) < 0x80
             && escaping != Escaping::Literal
@@ -322,10 +326,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || ((self.options.extension.math_dollars
                         || self.options.extension.math_code)
                         && c == '$')
-                    || (self.options.extension.ofm_comments
-                        && c == '%'
-                        && (nextb == b'%'
-                            || (nextb == 0 && self.next_inline_starts_with_percent())))
+                    || (self.options.extension.ofm_comments && c == '%' && nextb == b'%')
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
@@ -374,25 +375,15 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn next_inline_starts_with_percent(&self) -> bool {
-        let next = self.node.next_sibling().or_else(|| {
-            self.node
-                .parent()
-                .filter(|parent| node_matches!(parent, NodeValue::Escaped))
-                .and_then(|parent| parent.next_sibling())
-        });
-        next.is_some_and(|next| {
-            let next = if node_matches!(next, NodeValue::Escaped) {
-                next.first_child().unwrap_or(next)
-            } else {
-                next
-            };
-            match &next.data().value {
-                NodeValue::Text(text) => text.starts_with('%'),
-                NodeValue::CommentInline(_) => true,
-                _ => false,
-            }
-        })
+    fn next_inline_first_byte(&self) -> u8 {
+        self.node
+            .next_sibling()
+            .map_or(0, |next| match &next.data().value {
+                NodeValue::Text(text) => text.as_bytes().first().copied().unwrap_or(0),
+                NodeValue::Escaped => b'\\',
+                NodeValue::CommentInline(_) => b'%',
+                _ => 0,
+            })
     }
 
     fn cr(&mut self) {
@@ -548,8 +539,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
             NodeValue::MultilineBlockQuote(..) => self.format_block_quote(entering)?,
             NodeValue::Escaped => {
-                // Noop - the character gets escaped as usual, this is just an
-                // AST marker created by escaped_char_spans.
+                self.format_escaped(node)?;
+                return Ok(false);
             }
             NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
@@ -1150,6 +1141,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_spoiler(&mut self) -> fmt::Result {
         write!(self, "||")?;
         Ok(())
+    }
+
+    fn format_escaped(&mut self, node: Node<'a>) -> fmt::Result {
+        let child = node.first_child().unwrap();
+        let NodeValue::Text(ref literal) = child.data().value else {
+            unreachable!()
+        };
+        write!(self, "\\{}", literal)
     }
 
     fn format_escaped_tag(&mut self, net: &str) -> fmt::Result {
