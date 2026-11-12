@@ -402,6 +402,8 @@ where
 
         self.finalize_document()?;
         self.postprocess_text_nodes(self.root);
+        #[cfg(feature = "grid_table")]
+        self.place_cell_line_ends();
         self.cancellation.check()?;
         if self.options.parse.sourcepos_chars {
             convert_sourcepos_columns_to_chars(self.root, md, &self.cancellation);
@@ -2375,9 +2377,6 @@ where
         for escaped_pipes in mem::take(&mut self.escaped_pipes) {
             escaped_pipes.restore(self.arena);
         }
-
-        #[cfg(feature = "grid_table")]
-        self.place_cell_line_ends();
 
         Ok(())
     }

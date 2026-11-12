@@ -678,6 +678,30 @@ fn same_tree(
             })
 }
 
+fn footnote_definitions(doc: &str, options: &Options<'static>) -> Vec<Rec> {
+    let mut options = options.clone();
+    options.parse.leave_footnote_definitions = true;
+    let recs = super::model::snapshot(doc, &options);
+    (0..recs.len())
+        .filter(|&i| matches!(recs[i].value, NodeValue::FootnoteDefinition(_)))
+        .flat_map(|i| subtree(&recs, i, recs[i].depth))
+        .map(|(i, depth)| Rec {
+            depth,
+            ..recs[i].clone()
+        })
+        .collect()
+}
+
+fn same_definitions(trial: &Trial, old: &[Rec], new: &[Rec]) -> bool {
+    old.len() == new.len()
+        && old.iter().zip(new).all(|(x, y)| {
+            x.kind == y.kind
+                && x.depth == y.depth
+                && normalised(trial.normalise, &x.fingerprint)
+                    == normalised(trial.normalise, &y.fingerprint)
+        })
+}
+
 fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
     let rec = &old[index];
     if is_placeholder(old, index) {
@@ -704,6 +728,10 @@ fn format_position(position: LineColumn) -> String {
 pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> Outcome {
     let mut outcome = Outcome::default();
     let source = Source::new(doc);
+    let hidden_definitions = options.extension.footnotes
+        && !options.parse.leave_footnote_definitions
+        && doc.contains("[^");
+    let old_definitions = hidden_definitions.then(|| footnote_definitions(doc, options));
     for trial in trials(family, doc, options) {
         outcome.tried += 1;
         let edited = apply(doc, &trial.edits);
@@ -715,7 +743,13 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
             outcome.failed += 1;
             continue;
         };
-        if !same_tree(family, &trial, old, &new, &old_view, &new_view) {
+        if !same_tree(family, &trial, old, &new, &old_view, &new_view)
+            || old_definitions.as_ref().is_some_and(|old_definitions| {
+                let new_definitions =
+                    footnote_definitions(&edited, trial.options.as_ref().unwrap_or(options));
+                !same_definitions(&trial, old_definitions, &new_definitions)
+            })
+        {
             outcome.failed += 1;
             continue;
         }

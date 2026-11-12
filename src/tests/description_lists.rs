@@ -1,4 +1,5 @@
 use super::*;
+use ntest::test_case;
 
 #[test]
 fn description_lists_loose() {
@@ -292,4 +293,82 @@ fn commonmark_keeps_details_tightness() {
         Some(&options),
     );
     commonmark("- a\n  : b\n- d\n", "- a\n  : b\n- d\n", Some(&options));
+}
+
+#[test_case(
+    "a\n: b\n\n  c\n",
+    "a\n: b\n  \n  c\n",
+    "<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n"
+)]
+#[test_case(
+    "a\n: b\n\n  - x\n  - y\n",
+    "a\n: b\n  \n  - x\n  - y\n",
+    "<dl>\n<dt>a</dt>\n<dd>b\n<ul>\n<li>x</li>\n<li>y</li>\n</ul>\n</dd>\n</dl>\n"
+)]
+#[test_case(
+    "> a\n> : b\n>\n>   c\n",
+    "> a\n> : b\n>   \n>   c\n",
+    "<blockquote>\n<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n</blockquote>\n"
+)]
+fn commonmark_indents_details_continuation(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([extension.description_lists], input, expected);
+}
+
+#[test_case("- i\n: d\n", "- i\n  \\: d\n", "<ul>\n<li>i\n: d</li>\n</ul>\n")]
+#[test_case(
+    "> k\n: d\n",
+    "> k\n> \\: d\n",
+    "<blockquote>\n<p>k\n: d</p>\n</blockquote>\n"
+)]
+fn commonmark_escapes_leading_colon(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([extension.description_lists], input, expected);
+}
+
+#[test_case(
+    "a\n  : b\n\n  <div>\n",
+    "a\n:  b\n\n  <div>\n",
+    "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n  <div>\n"
+)]
+#[test_case(
+    "a\n   : b\n\n   <!-- x -->\n",
+    "a\n:   b\n\n   <!-- x -->\n",
+    "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n   <!-- x -->\n"
+)]
+#[test_case(
+    "a\n: b\n\n  <div>\n",
+    "a\n: b\n  \n  <div>\n",
+    "<dl>\n<dt>a</dt>\n<dd>b\n<div>\n</dd>\n</dl>\n"
+)]
+fn commonmark_indented_html_block_stays_after_details(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    options.render.r#unsafe = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!(
+        [extension.description_lists, render.r#unsafe],
+        input,
+        expected
+    );
+}
+
+#[test]
+fn commonmark_code_block_after_details_is_fenced() {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(
+        "a\n: b\n\n```\n- c\n```\n",
+        "a\n: b\n\n```\n- c\n```\n",
+        Some(&options),
+    );
+    html_opts!(
+        [extension.description_lists],
+        "a\n: b\n\n```\n- c\n```\n",
+        "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n<pre><code>- c\n</code></pre>\n"
+    );
 }

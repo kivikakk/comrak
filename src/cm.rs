@@ -87,7 +87,8 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
-    tight_stack: Vec<bool>,
+    emphasis_delims: Vec<char>,
+    last_emphasis: Option<(Node<'a>, char)>,
     #[cfg(feature = "grid_table")]
     grid_table_indent: usize,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
@@ -128,7 +129,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
-            tight_stack: vec![],
+            emphasis_delims: vec![],
+            last_emphasis: None,
             #[cfg(feature = "grid_table")]
             grid_table_indent: 0,
             custom_escape: None,
@@ -317,6 +319,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '~'
                     || c == '!'
                     || (self.options.extension.autolink && c == '@')
+                    || ((self.options.extension.math_dollars
+                        || self.options.extension.math_code)
+                        && c == '$')
                     || (self.options.extension.ofm_comments
                         && c == '%'
                         && (nextb == b'%'
@@ -324,7 +329,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || (c == '&' && isalpha(nextb))
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
-                        && self.options.extension.block_directive
+                        && (self.options.extension.block_directive
+                            || self.options.extension.description_lists)
                         && c == ':')
                     || (self.begin_content
                         && (c == '-' || c == '+' || c == '=')
@@ -348,6 +354,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             // (c as u64) < 256 is implied.
             let out = if escaping == Escaping::Url && isspace_char(c) {
                 format!("%{:2X}", c as u8)
+            } else if c == '[' && self.options.extension.math_latex {
+                "&#91;".to_string()
             } else if ispunct_char(c) {
                 format!("\\{}", c)
             } else if c == '\0' {
@@ -467,79 +475,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn get_in_tight_list_item(&self, node: Node<'a>) -> bool {
-        let tmp = match node.containing_block() {
-            Some(tmp) => tmp,
-            None => return false,
-        };
-
-        match tmp.data().value {
-            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = tmp.parent().unwrap().data().value {
-                    return nl.tight;
-                }
-                return false;
-            }
-            _ => {}
-        }
-
-        let parent = match tmp.parent() {
-            Some(parent) => parent,
-            None => return false,
-        };
-
-        match parent.data().value {
-            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = parent.parent().unwrap().data().value {
-                    return nl.tight;
-                }
-            }
-            _ => {}
-        }
-
-        false
-    }
-
     fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
 
         let parent_node = node.parent();
-        if entering {
-            if parent_node.is_some()
-                && node_matches!(
-                    parent_node.unwrap(),
-                    NodeValue::Item(..) | NodeValue::TaskItem(..)
-                )
-            {
-                self.in_tight_list_item = self.get_in_tight_list_item(node);
-            }
-        } else if node_matches!(node, NodeValue::List(..)) {
-            self.in_tight_list_item = parent_node.is_some()
-                && node_matches!(
-                    parent_node.unwrap(),
-                    NodeValue::Item(..) | NodeValue::TaskItem(..)
-                )
-                && self.get_in_tight_list_item(node);
-        }
-        if node_matches!(
-            node,
-            NodeValue::BlockQuote
-                | NodeValue::MultilineBlockQuote(..)
-                | NodeValue::Alert(..)
-                | NodeValue::Callout(..)
-                | NodeValue::BlockDirective(..)
-                | NodeValue::FootnoteDefinition(..)
-                | NodeValue::DescriptionList
-        ) {
-            if entering {
-                if self.in_tight_list_item && self.need_cr > 1 {
-                    self.need_cr = 1;
-                }
-                self.tight_stack.push(self.in_tight_list_item);
-                self.in_tight_list_item = false;
-            } else {
-                self.in_tight_list_item = self.tight_stack.pop().unwrap();
-            }
+        if (entering && node.data().value.block() && node.previous_sibling().is_some())
+            || (!entering && node_matches!(node, NodeValue::List(..)))
+        {
+            self.in_tight_list_item = parent_node.is_some_and(tight_container);
         }
         let next_is_block = node
             .next_sibling()
@@ -557,7 +500,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::DescriptionItem(..) => (),
             NodeValue::DescriptionTerm => (),
             NodeValue::DescriptionDetails => self.format_description_details(node, entering)?,
-            NodeValue::Heading(ref nh) => self.format_heading(nh, entering)?,
+            NodeValue::Heading(ref nh) => self.format_heading(nh, node, entering)?,
             NodeValue::CodeBlock(ref ncb) => self.format_code_block(node, ncb, entering)?,
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             #[cfg(feature = "phoenix_heex")]
@@ -574,13 +517,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(ref literal) => self.format_heex_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
-            NodeValue::Strong => {
-                if parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong)
-                {
-                    self.format_strong()?;
-                }
-            }
-            NodeValue::Emph => self.format_emph(node)?,
+            NodeValue::Strong => self.format_emphasis(node, entering, true)?,
+            NodeValue::Emph => self.format_emphasis(node, entering, false)?,
             NodeValue::TaskItem(ref nti) => self.format_task_item(nti, node, entering)?,
             NodeValue::Strikethrough => self.format_strikethrough()?,
             NodeValue::Highlight => self.format_highlight()?,
@@ -613,7 +551,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 // Noop - the character gets escaped as usual, this is just an
                 // AST marker created by escaped_char_spans.
             }
-            NodeValue::Math(ref math) => self.format_math(math, entering)?,
+            NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
@@ -713,9 +651,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         };
 
         let mut listmarker = String::new();
+        let min_width = following_html_block_indent(node) + 1;
 
         let marker_width = if parent.list_type == ListType::Bullet {
-            2
+            min_width.max(2)
         } else {
             let list_number = if let Some(last_stack) = self.ol_stack.last_mut() {
                 let list_number = *last_stack;
@@ -745,7 +684,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             )?;
             let mut current_len = listmarker.len();
 
-            while current_len < self.options.render.ol_width.min(12) {
+            while current_len < self.options.render.ol_width.min(12).max(min_width) {
                 write!(listmarker, " ").unwrap();
                 current_len += 1;
             }
@@ -756,7 +695,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if entering {
             if parent.list_type == ListType::Bullet {
                 let bullet = char::from(self.options.render.list_style as u8);
-                write!(self, "{} ", bullet).unwrap();
+                write!(self, "{}{}", bullet, " ".repeat(marker_width - 1)).unwrap();
             } else {
                 self.write_str(&listmarker)?;
             }
@@ -771,33 +710,53 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 0
             };
             self.prefix.truncate(new_len);
-            self.cr();
+            if !parent.tight && node.next_sibling().is_some() {
+                self.blankline();
+            } else {
+                self.cr();
+            }
         }
 
         Ok(())
     }
 
     fn format_description_details(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
+        let item = node.parent().unwrap();
+        let width = (following_html_block_indent(item) + 1).max(2);
         if entering {
-            if let NodeValue::DescriptionItem(item) = node.parent().unwrap().data().value
-                && item.tight
+            if let NodeValue::DescriptionItem(ref ndi) = item.data().value
+                && ndi.tight
             {
                 self.need_cr = self.need_cr.min(1);
             }
-            write!(self, ": ")?
+            write!(self, ":{}", " ".repeat(width - 1))?;
+            self.begin_content = true;
+            self.prefix.push_str(&" ".repeat(width));
+        } else {
+            self.prefix.truncate(self.prefix.len() - width);
         }
         Ok(())
     }
 
-    fn format_heading(&mut self, nh: &NodeHeading, entering: bool) -> fmt::Result {
+    fn format_heading(&mut self, nh: &NodeHeading, node: Node<'a>, entering: bool) -> fmt::Result {
+        let setext = nh.level <= 2
+            && node
+                .descendants()
+                .any(|n| node_matches!(n, NodeValue::SoftBreak | NodeValue::LineBreak));
         if entering {
-            for _ in 0..nh.level {
-                write!(self, "#")?;
+            if !setext {
+                for _ in 0..nh.level {
+                    write!(self, "#")?;
+                }
+                write!(self, " ")?;
+                self.no_linebreaks = true;
             }
-            write!(self, " ")?;
             self.begin_content = true;
-            self.no_linebreaks = true;
         } else {
+            if setext {
+                self.cr();
+                self.write_str(if nh.level == 1 { "===" } else { "---" })?;
+            }
             self.no_linebreaks = false;
             self.blankline();
         }
@@ -852,6 +811,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 || literal.len() <= 2
                 || isspace(literal[0])
                 || first_in_list_item
+                || node.previous_sibling().is_some_and(|previous| {
+                    self.in_tight_list_item
+                        || node_matches!(
+                            previous,
+                            NodeValue::CodeBlock(..) | NodeValue::DescriptionList
+                        )
+                })
                 || self.options.render.prefer_fenced
                 || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
             {
@@ -1080,24 +1046,56 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_strong(&mut self) -> fmt::Result {
-        write!(self, "**")
+    fn format_emphasis(&mut self, node: Node<'a>, entering: bool, strong: bool) -> fmt::Result {
+        let written = !(strong
+            && self.options.render.gfm_quirks
+            && node
+                .parent()
+                .is_some_and(|p| node_matches!(p, NodeValue::Strong)));
+        let delim = if entering {
+            let delim = if written {
+                self.emphasis_delimiter(node, strong)
+            } else {
+                *self.emphasis_delims.last().unwrap()
+            };
+            self.emphasis_delims.push(delim);
+            delim
+        } else {
+            let delim = self.emphasis_delims.pop().unwrap();
+            if written {
+                self.last_emphasis = Some((node, delim));
+            }
+            delim
+        };
+        if written {
+            self.write_char(delim)?;
+            if strong {
+                self.write_char(delim)?;
+            }
+        }
+        Ok(())
     }
 
-    fn format_emph(&mut self, node: Node<'a>) -> fmt::Result {
-        let emph_delim = if match node.parent() {
-            Some(parent) => matches!(parent.data().value, NodeValue::Emph),
-            _ => false,
-        } && node.next_sibling().is_none()
-            && node.previous_sibling().is_none()
-        {
-            "_"
-        } else {
-            "*"
+    fn emphasis_delimiter(&self, node: Node<'a>, strong: bool) -> char {
+        let adjacent = match node.previous_sibling() {
+            Some(prev) => self
+                .last_emphasis
+                .filter(|&(last, _)| last.same_node(prev))
+                .map(|(_, delim)| delim),
+            None if !strong
+                && node.next_sibling().is_none()
+                && node
+                    .parent()
+                    .is_some_and(|p| node_matches!(p, NodeValue::Emph | NodeValue::Strong)) =>
+            {
+                self.emphasis_delims.last().copied()
+            }
+            None => None,
         };
-
-        self.write_str(emph_delim)?;
-        Ok(())
+        match adjacent {
+            Some('*') if !(strong && self.options.extension.underline) => '_',
+            _ => '*',
+        }
     }
 
     fn format_task_item(
@@ -1309,20 +1307,22 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_math(&mut self, math: &NodeMath, entering: bool) -> fmt::Result {
+    fn format_math(&mut self, math: &NodeMath, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
-            let (start_fence, end_fence) = match (
-                math.dollar_math,
-                math.display_math,
-                self.options.extension.math_latex,
-                self.options.extension.math_dollars,
-            ) {
-                (false, _, _, _) => ("$`", "`$"),
-                (true, true, true, false) => ("\\[", "\\]"),
-                (true, false, true, false) => ("\\(", "\\)"),
-                (true, true, _, _) => ("$$", "$$"),
-                (true, false, _, _) => ("$", "$"),
+            let latex = self.options.extension.math_latex
+                && !(self.options.extension.math_dollars
+                    && dollar_math_holds(
+                        math,
+                        node.next_sibling(),
+                        self.options.extension.math_code,
+                    ));
+            let (start_fence, end_fence) = match (math.dollar_math, math.display_math, latex) {
+                (false, _, _) => ("$`", "`$"),
+                (true, true, true) => ("\\[", "\\]"),
+                (true, false, true) => ("\\(", "\\)"),
+                (true, true, false) => ("$$", "$$"),
+                (true, false, false) => ("$", "$"),
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
@@ -1636,6 +1636,51 @@ pub fn escape_link_destination(url: &str) -> String {
     result.push('>');
 
     result
+}
+
+fn dollar_math_holds(math: &NodeMath, next: Option<Node<'_>>, math_code: bool) -> bool {
+    let literal = math.literal.as_bytes();
+    let (Some(&first), Some(&last)) = (literal.first(), literal.last()) else {
+        return false;
+    };
+    if math.display_math {
+        return first != b'$' && last != b'$' && !math.literal.contains("$$");
+    }
+    let next_is_digit = next.is_some_and(|next| match next.data().value {
+        NodeValue::Text(ref t) => t.as_bytes().first().is_some_and(|&b| isdigit(b)),
+        _ => false,
+    });
+    !isspace(first)
+        && (!math_code || first != b'`')
+        && !isspace(last)
+        && last != b'\\'
+        && !literal.contains(&b'\n')
+        && !next_is_digit
+        && literal
+            .iter()
+            .enumerate()
+            .all(|(i, &b)| b != b'$' || (i > 0 && literal[i - 1] == b'\\'))
+}
+
+fn tight_container(node: Node<'_>) -> bool {
+    match node.data().value {
+        NodeValue::List(ref nl) => nl.tight,
+        NodeValue::Item(..) | NodeValue::TaskItem(..) => node.parent().is_some_and(tight_container),
+        _ => false,
+    }
+}
+
+fn following_html_block_indent(item: Node<'_>) -> usize {
+    if item.next_sibling().is_some() {
+        return 0;
+    }
+    match item.parent().and_then(|list| list.next_sibling()) {
+        Some(next) => match next.data().value {
+            NodeValue::HtmlBlock(ref nhb) => nhb.literal.bytes().take_while(|&b| b == b' ').count(),
+            _ => 0,
+        },
+        None => 0,
+    }
 }
 
 #[inline]

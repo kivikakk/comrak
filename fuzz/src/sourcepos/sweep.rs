@@ -310,6 +310,7 @@ fn conventions_are_not_findings() {
         "+-----+\n| a\\  |\n| b   |\n+-----+\n",
         "+-----+\n| ^[a |\n| b]  |\n+-----+\n",
         "+---+---+\n+---+---+\n",
+        "2. [^1]:<pre\n\n       [r]:/",
     ] {
         super::assert_clean(doc);
     }

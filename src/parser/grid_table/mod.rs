@@ -333,6 +333,21 @@ where
                 ast.sourcepos.start.column = eol;
             }
             ast.sourcepos.end = (start.line, eol - 1).into();
+            drop(ast);
+            if soft {
+                let mut child = node;
+                while child.previous_sibling().is_none()
+                    && let Some(parent) = child.parent()
+                {
+                    let mut parent_ast = parent.data_mut();
+                    if parent_ast.sourcepos.start != start {
+                        break;
+                    }
+                    parent_ast.sourcepos.start.column = eol;
+                    drop(parent_ast);
+                    child = parent;
+                }
+            }
         }
     }
 

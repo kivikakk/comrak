@@ -9,7 +9,146 @@ use super::*;
 fn commonmark_removes_redundant_strong() {
     let input = "This is **something **even** better**";
     let output = "This is **something even better**\n";
-    commonmark(input, output, None);
+    let mut options = Options::default();
+    options.render.gfm_quirks = true;
+    commonmark(input, output, Some(&options));
+}
+
+#[test_case(
+    "This is **something **even** better**",
+    "This is **something **even** better**\n",
+    "<p>This is <strong>something <strong>even</strong> better</strong></p>\n"
+)]
+#[test_case(
+    "****a****",
+    "****a****\n",
+    "<p><strong><strong>a</strong></strong></p>\n"
+)]
+#[test_case(
+    "**__a__**",
+    "****a****\n",
+    "<p><strong><strong>a</strong></strong></p>\n"
+)]
+fn commonmark_keeps_nested_strong(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
+#[test_case("**_a_**", "**_a_**\n", "<p><strong><em>a</em></strong></p>\n")]
+#[test_case("_**a**_", "***a***\n", "<p><em><strong>a</strong></em></p>\n")]
+#[test_case("*_a_*", "*_a_*\n", "<p><em><em>a</em></em></p>\n")]
+#[test_case(
+    "**_**a**_**",
+    "**_**a**_**\n",
+    "<p><strong><em><strong>a</strong></em></strong></p>\n"
+)]
+#[test_case(
+    "***_a_***",
+    "***_a_***\n",
+    "<p><em><strong><em>a</em></strong></em></p>\n"
+)]
+#[test_case("**_a_ b**", "***a* b**\n", "<p><strong><em>a</em> b</strong></p>\n")]
+#[test_case(
+    "foo***bar***baz",
+    "foo***bar***baz\n",
+    "<p>foo<em><strong>bar</strong></em>baz</p>\n"
+)]
+#[test_case("*a*_b_", "*a*_b_\n", "<p><em>a</em><em>b</em></p>\n")]
+#[test_case(
+    "**a**__b__",
+    "**a**__b__\n",
+    "<p><strong>a</strong><strong>b</strong></p>\n"
+)]
+#[test_case("*a*__b__", "*a*__b__\n", "<p><em>a</em><strong>b</strong></p>\n")]
+#[test_case("*a.*_b_", "*a.*_b_\n", "<p><em>a.</em><em>b</em></p>\n")]
+fn commonmark_emphasis_delimiters_remain_apart(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
+#[test_case(
+    "-   a\n\n  <div>\n",
+    "-  a\n\n  <div>\n",
+    "<ul>\n<li>a</li>\n</ul>\n  <div>\n"
+)]
+#[test_case(
+    "1.  a\n\n   <!-- x -->\n",
+    "1.  a\n\n   <!-- x -->\n",
+    "<ol>\n<li>a</li>\n</ol>\n   <!-- x -->\n"
+)]
+#[test_case(
+    "> -   a\n>\n>   <div>\n",
+    "> -  a\n> \n>   <div>\n",
+    "<blockquote>\n<ul>\n<li>a</li>\n</ul>\n  <div>\n</blockquote>\n"
+)]
+#[test_case(
+    "- a\n-   b\n\n  <div>\n",
+    "- a\n-  b\n\n  <div>\n",
+    "<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n  <div>\n"
+)]
+fn commonmark_indented_html_block_remains_after_list(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.render.r#unsafe = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([render.r#unsafe], input, expected);
+}
+
+#[test_case("a\nb\n-\n", "a\nb\n---\n", "<h2>a\nb</h2>\n")]
+#[test_case("a  \nb\n===\n", "a\\\nb\n===\n", "<h1>a<br />\nb</h1>\n")]
+#[test_case(
+    "> a\n> b\n> ---\n",
+    "> a\n> b\n> ---\n",
+    "<blockquote>\n<h2>a\nb</h2>\n</blockquote>\n"
+)]
+#[test_case("a\n===\n", "# a\n", "<h1>a</h1>\n")]
+fn commonmark_multiline_heading_stays_setext(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
+#[test_case(
+    "-\n\n- a\n",
+    "- \n\n- a\n",
+    "<ul>\n<li></li>\n<li>\n<p>a</p>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- -\n\n  - a\n",
+    "- - \n  \n  - a\n",
+    "<ul>\n<li>\n<ul>\n<li></li>\n<li>\n<p>a</p>\n</li>\n</ul>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- a\n\n  - b\n",
+    "- a\n  \n  - b\n",
+    "<ul>\n<li>\n<p>a</p>\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- - a\n\n  - b\n  c\n",
+    "- - a\n  \n  - b\n    c\n",
+    "<ul>\n<li>\n<ul>\n<li>\n<p>a</p>\n</li>\n<li>\n<p>b\nc</p>\n</li>\n</ul>\n</li>\n</ul>\n"
+)]
+fn commonmark_list_gaps_after_their_container(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
+#[test_case(
+    "- a\n  ```\n  code\n  ```\n",
+    "- a\n  ```\n  code\n  ```\n",
+    "<ul>\n<li>a\n<pre><code>code\n</code></pre>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "    one\n```\ntwo\n```\n",
+    "    one\n\n```\ntwo\n```\n",
+    "<pre><code>one\n</code></pre>\n<pre><code>two\n</code></pre>\n"
+)]
+#[test_case(
+    "a\n\n    code\n",
+    "a\n\n    code\n",
+    "<p>a</p>\n<pre><code>code\n</code></pre>\n"
+)]
+fn commonmark_code_block_fences_when_indent_would_merge(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
 }
 
 #[test]
