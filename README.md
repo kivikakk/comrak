@@ -397,7 +397,7 @@ projects and resources to also consider:
 Comrak is used in a few Rust-y places, and more beyond:
 
 - [crates.io](https://crates.io), [docs.rs](https://docs.rs) and [lib.rs](https://lib.rs) use Comrak to render README Markdown faithfully.
-- [GitLab](https://gitlab.com) uses Comrak to render Markdown documents, issues, comments, and more.
+- [GitLab](https://gitlab.com) uses Comrak to render Markdown documents, work items, merge requests, notes, and more.
 - [Deno](https://deno.com) uses Comrak to render documentation in [`deno_doc`](https://github.com/denoland/deno_doc).
 - [Reddit](https://reddit.com)'s new-style site uses a Comrak fork[^reddit].
 - [Lockbook](https://lockbook.net/) is a Markdown-based secure notebook with native apps. It looks really neat!!
