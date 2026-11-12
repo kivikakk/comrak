@@ -176,6 +176,26 @@ fn commonmark_avoids_spurious_backslash() {
 }
 
 #[test]
+fn commonmark_escapes_entity_across_text_nodes() {
+    let arena = Arena::new();
+    let options = Options::default();
+    let empty = LineColumn { line: 0, column: 0 };
+
+    let ast = |val: NodeValue| arena.alloc(Ast::new(val, empty).into());
+    let root = ast(NodeValue::Document);
+
+    let p = ast(NodeValue::Paragraph);
+    p.append(ast(NodeValue::Text("&".into())));
+    p.append(ast(NodeValue::Text("amp;".into())));
+    root.append(p);
+
+    let mut output = String::new();
+    cm::format_document(root, &options, &mut output).unwrap();
+
+    compare_strs(&output, "\\&amp;\n", "rendered", "<synthetic>");
+}
+
+#[test]
 fn commonmark_renders_single_list_item() {
     let arena = Arena::new();
     let options = Options::default();
