@@ -24,6 +24,8 @@ for f in spec.txt extensions.txt; do
 	test "$(diff "$f" "$specs/$f" | grep -c '^>')" = 1
 done
 
+export PYTHONWARNINGS=ignore::SyntaxWarning
+
 PROGRAM_ARG="--program=../../../target/release/comrak --syntax-highlighting none --relaxed-autolinks"
 
 set +e
