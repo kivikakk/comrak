@@ -1,37 +1,3 @@
-# [v1.0.0-rc.1] - 2026-11-12
-
-## What's Changed
-* Bump clap from 4.6.3 to 4.6.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/890
-* Bump glob from 0.3.3 to 0.3.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/889
-* inlines: use paragraph per-line offsets for inline footnotes. by @kivikakk in https://github.com/kivikakk/comrak/pull/895
-* Bump toml from 1.1.3+spec-1.1.0 to 1.1.4+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/897
-* Bump clap from 4.6.4 to 4.6.5 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/896
-* Sourcepos bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/901
-* fix attr sourcepos across lines. by @kivikakk in https://github.com/kivikakk/comrak/pull/902
-* `attributes` render option. by @kivikakk in https://github.com/kivikakk/comrak/pull/903
-* Support OFM block id markers by @szdytom in https://github.com/kivikakk/comrak/pull/900
-* parser: use 100000 as the minimum for max_ref_size by @sventmueller in https://github.com/kivikakk/comrak/pull/905
-* count refmap size once, correctly. by @kivikakk in https://github.com/kivikakk/comrak/pull/906
-* finalise list contents when closing fenced containers. by @kivikakk in https://github.com/kivikakk/comrak/pull/907
-* fuzz: sourcepos. by @kivikakk in https://github.com/kivikakk/comrak/pull/908
-* Sourcepos bonanza Ⅱ by @kivikakk in https://github.com/kivikakk/comrak/pull/910
-* Sourcepos bonanza Ⅲ by @kivikakk in https://github.com/kivikakk/comrak/pull/911
-* strings: find frontmatter closers more methodically. by @kivikakk in https://github.com/kivikakk/comrak/pull/912
-* build(deps): bump clap from 4.6.5 to 4.6.6 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/914
-* grid tables. by @kivikakk in https://github.com/kivikakk/comrak/pull/820
-* crlf normalisation. by @kivikakk in https://github.com/kivikakk/comrak/pull/915
-* inlines: search for special chars with memchr-n. by @FalkWoldmann in https://github.com/kivikakk/comrak/pull/916
-* Roundtrip bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/917
-* roundtrip Escaped. by @kivikakk in https://github.com/kivikakk/comrak/pull/680
-
-## New Contributors
-* @sventmueller made their first contribution in https://github.com/kivikakk/comrak/pull/905
-* @FalkWoldmann made their first contribution in https://github.com/kivikakk/comrak/pull/916
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.59.0...v1.0.0-rc.1
-
----snip---
-
 <!--
 
 Categories to use in this document, and the order in which to give them:
@@ -50,6 +16,74 @@ Build changes:
 Behind the scenes:
 
 -->
+
+# [v1.0.0-rc.1] - 2026-11-12
+
+Is it time? I think it's almost time!
+
+Parser changes:
+
+* Normalise `\r\n` and `\r` line endings to `\n` in block content, so carriage returns no longer leak into literals, e.g. a `\r\n` in an inline code span becoming `\r `. (by @kivikakk in https://github.com/kivikakk/comrak/pull/915)
+  * Note this reverses behaviour changed in v0.48.0; see the PR for details.
+* Reference links are now expanded up to a limit of at _least_ 100 KB or the document size, whichever is larger, instead of at most whichever is smaller! (by @sventmueller in https://github.com/kivikakk/comrak/pull/905)
+
+Changed APIs:
+
+* There's been big changes to sourcepos for _unclosed_ fenced code blocks, multiline block quotes and block directives, and multiline alerts. They are all, hopefully, more accurate and usable. (by @kivikakk in https://github.com/kivikakk/comrak/pull/901)
+* `SyntaxHighlighterAdapter::write_pre_tag` and `write_code_tag` take `BTreeMap<&str, Cow<str>>` instead of `HashMap<&'static str, Cow<str>>`, to get stable attribute order. (by @kivikakk in 15beb469 and https://github.com/kivikakk/comrak/pull/903)
+
+New APIs:
+
+* Add [grid tables](https://pandoc.org/MANUAL.html#extension-grid_tables), with the `grid_table` extension and `grid_table_widths` render option. (by @kivikakk in https://github.com/kivikakk/comrak/pull/820)
+  * These are behind the new `grid_table` feature, enabled by `cli`.
+* Support Obsidian block IDs, with the `ofm_block_ids` extension. (by @szdytom in https://github.com/kivikakk/comrak/pull/900)
+* Add the `attributes` render option, which renders parsed attributes in the default HTML formatters.  It needs `unsafe` to have any effect. (by @kivikakk in https://github.com/kivikakk/comrak/pull/903)
+* Add `--tasklist-in-table` to the CLI. (706a3fc7)
+
+Bug fixes:
+
+* Fix inline footnote sourcepos within the note, and after multiline notes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/895)
+* Fix attribute sourcepos spanning lines. (by @kivikakk in https://github.com/kivikakk/comrak/pull/902)
+* Count refmap size once, correctly. (by @kivikakk in https://github.com/kivikakk/comrak/pull/906)
+* Finalise list contents when closing multiline block quotes, alerts, and block directives. (by @kivikakk in https://github.com/kivikakk/comrak/pull/907)
+* Fix many sourcepos bugs found by the new sourcepos fuzzer. (by @kivikakk in https://github.com/kivikakk/comrak/pull/908, https://github.com/kivikakk/comrak/pull/910, https://github.com/kivikakk/comrak/pull/911)
+* Detect front matter when a payload line starts with the delimiter and the closing delimiter is at EOF. (by @kivikakk in https://github.com/kivikakk/comrak/pull/912)
+* Address many CommonMark roundtrip issues, including nested emphasis, HTML blocks after lists, description lists, math, multiline headings, and loose lists starting with empty items. (by @kivikakk in https://github.com/kivikakk/comrak/pull/917)
+* CommonMark formatter emits `Escaped` nodes as backslash escapes such that e.g. `\&trade;` roundtrips. (by @kivikakk in https://github.com/kivikakk/comrak/pull/680)
+
+Performance:
+
+* The inline parser uses `memchr-n` to find the next special character. (by @FalkWoldmann in https://github.com/kivikakk/comrak/pull/916)
+
+Dependency updates:
+
+* Bump clap from 4.6.3 to 4.6.6. (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/890, https://github.com/kivikakk/comrak/pull/896, https://github.com/kivikakk/comrak/pull/914)
+* Bump glob from 0.3.3 to 0.3.4. (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/889)
+* Bump toml from 1.1.3+spec-1.1.0 to 1.1.4+spec-1.1.0. (by `@dependabot[bot]` in https://github.com/kivikakk/comrak/pull/897)
+
+Documentation:
+
+* Comrak has a documentation site at [comrak.ee](https://comrak.ee), built from runnable examples for every extension and option. (459e4c2f et al.)
+* Complete the README extension list. (03c27a9a)
+
+Build changes:
+
+* Run CodSpeed on GHA `ubuntu-24.04`. (18e4ab9b)
+
+Behind the scenes:
+
+* Add a sourcepos fuzzer! (by @kivikakk in https://github.com/kivikakk/comrak/pull/908, https://github.com/kivikakk/comrak/pull/910, https://github.com/kivikakk/comrak/pull/911)
+* Move CLI arguments out of `main.rs`. (ee19eacc)
+* Update vendored cmark-gfm to get `run_benchmarks` workflow running on GHA `ubuntu-latest`. (e0404124)
+
+
+## New Contributors
+
+* @sventmueller made their first contribution in https://github.com/kivikakk/comrak/pull/905
+* @FalkWoldmann made their first contribution in https://github.com/kivikakk/comrak/pull/916
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v0.59.0...v1.0.0-rc.1
 
 
 # [v0.59.0] - 2026-10-26
