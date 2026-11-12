@@ -784,7 +784,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             {
                 self.need_cr = self.need_cr.min(1);
             }
-            write!(self, ": ")?
+            write!(self, ": ")?;
+            self.begin_content = true;
+            self.prefix.push_str("  ");
+        } else {
+            self.prefix.truncate(self.prefix.len() - 2);
         }
         Ok(())
     }

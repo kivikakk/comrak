@@ -1,4 +1,5 @@
 use super::*;
+use ntest::test_case;
 
 #[test]
 fn description_lists_loose() {
@@ -292,4 +293,26 @@ fn commonmark_keeps_details_tightness() {
         Some(&options),
     );
     commonmark("- a\n  : b\n- d\n", "- a\n  : b\n- d\n", Some(&options));
+}
+
+#[test_case(
+    "a\n: b\n\n  c\n",
+    "a\n: b\n  \n  c\n",
+    "<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n"
+)]
+#[test_case(
+    "a\n: b\n\n  - x\n  - y\n",
+    "a\n: b\n  \n  - x\n  - y\n",
+    "<dl>\n<dt>a</dt>\n<dd>b\n<ul>\n<li>x</li>\n<li>y</li>\n</ul>\n</dd>\n</dl>\n"
+)]
+#[test_case(
+    "> a\n> : b\n>\n>   c\n",
+    "> a\n> : b\n>   \n>   c\n",
+    "<blockquote>\n<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n</blockquote>\n"
+)]
+fn commonmark_indents_details_continuation(input: &str, cm: &str, expected: &str) {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(input, cm, Some(&options));
+    html_opts!([extension.description_lists], input, expected);
 }
