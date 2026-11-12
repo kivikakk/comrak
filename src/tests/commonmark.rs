@@ -131,6 +131,26 @@ fn commonmark_list_gaps_after_their_container(input: &str, cm: &str, expected: &
     html(input, expected);
 }
 
+#[test_case(
+    "- a\n  ```\n  code\n  ```\n",
+    "- a\n  ```\n  code\n  ```\n",
+    "<ul>\n<li>a\n<pre><code>code\n</code></pre>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "    one\n```\ntwo\n```\n",
+    "    one\n\n```\ntwo\n```\n",
+    "<pre><code>one\n</code></pre>\n<pre><code>two\n</code></pre>\n"
+)]
+#[test_case(
+    "a\n\n    code\n",
+    "a\n\n    code\n",
+    "<p>a</p>\n<pre><code>code\n</code></pre>\n"
+)]
+fn commonmark_code_block_fences_when_indent_would_merge(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();

@@ -809,6 +809,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 || literal.len() <= 2
                 || isspace(literal[0])
                 || first_in_list_item
+                || node.previous_sibling().is_some_and(|previous| {
+                    self.in_tight_list_item || node_matches!(previous, NodeValue::CodeBlock(..))
+                })
                 || self.options.render.prefer_fenced
                 || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
             {
