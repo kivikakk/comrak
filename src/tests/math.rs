@@ -259,3 +259,58 @@ fn math_code_text_dollars_stay_text(markdown: &str, cm: &str, html: &str) {
     commonmark(markdown, cm, Some(&options));
     html_opts!([extension.math_code], markdown, html);
 }
+
+#[test_case(
+    "\\( x\\)",
+    "\\( x\\)\n",
+    "<p><span data-math-style=\"inline\"> x</span></p>\n"
+)]
+#[test_case(
+    "\\(a$b\\)",
+    "\\(a$b\\)\n",
+    "<p><span data-math-style=\"inline\">a$b</span></p>\n"
+)]
+#[test_case(
+    "\\(x\\)5",
+    "\\(x\\)5\n",
+    "<p><span data-math-style=\"inline\">x</span>5</p>\n"
+)]
+#[test_case(
+    "\\[a$$b\\]",
+    "\\[a$$b\\]\n",
+    "<p><span data-math-style=\"display\">a$$b</span></p>\n"
+)]
+#[test_case(
+    "\\(x\\)",
+    "$x$\n",
+    "<p><span data-math-style=\"inline\">x</span></p>\n"
+)]
+fn math_latex_keeps_form_dollars_cannot_hold(markdown: &str, cm: &str, html: &str) {
+    let mut options = Options::default();
+    options.extension.math_latex = true;
+    options.extension.math_dollars = true;
+    commonmark(markdown, cm, Some(&options));
+    html_opts!(
+        [extension.math_latex, extension.math_dollars],
+        markdown,
+        html
+    );
+}
+
+#[test]
+fn math_latex_keeps_form_before_math_code_opener() {
+    let mut options = Options::default();
+    options.extension.math_latex = true;
+    options.extension.math_dollars = true;
+    options.extension.math_code = true;
+    commonmark("\\(`x\\)", "\\(`x\\)\n", Some(&options));
+    html_opts!(
+        [
+            extension.math_latex,
+            extension.math_dollars,
+            extension.math_code
+        ],
+        "\\(`x\\)",
+        "<p><span data-math-style=\"inline\">`x</span></p>\n"
+    );
+}

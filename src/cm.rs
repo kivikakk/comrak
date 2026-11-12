@@ -551,7 +551,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 // Noop - the character gets escaped as usual, this is just an
                 // AST marker created by escaped_char_spans.
             }
-            NodeValue::Math(ref math) => self.format_math(math, entering)?,
+            NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
@@ -1298,20 +1298,22 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_math(&mut self, math: &NodeMath, entering: bool) -> fmt::Result {
+    fn format_math(&mut self, math: &NodeMath, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
-            let (start_fence, end_fence) = match (
-                math.dollar_math,
-                math.display_math,
-                self.options.extension.math_latex,
-                self.options.extension.math_dollars,
-            ) {
-                (false, _, _, _) => ("$`", "`$"),
-                (true, true, true, false) => ("\\[", "\\]"),
-                (true, false, true, false) => ("\\(", "\\)"),
-                (true, true, _, _) => ("$$", "$$"),
-                (true, false, _, _) => ("$", "$"),
+            let latex = self.options.extension.math_latex
+                && !(self.options.extension.math_dollars
+                    && dollar_math_holds(
+                        math,
+                        node.next_sibling(),
+                        self.options.extension.math_code,
+                    ));
+            let (start_fence, end_fence) = match (math.dollar_math, math.display_math, latex) {
+                (false, _, _) => ("$`", "`$"),
+                (true, true, true) => ("\\[", "\\]"),
+                (true, false, true) => ("\\(", "\\)"),
+                (true, true, false) => ("$$", "$$"),
+                (true, false, false) => ("$", "$"),
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
@@ -1625,6 +1627,30 @@ pub fn escape_link_destination(url: &str) -> String {
     result.push('>');
 
     result
+}
+
+fn dollar_math_holds(math: &NodeMath, next: Option<Node<'_>>, math_code: bool) -> bool {
+    let literal = math.literal.as_bytes();
+    let (Some(&first), Some(&last)) = (literal.first(), literal.last()) else {
+        return false;
+    };
+    if math.display_math {
+        return first != b'$' && last != b'$' && !math.literal.contains("$$");
+    }
+    let next_is_digit = next.is_some_and(|next| match next.data().value {
+        NodeValue::Text(ref t) => t.as_bytes().first().is_some_and(|&b| isdigit(b)),
+        _ => false,
+    });
+    !isspace(first)
+        && (!math_code || first != b'`')
+        && !isspace(last)
+        && last != b'\\'
+        && !literal.contains(&b'\n')
+        && !next_is_digit
+        && literal
+            .iter()
+            .enumerate()
+            .all(|(i, &b)| b != b'$' || (i > 0 && literal[i - 1] == b'\\'))
 }
 
 fn tight_container(node: Node<'_>) -> bool {
