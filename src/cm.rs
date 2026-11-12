@@ -87,7 +87,6 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     begin_content: bool,
     no_linebreaks: bool,
     in_tight_list_item: bool,
-    tight_stack: Vec<bool>,
     emphasis_delims: Vec<char>,
     last_emphasis: Option<(Node<'a>, char)>,
     #[cfg(feature = "grid_table")]
@@ -130,7 +129,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             begin_content: true,
             no_linebreaks: false,
             in_tight_list_item: false,
-            tight_stack: vec![],
             emphasis_delims: vec![],
             last_emphasis: None,
             #[cfg(feature = "grid_table")]
@@ -474,79 +472,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn get_in_tight_list_item(&self, node: Node<'a>) -> bool {
-        let tmp = match node.containing_block() {
-            Some(tmp) => tmp,
-            None => return false,
-        };
-
-        match tmp.data().value {
-            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = tmp.parent().unwrap().data().value {
-                    return nl.tight;
-                }
-                return false;
-            }
-            _ => {}
-        }
-
-        let parent = match tmp.parent() {
-            Some(parent) => parent,
-            None => return false,
-        };
-
-        match parent.data().value {
-            NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                if let NodeValue::List(ref nl) = parent.parent().unwrap().data().value {
-                    return nl.tight;
-                }
-            }
-            _ => {}
-        }
-
-        false
-    }
-
     fn format_node(&mut self, node: Node<'a>, entering: bool) -> Result<bool, fmt::Error> {
         self.node = node;
 
         let parent_node = node.parent();
-        if entering {
-            if parent_node.is_some()
-                && node_matches!(
-                    parent_node.unwrap(),
-                    NodeValue::Item(..) | NodeValue::TaskItem(..)
-                )
-            {
-                self.in_tight_list_item = self.get_in_tight_list_item(node);
-            }
-        } else if node_matches!(node, NodeValue::List(..)) {
-            self.in_tight_list_item = parent_node.is_some()
-                && node_matches!(
-                    parent_node.unwrap(),
-                    NodeValue::Item(..) | NodeValue::TaskItem(..)
-                )
-                && self.get_in_tight_list_item(node);
-        }
-        if node_matches!(
-            node,
-            NodeValue::BlockQuote
-                | NodeValue::MultilineBlockQuote(..)
-                | NodeValue::Alert(..)
-                | NodeValue::Callout(..)
-                | NodeValue::BlockDirective(..)
-                | NodeValue::FootnoteDefinition(..)
-                | NodeValue::DescriptionList
-        ) {
-            if entering {
-                if self.in_tight_list_item && self.need_cr > 1 {
-                    self.need_cr = 1;
-                }
-                self.tight_stack.push(self.in_tight_list_item);
-                self.in_tight_list_item = false;
-            } else {
-                self.in_tight_list_item = self.tight_stack.pop().unwrap();
-            }
+        if (entering && node.data().value.block() && node.previous_sibling().is_some())
+            || (!entering && node_matches!(node, NodeValue::List(..)))
+        {
+            self.in_tight_list_item = parent_node.is_some_and(tight_container);
         }
         let next_is_block = node
             .next_sibling()
@@ -774,7 +707,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 0
             };
             self.prefix.truncate(new_len);
-            self.cr();
+            if !parent.tight && node.next_sibling().is_some() {
+                self.blankline();
+            } else {
+                self.cr();
+            }
         }
 
         Ok(())
@@ -1685,6 +1622,14 @@ pub fn escape_link_destination(url: &str) -> String {
     result.push('>');
 
     result
+}
+
+fn tight_container(node: Node<'_>) -> bool {
+    match node.data().value {
+        NodeValue::List(ref nl) => nl.tight,
+        NodeValue::Item(..) | NodeValue::TaskItem(..) => node.parent().is_some_and(tight_container),
+        _ => false,
+    }
 }
 
 fn following_html_block_indent(item: Node<'_>) -> usize {

@@ -2,7 +2,7 @@ use std::fmt;
 
 use unicode_width::UnicodeWidthChar;
 
-use crate::cm::{CommonMarkFormatter, Escaping};
+use crate::cm::{CommonMarkFormatter, Escaping, tight_container};
 use crate::node_matches;
 use crate::nodes::{GridTableSection, Node, NodeValue, TableAlignment};
 use crate::parser::TAB_STOP;
@@ -193,10 +193,9 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
             }
         }
 
-        let direct_tight = self.in_tight_list_item
-            && table
-                .parent()
-                .is_some_and(|p| node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)));
+        let direct_tight = table.parent().is_some_and(|p| {
+            node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)) && tight_container(p)
+        });
         let indent = match table.previous_sibling() {
             _ if !direct_tight => 0,
             Some(previous) if node_matches!(previous, NodeValue::GridTable(..)) => {

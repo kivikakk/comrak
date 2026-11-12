@@ -106,6 +106,31 @@ fn commonmark_multiline_heading_stays_setext(input: &str, cm: &str, expected: &s
     html(input, expected);
 }
 
+#[test_case(
+    "-\n\n- a\n",
+    "- \n\n- a\n",
+    "<ul>\n<li></li>\n<li>\n<p>a</p>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- -\n\n  - a\n",
+    "- - \n  \n  - a\n",
+    "<ul>\n<li>\n<ul>\n<li></li>\n<li>\n<p>a</p>\n</li>\n</ul>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- a\n\n  - b\n",
+    "- a\n  \n  - b\n",
+    "<ul>\n<li>\n<p>a</p>\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "- - a\n\n  - b\n  c\n",
+    "- - a\n  \n  - b\n    c\n",
+    "<ul>\n<li>\n<ul>\n<li>\n<p>a</p>\n</li>\n<li>\n<p>b\nc</p>\n</li>\n</ul>\n</li>\n</ul>\n"
+)]
+fn commonmark_list_gaps_after_their_container(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();

@@ -1452,15 +1452,4 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
         }
         false
     }
-
-    pub(crate) fn containing_block(&'a self) -> Option<Node<'a>> {
-        let mut ch = Some(self);
-        while let Some(n) = ch {
-            if n.data().value.block() {
-                return Some(n);
-            }
-            ch = n.parent();
-        }
-        None
-    }
 }
