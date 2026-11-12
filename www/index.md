@@ -76,6 +76,7 @@ Enjoy the robust flavour of our [fixture-based documentation](/docs.html).
 * [Deno]
 * [Reddit]
 * [Lockbook]
+* [Markview]
 * [many] [more!]
 
 [crates.io]: https://crates.io/
@@ -84,6 +85,7 @@ Enjoy the robust flavour of our [fixture-based documentation](/docs.html).
 [Deno]: https://deno.com/
 [Reddit]: https://www.reddit.com/
 [Lockbook]: https://lockbook.net/
+[Markview]: https://github.com/szdytom/markview
 [many]: https://github.com/kivikakk/comrak/network/dependents
 [more!]: https://crates.io/crates/comrak/reverse_dependencies
 
