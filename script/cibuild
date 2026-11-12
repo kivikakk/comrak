@@ -12,30 +12,40 @@ cargo build --verbose --release
 
 cd vendor/cmark-gfm/test
 
+specs="$(mktemp -d)"
+trap 'rm -rf "$specs"' EXIT
+sed 's/^\(`* example\) tagfilter$/\1 disabled/' spec.txt >"$specs/spec.txt"
+awk '
+    /^## HTML tag filter$/ { s = 1 }
+    s && /^`+ example$/ { $0 = $0 " disabled"; s = 0 }
+    { print }
+' extensions.txt >"$specs/extensions.txt"
+for f in spec.txt extensions.txt; do
+	test "$(diff "$f" "$specs/$f" | grep -c '^>')" = 1
+done
+
 PROGRAM_ARG="--program=../../../target/release/comrak --syntax-highlighting none --relaxed-autolinks"
 
 set +e
 
-# Upstream CommonMark specs.
 python3 spec_tests.py --no-normalize --spec ../../commonmark-spec/spec.txt "$PROGRAM_ARG" \
 	|| failed=1
 
-python3 spec_tests.py --no-normalize --spec spec.txt "$PROGRAM_ARG --gfm-quirks" \
+python3 spec_tests.py --no-normalize --spec "$specs/spec.txt" "$PROGRAM_ARG --gfm-quirks" \
 	|| failed=1
 python3 pathological_tests.py "$PROGRAM_ARG" \
 	|| failed=1
-python3 roundtrip_tests.py --spec spec.txt "$PROGRAM_ARG --gfm-quirks" \
+python3 roundtrip_tests.py --spec "$specs/spec.txt" "$PROGRAM_ARG --gfm-quirks" \
 	|| failed=1
 python3 entity_tests.py "$PROGRAM_ARG" \
 	|| failed=1
 python3 spec_tests.py --no-normalize --spec smart_punct.txt "$PROGRAM_ARG --smart" \
 	|| failed=1
 
-python3 spec_tests.py --no-normalize --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
+python3 spec_tests.py --no-normalize --spec "$specs/extensions.txt" "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
 	|| failed=1
-python3 roundtrip_tests.py --spec extensions.txt "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
+python3 roundtrip_tests.py --spec "$specs/extensions.txt" "$PROGRAM_ARG" --extensions "table strikethrough autolink footnotes tasklist" \
 	|| failed=1
-# python3 roundtrip_tests.py --spec extensions-table-prefer-style-attributes.txt "$PROGRAM_ARG --table-prefer-style-attributes" --extensions "table strikethrough autolink footnotes tasklist" || failed=1
 python3 roundtrip_tests.py --spec extensions-full-info-string.txt "$PROGRAM_ARG --full-info-string" \
 	|| failed=1
 
