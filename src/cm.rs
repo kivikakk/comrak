@@ -376,24 +376,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn next_inline_first_byte(&self) -> u8 {
-        let next = self.node.next_sibling().or_else(|| {
-            self.node
-                .parent()
-                .filter(|parent| node_matches!(parent, NodeValue::Escaped))
-                .and_then(|parent| parent.next_sibling())
-        });
-        next.map_or(0, |next| {
-            let next = if node_matches!(next, NodeValue::Escaped) {
-                next.first_child().unwrap_or(next)
-            } else {
-                next
-            };
-            match &next.data().value {
+        self.node
+            .next_sibling()
+            .map_or(0, |next| match &next.data().value {
                 NodeValue::Text(text) => text.as_bytes().first().copied().unwrap_or(0),
+                NodeValue::Escaped => b'\\',
                 NodeValue::CommentInline(_) => b'%',
                 _ => 0,
-            }
-        })
+            })
     }
 
     fn cr(&mut self) {
@@ -549,8 +539,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
             NodeValue::MultilineBlockQuote(..) => self.format_block_quote(entering)?,
             NodeValue::Escaped => {
-                // Noop - the character gets escaped as usual, this is just an
-                // AST marker created by escaped_char_spans.
+                self.format_escaped(node)?;
+                return Ok(false);
             }
             NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
@@ -1151,6 +1141,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_spoiler(&mut self) -> fmt::Result {
         write!(self, "||")?;
         Ok(())
+    }
+
+    fn format_escaped(&mut self, node: Node<'a>) -> fmt::Result {
+        let child = node.first_child().unwrap();
+        let NodeValue::Text(ref literal) = child.data().value else {
+            unreachable!()
+        };
+        write!(self, "\\{}", literal)
     }
 
     fn format_escaped_tag(&mut self, net: &str) -> fmt::Result {
