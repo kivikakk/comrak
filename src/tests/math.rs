@@ -222,3 +222,17 @@ fn math_latex_sourcepos() {
         ])
     );
 }
+
+#[test_case("a [x] b", "a &#91;x\\] b\n", "<p>a [x] b</p>\n")]
+#[test_case("\\\\[x\\\\]", "\\\\&#91;x\\\\\\]\n", "<p>\\[x\\]</p>\n")]
+#[test_case(
+    "\\[x\\] [y]",
+    "\\[x\\] &#91;y\\]\n",
+    "<p><span data-math-style=\"display\">x</span> [y]</p>\n"
+)]
+fn math_latex_text_brackets_stay_text(markdown: &str, cm: &str, html: &str) {
+    let mut options = Options::default();
+    options.extension.math_latex = true;
+    commonmark(markdown, cm, Some(&options));
+    html_opts!([extension.math_latex], markdown, html);
+}

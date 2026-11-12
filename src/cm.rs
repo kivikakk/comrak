@@ -352,6 +352,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             // (c as u64) < 256 is implied.
             let out = if escaping == Escaping::Url && isspace_char(c) {
                 format!("%{:2X}", c as u8)
+            } else if c == '[' && self.options.extension.math_latex {
+                "&#91;".to_string()
             } else if ispunct_char(c) {
                 format!("\\{}", c)
             } else if c == '\0' {
