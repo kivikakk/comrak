@@ -28,7 +28,15 @@ pub struct Doc {
     pub title: String,
     pub source: String,
     pub examples: Vec<Example>,
+    pub headings: Vec<Heading>,
     terms: BTreeSet<String>,
+}
+
+#[derive(Debug)]
+pub struct Heading {
+    pub level: u8,
+    pub text: String,
+    pub id: String,
 }
 
 #[derive(Debug)]
@@ -97,13 +105,18 @@ impl Doc {
         let mut title = None;
         let mut examples = vec![];
         let mut terms = BTreeSet::new();
-        let mut headings = Anchorizer::new();
-        let mut heading_ids = BTreeSet::new();
+        let mut anchorizer = Anchorizer::new();
+        let mut headings = vec![];
         for node in document.descendants() {
             if let NodeValue::FrontMatter(ref front_matter) = node.data().value {
                 title = Some(parse_title(&path, front_matter));
-            } else if let NodeValue::Heading(_) = node.data().value {
-                heading_ids.insert(headings.anchorize(&node.collect_text()));
+            } else if let NodeValue::Heading(ref heading) = node.data().value {
+                let text = node.collect_text();
+                headings.push(Heading {
+                    level: heading.level,
+                    id: anchorizer.anchorize(&text),
+                    text,
+                });
             } else if is_definition(node) {
                 let slug = term_slug(&node.collect_text());
                 assert!(
@@ -123,7 +136,7 @@ impl Doc {
             .chain(examples.iter().map(Example::id))
         {
             assert!(
-                !heading_ids.contains(&id),
+                !headings.iter().any(|heading| heading.id == id),
                 "{}: `#{id}` is also a heading's id",
                 path.display()
             );
@@ -134,6 +147,7 @@ impl Doc {
             path,
             source,
             examples,
+            headings,
             terms,
         }
     }
