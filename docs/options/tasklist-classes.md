@@ -71,13 +71,11 @@ title: Tasklist classes
 </thead>
 <tbody>
 <tr>
-<td>
-<input type="checkbox" class="task-list-item-checkbox" disabled="" /> </td>
+<td><input type="checkbox" class="task-list-item-checkbox" disabled="" /> </td>
 <td>Rell</td>
 </tr>
 <tr>
-<td>
-<input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> </td>
+<td><input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> </td>
 <td>Kai</td>
 </tr>
 </tbody>

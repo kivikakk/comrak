@@ -43,13 +43,11 @@ title: Tasklists in tables
 </thead>
 <tbody>
 <tr>
-<td>
-<input type="checkbox" disabled="" /> </td>
+<td><input type="checkbox" disabled="" /> </td>
 <td>Rell</td>
 </tr>
 <tr>
-<td>
-<input type="checkbox" checked="" disabled="" /> </td>
+<td><input type="checkbox" checked="" disabled="" /> </td>
 <td>Kai</td>
 </tr>
 </tbody>
@@ -72,13 +70,11 @@ title: Tasklists in tables
 </thead>
 <tbody>
 <tr>
-<td>
-<input type="checkbox" checked="" disabled="" /> </td>
+<td><input type="checkbox" checked="" disabled="" /> </td>
 <td>Rell</td>
 </tr>
 <tr>
-<td>
-<input type="checkbox" checked="" disabled="" /> </td>
+<td><input type="checkbox" checked="" disabled="" /> </td>
 <td>Kai</td>
 </tr>
 <tr>
