@@ -704,9 +704,6 @@ fn same_definitions(trial: &Trial, old: &[Rec], new: &[Rec]) -> bool {
 
 fn is_exempt(family: &str, old: &[Rec], index: usize) -> bool {
     let rec = &old[index];
-    if is_placeholder(old, index) {
-        return true;
-    }
     let is_break = matches!(rec.value, NodeValue::SoftBreak | NodeValue::LineBreak);
     match family {
         "crlf" => is_break,
@@ -758,6 +755,7 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
                 continue;
             }
             let (x, y) = (&old[a], &new[b]);
+            let placeholder = is_placeholder(old, a);
             let mut compare = |old_sp: Sourcepos, new_sp: Sourcepos, label: &str| {
                 let (Some(start), Some(end)) =
                     (source.offset(old_sp.start), source.offset(old_sp.end))
@@ -784,14 +782,21 @@ pub fn run(family: &str, doc: &str, options: &Options<'static>, old: &[Rec]) -> 
                     (is_grid_wrap(family) && offset >= content_end)
                         .then(|| map_start(&trial.edits, content_end))
                 };
-                let want_start = edited_source.position(
-                    at_eol(start, old_sp.start.line)
-                        .map_or_else(|| map_start(&trial.edits, start), |eol| eol - 1),
-                );
                 let want_end = edited_source.position(
                     at_eol(end, old_sp.end.line)
                         .map_or_else(|| map_end(&trial.edits, end), |eol| eol - 2),
                 );
+                let want_start = if placeholder {
+                    LineColumn {
+                        column: want_end.column + 1,
+                        ..want_end
+                    }
+                } else {
+                    edited_source.position(
+                        at_eol(start, old_sp.start.line)
+                            .map_or_else(|| map_start(&trial.edits, start), |eol| eol - 1),
+                    )
+                };
                 let which = match (new_sp.start != want_start, new_sp.end != want_end) {
                     (false, false) => return,
                     (true, true) => "both",
