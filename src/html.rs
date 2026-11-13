@@ -1479,8 +1479,8 @@ fn render_task_item<T>(
         .unwrap_or_default();
 
     if entering {
-        context.cr()?;
         if write_li {
+            context.cr()?;
             context.write_str("<li")?;
             if context.options.render.tasklist_classes {
                 context.write_str(" class=\"task-list-item\"")?;

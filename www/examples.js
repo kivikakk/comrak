@@ -61,6 +61,7 @@ selectView(
 );
 
 const sidebar = document.querySelector(".docs-nav");
-const current = sidebar.querySelector('[aria-current="page"]');
+const current = sidebar.querySelector('[aria-current="page"]').parentElement;
 sidebar.scrollTop =
-  current.offsetTop - (sidebar.clientHeight - current.offsetHeight) / 2;
+  current.offsetTop -
+  Math.max(0, (sidebar.clientHeight - current.offsetHeight) / 2);

@@ -892,7 +892,7 @@ pub struct Parse<'c> {
     ///
     /// options.parse.tasklist_in_table = true;
     /// assert_eq!(markdown_to_html("| val |\n| - |\n| [ ] |\n", &options),
-    ///            "<table>\n<thead>\n<tr>\n<th>val</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>\n<input type=\"checkbox\" disabled=\"\" /> </td>\n</tr>\n</tbody>\n</table>\n");
+    ///            "<table>\n<thead>\n<tr>\n<th>val</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><input type=\"checkbox\" disabled=\"\" /> </td>\n</tr>\n</tbody>\n</table>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub tasklist_in_table: bool,

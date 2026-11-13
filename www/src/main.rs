@@ -129,22 +129,58 @@ fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error
         let dir = group[0].path.parent().unwrap().to_str().unwrap();
         writeln!(nav, "<li>{}<ul>", escape(dir))?;
         for doc in group {
-            let aria_current = if current.is_some_and(|current| current.path == doc.path) {
+            let is_current = current.is_some_and(|current| current.path == doc.path);
+            let aria_current = if is_current {
                 r#" aria-current="page""#
             } else {
                 ""
             };
-            writeln!(
+            write!(
                 nav,
-                r#"<li><a href="{}"{aria_current}>{}</a></li>"#,
+                r#"<li><a href="{}"{aria_current}>{}</a>"#,
                 href(doc),
                 escape(&doc.title)
             )?;
+            if is_current {
+                nav.push_str(&toc(doc)?);
+            }
+            writeln!(nav, "</li>")?;
         }
         writeln!(nav, "</ul></li>")?;
     }
     nav.push_str("</ul></nav>\n");
     Ok(nav)
+}
+
+fn toc(doc: &Doc) -> Result<String, Box<dyn Error>> {
+    let mut toc = String::new();
+    let mut open: Vec<u8> = vec![];
+    for heading in doc.headings.iter().filter(|h| (2..=3).contains(&h.level)) {
+        while open.last().is_some_and(|&level| level > heading.level) {
+            toc.push_str("</li></ul>");
+            open.pop();
+        }
+        if open.last() == Some(&heading.level) {
+            toc.push_str("</li>");
+        } else {
+            toc.push_str(if open.is_empty() {
+                r#"<ul class="docs-toc">"#
+            } else {
+                "<ul>"
+            });
+            open.push(heading.level);
+        }
+        write!(
+            toc,
+            r##"<li><a href="#{}">{}</a>"##,
+            escape(&heading.id),
+            escape(&heading.text)
+        )?;
+    }
+    for _ in open {
+        toc.push_str("</li></ul>");
+    }
+    Ok(toc)
 }
 
 fn pager(prev: Option<&Doc>, next: Option<&Doc>) -> String {

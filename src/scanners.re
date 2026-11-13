@@ -501,8 +501,7 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
     let mut marker = 0;
     let len = s.len();
 
-    let t1;
-    let mut t2;
+    let mut t;
 /*!stags:re2c format = 'let mut @@{tag} = 0;'; */
 
 /*!local:re2c
@@ -510,11 +509,11 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
     re2c:define:YYSHIFTSTAG = "@@{tag} = (@@{tag} as isize + @@{shift}) as usize;";
     re2c:tags = 2;
 
-    spacechar* [[] @t1 [^\xff\r\n\]]+ @t2 [\]] (spacechar | [\xff]) {
+    [[] [^\xff\r\n\]]+ @t [\]] ([ \t] | [\xff]) {
         if cursor == len + 1 {
             cursor -= 1;
         }
-        return Some((cursor, &s[t1..t2], t1..t2));
+        return Some((cursor, &s[1..t], 1..t));
     }
     * { return None; }
 */

@@ -218,6 +218,10 @@ section.footnotes li:target {
         font-weight: bold;
     }
 
+    .docs-toc {
+        font-size: 0.9em;
+    }
+
     > ul {
         padding-left: 0;
     }
