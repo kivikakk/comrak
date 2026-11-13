@@ -1,17 +1,18 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use clap::Parser;
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::cli::OptionArgs;
 use comrak::nodes::{NodeHtmlBlock, NodeValue};
-use comrak::options::Plugins;
+use comrak::options::{BrokenLinkReference, Plugins};
 use comrak::plugins::syntect::SyntectAdapter;
 use comrak::{
-    Arena, Node, Options, format_commonmark, format_html_with_plugins, format_xml,
-    markdown_to_html_with_plugins, parse_document,
+    Anchorizer, Arena, Node, Options, ResolvedReference, format_commonmark,
+    format_html_with_plugins, format_xml, markdown_to_html_with_plugins, parse_document,
 };
 use yaml_rust::YamlLoader;
 
@@ -27,11 +28,13 @@ pub struct Doc {
     pub title: String,
     pub source: String,
     pub examples: Vec<Example>,
+    terms: BTreeSet<String>,
 }
 
 #[derive(Debug)]
 pub struct Example {
     pub line: usize,
+    pub number: usize,
     pub flags: String,
     pub input: String,
     pub expected: String,
@@ -61,6 +64,18 @@ fn example_flags(node: Node<'_>) -> Option<String> {
     (cb.fenced && (rest.is_empty() || rest.starts_with(' '))).then(|| rest.trim().to_string())
 }
 
+fn is_definition(node: Node<'_>) -> bool {
+    matches!(node.data().value, NodeValue::Link(ref link) if link.url == "@")
+}
+
+fn term_slug(term: &str) -> String {
+    Anchorizer::new().anchorize(&term.split_whitespace().collect::<Vec<_>>().join(" "))
+}
+
+fn visible_tabs(text: &str) -> String {
+    text.replace('\t', "→")
+}
+
 impl Doc {
     pub fn load_all(root: &Path) -> Vec<Doc> {
         let mut paths = vec![];
@@ -81,12 +96,37 @@ impl Doc {
 
         let mut title = None;
         let mut examples = vec![];
+        let mut terms = BTreeSet::new();
+        let mut headings = Anchorizer::new();
+        let mut heading_ids = BTreeSet::new();
         for node in document.descendants() {
             if let NodeValue::FrontMatter(ref front_matter) = node.data().value {
                 title = Some(parse_title(&path, front_matter));
+            } else if let NodeValue::Heading(_) = node.data().value {
+                heading_ids.insert(headings.anchorize(&node.collect_text()));
+            } else if is_definition(node) {
+                let slug = term_slug(&node.collect_text());
+                assert!(
+                    terms.insert(slug.clone()),
+                    "{}:{}: term `{slug}` defined twice",
+                    path.display(),
+                    node.data().sourcepos.start.line
+                );
             } else if let Some(flags) = example_flags(node) {
-                examples.push(Example::from_node(&path, node, flags));
+                examples.push(Example::from_node(&path, node, examples.len() + 1, flags));
             }
+        }
+
+        for id in terms
+            .iter()
+            .cloned()
+            .chain(examples.iter().map(Example::id))
+        {
+            assert!(
+                !heading_ids.contains(&id),
+                "{}: `#{id}` is also a heading's id",
+                path.display()
+            );
         }
 
         Doc {
@@ -94,6 +134,7 @@ impl Doc {
             path,
             source,
             examples,
+            terms,
         }
     }
 
@@ -120,7 +161,11 @@ impl Doc {
 
     pub fn snap(&self) -> String {
         let mut lines: Vec<&str> = self.source.split_inclusive('\n').collect();
-        let rendered: Vec<_> = self.examples.iter().map(Example::render).collect();
+        let rendered: Vec<_> = self
+            .examples
+            .iter()
+            .map(|example| example.render().map(|actual| visible_tabs(&actual)))
+            .collect();
         for (example, actual) in self.examples.iter().zip(&rendered).rev() {
             if let Ok(actual) = actual {
                 lines.splice(example.expected_lines.clone(), actual.split_inclusive('\n'));
@@ -132,18 +177,40 @@ impl Doc {
     pub fn render_page(&self) -> String {
         let mut options = page_options();
         options.render.r#unsafe = true;
+        options.parse.broken_link_callback = Some(Arc::new(|reference: BrokenLinkReference| {
+            let slug = term_slug(reference.normalized);
+            self.terms.contains(&slug).then(|| ResolvedReference {
+                url: format!("#{slug}"),
+                title: String::new(),
+            })
+        }));
 
         let arena = Arena::new();
         let document = parse_document(&arena, &self.source, &options);
 
         let mut examples = self.examples.iter();
+        let mut definitions = vec![];
         for node in document.descendants() {
             if example_flags(node).is_some() {
                 node.data_mut().value = NodeValue::HtmlBlock(NodeHtmlBlock {
                     block_type: 6,
                     literal: examples.next().unwrap().html(),
                 });
+            } else if is_definition(node) {
+                definitions.push(node);
             }
+        }
+
+        for node in definitions {
+            let slug = term_slug(&node.collect_text());
+            match node.data_mut().value {
+                NodeValue::Link(ref mut link) => link.url = format!("#{slug}"),
+                _ => unreachable!(),
+            }
+            node.insert_before(
+                arena.alloc(NodeValue::HtmlInline(format!(r#"<dfn id="{slug}">"#)).into()),
+            );
+            node.insert_after(arena.alloc(NodeValue::HtmlInline("</dfn>".into()).into()));
         }
 
         let mut html = String::new();
@@ -187,7 +254,7 @@ fn parse_title(path: &Path, front_matter: &str) -> String {
 }
 
 impl Example {
-    fn from_node(path: &Path, node: Node<'_>, flags: String) -> Example {
+    fn from_node(path: &Path, node: Node<'_>, number: usize, flags: String) -> Example {
         let data = node.data();
         let NodeValue::CodeBlock(ref cb) = data.value else {
             unreachable!()
@@ -207,11 +274,16 @@ impl Example {
 
         Example {
             line,
+            number,
             flags,
-            input: lines[..separator].concat(),
-            expected: lines[separator + 1..].concat(),
+            input: lines[..separator].concat().replace('→', "\t"),
+            expected: lines[separator + 1..].concat().replace('→', "\t"),
             expected_lines: line + separator + 1..line + lines.len(),
         }
+    }
+
+    pub fn id(&self) -> String {
+        format!("example-{}", self.number)
     }
 
     fn options(&self) -> Result<Options<'static>, String> {
@@ -253,16 +325,26 @@ impl Example {
                     self.expected
                 ),
             ),
-            ("html", "", pre(&highlight("html", &self.expected))),
+            (
+                "html",
+                "",
+                pre(&highlight("html", &visible_tabs(&self.expected))),
+            ),
             (
                 "commonmark",
                 " -t commonmark",
-                pre(&highlight("markdown", &self.formatted(format_commonmark))),
+                pre(&highlight(
+                    "markdown",
+                    &visible_tabs(&self.formatted(format_commonmark)),
+                )),
             ),
             (
                 "xml",
                 " -t xml",
-                pre(&highlight("xml", &self.formatted(format_xml))),
+                pre(&highlight(
+                    "xml",
+                    &visible_tabs(&self.formatted(format_xml)),
+                )),
             ),
         ];
 
@@ -291,9 +373,10 @@ impl Example {
         }
 
         format!(
-            r#"
-            <div class="example">
+            r##"
+            <div class="example" id="{id}">
                 <div class="example-header">
+                    <a class="example-number" href="#{id}">Example {number}</a>
                     <pre class="example-invocation"><code>{invocation}</code></pre>
                     <div class="example-tabs" hidden>{tabs}</div>
                 </div>
@@ -304,8 +387,10 @@ impl Example {
                         {panes}
                     </div>
                 </div>
-            </div>"#,
-            highlight("markdown", &self.input),
+            </div>"##,
+            highlight("markdown", &visible_tabs(&self.input)),
+            id = self.id(),
+            number = self.number,
         )
     }
 }

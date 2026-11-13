@@ -162,9 +162,16 @@ section.footnotes li:target {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
     column-gap: 1em;
     background-color: var(--example-bg);
+
+    .example-number {
+        padding-left: 0.5em;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: inherit;
+        opacity: var(--md-opacity);
+    }
 
     .example-invocation {
         background-color: transparent;
@@ -173,6 +180,7 @@ section.footnotes li:target {
 
 .example-tabs {
     display: flex;
+    margin-left: auto;
     gap: 0.75em;
     padding: 0 0.5em 0.5em;
     font-family: monospace;
