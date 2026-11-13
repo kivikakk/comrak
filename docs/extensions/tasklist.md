@@ -542,7 +542,7 @@ Other lists and list items get no classes:
 
 ### Task lists in tables
 
-With `--tasklist-in-table` (`parse.tasklist_in_table`), a [table](table.html) cell whose entire content is a [task list item marker] becomes a checkbox.  With `--tasklist-classes`, the checkbox has the class `task-list-item-checkbox`.
+With `--tasklist-in-table` (`parse.tasklist_in_table`), a [table](table.html) cell whose entire content is a [task list item marker] becomes a checkbox.
 
 Without the option, such cells stay as text:
 
@@ -674,6 +674,34 @@ The marker must be the cell's only content.  None of these cells contain a check
 <tr>
 <td>[x] No.</td>
 <td>Ez</td>
+</tr>
+</tbody>
+</table>
+````````````````````````````````
+
+With [task list classes](#task-list-classes), only the checkbox gets a class:
+
+```````````````````````````````` example -e table -e tasklist --tasklist-in-table --tasklist-classes
+|     | name |
+| --- | ---- |
+| [ ] | Rell |
+| [x] | Kai  |
+.
+<table>
+<thead>
+<tr>
+<th></th>
+<th>name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><input type="checkbox" class="task-list-item-checkbox" disabled="" /> </td>
+<td>Rell</td>
+</tr>
+<tr>
+<td><input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> </td>
+<td>Kai</td>
 </tr>
 </tbody>
 </table>
