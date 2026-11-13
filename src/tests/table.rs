@@ -27,7 +27,7 @@ fn sourcepos_with_differently_indented_rows() {
                 ])
                 (table_row (5:3-5:5) [
                     (table_cell (5:4-5:4) [(text (5:4-5:4) "e")])
-                    (table_cell (5:5-5:5))
+                    (table_cell (5:5-5:4))
                 ])
             ])
             (heading (6:1-6:1))
@@ -94,7 +94,7 @@ fn sourcepos_with_indented_rows_in_containers() {
                             );
                             assert_eq!(
                                 row.last_child().unwrap().data().sourcepos,
-                                (4, end_column, 4, end_column).into(),
+                                (4, end_column, 4, end_column - 1).into(),
                                 "{input:?}"
                             );
                         }
@@ -602,7 +602,7 @@ fn table_missing_cell_sourcepos() {
                     (table_cell (3:2-3:2) [
                         (text (3:2-3:2) "c")
                     ])
-                    (table_cell (3:3-3:3)
+                    (table_cell (3:3-3:2)
                     )
                 ])
             ])
@@ -666,10 +666,42 @@ fn table_missing_cells_sourcepos() {
                     (table_cell (3:2-3:2) [
                         (text (3:2-3:2) "d")
                     ])
-                    (table_cell (3:3-3:3)
+                    (table_cell (3:3-3:2)
                     )
-                    (table_cell (3:3-3:3)
+                    (table_cell (3:3-3:2)
                     )
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn table_missing_cells_without_trailing_pipe_sourcepos() {
+    assert_ast_match!(
+        [extension.table],
+        "a|b|c\n"
+        "-|-|-\n"
+        "z",
+        (document (1:1-3:1) [
+            (table (1:1-3:1) [
+                (table_row (1:1-1:5) [
+                    (table_cell (1:1-1:1) [
+                        (text (1:1-1:1) "a")
+                    ])
+                    (table_cell (1:3-1:3) [
+                        (text (1:3-1:3) "b")
+                    ])
+                    (table_cell (1:5-1:5) [
+                        (text (1:5-1:5) "c")
+                    ])
+                ])
+                (table_row (3:1-3:1) [
+                    (table_cell (3:1-3:1) [
+                        (text (3:1-3:1) "z")
+                    ])
+                    (table_cell (3:2-3:1))
+                    (table_cell (3:2-3:1))
                 ])
             ])
         ])

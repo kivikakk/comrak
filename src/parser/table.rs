@@ -217,9 +217,7 @@ fn try_opening_row<'a>(
             break;
         }
         let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
-        // for autocompleted (empty) cells, set end column equal to start
-        let cell_ast = &mut cell_node.data_mut();
-        cell_ast.sourcepos.end.column = last_column + 1;
+        cell_node.data_mut().sourcepos.end.column = last_column;
     }
 
     let offset = line.len() - parser.offset - newlines_of(line);

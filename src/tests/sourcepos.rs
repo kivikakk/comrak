@@ -1161,7 +1161,7 @@ fn list_item_end_ignores_autocompleted_table_cells() {
                             (table_cell (3:3-3:3) [
                                 (text (3:3-3:3) "c")
                             ])
-                            (table_cell (3:4-3:4))
+                            (table_cell (3:4-3:3))
                         ])
                     ])
                 ])

@@ -1,16 +1,19 @@
 use super::model::{children, Finding, Rec, Source};
-use comrak::nodes::NodeValue;
+use comrak::nodes::{NodeValue, Sourcepos};
 
 fn is_break(rec: &Rec) -> bool {
     matches!(rec.value, NodeValue::SoftBreak | NodeValue::LineBreak)
 }
 
+fn is_zero_width(sp: Sourcepos) -> bool {
+    sp.start.line == sp.end.line && sp.start.column == sp.end.column + 1
+}
+
 pub fn is_placeholder(recs: &[Rec], index: usize) -> bool {
-    match recs[index].value {
-        NodeValue::TableCell | NodeValue::GridTableCell(_) => children(recs, index).is_empty(),
-        NodeValue::GridTableRow(_) => recs[index].sp.start > recs[index].sp.end,
-        _ => false,
-    }
+    matches!(
+        recs[index].value,
+        NodeValue::TableCell | NodeValue::GridTableCell(_) | NodeValue::GridTableRow(_)
+    ) && is_zero_width(recs[index].sp)
 }
 
 fn in_grid_cell(recs: &[Rec], index: usize) -> bool {
@@ -27,8 +30,7 @@ fn in_grid_cell(recs: &[Rec], index: usize) -> bool {
 fn is_zero_width_cell_break(recs: &[Rec], index: usize, source: &Source) -> bool {
     let sp = recs[index].sp;
     is_break(&recs[index])
-        && sp.start.line == sp.end.line
-        && sp.start.column == sp.end.column + 1
+        && is_zero_width(sp)
         && source
             .offset(sp.start)
             .is_some_and(|at| matches!(source.bytes.get(at), Some(b'|' | b'+')))
@@ -104,9 +106,6 @@ fn sibling_order(recs: &[Rec], parent: usize, out: &mut Vec<Finding>) {
         if is_footnote_definition(a) || is_footnote_definition(b) {
             continue;
         }
-        if is_placeholder(recs, pair[1]) {
-            continue;
-        }
         if a.sp.end >= b.sp.start {
             out.push(Finding::new(
                 "structure",
@@ -123,44 +122,61 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
     sibling_order(recs, 0, &mut out);
     for (index, rec) in recs.iter().enumerate().skip(1) {
         sibling_order(recs, index, &mut out);
-        if is_placeholder(recs, index) {
-            continue;
-        }
         let sp = rec.sp;
         let kind = rec.kind.as_str();
         let detail = format!("{kind} @ {sp}");
         let mut flag = |reason: &str| {
             out.push(Finding::new("structure", kind, reason, detail.clone()));
         };
-        if sp.start.line == 0 || sp.start.column == 0 || sp.end.line == 0 || sp.end.column == 0 {
+        let zero_width =
+            is_placeholder(recs, index) || is_zero_width_cell_break(recs, index, source);
+        if sp.start.line == 0
+            || sp.start.column == 0
+            || sp.end.line == 0
+            || (sp.end.column == 0 && !zero_width)
+        {
             flag("zero");
             continue;
         }
-        if sp.start > sp.end && !is_zero_width_cell_break(recs, index, source) {
+        if sp.start > sp.end && !zero_width {
             flag("inverted");
             continue;
         }
-        let (Some(start), Some(end)) = (source.offset(sp.start), source.offset(sp.end)) else {
-            flag("out-of-bounds");
-            continue;
-        };
-        if end >= source.bytes.len() {
-            flag("past-eof");
-            continue;
-        }
-        if !source.text.is_char_boundary(start) || !source.text.is_char_boundary(end + 1) {
-            flag("splits-utf8");
-        }
-        if !is_break(rec) {
-            if start >= source.content_ends[sp.start.line - 1] && !has_verbatim_bounds(recs, index)
-            {
-                flag("start-at-eol");
+        if zero_width {
+            let Some(start) = source.offset(sp.start) else {
+                flag("out-of-bounds");
+                continue;
+            };
+            if start > source.content_ends[sp.start.line - 1] {
+                flag("start-past-eol");
             }
-            if end >= source.content_ends[sp.end.line - 1]
-                && !is_in_wikilink(recs, index)
-                && !is_inline_footnote_paragraph(recs, index)
-            {
-                flag("end-at-eol");
+            if !source.text.is_char_boundary(start) {
+                flag("splits-utf8");
+            }
+        } else {
+            let (Some(start), Some(end)) = (source.offset(sp.start), source.offset(sp.end)) else {
+                flag("out-of-bounds");
+                continue;
+            };
+            if end >= source.bytes.len() {
+                flag("past-eof");
+                continue;
+            }
+            if !source.text.is_char_boundary(start) || !source.text.is_char_boundary(end + 1) {
+                flag("splits-utf8");
+            }
+            if !is_break(rec) {
+                if start >= source.content_ends[sp.start.line - 1]
+                    && !has_verbatim_bounds(recs, index)
+                {
+                    flag("start-at-eol");
+                }
+                if end >= source.content_ends[sp.end.line - 1]
+                    && !is_in_wikilink(recs, index)
+                    && !is_inline_footnote_paragraph(recs, index)
+                {
+                    flag("end-at-eol");
+                }
             }
         }
         let parent = &recs[rec.parent.unwrap()];
@@ -359,6 +375,10 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8], ends_line: bool) -> Option
             bad(!(s.starts_with(b"[^") || s.starts_with(b"^[")), "no-open")
         }
         NodeValue::Table(_) | NodeValue::TableRow(_) => bad(is_ws(first), "leading-ws"),
+        NodeValue::TableCell if children(recs, index).is_empty() => bad(
+            !s.iter().all(|&b| matches!(b, b' ' | b'\t' | 0x0b | 0x0c)),
+            "empty-not-padding",
+        ),
         NodeValue::GridTable(_) => bad(first != b'+', "no-corner"),
         NodeValue::GridTableRow(_) => bad(!matches!(first, b'|' | b'+'), "no-border"),
         NodeValue::LineBreak if in_grid_cell(recs, index) => bad(

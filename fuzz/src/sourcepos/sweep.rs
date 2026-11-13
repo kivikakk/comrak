@@ -358,6 +358,37 @@ fn checks_catch_corrupted_positions() {
 }
 
 #[test]
+fn checks_catch_widened_placeholders() {
+    let options = options::named("gfm");
+    for doc in [
+        "|-|---:|\n-:|---:|\nz\n",
+        "a|b\n-|-\nz",
+        "a|b|c\n-|-|-\nz |\n",
+        "| a | b |\n|-|-|\n| z |\n",
+    ] {
+        let clean = snapshot(doc, &options);
+        let source = Source::new(doc);
+        assert!(
+            invariants::structure(&clean, &source).is_empty(),
+            "{:?}",
+            doc
+        );
+        assert!(invariants::kind(&clean, &source).is_empty(), "{:?}", doc);
+        let placeholders: Vec<usize> = (1..clean.len())
+            .filter(|&index| invariants::is_placeholder(&clean, index))
+            .collect();
+        assert!(!placeholders.is_empty(), "{:?}", doc);
+        for index in placeholders {
+            let mut corrupted = clean.clone();
+            corrupted[index].sp.end.column = corrupted[index].sp.start.column;
+            let caught = !invariants::structure(&corrupted, &source).is_empty()
+                || !invariants::kind(&corrupted, &source).is_empty();
+            assert!(caught, "didn't catch widened placeholder in {:?}", doc);
+        }
+    }
+}
+
+#[test]
 fn checks_catch_breaks_short_of_crlf() {
     let doc = "a\r\nb  \r\nc\\\r\nd\r\n";
     let options = options::named("cm");
