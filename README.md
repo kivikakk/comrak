@@ -401,6 +401,7 @@ Comrak is used in a few Rust-y places, and more beyond:
 - [Deno](https://deno.com) uses Comrak to render documentation in [`deno_doc`](https://github.com/denoland/deno_doc).
 - [Reddit](https://reddit.com)'s new-style site uses a Comrak fork[^reddit].
 - [Lockbook](https://lockbook.net/) is a Markdown-based secure notebook with native apps. It looks really neat!!
+- [Markview](https://github.com/szdytom/markview) is a *fast*, native Markdown reader with publication-quality typography. It's mostly Obsidian compatible.
 - [many](https://github.com/kivikakk/comrak/network/dependents) [more!](https://crates.io/crates/comrak/reverse_dependencies)
 
 I'd be really happy to add your site or app here, just open a PR or issue. :)
