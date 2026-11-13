@@ -233,13 +233,11 @@ fn tasklist_in_table() {
             "</thead>\n",
             "<tbody>\n",
             "<tr data-sourcepos=\"3:1-3:14\">\n",
-            "<td data-sourcepos=\"3:2-3:6\">\n",
-            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:2-3:6\"><input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" disabled=\"\" /> </td>\n",
             "<td data-sourcepos=\"3:8-3:13\">Rell</td>\n",
             "</tr>\n",
             "<tr data-sourcepos=\"4:1-4:14\">\n",
-            "<td data-sourcepos=\"4:2-4:6\">\n",
-            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:2-4:6\"><input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
             "<td data-sourcepos=\"4:8-4:13\">Kai</td>\n",
             "</tr>\n",
             "</tbody>\n",
@@ -272,13 +270,11 @@ fn tasklist_in_table() {
             "</thead>\n",
             "<tbody>\n",
             "<tr data-sourcepos=\"3:1-3:18\">\n",
-            "<td data-sourcepos=\"3:2-3:10\">\n",
-            "<input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"3:2-3:10\"><input type=\"checkbox\" data-sourcepos=\"3:3-3:5\" checked=\"\" disabled=\"\" /> </td>\n",
             "<td data-sourcepos=\"3:12-3:17\">Rell</td>\n",
             "</tr>\n",
             "<tr data-sourcepos=\"4:1-4:18\">\n",
-            "<td data-sourcepos=\"4:2-4:10\">\n",
-            "<input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
+            "<td data-sourcepos=\"4:2-4:10\"><input type=\"checkbox\" data-sourcepos=\"4:3-4:5\" checked=\"\" disabled=\"\" /> </td>\n",
             "<td data-sourcepos=\"4:12-4:17\">Kai</td>\n",
             "</tr>\n",
             "<tr data-sourcepos=\"5:1-5:18\">\n",
@@ -562,32 +558,97 @@ fn tasklist_symbol_sourcepos() {
 }
 
 #[test]
-fn tasklist_symbol_sourcepos_transformed() {
-    let mut options = Options::default();
-    options.extension.tasklist = true;
-    options.parse.relaxed_tasklist_matching = true;
-    options.parse.smart = true;
+fn tasklist_marker_is_literal() {
+    html_opts!(
+        [
+            extension.tasklist,
+            extension.table,
+            parse.relaxed_tasklist_matching,
+            parse.tasklist_in_table,
+            parse.smart
+        ],
+        concat!(
+            "- [\"] a\n",
+            "- [&amp;] b\n",
+            "- [&#x3042;] c\n",
+            "- &#91;x] d\n",
+            "- [x&#93; e\n",
+            "- [x]&#32;f\n",
+            "- [あ] g\n",
+            "\n",
+            "| a | b |\n",
+            "| --- | --- |\n",
+            "| &#91;x] | [x] |\n",
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>[”] a</li>\n",
+            "<li>[&amp;] b</li>\n",
+            "<li>[あ] c</li>\n",
+            "<li>[x] d</li>\n",
+            "<li>[x] e</li>\n",
+            "<li>[x] f</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> g</li>\n",
+            "</ul>\n",
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>[x]</td>\n",
+            "<td><input type=\"checkbox\" checked=\"\" disabled=\"\" /> </td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
 
-    let arena = Arena::new();
-    let md = "- [\"] a\n- [&amp;] b\n- [&#x3042;] c\n";
-    let root = parse_document(&arena, md, &options);
+#[test]
+fn tasklist_marker_not_after_entity_space() {
+    html_opts!(
+        [extension.tasklist],
+        "- &#32;[x] a\n",
+        "<ul>\n<li> [x] a</li>\n</ul>\n",
+        no_roundtrip,
+    );
+}
 
-    let sourceposes = root
-        .descendants()
-        .filter_map(|n| {
-            let NodeValue::TaskItem(ref nti) = n.data().value else {
-                return None;
-            };
-            Some(nti.symbol_sourcepos)
-        })
-        .collect::<Vec<_>>();
-    assert_eq!(
-        sourceposes,
-        vec![
-            (1, 4, 1, 4).into(),
-            (2, 4, 2, 8).into(),
-            (3, 4, 3, 11).into()
-        ]
+#[test]
+fn tasklist_marker_followed_by_inline() {
+    html_opts!(
+        [extension.tasklist, extension.strikethrough, render.r#unsafe],
+        concat!(
+            "- [x]*a*\n",
+            "- [x]`b`\n",
+            "- [x]<b>c</b>\n",
+            "- [x]~~d~~\n",
+            "- [x] *e*\n",
+            "- [x]\n",
+            "  f\n",
+            "- [x]  \n",
+            "  g\n",
+            "- [x]\\\n",
+            "  h\n",
+            "- [x]\n",
+        ),
+        concat!(
+            "<ul>\n",
+            "<li>[x]<em>a</em></li>\n",
+            "<li>[x]<code>b</code></li>\n",
+            "<li>[x]<b>c</b></li>\n",
+            "<li>[x]<del>d</del></li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> <em>e</em></li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> \nf</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> <br />\ng</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> <br />\nh</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> </li>\n",
+            "</ul>\n",
+        ),
     );
 }
 

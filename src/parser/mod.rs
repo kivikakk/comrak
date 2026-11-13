@@ -3046,6 +3046,18 @@ where
             return;
         }
 
+        if text.as_bytes()[end - 1] == b']'
+            && node.next_sibling().is_some_and(|next| {
+                !node_matches!(next, NodeValue::SoftBreak | NodeValue::LineBreak)
+            })
+        {
+            return;
+        }
+
+        if !spx.is_literal(end) {
+            return;
+        }
+
         let parent = node.parent().unwrap();
 
         if node_matches!(parent, NodeValue::TableCell) {
@@ -3398,6 +3410,19 @@ impl Spx {
                 }
             }
         }
+    }
+
+    fn is_literal(&self, mut len: usize) -> bool {
+        for &(sp, x) in &self.items[self.front..] {
+            if sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x {
+                return false;
+            }
+            if len <= x {
+                return true;
+            }
+            len -= x;
+        }
+        unreachable!()
     }
 
     pub(crate) fn next_column(&self) -> Option<usize> {
