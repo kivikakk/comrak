@@ -509,7 +509,7 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
     re2c:define:YYSHIFTSTAG = "@@{tag} = (@@{tag} as isize + @@{shift}) as usize;";
     re2c:tags = 2;
 
-    [[] [^\xff\r\n\]]+ @t [\]] (spacechar | [\xff]) {
+    [[] [^\xff\r\n\]]+ @t [\]] ([ \t] | [\xff]) {
         if cursor == len + 1 {
             cursor -= 1;
         }

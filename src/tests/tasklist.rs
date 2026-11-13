@@ -619,6 +619,22 @@ fn tasklist_marker_not_after_entity_space() {
 }
 
 #[test]
+fn tasklist_marker_followed_by_space_or_tab_only() {
+    html_opts!(
+        [extension.tasklist],
+        "- [x] a\n- [x]\tb\n- [x]\u{b}c\n- [x]\u{c}d\n",
+        concat!(
+            "<ul>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> a</li>\n",
+            "<li><input type=\"checkbox\" checked=\"\" disabled=\"\" /> b</li>\n",
+            "<li>[x]\u{b}c</li>\n",
+            "<li>[x]\u{c}d</li>\n",
+            "</ul>\n",
+        ),
+    );
+}
+
+#[test]
 fn tasklist_marker_followed_by_inline() {
     html_opts!(
         [extension.tasklist, extension.strikethrough, render.r#unsafe],

@@ -17999,7 +17999,7 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
                         }
                     };
                     match yych {
-                        0x00..=0x08 | 0x0E..=0x1F | 0x21..=0xFE => {
+                        0x00..=0x08 | 0x0A..=0x1F | 0x21..=0xFE => {
                             yystate = 5;
                             continue 'yyl;
                         }
