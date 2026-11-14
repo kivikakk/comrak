@@ -1,5 +1,6 @@
 use comrak::nodes::{LineColumn, NodeValue, Sourcepos};
 use comrak::{parse_document, Arena, Options};
+use std::ops::Range;
 
 #[derive(Clone)]
 pub struct Rec {
@@ -137,8 +138,107 @@ impl<'a> Source<'a> {
         if position.line == 0 || position.line > self.line_count() || position.column == 0 {
             return None;
         }
-        let offset = self.line_starts[position.line - 1] + position.column - 1;
+        let offset = self.line_starts[position.line - 1].checked_add(position.column - 1)?;
         (offset <= self.line_ends[position.line - 1]).then_some(offset)
+    }
+
+    fn line_offset(&self, line: usize, column: usize, max: usize) -> Result<usize, &'static str> {
+        if line == 0 || column == 0 {
+            return Err("zero");
+        }
+        if line > self.line_count() {
+            return Err("out-of-bounds");
+        }
+        let offset = self.line_starts[line - 1]
+            .checked_add(column - 1)
+            .ok_or("out-of-bounds")?;
+        (offset <= max).then_some(offset).ok_or("out-of-bounds")
+    }
+
+    /// Converts a sourcepos (whose end is inclusive) to a half-open byte range.
+    ///
+    /// A legal empty range is either represented by `end.column == start.column - 1`
+    /// on the same line, or by the document sentinel handled in [`Self::document_span`].
+    pub fn half_open_span(&self, sp: Sourcepos) -> Result<Range<usize>, &'static str> {
+        let empty =
+            sp.start.line == sp.end.line && sp.end.column.checked_add(1) == Some(sp.start.column);
+        if empty {
+            if sp.start.line == 0 {
+                return Err("zero");
+            }
+            if sp.start.line > self.line_count() {
+                return Err("out-of-bounds");
+            }
+            let at = self.line_offset(
+                sp.start.line,
+                sp.start.column,
+                self.content_ends[sp.start.line - 1],
+            )?;
+            if !self.text.is_char_boundary(at) {
+                return Err("splits-utf8");
+            }
+            return Ok(at..at);
+        }
+        if sp.end.column == 0 {
+            return Err("zero");
+        }
+        if sp.start.line == 0 || sp.start.column == 0 {
+            return Err("zero");
+        }
+        if sp.start.line > self.line_count() {
+            return Err("out-of-bounds");
+        }
+        let start = self.line_offset(
+            sp.start.line,
+            sp.start.column,
+            self.content_ends[sp.start.line - 1],
+        )?;
+        let end_line = sp.end.line;
+        if end_line == 0 || end_line > self.line_count() {
+            return Err("out-of-bounds");
+        }
+        let end_inclusive = self.line_offset(
+            end_line,
+            sp.end.column,
+            self.line_ends[end_line - 1]
+                .checked_sub(1)
+                .ok_or("out-of-bounds")?,
+        )?;
+        if start > end_inclusive {
+            return Err("inverted");
+        }
+        let end = end_inclusive.checked_add(1).ok_or("past-eof")?;
+        if !self.text.is_char_boundary(start) || !self.text.is_char_boundary(end) {
+            return Err("splits-utf8");
+        }
+        Ok(start..end)
+    }
+
+    /// Normalises the Document node's span, including its empty-input sentinel
+    /// and its convention of ending at the last line's content.
+    pub fn document_span(&self, sp: Sourcepos) -> Result<Range<usize>, &'static str> {
+        if self.bytes.is_empty() {
+            if sp.start != (1, 1).into() {
+                return Err("start");
+            }
+            if sp.end != (0, 0).into() {
+                return Err("end");
+            }
+            return Ok(0..0);
+        }
+        if sp.start != (1, 1).into() {
+            return Err("start");
+        }
+        let last = self.line_count();
+        let last_len = self.line_content(last - 1).len();
+        let line_start = self.line_starts[last - 1];
+        if sp.end == (last, last_len).into() {
+            Ok(0..line_start + last_len)
+        } else if last_len == 0 && sp.end == (last, 1).into() {
+            Ok(0..line_start + 1)
+        } else {
+            Err("end")
+        }
     }
 
     pub fn position(&self, offset: usize) -> LineColumn {

@@ -6,7 +6,7 @@ fn is_break(rec: &Rec) -> bool {
 }
 
 fn is_zero_width(sp: Sourcepos) -> bool {
-    sp.start.line == sp.end.line && sp.start.column == sp.end.column + 1
+    sp.start.line == sp.end.line && sp.end.column.checked_add(1) == Some(sp.start.column)
 }
 
 pub fn is_placeholder(recs: &[Rec], index: usize) -> bool {
@@ -25,6 +25,20 @@ fn in_grid_cell(recs: &[Rec], index: usize) -> bool {
         current = recs[parent].parent;
     }
     false
+}
+
+fn owning_table(recs: &[Rec], index: usize) -> Option<usize> {
+    let mut current = recs[index].parent;
+    while let Some(parent) = current {
+        if matches!(
+            recs[parent].value,
+            NodeValue::Table(_) | NodeValue::GridTable(_)
+        ) {
+            return Some(parent);
+        }
+        current = recs[parent].parent;
+    }
+    None
 }
 
 fn is_zero_width_cell_break(recs: &[Rec], index: usize, source: &Source) -> bool {
@@ -120,6 +134,15 @@ fn sibling_order(recs: &[Rec], parent: usize, out: &mut Vec<Finding>) {
 pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
     let mut out = vec![];
     sibling_order(recs, 0, &mut out);
+    let document_range = source.document_span(recs[0].sp);
+    if let Err(reason) = &document_range {
+        out.push(Finding::new(
+            "structure",
+            "Document",
+            &format!("document-{reason}"),
+            format!("Document @ {}", recs[0].sp),
+        ));
+    }
     for (index, rec) in recs.iter().enumerate().skip(1) {
         sibling_order(recs, index, &mut out);
         let sp = rec.sp;
@@ -130,71 +153,87 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
         };
         let zero_width =
             is_placeholder(recs, index) || is_zero_width_cell_break(recs, index, source);
-        if sp.start.line == 0
-            || sp.start.column == 0
-            || sp.end.line == 0
-            || (sp.end.column == 0 && !zero_width)
-        {
-            flag("zero");
+        let range = match source.half_open_span(sp) {
+            Ok(range) => range,
+            Err(reason) => {
+                flag(reason);
+                continue;
+            }
+        };
+        if range.is_empty() && !zero_width {
+            flag(if sp.end.column == 0 {
+                "zero"
+            } else {
+                "inverted"
+            });
             continue;
         }
-        if sp.start > sp.end && !zero_width {
-            flag("inverted");
-            continue;
+        if !range.is_empty() && !is_break(rec) {
+            let start = range.start;
+            let end = range.end - 1;
+            if start >= source.content_ends[sp.start.line - 1] && !has_verbatim_bounds(recs, index)
+            {
+                flag("start-at-eol");
+            }
+            if end >= source.content_ends[sp.end.line - 1]
+                && !is_in_wikilink(recs, index)
+                && !is_inline_footnote_paragraph(recs, index)
+            {
+                flag("end-at-eol");
+            }
         }
-        if zero_width {
-            let Some(start) = source.offset(sp.start) else {
-                flag("out-of-bounds");
+        let parent_index = rec.parent.unwrap();
+        let parent = &recs[parent_index];
+        let parent_range = if parent_index == 0 {
+            let Ok(range) = &document_range else {
                 continue;
             };
-            if start > source.content_ends[sp.start.line - 1] {
-                flag("start-past-eol");
-            }
-            if !source.text.is_char_boundary(start) {
-                flag("splits-utf8");
-            }
+            range.clone()
         } else {
-            let (Some(start), Some(end)) = (source.offset(sp.start), source.offset(sp.end)) else {
-                flag("out-of-bounds");
-                continue;
-            };
-            if end >= source.bytes.len() {
-                flag("past-eof");
-                continue;
+            match source.half_open_span(parent.sp) {
+                Ok(range) => range,
+                Err(_) => continue,
             }
-            if !source.text.is_char_boundary(start) || !source.text.is_char_boundary(end + 1) {
-                flag("splits-utf8");
-            }
-            if !is_break(rec) {
-                if start >= source.content_ends[sp.start.line - 1]
-                    && !has_verbatim_bounds(recs, index)
-                {
-                    flag("start-at-eol");
-                }
-                if end >= source.content_ends[sp.end.line - 1]
-                    && !is_in_wikilink(recs, index)
-                    && !is_inline_footnote_paragraph(recs, index)
-                {
-                    flag("end-at-eol");
-                }
-            }
-        }
-        let parent = &recs[rec.parent.unwrap()];
+        };
+        let table = owning_table(recs, index);
         let bound = match rec.value {
             NodeValue::GridTableCell(cell)
-                if cell.rowspan > 1 || is_placeholder(recs, rec.parent.unwrap()) =>
+                if cell.rowspan > 1 || is_placeholder(recs, parent_index) =>
             {
-                (parent.sp.start, recs[parent.parent.unwrap()].sp.end)
+                match table.and_then(|table| source.half_open_span(recs[table].sp).ok()) {
+                    Some(table_range) => parent_range.start..table_range.end,
+                    None => parent_range.clone(),
+                }
             }
-            _ => (parent.sp.start, parent.sp.end),
+            _ => parent_range.clone(),
         };
-        if rec.parent != Some(0) && (sp.start < bound.0 || sp.end > bound.1) {
+        if range.start < bound.start || range.end > bound.end {
             out.push(Finding::new(
                 "structure",
                 kind,
                 &format!("escapes-parent:{}", parent.kind),
                 format!("{kind} @ {sp} parent {} @ {}", parent.kind, parent.sp),
             ));
+        }
+        if matches!(
+            rec.value,
+            NodeValue::TableCell | NodeValue::GridTableCell(_)
+        ) {
+            if let Some(table) = table {
+                if let Ok(table_range) = source.half_open_span(recs[table].sp) {
+                    if range.start < table_range.start || range.end > table_range.end {
+                        out.push(Finding::new(
+                            "structure",
+                            kind,
+                            &format!("outside-table:{}", recs[table].kind),
+                            format!(
+                                "{kind} @ {sp} table {} @ {}",
+                                recs[table].kind, recs[table].sp
+                            ),
+                        ));
+                    }
+                }
+            }
         }
     }
     out
@@ -691,27 +730,16 @@ pub fn tiling(recs: &[Rec], source: &Source) -> Vec<Finding> {
 }
 
 pub fn document_extent(recs: &[Rec], source: &Source) -> Vec<Finding> {
-    if source.bytes.is_empty() {
-        return vec![];
-    }
     let sp = recs[0].sp;
-    let last = source.line_count();
-    let last_len = source.line_content(last - 1).len();
-    if sp.start != (1, 1).into() {
-        return vec![Finding::new(
-            "document",
-            "Document",
-            "start",
-            sp.to_string(),
-        )];
+    let detail = if source.bytes.is_empty() {
+        sp.to_string()
+    } else {
+        let last = source.line_count();
+        let last_len = source.line_content(last - 1).len();
+        format!("{sp}, wanted end {last}:{last_len}")
+    };
+    match source.document_span(sp) {
+        Ok(_) => vec![],
+        Err(reason) => vec![Finding::new("document", "Document", reason, detail)],
     }
-    if sp.end != (last, last_len.max(1)).into() && sp.end != (last, last_len).into() {
-        return vec![Finding::new(
-            "document",
-            "Document",
-            "end",
-            format!("{sp}, wanted end {last}:{last_len}"),
-        )];
-    }
-    vec![]
 }
