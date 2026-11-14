@@ -1,7 +1,7 @@
-use super::model::{snapshot, Source};
+use super::model::{snapshot, Rec, Source};
 use super::{all_checks, generate, invariants, options, relations, run_check};
 use super::{MAX_DOC_LEN, STATIC_CHECKS};
-use comrak::nodes::NodeValue;
+use comrak::nodes::{NodeValue, Sourcepos};
 use comrak::Options;
 use std::collections::{BTreeMap, BTreeSet};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -413,4 +413,174 @@ fn checks_catch_breaks_short_of_crlf() {
             clean[index].kind
         );
     }
+}
+
+struct Fixture<'a> {
+    recs: Vec<Rec>,
+    source: Source<'a>,
+}
+
+impl<'a> Fixture<'a> {
+    fn new(profile: &str, doc: &'a str) -> Self {
+        let recs = snapshot(doc, &options::named(profile));
+        let source = Source::new(doc);
+        let findings = invariants::structure(&recs, &source);
+        assert!(
+            findings.is_empty(),
+            "baseline findings for {:?}: {:?}",
+            doc,
+            findings.iter().map(|f| &f.reason).collect::<Vec<_>>()
+        );
+        Fixture { recs, source }
+    }
+
+    fn node(&self, kind: &str) -> usize {
+        (1..self.recs.len())
+            .find(|&index| self.recs[index].kind == kind)
+            .unwrap_or_else(|| panic!("no {} node", kind))
+    }
+
+    fn reject(&self, at: usize, sp: impl Into<Sourcepos>, reason: &str) {
+        let mut recs = self.recs.clone();
+        recs[at].sp = sp.into();
+        let found: Vec<_> = invariants::structure(&recs, &self.source)
+            .into_iter()
+            .map(|finding| finding.reason)
+            .collect();
+        assert!(
+            found.iter().any(|found| found.starts_with(reason)),
+            "expected {}, got {:?}",
+            reason,
+            found
+        );
+    }
+
+    fn reject_document(&self, sp: impl Into<Sourcepos>, reason: &str) {
+        let sp = sp.into();
+        self.reject(0, sp, &format!("document-{reason}"));
+        let mut recs = self.recs.clone();
+        recs[0].sp = sp;
+        let findings = invariants::document_extent(&recs, &self.source);
+        assert!(
+            findings.iter().any(|finding| finding.reason == reason),
+            "expected {}, got {:?}",
+            reason,
+            findings.iter().map(|f| &f.reason).collect::<Vec<_>>()
+        );
+    }
+}
+
+#[test]
+fn contract_accepts_valid_spans() {
+    for doc in [
+        "a|b\n-|-\nz",
+        "a|b\n-|-\nz\n",
+        "a|b\n-|-\nz  ",
+        "|a|b|\n|-|-|\n|z||",
+        "|a|é|\n|-|-|\n|z|ö|",
+        "a|b\r\n-|-\r\nz\r\n",
+        "",
+        "\n",
+        "+---+---+\n| A | B |\n+---+   +\n| D | B |\n+---+---+\n",
+    ] {
+        super::assert_clean(doc);
+    }
+}
+
+#[test]
+fn contract_rejects_invalid_ranges() {
+    let fixture = Fixture::new("cm", "alpha *beta* gamma\n");
+    let text = fixture.node("Text");
+    for (sp, reason) in [
+        ((1usize, 4, 1, 2), "inverted"),
+        ((1, 1, 1, 1000), "out-of-bounds"),
+        ((1, 1, 99, 1), "out-of-bounds"),
+        ((0, 1, 1, 1), "zero"),
+        ((1, 0, 1, 1), "zero"),
+        ((1, usize::MAX, 1, usize::MAX), "out-of-bounds"),
+        ((usize::MAX, 1, usize::MAX, 1), "out-of-bounds"),
+    ] {
+        fixture.reject(text, sp, reason);
+    }
+
+    let fixture = Fixture::new("cm", "ab\ncd\n");
+    let text = fixture.node("Text");
+    fixture.reject(text, (1usize, 1, 1, 4), "out-of-bounds");
+}
+
+#[test]
+fn contract_rejects_utf8_splits() {
+    let fixture = Fixture::new("cm", "é");
+    let text = fixture.node("Text");
+    let sp = fixture.recs[text].sp;
+    let mut split_start = sp;
+    split_start.start.column = 2;
+    fixture.reject(text, split_start, "splits-utf8");
+    let mut split_end = sp;
+    split_end.end.column = 1;
+    fixture.reject(text, split_end, "splits-utf8");
+}
+
+#[test]
+fn contract_rejects_empty_range_outside_parent() {
+    let fixture = Fixture::new("gfm", "|a|b|\n|-|-|\n|z|\n|x|y|");
+    let placeholder = (1..fixture.recs.len())
+        .find(|&index| invariants::is_placeholder(&fixture.recs, index))
+        .expect("no placeholder");
+    for sp in [(2usize, 1, 2, 0), (4, 1, 4, 0)] {
+        fixture.reject(placeholder, sp, "escapes-parent");
+    }
+    fixture.reject(placeholder, (usize::MAX, 1, usize::MAX, 0), "out-of-bounds");
+}
+
+#[test]
+fn contract_validates_document_span() {
+    for (doc, cases) in [
+        (
+            "",
+            [((900usize, 900, 0, 0), "start"), ((1, 1, 1, 1), "end")],
+        ),
+        ("a\nb\n", [((2, 1, 2, 1), "start"), ((1, 1, 2, 2), "end")]),
+    ] {
+        let fixture = Fixture::new("cm", doc);
+        assert!(invariants::document_extent(&fixture.recs, &fixture.source).is_empty());
+        for (sp, reason) in cases {
+            fixture.reject_document(sp, reason);
+        }
+    }
+}
+
+#[test]
+fn contract_rejects_child_outside_parent() {
+    for (doc, kind, sp) in [
+        ("*a*\n\nb\n", "Emph", (3usize, 1, 3, 1)),
+        ("a\n\n", "Paragraph", (2, 1, 2, 1)),
+    ] {
+        let fixture = Fixture::new("cm", doc);
+        let at = fixture.node(kind);
+        let parent = fixture.recs[at].parent.unwrap();
+        let reason = format!("escapes-parent:{}", fixture.recs[parent].kind);
+        fixture.reject(at, sp, &reason);
+    }
+}
+
+#[test]
+fn contract_rejects_cell_outside_owning_table() {
+    let fixture = Fixture::new("gfm", "|a|\n|-|\n|b|\n\nx\n");
+    fixture.reject(
+        fixture.node("TableCell"),
+        (5usize, 1, 5, 1),
+        "outside-table:Table",
+    );
+
+    let doc = "+---+---+\n| A | B |\n+---+   +\n| D | B |\n+---+---+\n\nx\n";
+    let fixture = Fixture::new("all", doc);
+    let cell = (1..fixture.recs.len())
+        .find(|&index| {
+            matches!(&fixture.recs[index].value, NodeValue::GridTableCell(cell) if cell.rowspan > 1)
+        })
+        .expect("no rowspan cell");
+    let mut sp = fixture.recs[cell].sp;
+    sp.end = (7, 1).into();
+    fixture.reject(cell, sp, "outside-table:GridTable");
 }
