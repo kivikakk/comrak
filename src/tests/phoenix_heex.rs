@@ -2303,7 +2303,7 @@ fn table_header_after_unclosed_directive_sourcepos() {
                 (text (1:1-1:3) "a<%")
             ])
             (table (2:2-3:2) [
-                (table_row (2:2-2:3) [
+                (table_header (2:2-2:3) [
                     (table_cell (2:2-2:2) [
                         (text (2:2-2:2) "b")
                     ])
@@ -2322,7 +2322,7 @@ fn table_header_after_unclosed_directive_sourcepos() {
                 (text (1:1-1:3) "a<%")
             ])
             (table (2:2-3:5) [
-                (table_row (2:2-2:6) [
+                (table_header (2:2-2:6) [
                     (table_cell (2:3-2:5) [
                         (text (2:4-2:4) "b")
                     ])

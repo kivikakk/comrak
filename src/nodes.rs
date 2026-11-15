@@ -930,7 +930,8 @@ impl NodeValue {
             NodeValue::Heading(..) => "heading",
             NodeValue::ThematicBreak => "thematic_break",
             NodeValue::Table(..) => "table",
-            NodeValue::TableRow(..) => "table_row",
+            NodeValue::TableRow(true) => "table_header",
+            NodeValue::TableRow(false) => "table_row",
             NodeValue::TableCell => "table_cell",
             #[cfg(feature = "grid_table")]
             NodeValue::GridTable(..) => "grid_table",

@@ -746,7 +746,7 @@ fn table_header_on_indented_lazy_line() {
                     (text (1:2-1:2) "b")
                 ])
                 (table (2:2-3:3) [
-                    (table_row (2:2-2:2) [
+                    (table_header (2:2-2:2) [
                         (table_cell (2:2-2:2) [
                             (text (2:2-2:2) "}")
                         ])
@@ -1003,7 +1003,7 @@ fn table_before_trailing_blank_lines() {
         "\n",
         (document (1:1-3:0) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
@@ -1149,7 +1149,7 @@ fn list_item_end_ignores_autocompleted_table_cells() {
             (list (1:1-3:3) [
                 (item (1:1-3:3) [
                     (table (1:3-3:3) [
-                        (table_row (1:3-1:5) [
+                        (table_header (1:3-1:5) [
                             (table_cell (1:3-1:3) [
                                 (text (1:3-1:3) "a")
                             ])
