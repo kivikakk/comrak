@@ -1,20 +1,3 @@
-# [v1.0.0-rc.2] - 2026-11-16
-
-## What's Changed
-* use upstream cmark-gfm. by @kivikakk in https://github.com/kivikakk/comrak/pull/919
-* Add Markview to comrak users list by @szdytom in https://github.com/kivikakk/comrak/pull/921
-* table: autocompleted cells are zero-width. by @kivikakk in https://github.com/kivikakk/comrak/pull/922
-* tasklist: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/923
-* fuzz: sourcepos: strengthen span validation. by @szdytom in https://github.com/kivikakk/comrak/pull/925
-* tables: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/926
-* autolink: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/927
-* strikethrough: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/928
-
-
-**Full Changelog**: https://github.com/kivikakk/comrak/compare/v1.0.0-rc.1...v1.0.0-rc.2
-
----snip---
-
 <!--
 
 Categories to use in this document, and the order in which to give them:
@@ -33,6 +16,50 @@ Build changes:
 Behind the scenes:
 
 -->
+
+# [v1.0.0-rc.2] - 2026-11-16
+
+In getting close to 1.0, I've been reviewing the "core" GFM extensions, and writing them up the way the deserved to be ten years ago. As a result, I've found some changes to make: some of them bring a little more parity with `cmark-gfm`, some a little less, but all with the intention of making them make more sense. See below:
+
+* [Autolinks](https://comrak.ee/extensions/autolink.html)
+* [Strikethrough](https://comrak.ee/extensions/strikethrough.html)
+* [Tables](https://comrak.ee/extensions/table.html)
+* [Task lists](https://comrak.ee/extensions/tasklist.html)
+
+I hope these make Comrak a little easier to understand, and G(L)FM a little easier to implement!  Note that, given how underspecified GFM _is_ in its [spec](https://github.github.com/gfm/), Comrak remains compliant ([modulo `tagfilter`](https://github.com/kivikakk/comrak/pull/845)) even while differing from `cmark-gfm` at points.
+
+Parser changes:
+
+* Tasklist markers must appear literally in the source --- entities like `[&amp;]` or `&#91;x]` and smart punctuation like `["]` (with `--smart`) no longer make task items with `relaxed_tasklist_matching`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/923)
+  * Markers must also be followed by a space, tab, or line end; `[x]*a*` is no longer a task item, and `\v` and `\f` no longer count. Before, `[x]*a*` worked, while `[x]a` didn't (and doesn't).
+* Backslashes before pipes in table cells now count as paired correctly: `c\\|` ends the cell after the text `c\` as you'd expect, and (as above) only spaces and tabs count as cell and delimiter row padding. (by @kivikakk in https://github.com/kivikakk/comrak/pull/926)
+* Emails containing entities, like `foo&#x40;bar.com`, no longer autolink, and domains are checked after stripping trailing punctuation, such that `_www.example.com_` now autolinks. (by @kivikakk in https://github.com/kivikakk/comrak/pull/927)
+* A strikethrough delimiter mismatch no longer stops inline processing, such that `~~a~ *b*` emphasises `b` (as in cmark-gfm). (by @kivikakk in https://github.com/kivikakk/comrak/pull/928)
+
+Changed APIs:
+
+* The XML formatter emits table header rows as `<table_header>`, like cmark-gfm. (by @kivikakk in https://github.com/kivikakk/comrak/pull/926)
+
+Bug fixes:
+
+* Autocompleted table cells now have zero-width sourcepos, ending one column before they start, no longer extending past their row. (by @kivikakk in https://github.com/kivikakk/comrak/pull/922)
+* Tasklist checkboxes in table cells are no longer preceded by a newline in HTML. (by @kivikakk in https://github.com/kivikakk/comrak/pull/923)
+
+Documentation:
+
+* Add Markview to the users list. (by @szdytom in https://github.com/kivikakk/comrak/pull/921)
+* Document tasklists, tables, autolinks, and strikethrough with care. (by @kivikakk in https://github.com/kivikakk/comrak/pull/923, https://github.com/kivikakk/comrak/pull/926, https://github.com/kivikakk/comrak/pull/927, https://github.com/kivikakk/comrak/pull/928)
+* comrak.ee now has numbered examples, shows tabs, links terms to their definitions, and has per-page TOCs and OpenGraph metadata! (by @kivikakk in d9839106, c7ebe5b3, and https://github.com/kivikakk/comrak/pull/923)
+* Update GitLab's entry in the README users list. (2a0d7277)
+
+Behind the scenes:
+
+* Run spec tests against upstream cmark-gfm instead of our fork \o/ (by @kivikakk in https://github.com/kivikakk/comrak/pull/919)
+* Strengthen span validation in the sourcepos fuzzer. (by @szdytom in https://github.com/kivikakk/comrak/pull/925)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
 
 # [v1.0.0-rc.1] - 2026-11-12
 
