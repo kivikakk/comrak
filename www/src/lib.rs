@@ -26,6 +26,7 @@ static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| SyntectAdapter::
 pub struct Doc {
     pub path: PathBuf,
     pub title: String,
+    pub lede: Option<String>,
     pub source: String,
     pub examples: Vec<Example>,
     pub headings: Vec<Heading>,
@@ -76,8 +77,12 @@ fn is_definition(node: Node<'_>) -> bool {
     matches!(node.data().value, NodeValue::Link(ref link) if link.url == "@")
 }
 
+fn collapse_whitespace(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 fn term_slug(term: &str) -> String {
-    Anchorizer::new().anchorize(&term.split_whitespace().collect::<Vec<_>>().join(" "))
+    Anchorizer::new().anchorize(&collapse_whitespace(term))
 }
 
 fn visible_tabs(text: &str) -> String {
@@ -101,6 +106,12 @@ impl Doc {
 
         let arena = Arena::new();
         let document = parse_document(&arena, &source, &page_options());
+
+        let lede = document
+            .children()
+            .find(|node| !matches!(node.data().value, NodeValue::FrontMatter(_)))
+            .filter(|node| matches!(node.data().value, NodeValue::Paragraph))
+            .map(|node| collapse_whitespace(&node.collect_text()));
 
         let mut title = None;
         let mut examples = vec![];
@@ -144,6 +155,7 @@ impl Doc {
 
         Doc {
             title: title.unwrap_or_else(|| panic!("{}: no front matter", path.display())),
+            lede,
             path,
             source,
             examples,

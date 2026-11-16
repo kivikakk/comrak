@@ -22,6 +22,16 @@ const DOC_HEAD: &str = r#"
     <script defer src="/examples.js"></script>
     <noscript><style>.example-view[hidden] { display: block; }</style></noscript>
 "#;
+const INDEX_DESCRIPTION: &str = "Homepage of Comrak, a CommonMark and GitHub Flavored Markdown parser and renderer. Standalone tool and Rust library.";
+const DOCS_DESCRIPTION: &str = "Documentation for Comrak's extensions and options.";
+
+struct Meta<'a> {
+    title: &'a str,
+    og_title: &'a str,
+    og_type: &'a str,
+    description: &'a str,
+    path: &'a Path,
+}
 
 struct Templates {
     header: String,
@@ -29,12 +39,14 @@ struct Templates {
 }
 
 impl Templates {
-    fn page(&self, title: &str, og_title: &str, path: &Path, body: &str) -> String {
+    fn page(&self, meta: &Meta<'_>, body: &str) -> String {
         let header = self
             .header
-            .replace("{{title}}", &escape(title))
-            .replace("{{og_title}}", &escape(og_title))
-            .replace("{{path}}", &escape(path.to_str().unwrap()));
+            .replace("{{title}}", &escape(meta.title))
+            .replace("{{og_title}}", &escape(meta.og_title))
+            .replace("{{og_type}}", &escape(meta.og_type))
+            .replace("{{description}}", &escape(meta.description))
+            .replace("{{path}}", &escape(meta.path.to_str().unwrap()));
         format!("{header}{body}{}", self.footer)
     }
 }
@@ -79,15 +91,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     fs::write(
         out_dir.join("index.html"),
         templates.page(
-            "Comrak · Markdown parser and renderer",
-            "Comrak",
-            Path::new(""),
+            &Meta {
+                title: "Comrak · Markdown parser and renderer",
+                og_title: "Comrak",
+                og_type: "website",
+                description: INDEX_DESCRIPTION,
+                path: Path::new(""),
+            },
             &markdown_to_html_with_plugins(&index, &page_options(), &plugins()),
         ),
     )?;
 
     let landing = fs::read_to_string(www_dir.join("docs.md"))?;
-    let title = "Docs · Comrak";
     let body = format!(
         "<nav class=\"breadcrumb\"><a href=\"/\">Comrak</a> / Docs</nav>\n{}{}",
         markdown_to_html_with_plugins(&landing, &page_options(), &plugins()),
@@ -95,7 +110,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     fs::write(
         out_dir.join("docs.html"),
-        templates.page(title, title, Path::new("docs.html"), &body),
+        templates.page(
+            &Meta {
+                title: "Docs · Comrak",
+                og_title: "Docs",
+                og_type: "website",
+                description: DOCS_DESCRIPTION,
+                path: Path::new("docs.html"),
+            },
+            &body,
+        ),
     )?;
 
     for (i, doc) in docs.iter().enumerate() {
@@ -117,10 +141,39 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
         let out = out_dir.join(&html_path);
         fs::create_dir_all(out.parent().unwrap())?;
-        fs::write(out, templates.page(&title, &title, &html_path, &body))?;
+        fs::write(
+            out,
+            templates.page(
+                &Meta {
+                    title: &title,
+                    og_title: &doc.title,
+                    og_type: "article",
+                    description: &description(doc),
+                    path: &html_path,
+                },
+                &body,
+            ),
+        )?;
     }
 
     Ok(())
+}
+
+fn description(doc: &Doc) -> String {
+    if let Some(lede) = &doc.lede {
+        return lede.clone();
+    }
+    let group = doc.path.parent().unwrap().to_str().unwrap();
+    let thing = match group {
+        "extensions" => " extension",
+        "options" => " option",
+        "combinations" => "",
+        group => unreachable!("{group}"),
+    };
+    format!(
+        "Documentation for Comrak's {}{thing}.",
+        doc.title,
+    )
 }
 
 fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error>> {

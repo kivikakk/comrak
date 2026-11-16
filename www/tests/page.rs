@@ -65,3 +65,28 @@ fn snapping_writes_tabs_as_arrows() {
 
     assert!(doc.snap().contains("a→b\n.\n<p>a→b</p>\n"));
 }
+
+#[test]
+fn lede_is_opening_paragraph_as_text() {
+    let doc = load(
+        "lede.md",
+        "A [widget](@) is a `thing`.  It\n*really* is.\n\nMore.\n",
+    );
+
+    assert_eq!(
+        doc.lede.as_deref(),
+        Some("A widget is a thing. It really is.")
+    );
+}
+
+#[test]
+fn lede_must_open_page() {
+    let fence = "`".repeat(32);
+    let example = format!("{fence} example\na\n.\n<p>a</p>\n{fence}\n");
+
+    assert_eq!(load("headed.md", "## Widget\n\nA widget.\n").lede, None);
+    assert_eq!(
+        load("example.md", &format!("{example}\nA widget.\n")).lede,
+        None
+    );
+}
