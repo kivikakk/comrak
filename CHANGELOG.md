@@ -1,3 +1,20 @@
+# [v1.0.0-rc.2] - 2026-11-16
+
+## What's Changed
+* use upstream cmark-gfm. by @kivikakk in https://github.com/kivikakk/comrak/pull/919
+* Add Markview to comrak users list by @szdytom in https://github.com/kivikakk/comrak/pull/921
+* table: autocompleted cells are zero-width. by @kivikakk in https://github.com/kivikakk/comrak/pull/922
+* tasklist: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/923
+* fuzz: sourcepos: strengthen span validation. by @szdytom in https://github.com/kivikakk/comrak/pull/925
+* tables: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/926
+* autolink: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/927
+* strikethrough: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/928
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
