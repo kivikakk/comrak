@@ -556,6 +556,8 @@ const COMMENT_INLINE: TestCase = (&[sourcepos!((1:3-1:8))], "x %%aa%% tail");
 
 const MULTILINE_COMMENT: TestCase = (&[sourcepos!((1:1-2:4))], "%%\naa%%bb");
 
+const MATH_BLOCK: TestCase = (&[sourcepos!((1:1-3:2))], "$$\na\n$$\n");
+
 const CALLOUT: TestCase = (&[sourcepos!((1:1-2:6))], "> [!note]\n> Body\n");
 const CALLOUT_TITLE: TestCase = (&[sourcepos!((1:11-1:15))], "> [!note] Title\n> Body\n");
 
@@ -611,6 +613,7 @@ fn node_values() -> HashMap<NodeValueDiscriminants, TestCase> {
                 Link => LINK,
                 Image => IMAGE,
                 Math => MATH,
+                MathBlock => MATH_BLOCK,
                 Escaped => ESCAPED,
                 WikiLink => WIKI_LINK,
                 Underline => UNDERLINE,
@@ -685,6 +688,8 @@ fn sourcepos() {
             NodeValueDiscriminants::Callout | NodeValueDiscriminants::CalloutTitle
         );
         case_options.extension.ofm_block_ids = matches!(kind, NodeValueDiscriminants::BlockId);
+        case_options.extension.math_dollars_block =
+            matches!(kind, NodeValueDiscriminants::MathBlock);
 
         let arena = Arena::new();
         let root = parse_document(&arena, text, &case_options);

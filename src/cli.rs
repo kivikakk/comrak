@@ -156,6 +156,7 @@ pub enum Extension {
     DescriptionLists,
     MultilineBlockQuotes,
     MathDollars,
+    MathDollarsBlock,
     MathLatex,
     MathCode,
     WikilinksTitleAfterPipe,
@@ -230,6 +231,7 @@ impl OptionArgs {
             .description_lists(ext(Extension::DescriptionLists))
             .multiline_block_quotes(ext(Extension::MultilineBlockQuotes))
             .math_dollars(ext(Extension::MathDollars))
+            .math_dollars_block(ext(Extension::MathDollarsBlock))
             .math_latex(ext(Extension::MathLatex))
             .math_code(ext(Extension::MathCode))
             .wikilinks_title_after_pipe(ext(Extension::WikilinksTitleAfterPipe))

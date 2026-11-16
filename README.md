@@ -138,10 +138,11 @@ Options:
           
           [possible values: strikethrough, table, grid-table, autolink, tasklist, superscript,
           footnotes, inline-footnotes, description-lists, multiline-block-quotes, math-dollars,
-          math-latex, math-code, wikilinks-title-after-pipe, wikilinks-title-before-pipe, underline,
-          subscript, spoiler, greentext, ofm-comments, ofm-block-ids, alerts, ofm-callouts,
-          cjk-friendly-emphasis, subtext, highlight, insert, phoenix-heex, block-directive,
-          header-attributes, fenced-code-attributes, inline-code-attributes, link-attributes]
+          math-dollars-block, math-latex, math-code, wikilinks-title-after-pipe,
+          wikilinks-title-before-pipe, underline, subscript, spoiler, greentext, ofm-comments,
+          ofm-block-ids, alerts, ofm-callouts, cjk-friendly-emphasis, subtext, highlight, insert,
+          phoenix-heex, block-directive, header-attributes, fenced-code-attributes,
+          inline-code-attributes, link-attributes]
 
       --width <WIDTH>
           Specify wrap width for output CommonMark, or '0' to disable wrapping

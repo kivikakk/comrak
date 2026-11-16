@@ -446,6 +446,10 @@ impl AstMatchTree {
                         assert_eq!(text, &nm.literal, "Math literal should match");
                         asserted_text = true;
                     }
+                    NodeValue::MathBlock(ref nmb) => {
+                        assert_eq!(text, &nmb.literal, "MathBlock literal should match");
+                        asserted_text = true;
+                    }
                     NodeValue::CodeBlock(ref ncb) => {
                         assert_eq!(text, &ncb.literal, "CodeBlock literal should match");
                         asserted_text = true;
@@ -548,6 +552,7 @@ impl AstMatchTree {
                 || !matches!(
                     ast.value,
                     NodeValue::Math(_)
+                        | NodeValue::MathBlock(_)
                         | NodeValue::CodeBlock(_)
                         | NodeValue::Text(_)
                         | NodeValue::Link(_)

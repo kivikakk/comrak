@@ -338,6 +338,33 @@ pub struct Extension<'c> {
     #[cfg_attr(feature = "bon", builder(default))]
     pub math_dollars: bool,
 
+    /// Enables block-level parsing for multiline display math using dollar syntax.
+    ///
+    /// This option requires [`math_dollars`](Self::math_dollars) to also be enabled.
+    /// An opening line containing only `$$` starts a block, and another such line
+    /// closes it.  The contents are treated as literal math, including blank lines
+    /// and Markdown syntax.  An unmatched opening fence continues to the end of its
+    /// enclosing container or the document.
+    ///
+    /// ```markdown
+    /// $$
+    /// 1
+    /// =
+    /// 2
+    /// $$
+    /// ```
+    ///
+    /// ```rust
+    /// # use comrak::{markdown_to_html, Options};
+    /// let mut options = Options::default();
+    /// options.extension.math_dollars = true;
+    /// options.extension.math_dollars_block = true;
+    /// assert_eq!(markdown_to_html("$$\n1\n=\n2\n$$\n", &options),
+    ///            "<div data-math-style=\"display\">\n1\n=\n2\n</div>\n");
+    /// ```
+    #[cfg_attr(feature = "bon", builder(default))]
+    pub math_dollars_block: bool,
+
     /// Enables math using LaTeX-style delimiters.
     ///
     /// ```markdown

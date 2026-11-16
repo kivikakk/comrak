@@ -24,6 +24,10 @@ pub const TOGGLES: &[Toggle] = &[
     ("alerts", |o| o.extension.alerts = true),
     ("ofm_callouts", |o| o.extension.ofm_callouts = true),
     ("math_dollars", |o| o.extension.math_dollars = true),
+    ("math_dollars_block", |o| {
+        o.extension.math_dollars = true;
+        o.extension.math_dollars_block = true;
+    }),
     ("math_code", |o| o.extension.math_code = true),
     ("math_latex", |o| o.extension.math_latex = true),
     ("shortcodes", |o| o.extension.shortcodes = true),
@@ -110,6 +114,7 @@ pub const COMPOSITES: &[(&str, &[&str])] = &[
             "multiline_block_quotes",
             "alerts",
             "math_dollars",
+            "math_dollars_block",
             "math_code",
             "math_latex",
             "shortcodes",
