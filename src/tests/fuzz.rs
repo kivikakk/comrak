@@ -266,10 +266,7 @@ fn echaw4() {
         "-@&UnderBar;.e--",
         (document (1:1-1:16) [
             (paragraph (1:1-1:16) [
-                (link (1:1-1:14) "mailto:-@_.e" [
-                    (text (1:1-1:14) "-@_.e")
-                ])
-                (text (1:15-1:16) "–")  // en-dash
+                (text (1:1-1:16) "-@_.e–")
             ])
         ])
     );
@@ -316,9 +313,7 @@ fn echaw7() {
         "&#65;i@i.a",
         (document (1:1-1:10) [
             (paragraph (1:1-1:10) [
-                (link (1:1-1:10) "mailto:Ai@i.a" [
-                    (text (1:1-1:10) "Ai@i.a")
-                ])
+                (text (1:1-1:10) "Ai@i.a")
             ])
         ])
     );

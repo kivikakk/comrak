@@ -801,3 +801,29 @@ fn autolink_with_unicode_isolation() {
         "<p>\u{2068}<a href=\"https://www.example.com/\">https://www.example.com/</a>\u{2069}</p>\n",
     );
 }
+
+#[test]
+fn autolink_email_must_be_literal() {
+    html_opts!(
+        [extension.autolink],
+        "foo&#64;bar.com foo@bar&#46;com x foo@bar.com &#102;oo@bar.com\n",
+        concat!(
+            "<p>foo@bar.com foo@bar.com x ",
+            "<a href=\"mailto:foo@bar.com\">foo@bar.com</a> foo@bar.com</p>\n"
+        ),
+    );
+}
+
+#[test]
+fn autolink_domain_excludes_trailing_punctuation() {
+    html_opts!(
+        [extension.autolink],
+        "_www.a.com_ __http://a.com__ www.a.com_ www.a.b_c.com_ http://a_b.com_\n",
+        concat!(
+            "<p><em><a href=\"http://www.a.com\">www.a.com</a></em> ",
+            "<strong><a href=\"http://a.com\">http://a.com</a></strong> ",
+            "<a href=\"http://www.a.com\">www.a.com</a>_ ",
+            "www.a.b_c.com_ http://a_b.com_</p>\n"
+        ),
+    );
+}
