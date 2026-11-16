@@ -1077,7 +1077,7 @@ With [grid tables](grid-table.html) also enabled, both kinds of table work in th
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same table design as Comrak.  It doesn't support the other extensions in [Interactions](#interactions), so those examples aren't compared.  On every other example above, the two implementations agree on HTML and XML output, except that cmark-gfm:
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same table design as Comrak.  It doesn't support the other extensions in [Interactions](#interactions), so those examples aren't comparable.  On every other example above, the two implementations agree on HTML and XML output, except that cmark-gfm:
 
 - treats a pipe after an escaped backslash as escaped, so `| c\\| d |` is one cell that contains `c| d` ([example 18](#example-18));
 - treats a vertical tab (U+000B) or a form feed (U+000C) as whitespace around cells, including in delimiter rows;
