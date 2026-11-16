@@ -654,7 +654,7 @@ fn inline_footnote_sourcepos_table() {
         "| H |\n| - |\n| c ^[cell] |\n",
         (document (1:1-3:13) [
             (table (1:1-3:13) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "H")
                     ])

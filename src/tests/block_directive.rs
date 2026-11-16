@@ -251,7 +251,7 @@ fn sourcepos_table_cells_untouched_on_close() {
         (document (1:1-4:3) [
             (block_directive (1:1-4:3) [
                 (table (2:1-3:5) [
-                    (table_row (2:1-2:5) [
+                    (table_header (2:1-2:5) [
                         (table_cell (2:2-2:4) [
                             (text (2:3-2:3) "a")
                         ])

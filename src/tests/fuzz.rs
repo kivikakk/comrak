@@ -412,7 +412,7 @@ fn commonmark_table_of_fun() {
     opts.render.experimental_minimize_commonmark = true;
     commonmark(
         "\0I|-|\r-|-|\r\u{c}||~|||",
-        "| �I | - |\n| --- | --- |\n| &#12;\\||~\\|| |  |\n",
+        "| �I | - |\n| --- | --- |\n| &#12;\\|\\|~\\|\\| |  |\n",
         Some(&opts),
     );
 }
@@ -514,7 +514,7 @@ fn dont_try_this_at_home() {
         "\u{3}\n--\nT",
         (document (1:1-3:1) [
             (table (1:1-3:1) [
-                (table_row (1:1-1:1) [
+                (table_header (1:1-1:1) [
                     (table_cell (1:1-1:1) [
                         (text (1:1-1:1) "\u{3}")
                     ])

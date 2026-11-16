@@ -10,7 +10,7 @@ use crate::nodes::{
 use crate::parser::Parser;
 use crate::parser::inlines::make_inline;
 use crate::scanners;
-use crate::strings::{count_newlines, is_line_end_char, newlines_of, trim_cow};
+use crate::strings::{count_newlines, is_line_end_char, is_space_or_tab, newlines_of, trim_cow};
 
 // Limit to prevent a malicious input from causing a denial of service.
 // See get_num_autocompleted_cells.
@@ -262,7 +262,7 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
 
         if cell_matched > 0 || pipe_matched > 0 {
             let (mut cell, escaped_pipes) = unescape_pipes(&string[offset..offset + cell_matched]);
-            trim_cow(&mut cell);
+            rtrim_space_or_tab(&mut cell);
 
             let mut start_offset = offset;
             let mut internal_offset = 0;
@@ -315,6 +315,16 @@ fn row(string: &str, spoiler: bool) -> Option<Row<'_>> {
             row_start,
             cells,
         })
+    }
+}
+
+fn rtrim_space_or_tab(cell: &mut Cow<'_, str>) {
+    let len = cell
+        .trim_end_matches(|c: char| c.is_ascii() && is_space_or_tab(c as u8))
+        .len();
+    match cell {
+        Cow::Borrowed(s) => *s = &s[..len],
+        Cow::Owned(s) => s.truncate(len),
     }
 }
 

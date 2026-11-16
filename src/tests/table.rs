@@ -17,7 +17,7 @@ fn sourcepos_with_differently_indented_rows() {
                 (text (1:1-1:1) "p")
             ])
             (table (2:7-5:5) [
-                (table_row (2:7-2:11) [
+                (table_header (2:7-2:11) [
                     (table_cell (2:8-2:8) [(text (2:8-2:8) "a")])
                     (table_cell (2:10-2:10) [(text (2:10-2:10) "b")])
                 ])
@@ -265,7 +265,7 @@ fn sourcepos_with_preceding_para_no_spaces() {
                 (text (2:1-2:3) "456")
             ])
             (table (3:1-5:9) [
-                (table_row (3:1-3:9) [
+                (table_header (3:1-3:9) [
                     (table_cell (3:2-3:4) [
                         (text (3:3-3:3) "a")
                     ])
@@ -303,7 +303,7 @@ fn sourcepos_with_preceding_para_spaces_before_table() {
                 (text (2:1-2:3) "456")
             ])
             (table (3:2-5:10) [
-                (table_row (3:2-3:10) [
+                (table_header (3:2-3:10) [
                     (table_cell (3:3-3:5) [
                         (text (3:4-3:4) "a")
                     ])
@@ -341,7 +341,7 @@ fn sourcepos_with_preceding_para_spaces_before_para() {
                 (text (2:3-2:5) "456")
             ])
             (table (3:1-5:9) [
-                (table_row (3:1-3:9) [
+                (table_header (3:1-3:9) [
                     (table_cell (3:2-3:4) [
                         (text (3:3-3:3) "a")
                     ])
@@ -379,7 +379,7 @@ fn sourcepos_with_preceding_para_spaces_before_both() {
                 (text (2:3-2:5) "456")
             ])
             (table (3:2-5:10) [
-                (table_row (3:2-3:10) [
+                (table_header (3:2-3:10) [
                     (table_cell (3:3-3:5) [
                         (text (3:4-3:4) "a")
                     ])
@@ -410,7 +410,7 @@ fn sourcepos_with_preceding_para_mixed_line_endings() {
                 (text (1:1-1:2) "|-")
             ])
             (table (2:1-3:2) [
-                (table_row (2:1-2:1) [
+                (table_header (2:1-2:1) [
                     (table_cell (2:1-2:1) [
                         (text (2:1-2:1) "b")
                     ])
@@ -461,7 +461,7 @@ fn table_crlf() {
         ,
         (document (1:1-3:9) [
             (table (1:1-3:9) [
-                (table_row (1:1-1:9) [
+                (table_header (1:1-1:9) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
@@ -492,7 +492,7 @@ fn table_cr() {
         ,
         (document (1:1-3:9) [
             (table (1:1-3:9) [
-                (table_row (1:1-1:9) [
+                (table_header (1:1-1:9) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
@@ -522,7 +522,7 @@ fn table_no_body_no_eol_at_eof() {
         ,
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
@@ -543,7 +543,7 @@ fn table_with_trailing_para() {
         ,
         (document (1:1-4:2) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "a")
                     ])
@@ -567,7 +567,7 @@ fn table_with_trailing_para_and_leading_whitespace() {
         ,
         (document (1:1-4:3) [
             (table (1:3-2:7) [
-                (table_row (1:3-1:8) [
+                (table_header (1:3-1:8) [
                     (table_cell (1:4-1:7) [
                         (text (1:5-1:5) "a")
                     ])
@@ -590,7 +590,7 @@ fn table_missing_cell_sourcepos() {
         ,
         (document (1:1-3:3) [
             (table (1:1-3:3) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:2) [
                         (text (1:2-1:2) "a")
                     ])
@@ -620,7 +620,7 @@ fn table_missing_cell_with_text_sourcepos() {
         ,
         (document (1:1-3:4) [
             (table (1:1-3:4) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:2-1:2) [
                         (text (1:2-1:2) "a")
                     ])
@@ -651,7 +651,7 @@ fn table_missing_cells_sourcepos() {
         ,
         (document (1:1-3:3) [
             (table (1:1-3:3) [
-                (table_row (1:1-1:7) [
+                (table_header (1:1-1:7) [
                     (table_cell (1:2-1:2) [
                         (text (1:2-1:2) "a")
                     ])
@@ -685,7 +685,7 @@ fn table_missing_cells_without_trailing_pipe_sourcepos() {
         "z",
         (document (1:1-3:1) [
             (table (1:1-3:1) [
-                (table_row (1:1-1:5) [
+                (table_header (1:1-1:5) [
                     (table_cell (1:1-1:1) [
                         (text (1:1-1:1) "a")
                     ])
@@ -767,7 +767,7 @@ fn escaped_pipe_sourcepos() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:12) [
+                (table_header (1:1-1:12) [
                     (table_cell (1:2-1:11) [
                         (text (1:3-1:7) "a|b ")
                         (emph (1:8-1:10) [
@@ -785,7 +785,7 @@ fn escaped_pipe_sourcepos() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:10) [
+                (table_header (1:1-1:10) [
                     (table_cell (1:2-1:9) [
                         (code (1:3-1:8) "x|y")
                     ])
@@ -800,7 +800,7 @@ fn escaped_pipe_sourcepos() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:7) [
+                (table_header (1:1-1:7) [
                     (table_cell (1:2-1:6) [
                         (text (1:4-1:5) "|a")
                     ])
@@ -816,7 +816,7 @@ fn escaped_pipe_sourcepos() {
         "| é\\|f | g |\n",
         (document (1:1-3:13) [
             (table (1:1-3:13) [
-                (table_row (1:1-1:15) [
+                (table_header (1:1-1:15) [
                     (table_cell (1:2-1:10) [
                         (text (1:3-1:9) "a|b|c")
                     ])
@@ -845,7 +845,7 @@ fn escaped_pipe_sourcepos_before_autolink() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:19) [
+                (table_header (1:1-1:19) [
                     (table_cell (1:2-1:18) [
                         (text (1:3-1:7) "a|b ")
                         (link (1:8-1:15) "http://www.x.yz" [
@@ -867,7 +867,7 @@ fn escaped_pipe_sourcepos_after_email_autolink() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:21) [
+                (table_header (1:1-1:21) [
                     (table_cell (1:2-1:20) [
                         (link (1:3-1:8) "mailto:a@b.cd" [
                             (text (1:3-1:8) "a@b.cd")
@@ -892,7 +892,7 @@ fn escaped_pipe_sourcepos_in_unresolved_footnote() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:12) [
+                (table_header (1:1-1:12) [
                     (table_cell (1:2-1:11) [
                         (text (1:3-1:10) "?[^b|c]")
                     ])
@@ -907,7 +907,7 @@ fn escaped_pipe_sourcepos_in_unresolved_footnote() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:16) [
+                (table_header (1:1-1:16) [
                     (table_cell (1:2-1:15) [
                         (text (1:3-1:7) "[^a|")
                         (link (1:8-1:13) "mailto:b@c.de" [
@@ -935,7 +935,7 @@ fn escaped_pipe_sourcepos_after_tasklist_marker() {
                         (text (1:8-1:9) "|b")
                     ])
                     (table (2:3-3:7) [
-                        (table_row (2:3-2:7) [
+                        (table_header (2:3-2:7) [
                             (table_cell (2:4-2:6) [
                                 (text (2:5-2:5) "a")
                             ])
@@ -962,7 +962,7 @@ fn escaped_pipe_sourcepos_in_preface_paragraph() {
                 (text (2:3-2:6) "c|d")
             ])
             (table (3:1-4:5) [
-                (table_row (3:1-3:5) [
+                (table_header (3:1-3:5) [
                     (table_cell (3:2-3:4) [
                         (text (3:3-3:3) "h")
                     ])
@@ -980,7 +980,7 @@ fn escaped_pipe_sourcepos_at_inline_footnote_start() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:10) [
+                (table_header (1:1-1:10) [
                     (table_cell (1:2-1:9) [
                         (footnote_reference (1:3-1:8))
                     ])
@@ -1003,7 +1003,7 @@ fn escaped_pipe_sourcepos_before_inline_footnote() {
         "| - |\n",
         (document (1:1-2:5) [
             (table (1:1-2:5) [
-                (table_row (1:1-1:16) [
+                (table_header (1:1-1:16) [
                     (table_cell (1:2-1:15) [
                         (text (1:3-1:7) "a|b ")
                         (footnote_reference (1:8-1:14))
@@ -1016,5 +1016,99 @@ fn escaped_pipe_sourcepos_before_inline_footnote() {
                 ])
             ])
         ])
+    );
+}
+
+#[test]
+fn backslashes_pair_before_pipes() {
+    html_opts!(
+        [extension.table],
+        concat!(
+            "| a | b |\n",
+            "| - | - |\n",
+            "| c\\\\| d |\n",
+            "| e\\\\\\| f |\n",
+            "| g\\ | h\\\n",
+        ),
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "<th>b</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>c\\</td>\n",
+            "<td>d</td>\n",
+            "</tr>\n",
+            "<tr>\n",
+            "<td>e\\| f</td>\n",
+            "<td></td>\n",
+            "</tr>\n",
+            "<tr>\n",
+            "<td>g\\</td>\n",
+            "<td>h\\</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
+fn only_spaces_and_tabs_pad_cells() {
+    html_opts!(
+        [extension.table],
+        "| a |\n|\u{b}-\u{b}|\n",
+        "<p>| a |\n|\u{b}-\u{b}|</p>\n",
+    );
+    html_opts!(
+        [extension.table],
+        "| a |\n| - |\n|\u{c}b\u{c}|\n|\tc\t|\n",
+        concat!(
+            "<table>\n",
+            "<thead>\n",
+            "<tr>\n",
+            "<th>a</th>\n",
+            "</tr>\n",
+            "</thead>\n",
+            "<tbody>\n",
+            "<tr>\n",
+            "<td>\u{c}b\u{c}</td>\n",
+            "</tr>\n",
+            "<tr>\n",
+            "<td>c</td>\n",
+            "</tr>\n",
+            "</tbody>\n",
+            "</table>\n",
+        ),
+    );
+}
+
+#[test]
+fn xml_header_row() {
+    xml_opts(
+        "| a |\n| - |\n| b |\n",
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <table>\n",
+            "    <table_header>\n",
+            "      <table_cell>\n",
+            "        <text xml:space=\"preserve\">a</text>\n",
+            "      </table_cell>\n",
+            "    </table_header>\n",
+            "    <table_row>\n",
+            "      <table_cell>\n",
+            "        <text xml:space=\"preserve\">b</text>\n",
+            "      </table_cell>\n",
+            "    </table_row>\n",
+            "  </table>\n",
+            "</document>\n",
+        ),
+        |o| o.extension.table = true,
     );
 }

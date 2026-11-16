@@ -28,7 +28,7 @@ A [task list item marker](@) is a left bracket (`[`), followed by a [task list i
 
 A [task list item](@) is a [list item] whose first block is a [paragraph] that begins with a [task list item marker].  The marker must be followed by a [space], a [tab], a [soft line break], a [hard line break], or the end of the paragraph.
 
-A parser determines the document's [block structure](https://spec.commonmark.org/0.31.2/#blocks-and-inlines) and inline structure before it recognizes task list item markers.  The marker and the whitespace after it must be literal characters, and must not form part of any other inline construct.
+Comrak determines the document's [block structure](https://spec.commonmark.org/0.31.2/#blocks-and-inlines) and inline structure before it recognises task list item markers.  The marker and the whitespace after it must be literal characters, and must not form part of any other inline construct.
 
 A [task list item] is [incomplete](@) if the symbol in its marker is a [space], and [complete](@) otherwise:
 
@@ -268,7 +268,7 @@ Inline structure also comes first.  A [backslash escape] or an [entity reference
 </ul>
 ````````````````````````````````
 
-Only the marker at the beginning of the paragraph is recognized; anything after it is content:
+Only the marker at the beginning of the paragraph is recognised; anything after it is content:
 
 ```````````````````````````````` example -e tasklist
 - [ ] [x] foo
@@ -646,7 +646,7 @@ The marker must be the cell's only content.  None of these cells contain a check
 </table>
 ````````````````````````````````
 
-[Relaxed task list characters](#relaxed-task-list-character) are recognized in cells too:
+[Relaxed task list characters](#relaxed-task-list-character) are recognised in cells too:
 
 ```````````````````````````````` example -e table -e tasklist --tasklist-in-table --relaxed-tasklist-character
 |         | name |
@@ -758,18 +758,16 @@ With `--smart`, inline parsing transforms some punctuation.  Inline parsing come
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, recognizes task list items differently.  It matches the marker against the source line on which a list item's first block opens, before it parses that block's content.  The line must begin with an optional indent, a [list marker], whitespace, and a [task list item marker], followed by a [space] or [tab].  To decide whether the item is [complete], cmark-gfm searches the whole line for `[x]` or `[X]`.
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, recognises task list items differently.  It matches the marker against the source line on which a list item's first block opens, before it parses that block's content.  The line must begin with an optional indent, a [list marker], whitespace, and a [task list item marker], followed by a [space] or [tab].  To decide whether the item is [complete], cmark-gfm searches the whole line for `[x]` or `[X]`.
 
-Comrak recognizes the marker after it determines block and inline structure, as described in [Syntax](#syntax).  The two implementations agree on every example above except in these cases:
+Comrak recognises the marker after it determines block and inline structure, as described in [Syntax](#syntax).  cmark-gfm has no equivalent of the [options](#options) described above.  The two implementations agree on every other example above, except that cmark-gfm:
 
-- cmark-gfm requires a [space] or [tab] after the marker, on the same line.  It doesn't recognize a marker followed by a line break ([example 7](#example-7), [example 8](#example-8)), or a marker that makes up the whole paragraph ([example 9](#example-9), [example 28](#example-28), [example 29](#example-29)).
-- cmark-gfm requires the marker to be on the same line as the [list marker], and that line to begin with the list marker.  It doesn't recognize a first block that begins on the next line ([example 18](#example-18)), or a task list inside a [block quote] ([example 33](#example-33)).
-- cmark-gfm recognizes the marker before inline parsing, so the marker takes precedence over a shortcut reference link with a matching definition ([example 22](#example-22)).
-- cmark-gfm recognizes the marker before it sees a [setext heading] underline, so it produces a task list item that contains a heading ([example 17](#example-17)).
-- cmark-gfm removes all whitespace after the marker ([example 35](#example-35)).
-- cmark-gfm marks an item [complete] if `[x]` or `[X]` appears anywhere on its line, so `- [ ] see [x]` is complete ([example 24](#example-24)).
-
-cmark-gfm has no equivalent of the [options](#options) described above.
+- requires a [space] or [tab] after the marker, on the same line, and doesn't recognise a marker followed by a line break ([example 7](#example-7), [example 8](#example-8)) or a marker that makes up the whole paragraph ([example 9](#example-9), [example 28](#example-28), [example 29](#example-29));
+- requires the marker to be on the same line as the [list marker], and that line to begin with the list marker, which rules out a first block that begins on the next line ([example 18](#example-18)) and a task list inside a [block quote] ([example 33](#example-33));
+- recognises the marker before inline parsing, so the marker takes precedence over a shortcut reference link with a matching definition ([example 22](#example-22));
+- recognises the marker before it sees a [setext heading] underline, which yields a task list item that contains a heading ([example 17](#example-17));
+- removes all whitespace after the marker ([example 35](#example-35)); and,
+- marks an item [complete] if `[x]` or `[X]` appears anywhere on its line, so `- [ ] see [x]` is complete ([example 24](#example-24)).
 
 ## Regressions
 

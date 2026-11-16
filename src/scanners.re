@@ -398,12 +398,12 @@ pub fn ipv6_relaxed_url_start(s: &str) -> Option<usize> {
 /*!re2c
 
     table_spoiler = ['|']['|'];
-    table_spacechar = [ \t\v\f];
+    table_spacechar = [ \t];
     table_newline = ([\r][\n]|[\r\n]);
 
     table_delimiter = (table_spacechar*[:]?[-]+[:]?table_spacechar*);
-    table_cell = (escaped_char|[^\xff|\r\n])+;
-    table_cell_spoiler = (escaped_char|table_spoiler|[^\xff|\r\n])+;
+    table_cell = ([\\][^\xff\r\n]|[^\xff|\r\n\\])+ [\\]? | [\\];
+    table_cell_spoiler = ([\\][^\xff\r\n]|table_spoiler|[^\xff|\r\n\\])+ [\\]? | [\\];
 
 */
 

@@ -718,7 +718,7 @@ fn sourcepos_chars_table() {
         ,
         (document (1:1-3:15) [
             (table (1:1-3:15) [
-                (table_row (1:1-1:15) [
+                (table_header (1:1-1:15) [
                     (table_cell (1:2-1:7) [
                         (text (1:3-1:6) "𐀀")
                     ])
@@ -746,7 +746,7 @@ fn sourcepos_chars_table() {
         ,
         (document (1:1-3:9) [
             (table (1:1-3:9) [
-                (table_row (1:1-1:9) [
+                (table_header (1:1-1:9) [
                     (table_cell (1:2-1:4) [
                         (text (1:3-1:3) "𐀀")
                     ])
