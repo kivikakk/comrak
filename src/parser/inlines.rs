@@ -1681,7 +1681,15 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             && opener_byte == b'~'
             && (opener_num_bytes != closer_num_bytes || opener_num_bytes > 0)
         {
-            return None;
+            let next = closer.next.get();
+            let mut delim = closer;
+            while delim != opener {
+                let prev = delim.prev.get().unwrap();
+                self.remove_delimiter(delim);
+                delim = prev;
+            }
+            self.remove_delimiter(opener);
+            return next;
         }
 
         opener
