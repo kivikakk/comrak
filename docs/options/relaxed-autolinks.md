@@ -2,62 +2,40 @@
 title: Relaxed autolinks
 ---
 
+`--relaxed-autolinks` (`parse.relaxed_autolinks`) makes [autolinks](../extensions/autolink.html) more permissive.  Most importantly:
+
+* autolinks are recognised inside brackets;
+* a URL autolink may use any scheme; and,
+* a www autolink's domain needn't contain a period.
+
+The option has no effect unless autolinks are enabled.
+
+For the full rules, see [Relaxed autolinks](../extensions/autolink.html#relaxed-autolinks).
+
+Without the option, none of these are autolinks:
+
 ```````````````````````````````` example -e autolink
 [https://foo.com]
 
-[[https://foo.com]]
+irc://irc.freenode.net/git
 
-{https://foo.com}
+www.example
 .
 <p>[https://foo.com]</p>
-<p>[[https://foo.com]]</p>
-<p>{<a href="https://foo.com%7D">https://foo.com}</a></p>
+<p>irc://irc.freenode.net/git</p>
+<p>www.example</p>
 ````````````````````````````````
+
+With the option, they all are:
 
 ```````````````````````````````` example -e autolink --relaxed-autolinks
 [https://foo.com]
 
-[[https://foo.com]]
+irc://irc.freenode.net/git
 
-{https://foo.com}
+www.example
 .
 <p>[<a href="https://foo.com">https://foo.com</a>]</p>
-<p>[[<a href="https://foo.com">https://foo.com</a>]]</p>
-<p>{<a href="https://foo.com">https://foo.com</a>}</p>
-````````````````````````````````
-
-```````````````````````````````` example -e autolink
-smb:///Volumes/shared/foo.pdf
-
-irc://irc.freenode.net/git
-
-rdar://localhost.com/blah
-.
-<p>smb:///Volumes/shared/foo.pdf</p>
-<p>irc://irc.freenode.net/git</p>
-<p>rdar://localhost.com/blah</p>
-````````````````````````````````
-
-```````````````````````````````` example -e autolink --relaxed-autolinks
-smb:///Volumes/shared/foo.pdf
-
-irc://irc.freenode.net/git
-
-rdar://localhost.com/blah
-.
-<p><a href="smb:///Volumes/shared/foo.pdf">smb:///Volumes/shared/foo.pdf</a></p>
 <p><a href="irc://irc.freenode.net/git">irc://irc.freenode.net/git</a></p>
-<p><a href="rdar://localhost.com/blah">rdar://localhost.com/blah</a></p>
-````````````````````````````````
-
-```````````````````````````````` example -e autolink
-http://example.com/[abc]]...
-.
-<p><a href="http://example.com/%5Babc%5D%5D">http://example.com/[abc]]</a>...</p>
-````````````````````````````````
-
-```````````````````````````````` example -e autolink --relaxed-autolinks
-http://example.com/[abc]]...
-.
-<p><a href="http://example.com/%5Babc%5D">http://example.com/[abc]</a>]...</p>
+<p><a href="http://www.example">www.example</a></p>
 ````````````````````````````````

@@ -170,10 +170,7 @@ fn description(doc: &Doc) -> String {
         "combinations" => "",
         group => unreachable!("{group}"),
     };
-    format!(
-        "Documentation for Comrak's {}{thing}.",
-        doc.title,
-    )
+    format!("Documentation for Comrak's {}{thing}.", doc.title,)
 }
 
 fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error>> {

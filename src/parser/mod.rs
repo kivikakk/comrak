@@ -3054,7 +3054,7 @@ where
             return;
         }
 
-        if !spx.is_literal(end) {
+        if !spx.is_literal_at(0, end) {
             return;
         }
 
@@ -3412,17 +3412,22 @@ impl Spx {
         }
     }
 
-    fn is_literal(&self, mut len: usize) -> bool {
+    pub(crate) fn is_literal_at(&self, start: usize, len: usize) -> bool {
+        let end = start + len;
+        let mut pos = 0;
         for &(sp, x) in &self.items[self.front..] {
-            if sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x {
-                return false;
-            }
-            if len <= x {
+            if pos >= end {
                 return true;
             }
-            len -= x;
+            if pos + x > start
+                && (sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x)
+            {
+                return false;
+            }
+            pos += x;
         }
-        unreachable!()
+        assert!(pos >= end);
+        true
     }
 
     pub(crate) fn next_column(&self) -> Option<usize> {

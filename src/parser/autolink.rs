@@ -21,7 +21,9 @@ pub(crate) fn process_email_autolinks<'a>(
     cancellation: &Cancellation<'_>,
 ) {
     let Some((mut post, mut before_len, mut skip)) =
-        find_email_autolink(arena, contents, relaxed_autolinks)
+        find_email_autolink(arena, contents, relaxed_autolinks, |start, len| {
+            spx.is_literal_at(start, len)
+        })
     else {
         return;
     };
@@ -81,9 +83,12 @@ pub(crate) fn process_email_autolinks<'a>(
         )
             .into();
 
-        if let Some((next_post, next_before_len, next_skip)) =
-            find_email_autolink(arena, &original[offset..], relaxed_autolinks)
-        {
+        if let Some((next_post, next_before_len, next_skip)) = find_email_autolink(
+            arena,
+            &original[offset..],
+            relaxed_autolinks,
+            |start, len| spx.is_literal_at(start, len),
+        ) {
             post = next_post;
             before_len = next_before_len;
             skip = next_skip;
@@ -104,6 +109,7 @@ fn find_email_autolink<'a>(
     arena: &'a Arena<'a>,
     contents: &str,
     relaxed_autolinks: bool,
+    is_literal: impl Fn(usize, usize) -> bool,
 ) -> Option<(Node<'a>, usize, usize)> {
     static MATCHER: OnceLock<MemchrN> = OnceLock::new();
     static RELAXED_MATCHER: OnceLock<MemchrN> = OnceLock::new();
@@ -127,6 +133,7 @@ fn find_email_autolink<'a>(
                 if bracket_opening <= 0
                     && let Some((post, reverse, skip)) =
                         email_match(arena, contents, i, relaxed_autolinks)
+                    && is_literal(i - reverse, skip)
                 {
                     return Some((post, i - reverse, skip));
                 }
@@ -272,9 +279,7 @@ pub fn www_match<'a>(
         return None;
     }
 
-    // Skip over "www." for domain validation, but account for its length in the overall link
-    let mut link_end = check_domain(&subject.input[i + 4..], relaxed_autolinks)? + 4;
-
+    let mut link_end = 4;
     while i + link_end < subject.input.len() && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
         if relaxed_autolinks && bytes[i + link_end - 1] == b']' && bytes[i + link_end] == b'(' {
@@ -285,6 +290,13 @@ pub fn www_match<'a>(
     }
 
     link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
+
+    if !valid_domain(
+        &subject.input[i + 4..i + link_end.max(4)],
+        relaxed_autolinks,
+    ) {
+        return None;
+    }
 
     let mut url = "http://".to_string();
     url.push_str(&subject.input[i..link_end + i]);
@@ -308,14 +320,7 @@ pub fn www_match<'a>(
 
 const MAX_DOMAIN_DOTS: usize = 10;
 
-struct DomainScan {
-    end: usize,
-    dots: usize,
-    uscored_host: bool,
-}
-
-fn scan_domain(data: &str) -> DomainScan {
-    let mut end = 0;
+fn valid_domain(data: &str, allow_short: bool) -> bool {
     let mut dots = 0;
     let mut uscores = 0;
     let mut prev_uscores = 0;
@@ -330,33 +335,11 @@ fn scan_domain(data: &str) -> DomainScan {
                 dots += 1;
             }
             c if is_valid_hostchar(c) || c == '-' => {}
-            _ => {
-                end = i;
-                break;
-            }
+            _ => break,
         }
-        end = i + c.len_utf8();
     }
 
-    DomainScan {
-        end,
-        dots,
-        uscored_host: uscores > 0 || prev_uscores > 0,
-    }
-}
-
-fn check_domain(data: &str, allow_short: bool) -> Option<usize> {
-    let scan = scan_domain(data);
-
-    if scan.dots > MAX_DOMAIN_DOTS {
-        return Some(scan.end);
-    }
-
-    if scan.uscored_host {
-        return None;
-    }
-
-    (allow_short || scan.dots > 0).then_some(scan.end)
+    dots > MAX_DOMAIN_DOTS || (uscores == 0 && prev_uscores == 0 && (allow_short || dots > 0))
 }
 
 fn is_valid_hostchar(ch: char) -> bool {
@@ -480,8 +463,7 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = check_domain(&subject.input[i + 3..], true)? + 3;
-
+    let mut link_end = 3;
     while link_end < size - i && !isspace(bytes[i + link_end]) {
         // basic test to detect whether we're in a normal markdown link - not exhaustive
         if relaxed_autolinks
@@ -496,6 +478,10 @@ pub fn url_match<'a>(
     }
 
     link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
+
+    if !valid_domain(&subject.input[i + 3..i + link_end.max(3)], true) {
+        return None;
+    }
 
     let url = &subject.input[i - rewind..i + link_end];
     let inl = make_inline(
@@ -536,7 +522,7 @@ mod tests {
 
         for (contents, relaxed, expected) in cases {
             let arena = Arena::new();
-            let actual = find_email_autolink(&arena, contents, relaxed)
+            let actual = find_email_autolink(&arena, contents, relaxed, |_, _| true)
                 .map(|(_, before_len, skip)| (before_len, skip));
             assert_eq!(actual, expected, "{contents:?}, relaxed: {relaxed}");
         }
