@@ -18,7 +18,7 @@ use std::fmt::{self, Write};
 use std::str;
 use std::sync::OnceLock;
 
-use crate::adapters::HeadingMeta;
+use crate::adapters::{CodefenceMeta, HeadingMeta, SyntaxHighlightMeta};
 use crate::character_set::character_set;
 use crate::ctype::isspace;
 #[cfg(feature = "shortcodes")]
@@ -705,7 +705,10 @@ fn render_code_block<T>(
                 None
             };
 
-            adapter.write(context, lang, meta, &ncb.literal, sourcepos)?;
+            adapter.write(
+                context,
+                &CodefenceMeta::new(lang, meta, &ncb.literal, sourcepos),
+            )?;
             return Ok(ChildRendering::HTML);
         }
 
@@ -759,7 +762,10 @@ fn render_code_block<T>(
                     highlighter.write_pre_tag(context, pre_attributes)?;
                     highlighter.write_code_tag(context, code_attributes)?;
 
-                    highlighter.write_highlighted(context, Some(lang), &ncb.literal)?;
+                    highlighter.write_highlighted(
+                        context,
+                        &SyntaxHighlightMeta::new(Some(lang), &ncb.literal),
+                    )?;
 
                     context.write_str("</code></pre>")?;
                     context.lf()?
@@ -846,25 +852,23 @@ fn render_heading<T>(
             }
         }
         Some(adapter) => {
+            let sourcepos = if context.options.render.sourcepos {
+                Some(node.data().sourcepos)
+            } else {
+                None
+            };
             if entering {
-                let heading = HeadingMeta {
-                    level: nh.level,
-                    content: node.collect_text(),
-                };
+                let heading = HeadingMeta::new(nh.level, node.collect_text(), sourcepos);
 
                 context.cr()?;
-                let sp = if context.options.render.sourcepos {
-                    Some(node.data().sourcepos)
-                } else {
-                    None
-                };
-                adapter.enter(context, &heading, sp)?;
+                adapter.enter(context, &heading)?;
                 context.current_heading_text = Some(heading.content);
             } else {
-                let heading = HeadingMeta {
-                    level: nh.level,
-                    content: context.current_heading_text.take().unwrap(),
-                };
+                let heading = HeadingMeta::new(
+                    nh.level,
+                    context.current_heading_text.take().unwrap(),
+                    sourcepos,
+                );
                 adapter.exit(context, &heading)?;
             }
         }

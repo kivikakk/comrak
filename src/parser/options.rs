@@ -976,10 +976,10 @@ pub struct Parse<'c> {
     /// # use std::{str, sync::Arc};
     /// # use comrak::{markdown_to_html, options::BrokenLinkReference, Options, ResolvedReference};
     /// let cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
-    ///     "foo" => Some(ResolvedReference {
-    ///         url: "https://www.rust-lang.org/".to_string(),
-    ///         title: "The Rust Language".to_string(),
-    ///     }),
+    ///     "foo" => Some(ResolvedReference::new(
+    ///         "https://www.rust-lang.org/",
+    ///         "The Rust Language",
+    ///     )),
     ///     _ => None,
     /// };
     ///
@@ -1138,6 +1138,7 @@ where
 /// Struct to the broken link callback, containing details on the link reference
 /// which failed to find a match.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct BrokenLinkReference<'l> {
     /// The normalized reference link label. Unicode case folding is applied;
     /// see <https://github.com/commonmark/commonmark-spec/issues/695> for a
@@ -1606,7 +1607,7 @@ pub struct RenderPlugins<'p> {
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options, options::Plugins, markdown_to_html_with_plugins};
-    /// # use comrak::adapters::SyntaxHighlighterAdapter;
+    /// # use comrak::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
     /// use std::borrow::Cow;
     /// use std::collections::BTreeMap;
     /// use std::fmt::{self, Write};
@@ -1619,8 +1620,8 @@ pub struct RenderPlugins<'p> {
     ///
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {
-    ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, lang: Option<&str>, code: &str) -> fmt::Result {
-    ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
+    ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, highlight: &SyntaxHighlightMeta<'_>) -> fmt::Result {
+    ///         write!(output, "<span class=\"lang-{}\">{}</span>", highlight.lang.unwrap(), highlight.code)
     ///     }
     ///
     ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {

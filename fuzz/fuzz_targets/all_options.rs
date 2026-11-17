@@ -246,10 +246,10 @@ struct Input {
 fuzz_target!(|input: Input| {
     let url_rewriter = |input: &str| format!("{input}#rewritten");
     let broken_link_callback = |link_ref: options::BrokenLinkReference| {
-        Some(ResolvedReference {
-            url: link_ref.normalized.to_string(),
-            title: link_ref.original.to_string(),
-        })
+        Some(ResolvedReference::new(
+            link_ref.normalized,
+            link_ref.original,
+        ))
     };
 
     let s = &input.markdown;

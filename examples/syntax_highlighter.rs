@@ -1,6 +1,6 @@
 //! This example shows how to implement a syntax highlighter plugin.
 
-use comrak::adapters::SyntaxHighlighterAdapter;
+use comrak::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
 use comrak::{Options, markdown_to_html_with_plugins, options};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -21,9 +21,10 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
     fn write_highlighted(
         &self,
         output: &mut dyn Write,
-        lang: Option<&str>,
-        code: &str,
+        highlight: &SyntaxHighlightMeta<'_>,
     ) -> fmt::Result {
+        let lang = highlight.lang;
+        let code = highlight.code;
         write!(
             output,
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",

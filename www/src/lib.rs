@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 
 use clap::Parser;
-use comrak::adapters::SyntaxHighlighterAdapter;
+use comrak::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
 use comrak::cli::OptionArgs;
 use comrak::nodes::{NodeHtmlBlock, NodeValue};
 use comrak::options::{BrokenLinkReference, Plugins};
@@ -205,10 +205,9 @@ impl Doc {
         options.render.r#unsafe = true;
         options.parse.broken_link_callback = Some(Arc::new(|reference: BrokenLinkReference| {
             let slug = term_slug(reference.normalized);
-            self.terms.contains(&slug).then(|| ResolvedReference {
-                url: format!("#{slug}"),
-                title: String::new(),
-            })
+            self.terms
+                .contains(&slug)
+                .then(|| ResolvedReference::new(format!("#{slug}"), String::new()))
         }));
 
         let arena = Arena::new();
@@ -429,7 +428,7 @@ fn pre(code: &str) -> String {
 fn highlight(lang: &str, code: &str) -> String {
     let mut out = String::new();
     HIGHLIGHTER
-        .write_highlighted(&mut out, Some(lang), code)
+        .write_highlighted(&mut out, &SyntaxHighlightMeta::new(Some(lang), code))
         .unwrap();
     out
 }

@@ -300,12 +300,23 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
 
 /// A reference link's resolved details.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct ResolvedReference {
     /// The destination URL of the reference link.
     pub url: String,
 
     /// The text of the link.
     pub title: String,
+}
+
+impl ResolvedReference {
+    /// Create a new `ResolvedReference` with the given URL and title.
+    pub fn new(url: impl Into<String>, title: impl Into<String>) -> Self {
+        ResolvedReference {
+            url: url.into(),
+            title: title.into(),
+        }
+    }
 }
 
 struct FootnoteDefinition<'a> {
