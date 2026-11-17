@@ -1065,6 +1065,7 @@ impl NodeCallout {
 
 /// The type of alert.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum AlertType {
     /// Useful information that users should know, even when skimming content
     #[default]
@@ -1569,9 +1570,11 @@ impl From<Ast> for AstNode<'_> {
 
 /// Validation errors produced by [arena_tree::Node::validate].
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ValidationError<'a> {
     /// The type of a child node is not allowed in the parent node. This can happen when an inline
     /// node is found in a block container, a block is found in an inline node, etc.
+    #[non_exhaustive]
     InvalidChildType {
         /// The parent node.
         parent: Node<'a>,

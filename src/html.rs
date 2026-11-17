@@ -71,6 +71,7 @@ pub fn format_document_with_plugins(
 /// subtree in CommonMark — there are probably few other use cases for "plain"
 /// mode), or whether they should be skipped.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum ChildRendering {
     /// Indicates children should be rendered in full HTML as usual.
     HTML,

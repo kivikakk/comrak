@@ -1570,6 +1570,7 @@ pub enum ListStyleType {
 #[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for alert rendering in markdown. See [`Render::alert_style`] for more details.
+#[non_exhaustive]
 pub enum AlertStyleType {
     /// `div`s with `class="markdown-alert markdown-alert-<type>"`
     #[default]

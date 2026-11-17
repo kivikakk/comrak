@@ -1,5 +1,6 @@
 /// Represents the type of Phoenix HEEx node.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum HeexNode {
     /// A directive like `<% %>` or `<%= %>`.
     Directive,
