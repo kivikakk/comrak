@@ -79,7 +79,11 @@ fn syntax_highlighter_tags_receive_meta() {
             highlight: &SyntaxHighlightMeta<'_>,
             _attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
-            write!(output, "<pre data-pre=\"{}\">", highlight.lang)
+            write!(
+                output,
+                "<pre data-pre=\"{}|{}\">",
+                highlight.lang, highlight.meta
+            )
         }
 
         fn write_code_tag(
@@ -97,7 +101,7 @@ fn syntax_highlighter_tags_receive_meta() {
 
     html_plugins(
         concat!("``` rust yum\n", "x\n", "```\n"),
-        "<pre data-pre=\"rust\"><code data-code=\"rust\">x\n</code></pre>\n",
+        "<pre data-pre=\"rust|yum\"><code data-code=\"rust\">x\n</code></pre>\n",
         &plugins,
     );
 }

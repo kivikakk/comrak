@@ -82,14 +82,17 @@ pub struct SyntaxHighlightMeta<'a> {
     /// Name of the programming language (the first token of the info string).
     pub lang: &'a str,
 
+    /// The remaining info string after the language token, trimmed.
+    pub meta: &'a str,
+
     /// The source code to be syntax highlighted.
     pub code: &'a str,
 }
 
 impl<'a> SyntaxHighlightMeta<'a> {
     /// Create a new `SyntaxHighlightMeta`.
-    pub fn new(lang: &'a str, code: &'a str) -> Self {
-        SyntaxHighlightMeta { lang, code }
+    pub fn new(lang: &'a str, meta: &'a str, code: &'a str) -> Self {
+        SyntaxHighlightMeta { lang, meta, code }
     }
 }
 

@@ -428,7 +428,7 @@ fn pre(code: &str) -> String {
 fn highlight(lang: &str, code: &str) -> String {
     let mut out = String::new();
     HIGHLIGHTER
-        .write_highlighted(&mut out, &SyntaxHighlightMeta::new(lang, code))
+        .write_highlighted(&mut out, &SyntaxHighlightMeta::new(lang, "", code))
         .unwrap();
     out
 }

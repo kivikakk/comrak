@@ -36,8 +36,9 @@ impl core::panic::unwind_safe::UnwindSafe for comrak::adapters::HeadingMeta
 #[non_exhaustive] pub struct comrak::adapters::SyntaxHighlightMeta<'a>
 pub comrak::adapters::SyntaxHighlightMeta::code: &'a str
 pub comrak::adapters::SyntaxHighlightMeta::lang: &'a str
+pub comrak::adapters::SyntaxHighlightMeta::meta: &'a str
 impl<'a> comrak::adapters::SyntaxHighlightMeta<'a>
-pub fn comrak::adapters::SyntaxHighlightMeta<'a>::new(lang: &'a str, code: &'a str) -> Self
+pub fn comrak::adapters::SyntaxHighlightMeta<'a>::new(lang: &'a str, meta: &'a str, code: &'a str) -> Self
 impl<'a> core::clone::Clone for comrak::adapters::SyntaxHighlightMeta<'a>
 pub fn comrak::adapters::SyntaxHighlightMeta<'a>::clone(&self) -> comrak::adapters::SyntaxHighlightMeta<'a>
 impl<'a> core::fmt::Debug for comrak::adapters::SyntaxHighlightMeta<'a>

@@ -759,7 +759,7 @@ fn render_code_block<T>(
                     context.lf()?
                 }
                 Some(highlighter) => {
-                    let highlight = SyntaxHighlightMeta::new(lang, &ncb.literal);
+                    let highlight = SyntaxHighlightMeta::new(lang, meta, &ncb.literal);
                     highlighter.write_pre_tag(context, &highlight, pre_attributes)?;
                     highlighter.write_code_tag(context, &highlight, code_attributes)?;
                     highlighter.write_highlighted(context, &highlight)?;
