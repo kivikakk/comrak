@@ -1618,7 +1618,7 @@ pub struct RenderPlugins<'p> {
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {
     ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, highlight: &SyntaxHighlightMeta<'_>) -> fmt::Result {
-    ///         write!(output, "<span class=\"lang-{}\">{}</span>", highlight.lang.unwrap(), highlight.code)
+    ///         write!(output, "<span class=\"lang-{}\">{}</span>", highlight.lang, highlight.code)
     ///     }
     ///
     ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {

@@ -28,9 +28,7 @@ impl SyntaxHighlighterAdapter for PotatoSyntaxAdapter {
         write!(
             output,
             "<span class=\"potato-{}\">{}</span><span class=\"size-{}\">potato</span>",
-            lang.unwrap(),
-            code,
-            self.potato_size
+            lang, code, self.potato_size
         )
     }
 

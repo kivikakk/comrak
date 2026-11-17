@@ -20,7 +20,7 @@ fn syntax_highlighter_plugin() {
         ) -> std::fmt::Result {
             let lang = highlight.lang;
             let code = highlight.code;
-            write!(output, "<!--{}--><span>{}</span>", lang.unwrap(), code)
+            write!(output, "<!--{}--><span>{}</span>", lang, code)
         }
 
         fn write_pre_tag(
@@ -51,6 +51,11 @@ fn syntax_highlighter_plugin() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+    html_plugins(
+        concat!("```\n", "plain\n", "```\n"),
+        "<pre><code><!----><span>plain\n</span></code></pre>\n",
+        &plugins,
+    );
 }
 
 #[test]
@@ -207,7 +212,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         ) -> std::fmt::Result {
             let lang = highlight.lang;
             let code = highlight.code;
-            write!(output, "<!--{}--><span>{code}</span>", lang.unwrap())
+            write!(output, "<!--{}--><span>{code}</span>", lang)
         }
 
         fn write_pre_tag(

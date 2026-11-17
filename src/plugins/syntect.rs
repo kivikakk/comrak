@@ -85,9 +85,9 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
         let code = highlight.code;
         let fallback_syntax = "Plain Text";
 
-        let lang: &str = match highlight.lang {
-            Some(l) if !l.is_empty() => l.split_once(',').map(|(left, _)| left).unwrap_or(l),
-            _ => fallback_syntax,
+        let lang = match highlight.lang {
+            "" => fallback_syntax,
+            l => l.split_once(',').map(|(left, _)| left).unwrap_or(l),
         };
 
         let syntax = self

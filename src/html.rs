@@ -764,7 +764,7 @@ fn render_code_block<T>(
 
                     highlighter.write_highlighted(
                         context,
-                        &SyntaxHighlightMeta::new(Some(lang), &ncb.literal),
+                        &SyntaxHighlightMeta::new(lang, &ncb.literal),
                     )?;
 
                     context.write_str("</code></pre>")?;
