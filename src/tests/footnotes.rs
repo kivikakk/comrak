@@ -230,6 +230,34 @@ fn footnote_name_parsed_into_multiple_nodes() {
 }
 
 #[test]
+fn footnote_reference_texts_hold_source_label() {
+    let mut options = Options::default();
+    options.extension.footnotes = true;
+
+    let arena = Arena::new();
+    let root = parse_document(
+        &arena,
+        "Foo.[^_ab] and [^&#97;].\n\n[^_ab]: x\n[^&#97;]: y\n",
+        &options,
+    );
+
+    let texts: Vec<_> = root
+        .descendants()
+        .filter_map(|n| match n.data().value {
+            NodeValue::FootnoteReference(ref nfr) => Some(nfr.texts.clone()),
+            _ => None,
+        })
+        .collect();
+    std::assert_eq!(
+        texts,
+        [
+            vec![("^_ab".to_string(), 4)],
+            vec![("^&#97;".to_string(), 6)]
+        ]
+    );
+}
+
+#[test]
 fn footnote_invalid_with_missing_name() {
     html_opts!(
         [extension.footnotes],
@@ -422,5 +450,37 @@ fn footnote_definition_nested_in_definition() {
             "</ol>\n",
             "</section>\n",
         ),
+    );
+}
+
+#[test]
+fn footnote_label_matches_raw_source() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^&#97;] B[^`b`].\n",
+            "\n",
+            "[^a]: plain\n",
+            "[^`b`]: code\n",
+        ),
+        concat!(
+            "<p>A[^a] B<sup class=\"footnote-ref\"><a href=\"#fn-%60b%60\" id=\"fnref-%60b%60\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-%60b%60\">\n",
+            "<p>code <a href=\"#fnref-%60b%60\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_unmatched_label_keeps_inlines() {
+    html_opts!(
+        [extension.footnotes],
+        "A[^*b*] and [^c&amp;].\n",
+        "<p>A[^<em>b</em>] and [^c&amp;].</p>\n",
     );
 }
