@@ -278,47 +278,47 @@ use of a sanitisation library like [`ammonia`](https://github.com/notriddle/ammo
 ## Extensions
 
 Comrak supports four (!) of the five extensions to CommonMark defined in the
-[GitHub Flavored Markdown Spec](https://github.github.com/gfm/):
+[GitHub Flavored Markdown Spec](https://github.github.com/gfm/), and have
+written up our own specs for them in the spirit of CommonMark:
 
-- [Tables](https://github.github.com/gfm/#tables-extension-)
-- [Task list items](https://github.github.com/gfm/#task-list-items-extension-)
-- [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-)
-- [Autolinks](https://github.github.com/gfm/#autolinks-extension-)
+- [Autolinks](https://comrak.ee/extensions/autolink.html) ([GFM](https://github.github.com/gfm/#autolinks-extension-))
+- [Strikethrough](https://comrak.ee/extensions/strikethrough.html) ([GFM](https://github.github.com/gfm/#strikethrough-extension-))
+- [Tables](https://comrak.ee/extensions/table.html) ([GFM](https://github.github.com/gfm/#tables-extension-))
+- [Task lists](https://comrak.ee/extensions/tasklist.html) ([GFM](https://github.github.com/gfm/#task-list-items-extension-))
 
-We [deprecated](https://github.com/kivikakk/comrak/pull/830) the
+We removed the
 [Disallowed Raw HTML](https://github.github.com/gfm/#disallowed-raw-html-extension-)
-(a.k.a. `tagfilter`) extension in Comrak 0.55.0, and
-[removed](https://github.com/kivikakk/comrak/pull/845) it in Comrak 0.56.0. It is poorly
-designed, specific to GitHub's CommonMark transition of 2017, and should not be used.
+(a.k.a. `tagfilter`) extension in Comrak 0.56.0  It is poorly designed, specific
+to GitHub's CommonMark transition of 2017, and should not be used.
 
-Comrak additionally supports its own extensions, which are yet to be specced out (PRs welcome!):
+Comrak additionally supports its own extensions, which are in the process of being specced out ([join the effort!](https://github.com/kivikakk/comrak/issues/924)):
 
-- Superscript
-- Subscript
-- Header IDs
-- Footnotes
-- Inline footnotes
-- Description lists
-- Front matter
-- Multi-line blockquotes
-- Math
-- Emoji shortcodes
-- Wikilinks
-- Underline
-- Spoiler text
-- "Greentext"
 - Alerts
-- [CJK friendly emphasis](https://github.com/tats-u/markdown-cjk-friendly)
-- Subtext
-- Highlight
-- Insert
-- Block directives
-- Obsidian callouts
-- Obsidian comments
-- Obsidian block IDs
-- Phoenix HEEx
 - Attributes
-- Grid tables
+- Block directives
+- CJK friendly emphasis ([`tats-u/markdown-cjk-friendly`](https://github.com/tats-u/markdown-cjk-friendly))
+- Description lists
+- Emoji shortcodes
+- Footnotes
+- Front matter
+- Greentext
+- Header IDs
+- Highlight
+- Inline footnotes
+- Insert
+- Math
+- Multi-line blockquotes
+- Obsidian block IDs
+- Obsidian callouts
+- [Obsidian comments](https://comrak.ee/extensions/ofm-comments.html)
+- Phoenix HEEx
+- Spoiler text
+- Subscript
+- Subtext
+- Superscript
+- Underline
+- Wikilinks
+- [Grid tables](https://comrak.ee/extensions/grid-table.html)
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`options::Extension` struct](https://docs.rs/comrak/latest/comrak/options/struct.Extension.html).
