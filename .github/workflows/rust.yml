@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   MSRV: "1.89"
+  API_NIGHTLY: nightly-2026-01-16
 
 jobs:
   build_lib_test:
@@ -113,6 +114,26 @@ jobs:
       run: rustup override set ${{ matrix.rust }}
     - name: Build and test with all features
       run: cargo test --locked --all-features
+  public_api:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+    - name: Obtain Rust
+      run: rustup toolchain install $API_NIGHTLY --profile minimal
+    - name: Install cargo-public-api
+      run: cargo +$API_NIGHTLY install cargo-public-api --version 0.51.0 --locked
+    - name: Check public API snapshot
+      run: cargo +$API_NIGHTLY public-api --all-features -s | diff -u public-api.txt -
+  semver_checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+    - name: Obtain Rust
+      run: rustup toolchain install $API_NIGHTLY --profile minimal
+    - name: Install cargo-semver-checks
+      run: cargo +$API_NIGHTLY install cargo-semver-checks --version 0.47.0 --locked
+    - name: Check semver against the latest release
+      run: cargo +$API_NIGHTLY semver-checks
   clippy_format:
     runs-on: ubuntu-latest
     steps:

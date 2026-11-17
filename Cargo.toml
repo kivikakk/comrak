@@ -17,6 +17,7 @@ exclude = [
     "/.travis.yml",
     "/Makefile",
     "/spec_out.txt",
+    "/public-api.txt",
 ]
 resolver = "3"
 edition = "2024"

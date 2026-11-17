@@ -9,6 +9,9 @@ src/scanners.rs: src/scanners.re
 FUZZ_JOBS:=6
 FUZZ_ARGS:=
 
+public-api:
+	cargo public-api --all-features -s > ${ROOT}/public-api.txt
+
 fuzz-sourcepos:
 	cd ${ROOT}/fuzz && \
 	cargo fuzz run -j${FUZZ_JOBS} --sanitizer none sourcepos -- -dict=${ROOT}/fuzz/sourcepos.dict ${FUZZ_ARGS}

@@ -92,6 +92,8 @@
                 cargo-flamegraph
                 cargo-tarpaulin
                 cargo-audit
+                cargo-semver-checks
+                cargo-public-api
                 samply
                 python3
                 hyperfine
