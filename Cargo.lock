@@ -314,7 +314,7 @@ dependencies = [
 
 [[package]]
 name = "comrak"
-version = "1.0.0-rc.2"
+version = "1.0.0"
 dependencies = [
  "arbitrary",
  "bon",
