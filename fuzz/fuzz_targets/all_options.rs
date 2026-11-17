@@ -10,241 +10,20 @@ use comrak::{
 };
 
 #[derive(Arbitrary, Debug)]
-struct FuzzOptions {
-    extension: FuzzExtensionOptions,
-    parse: FuzzParseOptions,
-    render: FuzzRenderOptions,
-}
-
-impl FuzzOptions {
-    fn to_options<'c>(
-        &self,
-        url_rewriter: Arc<dyn options::URLRewriter + 'c>,
-        broken_link_callback: Arc<dyn options::BrokenLinkCallback + 'c>,
-    ) -> Options<'c> {
-        Options::builder()
-            .extension(self.extension.to_options(url_rewriter))
-            .parse(self.parse.to_options(broken_link_callback))
-            .render(self.render.to_options())
-            .build()
-    }
-}
-
-#[derive(Arbitrary, Debug)]
-struct FuzzExtensionOptions {
-    strikethrough: bool,
-    table: bool,
-    grid_table: bool,
-    autolink: bool,
-    tasklist: bool,
-    superscript: bool,
-    footnotes: bool,
-    description_lists: bool,
-    multiline_block_quotes: bool,
-    math_dollars: bool,
-    math_dollars_block: bool,
-    math_code: bool,
-    shortcodes: bool,
-    wikilinks_title_after_pipe: bool,
-    wikilinks_title_before_pipe: bool,
-    wikilinks_ignore_embeds: bool,
-    underline: bool,
-    spoiler: bool,
-    greentext: bool,
-    ofm_comments: bool,
-    ofm_block_ids: bool,
-    alerts: bool,
-    ofm_callouts: bool,
-    inline_footnotes: bool,
-    subscript: bool,
-    subtext: bool,
-    cjk_friendly_emphasis: bool,
-    highlight: bool,
-    block_directive: bool,
-    phoenix_heex: bool,
-    insert: bool,
-    header_id_prefix_in_href: bool,
-    header_attributes: bool,
-    fenced_code_attributes: bool,
-    inline_code_attributes: bool,
-    link_attributes: bool,
-    math_latex: bool,
-    // non-bool below
+struct Input<'a> {
+    options: Options<'a>,
     header_id_prefix: bool,
     front_matter_delimiter: bool,
     image_url_rewriter: bool,
     link_url_rewriter: bool,
-}
-
-impl FuzzExtensionOptions {
-    fn to_options<'c>(
-        &self,
-        url_rewriter: Arc<dyn options::URLRewriter + 'c>,
-    ) -> options::Extension<'c> {
-        options::Extension::builder()
-            .strikethrough(self.strikethrough)
-            .table(self.table)
-            .grid_table(self.grid_table)
-            .autolink(self.autolink)
-            .tasklist(self.tasklist)
-            .superscript(self.superscript)
-            .footnotes(self.footnotes)
-            .inline_footnotes(self.inline_footnotes)
-            .description_lists(self.description_lists)
-            .multiline_block_quotes(self.multiline_block_quotes)
-            .math_dollars(self.math_dollars)
-            .math_dollars_block(self.math_dollars_block)
-            .math_code(self.math_code)
-            .shortcodes(self.shortcodes)
-            .wikilinks_title_after_pipe(self.wikilinks_title_after_pipe)
-            .wikilinks_title_before_pipe(self.wikilinks_title_before_pipe)
-            .wikilinks_ignore_embeds(self.wikilinks_ignore_embeds)
-            .underline(self.underline)
-            .spoiler(self.spoiler)
-            .greentext(self.greentext)
-            .ofm_comments(self.ofm_comments)
-            .ofm_block_ids(self.ofm_block_ids)
-            .alerts(self.alerts)
-            .ofm_callouts(self.ofm_callouts)
-            .subscript(self.subscript)
-            .subtext(self.subtext)
-            .cjk_friendly_emphasis(self.cjk_friendly_emphasis)
-            .highlight(self.highlight)
-            .block_directive(self.block_directive)
-            .phoenix_heex(self.phoenix_heex)
-            .insert(self.insert)
-            .header_id_prefix_in_href(self.header_id_prefix_in_href)
-            .header_attributes(self.header_attributes)
-            .fenced_code_attributes(self.fenced_code_attributes)
-            .inline_code_attributes(self.inline_code_attributes)
-            .link_attributes(self.link_attributes)
-            .math_latex(self.math_latex)
-            // non-bool below
-            .maybe_header_id_prefix(if self.header_id_prefix {
-                Some("user-content-".into())
-            } else {
-                None
-            })
-            .maybe_front_matter_delimiter(if self.front_matter_delimiter {
-                Some("---".into())
-            } else {
-                None
-            })
-            .maybe_image_url_rewriter(if self.image_url_rewriter {
-                Some(url_rewriter.clone())
-            } else {
-                None
-            })
-            .maybe_link_url_rewriter(if self.link_url_rewriter {
-                Some(url_rewriter)
-            } else {
-                None
-            })
-            .build()
-    }
-}
-
-#[derive(Arbitrary, Debug)]
-struct FuzzParseOptions {
-    smart: bool,
-    relaxed_tasklist_matching: bool,
-    relaxed_autolinks: bool,
-    ignore_setext: bool,
-    tasklist_in_table: bool,
-    leave_footnote_definitions: bool,
     default_info_string: bool,
     broken_link_callback: bool,
-    escaped_char_spans: bool,
-    sourcepos_chars: bool,
-}
-
-impl FuzzParseOptions {
-    fn to_options<'c>(
-        &self,
-        broken_link_callback: Arc<dyn options::BrokenLinkCallback + 'c>,
-    ) -> options::Parse<'c> {
-        options::Parse::builder()
-            .smart(self.smart)
-            .relaxed_tasklist_matching(self.relaxed_tasklist_matching)
-            .relaxed_autolinks(self.relaxed_autolinks)
-            .ignore_setext(self.ignore_setext)
-            .tasklist_in_table(self.tasklist_in_table)
-            .leave_footnote_definitions(self.leave_footnote_definitions)
-            .maybe_default_info_string(if self.default_info_string {
-                Some("rust".into())
-            } else {
-                None
-            })
-            .maybe_broken_link_callback(if self.broken_link_callback {
-                Some(broken_link_callback)
-            } else {
-                None
-            })
-            .escaped_char_spans(self.escaped_char_spans)
-            .sourcepos_chars(self.sourcepos_chars)
-            .build()
-    }
-}
-
-#[derive(Arbitrary, Debug)]
-struct FuzzRenderOptions {
-    hardbreaks: bool,
-    github_pre_lang: bool,
-    full_info_string: bool,
-    width: usize,
-    r#unsafe: bool,
-    escape: bool,
-    list_style: options::ListStyleType,
-    alert_style: options::AlertStyleType,
-    sourcepos: bool,
-    escaped_char_spans: bool,
-    ignore_empty_links: bool,
-    gfm_quirks: bool,
-    prefer_fenced: bool,
-    figure_with_caption: bool,
-    tasklist_classes: bool,
-    ol_width: usize,
-    experimental_minimize_commonmark: bool,
-    compact_html: bool,
-    attributes: bool,
-    grid_table_widths: bool,
-}
-
-impl FuzzRenderOptions {
-    fn to_options(&self) -> options::Render {
-        options::Render::builder()
-            .hardbreaks(self.hardbreaks)
-            .github_pre_lang(self.github_pre_lang)
-            .full_info_string(self.full_info_string)
-            .width(self.width)
-            .r#unsafe(self.r#unsafe)
-            .escape(self.escape)
-            .list_style(self.list_style)
-            .alert_style(self.alert_style)
-            .sourcepos(self.sourcepos)
-            .escaped_char_spans(self.escaped_char_spans)
-            .ignore_empty_links(self.ignore_empty_links)
-            .gfm_quirks(self.gfm_quirks)
-            .prefer_fenced(self.prefer_fenced)
-            .figure_with_caption(self.figure_with_caption)
-            .tasklist_classes(self.tasklist_classes)
-            .ol_width(self.ol_width)
-            .experimental_minimize_commonmark(self.experimental_minimize_commonmark)
-            .compact_html(self.compact_html)
-            .attributes(self.attributes)
-            .grid_table_widths(self.grid_table_widths)
-            .build()
-    }
-}
-
-#[derive(Arbitrary, Debug)]
-struct Input {
-    options: FuzzOptions,
     markdown: String,
 }
 
 fuzz_target!(|input: Input| {
-    let url_rewriter = |input: &str| format!("{input}#rewritten");
+    let url_rewriter: Arc<dyn options::URLRewriter> =
+        Arc::new(|input: &str| format!("{input}#rewritten"));
     let broken_link_callback = |link_ref: options::BrokenLinkReference| {
         Some(ResolvedReference::new(
             link_ref.normalized,
@@ -252,11 +31,17 @@ fuzz_target!(|input: Input| {
         ))
     };
 
-    let s = &input.markdown;
-    let options = input
-        .options
-        .to_options(Arc::new(url_rewriter), Arc::new(broken_link_callback));
+    let mut options = input.options;
+    options.extension.header_id_prefix = input.header_id_prefix.then(|| "user-content-".into());
+    options.extension.front_matter_delimiter = input.front_matter_delimiter.then(|| "---".into());
+    options.extension.image_url_rewriter = input.image_url_rewriter.then(|| url_rewriter.clone());
+    options.extension.link_url_rewriter = input.link_url_rewriter.then(|| url_rewriter);
+    options.parse.default_info_string = input.default_info_string.then(|| "rust".into());
+    options.parse.broken_link_callback = input
+        .broken_link_callback
+        .then(|| Arc::new(broken_link_callback) as Arc<dyn options::BrokenLinkCallback>);
 
+    let s = &input.markdown;
     let _ = markdown_to_html(s, &options);
     let _ = markdown_to_commonmark(s, &options);
     let _ = markdown_to_commonmark_xml(s, &options);
