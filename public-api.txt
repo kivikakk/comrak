@@ -54,13 +54,13 @@ pub trait comrak::adapters::HeadingAdapter: core::marker::Send + core::marker::S
 pub fn comrak::adapters::HeadingAdapter::enter(&self, output: &mut dyn core::fmt::Write, heading: &comrak::adapters::HeadingMeta) -> core::fmt::Result
 pub fn comrak::adapters::HeadingAdapter::exit(&self, output: &mut dyn core::fmt::Write, heading: &comrak::adapters::HeadingMeta) -> core::fmt::Result
 pub trait comrak::adapters::SyntaxHighlighterAdapter: core::marker::Send + core::marker::Sync
-pub fn comrak::adapters::SyntaxHighlighterAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::adapters::SyntaxHighlighterAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 pub fn comrak::adapters::SyntaxHighlighterAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
-pub fn comrak::adapters::SyntaxHighlighterAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::adapters::SyntaxHighlighterAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 impl comrak::adapters::SyntaxHighlighterAdapter for comrak::plugins::syntect::SyntectAdapter
-pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 pub fn comrak::plugins::syntect::SyntectAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
-pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 pub mod comrak::arena_tree
 pub enum comrak::arena_tree::NodeEdge<T>
 pub comrak::arena_tree::NodeEdge::End(T)
@@ -1714,9 +1714,9 @@ pub struct comrak::plugins::syntect::SyntectAdapter
 impl comrak::plugins::syntect::SyntectAdapter
 pub fn comrak::plugins::syntect::SyntectAdapter::new(theme: core::option::Option<&str>) -> Self
 impl comrak::adapters::SyntaxHighlighterAdapter for comrak::plugins::syntect::SyntectAdapter
-pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 pub fn comrak::plugins::syntect::SyntectAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
-pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
 impl core::fmt::Debug for comrak::plugins::syntect::SyntectAdapter
 pub fn comrak::plugins::syntect::SyntectAdapter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl !core::marker::Freeze for comrak::plugins::syntect::SyntectAdapter

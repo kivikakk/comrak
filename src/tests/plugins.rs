@@ -26,6 +26,7 @@ fn syntax_highlighter_plugin() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -34,6 +35,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
@@ -54,6 +56,48 @@ fn syntax_highlighter_plugin() {
     html_plugins(
         concat!("```\n", "plain\n", "```\n"),
         "<pre><code><!----><span>plain\n</span></code></pre>\n",
+        &plugins,
+    );
+}
+
+#[test]
+fn syntax_highlighter_tags_receive_meta() {
+    struct MockAdapter;
+
+    impl SyntaxHighlighterAdapter for MockAdapter {
+        fn write_highlighted(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+        ) -> std::fmt::Result {
+            output.write_str(highlight.code)
+        }
+
+        fn write_pre_tag(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+            _attributes: BTreeMap<&str, Cow<str>>,
+        ) -> std::fmt::Result {
+            write!(output, "<pre data-pre=\"{}\">", highlight.lang)
+        }
+
+        fn write_code_tag(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+            _attributes: BTreeMap<&str, Cow<str>>,
+        ) -> std::fmt::Result {
+            write!(output, "<code data-code=\"{}\">", highlight.lang)
+        }
+    }
+
+    let mut plugins = options::Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&MockAdapter);
+
+    html_plugins(
+        concat!("``` rust yum\n", "x\n", "```\n"),
+        "<pre data-pre=\"rust\"><code data-code=\"rust\">x\n</code></pre>\n",
         &plugins,
     );
 }
@@ -120,6 +164,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -128,6 +173,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
@@ -218,6 +264,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -226,6 +273,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)

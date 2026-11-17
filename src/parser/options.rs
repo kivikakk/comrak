@@ -1621,11 +1621,11 @@ pub struct RenderPlugins<'p> {
     ///         write!(output, "<span class=\"lang-{}\">{}</span>", highlight.lang, highlight.code)
     ///     }
     ///
-    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _highlight: &SyntaxHighlightMeta<'_>, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _highlight: &SyntaxHighlightMeta<'_>, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }

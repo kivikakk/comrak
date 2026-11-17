@@ -108,6 +108,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
+        _highlight: &SyntaxHighlightMeta<'_>,
         mut attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         match &self.theme {
@@ -145,6 +146,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
+        _highlight: &SyntaxHighlightMeta<'_>,
         attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)

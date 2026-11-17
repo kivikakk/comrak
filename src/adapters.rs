@@ -59,6 +59,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_pre_tag(
         &self,
         output: &mut dyn fmt::Write,
+        highlight: &SyntaxHighlightMeta<'_>,
         attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result;
 
@@ -69,6 +70,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
     fn write_code_tag(
         &self,
         output: &mut dyn fmt::Write,
+        highlight: &SyntaxHighlightMeta<'_>,
         attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result;
 }
