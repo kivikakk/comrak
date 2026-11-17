@@ -17,6 +17,116 @@ Behind the scenes:
 
 -->
 
+# [v1.0.0] - 2026-11-17
+
+Ten years ago today, we find 280de0d358:
+
+```
+commit 280de0d358d6f0b26bab4954f52b5cc73261ee79
+Author: Yuki Izumi <kivikakk@github.com>
+Date:   Thu Nov 17 14:05:13 2016 +1100
+
+    initial
+```
+
+I'd recently been put onto the [CommonMark migration at
+work](https://github.blog/engineering/user-experience/a-formal-spec-for-github-markdown/),
+and there was this neat new systems language called Rust that I really wanted
+to try out in earnest.  What a good opportunity! I had no idea it'd become
+my longest-lived project, and lead to so many interesting connections and
+collaborations.  My life has changed a *lot* because of this project (and, uh,
+perhaps my tenacity in keeping on with it during the years when there wasn't
+much in the way of intrinsic or extrinsic motivation to do so), and I'm really
+happy for that.
+
+Happy 10th birthday, Comrak!
+
+For users coming from 0.x (0.59.0), please read the release candidate changes
+too.  Between rc.2 and here, I've marked ~just about everything non-exhaustive
+that can be, replaced some argument lists with structs; whatever we needed to
+make sure we can _add_ to Comrak in future without necessitating a major version
+bump.  You'll find some new constructors and builders that'll need to be used in
+place of creating the struct yourself.
+
+
+## What does 1.0 mean beyond API semver?
+
+Here's what we commit to:
+
+* Patch releases
+  * Output changes: incorrect output (*bugs*, like a missing symbol or something), incorrect sourcepos, anything that results in a crash, a hang, or a security issue (e.g. `dangerous_url` tightening). If there was any way we weren't compatible with the current CommonMark target (and it'd have to be a textual interpretation issue, as we're always passing the executable spec), that'd be a bug and also come in here.
+  * MSRV bumps: never.
+  * `#[doc(hidden)]` items: may change.
+  * Option defaults: never.
+  * Cargo features: never.
+  * CLI bits and pieces (arguments, exit codes, config file format, stdin/stdout): never.
+* Minor releases 
+  * Output changes: new output from a new option or extension; upgrading to a new CommonMark version. Since we're [writing our own specs](https://github.com/kivikakk/comrak/issues/924), we don't intend to try to be compatible with any changes a future GFM spec may bring --- not that we anticipate any.  We remain executably compatible with it as it stands at 0.29-gfm.
+    * Comrak spec changes where new examples are _added_ may fall in patch or minor releases, depending on their nature.
+    * Any option or extension currently without a complete write-up per [#924](https://github.com/kivikakk/comrak/issues/924) _is liable to change output_ in the minor version it gets its spec!  It'll probably be in very edge-case-y ways you might never have run into, but be warned.
+  * MSRV bumps: can happen, always at least 6 months old.
+  * `#[doc(hidden)]` items: may change.
+  * Option defaults: never.
+  * Cargo features: adding a feature, or adding to an existing one.
+  * CLI bits and pieces: flags might get added, additional selections might get added to existing flags (e.g. `--extension`, `--list-style`); nothing else.
+* Major releases
+  * Output changes: literally anything else.
+    * This includes Comrak spec changes where an existing example is _changed_.
+  * MSRV bumps: can happen.
+  * `#[doc(hidden)]` items: may change.
+  * Option defaults: may change.
+  * Cargo features: may change.
+  * CLI bits and pieces: may change.
+  * It's like Web 2.0 but for Comrak.
+
+API deprecations will be flagged in a minor release, to be removed in the next major.
+
+Note that each output format also has its own nuances:
+
+* Comrak's AST is kind of the ur-output format, and the above applies to it.  For a given set of options, you expect to see the same kinds of node types and where they nest.  It won't change in patch releases (unless clearly a bug), and may change in minor releases with new options/extensions, CommonMark upgrades, or added Comrak spec examples.
+* HTML has the CommonMark spec and Comrak's fixture-based docs.  If there's edge cases the docs don't cover, then I think they're bugs if they don't make sense in light of the documented intent, and fixing them (and documenting them!) isn't a breaking change.  Changing things like class names and `data-` attributes is breaking.
+* CommonMark is promised to re-parse to the same AST, but not necessarily beyond that.  A `Strong` node may be output as `__strong__` today and `**strong**` tomorrow under default options and I wouldn't call that breaking.  Your code block may come out with a different length fence, so long as it means the same thing.
+* XML will always have the same element and attribute names, but who knows, maybe I'll start interior-spacing all the tags `< like / > < this / >`. I won't, but I might be lying.
+
+## Okay, gimme the changes
+
+Changed APIs:
+
+* Future-proof the public API to permit future expansion without breaking you. (by @kivikakk in https://github.com/kivikakk/comrak/pull/933)
+  * `Options`, `Extension`, `Parse`, `Render`, `Plugins` and `RenderPlugins` are `#[non_exhaustive]`; start from `Default` and modify, or use the builders, including the new `Options::builder()`.
+    * `Render` is no longer `Copy`. We lose `Copy` in case we want to add a non-`Copy` element in the future (like `String` or `Vec`).
+  * `NodeValue` and its payload structs are `#[non_exhaustive]`; payloads get constructors, like `NodeList::bullet`, `NodeList::ordered`, `NodeCodeBlock::fenced`, and `NodeLink::new`.
+  * `NodeList`, `NodeDescriptionItem`, `NodeHeading`, `NodeTaskItem`, `NodeMultilineBlockQuote`, `GridTableColumn`, and `NodeGridTableCell` are no longer `Copy`.
+  * `NodeValue::ThematicBreak`, `Emph`, `Strong`, and `Strikethrough` get (intentionally blank) payload structs, and `TableRow(bool)` is now `TableRow(NodeTableRow)`.
+  * `AlertType`, `AlertStyleType`, `Attributes`, `ChildRendering`, `HeexNode`, and `ValidationError` are `#[non_exhaustive]`.
+  * `CodefenceRendererAdapter::write` takes a `CodefenceMeta`, and all `SyntaxHighlighterAdapter` methods take a `SyntaxHighlightMeta`, which has a now-non-optional `lang` (we always passed it), plus `meta`. `HeadingAdapter::enter` gets its sourcepos from `HeadingMeta`; `HeadingAdapter::exit` gets it too now.
+  * `ResolvedReference` and `BrokenLinkReference` are `#[non_exhaustive]`; use `ResolvedReference::new`.
+  * `options::WikiLinksMode` is no longer public (its only ctor wasn't).
+  * Optional dependencies no longer create implicit features: so `clap`, `shell-words`, `xdg`, `fmt2io`, and `emojis` are gone. They weren't helpful, as we didn't do feature detection on them anyway; use `cli` and `shortcodes`.
+
+New APIs:
+
+* Support block-level display math, with the `math_dollars_block` extension and `NodeValue::MathBlock`. (added by @szdytom in https://github.com/kivikakk/comrak/pull/931)
+* `Sourcepos` implements `Default`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/933)
+
+Documentation:
+
+* Document OFM comments with care. (by @szdytom in https://github.com/kivikakk/comrak/pull/930)
+* Document grid tables with care. (by @kivikakk in https://github.com/kivikakk/comrak/pull/932)
+
+Build changes:
+
+* CI checks the public API against a [cargo-public-api](https://github.com/cargo-public-api/cargo-public-api) snapshot. (by @kivikakk in https://github.com/kivikakk/comrak/pull/933)
+* CI runs `cargo semver-checks` against the latest release. (by @kivikakk in https://github.com/kivikakk/comrak/pull/933)
+
+Behind the scenes:
+
+* The `all_options` fuzz target generates options with `Arbitrary`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/933)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v1.0.0-rc.2...v1.0.0
+
+
 # [v1.0.0-rc.2] - 2026-11-16
 
 In getting close to 1.0, I've been reviewing the "core" GFM extensions, and writing them up the way the deserved to be ten years ago. As a result, I've found some changes to make: some of them bring a little more parity with `cmark-gfm`, some a little less, but all with the intention of making them make more sense. See below:
