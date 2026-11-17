@@ -302,6 +302,7 @@ Comrak additionally supports its own extensions, which are in the process of bei
 - Footnotes
 - Front matter
 - Greentext
+- [Grid tables](https://comrak.ee/extensions/grid-table.html)
 - Header IDs
 - Highlight
 - Inline footnotes
@@ -318,7 +319,6 @@ Comrak additionally supports its own extensions, which are in the process of bei
 - Superscript
 - Underline
 - Wikilinks
-- [Grid tables](https://comrak.ee/extensions/grid-table.html)
 
 By default none are enabled; they are individually enabled with each parse by setting the appropriate values in the
 [`options::Extension` struct](https://docs.rs/comrak/latest/comrak/options/struct.Extension.html).
