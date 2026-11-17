@@ -1,3 +1,51 @@
+# [v1.0.0] - 2026-11-17
+
+## What's Changed
+* Bump clap from 4.6.3 to 4.6.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/890
+* Bump glob from 0.3.3 to 0.3.4 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/889
+* inlines: use paragraph per-line offsets for inline footnotes. by @kivikakk in https://github.com/kivikakk/comrak/pull/895
+* Bump toml from 1.1.3+spec-1.1.0 to 1.1.4+spec-1.1.0 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/897
+* Bump clap from 4.6.4 to 4.6.5 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/896
+* Sourcepos bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/901
+* fix attr sourcepos across lines. by @kivikakk in https://github.com/kivikakk/comrak/pull/902
+* `attributes` render option. by @kivikakk in https://github.com/kivikakk/comrak/pull/903
+* Support OFM block id markers by @szdytom in https://github.com/kivikakk/comrak/pull/900
+* parser: use 100000 as the minimum for max_ref_size by @sventmueller in https://github.com/kivikakk/comrak/pull/905
+* count refmap size once, correctly. by @kivikakk in https://github.com/kivikakk/comrak/pull/906
+* finalise list contents when closing fenced containers. by @kivikakk in https://github.com/kivikakk/comrak/pull/907
+* fuzz: sourcepos. by @kivikakk in https://github.com/kivikakk/comrak/pull/908
+* Sourcepos bonanza Ⅱ by @kivikakk in https://github.com/kivikakk/comrak/pull/910
+* Sourcepos bonanza Ⅲ by @kivikakk in https://github.com/kivikakk/comrak/pull/911
+* strings: find frontmatter closers more methodically. by @kivikakk in https://github.com/kivikakk/comrak/pull/912
+* build(deps): bump clap from 4.6.5 to 4.6.6 by @dependabot[bot] in https://github.com/kivikakk/comrak/pull/914
+* grid tables. by @kivikakk in https://github.com/kivikakk/comrak/pull/820
+* crlf normalisation. by @kivikakk in https://github.com/kivikakk/comrak/pull/915
+* inlines: search for special chars with memchr-n. by @FalkWoldmann in https://github.com/kivikakk/comrak/pull/916
+* Roundtrip bonanza by @kivikakk in https://github.com/kivikakk/comrak/pull/917
+* roundtrip Escaped. by @kivikakk in https://github.com/kivikakk/comrak/pull/680
+* Release v1.0.0-rc.1. by @github-actions[bot] in https://github.com/kivikakk/comrak/pull/918
+* use upstream cmark-gfm. by @kivikakk in https://github.com/kivikakk/comrak/pull/919
+* Add Markview to comrak users list by @szdytom in https://github.com/kivikakk/comrak/pull/921
+* table: autocompleted cells are zero-width. by @kivikakk in https://github.com/kivikakk/comrak/pull/922
+* tasklist: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/923
+* fuzz: sourcepos: strengthen span validation. by @szdytom in https://github.com/kivikakk/comrak/pull/925
+* tables: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/926
+* autolink: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/927
+* strikethrough: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/928
+* Release v1.0.0-rc.2. by @github-actions[bot] in https://github.com/kivikakk/comrak/pull/929
+* Enrich document for OFM Comments extension by @szdytom in https://github.com/kivikakk/comrak/pull/930
+* docs: grid table. by @kivikakk in https://github.com/kivikakk/comrak/pull/932
+* Support block-level parsing for display math by @szdytom in https://github.com/kivikakk/comrak/pull/931
+* future-proofing. by @kivikakk in https://github.com/kivikakk/comrak/pull/933
+
+## New Contributors
+* @sventmueller made their first contribution in https://github.com/kivikakk/comrak/pull/905
+* @FalkWoldmann made their first contribution in https://github.com/kivikakk/comrak/pull/916
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v0.59.0...v1.0.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
