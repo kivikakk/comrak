@@ -1269,6 +1269,7 @@ fn render_footnote_definition<T>(
         context.write_str(" id=\"fn-")?;
         context.escape_href(&nfd.name)?;
         context.write_str("\">")?;
+        context.cr()?;
     } else {
         if put_footnote_backref(context, nfd)? {
             context.lf()?;
