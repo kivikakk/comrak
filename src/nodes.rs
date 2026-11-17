@@ -522,7 +522,7 @@ pub struct NodeCode {
 }
 
 impl NodeCode {
-    /// Create a new `NodeCode` with the given info string.
+    /// Create a new `NodeCode` with the given literal.
     pub fn new(literal: impl Into<String>) -> Self {
         NodeCode {
             num_backticks: 0,

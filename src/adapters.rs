@@ -24,7 +24,7 @@ pub struct CodefenceMeta<'a> {
     /// The remaining codefence info string after the language token, trimmed.
     pub meta: &'a str,
 
-    /// The source code to be syntax highlighted.
+    /// The block content.
     pub code: &'a str,
 
     /// Source position information for the code fence, if any.
@@ -77,7 +77,7 @@ pub trait SyntaxHighlighterAdapter: Send + Sync {
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct SyntaxHighlightMeta<'a> {
-    /// Name of the programming language (the info string of the codefence block after the initial "```" part).
+    /// Name of the programming language (the first token of the info string).
     pub lang: Option<&'a str>,
 
     /// The source code to be syntax highlighted.
@@ -103,7 +103,7 @@ pub struct HeadingMeta {
     /// example, the would be the string `"This is bold"`.
     pub content: String,
 
-    /// Source position information for the code fence, if any.
+    /// Source position information for the heading, if any.
     pub sourcepos: Option<Sourcepos>,
 }
 
