@@ -370,3 +370,57 @@ fn sourcepos_definition_ends_with_its_contents() {
         ])
     );
 }
+
+#[test]
+fn footnote_duplicate_definitions_first_wins() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("A[^a].\n", "\n", "[^a]: first\n", "\n", "[^a]: second\n",),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>first <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_duplicate_definitions_unused_are_dropped() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("A.\n", "\n", "[^a]: first\n", "\n", "[^a]: second\n",),
+        "<p>A.</p>\n",
+    );
+}
+
+#[test]
+fn footnote_definition_nested_in_definition() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^a] B[^b].\n",
+            "\n",
+            "[^a]: outer\n",
+            "\n",
+            "    [^b]: inner\n",
+        ),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup> B<sup class=\"footnote-ref\"><a href=\"#fn-b\" id=\"fnref-b\" data-footnote-ref>2</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>outer <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn-b\">\n",
+            "<p>inner <a href=\"#fnref-b\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}

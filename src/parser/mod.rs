@@ -19,6 +19,7 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::cmp::{Ordering, min};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Debug;
 use std::mem;
 use std::str;
@@ -2802,7 +2803,13 @@ where
     fn process_footnotes(&mut self) {
         // TODO: combine find_footnote_definitions and find_footnote_references into one pass!
         let mut fd_map = HashMap::new();
-        Self::find_footnote_definitions(self.root, &mut fd_map, &self.cancellation);
+        let mut duplicates = vec![];
+        Self::find_footnote_definitions(
+            self.root,
+            &mut fd_map,
+            &mut duplicates,
+            &self.cancellation,
+        );
 
         let mut next_ix = 0;
         self.find_footnote_references(&mut fd_map, &mut next_ix);
@@ -2826,11 +2833,18 @@ where
                 fd.node.detach();
             }
         }
+
+        if !self.options.parse.leave_footnote_definitions {
+            for node in duplicates {
+                node.detach();
+            }
+        }
     }
 
     fn find_footnote_definitions(
         root: Node<'a>,
         map: &mut HashMap<String, FootnoteDefinition<'a>>,
+        duplicates: &mut Vec<Node<'a>>,
         cancellation: &Cancellation<'_>,
     ) {
         let mut stack = vec![root];
@@ -2838,22 +2852,20 @@ where
             if cancellation.step() {
                 return;
             }
-            match node.data().value {
-                NodeValue::FootnoteDefinition(ref nfd) => {
-                    map.insert(
-                        strings::normalize_label(&nfd.name, Case::Fold),
-                        FootnoteDefinition {
+            if let NodeValue::FootnoteDefinition(ref nfd) = node.data().value {
+                match map.entry(strings::normalize_label(&nfd.name, Case::Fold)) {
+                    Entry::Occupied(_) => duplicates.push(node),
+                    Entry::Vacant(entry) => {
+                        entry.insert(FootnoteDefinition {
                             ix: None,
                             node,
                             name: strings::normalize_label(&nfd.name, Case::Preserve),
                             total_references: 0,
-                        },
-                    );
-                }
-                _ => {
-                    stack.extend(node.reverse_children());
+                        });
+                    }
                 }
             }
+            stack.extend(node.reverse_children());
         }
     }
 
