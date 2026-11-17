@@ -62,7 +62,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /home/runner/.config/comrak/config]
+          [default: /Users/kivikakk/.config/comrak/config]
 
   -i, --inplace
           Reformat CommonMark files in-place
@@ -435,11 +435,55 @@ This will build and run benchmarks across all, and report the time taken by each
 
 <!-- Apart from this, CI is also setup for running benchmarks when a pull request is first opened. It will add a comment with the results on the pull request in a tabular format comparing the 5 versions. After that you can manually trigger this CI by commenting `/run-bench` on the PR, this will update the existing comment with new results. Note benchmarks won't be automatically run on each push. -->
 
+## Stability guarantees
+
+Regular [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html) applies to our Rust API. Beyond that, you can expect the following.
+
+Patch releases:
+
+- Output changes: incorrect output (*bugs*, like a missing symbol or something), incorrect sourcepos, anything that results in a crash, a hang, or a security issue (e.g. `dangerous_url` tightening). If there was any way we weren't compatible with the current CommonMark target (and it'd have to be a textual interpretation issue, as we're always passing the executable spec), that'd be a bug and also come in here.
+- MSRV bumps: never.
+- `#[doc(hidden)]` items: may change.
+- Option defaults: never.
+- Cargo features: never.
+- CLI bits and pieces (arguments, exit codes, config file format, stdin/stdout): never.
+
+Minor releases:
+
+- Output changes: new output from a new option or extension; upgrading to a new CommonMark version. Since we're [writing our own specs](https://github.com/kivikakk/comrak/issues/924), we don't intend to try to be compatible with any changes a future GFM spec may bring --- not that we anticipate any.  We remain executably compatible with it as it stands at 0.29-gfm.
+- Comrak spec changes where new examples are *added* may fall in patch or minor releases, depending on their nature.
+- Any option or extension currently without a complete write-up per [#924](https://github.com/kivikakk/comrak/issues/924) *is liable to change output* in the minor version it gets its spec!  It'll probably be in very edge-case-y ways you might never have run into, but be warned.
+- MSRV bumps: can happen, always at least 6 months old.
+- `#[doc(hidden)]` items: may change.
+- Option defaults: never.
+- Cargo features: adding a feature, or adding to an existing one.
+- CLI bits and pieces: flags might get added, additional selections might get added to existing flags (e.g. `--extension`, `--list-style`); nothing else.
+
+Major releases:
+
+- Output changes: literally anything else.
+- This includes Comrak spec changes where an existing example is *changed*.
+- MSRV bumps: can happen.
+- `#[doc(hidden)]` items: may change.
+- Option defaults: may change.
+- Cargo features: may change.
+- CLI bits and pieces: may change.
+- It's like Web 2.0 but for Comrak.
+
+API deprecations will be flagged in a minor release, to be removed in the next major.
+
+Note that each output format also has its own nuances:
+
+- Comrak's AST is kind of the ur-output format, and the above applies to it.  For a given set of options, you expect to see the same kinds of node types and where they nest.  It won't change in patch releases (unless clearly a bug), and may change in minor releases with new options/extensions, CommonMark upgrades, or added Comrak spec examples.
+- HTML has the CommonMark spec and Comrak's fixture-based docs.  If there's edge cases the docs don't cover, then I think they're bugs if they don't make sense in light of the documented intent, and fixing them (and documenting them!) isn't a breaking change.  Changing things like class names and `data-` attributes is breaking.
+- CommonMark is promised to re-parse to the same AST, but not necessarily beyond that.  A `Strong` node may be output as `__strong__` today and `**strong**` tomorrow under default options and I wouldn't call that breaking.  Your code block may come out with a different length fence, so long as it means the same thing.
+- XML will always have the same element and attribute names, but who knows, maybe I'll start interior-spacing all the tags `< like / > < this / >`. I won't, but I might be lying.
+
 ## Contributing
 
 Contributions are **highly encouraged**; if you'd like to assist, consider checking out the [`good first issue` label](https://github.com/kivikakk/comrak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)! I'm happy to help provide direction and guidance throughout, even if (especially if!) you're new to Rust or open source.
 
-Where possible I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens. Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind too.
+I practice [Optimistic Merging](http://hintjens.com/blog:106) as described by Peter Hintjens, where possible, and respecting our [stability guarantees](https://github.com/kivikakk/comrak#stability-guarantees). Please keep the [code of conduct](CODE_OF_CONDUCT.md) in mind too.
 
 Thank you to Comrak's many contributors for PRs and issues opened!
 

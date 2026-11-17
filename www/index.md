@@ -2,12 +2,13 @@
 
 Comrak is a [CommonMark] and [GitHub Flavored Markdown] compatible parser and renderer, written in Rust.
 
-It is [developed on GitHub] by a community of contributors, and released under the [BSD 2-clause license], forever[^no-cla], for use by all.
+It is [developed on GitHub] by a community of contributors, and released under the [BSD 2-clause license], forever[^no-cla], for use by all.  It [powers] the Markdown support of many popular websites today.
 
 [CommonMark]: https://commonmark.org/
 [GitHub Flavored Markdown]: https://github.github.com/gfm/
 [developed on GitHub]: https://github.com/kivikakk/comrak
 [BSD 2-clause license]: https://github.com/kivikakk/comrak/blob/main/COPYING
+[powers]: #who-uses-comrak
 
 [^no-cla]: Comrak intentionally does not use a [Contributor License Agreement] --- every contributor retains copyright on their contributions.
 
@@ -20,6 +21,7 @@ It is [developed on GitHub] by a community of contributors, and released under t
 * One option to toggle on all [GitHub Flavored Markdown] extensions (or enable them separately).
 * Many additional [extensions] developed by the community.
 * Fine-grained [parse] and [render] options.
+* Detailed [documentation] above and beyond GFM.
 * [Pluggable] syntax highlighting for code blocks.
 * [Custom formatter] support to override the rendering of any node type.
 
@@ -27,6 +29,7 @@ It is [developed on GitHub] by a community of contributors, and released under t
 [extensions]: https://docs.rs/comrak/latest/comrak/options/struct.Extension.html
 [parse]: https://docs.rs/comrak/latest/comrak/options/struct.Parse.html
 [render]: https://docs.rs/comrak/latest/comrak/options/struct.Render.html
+[documentation]: #docs
 [Pluggable]: https://github.com/kivikakk/comrak#plugins
 [Custom formatter]: https://docs.rs/comrak/latest/comrak/macro.create_formatter.html
 
@@ -51,7 +54,15 @@ The CLI help for the latest version is available in the [README], and the Rust d
 
 ## Docs
 
-Enjoy the robust flavour of our [fixture-based documentation](/docs.html).
+We've written detailed, executable specs in the spirit of CommonMark to make up
+for the lack of detail present in GFM's spec extensions[^fault], and are working
+to document every other extension and option we offer in the same way.
+
+[^fault]: This is my fault.  I wrote them.  (In my defense, I was in my mid-twenties.)
+
+See more at [the docs page].
+
+[the docs page]: /docs.html
 
 
 ## Bindings
@@ -92,14 +103,14 @@ Enjoy the robust flavour of our [fixture-based documentation](/docs.html).
 
 ## Questions? Commits? Cat pictures?
 
-You can contact the maintainers and community [on GitHub], or you can
-email the author at [`ashe@kivikakk.ee`](mailto:ashe@kivikakk.ee).
-Please report security issues to that email address. 
+You can contact the maintainers and community [on GitHub], or you can email [me]
+at [`ashe@kivikakk.ee`](mailto:ashe@kivikakk.ee). Please report security issues
+to that email address.
 
-Contributions are **highly encouraged**, and we would love to help you
-through the process.  We practice [Optimistic Merging] as described by
-Peter Hintjens.  We have a [Code of Conduct] which forms the basis of how
-we treat one another.
+Contributions are **highly encouraged**, and we would love to help you through
+the process.  We practice [Optimistic Merging] as described by Peter Hintjens,
+while respecting our [stability guarantees].  We have a [Code of Conduct] which
+forms the basis of how we treat one another.
 
 If you have a GitHub account, you are welcome to use its interface to
 report issues, open pull requests, and [privately report security issues].
@@ -107,12 +118,11 @@ If not, you are very welcome to discuss and contribute by email, and a
 maintainer will make those actions on your behalf, attributed however you
 like.
 
+[me]: https://kivikakk.ee/about
 [on GitHub]: https://github.com/kivikakk/comrak
 [Optimistic Merging]: http://hintjens.com/blog:106
+[stability guarantees]: https://github.com/kivikakk/comrak#stability-guarantees
 [Code of Conduct]: https://github.com/kivikakk/comrak/blob/main/CODE_OF_CONDUCT.md
 [privately report security issues]: https://github.com/kivikakk/comrak/security/advisories/new
 
 ---
-
-
-
