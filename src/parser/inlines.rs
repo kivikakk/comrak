@@ -2598,7 +2598,7 @@ impl<'a> FootnoteDefs<'a> {
     }
 }
 
-pub struct Delimiter<'a: 'd, 'd> {
+pub(crate) struct Delimiter<'a: 'd, 'd> {
     inl: Node<'a>,
     position: usize,
     length: usize,

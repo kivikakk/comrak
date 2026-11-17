@@ -838,11 +838,8 @@ impl Extension<'_> {
     }
 }
 
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Selects between wikilinks with the title first or the URL first.
-pub enum WikiLinksMode {
+pub(crate) enum WikiLinksMode {
     /// Indicates that the URL precedes the title. For example: `[[http://example.com|link
     /// title]]`.
     UrlFirst,
