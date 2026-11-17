@@ -1,0 +1,1824 @@
+pub mod comrak
+pub mod comrak::adapters
+#[non_exhaustive] pub struct comrak::adapters::CodefenceMeta<'a>
+pub comrak::adapters::CodefenceMeta::code: &'a str
+pub comrak::adapters::CodefenceMeta::lang: &'a str
+pub comrak::adapters::CodefenceMeta::meta: &'a str
+pub comrak::adapters::CodefenceMeta::sourcepos: core::option::Option<comrak::nodes::Sourcepos>
+impl<'a> comrak::adapters::CodefenceMeta<'a>
+pub fn comrak::adapters::CodefenceMeta<'a>::new(lang: &'a str, meta: &'a str, code: &'a str, sourcepos: core::option::Option<comrak::nodes::Sourcepos>) -> Self
+impl<'a> core::clone::Clone for comrak::adapters::CodefenceMeta<'a>
+pub fn comrak::adapters::CodefenceMeta<'a>::clone(&self) -> comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::fmt::Debug for comrak::adapters::CodefenceMeta<'a>
+pub fn comrak::adapters::CodefenceMeta<'a>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::marker::Send for comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::marker::Sync for comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::marker::Unpin for comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for comrak::adapters::CodefenceMeta<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for comrak::adapters::CodefenceMeta<'a>
+#[non_exhaustive] pub struct comrak::adapters::HeadingMeta
+pub comrak::adapters::HeadingMeta::content: alloc::string::String
+pub comrak::adapters::HeadingMeta::level: u8
+pub comrak::adapters::HeadingMeta::sourcepos: core::option::Option<comrak::nodes::Sourcepos>
+impl comrak::adapters::HeadingMeta
+pub fn comrak::adapters::HeadingMeta::new(level: u8, content: impl core::convert::Into<alloc::string::String>, sourcepos: core::option::Option<comrak::nodes::Sourcepos>) -> Self
+impl core::clone::Clone for comrak::adapters::HeadingMeta
+pub fn comrak::adapters::HeadingMeta::clone(&self) -> comrak::adapters::HeadingMeta
+impl core::fmt::Debug for comrak::adapters::HeadingMeta
+pub fn comrak::adapters::HeadingMeta::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for comrak::adapters::HeadingMeta
+impl core::marker::Send for comrak::adapters::HeadingMeta
+impl core::marker::Sync for comrak::adapters::HeadingMeta
+impl core::marker::Unpin for comrak::adapters::HeadingMeta
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::adapters::HeadingMeta
+impl core::panic::unwind_safe::UnwindSafe for comrak::adapters::HeadingMeta
+#[non_exhaustive] pub struct comrak::adapters::SyntaxHighlightMeta<'a>
+pub comrak::adapters::SyntaxHighlightMeta::code: &'a str
+pub comrak::adapters::SyntaxHighlightMeta::lang: &'a str
+pub comrak::adapters::SyntaxHighlightMeta::meta: &'a str
+impl<'a> comrak::adapters::SyntaxHighlightMeta<'a>
+pub fn comrak::adapters::SyntaxHighlightMeta<'a>::new(lang: &'a str, meta: &'a str, code: &'a str) -> Self
+impl<'a> core::clone::Clone for comrak::adapters::SyntaxHighlightMeta<'a>
+pub fn comrak::adapters::SyntaxHighlightMeta<'a>::clone(&self) -> comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::fmt::Debug for comrak::adapters::SyntaxHighlightMeta<'a>
+pub fn comrak::adapters::SyntaxHighlightMeta<'a>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::marker::Send for comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::marker::Sync for comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::marker::Unpin for comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for comrak::adapters::SyntaxHighlightMeta<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for comrak::adapters::SyntaxHighlightMeta<'a>
+pub trait comrak::adapters::CodefenceRendererAdapter: core::marker::Send + core::marker::Sync
+pub fn comrak::adapters::CodefenceRendererAdapter::write(&self, output: &mut dyn core::fmt::Write, codefence: &comrak::adapters::CodefenceMeta<'_>) -> core::fmt::Result
+pub trait comrak::adapters::HeadingAdapter: core::marker::Send + core::marker::Sync
+pub fn comrak::adapters::HeadingAdapter::enter(&self, output: &mut dyn core::fmt::Write, heading: &comrak::adapters::HeadingMeta) -> core::fmt::Result
+pub fn comrak::adapters::HeadingAdapter::exit(&self, output: &mut dyn core::fmt::Write, heading: &comrak::adapters::HeadingMeta) -> core::fmt::Result
+pub trait comrak::adapters::SyntaxHighlighterAdapter: core::marker::Send + core::marker::Sync
+pub fn comrak::adapters::SyntaxHighlighterAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::adapters::SyntaxHighlighterAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
+pub fn comrak::adapters::SyntaxHighlighterAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+impl comrak::adapters::SyntaxHighlighterAdapter for comrak::plugins::syntect::SyntectAdapter
+pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub mod comrak::arena_tree
+pub enum comrak::arena_tree::NodeEdge<T>
+pub comrak::arena_tree::NodeEdge::End(T)
+pub comrak::arena_tree::NodeEdge::Start(T)
+impl<T: core::clone::Clone> core::clone::Clone for comrak::arena_tree::NodeEdge<T>
+pub fn comrak::arena_tree::NodeEdge<T>::clone(&self) -> comrak::arena_tree::NodeEdge<T>
+impl<T: core::fmt::Debug> core::fmt::Debug for comrak::arena_tree::NodeEdge<T>
+pub fn comrak::arena_tree::NodeEdge<T>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T> core::marker::Freeze for comrak::arena_tree::NodeEdge<T> where T: core::marker::Freeze
+impl<T> core::marker::Send for comrak::arena_tree::NodeEdge<T> where T: core::marker::Send
+impl<T> core::marker::Sync for comrak::arena_tree::NodeEdge<T> where T: core::marker::Sync
+impl<T> core::marker::Unpin for comrak::arena_tree::NodeEdge<T> where T: core::marker::Unpin
+impl<T> core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::NodeEdge<T> where T: core::panic::unwind_safe::RefUnwindSafe
+impl<T> core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::NodeEdge<T> where T: core::panic::unwind_safe::UnwindSafe
+pub struct comrak::arena_tree::Ancestors<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::Ancestors<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::Ancestors<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::Ancestors<'a, T>
+pub type comrak::arena_tree::Ancestors<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::Ancestors<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::Ancestors<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::Ancestors<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::Ancestors<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::Ancestors<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::Ancestors<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::Ancestors<'a, T>
+pub struct comrak::arena_tree::Children<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::Children<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::Children<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::Children<'a, T>
+pub type comrak::arena_tree::Children<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::Children<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::Children<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::Children<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::Children<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::Children<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::Children<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::Children<'a, T>
+pub struct comrak::arena_tree::Descendants<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::Descendants<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::Descendants<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::Descendants<'a, T>
+pub type comrak::arena_tree::Descendants<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::Descendants<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::Descendants<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::Descendants<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::Descendants<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::Descendants<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::Descendants<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::Descendants<'a, T>
+pub struct comrak::arena_tree::FollowingSiblings<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::FollowingSiblings<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::FollowingSiblings<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::FollowingSiblings<'a, T>
+pub type comrak::arena_tree::FollowingSiblings<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::FollowingSiblings<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::FollowingSiblings<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::FollowingSiblings<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::FollowingSiblings<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::FollowingSiblings<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::FollowingSiblings<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::FollowingSiblings<'a, T>
+pub struct comrak::arena_tree::Node<'a, T: 'a>
+pub comrak::arena_tree::Node::data: T
+impl<'a, T> comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::ancestors(&'a self) -> comrak::arena_tree::Ancestors<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::append(&'a self, new_child: &'a comrak::arena_tree::Node<'a, T>)
+pub fn comrak::arena_tree::Node<'a, T>::children(&'a self) -> comrak::arena_tree::Children<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::descendants(&'a self) -> comrak::arena_tree::Descendants<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::detach(&self)
+pub fn comrak::arena_tree::Node<'a, T>::extend(&'a self, new_children: impl core::iter::traits::collect::IntoIterator<Item = &'a comrak::arena_tree::Node<'a, T>>)
+pub fn comrak::arena_tree::Node<'a, T>::first_child(&self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Node<'a, T>::following_siblings(&'a self) -> comrak::arena_tree::FollowingSiblings<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::insert_after(&'a self, new_sibling: &'a comrak::arena_tree::Node<'a, T>)
+pub fn comrak::arena_tree::Node<'a, T>::insert_before(&'a self, new_sibling: &'a comrak::arena_tree::Node<'a, T>)
+pub fn comrak::arena_tree::Node<'a, T>::last_child(&self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Node<'a, T>::new(data: T) -> comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::next_sibling(&self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Node<'a, T>::parent(&self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Node<'a, T>::preceding_siblings(&'a self) -> comrak::arena_tree::PrecedingSiblings<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::prepend(&'a self, new_child: &'a comrak::arena_tree::Node<'a, T>)
+pub fn comrak::arena_tree::Node<'a, T>::previous_sibling(&self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Node<'a, T>::reverse_children(&'a self) -> comrak::arena_tree::ReverseChildren<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::reverse_traverse(&'a self) -> comrak::arena_tree::ReverseTraverse<'a, T>
+pub fn comrak::arena_tree::Node<'a, T>::same_node(&self, other: &comrak::arena_tree::Node<'a, T>) -> bool
+pub fn comrak::arena_tree::Node<'a, T>::traverse(&'a self) -> comrak::arena_tree::Traverse<'a, T>
+impl<'a> comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>
+pub fn comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>::can_contain_type(&self, child: &comrak::nodes::NodeValue) -> bool
+pub fn comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>::collect_text(&'a self) -> alloc::string::String
+pub fn comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>::collect_text_append(&'a self, output: &mut alloc::string::String)
+pub fn comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>::validate(&'a self) -> core::result::Result<(), comrak::nodes::ValidationError<'a>>
+impl<T> comrak::arena_tree::Node<'_, core::cell::RefCell<T>>
+pub fn comrak::arena_tree::Node<'_, core::cell::RefCell<T>>::data(&self) -> core::cell::Ref<'_, T>
+pub fn comrak::arena_tree::Node<'_, core::cell::RefCell<T>>::data_mut(&self) -> core::cell::RefMut<'_, T>
+pub fn comrak::arena_tree::Node<'_, core::cell::RefCell<T>>::try_data(&self) -> core::result::Result<core::cell::Ref<'_, T>, core::cell::BorrowError>
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::Node<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::Node<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error>
+impl<'a, T> !core::marker::Freeze for comrak::arena_tree::Node<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::Node<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::Node<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::Node<'a, T> where T: core::marker::Unpin
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::Node<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::Node<'a, T>
+pub struct comrak::arena_tree::PrecedingSiblings<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::PrecedingSiblings<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::PrecedingSiblings<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::PrecedingSiblings<'a, T>
+pub type comrak::arena_tree::PrecedingSiblings<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::PrecedingSiblings<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::PrecedingSiblings<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::PrecedingSiblings<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::PrecedingSiblings<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::PrecedingSiblings<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::PrecedingSiblings<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::PrecedingSiblings<'a, T>
+pub struct comrak::arena_tree::ReverseChildren<'a, T: 'a>(_)
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::ReverseChildren<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::ReverseChildren<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::ReverseChildren<'a, T>
+pub type comrak::arena_tree::ReverseChildren<'a, T>::Item = &'a comrak::arena_tree::Node<'a, T>
+pub fn comrak::arena_tree::ReverseChildren<'a, T>::next(&mut self) -> core::option::Option<&'a comrak::arena_tree::Node<'a, T>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::ReverseChildren<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::ReverseChildren<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::ReverseChildren<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::ReverseChildren<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::ReverseChildren<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::ReverseChildren<'a, T>
+pub struct comrak::arena_tree::ReverseTraverse<'a, T: 'a>
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::ReverseTraverse<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::ReverseTraverse<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::ReverseTraverse<'a, T>
+pub type comrak::arena_tree::ReverseTraverse<'a, T>::Item = comrak::arena_tree::NodeEdge<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::ReverseTraverse<'a, T>::next(&mut self) -> core::option::Option<comrak::arena_tree::NodeEdge<&'a comrak::arena_tree::Node<'a, T>>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::ReverseTraverse<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::ReverseTraverse<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::ReverseTraverse<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::ReverseTraverse<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::ReverseTraverse<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::ReverseTraverse<'a, T>
+pub struct comrak::arena_tree::Traverse<'a, T: 'a>
+impl<'a, T> core::fmt::Debug for comrak::arena_tree::Traverse<'a, core::cell::RefCell<T>> where T: core::fmt::Debug + 'a
+pub fn comrak::arena_tree::Traverse<'a, core::cell::RefCell<T>>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, T> core::iter::traits::iterator::Iterator for comrak::arena_tree::Traverse<'a, T>
+pub type comrak::arena_tree::Traverse<'a, T>::Item = comrak::arena_tree::NodeEdge<&'a comrak::arena_tree::Node<'a, T>>
+pub fn comrak::arena_tree::Traverse<'a, T>::next(&mut self) -> core::option::Option<comrak::arena_tree::NodeEdge<&'a comrak::arena_tree::Node<'a, T>>>
+impl<'a, T> core::marker::Freeze for comrak::arena_tree::Traverse<'a, T>
+impl<'a, T> !core::marker::Send for comrak::arena_tree::Traverse<'a, T>
+impl<'a, T> !core::marker::Sync for comrak::arena_tree::Traverse<'a, T>
+impl<'a, T> core::marker::Unpin for comrak::arena_tree::Traverse<'a, T>
+impl<'a, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::arena_tree::Traverse<'a, T>
+impl<'a, T> !core::panic::unwind_safe::UnwindSafe for comrak::arena_tree::Traverse<'a, T>
+pub mod comrak::html
+#[non_exhaustive] pub enum comrak::html::ChildRendering
+pub comrak::html::ChildRendering::HTML
+pub comrak::html::ChildRendering::Plain
+pub comrak::html::ChildRendering::Skip
+impl core::clone::Clone for comrak::html::ChildRendering
+pub fn comrak::html::ChildRendering::clone(&self) -> comrak::html::ChildRendering
+impl core::fmt::Debug for comrak::html::ChildRendering
+pub fn comrak::html::ChildRendering::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::html::ChildRendering
+impl core::marker::Freeze for comrak::html::ChildRendering
+impl core::marker::Send for comrak::html::ChildRendering
+impl core::marker::Sync for comrak::html::ChildRendering
+impl core::marker::Unpin for comrak::html::ChildRendering
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::html::ChildRendering
+impl core::panic::unwind_safe::UnwindSafe for comrak::html::ChildRendering
+pub struct comrak::html::Context<'o, 'c, T>
+pub comrak::html::Context::anchorizer: anchorizer::Anchorizer
+pub comrak::html::Context::current_anchorized_id: core::option::Option<alloc::string::String>
+pub comrak::html::Context::options: &'o comrak::Options<'c>
+pub comrak::html::Context::plugins: &'o comrak::options::Plugins<'o>
+pub comrak::html::Context::user: T
+impl<'o, 'c, T> comrak::html::Context<'o, 'c, T>
+pub fn comrak::html::Context<'o, 'c, T>::cr(&mut self) -> core::fmt::Result
+pub fn comrak::html::Context<'o, 'c, T>::escape(&mut self, buffer: &str) -> core::fmt::Result
+pub fn comrak::html::Context<'o, 'c, T>::escape_href(&mut self, buffer: &str) -> core::fmt::Result
+pub fn comrak::html::Context<'o, 'c, T>::lf(&mut self) -> core::fmt::Result
+impl<T> core::fmt::Debug for comrak::html::Context<'_, '_, T>
+pub fn comrak::html::Context<'_, '_, T>::fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error>
+impl<T> core::fmt::Write for comrak::html::Context<'_, '_, T>
+pub fn comrak::html::Context<'_, '_, T>::write_str(&mut self, s: &str) -> core::fmt::Result
+impl<'o, 'c, T> !core::marker::Freeze for comrak::html::Context<'o, 'c, T>
+impl<'o, 'c, T> !core::marker::Send for comrak::html::Context<'o, 'c, T>
+impl<'o, 'c, T> !core::marker::Sync for comrak::html::Context<'o, 'c, T>
+impl<'o, 'c, T> core::marker::Unpin for comrak::html::Context<'o, 'c, T> where T: core::marker::Unpin
+impl<'o, 'c, T> !core::panic::unwind_safe::RefUnwindSafe for comrak::html::Context<'o, 'c, T>
+impl<'o, 'c, T> !core::panic::unwind_safe::UnwindSafe for comrak::html::Context<'o, 'c, T>
+pub fn comrak::html::dangerous_url(input: &str) -> bool
+pub fn comrak::html::escape(output: &mut dyn core::fmt::Write, buffer: &str) -> core::fmt::Result
+pub fn comrak::html::escape_href(output: &mut dyn core::fmt::Write, buffer: &str, relaxed_ipv6: bool) -> core::fmt::Result
+pub fn comrak::html::format_document(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write) -> core::fmt::Result
+pub fn comrak::html::format_document_with_formatter<'a, 'o, 'c: 'o, T>(root: comrak::nodes::Node<'a>, options: &'o comrak::Options<'c>, output: &'o mut dyn core::fmt::Write, plugins: &'o comrak::options::Plugins<'o>, formatter: fn(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'a>, entering: bool) -> core::result::Result<comrak::html::ChildRendering, core::fmt::Error>, user: T) -> core::result::Result<T, core::fmt::Error>
+pub fn comrak::html::format_document_with_plugins(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write, plugins: &comrak::options::Plugins<'_>) -> core::fmt::Result
+pub fn comrak::html::format_node_default<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>, entering: bool) -> core::result::Result<comrak::html::ChildRendering, core::fmt::Error>
+pub fn comrak::html::render_attributes<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>) -> core::fmt::Result
+pub fn comrak::html::render_block_id<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>) -> core::fmt::Result
+pub fn comrak::html::render_math<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>, entering: bool, nm: &comrak::nodes::NodeMath) -> core::result::Result<comrak::html::ChildRendering, core::fmt::Error>
+pub fn comrak::html::render_math_block<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>, entering: bool, nmb: &comrak::nodes::NodeMathBlock) -> core::result::Result<comrak::html::ChildRendering, core::fmt::Error>
+pub fn comrak::html::render_math_code_block<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>, literal: &str) -> core::result::Result<comrak::html::ChildRendering, core::fmt::Error>
+pub fn comrak::html::render_sourcepos<T>(context: &mut comrak::html::Context<'_, '_, T>, node: comrak::nodes::Node<'_>) -> core::fmt::Result
+pub fn comrak::html::write_opening_tag<K: core::convert::AsRef<str>, V: core::convert::AsRef<str>>(output: &mut dyn core::fmt::Write, tag: &str, attributes: impl core::iter::traits::collect::IntoIterator<Item = (K, V)>) -> core::fmt::Result
+pub mod comrak::nodes
+#[non_exhaustive] pub enum comrak::nodes::AlertType
+pub comrak::nodes::AlertType::Caution
+pub comrak::nodes::AlertType::Important
+pub comrak::nodes::AlertType::Note
+pub comrak::nodes::AlertType::Tip
+pub comrak::nodes::AlertType::Warning
+impl comrak::nodes::AlertType
+pub fn comrak::nodes::AlertType::css_class(&self, style: comrak::options::AlertStyleType) -> &'static str
+pub fn comrak::nodes::AlertType::default_title(&self) -> &'static str
+impl core::clone::Clone for comrak::nodes::AlertType
+pub fn comrak::nodes::AlertType::clone(&self) -> comrak::nodes::AlertType
+impl core::cmp::Eq for comrak::nodes::AlertType
+impl core::cmp::PartialEq for comrak::nodes::AlertType
+pub fn comrak::nodes::AlertType::eq(&self, other: &comrak::nodes::AlertType) -> bool
+impl core::default::Default for comrak::nodes::AlertType
+pub fn comrak::nodes::AlertType::default() -> comrak::nodes::AlertType
+impl core::fmt::Debug for comrak::nodes::AlertType
+pub fn comrak::nodes::AlertType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::AlertType
+impl core::marker::StructuralPartialEq for comrak::nodes::AlertType
+impl core::marker::Freeze for comrak::nodes::AlertType
+impl core::marker::Send for comrak::nodes::AlertType
+impl core::marker::Sync for comrak::nodes::AlertType
+impl core::marker::Unpin for comrak::nodes::AlertType
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::AlertType
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::AlertType
+pub enum comrak::nodes::CalloutFold
+pub comrak::nodes::CalloutFold::Collapsed
+pub comrak::nodes::CalloutFold::Expanded
+pub comrak::nodes::CalloutFold::None
+impl core::clone::Clone for comrak::nodes::CalloutFold
+pub fn comrak::nodes::CalloutFold::clone(&self) -> comrak::nodes::CalloutFold
+impl core::cmp::Eq for comrak::nodes::CalloutFold
+impl core::cmp::PartialEq for comrak::nodes::CalloutFold
+pub fn comrak::nodes::CalloutFold::eq(&self, other: &comrak::nodes::CalloutFold) -> bool
+impl core::fmt::Debug for comrak::nodes::CalloutFold
+pub fn comrak::nodes::CalloutFold::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::CalloutFold
+impl core::marker::StructuralPartialEq for comrak::nodes::CalloutFold
+impl core::marker::Freeze for comrak::nodes::CalloutFold
+impl core::marker::Send for comrak::nodes::CalloutFold
+impl core::marker::Sync for comrak::nodes::CalloutFold
+impl core::marker::Unpin for comrak::nodes::CalloutFold
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::CalloutFold
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::CalloutFold
+pub enum comrak::nodes::GridTableSection
+pub comrak::nodes::GridTableSection::Body
+pub comrak::nodes::GridTableSection::Foot
+pub comrak::nodes::GridTableSection::Head
+impl core::clone::Clone for comrak::nodes::GridTableSection
+pub fn comrak::nodes::GridTableSection::clone(&self) -> comrak::nodes::GridTableSection
+impl core::cmp::Eq for comrak::nodes::GridTableSection
+impl core::cmp::PartialEq for comrak::nodes::GridTableSection
+pub fn comrak::nodes::GridTableSection::eq(&self, other: &comrak::nodes::GridTableSection) -> bool
+impl core::fmt::Debug for comrak::nodes::GridTableSection
+pub fn comrak::nodes::GridTableSection::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::GridTableSection
+impl core::marker::StructuralPartialEq for comrak::nodes::GridTableSection
+impl core::marker::Freeze for comrak::nodes::GridTableSection
+impl core::marker::Send for comrak::nodes::GridTableSection
+impl core::marker::Sync for comrak::nodes::GridTableSection
+impl core::marker::Unpin for comrak::nodes::GridTableSection
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::GridTableSection
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::GridTableSection
+#[non_exhaustive] pub enum comrak::nodes::HeexNode
+pub comrak::nodes::HeexNode::Comment
+pub comrak::nodes::HeexNode::Directive
+pub comrak::nodes::HeexNode::Expression
+pub comrak::nodes::HeexNode::MultilineComment
+pub comrak::nodes::HeexNode::Tag(alloc::string::String)
+impl core::clone::Clone for comrak::nodes::HeexNode
+pub fn comrak::nodes::HeexNode::clone(&self) -> comrak::nodes::HeexNode
+impl core::cmp::Eq for comrak::nodes::HeexNode
+impl core::cmp::PartialEq for comrak::nodes::HeexNode
+pub fn comrak::nodes::HeexNode::eq(&self, other: &comrak::nodes::HeexNode) -> bool
+impl core::fmt::Debug for comrak::nodes::HeexNode
+pub fn comrak::nodes::HeexNode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::HeexNode
+impl core::marker::Freeze for comrak::nodes::HeexNode
+impl core::marker::Send for comrak::nodes::HeexNode
+impl core::marker::Sync for comrak::nodes::HeexNode
+impl core::marker::Unpin for comrak::nodes::HeexNode
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::HeexNode
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::HeexNode
+pub enum comrak::nodes::ListDelimType
+pub comrak::nodes::ListDelimType::Paren
+pub comrak::nodes::ListDelimType::Period
+impl core::clone::Clone for comrak::nodes::ListDelimType
+pub fn comrak::nodes::ListDelimType::clone(&self) -> comrak::nodes::ListDelimType
+impl core::cmp::Eq for comrak::nodes::ListDelimType
+impl core::cmp::PartialEq for comrak::nodes::ListDelimType
+pub fn comrak::nodes::ListDelimType::eq(&self, other: &comrak::nodes::ListDelimType) -> bool
+impl core::default::Default for comrak::nodes::ListDelimType
+pub fn comrak::nodes::ListDelimType::default() -> comrak::nodes::ListDelimType
+impl core::fmt::Debug for comrak::nodes::ListDelimType
+pub fn comrak::nodes::ListDelimType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::ListDelimType
+impl core::marker::StructuralPartialEq for comrak::nodes::ListDelimType
+impl core::marker::Freeze for comrak::nodes::ListDelimType
+impl core::marker::Send for comrak::nodes::ListDelimType
+impl core::marker::Sync for comrak::nodes::ListDelimType
+impl core::marker::Unpin for comrak::nodes::ListDelimType
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::ListDelimType
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::ListDelimType
+pub enum comrak::nodes::ListType
+pub comrak::nodes::ListType::Bullet
+pub comrak::nodes::ListType::Ordered
+impl core::clone::Clone for comrak::nodes::ListType
+pub fn comrak::nodes::ListType::clone(&self) -> comrak::nodes::ListType
+impl core::cmp::Eq for comrak::nodes::ListType
+impl core::cmp::PartialEq for comrak::nodes::ListType
+pub fn comrak::nodes::ListType::eq(&self, other: &comrak::nodes::ListType) -> bool
+impl core::default::Default for comrak::nodes::ListType
+pub fn comrak::nodes::ListType::default() -> comrak::nodes::ListType
+impl core::fmt::Debug for comrak::nodes::ListType
+pub fn comrak::nodes::ListType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::ListType
+impl core::marker::StructuralPartialEq for comrak::nodes::ListType
+impl core::marker::Freeze for comrak::nodes::ListType
+impl core::marker::Send for comrak::nodes::ListType
+impl core::marker::Sync for comrak::nodes::ListType
+impl core::marker::Unpin for comrak::nodes::ListType
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::ListType
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::ListType
+#[non_exhaustive] pub enum comrak::nodes::NodeValue
+pub comrak::nodes::NodeValue::Alert(alloc::boxed::Box<comrak::nodes::NodeAlert>)
+pub comrak::nodes::NodeValue::BlockDirective(alloc::boxed::Box<comrak::nodes::NodeBlockDirective>)
+pub comrak::nodes::NodeValue::BlockId(alloc::boxed::Box<comrak::nodes::NodeBlockId>)
+pub comrak::nodes::NodeValue::BlockQuote
+pub comrak::nodes::NodeValue::Callout(alloc::boxed::Box<comrak::nodes::NodeCallout>)
+pub comrak::nodes::NodeValue::CalloutTitle
+pub comrak::nodes::NodeValue::Code(comrak::nodes::NodeCode)
+pub comrak::nodes::NodeValue::CodeBlock(alloc::boxed::Box<comrak::nodes::NodeCodeBlock>)
+pub comrak::nodes::NodeValue::CommentInline(comrak::nodes::NodeComment)
+pub comrak::nodes::NodeValue::DescriptionDetails
+pub comrak::nodes::NodeValue::DescriptionItem(comrak::nodes::NodeDescriptionItem)
+pub comrak::nodes::NodeValue::DescriptionList
+pub comrak::nodes::NodeValue::DescriptionTerm
+pub comrak::nodes::NodeValue::Document
+pub comrak::nodes::NodeValue::Emph(comrak::nodes::NodeEmph)
+pub comrak::nodes::NodeValue::Escaped
+pub comrak::nodes::NodeValue::EscapedTag(&'static str)
+pub comrak::nodes::NodeValue::FootnoteDefinition(comrak::nodes::NodeFootnoteDefinition)
+pub comrak::nodes::NodeValue::FootnoteReference(alloc::boxed::Box<comrak::nodes::NodeFootnoteReference>)
+pub comrak::nodes::NodeValue::FrontMatter(alloc::string::String)
+pub comrak::nodes::NodeValue::GridTable(alloc::boxed::Box<comrak::nodes::NodeGridTable>)
+pub comrak::nodes::NodeValue::GridTableCell(comrak::nodes::NodeGridTableCell)
+pub comrak::nodes::NodeValue::GridTableRow(comrak::nodes::GridTableSection)
+pub comrak::nodes::NodeValue::Heading(comrak::nodes::NodeHeading)
+pub comrak::nodes::NodeValue::HeexBlock(alloc::boxed::Box<comrak::nodes::NodeHeexBlock>)
+pub comrak::nodes::NodeValue::HeexInline(alloc::string::String)
+pub comrak::nodes::NodeValue::Highlight
+pub comrak::nodes::NodeValue::HtmlBlock(comrak::nodes::NodeHtmlBlock)
+pub comrak::nodes::NodeValue::HtmlInline(alloc::string::String)
+pub comrak::nodes::NodeValue::Image(alloc::boxed::Box<comrak::nodes::NodeLink>)
+pub comrak::nodes::NodeValue::Insert
+pub comrak::nodes::NodeValue::Item(comrak::nodes::NodeList)
+pub comrak::nodes::NodeValue::LineBreak
+pub comrak::nodes::NodeValue::Link(alloc::boxed::Box<comrak::nodes::NodeLink>)
+pub comrak::nodes::NodeValue::List(comrak::nodes::NodeList)
+pub comrak::nodes::NodeValue::Math(comrak::nodes::NodeMath)
+pub comrak::nodes::NodeValue::MathBlock(alloc::boxed::Box<comrak::nodes::NodeMathBlock>)
+pub comrak::nodes::NodeValue::MultilineBlockQuote(comrak::nodes::NodeMultilineBlockQuote)
+pub comrak::nodes::NodeValue::MultilineComment(comrak::nodes::NodeCommentBlock)
+pub comrak::nodes::NodeValue::Paragraph
+pub comrak::nodes::NodeValue::Raw(alloc::string::String)
+pub comrak::nodes::NodeValue::ShortCode(alloc::boxed::Box<comrak::nodes::NodeShortCode>)
+pub comrak::nodes::NodeValue::SoftBreak
+pub comrak::nodes::NodeValue::SpoileredText
+pub comrak::nodes::NodeValue::Strikethrough(comrak::nodes::NodeStrikethrough)
+pub comrak::nodes::NodeValue::Strong(comrak::nodes::NodeStrong)
+pub comrak::nodes::NodeValue::Subscript
+pub comrak::nodes::NodeValue::Subtext
+pub comrak::nodes::NodeValue::Superscript
+pub comrak::nodes::NodeValue::Table(alloc::boxed::Box<comrak::nodes::NodeTable>)
+pub comrak::nodes::NodeValue::TableCell
+pub comrak::nodes::NodeValue::TableRow(comrak::nodes::NodeTableRow)
+pub comrak::nodes::NodeValue::TaskItem(comrak::nodes::NodeTaskItem)
+pub comrak::nodes::NodeValue::Text(alloc::borrow::Cow<'static, str>)
+pub comrak::nodes::NodeValue::ThematicBreak(comrak::nodes::NodeThematicBreak)
+pub comrak::nodes::NodeValue::Underline
+pub comrak::nodes::NodeValue::WikiLink(comrak::nodes::NodeWikiLink)
+impl comrak::nodes::NodeValue
+pub fn comrak::nodes::NodeValue::block(&self) -> bool
+pub fn comrak::nodes::NodeValue::contains_inlines(&self) -> bool
+pub fn comrak::nodes::NodeValue::text(&self) -> core::option::Option<&str>
+pub fn comrak::nodes::NodeValue::text_mut(&mut self) -> core::option::Option<&mut alloc::borrow::Cow<'static, str>>
+pub fn comrak::nodes::NodeValue::xml_node_name(&self) -> &'static str
+impl core::clone::Clone for comrak::nodes::NodeValue
+pub fn comrak::nodes::NodeValue::clone(&self) -> comrak::nodes::NodeValue
+impl core::cmp::Eq for comrak::nodes::NodeValue
+impl core::cmp::PartialEq for comrak::nodes::NodeValue
+pub fn comrak::nodes::NodeValue::eq(&self, other: &comrak::nodes::NodeValue) -> bool
+impl core::convert::From<comrak::nodes::NodeValue> for comrak::nodes::AstNode<'_>
+pub fn comrak::nodes::AstNode<'_>::from(value: comrak::nodes::NodeValue) -> Self
+impl core::fmt::Debug for comrak::nodes::NodeValue
+pub fn comrak::nodes::NodeValue::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeValue
+impl core::marker::Freeze for comrak::nodes::NodeValue
+impl core::marker::Send for comrak::nodes::NodeValue
+impl core::marker::Sync for comrak::nodes::NodeValue
+impl core::marker::Unpin for comrak::nodes::NodeValue
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeValue
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeValue
+pub enum comrak::nodes::TableAlignment
+pub comrak::nodes::TableAlignment::Center
+pub comrak::nodes::TableAlignment::Left
+pub comrak::nodes::TableAlignment::None
+pub comrak::nodes::TableAlignment::Right
+impl core::clone::Clone for comrak::nodes::TableAlignment
+pub fn comrak::nodes::TableAlignment::clone(&self) -> comrak::nodes::TableAlignment
+impl core::cmp::Eq for comrak::nodes::TableAlignment
+impl core::cmp::PartialEq for comrak::nodes::TableAlignment
+pub fn comrak::nodes::TableAlignment::eq(&self, other: &comrak::nodes::TableAlignment) -> bool
+impl core::fmt::Debug for comrak::nodes::TableAlignment
+pub fn comrak::nodes::TableAlignment::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::TableAlignment
+impl core::marker::StructuralPartialEq for comrak::nodes::TableAlignment
+impl core::marker::Freeze for comrak::nodes::TableAlignment
+impl core::marker::Send for comrak::nodes::TableAlignment
+impl core::marker::Sync for comrak::nodes::TableAlignment
+impl core::marker::Unpin for comrak::nodes::TableAlignment
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::TableAlignment
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::TableAlignment
+#[non_exhaustive] pub enum comrak::nodes::ValidationError<'a>
+#[non_exhaustive] pub comrak::nodes::ValidationError::InvalidChildType
+pub comrak::nodes::ValidationError::InvalidChildType::child: comrak::nodes::Node<'a>
+pub comrak::nodes::ValidationError::InvalidChildType::parent: comrak::nodes::Node<'a>
+impl<'a> core::clone::Clone for comrak::nodes::ValidationError<'a>
+pub fn comrak::nodes::ValidationError<'a>::clone(&self) -> comrak::nodes::ValidationError<'a>
+impl<'a> core::fmt::Debug for comrak::nodes::ValidationError<'a>
+pub fn comrak::nodes::ValidationError<'a>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for comrak::nodes::ValidationError<'a>
+impl<'a> !core::marker::Send for comrak::nodes::ValidationError<'a>
+impl<'a> !core::marker::Sync for comrak::nodes::ValidationError<'a>
+impl<'a> core::marker::Unpin for comrak::nodes::ValidationError<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::ValidationError<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for comrak::nodes::ValidationError<'a>
+pub struct comrak::nodes::Ast
+pub comrak::nodes::Ast::attrs: core::option::Option<alloc::boxed::Box<comrak::nodes::Attributes>>
+pub comrak::nodes::Ast::sourcepos: comrak::nodes::Sourcepos
+pub comrak::nodes::Ast::value: comrak::nodes::NodeValue
+impl comrak::nodes::Ast
+pub fn comrak::nodes::Ast::new(value: comrak::nodes::NodeValue, start: comrak::nodes::LineColumn) -> Self
+pub fn comrak::nodes::Ast::new_with_sourcepos(value: comrak::nodes::NodeValue, sourcepos: comrak::nodes::Sourcepos) -> Self
+impl core::clone::Clone for comrak::nodes::Ast
+pub fn comrak::nodes::Ast::clone(&self) -> comrak::nodes::Ast
+impl core::cmp::Eq for comrak::nodes::Ast
+impl core::cmp::PartialEq for comrak::nodes::Ast
+pub fn comrak::nodes::Ast::eq(&self, other: &comrak::nodes::Ast) -> bool
+impl core::convert::From<comrak::nodes::Ast> for comrak::nodes::AstNode<'_>
+pub fn comrak::nodes::AstNode<'_>::from(ast: comrak::nodes::Ast) -> Self
+impl core::fmt::Debug for comrak::nodes::Ast
+pub fn comrak::nodes::Ast::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::Ast
+impl core::marker::Freeze for comrak::nodes::Ast
+impl core::marker::Send for comrak::nodes::Ast
+impl core::marker::Sync for comrak::nodes::Ast
+impl core::marker::Unpin for comrak::nodes::Ast
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::Ast
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::Ast
+#[non_exhaustive] pub struct comrak::nodes::Attributes
+pub comrak::nodes::Attributes::classes: alloc::vec::Vec<alloc::string::String>
+pub comrak::nodes::Attributes::id: core::option::Option<alloc::string::String>
+pub comrak::nodes::Attributes::pairs: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl core::clone::Clone for comrak::nodes::Attributes
+pub fn comrak::nodes::Attributes::clone(&self) -> comrak::nodes::Attributes
+impl core::cmp::Eq for comrak::nodes::Attributes
+impl core::cmp::PartialEq for comrak::nodes::Attributes
+pub fn comrak::nodes::Attributes::eq(&self, other: &comrak::nodes::Attributes) -> bool
+impl core::default::Default for comrak::nodes::Attributes
+pub fn comrak::nodes::Attributes::default() -> comrak::nodes::Attributes
+impl core::fmt::Debug for comrak::nodes::Attributes
+pub fn comrak::nodes::Attributes::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::Attributes
+impl core::marker::Freeze for comrak::nodes::Attributes
+impl core::marker::Send for comrak::nodes::Attributes
+impl core::marker::Sync for comrak::nodes::Attributes
+impl core::marker::Unpin for comrak::nodes::Attributes
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::Attributes
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::Attributes
+#[non_exhaustive] pub struct comrak::nodes::GridTableColumn
+pub comrak::nodes::GridTableColumn::alignment: comrak::nodes::TableAlignment
+pub comrak::nodes::GridTableColumn::width: usize
+impl comrak::nodes::GridTableColumn
+pub fn comrak::nodes::GridTableColumn::new(alignment: comrak::nodes::TableAlignment, width: usize) -> Self
+impl core::clone::Clone for comrak::nodes::GridTableColumn
+pub fn comrak::nodes::GridTableColumn::clone(&self) -> comrak::nodes::GridTableColumn
+impl core::cmp::Eq for comrak::nodes::GridTableColumn
+impl core::cmp::PartialEq for comrak::nodes::GridTableColumn
+pub fn comrak::nodes::GridTableColumn::eq(&self, other: &comrak::nodes::GridTableColumn) -> bool
+impl core::fmt::Debug for comrak::nodes::GridTableColumn
+pub fn comrak::nodes::GridTableColumn::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::GridTableColumn
+impl core::marker::Freeze for comrak::nodes::GridTableColumn
+impl core::marker::Send for comrak::nodes::GridTableColumn
+impl core::marker::Sync for comrak::nodes::GridTableColumn
+impl core::marker::Unpin for comrak::nodes::GridTableColumn
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::GridTableColumn
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::GridTableColumn
+pub struct comrak::nodes::LineColumn
+pub comrak::nodes::LineColumn::column: usize
+pub comrak::nodes::LineColumn::line: usize
+impl comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::column_add(&self, offset: isize) -> comrak::nodes::LineColumn
+impl core::clone::Clone for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::clone(&self) -> comrak::nodes::LineColumn
+impl core::cmp::Eq for comrak::nodes::LineColumn
+impl core::cmp::Ord for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::cmp(&self, other: &comrak::nodes::LineColumn) -> core::cmp::Ordering
+impl core::cmp::PartialEq for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::eq(&self, other: &comrak::nodes::LineColumn) -> bool
+impl core::cmp::PartialOrd for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::partial_cmp(&self, other: &comrak::nodes::LineColumn) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<(usize, usize)> for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::from(lc: (usize, usize)) -> comrak::nodes::LineColumn
+impl core::default::Default for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::default() -> comrak::nodes::LineColumn
+impl core::fmt::Debug for comrak::nodes::LineColumn
+pub fn comrak::nodes::LineColumn::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::LineColumn
+impl core::marker::StructuralPartialEq for comrak::nodes::LineColumn
+impl core::marker::Freeze for comrak::nodes::LineColumn
+impl core::marker::Send for comrak::nodes::LineColumn
+impl core::marker::Sync for comrak::nodes::LineColumn
+impl core::marker::Unpin for comrak::nodes::LineColumn
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::LineColumn
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::LineColumn
+#[non_exhaustive] pub struct comrak::nodes::NodeAlert
+pub comrak::nodes::NodeAlert::alert_type: comrak::nodes::AlertType
+pub comrak::nodes::NodeAlert::fence_length: usize
+pub comrak::nodes::NodeAlert::fence_offset: usize
+pub comrak::nodes::NodeAlert::multiline: bool
+pub comrak::nodes::NodeAlert::title: core::option::Option<alloc::string::String>
+impl comrak::nodes::NodeAlert
+pub fn comrak::nodes::NodeAlert::new(alert_type: comrak::nodes::AlertType, title: core::option::Option<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeAlert
+pub fn comrak::nodes::NodeAlert::clone(&self) -> comrak::nodes::NodeAlert
+impl core::cmp::Eq for comrak::nodes::NodeAlert
+impl core::cmp::PartialEq for comrak::nodes::NodeAlert
+pub fn comrak::nodes::NodeAlert::eq(&self, other: &comrak::nodes::NodeAlert) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeAlert
+pub fn comrak::nodes::NodeAlert::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeAlert
+impl core::marker::Freeze for comrak::nodes::NodeAlert
+impl core::marker::Send for comrak::nodes::NodeAlert
+impl core::marker::Sync for comrak::nodes::NodeAlert
+impl core::marker::Unpin for comrak::nodes::NodeAlert
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeAlert
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeAlert
+#[non_exhaustive] pub struct comrak::nodes::NodeBlockDirective
+pub comrak::nodes::NodeBlockDirective::fence_length: usize
+pub comrak::nodes::NodeBlockDirective::fence_offset: usize
+pub comrak::nodes::NodeBlockDirective::info: alloc::string::String
+impl comrak::nodes::NodeBlockDirective
+pub fn comrak::nodes::NodeBlockDirective::new(info: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeBlockDirective
+pub fn comrak::nodes::NodeBlockDirective::clone(&self) -> comrak::nodes::NodeBlockDirective
+impl core::cmp::Eq for comrak::nodes::NodeBlockDirective
+impl core::cmp::PartialEq for comrak::nodes::NodeBlockDirective
+pub fn comrak::nodes::NodeBlockDirective::eq(&self, other: &comrak::nodes::NodeBlockDirective) -> bool
+impl core::default::Default for comrak::nodes::NodeBlockDirective
+pub fn comrak::nodes::NodeBlockDirective::default() -> comrak::nodes::NodeBlockDirective
+impl core::fmt::Debug for comrak::nodes::NodeBlockDirective
+pub fn comrak::nodes::NodeBlockDirective::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeBlockDirective
+impl core::marker::Freeze for comrak::nodes::NodeBlockDirective
+impl core::marker::Send for comrak::nodes::NodeBlockDirective
+impl core::marker::Sync for comrak::nodes::NodeBlockDirective
+impl core::marker::Unpin for comrak::nodes::NodeBlockDirective
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeBlockDirective
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeBlockDirective
+#[non_exhaustive] pub struct comrak::nodes::NodeBlockId
+pub comrak::nodes::NodeBlockId::name: alloc::string::String
+impl comrak::nodes::NodeBlockId
+pub fn comrak::nodes::NodeBlockId::new(name: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeBlockId
+pub fn comrak::nodes::NodeBlockId::clone(&self) -> comrak::nodes::NodeBlockId
+impl core::cmp::Eq for comrak::nodes::NodeBlockId
+impl core::cmp::PartialEq for comrak::nodes::NodeBlockId
+pub fn comrak::nodes::NodeBlockId::eq(&self, other: &comrak::nodes::NodeBlockId) -> bool
+impl core::default::Default for comrak::nodes::NodeBlockId
+pub fn comrak::nodes::NodeBlockId::default() -> comrak::nodes::NodeBlockId
+impl core::fmt::Debug for comrak::nodes::NodeBlockId
+pub fn comrak::nodes::NodeBlockId::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeBlockId
+impl core::marker::Freeze for comrak::nodes::NodeBlockId
+impl core::marker::Send for comrak::nodes::NodeBlockId
+impl core::marker::Sync for comrak::nodes::NodeBlockId
+impl core::marker::Unpin for comrak::nodes::NodeBlockId
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeBlockId
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeBlockId
+#[non_exhaustive] pub struct comrak::nodes::NodeCallout
+pub comrak::nodes::NodeCallout::callout_type: alloc::string::String
+pub comrak::nodes::NodeCallout::fold: comrak::nodes::CalloutFold
+pub comrak::nodes::NodeCallout::metadata: core::option::Option<alloc::string::String>
+impl comrak::nodes::NodeCallout
+pub fn comrak::nodes::NodeCallout::default_title(&self) -> alloc::string::String
+pub fn comrak::nodes::NodeCallout::new(callout_type: impl core::convert::Into<alloc::string::String>, metadata: core::option::Option<alloc::string::String>, fold: comrak::nodes::CalloutFold) -> Self
+impl core::clone::Clone for comrak::nodes::NodeCallout
+pub fn comrak::nodes::NodeCallout::clone(&self) -> comrak::nodes::NodeCallout
+impl core::cmp::Eq for comrak::nodes::NodeCallout
+impl core::cmp::PartialEq for comrak::nodes::NodeCallout
+pub fn comrak::nodes::NodeCallout::eq(&self, other: &comrak::nodes::NodeCallout) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeCallout
+pub fn comrak::nodes::NodeCallout::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeCallout
+impl core::marker::Freeze for comrak::nodes::NodeCallout
+impl core::marker::Send for comrak::nodes::NodeCallout
+impl core::marker::Sync for comrak::nodes::NodeCallout
+impl core::marker::Unpin for comrak::nodes::NodeCallout
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeCallout
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeCallout
+#[non_exhaustive] pub struct comrak::nodes::NodeCode
+pub comrak::nodes::NodeCode::literal: alloc::string::String
+pub comrak::nodes::NodeCode::num_backticks: usize
+impl comrak::nodes::NodeCode
+pub fn comrak::nodes::NodeCode::new(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeCode
+pub fn comrak::nodes::NodeCode::clone(&self) -> comrak::nodes::NodeCode
+impl core::cmp::Eq for comrak::nodes::NodeCode
+impl core::cmp::PartialEq for comrak::nodes::NodeCode
+pub fn comrak::nodes::NodeCode::eq(&self, other: &comrak::nodes::NodeCode) -> bool
+impl core::default::Default for comrak::nodes::NodeCode
+pub fn comrak::nodes::NodeCode::default() -> comrak::nodes::NodeCode
+impl core::fmt::Debug for comrak::nodes::NodeCode
+pub fn comrak::nodes::NodeCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeCode
+impl core::marker::Freeze for comrak::nodes::NodeCode
+impl core::marker::Send for comrak::nodes::NodeCode
+impl core::marker::Sync for comrak::nodes::NodeCode
+impl core::marker::Unpin for comrak::nodes::NodeCode
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeCode
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeCode
+#[non_exhaustive] pub struct comrak::nodes::NodeCodeBlock
+pub comrak::nodes::NodeCodeBlock::closed: bool
+pub comrak::nodes::NodeCodeBlock::fence_char: u8
+pub comrak::nodes::NodeCodeBlock::fence_length: usize
+pub comrak::nodes::NodeCodeBlock::fence_offset: usize
+pub comrak::nodes::NodeCodeBlock::fenced: bool
+pub comrak::nodes::NodeCodeBlock::info: alloc::string::String
+pub comrak::nodes::NodeCodeBlock::literal: alloc::string::String
+impl comrak::nodes::NodeCodeBlock
+pub fn comrak::nodes::NodeCodeBlock::fenced(info: impl core::convert::Into<alloc::string::String>, literal: impl core::convert::Into<alloc::string::String>) -> Self
+pub fn comrak::nodes::NodeCodeBlock::indented(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeCodeBlock
+pub fn comrak::nodes::NodeCodeBlock::clone(&self) -> comrak::nodes::NodeCodeBlock
+impl core::cmp::Eq for comrak::nodes::NodeCodeBlock
+impl core::cmp::PartialEq for comrak::nodes::NodeCodeBlock
+pub fn comrak::nodes::NodeCodeBlock::eq(&self, other: &comrak::nodes::NodeCodeBlock) -> bool
+impl core::default::Default for comrak::nodes::NodeCodeBlock
+pub fn comrak::nodes::NodeCodeBlock::default() -> comrak::nodes::NodeCodeBlock
+impl core::fmt::Debug for comrak::nodes::NodeCodeBlock
+pub fn comrak::nodes::NodeCodeBlock::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeCodeBlock
+impl core::marker::Freeze for comrak::nodes::NodeCodeBlock
+impl core::marker::Send for comrak::nodes::NodeCodeBlock
+impl core::marker::Sync for comrak::nodes::NodeCodeBlock
+impl core::marker::Unpin for comrak::nodes::NodeCodeBlock
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeCodeBlock
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeCodeBlock
+#[non_exhaustive] pub struct comrak::nodes::NodeComment
+pub comrak::nodes::NodeComment::literal: alloc::string::String
+impl comrak::nodes::NodeComment
+pub fn comrak::nodes::NodeComment::new(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeComment
+pub fn comrak::nodes::NodeComment::clone(&self) -> comrak::nodes::NodeComment
+impl core::cmp::Eq for comrak::nodes::NodeComment
+impl core::cmp::PartialEq for comrak::nodes::NodeComment
+pub fn comrak::nodes::NodeComment::eq(&self, other: &comrak::nodes::NodeComment) -> bool
+impl core::default::Default for comrak::nodes::NodeComment
+pub fn comrak::nodes::NodeComment::default() -> comrak::nodes::NodeComment
+impl core::fmt::Debug for comrak::nodes::NodeComment
+pub fn comrak::nodes::NodeComment::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeComment
+impl core::marker::Freeze for comrak::nodes::NodeComment
+impl core::marker::Send for comrak::nodes::NodeComment
+impl core::marker::Sync for comrak::nodes::NodeComment
+impl core::marker::Unpin for comrak::nodes::NodeComment
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeComment
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeComment
+#[non_exhaustive] pub struct comrak::nodes::NodeCommentBlock
+pub comrak::nodes::NodeCommentBlock::closed: bool
+pub comrak::nodes::NodeCommentBlock::literal: alloc::string::String
+impl comrak::nodes::NodeCommentBlock
+pub fn comrak::nodes::NodeCommentBlock::new(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeCommentBlock
+pub fn comrak::nodes::NodeCommentBlock::clone(&self) -> comrak::nodes::NodeCommentBlock
+impl core::cmp::Eq for comrak::nodes::NodeCommentBlock
+impl core::cmp::PartialEq for comrak::nodes::NodeCommentBlock
+pub fn comrak::nodes::NodeCommentBlock::eq(&self, other: &comrak::nodes::NodeCommentBlock) -> bool
+impl core::default::Default for comrak::nodes::NodeCommentBlock
+pub fn comrak::nodes::NodeCommentBlock::default() -> comrak::nodes::NodeCommentBlock
+impl core::fmt::Debug for comrak::nodes::NodeCommentBlock
+pub fn comrak::nodes::NodeCommentBlock::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeCommentBlock
+impl core::marker::Freeze for comrak::nodes::NodeCommentBlock
+impl core::marker::Send for comrak::nodes::NodeCommentBlock
+impl core::marker::Sync for comrak::nodes::NodeCommentBlock
+impl core::marker::Unpin for comrak::nodes::NodeCommentBlock
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeCommentBlock
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeCommentBlock
+#[non_exhaustive] pub struct comrak::nodes::NodeDescriptionItem
+pub comrak::nodes::NodeDescriptionItem::marker_offset: usize
+pub comrak::nodes::NodeDescriptionItem::padding: usize
+pub comrak::nodes::NodeDescriptionItem::tight: bool
+impl comrak::nodes::NodeDescriptionItem
+pub fn comrak::nodes::NodeDescriptionItem::new(tight: bool) -> Self
+impl core::clone::Clone for comrak::nodes::NodeDescriptionItem
+pub fn comrak::nodes::NodeDescriptionItem::clone(&self) -> comrak::nodes::NodeDescriptionItem
+impl core::cmp::Eq for comrak::nodes::NodeDescriptionItem
+impl core::cmp::PartialEq for comrak::nodes::NodeDescriptionItem
+pub fn comrak::nodes::NodeDescriptionItem::eq(&self, other: &comrak::nodes::NodeDescriptionItem) -> bool
+impl core::default::Default for comrak::nodes::NodeDescriptionItem
+pub fn comrak::nodes::NodeDescriptionItem::default() -> comrak::nodes::NodeDescriptionItem
+impl core::fmt::Debug for comrak::nodes::NodeDescriptionItem
+pub fn comrak::nodes::NodeDescriptionItem::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeDescriptionItem
+impl core::marker::Freeze for comrak::nodes::NodeDescriptionItem
+impl core::marker::Send for comrak::nodes::NodeDescriptionItem
+impl core::marker::Sync for comrak::nodes::NodeDescriptionItem
+impl core::marker::Unpin for comrak::nodes::NodeDescriptionItem
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeDescriptionItem
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeDescriptionItem
+#[non_exhaustive] pub struct comrak::nodes::NodeEmph
+impl core::clone::Clone for comrak::nodes::NodeEmph
+pub fn comrak::nodes::NodeEmph::clone(&self) -> comrak::nodes::NodeEmph
+impl core::cmp::Eq for comrak::nodes::NodeEmph
+impl core::cmp::PartialEq for comrak::nodes::NodeEmph
+pub fn comrak::nodes::NodeEmph::eq(&self, other: &comrak::nodes::NodeEmph) -> bool
+impl core::default::Default for comrak::nodes::NodeEmph
+pub fn comrak::nodes::NodeEmph::default() -> comrak::nodes::NodeEmph
+impl core::fmt::Debug for comrak::nodes::NodeEmph
+pub fn comrak::nodes::NodeEmph::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeEmph
+impl core::marker::Freeze for comrak::nodes::NodeEmph
+impl core::marker::Send for comrak::nodes::NodeEmph
+impl core::marker::Sync for comrak::nodes::NodeEmph
+impl core::marker::Unpin for comrak::nodes::NodeEmph
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeEmph
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeEmph
+#[non_exhaustive] pub struct comrak::nodes::NodeFootnoteDefinition
+pub comrak::nodes::NodeFootnoteDefinition::name: alloc::string::String
+pub comrak::nodes::NodeFootnoteDefinition::total_references: u32
+impl comrak::nodes::NodeFootnoteDefinition
+pub fn comrak::nodes::NodeFootnoteDefinition::new(name: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeFootnoteDefinition
+pub fn comrak::nodes::NodeFootnoteDefinition::clone(&self) -> comrak::nodes::NodeFootnoteDefinition
+impl core::cmp::Eq for comrak::nodes::NodeFootnoteDefinition
+impl core::cmp::PartialEq for comrak::nodes::NodeFootnoteDefinition
+pub fn comrak::nodes::NodeFootnoteDefinition::eq(&self, other: &comrak::nodes::NodeFootnoteDefinition) -> bool
+impl core::default::Default for comrak::nodes::NodeFootnoteDefinition
+pub fn comrak::nodes::NodeFootnoteDefinition::default() -> comrak::nodes::NodeFootnoteDefinition
+impl core::fmt::Debug for comrak::nodes::NodeFootnoteDefinition
+pub fn comrak::nodes::NodeFootnoteDefinition::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeFootnoteDefinition
+impl core::marker::Freeze for comrak::nodes::NodeFootnoteDefinition
+impl core::marker::Send for comrak::nodes::NodeFootnoteDefinition
+impl core::marker::Sync for comrak::nodes::NodeFootnoteDefinition
+impl core::marker::Unpin for comrak::nodes::NodeFootnoteDefinition
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeFootnoteDefinition
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeFootnoteDefinition
+#[non_exhaustive] pub struct comrak::nodes::NodeFootnoteReference
+pub comrak::nodes::NodeFootnoteReference::ix: u32
+pub comrak::nodes::NodeFootnoteReference::name: alloc::string::String
+pub comrak::nodes::NodeFootnoteReference::ref_num: u32
+pub comrak::nodes::NodeFootnoteReference::texts: alloc::vec::Vec<(alloc::string::String, usize)>
+impl comrak::nodes::NodeFootnoteReference
+pub fn comrak::nodes::NodeFootnoteReference::new(name: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeFootnoteReference
+pub fn comrak::nodes::NodeFootnoteReference::clone(&self) -> comrak::nodes::NodeFootnoteReference
+impl core::cmp::Eq for comrak::nodes::NodeFootnoteReference
+impl core::cmp::PartialEq for comrak::nodes::NodeFootnoteReference
+pub fn comrak::nodes::NodeFootnoteReference::eq(&self, other: &comrak::nodes::NodeFootnoteReference) -> bool
+impl core::default::Default for comrak::nodes::NodeFootnoteReference
+pub fn comrak::nodes::NodeFootnoteReference::default() -> comrak::nodes::NodeFootnoteReference
+impl core::fmt::Debug for comrak::nodes::NodeFootnoteReference
+pub fn comrak::nodes::NodeFootnoteReference::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeFootnoteReference
+impl core::marker::Freeze for comrak::nodes::NodeFootnoteReference
+impl core::marker::Send for comrak::nodes::NodeFootnoteReference
+impl core::marker::Sync for comrak::nodes::NodeFootnoteReference
+impl core::marker::Unpin for comrak::nodes::NodeFootnoteReference
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeFootnoteReference
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeFootnoteReference
+#[non_exhaustive] pub struct comrak::nodes::NodeGridTable
+pub comrak::nodes::NodeGridTable::columns: alloc::vec::Vec<comrak::nodes::GridTableColumn>
+impl comrak::nodes::NodeGridTable
+pub fn comrak::nodes::NodeGridTable::new(columns: alloc::vec::Vec<comrak::nodes::GridTableColumn>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeGridTable
+pub fn comrak::nodes::NodeGridTable::clone(&self) -> comrak::nodes::NodeGridTable
+impl core::cmp::Eq for comrak::nodes::NodeGridTable
+impl core::cmp::PartialEq for comrak::nodes::NodeGridTable
+pub fn comrak::nodes::NodeGridTable::eq(&self, other: &comrak::nodes::NodeGridTable) -> bool
+impl core::default::Default for comrak::nodes::NodeGridTable
+pub fn comrak::nodes::NodeGridTable::default() -> comrak::nodes::NodeGridTable
+impl core::fmt::Debug for comrak::nodes::NodeGridTable
+pub fn comrak::nodes::NodeGridTable::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeGridTable
+impl core::marker::Freeze for comrak::nodes::NodeGridTable
+impl core::marker::Send for comrak::nodes::NodeGridTable
+impl core::marker::Sync for comrak::nodes::NodeGridTable
+impl core::marker::Unpin for comrak::nodes::NodeGridTable
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeGridTable
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeGridTable
+#[non_exhaustive] pub struct comrak::nodes::NodeGridTableCell
+pub comrak::nodes::NodeGridTableCell::colspan: usize
+pub comrak::nodes::NodeGridTableCell::column: usize
+pub comrak::nodes::NodeGridTableCell::rowspan: usize
+impl comrak::nodes::NodeGridTableCell
+pub fn comrak::nodes::NodeGridTableCell::new(column: usize, colspan: usize, rowspan: usize) -> Self
+impl core::clone::Clone for comrak::nodes::NodeGridTableCell
+pub fn comrak::nodes::NodeGridTableCell::clone(&self) -> comrak::nodes::NodeGridTableCell
+impl core::cmp::Eq for comrak::nodes::NodeGridTableCell
+impl core::cmp::PartialEq for comrak::nodes::NodeGridTableCell
+pub fn comrak::nodes::NodeGridTableCell::eq(&self, other: &comrak::nodes::NodeGridTableCell) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeGridTableCell
+pub fn comrak::nodes::NodeGridTableCell::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeGridTableCell
+impl core::marker::Freeze for comrak::nodes::NodeGridTableCell
+impl core::marker::Send for comrak::nodes::NodeGridTableCell
+impl core::marker::Sync for comrak::nodes::NodeGridTableCell
+impl core::marker::Unpin for comrak::nodes::NodeGridTableCell
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeGridTableCell
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeGridTableCell
+#[non_exhaustive] pub struct comrak::nodes::NodeHeading
+pub comrak::nodes::NodeHeading::closed: bool
+pub comrak::nodes::NodeHeading::level: u8
+pub comrak::nodes::NodeHeading::setext: bool
+impl comrak::nodes::NodeHeading
+pub fn comrak::nodes::NodeHeading::new(level: u8) -> Self
+impl core::clone::Clone for comrak::nodes::NodeHeading
+pub fn comrak::nodes::NodeHeading::clone(&self) -> comrak::nodes::NodeHeading
+impl core::cmp::Eq for comrak::nodes::NodeHeading
+impl core::cmp::PartialEq for comrak::nodes::NodeHeading
+pub fn comrak::nodes::NodeHeading::eq(&self, other: &comrak::nodes::NodeHeading) -> bool
+impl core::default::Default for comrak::nodes::NodeHeading
+pub fn comrak::nodes::NodeHeading::default() -> comrak::nodes::NodeHeading
+impl core::fmt::Debug for comrak::nodes::NodeHeading
+pub fn comrak::nodes::NodeHeading::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeHeading
+impl core::marker::Freeze for comrak::nodes::NodeHeading
+impl core::marker::Send for comrak::nodes::NodeHeading
+impl core::marker::Sync for comrak::nodes::NodeHeading
+impl core::marker::Unpin for comrak::nodes::NodeHeading
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeHeading
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeHeading
+#[non_exhaustive] pub struct comrak::nodes::NodeHeexBlock
+pub comrak::nodes::NodeHeexBlock::literal: alloc::string::String
+pub comrak::nodes::NodeHeexBlock::node: comrak::nodes::HeexNode
+impl comrak::nodes::NodeHeexBlock
+pub fn comrak::nodes::NodeHeexBlock::new(literal: impl core::convert::Into<alloc::string::String>, node: comrak::nodes::HeexNode) -> Self
+impl core::clone::Clone for comrak::nodes::NodeHeexBlock
+pub fn comrak::nodes::NodeHeexBlock::clone(&self) -> comrak::nodes::NodeHeexBlock
+impl core::cmp::Eq for comrak::nodes::NodeHeexBlock
+impl core::cmp::PartialEq for comrak::nodes::NodeHeexBlock
+pub fn comrak::nodes::NodeHeexBlock::eq(&self, other: &comrak::nodes::NodeHeexBlock) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeHeexBlock
+pub fn comrak::nodes::NodeHeexBlock::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeHeexBlock
+impl core::marker::Freeze for comrak::nodes::NodeHeexBlock
+impl core::marker::Send for comrak::nodes::NodeHeexBlock
+impl core::marker::Sync for comrak::nodes::NodeHeexBlock
+impl core::marker::Unpin for comrak::nodes::NodeHeexBlock
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeHeexBlock
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeHeexBlock
+#[non_exhaustive] pub struct comrak::nodes::NodeHtmlBlock
+pub comrak::nodes::NodeHtmlBlock::block_type: u8
+pub comrak::nodes::NodeHtmlBlock::literal: alloc::string::String
+impl comrak::nodes::NodeHtmlBlock
+pub fn comrak::nodes::NodeHtmlBlock::new(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeHtmlBlock
+pub fn comrak::nodes::NodeHtmlBlock::clone(&self) -> comrak::nodes::NodeHtmlBlock
+impl core::cmp::Eq for comrak::nodes::NodeHtmlBlock
+impl core::cmp::PartialEq for comrak::nodes::NodeHtmlBlock
+pub fn comrak::nodes::NodeHtmlBlock::eq(&self, other: &comrak::nodes::NodeHtmlBlock) -> bool
+impl core::default::Default for comrak::nodes::NodeHtmlBlock
+pub fn comrak::nodes::NodeHtmlBlock::default() -> comrak::nodes::NodeHtmlBlock
+impl core::fmt::Debug for comrak::nodes::NodeHtmlBlock
+pub fn comrak::nodes::NodeHtmlBlock::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeHtmlBlock
+impl core::marker::Freeze for comrak::nodes::NodeHtmlBlock
+impl core::marker::Send for comrak::nodes::NodeHtmlBlock
+impl core::marker::Sync for comrak::nodes::NodeHtmlBlock
+impl core::marker::Unpin for comrak::nodes::NodeHtmlBlock
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeHtmlBlock
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeHtmlBlock
+#[non_exhaustive] pub struct comrak::nodes::NodeLink
+pub comrak::nodes::NodeLink::title: alloc::string::String
+pub comrak::nodes::NodeLink::url: alloc::string::String
+impl comrak::nodes::NodeLink
+pub fn comrak::nodes::NodeLink::new(url: impl core::convert::Into<alloc::string::String>, title: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeLink
+pub fn comrak::nodes::NodeLink::clone(&self) -> comrak::nodes::NodeLink
+impl core::cmp::Eq for comrak::nodes::NodeLink
+impl core::cmp::PartialEq for comrak::nodes::NodeLink
+pub fn comrak::nodes::NodeLink::eq(&self, other: &comrak::nodes::NodeLink) -> bool
+impl core::default::Default for comrak::nodes::NodeLink
+pub fn comrak::nodes::NodeLink::default() -> comrak::nodes::NodeLink
+impl core::fmt::Debug for comrak::nodes::NodeLink
+pub fn comrak::nodes::NodeLink::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeLink
+impl core::marker::Freeze for comrak::nodes::NodeLink
+impl core::marker::Send for comrak::nodes::NodeLink
+impl core::marker::Sync for comrak::nodes::NodeLink
+impl core::marker::Unpin for comrak::nodes::NodeLink
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeLink
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeLink
+#[non_exhaustive] pub struct comrak::nodes::NodeList
+pub comrak::nodes::NodeList::bullet_char: u8
+pub comrak::nodes::NodeList::delimiter: comrak::nodes::ListDelimType
+pub comrak::nodes::NodeList::is_task_list: bool
+pub comrak::nodes::NodeList::list_type: comrak::nodes::ListType
+pub comrak::nodes::NodeList::marker_offset: usize
+pub comrak::nodes::NodeList::padding: usize
+pub comrak::nodes::NodeList::start: usize
+pub comrak::nodes::NodeList::tight: bool
+impl comrak::nodes::NodeList
+pub fn comrak::nodes::NodeList::bullet(bullet_char: u8, tight: bool) -> Self
+pub fn comrak::nodes::NodeList::ordered(start: usize, delimiter: comrak::nodes::ListDelimType, tight: bool) -> Self
+impl core::clone::Clone for comrak::nodes::NodeList
+pub fn comrak::nodes::NodeList::clone(&self) -> comrak::nodes::NodeList
+impl core::cmp::Eq for comrak::nodes::NodeList
+impl core::cmp::PartialEq for comrak::nodes::NodeList
+pub fn comrak::nodes::NodeList::eq(&self, other: &comrak::nodes::NodeList) -> bool
+impl core::default::Default for comrak::nodes::NodeList
+pub fn comrak::nodes::NodeList::default() -> comrak::nodes::NodeList
+impl core::fmt::Debug for comrak::nodes::NodeList
+pub fn comrak::nodes::NodeList::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeList
+impl core::marker::Freeze for comrak::nodes::NodeList
+impl core::marker::Send for comrak::nodes::NodeList
+impl core::marker::Sync for comrak::nodes::NodeList
+impl core::marker::Unpin for comrak::nodes::NodeList
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeList
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeList
+#[non_exhaustive] pub struct comrak::nodes::NodeMath
+pub comrak::nodes::NodeMath::display_math: bool
+pub comrak::nodes::NodeMath::dollar_math: bool
+pub comrak::nodes::NodeMath::literal: alloc::string::String
+impl comrak::nodes::NodeMath
+pub fn comrak::nodes::NodeMath::new(literal: impl core::convert::Into<alloc::string::String>, display_math: bool) -> Self
+impl core::clone::Clone for comrak::nodes::NodeMath
+pub fn comrak::nodes::NodeMath::clone(&self) -> comrak::nodes::NodeMath
+impl core::cmp::Eq for comrak::nodes::NodeMath
+impl core::cmp::PartialEq for comrak::nodes::NodeMath
+pub fn comrak::nodes::NodeMath::eq(&self, other: &comrak::nodes::NodeMath) -> bool
+impl core::default::Default for comrak::nodes::NodeMath
+pub fn comrak::nodes::NodeMath::default() -> comrak::nodes::NodeMath
+impl core::fmt::Debug for comrak::nodes::NodeMath
+pub fn comrak::nodes::NodeMath::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeMath
+impl core::marker::Freeze for comrak::nodes::NodeMath
+impl core::marker::Send for comrak::nodes::NodeMath
+impl core::marker::Sync for comrak::nodes::NodeMath
+impl core::marker::Unpin for comrak::nodes::NodeMath
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeMath
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeMath
+#[non_exhaustive] pub struct comrak::nodes::NodeMathBlock
+pub comrak::nodes::NodeMathBlock::closed: bool
+pub comrak::nodes::NodeMathBlock::fence_offset: usize
+pub comrak::nodes::NodeMathBlock::literal: alloc::string::String
+impl comrak::nodes::NodeMathBlock
+pub fn comrak::nodes::NodeMathBlock::new(literal: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeMathBlock
+pub fn comrak::nodes::NodeMathBlock::clone(&self) -> comrak::nodes::NodeMathBlock
+impl core::cmp::Eq for comrak::nodes::NodeMathBlock
+impl core::cmp::PartialEq for comrak::nodes::NodeMathBlock
+pub fn comrak::nodes::NodeMathBlock::eq(&self, other: &comrak::nodes::NodeMathBlock) -> bool
+impl core::default::Default for comrak::nodes::NodeMathBlock
+pub fn comrak::nodes::NodeMathBlock::default() -> comrak::nodes::NodeMathBlock
+impl core::fmt::Debug for comrak::nodes::NodeMathBlock
+pub fn comrak::nodes::NodeMathBlock::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeMathBlock
+impl core::marker::Freeze for comrak::nodes::NodeMathBlock
+impl core::marker::Send for comrak::nodes::NodeMathBlock
+impl core::marker::Sync for comrak::nodes::NodeMathBlock
+impl core::marker::Unpin for comrak::nodes::NodeMathBlock
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeMathBlock
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeMathBlock
+#[non_exhaustive] pub struct comrak::nodes::NodeMultilineBlockQuote
+pub comrak::nodes::NodeMultilineBlockQuote::fence_length: usize
+pub comrak::nodes::NodeMultilineBlockQuote::fence_offset: usize
+impl core::clone::Clone for comrak::nodes::NodeMultilineBlockQuote
+pub fn comrak::nodes::NodeMultilineBlockQuote::clone(&self) -> comrak::nodes::NodeMultilineBlockQuote
+impl core::cmp::Eq for comrak::nodes::NodeMultilineBlockQuote
+impl core::cmp::PartialEq for comrak::nodes::NodeMultilineBlockQuote
+pub fn comrak::nodes::NodeMultilineBlockQuote::eq(&self, other: &comrak::nodes::NodeMultilineBlockQuote) -> bool
+impl core::default::Default for comrak::nodes::NodeMultilineBlockQuote
+pub fn comrak::nodes::NodeMultilineBlockQuote::default() -> comrak::nodes::NodeMultilineBlockQuote
+impl core::fmt::Debug for comrak::nodes::NodeMultilineBlockQuote
+pub fn comrak::nodes::NodeMultilineBlockQuote::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeMultilineBlockQuote
+impl core::marker::Freeze for comrak::nodes::NodeMultilineBlockQuote
+impl core::marker::Send for comrak::nodes::NodeMultilineBlockQuote
+impl core::marker::Sync for comrak::nodes::NodeMultilineBlockQuote
+impl core::marker::Unpin for comrak::nodes::NodeMultilineBlockQuote
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeMultilineBlockQuote
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeMultilineBlockQuote
+#[non_exhaustive] pub struct comrak::nodes::NodeShortCode
+pub comrak::nodes::NodeShortCode::code: alloc::string::String
+pub comrak::nodes::NodeShortCode::emoji: alloc::string::String
+impl comrak::nodes::NodeShortCode
+pub fn comrak::nodes::NodeShortCode::new(code: impl core::convert::Into<alloc::string::String>, emoji: impl core::convert::Into<alloc::string::String>) -> Self
+pub fn comrak::nodes::NodeShortCode::resolve(code: &str) -> core::option::Option<Self>
+impl core::clone::Clone for comrak::nodes::NodeShortCode
+pub fn comrak::nodes::NodeShortCode::clone(&self) -> comrak::nodes::NodeShortCode
+impl core::cmp::Eq for comrak::nodes::NodeShortCode
+impl core::cmp::PartialEq for comrak::nodes::NodeShortCode
+pub fn comrak::nodes::NodeShortCode::eq(&self, other: &comrak::nodes::NodeShortCode) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeShortCode
+pub fn comrak::nodes::NodeShortCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeShortCode
+impl core::marker::Freeze for comrak::nodes::NodeShortCode
+impl core::marker::Send for comrak::nodes::NodeShortCode
+impl core::marker::Sync for comrak::nodes::NodeShortCode
+impl core::marker::Unpin for comrak::nodes::NodeShortCode
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeShortCode
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeShortCode
+#[non_exhaustive] pub struct comrak::nodes::NodeStrikethrough
+impl core::clone::Clone for comrak::nodes::NodeStrikethrough
+pub fn comrak::nodes::NodeStrikethrough::clone(&self) -> comrak::nodes::NodeStrikethrough
+impl core::cmp::Eq for comrak::nodes::NodeStrikethrough
+impl core::cmp::PartialEq for comrak::nodes::NodeStrikethrough
+pub fn comrak::nodes::NodeStrikethrough::eq(&self, other: &comrak::nodes::NodeStrikethrough) -> bool
+impl core::default::Default for comrak::nodes::NodeStrikethrough
+pub fn comrak::nodes::NodeStrikethrough::default() -> comrak::nodes::NodeStrikethrough
+impl core::fmt::Debug for comrak::nodes::NodeStrikethrough
+pub fn comrak::nodes::NodeStrikethrough::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeStrikethrough
+impl core::marker::Freeze for comrak::nodes::NodeStrikethrough
+impl core::marker::Send for comrak::nodes::NodeStrikethrough
+impl core::marker::Sync for comrak::nodes::NodeStrikethrough
+impl core::marker::Unpin for comrak::nodes::NodeStrikethrough
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeStrikethrough
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeStrikethrough
+#[non_exhaustive] pub struct comrak::nodes::NodeStrong
+impl core::clone::Clone for comrak::nodes::NodeStrong
+pub fn comrak::nodes::NodeStrong::clone(&self) -> comrak::nodes::NodeStrong
+impl core::cmp::Eq for comrak::nodes::NodeStrong
+impl core::cmp::PartialEq for comrak::nodes::NodeStrong
+pub fn comrak::nodes::NodeStrong::eq(&self, other: &comrak::nodes::NodeStrong) -> bool
+impl core::default::Default for comrak::nodes::NodeStrong
+pub fn comrak::nodes::NodeStrong::default() -> comrak::nodes::NodeStrong
+impl core::fmt::Debug for comrak::nodes::NodeStrong
+pub fn comrak::nodes::NodeStrong::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeStrong
+impl core::marker::Freeze for comrak::nodes::NodeStrong
+impl core::marker::Send for comrak::nodes::NodeStrong
+impl core::marker::Sync for comrak::nodes::NodeStrong
+impl core::marker::Unpin for comrak::nodes::NodeStrong
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeStrong
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeStrong
+#[non_exhaustive] pub struct comrak::nodes::NodeTable
+pub comrak::nodes::NodeTable::alignments: alloc::vec::Vec<comrak::nodes::TableAlignment>
+pub comrak::nodes::NodeTable::num_columns: usize
+pub comrak::nodes::NodeTable::num_nonempty_cells: usize
+pub comrak::nodes::NodeTable::num_rows: usize
+impl comrak::nodes::NodeTable
+pub fn comrak::nodes::NodeTable::new(alignments: alloc::vec::Vec<comrak::nodes::TableAlignment>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeTable
+pub fn comrak::nodes::NodeTable::clone(&self) -> comrak::nodes::NodeTable
+impl core::cmp::Eq for comrak::nodes::NodeTable
+impl core::cmp::PartialEq for comrak::nodes::NodeTable
+pub fn comrak::nodes::NodeTable::eq(&self, other: &comrak::nodes::NodeTable) -> bool
+impl core::default::Default for comrak::nodes::NodeTable
+pub fn comrak::nodes::NodeTable::default() -> comrak::nodes::NodeTable
+impl core::fmt::Debug for comrak::nodes::NodeTable
+pub fn comrak::nodes::NodeTable::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeTable
+impl core::marker::Freeze for comrak::nodes::NodeTable
+impl core::marker::Send for comrak::nodes::NodeTable
+impl core::marker::Sync for comrak::nodes::NodeTable
+impl core::marker::Unpin for comrak::nodes::NodeTable
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeTable
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeTable
+#[non_exhaustive] pub struct comrak::nodes::NodeTableRow
+pub comrak::nodes::NodeTableRow::header: bool
+impl comrak::nodes::NodeTableRow
+pub fn comrak::nodes::NodeTableRow::new(header: bool) -> Self
+impl core::clone::Clone for comrak::nodes::NodeTableRow
+pub fn comrak::nodes::NodeTableRow::clone(&self) -> comrak::nodes::NodeTableRow
+impl core::cmp::Eq for comrak::nodes::NodeTableRow
+impl core::cmp::PartialEq for comrak::nodes::NodeTableRow
+pub fn comrak::nodes::NodeTableRow::eq(&self, other: &comrak::nodes::NodeTableRow) -> bool
+impl core::default::Default for comrak::nodes::NodeTableRow
+pub fn comrak::nodes::NodeTableRow::default() -> comrak::nodes::NodeTableRow
+impl core::fmt::Debug for comrak::nodes::NodeTableRow
+pub fn comrak::nodes::NodeTableRow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeTableRow
+impl core::marker::Freeze for comrak::nodes::NodeTableRow
+impl core::marker::Send for comrak::nodes::NodeTableRow
+impl core::marker::Sync for comrak::nodes::NodeTableRow
+impl core::marker::Unpin for comrak::nodes::NodeTableRow
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeTableRow
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeTableRow
+#[non_exhaustive] pub struct comrak::nodes::NodeTaskItem
+pub comrak::nodes::NodeTaskItem::symbol: core::option::Option<char>
+pub comrak::nodes::NodeTaskItem::symbol_sourcepos: comrak::nodes::Sourcepos
+impl comrak::nodes::NodeTaskItem
+pub fn comrak::nodes::NodeTaskItem::new(symbol: core::option::Option<char>) -> Self
+impl core::clone::Clone for comrak::nodes::NodeTaskItem
+pub fn comrak::nodes::NodeTaskItem::clone(&self) -> comrak::nodes::NodeTaskItem
+impl core::cmp::Eq for comrak::nodes::NodeTaskItem
+impl core::cmp::PartialEq for comrak::nodes::NodeTaskItem
+pub fn comrak::nodes::NodeTaskItem::eq(&self, other: &comrak::nodes::NodeTaskItem) -> bool
+impl core::fmt::Debug for comrak::nodes::NodeTaskItem
+pub fn comrak::nodes::NodeTaskItem::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeTaskItem
+impl core::marker::Freeze for comrak::nodes::NodeTaskItem
+impl core::marker::Send for comrak::nodes::NodeTaskItem
+impl core::marker::Sync for comrak::nodes::NodeTaskItem
+impl core::marker::Unpin for comrak::nodes::NodeTaskItem
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeTaskItem
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeTaskItem
+#[non_exhaustive] pub struct comrak::nodes::NodeThematicBreak
+impl core::clone::Clone for comrak::nodes::NodeThematicBreak
+pub fn comrak::nodes::NodeThematicBreak::clone(&self) -> comrak::nodes::NodeThematicBreak
+impl core::cmp::Eq for comrak::nodes::NodeThematicBreak
+impl core::cmp::PartialEq for comrak::nodes::NodeThematicBreak
+pub fn comrak::nodes::NodeThematicBreak::eq(&self, other: &comrak::nodes::NodeThematicBreak) -> bool
+impl core::default::Default for comrak::nodes::NodeThematicBreak
+pub fn comrak::nodes::NodeThematicBreak::default() -> comrak::nodes::NodeThematicBreak
+impl core::fmt::Debug for comrak::nodes::NodeThematicBreak
+pub fn comrak::nodes::NodeThematicBreak::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeThematicBreak
+impl core::marker::Freeze for comrak::nodes::NodeThematicBreak
+impl core::marker::Send for comrak::nodes::NodeThematicBreak
+impl core::marker::Sync for comrak::nodes::NodeThematicBreak
+impl core::marker::Unpin for comrak::nodes::NodeThematicBreak
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeThematicBreak
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeThematicBreak
+#[non_exhaustive] pub struct comrak::nodes::NodeWikiLink
+pub comrak::nodes::NodeWikiLink::embed: bool
+pub comrak::nodes::NodeWikiLink::url: alloc::string::String
+impl comrak::nodes::NodeWikiLink
+pub fn comrak::nodes::NodeWikiLink::new(url: impl core::convert::Into<alloc::string::String>, embed: bool) -> Self
+impl core::clone::Clone for comrak::nodes::NodeWikiLink
+pub fn comrak::nodes::NodeWikiLink::clone(&self) -> comrak::nodes::NodeWikiLink
+impl core::cmp::Eq for comrak::nodes::NodeWikiLink
+impl core::cmp::PartialEq for comrak::nodes::NodeWikiLink
+pub fn comrak::nodes::NodeWikiLink::eq(&self, other: &comrak::nodes::NodeWikiLink) -> bool
+impl core::default::Default for comrak::nodes::NodeWikiLink
+pub fn comrak::nodes::NodeWikiLink::default() -> comrak::nodes::NodeWikiLink
+impl core::fmt::Debug for comrak::nodes::NodeWikiLink
+pub fn comrak::nodes::NodeWikiLink::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for comrak::nodes::NodeWikiLink
+impl core::marker::Freeze for comrak::nodes::NodeWikiLink
+impl core::marker::Send for comrak::nodes::NodeWikiLink
+impl core::marker::Sync for comrak::nodes::NodeWikiLink
+impl core::marker::Unpin for comrak::nodes::NodeWikiLink
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::NodeWikiLink
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::NodeWikiLink
+pub struct comrak::nodes::Sourcepos
+pub comrak::nodes::Sourcepos::end: comrak::nodes::LineColumn
+pub comrak::nodes::Sourcepos::start: comrak::nodes::LineColumn
+impl core::clone::Clone for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::clone(&self) -> comrak::nodes::Sourcepos
+impl core::cmp::Eq for comrak::nodes::Sourcepos
+impl core::cmp::Ord for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::cmp(&self, other: &comrak::nodes::Sourcepos) -> core::cmp::Ordering
+impl core::cmp::PartialEq for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::eq(&self, other: &comrak::nodes::Sourcepos) -> bool
+impl core::cmp::PartialOrd for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::partial_cmp(&self, other: &comrak::nodes::Sourcepos) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<(comrak::nodes::LineColumn, comrak::nodes::LineColumn)> for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::from((start, end): (comrak::nodes::LineColumn, comrak::nodes::LineColumn)) -> comrak::nodes::Sourcepos
+impl core::convert::From<(usize, usize, usize, usize)> for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::from(sp: (usize, usize, usize, usize)) -> comrak::nodes::Sourcepos
+impl core::default::Default for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::default() -> comrak::nodes::Sourcepos
+impl core::fmt::Debug for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for comrak::nodes::Sourcepos
+pub fn comrak::nodes::Sourcepos::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::nodes::Sourcepos
+impl core::marker::StructuralPartialEq for comrak::nodes::Sourcepos
+impl core::marker::Freeze for comrak::nodes::Sourcepos
+impl core::marker::Send for comrak::nodes::Sourcepos
+impl core::marker::Sync for comrak::nodes::Sourcepos
+impl core::marker::Unpin for comrak::nodes::Sourcepos
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::nodes::Sourcepos
+impl core::panic::unwind_safe::UnwindSafe for comrak::nodes::Sourcepos
+pub type comrak::nodes::AstNode<'a> = comrak::arena_tree::Node<'a, core::cell::RefCell<comrak::nodes::Ast>>
+pub type comrak::nodes::Node<'a> = &'a comrak::nodes::AstNode<'a>
+pub mod comrak::options
+#[non_exhaustive] pub enum comrak::options::AlertStyleType
+pub comrak::options::AlertStyleType::Semantic
+pub comrak::options::AlertStyleType::Specific
+impl core::clone::Clone for comrak::options::AlertStyleType
+pub fn comrak::options::AlertStyleType::clone(&self) -> comrak::options::AlertStyleType
+impl core::default::Default for comrak::options::AlertStyleType
+pub fn comrak::options::AlertStyleType::default() -> comrak::options::AlertStyleType
+impl core::fmt::Debug for comrak::options::AlertStyleType
+pub fn comrak::options::AlertStyleType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::options::AlertStyleType
+impl<'arbitrary> arbitrary::Arbitrary<'arbitrary> for comrak::options::AlertStyleType
+pub fn comrak::options::AlertStyleType::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::AlertStyleType::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::AlertStyleType::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+impl core::marker::Freeze for comrak::options::AlertStyleType
+impl core::marker::Send for comrak::options::AlertStyleType
+impl core::marker::Sync for comrak::options::AlertStyleType
+impl core::marker::Unpin for comrak::options::AlertStyleType
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::options::AlertStyleType
+impl core::panic::unwind_safe::UnwindSafe for comrak::options::AlertStyleType
+pub enum comrak::options::ListStyleType
+pub comrak::options::ListStyleType::Dash = 45
+pub comrak::options::ListStyleType::Plus = 43
+pub comrak::options::ListStyleType::Star = 42
+impl core::clone::Clone for comrak::options::ListStyleType
+pub fn comrak::options::ListStyleType::clone(&self) -> comrak::options::ListStyleType
+impl core::default::Default for comrak::options::ListStyleType
+pub fn comrak::options::ListStyleType::default() -> comrak::options::ListStyleType
+impl core::fmt::Debug for comrak::options::ListStyleType
+pub fn comrak::options::ListStyleType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::options::ListStyleType
+impl<'arbitrary> arbitrary::Arbitrary<'arbitrary> for comrak::options::ListStyleType
+pub fn comrak::options::ListStyleType::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::ListStyleType::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::ListStyleType::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+impl core::marker::Freeze for comrak::options::ListStyleType
+impl core::marker::Send for comrak::options::ListStyleType
+impl core::marker::Sync for comrak::options::ListStyleType
+impl core::marker::Unpin for comrak::options::ListStyleType
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::options::ListStyleType
+impl core::panic::unwind_safe::UnwindSafe for comrak::options::ListStyleType
+#[non_exhaustive] pub struct comrak::options::BrokenLinkReference<'l>
+pub comrak::options::BrokenLinkReference::normalized: &'l str
+pub comrak::options::BrokenLinkReference::original: &'l str
+impl<'l> core::fmt::Debug for comrak::options::BrokenLinkReference<'l>
+pub fn comrak::options::BrokenLinkReference<'l>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'l> core::marker::Freeze for comrak::options::BrokenLinkReference<'l>
+impl<'l> core::marker::Send for comrak::options::BrokenLinkReference<'l>
+impl<'l> core::marker::Sync for comrak::options::BrokenLinkReference<'l>
+impl<'l> core::marker::Unpin for comrak::options::BrokenLinkReference<'l>
+impl<'l> core::panic::unwind_safe::RefUnwindSafe for comrak::options::BrokenLinkReference<'l>
+impl<'l> core::panic::unwind_safe::UnwindSafe for comrak::options::BrokenLinkReference<'l>
+#[non_exhaustive] pub struct comrak::options::Extension<'c>
+pub comrak::options::Extension::alerts: bool
+pub comrak::options::Extension::autolink: bool
+pub comrak::options::Extension::block_directive: bool
+pub comrak::options::Extension::cjk_friendly_emphasis: bool
+pub comrak::options::Extension::description_lists: bool
+pub comrak::options::Extension::fenced_code_attributes: bool
+pub comrak::options::Extension::footnotes: bool
+pub comrak::options::Extension::front_matter_delimiter: core::option::Option<alloc::string::String>
+pub comrak::options::Extension::greentext: bool
+pub comrak::options::Extension::grid_table: bool
+pub comrak::options::Extension::header_attributes: bool
+pub comrak::options::Extension::header_id_prefix: core::option::Option<alloc::string::String>
+pub comrak::options::Extension::header_id_prefix_in_href: bool
+pub comrak::options::Extension::highlight: bool
+pub comrak::options::Extension::image_url_rewriter: core::option::Option<alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>>
+pub comrak::options::Extension::inline_code_attributes: bool
+pub comrak::options::Extension::inline_footnotes: bool
+pub comrak::options::Extension::insert: bool
+pub comrak::options::Extension::link_attributes: bool
+pub comrak::options::Extension::link_url_rewriter: core::option::Option<alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>>
+pub comrak::options::Extension::math_code: bool
+pub comrak::options::Extension::math_dollars: bool
+pub comrak::options::Extension::math_dollars_block: bool
+pub comrak::options::Extension::math_latex: bool
+pub comrak::options::Extension::multiline_block_quotes: bool
+pub comrak::options::Extension::ofm_block_ids: bool
+pub comrak::options::Extension::ofm_callouts: bool
+pub comrak::options::Extension::ofm_comments: bool
+pub comrak::options::Extension::phoenix_heex: bool
+pub comrak::options::Extension::shortcodes: bool
+pub comrak::options::Extension::spoiler: bool
+pub comrak::options::Extension::strikethrough: bool
+pub comrak::options::Extension::subscript: bool
+pub comrak::options::Extension::subtext: bool
+pub comrak::options::Extension::superscript: bool
+pub comrak::options::Extension::table: bool
+pub comrak::options::Extension::tasklist: bool
+pub comrak::options::Extension::underline: bool
+pub comrak::options::Extension::wikilinks_ignore_embeds: bool
+pub comrak::options::Extension::wikilinks_title_after_pipe: bool
+pub comrak::options::Extension::wikilinks_title_before_pipe: bool
+impl<'c, 'arbitrary: 'c> arbitrary::Arbitrary<'arbitrary> for comrak::options::Extension<'c>
+pub fn comrak::options::Extension<'c>::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Extension<'c>::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Extension<'c>::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+pub fn comrak::options::Extension<'c>::try_size_hint(depth: usize) -> core::result::Result<(usize, core::option::Option<usize>), arbitrary::MaxRecursionReached>
+impl<'c> comrak::options::Extension<'c>
+pub fn comrak::options::Extension<'c>::builder() -> comrak::options::ExtensionBuilder<'c>
+impl<'c> core::clone::Clone for comrak::options::Extension<'c>
+pub fn comrak::options::Extension<'c>::clone(&self) -> comrak::options::Extension<'c>
+impl<'c> core::default::Default for comrak::options::Extension<'c>
+pub fn comrak::options::Extension<'c>::default() -> comrak::options::Extension<'c>
+impl<'c> core::fmt::Debug for comrak::options::Extension<'c>
+pub fn comrak::options::Extension<'c>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'c> core::marker::Freeze for comrak::options::Extension<'c>
+impl<'c> core::marker::Send for comrak::options::Extension<'c>
+impl<'c> core::marker::Sync for comrak::options::Extension<'c>
+impl<'c> core::marker::Unpin for comrak::options::Extension<'c>
+impl<'c> core::panic::unwind_safe::RefUnwindSafe for comrak::options::Extension<'c>
+impl<'c> core::panic::unwind_safe::UnwindSafe for comrak::options::Extension<'c>
+pub struct comrak::options::ExtensionBuilder<'c, S: comrak::parser::options::extension_builder::State>
+impl<'c, S: comrak::parser::options::extension_builder::State> comrak::options::ExtensionBuilder<'c, S>
+pub fn comrak::options::ExtensionBuilder<'c, S>::alerts(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetAlerts<S>> where <S as comrak::parser::options::extension_builder::State>::Alerts: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::autolink(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetAutolink<S>> where <S as comrak::parser::options::extension_builder::State>::Autolink: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::block_directive(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetBlockDirective<S>> where <S as comrak::parser::options::extension_builder::State>::BlockDirective: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::build(self) -> comrak::options::Extension<'c> where S: comrak::parser::options::extension_builder::IsComplete
+pub fn comrak::options::ExtensionBuilder<'c, S>::cjk_friendly_emphasis(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetCjkFriendlyEmphasis<S>> where <S as comrak::parser::options::extension_builder::State>::CjkFriendlyEmphasis: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::description_lists(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetDescriptionLists<S>> where <S as comrak::parser::options::extension_builder::State>::DescriptionLists: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::fenced_code_attributes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFencedCodeAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::FencedCodeAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::footnotes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFootnotes<S>> where <S as comrak::parser::options::extension_builder::State>::Footnotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::front_matter_delimiter(self, value: alloc::string::String) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFrontMatterDelimiter<S>> where <S as comrak::parser::options::extension_builder::State>::FrontMatterDelimiter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::greentext(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetGreentext<S>> where <S as comrak::parser::options::extension_builder::State>::Greentext: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::grid_table(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetGridTable<S>> where <S as comrak::parser::options::extension_builder::State>::GridTable: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::header_attributes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::header_id_prefix(self, value: alloc::string::String) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderIdPrefix<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderIdPrefix: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::header_id_prefix_in_href(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderIdPrefixInHref<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderIdPrefixInHref: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::highlight(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHighlight<S>> where <S as comrak::parser::options::extension_builder::State>::Highlight: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::image_url_rewriter(self, value: alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetImageUrlRewriter<S>> where <S as comrak::parser::options::extension_builder::State>::ImageUrlRewriter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::inline_code_attributes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInlineCodeAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::InlineCodeAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::inline_footnotes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInlineFootnotes<S>> where <S as comrak::parser::options::extension_builder::State>::InlineFootnotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::insert(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInsert<S>> where <S as comrak::parser::options::extension_builder::State>::Insert: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::link_attributes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetLinkAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::LinkAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::link_url_rewriter(self, value: alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetLinkUrlRewriter<S>> where <S as comrak::parser::options::extension_builder::State>::LinkUrlRewriter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::math_code(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathCode<S>> where <S as comrak::parser::options::extension_builder::State>::MathCode: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::math_dollars(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathDollars<S>> where <S as comrak::parser::options::extension_builder::State>::MathDollars: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::math_dollars_block(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathDollarsBlock<S>> where <S as comrak::parser::options::extension_builder::State>::MathDollarsBlock: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::math_latex(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathLatex<S>> where <S as comrak::parser::options::extension_builder::State>::MathLatex: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_alerts(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetAlerts<S>> where <S as comrak::parser::options::extension_builder::State>::Alerts: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_autolink(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetAutolink<S>> where <S as comrak::parser::options::extension_builder::State>::Autolink: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_block_directive(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetBlockDirective<S>> where <S as comrak::parser::options::extension_builder::State>::BlockDirective: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_cjk_friendly_emphasis(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetCjkFriendlyEmphasis<S>> where <S as comrak::parser::options::extension_builder::State>::CjkFriendlyEmphasis: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_description_lists(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetDescriptionLists<S>> where <S as comrak::parser::options::extension_builder::State>::DescriptionLists: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_fenced_code_attributes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFencedCodeAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::FencedCodeAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_footnotes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFootnotes<S>> where <S as comrak::parser::options::extension_builder::State>::Footnotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_front_matter_delimiter(self, value: core::option::Option<alloc::string::String>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetFrontMatterDelimiter<S>> where <S as comrak::parser::options::extension_builder::State>::FrontMatterDelimiter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_greentext(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetGreentext<S>> where <S as comrak::parser::options::extension_builder::State>::Greentext: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_grid_table(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetGridTable<S>> where <S as comrak::parser::options::extension_builder::State>::GridTable: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_header_attributes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_header_id_prefix(self, value: core::option::Option<alloc::string::String>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderIdPrefix<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderIdPrefix: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_header_id_prefix_in_href(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHeaderIdPrefixInHref<S>> where <S as comrak::parser::options::extension_builder::State>::HeaderIdPrefixInHref: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_highlight(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetHighlight<S>> where <S as comrak::parser::options::extension_builder::State>::Highlight: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_image_url_rewriter(self, value: core::option::Option<alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetImageUrlRewriter<S>> where <S as comrak::parser::options::extension_builder::State>::ImageUrlRewriter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_inline_code_attributes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInlineCodeAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::InlineCodeAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_inline_footnotes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInlineFootnotes<S>> where <S as comrak::parser::options::extension_builder::State>::InlineFootnotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_insert(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetInsert<S>> where <S as comrak::parser::options::extension_builder::State>::Insert: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_link_attributes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetLinkAttributes<S>> where <S as comrak::parser::options::extension_builder::State>::LinkAttributes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_link_url_rewriter(self, value: core::option::Option<alloc::sync::Arc<(dyn comrak::options::URLRewriter + 'c)>>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetLinkUrlRewriter<S>> where <S as comrak::parser::options::extension_builder::State>::LinkUrlRewriter: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_math_code(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathCode<S>> where <S as comrak::parser::options::extension_builder::State>::MathCode: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_math_dollars(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathDollars<S>> where <S as comrak::parser::options::extension_builder::State>::MathDollars: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_math_dollars_block(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathDollarsBlock<S>> where <S as comrak::parser::options::extension_builder::State>::MathDollarsBlock: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_math_latex(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMathLatex<S>> where <S as comrak::parser::options::extension_builder::State>::MathLatex: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_multiline_block_quotes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMultilineBlockQuotes<S>> where <S as comrak::parser::options::extension_builder::State>::MultilineBlockQuotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_ofm_block_ids(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmBlockIds<S>> where <S as comrak::parser::options::extension_builder::State>::OfmBlockIds: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_ofm_callouts(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmCallouts<S>> where <S as comrak::parser::options::extension_builder::State>::OfmCallouts: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_ofm_comments(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmComments<S>> where <S as comrak::parser::options::extension_builder::State>::OfmComments: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_phoenix_heex(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetPhoenixHeex<S>> where <S as comrak::parser::options::extension_builder::State>::PhoenixHeex: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_shortcodes(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetShortcodes<S>> where <S as comrak::parser::options::extension_builder::State>::Shortcodes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_spoiler(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSpoiler<S>> where <S as comrak::parser::options::extension_builder::State>::Spoiler: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_strikethrough(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetStrikethrough<S>> where <S as comrak::parser::options::extension_builder::State>::Strikethrough: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_subscript(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSubscript<S>> where <S as comrak::parser::options::extension_builder::State>::Subscript: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_subtext(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSubtext<S>> where <S as comrak::parser::options::extension_builder::State>::Subtext: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_superscript(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSuperscript<S>> where <S as comrak::parser::options::extension_builder::State>::Superscript: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_table(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetTable<S>> where <S as comrak::parser::options::extension_builder::State>::Table: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_tasklist(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetTasklist<S>> where <S as comrak::parser::options::extension_builder::State>::Tasklist: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_underline(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetUnderline<S>> where <S as comrak::parser::options::extension_builder::State>::Underline: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_wikilinks_ignore_embeds(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksIgnoreEmbeds<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksIgnoreEmbeds: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_wikilinks_title_after_pipe(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksTitleAfterPipe<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksTitleAfterPipe: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::maybe_wikilinks_title_before_pipe(self, value: core::option::Option<bool>) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksTitleBeforePipe<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksTitleBeforePipe: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::multiline_block_quotes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetMultilineBlockQuotes<S>> where <S as comrak::parser::options::extension_builder::State>::MultilineBlockQuotes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::ofm_block_ids(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmBlockIds<S>> where <S as comrak::parser::options::extension_builder::State>::OfmBlockIds: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::ofm_callouts(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmCallouts<S>> where <S as comrak::parser::options::extension_builder::State>::OfmCallouts: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::ofm_comments(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetOfmComments<S>> where <S as comrak::parser::options::extension_builder::State>::OfmComments: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::phoenix_heex(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetPhoenixHeex<S>> where <S as comrak::parser::options::extension_builder::State>::PhoenixHeex: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::shortcodes(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetShortcodes<S>> where <S as comrak::parser::options::extension_builder::State>::Shortcodes: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::spoiler(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSpoiler<S>> where <S as comrak::parser::options::extension_builder::State>::Spoiler: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::strikethrough(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetStrikethrough<S>> where <S as comrak::parser::options::extension_builder::State>::Strikethrough: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::subscript(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSubscript<S>> where <S as comrak::parser::options::extension_builder::State>::Subscript: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::subtext(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSubtext<S>> where <S as comrak::parser::options::extension_builder::State>::Subtext: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::superscript(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetSuperscript<S>> where <S as comrak::parser::options::extension_builder::State>::Superscript: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::table(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetTable<S>> where <S as comrak::parser::options::extension_builder::State>::Table: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::tasklist(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetTasklist<S>> where <S as comrak::parser::options::extension_builder::State>::Tasklist: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::underline(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetUnderline<S>> where <S as comrak::parser::options::extension_builder::State>::Underline: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::wikilinks_ignore_embeds(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksIgnoreEmbeds<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksIgnoreEmbeds: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::wikilinks_title_after_pipe(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksTitleAfterPipe<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksTitleAfterPipe: bon::builder_state::IsUnset
+pub fn comrak::options::ExtensionBuilder<'c, S>::wikilinks_title_before_pipe(self, value: bool) -> comrak::options::ExtensionBuilder<'c, comrak::parser::options::extension_builder::SetWikilinksTitleBeforePipe<S>> where <S as comrak::parser::options::extension_builder::State>::WikilinksTitleBeforePipe: bon::builder_state::IsUnset
+impl<'c, S> core::marker::Freeze for comrak::options::ExtensionBuilder<'c, S>
+impl<'c, S> core::marker::Send for comrak::options::ExtensionBuilder<'c, S>
+impl<'c, S> core::marker::Sync for comrak::options::ExtensionBuilder<'c, S>
+impl<'c, S> core::marker::Unpin for comrak::options::ExtensionBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::RefUnwindSafe for comrak::options::ExtensionBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::UnwindSafe for comrak::options::ExtensionBuilder<'c, S>
+#[non_exhaustive] pub struct comrak::options::Options<'c>
+pub comrak::options::Options::extension: comrak::options::Extension<'c>
+pub comrak::options::Options::parse: comrak::options::Parse<'c>
+pub comrak::options::Options::render: comrak::options::Render
+impl<'c, 'arbitrary: 'c> arbitrary::Arbitrary<'arbitrary> for comrak::Options<'c>
+pub fn comrak::Options<'c>::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::Options<'c>::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::Options<'c>::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+pub fn comrak::Options<'c>::try_size_hint(depth: usize) -> core::result::Result<(usize, core::option::Option<usize>), arbitrary::MaxRecursionReached>
+impl<'c> comrak::Options<'c>
+pub fn comrak::Options<'c>::builder() -> comrak::options::OptionsBuilder<'c>
+impl<'c> core::clone::Clone for comrak::Options<'c>
+pub fn comrak::Options<'c>::clone(&self) -> comrak::Options<'c>
+impl<'c> core::default::Default for comrak::Options<'c>
+pub fn comrak::Options<'c>::default() -> comrak::Options<'c>
+impl<'c> core::fmt::Debug for comrak::Options<'c>
+pub fn comrak::Options<'c>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'c> core::marker::Freeze for comrak::Options<'c>
+impl<'c> core::marker::Send for comrak::Options<'c>
+impl<'c> core::marker::Sync for comrak::Options<'c>
+impl<'c> core::marker::Unpin for comrak::Options<'c>
+impl<'c> core::panic::unwind_safe::RefUnwindSafe for comrak::Options<'c>
+impl<'c> core::panic::unwind_safe::UnwindSafe for comrak::Options<'c>
+pub struct comrak::options::OptionsBuilder<'c, S: comrak::parser::options::options_builder::State>
+impl<'c, S: comrak::parser::options::options_builder::State> comrak::options::OptionsBuilder<'c, S>
+pub fn comrak::options::OptionsBuilder<'c, S>::build(self) -> comrak::Options<'c> where S: comrak::parser::options::options_builder::IsComplete
+pub fn comrak::options::OptionsBuilder<'c, S>::extension(self, value: comrak::options::Extension<'c>) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetExtension<S>> where <S as comrak::parser::options::options_builder::State>::Extension: bon::builder_state::IsUnset
+pub fn comrak::options::OptionsBuilder<'c, S>::maybe_extension(self, value: core::option::Option<comrak::options::Extension<'c>>) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetExtension<S>> where <S as comrak::parser::options::options_builder::State>::Extension: bon::builder_state::IsUnset
+pub fn comrak::options::OptionsBuilder<'c, S>::maybe_parse(self, value: core::option::Option<comrak::options::Parse<'c>>) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetParse<S>> where <S as comrak::parser::options::options_builder::State>::Parse: bon::builder_state::IsUnset
+pub fn comrak::options::OptionsBuilder<'c, S>::maybe_render(self, value: core::option::Option<comrak::options::Render>) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetRender<S>> where <S as comrak::parser::options::options_builder::State>::Render: bon::builder_state::IsUnset
+pub fn comrak::options::OptionsBuilder<'c, S>::parse(self, value: comrak::options::Parse<'c>) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetParse<S>> where <S as comrak::parser::options::options_builder::State>::Parse: bon::builder_state::IsUnset
+pub fn comrak::options::OptionsBuilder<'c, S>::render(self, value: comrak::options::Render) -> comrak::options::OptionsBuilder<'c, comrak::parser::options::options_builder::SetRender<S>> where <S as comrak::parser::options::options_builder::State>::Render: bon::builder_state::IsUnset
+impl<'c, S> core::marker::Freeze for comrak::options::OptionsBuilder<'c, S>
+impl<'c, S> core::marker::Send for comrak::options::OptionsBuilder<'c, S>
+impl<'c, S> core::marker::Sync for comrak::options::OptionsBuilder<'c, S>
+impl<'c, S> core::marker::Unpin for comrak::options::OptionsBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::RefUnwindSafe for comrak::options::OptionsBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::UnwindSafe for comrak::options::OptionsBuilder<'c, S>
+#[non_exhaustive] pub struct comrak::options::Parse<'c>
+pub comrak::options::Parse::broken_link_callback: core::option::Option<alloc::sync::Arc<(dyn comrak::options::BrokenLinkCallback + 'c)>>
+pub comrak::options::Parse::default_info_string: core::option::Option<alloc::string::String>
+pub comrak::options::Parse::escaped_char_spans: bool
+pub comrak::options::Parse::ignore_setext: bool
+pub comrak::options::Parse::leave_footnote_definitions: bool
+pub comrak::options::Parse::relaxed_autolinks: bool
+pub comrak::options::Parse::relaxed_tasklist_matching: bool
+pub comrak::options::Parse::smart: bool
+pub comrak::options::Parse::sourcepos_chars: bool
+pub comrak::options::Parse::tasklist_in_table: bool
+impl<'c, 'arbitrary: 'c> arbitrary::Arbitrary<'arbitrary> for comrak::options::Parse<'c>
+pub fn comrak::options::Parse<'c>::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Parse<'c>::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Parse<'c>::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+pub fn comrak::options::Parse<'c>::try_size_hint(depth: usize) -> core::result::Result<(usize, core::option::Option<usize>), arbitrary::MaxRecursionReached>
+impl<'c> comrak::options::Parse<'c>
+pub fn comrak::options::Parse<'c>::builder() -> comrak::options::ParseBuilder<'c>
+impl<'c> core::clone::Clone for comrak::options::Parse<'c>
+pub fn comrak::options::Parse<'c>::clone(&self) -> comrak::options::Parse<'c>
+impl<'c> core::default::Default for comrak::options::Parse<'c>
+pub fn comrak::options::Parse<'c>::default() -> comrak::options::Parse<'c>
+impl<'c> core::fmt::Debug for comrak::options::Parse<'c>
+pub fn comrak::options::Parse<'c>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'c> core::marker::Freeze for comrak::options::Parse<'c>
+impl<'c> core::marker::Send for comrak::options::Parse<'c>
+impl<'c> core::marker::Sync for comrak::options::Parse<'c>
+impl<'c> core::marker::Unpin for comrak::options::Parse<'c>
+impl<'c> core::panic::unwind_safe::RefUnwindSafe for comrak::options::Parse<'c>
+impl<'c> core::panic::unwind_safe::UnwindSafe for comrak::options::Parse<'c>
+pub struct comrak::options::ParseBuilder<'c, S: comrak::parser::options::parse_builder::State>
+impl<'c, S: comrak::parser::options::parse_builder::State> comrak::options::ParseBuilder<'c, S>
+pub fn comrak::options::ParseBuilder<'c, S>::broken_link_callback(self, value: alloc::sync::Arc<(dyn comrak::options::BrokenLinkCallback + 'c)>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetBrokenLinkCallback<S>> where <S as comrak::parser::options::parse_builder::State>::BrokenLinkCallback: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::build(self) -> comrak::options::Parse<'c> where S: comrak::parser::options::parse_builder::IsComplete
+pub fn comrak::options::ParseBuilder<'c, S>::default_info_string(self, value: alloc::string::String) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetDefaultInfoString<S>> where <S as comrak::parser::options::parse_builder::State>::DefaultInfoString: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::escaped_char_spans(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetEscapedCharSpans<S>> where <S as comrak::parser::options::parse_builder::State>::EscapedCharSpans: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::ignore_setext(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetIgnoreSetext<S>> where <S as comrak::parser::options::parse_builder::State>::IgnoreSetext: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::leave_footnote_definitions(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetLeaveFootnoteDefinitions<S>> where <S as comrak::parser::options::parse_builder::State>::LeaveFootnoteDefinitions: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_broken_link_callback(self, value: core::option::Option<alloc::sync::Arc<(dyn comrak::options::BrokenLinkCallback + 'c)>>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetBrokenLinkCallback<S>> where <S as comrak::parser::options::parse_builder::State>::BrokenLinkCallback: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_default_info_string(self, value: core::option::Option<alloc::string::String>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetDefaultInfoString<S>> where <S as comrak::parser::options::parse_builder::State>::DefaultInfoString: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_escaped_char_spans(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetEscapedCharSpans<S>> where <S as comrak::parser::options::parse_builder::State>::EscapedCharSpans: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_ignore_setext(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetIgnoreSetext<S>> where <S as comrak::parser::options::parse_builder::State>::IgnoreSetext: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_leave_footnote_definitions(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetLeaveFootnoteDefinitions<S>> where <S as comrak::parser::options::parse_builder::State>::LeaveFootnoteDefinitions: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_relaxed_autolinks(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetRelaxedAutolinks<S>> where <S as comrak::parser::options::parse_builder::State>::RelaxedAutolinks: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_relaxed_tasklist_matching(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetRelaxedTasklistMatching<S>> where <S as comrak::parser::options::parse_builder::State>::RelaxedTasklistMatching: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_smart(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetSmart<S>> where <S as comrak::parser::options::parse_builder::State>::Smart: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_sourcepos_chars(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetSourceposChars<S>> where <S as comrak::parser::options::parse_builder::State>::SourceposChars: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::maybe_tasklist_in_table(self, value: core::option::Option<bool>) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetTasklistInTable<S>> where <S as comrak::parser::options::parse_builder::State>::TasklistInTable: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::relaxed_autolinks(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetRelaxedAutolinks<S>> where <S as comrak::parser::options::parse_builder::State>::RelaxedAutolinks: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::relaxed_tasklist_matching(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetRelaxedTasklistMatching<S>> where <S as comrak::parser::options::parse_builder::State>::RelaxedTasklistMatching: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::smart(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetSmart<S>> where <S as comrak::parser::options::parse_builder::State>::Smart: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::sourcepos_chars(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetSourceposChars<S>> where <S as comrak::parser::options::parse_builder::State>::SourceposChars: bon::builder_state::IsUnset
+pub fn comrak::options::ParseBuilder<'c, S>::tasklist_in_table(self, value: bool) -> comrak::options::ParseBuilder<'c, comrak::parser::options::parse_builder::SetTasklistInTable<S>> where <S as comrak::parser::options::parse_builder::State>::TasklistInTable: bon::builder_state::IsUnset
+impl<'c, S> core::marker::Freeze for comrak::options::ParseBuilder<'c, S>
+impl<'c, S> core::marker::Send for comrak::options::ParseBuilder<'c, S>
+impl<'c, S> core::marker::Sync for comrak::options::ParseBuilder<'c, S>
+impl<'c, S> core::marker::Unpin for comrak::options::ParseBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::RefUnwindSafe for comrak::options::ParseBuilder<'c, S>
+impl<'c, S> core::panic::unwind_safe::UnwindSafe for comrak::options::ParseBuilder<'c, S>
+#[non_exhaustive] pub struct comrak::options::Plugins<'p>
+pub comrak::options::Plugins::render: comrak::options::RenderPlugins<'p>
+impl<'p> comrak::options::Plugins<'p>
+pub fn comrak::options::Plugins<'p>::builder() -> comrak::options::PluginsBuilder<'p>
+impl<'p> core::clone::Clone for comrak::options::Plugins<'p>
+pub fn comrak::options::Plugins<'p>::clone(&self) -> comrak::options::Plugins<'p>
+impl<'p> core::default::Default for comrak::options::Plugins<'p>
+pub fn comrak::options::Plugins<'p>::default() -> comrak::options::Plugins<'p>
+impl<'p> core::fmt::Debug for comrak::options::Plugins<'p>
+pub fn comrak::options::Plugins<'p>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'p> core::marker::Freeze for comrak::options::Plugins<'p>
+impl<'p> core::marker::Send for comrak::options::Plugins<'p>
+impl<'p> core::marker::Sync for comrak::options::Plugins<'p>
+impl<'p> core::marker::Unpin for comrak::options::Plugins<'p>
+impl<'p> !core::panic::unwind_safe::RefUnwindSafe for comrak::options::Plugins<'p>
+impl<'p> !core::panic::unwind_safe::UnwindSafe for comrak::options::Plugins<'p>
+pub struct comrak::options::PluginsBuilder<'p, S: comrak::parser::options::plugins_builder::State>
+impl<'p, S: comrak::parser::options::plugins_builder::State> comrak::options::PluginsBuilder<'p, S>
+pub fn comrak::options::PluginsBuilder<'p, S>::build(self) -> comrak::options::Plugins<'p> where S: comrak::parser::options::plugins_builder::IsComplete
+pub fn comrak::options::PluginsBuilder<'p, S>::maybe_render(self, value: core::option::Option<comrak::options::RenderPlugins<'p>>) -> comrak::options::PluginsBuilder<'p, comrak::parser::options::plugins_builder::SetRender<S>> where <S as comrak::parser::options::plugins_builder::State>::Render: bon::builder_state::IsUnset
+pub fn comrak::options::PluginsBuilder<'p, S>::render(self, value: comrak::options::RenderPlugins<'p>) -> comrak::options::PluginsBuilder<'p, comrak::parser::options::plugins_builder::SetRender<S>> where <S as comrak::parser::options::plugins_builder::State>::Render: bon::builder_state::IsUnset
+impl<'p, S> core::marker::Freeze for comrak::options::PluginsBuilder<'p, S>
+impl<'p, S> core::marker::Send for comrak::options::PluginsBuilder<'p, S>
+impl<'p, S> core::marker::Sync for comrak::options::PluginsBuilder<'p, S>
+impl<'p, S> core::marker::Unpin for comrak::options::PluginsBuilder<'p, S>
+impl<'p, S> !core::panic::unwind_safe::RefUnwindSafe for comrak::options::PluginsBuilder<'p, S>
+impl<'p, S> !core::panic::unwind_safe::UnwindSafe for comrak::options::PluginsBuilder<'p, S>
+#[non_exhaustive] pub struct comrak::options::Render
+pub comrak::options::Render::alert_style: comrak::options::AlertStyleType
+pub comrak::options::Render::attributes: bool
+pub comrak::options::Render::compact_html: bool
+pub comrak::options::Render::escape: bool
+pub comrak::options::Render::escaped_char_spans: bool
+pub comrak::options::Render::experimental_minimize_commonmark: bool
+pub comrak::options::Render::figure_with_caption: bool
+pub comrak::options::Render::full_info_string: bool
+pub comrak::options::Render::gfm_quirks: bool
+pub comrak::options::Render::github_pre_lang: bool
+pub comrak::options::Render::grid_table_widths: bool
+pub comrak::options::Render::hardbreaks: bool
+pub comrak::options::Render::ignore_empty_links: bool
+pub comrak::options::Render::list_style: comrak::options::ListStyleType
+pub comrak::options::Render::ol_width: usize
+pub comrak::options::Render::prefer_fenced: bool
+pub comrak::options::Render::sourcepos: bool
+pub comrak::options::Render::tasklist_classes: bool
+pub comrak::options::Render::unsafe: bool
+pub comrak::options::Render::width: usize
+impl comrak::options::Render
+pub fn comrak::options::Render::builder() -> comrak::options::RenderBuilder
+impl core::clone::Clone for comrak::options::Render
+pub fn comrak::options::Render::clone(&self) -> comrak::options::Render
+impl core::default::Default for comrak::options::Render
+pub fn comrak::options::Render::default() -> comrak::options::Render
+impl core::fmt::Debug for comrak::options::Render
+pub fn comrak::options::Render::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'arbitrary> arbitrary::Arbitrary<'arbitrary> for comrak::options::Render
+pub fn comrak::options::Render::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Render::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::options::Render::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+pub fn comrak::options::Render::try_size_hint(depth: usize) -> core::result::Result<(usize, core::option::Option<usize>), arbitrary::MaxRecursionReached>
+impl core::marker::Freeze for comrak::options::Render
+impl core::marker::Send for comrak::options::Render
+impl core::marker::Sync for comrak::options::Render
+impl core::marker::Unpin for comrak::options::Render
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::options::Render
+impl core::panic::unwind_safe::UnwindSafe for comrak::options::Render
+pub struct comrak::options::RenderBuilder<S: comrak::parser::options::render_builder::State>
+impl<S: comrak::parser::options::render_builder::State> comrak::options::RenderBuilder<S>
+pub fn comrak::options::RenderBuilder<S>::alert_style(self, value: comrak::options::AlertStyleType) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetAlertStyle<S>> where <S as comrak::parser::options::render_builder::State>::AlertStyle: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::attributes(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetAttributes<S>> where <S as comrak::parser::options::render_builder::State>::Attributes: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::build(self) -> comrak::options::Render where S: comrak::parser::options::render_builder::IsComplete
+pub fn comrak::options::RenderBuilder<S>::compact_html(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetCompactHtml<S>> where <S as comrak::parser::options::render_builder::State>::CompactHtml: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::escape(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetEscape<S>> where <S as comrak::parser::options::render_builder::State>::Escape: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::escaped_char_spans(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetEscapedCharSpans<S>> where <S as comrak::parser::options::render_builder::State>::EscapedCharSpans: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::experimental_minimize_commonmark(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetExperimentalMinimizeCommonmark<S>> where <S as comrak::parser::options::render_builder::State>::ExperimentalMinimizeCommonmark: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::figure_with_caption(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetFigureWithCaption<S>> where <S as comrak::parser::options::render_builder::State>::FigureWithCaption: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::full_info_string(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetFullInfoString<S>> where <S as comrak::parser::options::render_builder::State>::FullInfoString: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::gfm_quirks(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGfmQuirks<S>> where <S as comrak::parser::options::render_builder::State>::GfmQuirks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::github_pre_lang(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGithubPreLang<S>> where <S as comrak::parser::options::render_builder::State>::GithubPreLang: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::grid_table_widths(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGridTableWidths<S>> where <S as comrak::parser::options::render_builder::State>::GridTableWidths: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::hardbreaks(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetHardbreaks<S>> where <S as comrak::parser::options::render_builder::State>::Hardbreaks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::ignore_empty_links(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetIgnoreEmptyLinks<S>> where <S as comrak::parser::options::render_builder::State>::IgnoreEmptyLinks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::list_style(self, value: comrak::options::ListStyleType) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetListStyle<S>> where <S as comrak::parser::options::render_builder::State>::ListStyle: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_alert_style(self, value: core::option::Option<comrak::options::AlertStyleType>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetAlertStyle<S>> where <S as comrak::parser::options::render_builder::State>::AlertStyle: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_attributes(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetAttributes<S>> where <S as comrak::parser::options::render_builder::State>::Attributes: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_compact_html(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetCompactHtml<S>> where <S as comrak::parser::options::render_builder::State>::CompactHtml: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_escape(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetEscape<S>> where <S as comrak::parser::options::render_builder::State>::Escape: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_escaped_char_spans(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetEscapedCharSpans<S>> where <S as comrak::parser::options::render_builder::State>::EscapedCharSpans: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_experimental_minimize_commonmark(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetExperimentalMinimizeCommonmark<S>> where <S as comrak::parser::options::render_builder::State>::ExperimentalMinimizeCommonmark: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_figure_with_caption(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetFigureWithCaption<S>> where <S as comrak::parser::options::render_builder::State>::FigureWithCaption: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_full_info_string(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetFullInfoString<S>> where <S as comrak::parser::options::render_builder::State>::FullInfoString: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_gfm_quirks(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGfmQuirks<S>> where <S as comrak::parser::options::render_builder::State>::GfmQuirks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_github_pre_lang(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGithubPreLang<S>> where <S as comrak::parser::options::render_builder::State>::GithubPreLang: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_grid_table_widths(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetGridTableWidths<S>> where <S as comrak::parser::options::render_builder::State>::GridTableWidths: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_hardbreaks(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetHardbreaks<S>> where <S as comrak::parser::options::render_builder::State>::Hardbreaks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_ignore_empty_links(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetIgnoreEmptyLinks<S>> where <S as comrak::parser::options::render_builder::State>::IgnoreEmptyLinks: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_list_style(self, value: core::option::Option<comrak::options::ListStyleType>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetListStyle<S>> where <S as comrak::parser::options::render_builder::State>::ListStyle: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_ol_width(self, value: core::option::Option<usize>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetOlWidth<S>> where <S as comrak::parser::options::render_builder::State>::OlWidth: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_prefer_fenced(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetPreferFenced<S>> where <S as comrak::parser::options::render_builder::State>::PreferFenced: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_sourcepos(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetSourcepos<S>> where <S as comrak::parser::options::render_builder::State>::Sourcepos: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_tasklist_classes(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetTasklistClasses<S>> where <S as comrak::parser::options::render_builder::State>::TasklistClasses: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_unsafe(self, value: core::option::Option<bool>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetUnsafe<S>> where <S as comrak::parser::options::render_builder::State>::Unsafe: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::maybe_width(self, value: core::option::Option<usize>) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetWidth<S>> where <S as comrak::parser::options::render_builder::State>::Width: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::ol_width(self, value: usize) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetOlWidth<S>> where <S as comrak::parser::options::render_builder::State>::OlWidth: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::prefer_fenced(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetPreferFenced<S>> where <S as comrak::parser::options::render_builder::State>::PreferFenced: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::sourcepos(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetSourcepos<S>> where <S as comrak::parser::options::render_builder::State>::Sourcepos: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::tasklist_classes(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetTasklistClasses<S>> where <S as comrak::parser::options::render_builder::State>::TasklistClasses: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::unsafe(self, value: bool) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetUnsafe<S>> where <S as comrak::parser::options::render_builder::State>::Unsafe: bon::builder_state::IsUnset
+pub fn comrak::options::RenderBuilder<S>::width(self, value: usize) -> comrak::options::RenderBuilder<comrak::parser::options::render_builder::SetWidth<S>> where <S as comrak::parser::options::render_builder::State>::Width: bon::builder_state::IsUnset
+impl<S> core::marker::Freeze for comrak::options::RenderBuilder<S>
+impl<S> core::marker::Send for comrak::options::RenderBuilder<S>
+impl<S> core::marker::Sync for comrak::options::RenderBuilder<S>
+impl<S> core::marker::Unpin for comrak::options::RenderBuilder<S>
+impl<S> core::panic::unwind_safe::RefUnwindSafe for comrak::options::RenderBuilder<S>
+impl<S> core::panic::unwind_safe::UnwindSafe for comrak::options::RenderBuilder<S>
+#[non_exhaustive] pub struct comrak::options::RenderPlugins<'p>
+pub comrak::options::RenderPlugins::codefence_renderers: std::collections::hash::map::HashMap<alloc::string::String, &'p dyn comrak::adapters::CodefenceRendererAdapter>
+pub comrak::options::RenderPlugins::codefence_syntax_highlighter: core::option::Option<&'p dyn comrak::adapters::SyntaxHighlighterAdapter>
+pub comrak::options::RenderPlugins::heading_adapter: core::option::Option<&'p dyn comrak::adapters::HeadingAdapter>
+impl core::fmt::Debug for comrak::options::RenderPlugins<'_>
+pub fn comrak::options::RenderPlugins<'_>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'p> comrak::options::RenderPlugins<'p>
+pub fn comrak::options::RenderPlugins<'p>::builder() -> comrak::options::RenderPluginsBuilder<'p>
+impl<'p> core::clone::Clone for comrak::options::RenderPlugins<'p>
+pub fn comrak::options::RenderPlugins<'p>::clone(&self) -> comrak::options::RenderPlugins<'p>
+impl<'p> core::default::Default for comrak::options::RenderPlugins<'p>
+pub fn comrak::options::RenderPlugins<'p>::default() -> comrak::options::RenderPlugins<'p>
+impl<'p> core::marker::Freeze for comrak::options::RenderPlugins<'p>
+impl<'p> core::marker::Send for comrak::options::RenderPlugins<'p>
+impl<'p> core::marker::Sync for comrak::options::RenderPlugins<'p>
+impl<'p> core::marker::Unpin for comrak::options::RenderPlugins<'p>
+impl<'p> !core::panic::unwind_safe::RefUnwindSafe for comrak::options::RenderPlugins<'p>
+impl<'p> !core::panic::unwind_safe::UnwindSafe for comrak::options::RenderPlugins<'p>
+pub struct comrak::options::RenderPluginsBuilder<'p, S: comrak::parser::options::render_plugins_builder::State>
+impl<'p, S: comrak::parser::options::render_plugins_builder::State> comrak::options::RenderPluginsBuilder<'p, S>
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::build(self) -> comrak::options::RenderPlugins<'p> where S: comrak::parser::options::render_plugins_builder::IsComplete
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::codefence_renderers(self, value: std::collections::hash::map::HashMap<alloc::string::String, &'p dyn comrak::adapters::CodefenceRendererAdapter>) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetCodefenceRenderers<S>> where <S as comrak::parser::options::render_plugins_builder::State>::CodefenceRenderers: bon::builder_state::IsUnset
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::codefence_syntax_highlighter(self, value: &'p dyn comrak::adapters::SyntaxHighlighterAdapter) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetCodefenceSyntaxHighlighter<S>> where <S as comrak::parser::options::render_plugins_builder::State>::CodefenceSyntaxHighlighter: bon::builder_state::IsUnset
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::heading_adapter(self, value: &'p dyn comrak::adapters::HeadingAdapter) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetHeadingAdapter<S>> where <S as comrak::parser::options::render_plugins_builder::State>::HeadingAdapter: bon::builder_state::IsUnset
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::maybe_codefence_renderers(self, value: core::option::Option<std::collections::hash::map::HashMap<alloc::string::String, &'p dyn comrak::adapters::CodefenceRendererAdapter>>) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetCodefenceRenderers<S>> where <S as comrak::parser::options::render_plugins_builder::State>::CodefenceRenderers: bon::builder_state::IsUnset
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::maybe_codefence_syntax_highlighter(self, value: core::option::Option<&'p dyn comrak::adapters::SyntaxHighlighterAdapter>) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetCodefenceSyntaxHighlighter<S>> where <S as comrak::parser::options::render_plugins_builder::State>::CodefenceSyntaxHighlighter: bon::builder_state::IsUnset
+pub fn comrak::options::RenderPluginsBuilder<'p, S>::maybe_heading_adapter(self, value: core::option::Option<&'p dyn comrak::adapters::HeadingAdapter>) -> comrak::options::RenderPluginsBuilder<'p, comrak::parser::options::render_plugins_builder::SetHeadingAdapter<S>> where <S as comrak::parser::options::render_plugins_builder::State>::HeadingAdapter: bon::builder_state::IsUnset
+impl<'p, S> core::marker::Freeze for comrak::options::RenderPluginsBuilder<'p, S>
+impl<'p, S> core::marker::Send for comrak::options::RenderPluginsBuilder<'p, S>
+impl<'p, S> core::marker::Sync for comrak::options::RenderPluginsBuilder<'p, S>
+impl<'p, S> core::marker::Unpin for comrak::options::RenderPluginsBuilder<'p, S>
+impl<'p, S> !core::panic::unwind_safe::RefUnwindSafe for comrak::options::RenderPluginsBuilder<'p, S>
+impl<'p, S> !core::panic::unwind_safe::UnwindSafe for comrak::options::RenderPluginsBuilder<'p, S>
+pub trait comrak::options::BrokenLinkCallback: core::panic::unwind_safe::RefUnwindSafe + core::marker::Send + core::marker::Sync
+pub fn comrak::options::BrokenLinkCallback::resolve(&self, broken_link_reference: comrak::options::BrokenLinkReference<'_>) -> core::option::Option<comrak::ResolvedReference>
+impl<F> comrak::options::BrokenLinkCallback for F where F: core::ops::function::Fn(comrak::options::BrokenLinkReference<'_>) -> core::option::Option<comrak::ResolvedReference> + core::panic::unwind_safe::RefUnwindSafe + core::marker::Send + core::marker::Sync
+pub fn F::resolve(&self, broken_link_reference: comrak::options::BrokenLinkReference<'_>) -> core::option::Option<comrak::ResolvedReference>
+pub trait comrak::options::URLRewriter: core::panic::unwind_safe::RefUnwindSafe + core::marker::Send + core::marker::Sync
+pub fn comrak::options::URLRewriter::to_html(&self, url: &str) -> alloc::string::String
+impl<F> comrak::options::URLRewriter for F where F: for<'a> core::ops::function::Fn(&'a str) -> alloc::string::String + core::panic::unwind_safe::RefUnwindSafe + core::marker::Send + core::marker::Sync
+pub fn F::to_html(&self, url: &str) -> alloc::string::String
+pub mod comrak::plugins
+pub mod comrak::plugins::syntect
+pub struct comrak::plugins::syntect::SyntectAdapter
+impl comrak::plugins::syntect::SyntectAdapter
+pub fn comrak::plugins::syntect::SyntectAdapter::new(theme: core::option::Option<&str>) -> Self
+impl comrak::adapters::SyntaxHighlighterAdapter for comrak::plugins::syntect::SyntectAdapter
+pub fn comrak::plugins::syntect::SyntectAdapter::write_code_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_highlighted(&self, output: &mut dyn core::fmt::Write, highlight: &comrak::adapters::SyntaxHighlightMeta<'_>) -> core::fmt::Result
+pub fn comrak::plugins::syntect::SyntectAdapter::write_pre_tag(&self, output: &mut dyn core::fmt::Write, _highlight: &comrak::adapters::SyntaxHighlightMeta<'_>, attributes: alloc::collections::btree::map::BTreeMap<&str, alloc::borrow::Cow<'_, str>>) -> core::fmt::Result
+impl core::fmt::Debug for comrak::plugins::syntect::SyntectAdapter
+pub fn comrak::plugins::syntect::SyntectAdapter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl !core::marker::Freeze for comrak::plugins::syntect::SyntectAdapter
+impl core::marker::Send for comrak::plugins::syntect::SyntectAdapter
+impl core::marker::Sync for comrak::plugins::syntect::SyntectAdapter
+impl core::marker::Unpin for comrak::plugins::syntect::SyntectAdapter
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::plugins::syntect::SyntectAdapter
+impl core::panic::unwind_safe::UnwindSafe for comrak::plugins::syntect::SyntectAdapter
+pub struct comrak::plugins::syntect::SyntectAdapterBuilder
+impl comrak::plugins::syntect::SyntectAdapterBuilder
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::build(self) -> comrak::plugins::syntect::SyntectAdapter
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::css(self) -> Self
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::css_with_class_prefix(self, prefix: &'static str) -> Self
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::new() -> Self
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::syntax_set(self, s: syntect::parsing::syntax_set::SyntaxSet) -> Self
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::theme(self, s: &str) -> Self
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::theme_set(self, s: syntect::highlighting::theme_set::ThemeSet) -> Self
+impl core::default::Default for comrak::plugins::syntect::SyntectAdapterBuilder
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::default() -> comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::fmt::Debug for comrak::plugins::syntect::SyntectAdapterBuilder
+pub fn comrak::plugins::syntect::SyntectAdapterBuilder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl !core::marker::Freeze for comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::marker::Send for comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::marker::Sync for comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::marker::Unpin for comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::plugins::syntect::SyntectAdapterBuilder
+impl core::panic::unwind_safe::UnwindSafe for comrak::plugins::syntect::SyntectAdapterBuilder
+pub macro comrak::create_formatter!
+pub macro comrak::node_matches!
+#[non_exhaustive] pub struct comrak::Options<'c>
+pub comrak::Options::extension: comrak::options::Extension<'c>
+pub comrak::Options::parse: comrak::options::Parse<'c>
+pub comrak::Options::render: comrak::options::Render
+impl<'c, 'arbitrary: 'c> arbitrary::Arbitrary<'arbitrary> for comrak::Options<'c>
+pub fn comrak::Options<'c>::arbitrary(u: &mut arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::Options<'c>::arbitrary_take_rest(u: arbitrary::unstructured::Unstructured<'arbitrary>) -> arbitrary::error::Result<Self>
+pub fn comrak::Options<'c>::size_hint(depth: usize) -> (usize, core::option::Option<usize>)
+pub fn comrak::Options<'c>::try_size_hint(depth: usize) -> core::result::Result<(usize, core::option::Option<usize>), arbitrary::MaxRecursionReached>
+impl<'c> comrak::Options<'c>
+pub fn comrak::Options<'c>::builder() -> comrak::options::OptionsBuilder<'c>
+impl<'c> core::clone::Clone for comrak::Options<'c>
+pub fn comrak::Options<'c>::clone(&self) -> comrak::Options<'c>
+impl<'c> core::default::Default for comrak::Options<'c>
+pub fn comrak::Options<'c>::default() -> comrak::Options<'c>
+impl<'c> core::fmt::Debug for comrak::Options<'c>
+pub fn comrak::Options<'c>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'c> core::marker::Freeze for comrak::Options<'c>
+impl<'c> core::marker::Send for comrak::Options<'c>
+impl<'c> core::marker::Sync for comrak::Options<'c>
+impl<'c> core::marker::Unpin for comrak::Options<'c>
+impl<'c> core::panic::unwind_safe::RefUnwindSafe for comrak::Options<'c>
+impl<'c> core::panic::unwind_safe::UnwindSafe for comrak::Options<'c>
+pub struct comrak::ParseCancelled
+impl core::clone::Clone for comrak::ParseCancelled
+pub fn comrak::ParseCancelled::clone(&self) -> comrak::ParseCancelled
+impl core::cmp::Eq for comrak::ParseCancelled
+impl core::cmp::PartialEq for comrak::ParseCancelled
+pub fn comrak::ParseCancelled::eq(&self, other: &comrak::ParseCancelled) -> bool
+impl core::error::Error for comrak::ParseCancelled
+impl core::fmt::Debug for comrak::ParseCancelled
+pub fn comrak::ParseCancelled::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for comrak::ParseCancelled
+pub fn comrak::ParseCancelled::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for comrak::ParseCancelled
+impl core::marker::StructuralPartialEq for comrak::ParseCancelled
+impl core::marker::Freeze for comrak::ParseCancelled
+impl core::marker::Send for comrak::ParseCancelled
+impl core::marker::Sync for comrak::ParseCancelled
+impl core::marker::Unpin for comrak::ParseCancelled
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::ParseCancelled
+impl core::panic::unwind_safe::UnwindSafe for comrak::ParseCancelled
+#[non_exhaustive] pub struct comrak::ResolvedReference
+pub comrak::ResolvedReference::title: alloc::string::String
+pub comrak::ResolvedReference::url: alloc::string::String
+impl comrak::ResolvedReference
+pub fn comrak::ResolvedReference::new(url: impl core::convert::Into<alloc::string::String>, title: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for comrak::ResolvedReference
+pub fn comrak::ResolvedReference::clone(&self) -> comrak::ResolvedReference
+impl core::fmt::Debug for comrak::ResolvedReference
+pub fn comrak::ResolvedReference::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for comrak::ResolvedReference
+impl core::marker::Send for comrak::ResolvedReference
+impl core::marker::Sync for comrak::ResolvedReference
+impl core::marker::Unpin for comrak::ResolvedReference
+impl core::panic::unwind_safe::RefUnwindSafe for comrak::ResolvedReference
+impl core::panic::unwind_safe::UnwindSafe for comrak::ResolvedReference
+pub fn comrak::escape_commonmark_inline(text: &str) -> alloc::string::String
+pub fn comrak::escape_commonmark_link_destination(url: &str) -> alloc::string::String
+pub fn comrak::format_commonmark(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write) -> core::fmt::Result
+pub fn comrak::format_commonmark_with_plugins(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write, _plugins: &comrak::options::Plugins<'_>) -> core::fmt::Result
+pub fn comrak::format_html(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write) -> core::fmt::Result
+pub fn comrak::format_html_with_plugins(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write, plugins: &comrak::options::Plugins<'_>) -> core::fmt::Result
+pub fn comrak::format_xml(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write) -> core::fmt::Result
+pub fn comrak::format_xml_with_plugins(root: comrak::nodes::Node<'_>, options: &comrak::Options<'_>, output: &mut dyn core::fmt::Write, plugins: &comrak::options::Plugins<'_>) -> core::fmt::Result
+pub fn comrak::markdown_to_commonmark(md: &str, options: &comrak::Options<'_>) -> alloc::string::String
+pub fn comrak::markdown_to_commonmark_xml(md: &str, options: &comrak::Options<'_>) -> alloc::string::String
+pub fn comrak::markdown_to_commonmark_xml_with_plugins(md: &str, options: &comrak::Options<'_>, plugins: &comrak::options::Plugins<'_>) -> alloc::string::String
+pub fn comrak::markdown_to_html(md: &str, options: &comrak::Options<'_>) -> alloc::string::String
+pub fn comrak::markdown_to_html_with_plugins(md: &str, options: &comrak::Options<'_>, plugins: &comrak::options::Plugins<'_>) -> alloc::string::String
+pub fn comrak::parse_document<'a>(arena: &'a comrak::Arena<'a>, md: &str, options: &comrak::Options<'_>) -> comrak::nodes::Node<'a>
+pub fn comrak::try_parse_document<'a>(arena: &'a comrak::Arena<'a>, md: &str, options: &comrak::Options<'_>, should_cancel: &dyn core::ops::function::Fn() -> bool) -> core::result::Result<comrak::nodes::Node<'a>, comrak::ParseCancelled>
+pub fn comrak::version() -> &'static str
+pub type comrak::Arena<'a> = typed_arena::Arena<comrak::nodes::AstNode<'a>>
+pub type comrak::Node<'a> = &'a comrak::nodes::AstNode<'a>

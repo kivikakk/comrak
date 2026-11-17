@@ -259,7 +259,11 @@ where
                     _ => (top.line, top.table_byte + 1, top.line, top.table_byte).into(),
                 };
                 let cell_node = self.arena.alloc(
-                    Ast::new_with_sourcepos(NodeValue::GridTableCell(cell.value), sourcepos).into(),
+                    Ast::new_with_sourcepos(
+                        NodeValue::GridTableCell(cell.value.clone()),
+                        sourcepos,
+                    )
+                    .into(),
                 );
                 self.parse_fragments(cell_node, &fragments, false);
                 self.cell_line_ends.extend(

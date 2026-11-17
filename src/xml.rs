@@ -3,7 +3,7 @@ use std::fmt::{self, Write};
 
 use crate::html::TableCellIndexer;
 use crate::node_matches;
-use crate::nodes::{CalloutFold, ListType, NodeCode, NodeMath, NodeValue};
+use crate::nodes::{CalloutFold, ListType, NodeCode, NodeMath, NodeTableRow, NodeValue};
 use crate::nodes::{Node, NodeHtmlBlock};
 use crate::parser::options::{Options, Plugins};
 
@@ -227,13 +227,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
-                NodeValue::ThematicBreak => {}
+                NodeValue::ThematicBreak(..) => {}
                 NodeValue::Paragraph => {}
                 NodeValue::LineBreak => {}
                 NodeValue::SoftBreak => {}
-                NodeValue::Strong => {}
-                NodeValue::Emph => {}
-                NodeValue::Strikethrough => {}
+                NodeValue::Strong(..) => {}
+                NodeValue::Emph(..) => {}
+                NodeValue::Strikethrough(..) => {}
                 NodeValue::Highlight => {}
                 NodeValue::Insert => {}
                 NodeValue::Superscript => {}
@@ -287,7 +287,11 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     let header_row = &ancestors.next().unwrap().data().value;
                     let table = &ancestors.next().unwrap().data().value;
 
-                    if let (NodeValue::TableRow(true), NodeValue::Table(nt)) = (header_row, table) {
+                    if let (
+                        NodeValue::TableRow(NodeTableRow { header: true }),
+                        NodeValue::Table(nt),
+                    ) = (header_row, table)
+                    {
                         let ix = self.table_cell_indexer.index(node);
                         if let Some(xml_align) = nt.alignments[ix].xml_name() {
                             write!(self.output, " align=\"{}\"", xml_align)?;

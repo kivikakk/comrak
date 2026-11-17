@@ -12,7 +12,7 @@ use syntect::html::{
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
-use crate::adapters::SyntaxHighlighterAdapter;
+use crate::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
 use crate::html;
 
 #[derive(Debug)]
@@ -80,14 +80,14 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_highlighted(
         &self,
         output: &mut dyn Write,
-        lang: Option<&str>,
-        code: &str,
+        highlight: &SyntaxHighlightMeta<'_>,
     ) -> fmt::Result {
+        let code = highlight.code;
         let fallback_syntax = "Plain Text";
 
-        let lang: &str = match lang {
-            Some(l) if !l.is_empty() => l.split_once(',').map(|(left, _)| left).unwrap_or(l),
-            _ => fallback_syntax,
+        let lang = match highlight.lang {
+            "" => fallback_syntax,
+            l => l.split_once(',').map(|(left, _)| left).unwrap_or(l),
         };
 
         let syntax = self
@@ -108,6 +108,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
+        _highlight: &SyntaxHighlightMeta<'_>,
         mut attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         match &self.theme {
@@ -145,6 +146,7 @@ impl SyntaxHighlighterAdapter for SyntectAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
+        _highlight: &SyntaxHighlightMeta<'_>,
         attributes: BTreeMap<&str, Cow<'_, str>>,
     ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)

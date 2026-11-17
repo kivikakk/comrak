@@ -11,20 +11,26 @@ use std::sync::Arc;
 use crate::adapters::{CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter};
 use crate::parser::ResolvedReference;
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Umbrella options struct.
 pub struct Options<'c> {
     /// Enable CommonMark extensions.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub extension: Extension<'c>,
 
     /// Configure parse-time options.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub parse: Parse<'c>,
 
     /// Configure render-time options.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub render: Render,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -832,11 +838,8 @@ impl Extension<'_> {
     }
 }
 
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// Selects between wikilinks with the title first or the URL first.
-pub enum WikiLinksMode {
+pub(crate) enum WikiLinksMode {
     /// Indicates that the URL precedes the title. For example: `[[http://example.com|link
     /// title]]`.
     UrlFirst,
@@ -867,6 +870,7 @@ where
     }
 }
 
+#[non_exhaustive]
 #[derive(Default, Clone, Debug)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -969,10 +973,10 @@ pub struct Parse<'c> {
     /// # use std::{str, sync::Arc};
     /// # use comrak::{markdown_to_html, options::BrokenLinkReference, Options, ResolvedReference};
     /// let cb = |link_ref: BrokenLinkReference| match link_ref.normalized {
-    ///     "foo" => Some(ResolvedReference {
-    ///         url: "https://www.rust-lang.org/".to_string(),
-    ///         title: "The Rust Language".to_string(),
-    ///     }),
+    ///     "foo" => Some(ResolvedReference::new(
+    ///         "https://www.rust-lang.org/",
+    ///         "The Rust Language",
+    ///     )),
     ///     _ => None,
     /// };
     ///
@@ -1131,6 +1135,7 @@ where
 /// Struct to the broken link callback, containing details on the link reference
 /// which failed to find a match.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct BrokenLinkReference<'l> {
     /// The normalized reference link label. Unicode case folding is applied;
     /// see <https://github.com/commonmark/commonmark-spec/issues/695> for a
@@ -1141,7 +1146,8 @@ pub struct BrokenLinkReference<'l> {
     pub original: &'l str,
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[non_exhaustive]
+#[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
@@ -1562,6 +1568,7 @@ pub enum ListStyleType {
 #[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for alert rendering in markdown. See [`Render::alert_style`] for more details.
+#[non_exhaustive]
 pub enum AlertStyleType {
     /// `div`s with `class="markdown-alert markdown-alert-<type>"`
     #[default]
@@ -1570,6 +1577,7 @@ pub enum AlertStyleType {
     Semantic,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Umbrella plugins struct.
@@ -1579,6 +1587,7 @@ pub struct Plugins<'p> {
     pub render: RenderPlugins<'p>,
 }
 
+#[non_exhaustive]
 #[derive(Default, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.
@@ -1595,7 +1604,7 @@ pub struct RenderPlugins<'p> {
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options, options::Plugins, markdown_to_html_with_plugins};
-    /// # use comrak::adapters::SyntaxHighlighterAdapter;
+    /// # use comrak::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
     /// use std::borrow::Cow;
     /// use std::collections::BTreeMap;
     /// use std::fmt::{self, Write};
@@ -1608,15 +1617,15 @@ pub struct RenderPlugins<'p> {
     ///
     /// pub struct MockAdapter {}
     /// impl SyntaxHighlighterAdapter for MockAdapter {
-    ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, lang: Option<&str>, code: &str) -> fmt::Result {
-    ///         write!(output, "<span class=\"lang-{}\">{}</span>", lang.unwrap(), code)
+    ///     fn write_highlighted(&self, output: &mut dyn fmt::Write, highlight: &SyntaxHighlightMeta<'_>) -> fmt::Result {
+    ///         write!(output, "<span class=\"lang-{}\">{}</span>", highlight.lang, highlight.code)
     ///     }
     ///
-    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_pre_tag<'s>(&self, output: &mut dyn fmt::Write, _highlight: &SyntaxHighlightMeta<'_>, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<pre lang=\"rust\">")
     ///     }
     ///
-    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
+    ///     fn write_code_tag<'s>(&self, output: &mut dyn fmt::Write, _highlight: &SyntaxHighlightMeta<'_>, _attributes: BTreeMap<&str, Cow<'s, str>>) -> fmt::Result {
     ///         output.write_str("<code class=\"language-rust\">")
     ///     }
     /// }

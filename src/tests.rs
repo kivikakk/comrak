@@ -18,6 +18,7 @@ mod cjk_friendly_emphasis;
 mod code;
 mod commonmark;
 mod compact_html;
+mod constructors;
 mod core;
 mod description_lists;
 mod empty;

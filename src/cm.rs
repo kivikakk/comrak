@@ -496,7 +496,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::HtmlBlock(ref nhb) => self.format_html_block(nhb, entering)?,
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexBlock(ref nhb) => self.format_heex_block(nhb, entering)?,
-            NodeValue::ThematicBreak => self.format_thematic_break(entering)?,
+            NodeValue::ThematicBreak(..) => self.format_thematic_break(entering)?,
             NodeValue::Paragraph => self.format_paragraph(entering),
             NodeValue::Text(ref literal) => {
                 self.format_text(literal, node, entering, !text_in_cell)?
@@ -508,10 +508,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(ref literal) => self.format_heex_inline(literal, entering)?,
             NodeValue::Raw(ref literal) => self.format_raw(literal, entering)?,
-            NodeValue::Strong => self.format_emphasis(node, entering, true)?,
-            NodeValue::Emph => self.format_emphasis(node, entering, false)?,
+            NodeValue::Strong(..) => self.format_emphasis(node, entering, true)?,
+            NodeValue::Emph(..) => self.format_emphasis(node, entering, false)?,
             NodeValue::TaskItem(ref nti) => self.format_task_item(nti, node, entering)?,
-            NodeValue::Strikethrough => self.format_strikethrough()?,
+            NodeValue::Strikethrough(..) => self.format_strikethrough()?,
             NodeValue::Highlight => self.format_highlight()?,
             NodeValue::Insert => self.format_insert()?,
             NodeValue::Superscript => self.format_superscript()?,
@@ -638,7 +638,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_item(&mut self, node: Node<'a>, entering: bool) -> fmt::Result {
         let parent = match node.parent().unwrap().data().value {
-            NodeValue::List(ref nl) => *nl,
+            NodeValue::List(ref nl) => nl.clone(),
             _ => unreachable!(),
         };
 
@@ -1043,7 +1043,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             && self.options.render.gfm_quirks
             && node
                 .parent()
-                .is_some_and(|p| node_matches!(p, NodeValue::Strong)));
+                .is_some_and(|p| node_matches!(p, NodeValue::Strong(..))));
         let delim = if entering {
             let delim = if written {
                 self.emphasis_delimiter(node, strong)
@@ -1076,9 +1076,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 .map(|(_, delim)| delim),
             None if !strong
                 && node.next_sibling().is_none()
-                && node
-                    .parent()
-                    .is_some_and(|p| node_matches!(p, NodeValue::Emph | NodeValue::Strong)) =>
+                && node.parent().is_some_and(|p| {
+                    node_matches!(p, NodeValue::Emph(..) | NodeValue::Strong(..))
+                }) =>
             {
                 self.emphasis_delims.last().copied()
             }
@@ -1255,7 +1255,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
             let row = &node.parent().unwrap().data().value;
             let in_header = match *row {
-                NodeValue::TableRow(header) => header,
+                NodeValue::TableRow(ref ntr) => ntr.header,
                 _ => panic!(),
             };
 
@@ -1728,9 +1728,9 @@ fn following_html_block_indent(item: Node<'_>) -> usize {
 fn is_emphasis_delimiter_node(value: &NodeValue) -> bool {
     matches!(
         value,
-        NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Strikethrough
+        NodeValue::Emph(..)
+            | NodeValue::Strong(..)
+            | NodeValue::Strikethrough(..)
             | NodeValue::Highlight
             | NodeValue::Superscript
             | NodeValue::Subscript

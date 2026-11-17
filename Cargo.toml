@@ -17,6 +17,7 @@ exclude = [
     "/.travis.yml",
     "/Makefile",
     "/spec_out.txt",
+    "/public-api.txt",
 ]
 resolver = "3"
 edition = "2024"
@@ -73,12 +74,13 @@ phf_codegen = "0.14"
 
 [features]
 default = ["cli", "syntect-onig", "bon"]
-cli = ["clap", "bon", "shell-words", "xdg", "fmt2io", "shortcodes", "phoenix_heex", "attributes", "grid_table"]
-shortcodes = ["emojis"]
+cli = ["dep:clap", "bon", "dep:shell-words", "dep:xdg", "dep:fmt2io", "shortcodes", "phoenix_heex", "attributes", "grid_table"]
+shortcodes = ["dep:emojis"]
 phoenix_heex = []
 grid_table = ["dep:unicode-width"]
 attributes = []
 bon = ["dep:bon"]
+arbitrary = ["dep:arbitrary"]
 # `syntect` enables the syntect plugin but is backend-neutral; pick a regex
 # backend via `syntect-onig` (C Oniguruma, the default) or `syntect-fancy`
 # (pure-Rust fancy-regex). The fancy backend avoids linking onig_sys, which is

@@ -78,7 +78,7 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
             };
             sections.push(section);
             for cell in row.children() {
-                let NodeValue::GridTableCell(value) = cell.data().value else {
+                let NodeValue::GridTableCell(ref value) = cell.data().value else {
                     unreachable!()
                 };
                 let mut content = String::new();

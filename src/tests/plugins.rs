@@ -1,8 +1,9 @@
+use pretty_assertions::assert_eq;
 use std::borrow::Cow;
 
-use crate::{
-    adapters::{CodefenceRendererAdapter, HeadingAdapter, HeadingMeta, SyntaxHighlighterAdapter},
-    nodes::Sourcepos,
+use crate::adapters::{
+    CodefenceMeta, CodefenceRendererAdapter, HeadingAdapter, HeadingMeta, SyntaxHighlightMeta,
+    SyntaxHighlighterAdapter,
 };
 
 use super::*;
@@ -15,15 +16,17 @@ fn syntax_highlighter_plugin() {
         fn write_highlighted(
             &self,
             output: &mut dyn std::fmt::Write,
-            lang: Option<&str>,
-            code: &str,
+            highlight: &SyntaxHighlightMeta<'_>,
         ) -> std::fmt::Result {
-            write!(output, "<!--{}--><span>{}</span>", lang.unwrap(), code)
+            let lang = highlight.lang;
+            let code = highlight.code;
+            write!(output, "<!--{}--><span>{}</span>", lang, code)
         }
 
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -32,6 +35,7 @@ fn syntax_highlighter_plugin() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
@@ -49,6 +53,57 @@ fn syntax_highlighter_plugin() {
     plugins.render.codefence_syntax_highlighter = Some(&adapter);
 
     html_plugins(input, expected, &plugins);
+    html_plugins(
+        concat!("```\n", "plain\n", "```\n"),
+        "<pre><code><!----><span>plain\n</span></code></pre>\n",
+        &plugins,
+    );
+}
+
+#[test]
+fn syntax_highlighter_tags_receive_meta() {
+    struct MockAdapter;
+
+    impl SyntaxHighlighterAdapter for MockAdapter {
+        fn write_highlighted(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+        ) -> std::fmt::Result {
+            output.write_str(highlight.code)
+        }
+
+        fn write_pre_tag(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+            _attributes: BTreeMap<&str, Cow<str>>,
+        ) -> std::fmt::Result {
+            write!(
+                output,
+                "<pre data-pre=\"{}|{}\">",
+                highlight.lang, highlight.meta
+            )
+        }
+
+        fn write_code_tag(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            highlight: &SyntaxHighlightMeta<'_>,
+            _attributes: BTreeMap<&str, Cow<str>>,
+        ) -> std::fmt::Result {
+            write!(output, "<code data-code=\"{}\">", highlight.lang)
+        }
+    }
+
+    let mut plugins = options::Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&MockAdapter);
+
+    html_plugins(
+        concat!("``` rust yum\n", "x\n", "```\n"),
+        "<pre data-pre=\"rust|yum\"><code data-code=\"rust\">x\n</code></pre>\n",
+        &plugins,
+    );
 }
 
 #[test]
@@ -59,11 +114,11 @@ fn language_specific_codefence_renderer_plugin() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            lang: &str,
-            meta: &str,
-            code: &str,
-            _sourcepos: Option<Sourcepos>,
+            codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
+            let lang = codefence.lang;
+            let meta = codefence.meta;
+            let code = codefence.code;
             writeln!(
                 output,
                 "<figure class=\"{lang}\" data-meta=\"{meta}\">{code}</figure>"
@@ -93,11 +148,9 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: &str,
-            _meta: &str,
-            code: &str,
-            _sourcepos: Option<Sourcepos>,
+            codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
+            let code = codefence.code;
             writeln!(output, "<div>{code}</div>")
         }
     }
@@ -106,15 +159,16 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_highlighted(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: Option<&str>,
-            code: &str,
+            highlight: &SyntaxHighlightMeta<'_>,
         ) -> std::fmt::Result {
+            let code = highlight.code;
             write!(output, "<span>{code}</span>")
         }
 
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -123,6 +177,7 @@ fn language_specific_codefence_renderer_precedes_highlighter() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
@@ -152,12 +207,12 @@ fn language_specific_codefence_renderer_receives_sourcepos() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: &str,
-            _meta: &str,
-            code: &str,
-            sourcepos: Option<Sourcepos>,
+            codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
-            let sourcepos = sourcepos.expect("sourcepos should be passed to adapter");
+            let code = codefence.code;
+            let sourcepos = codefence
+                .sourcepos
+                .expect("sourcepos should be passed to adapter");
             writeln!(
                 output,
                 "<figure data-sourcepos=\"{sourcepos}\">{code}</figure>"
@@ -193,10 +248,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: &str,
-            _meta: &str,
-            _code: &str,
-            _sourcepos: Option<Sourcepos>,
+            _codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
             output.write_str("<div>should-not-run</div>\n")
         }
@@ -206,15 +258,17 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_highlighted(
             &self,
             output: &mut dyn std::fmt::Write,
-            lang: Option<&str>,
-            code: &str,
+            highlight: &SyntaxHighlightMeta<'_>,
         ) -> std::fmt::Result {
-            write!(output, "<!--{}--><span>{code}</span>", lang.unwrap())
+            let lang = highlight.lang;
+            let code = highlight.code;
+            write!(output, "<!--{}--><span>{code}</span>", lang)
         }
 
         fn write_pre_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "pre", attributes)
@@ -223,6 +277,7 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
         fn write_code_tag(
             &self,
             output: &mut dyn std::fmt::Write,
+            _highlight: &SyntaxHighlightMeta<'_>,
             attributes: BTreeMap<&str, Cow<str>>,
         ) -> std::fmt::Result {
             html::write_opening_tag(output, "code", attributes)
@@ -255,10 +310,7 @@ fn math_codefence_renderer_is_not_overridden_by_custom_renderer() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: &str,
-            _meta: &str,
-            _code: &str,
-            _sourcepos: Option<Sourcepos>,
+            _codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
             output.write_str("<div>custom-math</div>\n")
         }
@@ -286,10 +338,7 @@ fn empty_info_codefence_does_not_use_custom_renderer() {
         fn write(
             &self,
             output: &mut dyn std::fmt::Write,
-            _lang: &str,
-            _meta: &str,
-            _code: &str,
-            _sourcepos: Option<Sourcepos>,
+            _codefence: &CodefenceMeta<'_>,
         ) -> std::fmt::Result {
             output.write_str("<div>should-not-run</div>\n")
         }
@@ -309,6 +358,50 @@ fn empty_info_codefence_does_not_use_custom_renderer() {
 }
 
 #[test]
+fn heading_adapter_receives_sourcepos() {
+    struct MockAdapter;
+
+    impl HeadingAdapter for MockAdapter {
+        fn enter(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            heading: &HeadingMeta,
+        ) -> std::fmt::Result {
+            write!(
+                output,
+                "<h{} data-enter=\"{}\">",
+                heading.level,
+                heading.sourcepos.unwrap()
+            )
+        }
+
+        fn exit(
+            &self,
+            output: &mut dyn std::fmt::Write,
+            heading: &HeadingMeta,
+        ) -> std::fmt::Result {
+            write!(
+                output,
+                "</h{}><!-- {} -->",
+                heading.level,
+                heading.sourcepos.unwrap()
+            )
+        }
+    }
+
+    let mut plugins = options::Plugins::default();
+    let adapter = MockAdapter;
+    plugins.render.heading_adapter = Some(&adapter);
+    let mut options = Options::default();
+    options.render.sourcepos = true;
+
+    assert_eq!(
+        markdown_to_html_with_plugins("text\n\n## Heading\n", &options, &plugins),
+        "<p data-sourcepos=\"1:1-1:4\">text</p>\n<h2 data-enter=\"3:1-3:10\">Heading</h2><!-- 3:1-3:10 -->"
+    );
+}
+
+#[test]
 fn heading_adapter_plugin() {
     struct MockAdapter;
 
@@ -317,7 +410,6 @@ fn heading_adapter_plugin() {
             &self,
             output: &mut dyn std::fmt::Write,
             heading: &HeadingMeta,
-            _sourcepos: Option<Sourcepos>,
         ) -> std::fmt::Result {
             write!(output, "<h{} data-heading=\"true\">", heading.level + 1)
         }
@@ -367,7 +459,6 @@ fn heading_adapter_plugin_deep_nesting() {
             &self,
             output: &mut dyn std::fmt::Write,
             heading: &HeadingMeta,
-            _sourcepos: Option<Sourcepos>,
         ) -> std::fmt::Result {
             write!(output, "<h{} data-heading=\"true\">", heading.level)
         }

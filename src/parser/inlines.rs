@@ -16,8 +16,9 @@ use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::matchers::{backslash_matcher, backtick_matcher, dollar_matcher};
 use crate::nodes::{
-    Ast, LineColumn, Node, NodeCode, NodeComment, NodeFootnoteDefinition, NodeFootnoteReference,
-    NodeLink, NodeMath, NodeValue, NodeWikiLink, Sourcepos,
+    Ast, LineColumn, Node, NodeCode, NodeComment, NodeEmph, NodeFootnoteDefinition,
+    NodeFootnoteReference, NodeLink, NodeMath, NodeStrikethrough, NodeStrong, NodeValue,
+    NodeWikiLink, Sourcepos,
 };
 #[cfg(feature = "attributes")]
 use crate::parser::attributes;
@@ -1728,7 +1729,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 // Unlike for |, these cases have to be handled because they will match
                 // in the event subscript but not strikethrough is enabled
                 if self.options.extension.strikethrough {
-                    NodeValue::Strikethrough
+                    NodeValue::Strikethrough(NodeStrikethrough::default())
                 } else if use_delims == 1 {
                     NodeValue::EscapedTag("~")
                 } else {
@@ -1757,9 +1758,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             } else if self.options.extension.underline && opener_byte == b'_' && use_delims == 2 {
                 NodeValue::Underline
             } else if use_delims == 1 {
-                NodeValue::Emph
+                NodeValue::Emph(NodeEmph::default())
             } else {
-                NodeValue::Strong
+                NodeValue::Strong(NodeStrong::default())
             },
             // These are overridden immediately below.
             self.scanner.pos,
@@ -2597,7 +2598,7 @@ impl<'a> FootnoteDefs<'a> {
     }
 }
 
-pub struct Delimiter<'a: 'd, 'd> {
+pub(crate) struct Delimiter<'a: 'd, 'd> {
     inl: Node<'a>,
     position: usize,
     length: usize,

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 
 use clap::Parser;
-use comrak::adapters::SyntaxHighlighterAdapter;
+use comrak::adapters::{SyntaxHighlightMeta, SyntaxHighlighterAdapter};
 use comrak::cli::OptionArgs;
 use comrak::nodes::{NodeHtmlBlock, NodeValue};
 use comrak::options::{BrokenLinkReference, Plugins};
@@ -205,10 +205,9 @@ impl Doc {
         options.render.r#unsafe = true;
         options.parse.broken_link_callback = Some(Arc::new(|reference: BrokenLinkReference| {
             let slug = term_slug(reference.normalized);
-            self.terms.contains(&slug).then(|| ResolvedReference {
-                url: format!("#{slug}"),
-                title: String::new(),
-            })
+            self.terms
+                .contains(&slug)
+                .then(|| ResolvedReference::new(format!("#{slug}"), String::new()))
         }));
 
         let arena = Arena::new();
@@ -218,10 +217,9 @@ impl Doc {
         let mut definitions = vec![];
         for node in document.descendants() {
             if example_flags(node).is_some() {
-                node.data_mut().value = NodeValue::HtmlBlock(NodeHtmlBlock {
-                    block_type: 6,
-                    literal: examples.next().unwrap().html(),
-                });
+                let mut nhb = NodeHtmlBlock::new(examples.next().unwrap().html());
+                nhb.block_type = 6;
+                node.data_mut().value = NodeValue::HtmlBlock(nhb);
             } else if is_definition(node) {
                 definitions.push(node);
             }
@@ -430,7 +428,7 @@ fn pre(code: &str) -> String {
 fn highlight(lang: &str, code: &str) -> String {
     let mut out = String::new();
     HIGHLIGHTER
-        .write_highlighted(&mut out, Some(lang), code)
+        .write_highlighted(&mut out, &SyntaxHighlightMeta::new(lang, "", code))
         .unwrap();
     out
 }

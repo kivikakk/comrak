@@ -206,7 +206,7 @@ fn commonmark_renders_single_list_item() {
         start: 1,
         ..Default::default()
     };
-    let list = ast(NodeValue::List(list_options));
+    let list = ast(NodeValue::List(list_options.clone()));
     let item = ast(NodeValue::Item(list_options));
     let p = ast(NodeValue::Paragraph);
     p.append(ast(NodeValue::Text("Item 1".into())));

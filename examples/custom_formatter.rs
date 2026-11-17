@@ -3,14 +3,14 @@ use comrak::{create_formatter, nodes::NodeValue};
 use std::fmt::Write;
 
 create_formatter!(CustomFormatter, {
-    NodeValue::Emph => |context, entering| {
+    NodeValue::Emph(..) => |context, entering| {
         if entering {
             context.write_str("<i>")?;
         } else {
             context.write_str("</i>")?;
         }
     },
-    NodeValue::Strong => |context, entering| {
+    NodeValue::Strong(..) => |context, entering| {
         context.write_str(if entering { "<b>" } else { "</b>" })?;
     },
     NodeValue::Image(ref nl) => |context, node, entering| {

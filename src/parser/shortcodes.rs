@@ -2,6 +2,7 @@
 ///
 /// ("gemoji" name context: <https://github.com/github/gemoji>)
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeShortCode {
     /// The shortcode that was resolved, e.g. "rabbit".
     pub code: String,
@@ -11,6 +12,14 @@ pub struct NodeShortCode {
 }
 
 impl NodeShortCode {
+    /// Create a new `NodeShortCode` with the given code and emoji.
+    pub fn new(code: impl Into<String>, emoji: impl Into<String>) -> Self {
+        NodeShortCode {
+            code: code.into(),
+            emoji: emoji.into(),
+        }
+    }
+
     /// Checks whether the input is a valid short code.
     pub fn resolve(code: &str) -> Option<Self> {
         let emoji = emojis::get_by_shortcode(code)?;

@@ -34,7 +34,7 @@ use crate::nodes::{
     self, AlertType, Ast, BlockLines, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
     NodeCallout, NodeCodeBlock, NodeCommentBlock, NodeDescriptionItem, NodeFootnoteDefinition,
     NodeHeading, NodeHtmlBlock, NodeList, NodeMathBlock, NodeMultilineBlockQuote, NodeTaskItem,
-    NodeValue, Sourcepos,
+    NodeThematicBreak, NodeValue, Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -300,12 +300,23 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
 
 /// A reference link's resolved details.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct ResolvedReference {
     /// The destination URL of the reference link.
     pub url: String,
 
     /// The text of the link.
     pub title: String,
+}
+
+impl ResolvedReference {
+    /// Create a new `ResolvedReference` with the given URL and title.
+    pub fn new(url: impl Into<String>, title: impl Into<String>) -> Self {
+        ResolvedReference {
+            url: url.into(),
+            title: title.into(),
+        }
+    }
 }
 
 struct FootnoteDefinition<'a> {
@@ -1722,7 +1733,11 @@ where
             return false;
         };
 
-        *container = self.add_child(container, NodeValue::ThematicBreak, self.first_nonspace + 1);
+        *container = self.add_child(
+            container,
+            NodeValue::ThematicBreak(NodeThematicBreak::default()),
+            self.first_nonspace + 1,
+        );
 
         let adv = line.len() - strings::newlines_of(line) - self.offset;
         container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
@@ -1993,7 +2008,11 @@ where
             NodeValue::List(ref mnl) => !lists_match(&nl, mnl),
             _ => true,
         } {
-            *container = self.add_child(container, NodeValue::List(nl), self.first_nonspace + 1);
+            *container = self.add_child(
+                container,
+                NodeValue::List(nl.clone()),
+                self.first_nonspace + 1,
+            );
         }
 
         *container = self.add_child(container, NodeValue::Item(nl), self.first_nonspace + 1);
@@ -2198,7 +2217,7 @@ where
                     | NodeValue::Callout(_)
                     | NodeValue::CalloutTitle
                     | NodeValue::Heading(..)
-                    | NodeValue::ThematicBreak
+                    | NodeValue::ThematicBreak(..)
                     | NodeValue::MultilineComment(..)
                     | NodeValue::Subtext => false,
                     NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
@@ -2528,7 +2547,7 @@ where
 
         if matches!(
             ast.value,
-            NodeValue::ThematicBreak
+            NodeValue::ThematicBreak(..)
                 | NodeValue::TableRow(..)
                 | NodeValue::Table(..)
                 | NodeValue::MultilineComment(..)

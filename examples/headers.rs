@@ -13,12 +13,12 @@ fn get_document_title(document: &str) -> String {
     let root = parse_document(&arena, document, &Options::default());
 
     for node in root.children() {
-        let header = match node.data().value {
-            NodeValue::Heading(c) => c,
+        let level = match node.data().value {
+            NodeValue::Heading(ref c) => c.level,
             _ => continue,
         };
 
-        if header.level != 1 {
+        if level != 1 {
             continue;
         }
 

@@ -2,7 +2,6 @@ use comrak::{
     Options,
     adapters::{HeadingAdapter, HeadingMeta},
     markdown_to_html_with_plugins,
-    nodes::Sourcepos,
     options::Plugins,
 };
 use std::fmt::{self, Write};
@@ -35,12 +34,8 @@ fn main() {
 struct CustomHeadingAdapter;
 
 impl HeadingAdapter for CustomHeadingAdapter {
-    fn enter(
-        &self,
-        output: &mut dyn Write,
-        heading: &HeadingMeta,
-        sourcepos: Option<Sourcepos>,
-    ) -> fmt::Result {
+    fn enter(&self, output: &mut dyn Write, heading: &HeadingMeta) -> fmt::Result {
+        let sourcepos = heading.sourcepos;
         let id = slug::slugify(&heading.content);
 
         let search_include = !&heading.content.contains("hide");
