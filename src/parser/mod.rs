@@ -826,7 +826,7 @@ where
             self.advance_offset(line, 4, true);
             true
         } else {
-            line == "\n" || line == "\r\n"
+            self.blank
         }
     }
 

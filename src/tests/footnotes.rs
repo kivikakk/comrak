@@ -572,3 +572,49 @@ fn footnote_numbering_with_leave_footnote_definitions() {
         .collect();
     assert_eq!(refs, [("b".to_string(), 2), ("a".to_string(), 1)]);
 }
+
+#[test]
+fn footnote_definition_continues_past_blank_line_in_container() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "> A[^a].\n",
+            ">\n",
+            "> [^a]: First.\n",
+            ">\n",
+            ">     Second.\n",
+        ),
+        concat!(
+            "<blockquote>\n",
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "</blockquote>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>First.</p>\n",
+            "<p>Second. <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_definition_continues_past_line_of_spaces() {
+    html_opts!(
+        [extension.footnotes],
+        "A[^a].\n\n[^a]: First.\n  \n    Second.\n",
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>First.</p>\n",
+            "<p>Second. <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
