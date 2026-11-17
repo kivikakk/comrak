@@ -87,10 +87,7 @@ fn dump(source: &str) -> io::Result<()> {
         .subtext(true)
         .build();
 
-    let opts = Options {
-        extension,
-        ..Options::default()
-    };
+    let opts = Options::builder().extension(extension).build();
 
     let doc = parse_document(&arena, source, &opts);
 

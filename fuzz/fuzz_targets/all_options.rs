@@ -22,11 +22,11 @@ impl FuzzOptions {
         url_rewriter: Arc<dyn options::URLRewriter + 'c>,
         broken_link_callback: Arc<dyn options::BrokenLinkCallback + 'c>,
     ) -> Options<'c> {
-        Options {
-            extension: self.extension.to_options(url_rewriter),
-            parse: self.parse.to_options(broken_link_callback),
-            render: self.render.to_options(),
-        }
+        Options::builder()
+            .extension(self.extension.to_options(url_rewriter))
+            .parse(self.parse.to_options(broken_link_callback))
+            .render(self.render.to_options())
+            .build()
     }
 }
 
@@ -81,66 +81,66 @@ impl FuzzExtensionOptions {
         &self,
         url_rewriter: Arc<dyn options::URLRewriter + 'c>,
     ) -> options::Extension<'c> {
-        options::Extension {
-            strikethrough: self.strikethrough,
-            table: self.table,
-            grid_table: self.grid_table,
-            autolink: self.autolink,
-            tasklist: self.tasklist,
-            superscript: self.superscript,
-            footnotes: self.footnotes,
-            inline_footnotes: self.inline_footnotes,
-            description_lists: self.description_lists,
-            multiline_block_quotes: self.multiline_block_quotes,
-            math_dollars: self.math_dollars,
-            math_dollars_block: self.math_dollars_block,
-            math_code: self.math_code,
-            shortcodes: self.shortcodes,
-            wikilinks_title_after_pipe: self.wikilinks_title_after_pipe,
-            wikilinks_title_before_pipe: self.wikilinks_title_before_pipe,
-            wikilinks_ignore_embeds: self.wikilinks_ignore_embeds,
-            underline: self.underline,
-            spoiler: self.spoiler,
-            greentext: self.greentext,
-            ofm_comments: self.ofm_comments,
-            ofm_block_ids: self.ofm_block_ids,
-            alerts: self.alerts,
-            ofm_callouts: self.ofm_callouts,
-            subscript: self.subscript,
-            subtext: self.subtext,
-            cjk_friendly_emphasis: self.cjk_friendly_emphasis,
-            highlight: self.highlight,
-            block_directive: self.block_directive,
-            phoenix_heex: self.phoenix_heex,
-            insert: self.insert,
-            header_id_prefix_in_href: self.header_id_prefix_in_href,
-            header_attributes: self.header_attributes,
-            fenced_code_attributes: self.fenced_code_attributes,
-            inline_code_attributes: self.inline_code_attributes,
-            link_attributes: self.link_attributes,
-            math_latex: self.math_latex,
+        options::Extension::builder()
+            .strikethrough(self.strikethrough)
+            .table(self.table)
+            .grid_table(self.grid_table)
+            .autolink(self.autolink)
+            .tasklist(self.tasklist)
+            .superscript(self.superscript)
+            .footnotes(self.footnotes)
+            .inline_footnotes(self.inline_footnotes)
+            .description_lists(self.description_lists)
+            .multiline_block_quotes(self.multiline_block_quotes)
+            .math_dollars(self.math_dollars)
+            .math_dollars_block(self.math_dollars_block)
+            .math_code(self.math_code)
+            .shortcodes(self.shortcodes)
+            .wikilinks_title_after_pipe(self.wikilinks_title_after_pipe)
+            .wikilinks_title_before_pipe(self.wikilinks_title_before_pipe)
+            .wikilinks_ignore_embeds(self.wikilinks_ignore_embeds)
+            .underline(self.underline)
+            .spoiler(self.spoiler)
+            .greentext(self.greentext)
+            .ofm_comments(self.ofm_comments)
+            .ofm_block_ids(self.ofm_block_ids)
+            .alerts(self.alerts)
+            .ofm_callouts(self.ofm_callouts)
+            .subscript(self.subscript)
+            .subtext(self.subtext)
+            .cjk_friendly_emphasis(self.cjk_friendly_emphasis)
+            .highlight(self.highlight)
+            .block_directive(self.block_directive)
+            .phoenix_heex(self.phoenix_heex)
+            .insert(self.insert)
+            .header_id_prefix_in_href(self.header_id_prefix_in_href)
+            .header_attributes(self.header_attributes)
+            .fenced_code_attributes(self.fenced_code_attributes)
+            .inline_code_attributes(self.inline_code_attributes)
+            .link_attributes(self.link_attributes)
+            .math_latex(self.math_latex)
             // non-bool below
-            header_id_prefix: if self.header_id_prefix {
+            .maybe_header_id_prefix(if self.header_id_prefix {
                 Some("user-content-".into())
             } else {
                 None
-            },
-            front_matter_delimiter: if self.front_matter_delimiter {
+            })
+            .maybe_front_matter_delimiter(if self.front_matter_delimiter {
                 Some("---".into())
             } else {
                 None
-            },
-            image_url_rewriter: if self.image_url_rewriter {
+            })
+            .maybe_image_url_rewriter(if self.image_url_rewriter {
                 Some(url_rewriter.clone())
             } else {
                 None
-            },
-            link_url_rewriter: if self.link_url_rewriter {
+            })
+            .maybe_link_url_rewriter(if self.link_url_rewriter {
                 Some(url_rewriter)
             } else {
                 None
-            },
-        }
+            })
+            .build()
     }
 }
 
@@ -163,26 +163,26 @@ impl FuzzParseOptions {
         &self,
         broken_link_callback: Arc<dyn options::BrokenLinkCallback + 'c>,
     ) -> options::Parse<'c> {
-        options::Parse {
-            smart: self.smart,
-            relaxed_tasklist_matching: self.relaxed_tasklist_matching,
-            relaxed_autolinks: self.relaxed_autolinks,
-            ignore_setext: self.ignore_setext,
-            tasklist_in_table: self.tasklist_in_table,
-            leave_footnote_definitions: self.leave_footnote_definitions,
-            default_info_string: if self.default_info_string {
+        options::Parse::builder()
+            .smart(self.smart)
+            .relaxed_tasklist_matching(self.relaxed_tasklist_matching)
+            .relaxed_autolinks(self.relaxed_autolinks)
+            .ignore_setext(self.ignore_setext)
+            .tasklist_in_table(self.tasklist_in_table)
+            .leave_footnote_definitions(self.leave_footnote_definitions)
+            .maybe_default_info_string(if self.default_info_string {
                 Some("rust".into())
             } else {
                 None
-            },
-            broken_link_callback: if self.broken_link_callback {
+            })
+            .maybe_broken_link_callback(if self.broken_link_callback {
                 Some(broken_link_callback)
             } else {
                 None
-            },
-            escaped_char_spans: self.escaped_char_spans,
-            sourcepos_chars: self.sourcepos_chars,
-        }
+            })
+            .escaped_char_spans(self.escaped_char_spans)
+            .sourcepos_chars(self.sourcepos_chars)
+            .build()
     }
 }
 
@@ -212,28 +212,28 @@ struct FuzzRenderOptions {
 
 impl FuzzRenderOptions {
     fn to_options(&self) -> options::Render {
-        options::Render {
-            hardbreaks: self.hardbreaks,
-            github_pre_lang: self.github_pre_lang,
-            full_info_string: self.full_info_string,
-            width: self.width,
-            r#unsafe: self.r#unsafe,
-            escape: self.escape,
-            list_style: self.list_style,
-            alert_style: self.alert_style,
-            sourcepos: self.sourcepos,
-            escaped_char_spans: self.escaped_char_spans,
-            ignore_empty_links: self.ignore_empty_links,
-            gfm_quirks: self.gfm_quirks,
-            prefer_fenced: self.prefer_fenced,
-            figure_with_caption: self.figure_with_caption,
-            tasklist_classes: self.tasklist_classes,
-            ol_width: self.ol_width,
-            experimental_minimize_commonmark: self.experimental_minimize_commonmark,
-            compact_html: self.compact_html,
-            attributes: self.attributes,
-            grid_table_widths: self.grid_table_widths,
-        }
+        options::Render::builder()
+            .hardbreaks(self.hardbreaks)
+            .github_pre_lang(self.github_pre_lang)
+            .full_info_string(self.full_info_string)
+            .width(self.width)
+            .r#unsafe(self.r#unsafe)
+            .escape(self.escape)
+            .list_style(self.list_style)
+            .alert_style(self.alert_style)
+            .sourcepos(self.sourcepos)
+            .escaped_char_spans(self.escaped_char_spans)
+            .ignore_empty_links(self.ignore_empty_links)
+            .gfm_quirks(self.gfm_quirks)
+            .prefer_fenced(self.prefer_fenced)
+            .figure_with_caption(self.figure_with_caption)
+            .tasklist_classes(self.tasklist_classes)
+            .ol_width(self.ol_width)
+            .experimental_minimize_commonmark(self.experimental_minimize_commonmark)
+            .compact_html(self.compact_html)
+            .attributes(self.attributes)
+            .grid_table_widths(self.grid_table_widths)
+            .build()
     }
 }
 

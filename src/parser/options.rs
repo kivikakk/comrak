@@ -11,20 +11,26 @@ use std::sync::Arc;
 use crate::adapters::{CodefenceRendererAdapter, HeadingAdapter, SyntaxHighlighterAdapter};
 use crate::parser::ResolvedReference;
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Umbrella options struct.
 pub struct Options<'c> {
     /// Enable CommonMark extensions.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub extension: Extension<'c>,
 
     /// Configure parse-time options.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub parse: Parse<'c>,
 
     /// Configure render-time options.
+    #[cfg_attr(feature = "bon", builder(default))]
     pub render: Render,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -867,6 +873,7 @@ where
     }
 }
 
+#[non_exhaustive]
 #[derive(Default, Clone, Debug)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -1141,7 +1148,8 @@ pub struct BrokenLinkReference<'l> {
     pub original: &'l str,
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[non_exhaustive]
+#[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 /// Options for formatter functions.
@@ -1570,6 +1578,7 @@ pub enum AlertStyleType {
     Semantic,
 }
 
+#[non_exhaustive]
 #[derive(Default, Debug, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Umbrella plugins struct.
@@ -1579,6 +1588,7 @@ pub struct Plugins<'p> {
     pub render: RenderPlugins<'p>,
 }
 
+#[non_exhaustive]
 #[derive(Default, Clone)]
 #[cfg_attr(feature = "bon", derive(Builder))]
 /// Plugins for alternative rendering.

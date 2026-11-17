@@ -172,11 +172,11 @@ struct FuzzOptions {
 
 impl FuzzOptions {
     fn to_options(&self) -> Options<'_> {
-        Options {
-            extension: self.extension.to_options(),
-            parse: self.parse.to_options(),
-            render: self.render.to_options(),
-        }
+        Options::builder()
+            .extension(self.extension.to_options())
+            .parse(self.parse.to_options())
+            .render(self.render.to_options())
+            .build()
     }
 }
 
@@ -207,32 +207,29 @@ struct FuzzExtensionOptions {
 
 impl FuzzExtensionOptions {
     fn to_options(&self) -> options::Extension<'_> {
-        options::Extension {
-            strikethrough: self.strikethrough,
-            table: self.table,
-            grid_table: self.grid_table,
-            autolink: self.autolink,
-            tasklist: self.tasklist,
-            superscript: self.superscript,
-            footnotes: self.footnotes,
-            inline_footnotes: self.inline_footnotes,
-            description_lists: self.description_lists,
-            multiline_block_quotes: self.multiline_block_quotes,
-            math_dollars: self.math_dollars,
-            math_dollars_block: self.math_dollars_block,
-            math_code: self.math_code,
-            shortcodes: self.shortcodes,
-            wikilinks_title_after_pipe: self.wikilinks_title_after_pipe,
-            wikilinks_title_before_pipe: self.wikilinks_title_before_pipe,
-            underline: self.underline,
-            spoiler: self.spoiler,
-            greentext: self.greentext,
-            alerts: self.alerts,
-            ofm_callouts: self.ofm_callouts,
-            front_matter_delimiter: None,
-            header_id_prefix: None,
-            ..Default::default()
-        }
+        options::Extension::builder()
+            .strikethrough(self.strikethrough)
+            .table(self.table)
+            .grid_table(self.grid_table)
+            .autolink(self.autolink)
+            .tasklist(self.tasklist)
+            .superscript(self.superscript)
+            .footnotes(self.footnotes)
+            .inline_footnotes(self.inline_footnotes)
+            .description_lists(self.description_lists)
+            .multiline_block_quotes(self.multiline_block_quotes)
+            .math_dollars(self.math_dollars)
+            .math_dollars_block(self.math_dollars_block)
+            .math_code(self.math_code)
+            .shortcodes(self.shortcodes)
+            .wikilinks_title_after_pipe(self.wikilinks_title_after_pipe)
+            .wikilinks_title_before_pipe(self.wikilinks_title_before_pipe)
+            .underline(self.underline)
+            .spoiler(self.spoiler)
+            .greentext(self.greentext)
+            .alerts(self.alerts)
+            .ofm_callouts(self.ofm_callouts)
+            .build()
     }
 }
 
@@ -245,13 +242,11 @@ struct FuzzParseOptions {
 
 impl FuzzParseOptions {
     fn to_options(&self) -> options::Parse<'_> {
-        options::Parse {
-            smart: self.smart,
-            default_info_string: None,
-            relaxed_tasklist_matching: self.relaxed_tasklist_matching,
-            relaxed_autolinks: self.relaxed_autolinks,
-            ..Default::default()
-        }
+        options::Parse::builder()
+            .smart(self.smart)
+            .relaxed_tasklist_matching(self.relaxed_tasklist_matching)
+            .relaxed_autolinks(self.relaxed_autolinks)
+            .build()
     }
 }
 
@@ -271,19 +266,18 @@ struct FuzzRenderOptions {
 
 impl FuzzRenderOptions {
     fn to_options(&self) -> options::Render {
-        options::Render {
-            hardbreaks: self.hardbreaks,
-            github_pre_lang: self.github_pre_lang,
-            full_info_string: self.full_info_string,
-            width: self.width,
-            r#unsafe: self.r#unsafe,
-            escape: self.escape,
-            list_style: self.list_style,
-            alert_style: self.alert_style,
-            sourcepos: self.sourcepos,
-            escaped_char_spans: self.escaped_char_spans,
-            ..Default::default()
-        }
+        options::Render::builder()
+            .hardbreaks(self.hardbreaks)
+            .github_pre_lang(self.github_pre_lang)
+            .full_info_string(self.full_info_string)
+            .width(self.width)
+            .r#unsafe(self.r#unsafe)
+            .escape(self.escape)
+            .list_style(self.list_style)
+            .alert_style(self.alert_style)
+            .sourcepos(self.sourcepos)
+            .escaped_char_spans(self.escaped_char_spans)
+            .build()
     }
 }
 
