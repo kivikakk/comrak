@@ -33,8 +33,8 @@ use crate::node_matches;
 use crate::nodes::{
     self, AlertType, Ast, BlockLines, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective,
     NodeCallout, NodeCodeBlock, NodeCommentBlock, NodeDescriptionItem, NodeFootnoteDefinition,
-    NodeHeading, NodeHtmlBlock, NodeList, NodeMultilineBlockQuote, NodeTaskItem, NodeValue,
-    Sourcepos,
+    NodeHeading, NodeHtmlBlock, NodeList, NodeMathBlock, NodeMultilineBlockQuote, NodeTaskItem,
+    NodeValue, Sourcepos,
 };
 use crate::parser::inlines::RefMap;
 pub use crate::parser::options::Options;
@@ -169,9 +169,10 @@ impl<'o> Cancellation<'o> {
 
 fn is_literal_block(value: &NodeValue) -> bool {
     match value {
-        NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MultilineComment(..) => {
-            true
-        }
+        NodeValue::CodeBlock(..)
+        | NodeValue::HtmlBlock(..)
+        | NodeValue::MathBlock(..)
+        | NodeValue::MultilineComment(..) => true,
         #[cfg(feature = "phoenix_heex")]
         NodeValue::HeexBlock(..) => true,
         _ => false,
@@ -191,6 +192,15 @@ fn ends_with_its_contents(value: &NodeValue) -> bool {
         NodeValue::Alert(alert) => alert.multiline,
         _ => false,
     }
+}
+
+fn is_math_block_fence(line: &str) -> bool {
+    let bytes = line.as_bytes();
+    bytes.starts_with(b"$$")
+        && bytes.get(2).is_none_or(|&b| b != b'$')
+        && bytes[2..]
+            .iter()
+            .all(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
 }
 
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
@@ -554,6 +564,9 @@ where
                         break;
                     }
                 }
+                NodeValue::MathBlock(..) => {
+                    self.parse_math_block_prefix(line, container, ast)?;
+                }
                 NodeValue::HtmlBlock(ref nhb) => {
                     if !self.parse_html_block_prefix(nhb.block_type) {
                         break;
@@ -757,6 +770,36 @@ where
         Some(true)
     }
 
+    fn parse_math_block_prefix(
+        &mut self,
+        line: &str,
+        container: Node<'a>,
+        ast: &mut Ast,
+    ) -> Option<bool> {
+        let fence_offset = match ast.value {
+            NodeValue::MathBlock(ref nmb) => nmb.fence_offset,
+            _ => unreachable!(),
+        };
+
+        let bytes = line.as_bytes();
+        if self.indent <= 3 && is_math_block_fence(&line[self.first_nonspace..]) {
+            let NodeValue::MathBlock(ref mut nmb) = ast.value else {
+                unreachable!();
+            };
+            nmb.closed = true;
+            ast.sourcepos.end = (self.line_number, self.curline_end_col).into();
+            self.current = self.finalize_borrowed(container, ast).unwrap();
+            return None;
+        }
+
+        let mut i = fence_offset;
+        while i > 0 && byte_matches(bytes, self.offset, strings::is_space_or_tab) {
+            self.advance_offset(line, 1, true);
+            i -= 1;
+        }
+        Some(true)
+    }
+
     fn parse_html_block_prefix(&self, t: u8) -> bool {
         match t {
             1..=5 => true,
@@ -890,7 +933,10 @@ where
 
         while !node_matches!(
             container,
-            NodeValue::CodeBlock(..) | NodeValue::HtmlBlock(..) | NodeValue::MultilineComment(..)
+            NodeValue::CodeBlock(..)
+                | NodeValue::HtmlBlock(..)
+                | NodeValue::MathBlock(..)
+                | NodeValue::MultilineComment(..)
         ) && !{
             #[cfg(feature = "phoenix_heex")]
             {
@@ -927,6 +973,7 @@ where
                     || self.handle_atx_subtext(container, line)
                     || self.handle_ofm_comment(container, line)
                     || self.handle_code_fence(container, line)
+                    || self.handle_math_block(container, line)
                     || self.handle_heex_directive_block(container, line)
                     || self.handle_heex_expression_block(container, line)
                     || self.handle_heex_block(container, line)
@@ -1283,6 +1330,30 @@ where
 
     fn detect_code_fence(&self, line: &str) -> Option<usize> {
         scanners::open_code_fence(&line[self.first_nonspace..])
+    }
+
+    fn handle_math_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        if !(self.options.extension.math_dollars && self.options.extension.math_dollars_block)
+            || self.indent > 3
+            || !is_math_block_fence(&line[self.first_nonspace..])
+        {
+            return false;
+        }
+
+        let nmb = NodeMathBlock {
+            fence_offset: self.indent,
+            literal: String::new(),
+            closed: false,
+        };
+        *container = self.add_child(
+            container,
+            NodeValue::MathBlock(Box::new(nmb)),
+            self.first_nonspace + 1,
+        );
+        container.data_mut().sourcepos.end = (self.line_number, self.curline_end_col).into();
+        self.advance_offset(line, self.first_nonspace + 2 - self.offset, false);
+
+        true
     }
 
     fn handle_html_block(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -2131,6 +2202,7 @@ where
                     | NodeValue::MultilineComment(..)
                     | NodeValue::Subtext => false,
                     NodeValue::CodeBlock(ref ncb) => !ncb.fenced,
+                    NodeValue::MathBlock(..) => false,
                     NodeValue::Item(..) => {
                         container.first_child().is_some()
                             || container.data().sourcepos.start.line != self.line_number
@@ -2165,7 +2237,7 @@ where
             self.close_unmatched_blocks();
 
             let add_text_result = match container.data().value {
-                NodeValue::CodeBlock(..) => AddTextResult::LiteralText,
+                NodeValue::CodeBlock(..) | NodeValue::MathBlock(..) => AddTextResult::LiteralText,
                 NodeValue::HtmlBlock(ref nhb) => AddTextResult::HtmlBlock(nhb.block_type),
                 #[cfg(feature = "phoenix_heex")]
                 NodeValue::HeexBlock(ref nhb) => AddTextResult::HeexBlock(nhb.clone()),
@@ -2472,6 +2544,7 @@ where
         } else if match ast.value {
             NodeValue::Document => true,
             NodeValue::CodeBlock(ref ncb) => ncb.fenced && ncb.closed,
+            NodeValue::MathBlock(ref nmb) => nmb.closed,
             _ => false,
         } || (!self.pending_callout_titles.is_empty()
             && ast.sourcepos.start.line == self.line_number)
@@ -2542,6 +2615,16 @@ where
                     strings::remove_from_start(content, pos);
                 }
                 ncb.literal = self.take_content(content);
+            }
+            NodeValue::MathBlock(ref mut nmb) => {
+                let mut lines = ast.lines.take().unwrap();
+                let content = &mut lines.content;
+                if !nmb.closed {
+                    ast.sourcepos.end = last_content_end;
+                }
+                let first_line_end = content.find('\n').map_or(content.len(), |pos| pos + 1);
+                strings::remove_from_start(content, first_line_end);
+                nmb.literal = self.take_content(content);
             }
             NodeValue::HtmlBlock(ref mut nhb) => {
                 let mut lines = ast.lines.take().unwrap();

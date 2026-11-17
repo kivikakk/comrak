@@ -314,3 +314,123 @@ fn math_latex_keeps_form_before_math_code_opener() {
         "<p><span data-math-style=\"inline\">`x</span></p>\n"
     );
 }
+
+#[test_case(
+    "$$\n1\n=\n2\n$$\n",
+    "<div data-math-style=\"display\">\n1\n=\n2\n</div>\n"
+)]
+#[test_case(
+    "$$\n# heading\n\n- list\n$$\n",
+    "<div data-math-style=\"display\">\n# heading\n\n- list\n</div>\n"
+)]
+#[test_case(
+    "$$\n<span>&</span>\n$$\n",
+    "<div data-math-style=\"display\">\n&lt;span&gt;&amp;&lt;/span&gt;\n</div>\n"
+)]
+#[test_case("$$\n$$\n", "<div data-math-style=\"display\">\n</div>\n")]
+#[test_case(
+    "before\n$$\na\n$$\nafter\n",
+    "<p>before</p>\n<div data-math-style=\"display\">\na\n</div>\n<p>after</p>\n"
+)]
+#[test_case(
+    "$$\na\n$$\n$$\nb\n$$\n",
+    "<div data-math-style=\"display\">\na\n</div>\n<div data-math-style=\"display\">\nb\n</div>\n"
+)]
+#[test_case(
+    "> $$\n> a\n> =\n> b\n> $$\n",
+    "<blockquote>\n<div data-math-style=\"display\">\na\n=\nb\n</div>\n</blockquote>\n"
+)]
+#[test_case(
+    "- $$\n  a\n  =\n  b\n  $$\n",
+    "<ul>\n<li>\n<div data-math-style=\"display\">\na\n=\nb\n</div>\n</li>\n</ul>\n"
+)]
+#[test_case(
+    "$$\na\n=\nb\n",
+    "<div data-math-style=\"display\">\na\n=\nb\n</div>\n"
+)]
+#[test_case("$$$\na\n$$$\n", "<p>$$$\na\n$$$</p>\n")]
+#[test_case("$$ trailing\na\n", "<p>$$ trailing\na</p>\n")]
+#[test_case(
+    "$$\na\n$$ trailing\n",
+    "<div data-math-style=\"display\">\na\n$$ trailing\n</div>\n"
+)]
+fn math_dollars_block_standalone(markdown: &str, html: &str) {
+    html_opts!(
+        [extension.math_dollars, extension.math_dollars_block],
+        markdown,
+        html
+    );
+}
+
+#[test_case(
+    "$$\n1\n2\n$$\n",
+    "<p><span data-math-style=\"display\">\n1\n2\n</span></p>\n"
+)]
+fn math_dollars_block_disabled(markdown: &str, html: &str) {
+    html_opts!([extension.math_dollars], markdown, html);
+}
+
+#[test_case("   $$\n    $$\n   $$\n", " $$\n")]
+#[test_case("  $$\n    $$\n  $$\n", "  $$\n")]
+#[test_case(" $$\n    $$\n $$\n", "   $$\n")]
+#[test_case("   $$\n\t$$\n   $$\n", " $$\n")]
+fn math_block_indented_literal_fence_roundtrip(input: &str, literal: &str) {
+    html_opts!(
+        [extension.math_dollars, extension.math_dollars_block],
+        input,
+        &format!("<div data-math-style=\"display\">\n{literal}</div>\n")
+    );
+}
+
+#[test_case(">    $$\n>     $$\n>    $$\n")]
+#[test_case("- item\n\n     $$\n      $$\n     $$\n")]
+fn math_block_indented_container_roundtrip(input: &str) {
+    let mut options = Options::default();
+    options.extension.math_dollars = true;
+    options.extension.math_dollars_block = true;
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, &options);
+    assert!(
+        root.descendants().any(
+            |node| matches!(&node.data().value, NodeValue::MathBlock(m) if m.literal == " $$\n")
+        )
+    );
+    let expected = markdown_to_html(input, &options);
+    html_opts_w(input, &expected, true, &options);
+}
+
+#[test_case(false)]
+#[test_case(true)]
+fn math_block_latex_display_roundtrip(block: bool) {
+    html_opts!(
+        [
+            extension.math_latex = true,
+            extension.math_dollars = true,
+            extension.math_dollars_block = block
+        ],
+        "\\[\nx\n\\]\n",
+        "<p><span data-math-style=\"display\">\nx\n</span></p>\n"
+    );
+}
+
+#[test]
+fn math_block_callout_title_roundtrip() {
+    let mut options = Options::default();
+    options.extension.ofm_callouts = true;
+    options.extension.math_dollars = true;
+    options.extension.math_dollars_block = true;
+    let input = "> [!note] $$\n> body\n";
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, &options);
+    let math = root
+        .descendants()
+        .find(|node| matches!(node.data().value, NodeValue::MathBlock(_)))
+        .unwrap();
+    assert!(matches!(
+        math.parent().unwrap().data().value,
+        NodeValue::CalloutTitle
+    ));
+    assert!(matches!(&math.data().value, NodeValue::MathBlock(m) if m.literal.is_empty()));
+    let expected = markdown_to_html(input, &options);
+    html_opts_w(input, &expected, true, &options);
+}

@@ -7,8 +7,8 @@ use crate::Arena;
 use crate::ctype::{isalpha, isdigit, ispunct, ispunct_char, isspace, isspace_char};
 use crate::nodes::{
     CalloutFold, ListDelimType, ListType, Node, NodeAlert, NodeBlockDirective, NodeCallout,
-    NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeTaskItem,
-    NodeValue, NodeWikiLink, TableAlignment,
+    NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeList, NodeMath, NodeMathBlock,
+    NodeTaskItem, NodeValue, NodeWikiLink, TableAlignment,
 };
 use crate::parser::block_ids;
 use crate::parser::options::{Options, Plugins, WikiLinksMode};
@@ -186,7 +186,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn write_prefix(&mut self) -> fmt::Result {
-        // A non-empty prefix is guaranteed to have a length of at least two.
         if self.prefix.is_empty() {
             return Ok(());
         }
@@ -197,7 +196,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         }
         self.window.clear();
         self.window
-            .extend_from_slice(&self.prefix.as_bytes()[self.prefix.len() - 2..]);
+            .extend_from_slice(&self.prefix.as_bytes()[self.prefix.len().saturating_sub(2)..]);
         Ok(())
     }
 
@@ -324,6 +323,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '!'
                     || (self.options.extension.autolink && c == '@')
                     || ((self.options.extension.math_dollars
+                        || self.options.extension.math_dollars_block
                         || self.options.extension.math_code)
                         && c == '$')
                     || (self.options.extension.ofm_comments && c == '%' && nextb == b'%')
@@ -543,6 +543,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 return Ok(false);
             }
             NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
+            NodeValue::MathBlock(ref math) => self.format_math_block(node, math, entering)?,
             NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
@@ -1310,12 +1311,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if entering {
             let literal = &math.literal;
             let latex = self.options.extension.math_latex
-                && !(self.options.extension.math_dollars
-                    && dollar_math_holds(
-                        math,
-                        node.next_sibling(),
-                        self.options.extension.math_code,
-                    ));
+                && ((math.display_math && self.options.extension.math_dollars_block)
+                    || !(self.options.extension.math_dollars
+                        && dollar_math_holds(
+                            math,
+                            node.next_sibling(),
+                            self.options.extension.math_code,
+                        )));
             let (start_fence, end_fence) = match (math.dollar_math, math.display_math, latex) {
                 (false, _, _) => ("$`", "`$"),
                 (true, true, true) => ("\\[", "\\]"),
@@ -1328,6 +1330,46 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             self.output(literal, true, Escaping::Literal)?;
             self.output(end_fence, false, Escaping::Literal)?;
         }
+        Ok(())
+    }
+
+    fn format_math_block(
+        &mut self,
+        node: Node<'a>,
+        math: &NodeMathBlock,
+        entering: bool,
+    ) -> fmt::Result {
+        if !entering {
+            return Ok(());
+        }
+
+        if self.callout_title_depth > 0 {
+            return self.write_str("$$");
+        }
+
+        let first_in_list_item = node.previous_sibling().is_none()
+            && node
+                .parent()
+                .is_some_and(|parent| node_matches!(parent, NodeValue::Item(..)));
+        if !first_in_list_item {
+            self.blankline();
+        }
+        // Restore the indentation stripped by the parser so literal dollar
+        // fences do not become closing fences on reparse.
+        let indent = " ".repeat(math.fence_offset);
+        self.write_str(&indent)?;
+        self.write_str("$$")?;
+        let prefix_len = self.prefix.len();
+        self.prefix.push_str(&indent);
+        self.cr();
+        self.write_str(&math.literal)?;
+        if !math.literal.is_empty() && !math.literal.ends_with('\n') {
+            self.cr();
+        }
+        self.write_str("$$")?;
+        self.prefix.truncate(prefix_len);
+        self.blankline();
+
         Ok(())
     }
 

@@ -331,6 +331,13 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                     write!(self.output, "</{}", ast.value.xml_node_name())?;
                     was_literal = true;
                 }
+                NodeValue::MathBlock(ref math) => {
+                    self.output.write_str(" math_style=\"display\"")?;
+                    self.output.write_str(" xml:space=\"preserve\">")?;
+                    self.escape(&math.literal)?;
+                    write!(self.output, "</{}", ast.value.xml_node_name())?;
+                    was_literal = true;
+                }
                 NodeValue::WikiLink(ref nl) => {
                     self.output.write_str(" destination=\"")?;
                     self.escape(&nl.url)?;

@@ -26,7 +26,8 @@ use crate::nodes::NodeShortCode;
 use crate::nodes::{
     CalloutFold, ListType, Node, NodeAlert, NodeBlockDirective, NodeCallout, NodeCode,
     NodeCodeBlock, NodeFootnoteDefinition, NodeFootnoteReference, NodeHeading, NodeHtmlBlock,
-    NodeLink, NodeList, NodeMath, NodeTaskItem, NodeValue, NodeWikiLink, TableAlignment,
+    NodeLink, NodeList, NodeMath, NodeMathBlock, NodeTaskItem, NodeValue, NodeWikiLink,
+    TableAlignment,
 };
 use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
@@ -421,6 +422,7 @@ pub fn format_node_default<T>(
         NodeValue::EscapedTag(net) => render_escaped_tag(context, net),
         NodeValue::FrontMatter(_) => Ok(ChildRendering::HTML),
         NodeValue::Math(ref nm) => render_math(context, node, entering, nm),
+        NodeValue::MathBlock(ref nmb) => render_math_block(context, node, entering, nmb),
         NodeValue::MultilineBlockQuote(_) => render_multiline_block_quote(context, node, entering),
         NodeValue::Raw(ref literal) => render_raw(context, entering, literal),
         #[cfg(feature = "shortcodes")]
@@ -1732,6 +1734,34 @@ pub fn render_math<T>(
         write_opening_tag(context, tag, tag_attributes.into_iter())?;
         context.escape(&nm.literal)?;
         write!(context, "</{tag}>")?;
+    }
+
+    Ok(ChildRendering::HTML)
+}
+
+/// Renders a block math span delimited by standalone `$$` lines using `<div>`.
+pub fn render_math_block<T>(
+    context: &mut Context<T>,
+    node: Node<'_>,
+    entering: bool,
+    nmb: &NodeMathBlock,
+) -> Result<ChildRendering, fmt::Error> {
+    if entering {
+        context.cr()?;
+
+        let mut tag_attributes: Vec<(&str, Cow<str>)> = Vec::new();
+        tag_attributes.push(("data-math-style", "display".into()));
+
+        if context.options.render.sourcepos {
+            let ast = node.data();
+            tag_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
+        }
+
+        write_opening_tag(context, "div", tag_attributes)?;
+        context.write_str("\n")?;
+        context.escape(&nmb.literal)?;
+        context.write_str("</div>")?;
+        context.lf()?;
     }
 
     Ok(ChildRendering::HTML)

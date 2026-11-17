@@ -218,6 +218,11 @@ pub enum NodeValue {
     ///
     Math(NodeMath),
 
+    /// **Block**. A math block delimited by standalone `$$` lines.  Enabled with the
+    /// `math_dollars` and `math_dollars_block` options.  Contains raw text which is not
+    /// parsed as Markdown, although is HTML escaped.
+    MathBlock(Box<NodeMathBlock>),
+
     /// **Block**. A [multiline block quote](https://github.github.com/gfm/#block-quotes).  Spans multiple
     /// lines and contains other **blocks**.
     ///
@@ -629,6 +634,19 @@ pub struct NodeMath {
     pub literal: String,
 }
 
+/// A block math span delimited by standalone `$$` lines.
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NodeMathBlock {
+    /// The indentation level of the opening fence marker.
+    pub fence_offset: usize,
+
+    /// The literal contents of the math block, excluding the delimiter lines.
+    pub literal: String,
+
+    /// Whether this math block was explicitly closed by a closing fence.
+    pub closed: bool,
+}
+
 /// The metadata of an Obsidian block identifier marker.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NodeBlockId {
@@ -853,6 +871,7 @@ impl NodeValue {
             | NodeValue::Item(..)
             | NodeValue::CodeBlock(..)
             | NodeValue::HtmlBlock(..)
+            | NodeValue::MathBlock(..)
             | NodeValue::Paragraph
             | NodeValue::Heading(..)
             | NodeValue::ThematicBreak
@@ -963,6 +982,7 @@ impl NodeValue {
             NodeValue::MultilineBlockQuote(_) => "multiline_block_quote",
             NodeValue::Escaped => "escaped",
             NodeValue::Math(..) => "math",
+            NodeValue::MathBlock(..) => "math_block",
             NodeValue::WikiLink(..) => "wikilink",
             NodeValue::Underline => "underline",
             NodeValue::Subscript => "subscript",
@@ -987,6 +1007,7 @@ impl NodeValue {
             NodeValue::Paragraph
             | NodeValue::Heading(..)
             | NodeValue::CodeBlock(..)
+            | NodeValue::MathBlock(..)
             | NodeValue::MultilineComment(..)
             | NodeValue::Subtext => true,
             #[cfg(feature = "phoenix_heex")]
@@ -1369,6 +1390,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             | NodeValue::Raw(_)
             | NodeValue::FootnoteReference(_)
             | NodeValue::Math(_)
+            | NodeValue::MathBlock(_)
             | NodeValue::BlockId(_) => false,
 
             #[cfg(feature = "phoenix_heex")]
@@ -1429,6 +1451,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 NodeValue::Code(NodeCode { ref literal, .. }) => output.push_str(literal),
                 NodeValue::LineBreak | NodeValue::SoftBreak => output.push(' '),
                 NodeValue::Math(NodeMath { ref literal, .. }) => output.push_str(literal),
+                NodeValue::MathBlock(ref nmb) => output.push_str(&nmb.literal),
                 _ => stack.extend(node.reverse_children()),
             }
         }
