@@ -1,5 +1,5 @@
 ---
-title: GitHub Flavored Markdown
+title: GitHub Flavored Markdown (draft)
 ---
 
 ```````````````````````````````` example

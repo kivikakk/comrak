@@ -1,5 +1,5 @@
 ---
-title: GFM quirks
+title: GFM quirks (draft)
 ---
 
 ```````````````````````````````` example

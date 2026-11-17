@@ -1,5 +1,5 @@
 ---
-title: Wikilinks (title before pipe)
+title: Wikilinks (title before pipe) (draft)
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/wikilinks_title_before_pipe.md
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Compact HTML
+title: Compact HTML (draft)
 ---
 
 ```````````````````````````````` example --compact

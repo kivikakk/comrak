@@ -1,5 +1,5 @@
 ---
-title: Inline code attributes
+title: Inline code attributes (draft)
 ---
 
 ```````````````````````````````` example -e inline-code-attributes

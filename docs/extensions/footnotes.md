@@ -1,5 +1,5 @@
 ---
-title: Footnotes
+title: Footnotes (draft)
 ---
 
 ```````````````````````````````` example -e footnotes

@@ -1,5 +1,5 @@
 ---
-title: LaTeX math
+title: LaTeX math (draft)
 ---
 
 ```````````````````````````````` example -e math-latex
