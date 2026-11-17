@@ -25,6 +25,7 @@ macro_rules! node_matches {
 }
 
 /// The core AST node enum.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(strum::EnumDiscriminants))]
 #[cfg_attr(
