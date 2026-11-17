@@ -218,10 +218,9 @@ impl Doc {
         let mut definitions = vec![];
         for node in document.descendants() {
             if example_flags(node).is_some() {
-                node.data_mut().value = NodeValue::HtmlBlock(NodeHtmlBlock {
-                    block_type: 6,
-                    literal: examples.next().unwrap().html(),
-                });
+                let mut nhb = NodeHtmlBlock::new(examples.next().unwrap().html());
+                nhb.block_type = 6;
+                node.data_mut().value = NodeValue::HtmlBlock(nhb);
             } else if is_definition(node) {
                 definitions.push(node);
             }

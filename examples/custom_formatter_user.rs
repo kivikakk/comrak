@@ -3,7 +3,7 @@ use comrak::{create_formatter, nodes::NodeValue};
 use std::fmt::Write;
 
 create_formatter!(CustomFormatter<usize>, {
-    NodeValue::Emph => |context, entering| {
+    NodeValue::Emph(..) => |context, entering| {
         context.user += 1;
         if entering {
             context.write_str("<i>")?;
@@ -11,7 +11,7 @@ create_formatter!(CustomFormatter<usize>, {
             context.write_str("</i>")?;
         }
     },
-    NodeValue::Strong => |context, entering| {
+    NodeValue::Strong(..) => |context, entering| {
         context.user += 1;
         context.write_str(if entering { "<b>" } else { "</b>" })?;
     },

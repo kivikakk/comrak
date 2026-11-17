@@ -197,7 +197,7 @@ pub fn structure(recs: &[Rec], source: &Source) -> Vec<Finding> {
         };
         let table = owning_table(recs, index);
         let bound = match rec.value {
-            NodeValue::GridTableCell(cell)
+            NodeValue::GridTableCell(ref cell)
                 if cell.rowspan > 1 || is_placeholder(recs, parent_index) =>
             {
                 match table.and_then(|table| source.half_open_span(recs[table].sp).ok()) {
@@ -403,7 +403,7 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8], ends_line: bool) -> Option
             )
         }
         NodeValue::Heading(h) => bad(!s.starts_with(&vec![b'#'; h.level as usize]), "atx-no-hash"),
-        NodeValue::ThematicBreak => bad(
+        NodeValue::ThematicBreak(..) => bad(
             is_ws(first)
                 || !s
                     .iter()
@@ -454,9 +454,9 @@ fn kind_problem(recs: &[Rec], index: usize, s: &[u8], ends_line: bool) -> Option
             )
             .or(bad(!same_last_line(s, literal), "last-line"))
         }
-        NodeValue::Emph => bad(!(delimited_by(s, "*") || delimited_by(s, "_")), "delim"),
-        NodeValue::Strong => bad(!(delimited_by(s, "**") || delimited_by(s, "__")), "delim"),
-        NodeValue::Strikethrough | NodeValue::Subscript => bad(!delimited_by(s, "~"), "delim"),
+        NodeValue::Emph(..) => bad(!(delimited_by(s, "*") || delimited_by(s, "_")), "delim"),
+        NodeValue::Strong(..) => bad(!(delimited_by(s, "**") || delimited_by(s, "__")), "delim"),
+        NodeValue::Strikethrough(..) | NodeValue::Subscript => bad(!delimited_by(s, "~"), "delim"),
         NodeValue::Highlight => bad(!delimited_by(s, "=="), "delim"),
         NodeValue::Insert => bad(!delimited_by(s, "++"), "delim"),
         NodeValue::Superscript => bad(!delimited_by(s, "^"), "delim"),
@@ -552,9 +552,9 @@ fn is_inline_container(rec: &Rec) -> bool {
             | NodeValue::Heading(_)
             | NodeValue::TableCell
             | NodeValue::Subtext
-            | NodeValue::Emph
-            | NodeValue::Strong
-            | NodeValue::Strikethrough
+            | NodeValue::Emph(..)
+            | NodeValue::Strong(..)
+            | NodeValue::Strikethrough(..)
             | NodeValue::Highlight
             | NodeValue::Insert
             | NodeValue::Superscript
@@ -584,10 +584,10 @@ fn open_fits(rec: &Rec, open: &[u8]) -> bool {
         }
         NodeValue::TableCell => open.iter().all(|&b| is_cell_padding(b)),
         NodeValue::Subtext => open.starts_with(b"-#"),
-        NodeValue::Emph => open == b"*" || open == b"_",
-        NodeValue::Strong => open == b"**" || open == b"__",
+        NodeValue::Emph(..) => open == b"*" || open == b"_",
+        NodeValue::Strong(..) => open == b"**" || open == b"__",
         NodeValue::Underline => open == b"__",
-        NodeValue::Strikethrough => open == b"~" || open == b"~~",
+        NodeValue::Strikethrough(..) => open == b"~" || open == b"~~",
         NodeValue::Subscript => open == b"~",
         NodeValue::Highlight => open == b"==",
         NodeValue::Insert => open == b"++",
@@ -609,10 +609,10 @@ fn close_fits(rec: &Rec, close: &[u8]) -> bool {
             .iter()
             .all(|&b| b == b'=' || b == b'-' || is_ws(b)),
         NodeValue::Heading(_) => close.iter().all(|&b| b == b'#' || is_ws(b)),
-        NodeValue::Emph => close == b"*" || close == b"_",
-        NodeValue::Strong => close == b"**" || close == b"__",
+        NodeValue::Emph(..) => close == b"*" || close == b"_",
+        NodeValue::Strong(..) => close == b"**" || close == b"__",
         NodeValue::Underline => close == b"__",
-        NodeValue::Strikethrough => close == b"~" || close == b"~~",
+        NodeValue::Strikethrough(..) => close == b"~" || close == b"~~",
         NodeValue::Subscript => close == b"~",
         NodeValue::Highlight => close == b"==",
         NodeValue::Insert => close == b"++",

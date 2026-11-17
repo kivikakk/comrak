@@ -81,7 +81,7 @@ pub(super) fn render_grid_table_cell<T>(
     context: &mut Context<T>,
     node: Node<'_>,
     entering: bool,
-    cell: NodeGridTableCell,
+    cell: &NodeGridTableCell,
 ) -> Result<ChildRendering, fmt::Error> {
     let row = node.parent().unwrap();
     let tag = match row.data().value {

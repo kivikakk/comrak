@@ -5,7 +5,8 @@ use std::mem;
 use crate::Arena;
 use crate::matchers::backslash_matcher;
 use crate::nodes::{
-    Ast, BlockLines, LineColumn, Node, NodeTable, NodeValue, Sourcepos, TableAlignment,
+    Ast, BlockLines, LineColumn, Node, NodeTable, NodeTableRow, NodeValue, Sourcepos,
+    TableAlignment,
 };
 use crate::parser::Parser;
 use crate::parser::inlines::make_inline;
@@ -106,7 +107,11 @@ fn try_opening_header<'a>(
     let table = parser.arena.alloc(child.into());
     container.append(table);
 
-    let header = parser.add_child(table, NodeValue::TableRow(true), start.column);
+    let header = parser.add_child(
+        table,
+        NodeValue::TableRow(NodeTableRow::new(true)),
+        start.column,
+    );
     {
         let header_ast = &mut header.data_mut();
         header_ast.sourcepos.start.line = start.line;
@@ -179,7 +184,11 @@ fn try_opening_row<'a>(
     let spoiler = parser.options.extension.spoiler;
     let mut this_row = row(&line[parser.first_nonspace..], spoiler)?;
 
-    let new_row = parser.add_child(container, NodeValue::TableRow(false), start_column);
+    let new_row = parser.add_child(
+        container,
+        NodeValue::TableRow(NodeTableRow::new(false)),
+        start_column,
+    );
     new_row.data_mut().sourcepos.end.column = parser.curline_end_col;
 
     let parsed_cells = min(alignments.len(), this_row.cells.len());

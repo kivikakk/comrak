@@ -26,8 +26,8 @@ use crate::nodes::NodeShortCode;
 use crate::nodes::{
     CalloutFold, ListType, Node, NodeAlert, NodeBlockDirective, NodeCallout, NodeCode,
     NodeCodeBlock, NodeFootnoteDefinition, NodeFootnoteReference, NodeHeading, NodeHtmlBlock,
-    NodeLink, NodeList, NodeMath, NodeMathBlock, NodeTaskItem, NodeValue, NodeWikiLink,
-    TableAlignment,
+    NodeLink, NodeList, NodeMath, NodeMathBlock, NodeTableRow, NodeTaskItem, NodeValue,
+    NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{AlertStyleType, Options, Plugins};
 use crate::{node_matches, scanners};
@@ -112,7 +112,7 @@ pub enum ChildRendering {
 /// # use comrak::{create_formatter, parse_document, Arena, Options, nodes::NodeValue, html::ChildRendering};
 /// # use std::fmt::Write;
 /// create_formatter!(CustomFormatter<usize>, {
-///     NodeValue::Emph => |context, entering| {
+///     NodeValue::Emph(..) => |context, entering| {
 ///         context.user += 1;
 ///         if entering {
 ///             context.write_str("<i>")?;
@@ -120,7 +120,7 @@ pub enum ChildRendering {
 ///             context.write_str("</i>")?;
 ///         }
 ///     },
-///     NodeValue::Strong => |context, entering| {
+///     NodeValue::Strong(..) => |context, entering| {
 ///         context.user += 1;
 ///         context.write_str(if entering { "<b>" } else { "</b>" })?;
 ///     },
@@ -366,7 +366,7 @@ pub fn format_node_default<T>(
         NodeValue::Code(ref nc) => render_code(context, node, entering, nc),
         NodeValue::CodeBlock(ref ncb) => render_code_block(context, node, entering, ncb),
         NodeValue::Document => Ok(ChildRendering::HTML),
-        NodeValue::Emph => render_emph(context, node, entering),
+        NodeValue::Emph(..) => render_emph(context, node, entering),
         NodeValue::Heading(ref nh) => render_heading(context, node, entering, nh),
         NodeValue::HtmlBlock(ref nhb) => render_html_block(context, entering, nhb),
         #[cfg(feature = "phoenix_heex")]
@@ -381,9 +381,9 @@ pub fn format_node_default<T>(
         NodeValue::List(ref nl) => render_list(context, node, entering, nl),
         NodeValue::Paragraph => render_paragraph(context, node, entering),
         NodeValue::SoftBreak => render_soft_break(context, node, entering),
-        NodeValue::Strong => render_strong(context, node, entering),
+        NodeValue::Strong(..) => render_strong(context, node, entering),
         NodeValue::Text(ref literal) => render_text(context, entering, literal),
-        NodeValue::ThematicBreak => render_thematic_break(context, node, entering),
+        NodeValue::ThematicBreak(..) => render_thematic_break(context, node, entering),
 
         // GFM
         NodeValue::FootnoteDefinition(ref nfd) => {
@@ -392,12 +392,12 @@ pub fn format_node_default<T>(
         NodeValue::FootnoteReference(ref nfr) => {
             render_footnote_reference(context, node, entering, nfr)
         }
-        NodeValue::Strikethrough => render_strikethrough(context, node, entering),
+        NodeValue::Strikethrough(..) => render_strikethrough(context, node, entering),
         NodeValue::Highlight => render_highlight(context, node, entering),
         NodeValue::Insert => render_insert(context, node, entering),
         NodeValue::Table(_) => render_table(context, node, entering),
         NodeValue::TableCell => render_table_cell(context, node, entering),
-        NodeValue::TableRow(thead) => render_table_row(context, node, entering, thead),
+        NodeValue::TableRow(ref ntr) => render_table_row(context, node, entering, ntr.header),
         #[cfg(feature = "grid_table")]
         NodeValue::GridTable(_) => grid_table::render_grid_table(context, node, entering),
         #[cfg(feature = "grid_table")]
@@ -405,7 +405,7 @@ pub fn format_node_default<T>(
             grid_table::render_grid_table_row(context, node, entering, section)
         }
         #[cfg(feature = "grid_table")]
-        NodeValue::GridTableCell(cell) => {
+        NodeValue::GridTableCell(ref cell) => {
             grid_table::render_grid_table_cell(context, node, entering, cell)
         }
         NodeValue::TaskItem(ref nti) => render_task_item(context, node, entering, nti),
@@ -1122,8 +1122,8 @@ fn render_paragraph<T>(
         .parent()
         .and_then(|n| n.parent())
         .is_some_and(|n| match n.data().value {
-            NodeValue::List(nl) => nl.tight,
-            NodeValue::DescriptionItem(ndi) => ndi.tight,
+            NodeValue::List(ref nl) => nl.tight,
+            NodeValue::DescriptionItem(ref ndi) => ndi.tight,
             _ => false,
         })
         || node
@@ -1201,7 +1201,7 @@ fn render_strong<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     let parent_node = node.parent();
     if !context.options.render.gfm_quirks
-        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong))
+        || (parent_node.is_none() || !node_matches!(parent_node.unwrap(), NodeValue::Strong(..)))
     {
         if entering {
             context.write_str("<strong")?;
@@ -1390,7 +1390,7 @@ fn render_table_cell<T>(
     };
     let row = &row_node.data().value;
     let in_header = match *row {
-        NodeValue::TableRow(header) => header,
+        NodeValue::TableRow(ref ntr) => ntr.header,
         _ => panic!("rendered a table cell contained by something other than a table row"),
     };
 
@@ -1449,7 +1449,7 @@ fn render_table_row<T>(
             context.write_str("<thead>")?;
             context.lf()?;
         } else if let Some(n) = node.previous_sibling()
-            && let NodeValue::TableRow(true) = n.data().value
+            && let NodeValue::TableRow(NodeTableRow { header: true }) = n.data().value
         {
             context.write_str("<tbody>")?;
             context.lf()?;

@@ -112,7 +112,7 @@ pub enum NodeValue {
 
     /// **Block**. A [thematic break](https://github.github.com/gfm/#thematic-breaks).  Has no
     /// children.
-    ThematicBreak,
+    ThematicBreak(NodeThematicBreak),
 
     /// **Block**. A footnote definition.  The `String` is the footnote's name.
     /// Contains other **blocks**.
@@ -122,9 +122,8 @@ pub enum NodeValue {
     /// Contains table rows.
     Table(Box<NodeTable>),
 
-    /// **Block**. A table row.  The `bool` represents whether the row is the header row or not.
-    /// Contains table cells.
-    TableRow(bool),
+    /// **Block**. A table row.  Contains table cells.
+    TableRow(NodeTableRow),
 
     /// **Block**.  A table cell.  Contains **inlines**.
     TableCell,
@@ -175,14 +174,14 @@ pub enum NodeValue {
 
     /// **Inline**.  [Emphasized](https://github.github.com/gfm/#emphasis-and-strong-emphasis)
     /// text.
-    Emph,
+    Emph(NodeEmph),
 
     /// **Inline**.  [Strong](https://github.github.com/gfm/#emphasis-and-strong-emphasis) text.
-    Strong,
+    Strong(NodeStrong),
 
     /// **Inline**.  [Strikethrough](https://github.github.com/gfm/#strikethrough-extension-) text
     /// per the GFM spec.
-    Strikethrough,
+    Strikethrough(NodeStrikethrough),
 
     /// ***Inline**. [Highlight](https://www.markdownlang.com/extended/highlight.html) / mark text
     Highlight,
@@ -335,6 +334,7 @@ impl TableAlignment {
 
 /// The metadata of a table
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeTable {
     /// The table alignments
     pub alignments: Vec<TableAlignment>,
@@ -349,23 +349,88 @@ pub struct NodeTable {
     pub num_nonempty_cells: usize,
 }
 
+impl NodeTable {
+    /// Create a new `NodeTable` with the given alignments.
+    pub fn new(alignments: Vec<TableAlignment>) -> Self {
+        NodeTable {
+            num_columns: alignments.len(),
+            alignments,
+            num_rows: 0,
+            num_nonempty_cells: 0,
+        }
+    }
+}
+
+/// Metadata for a table row.
+#[non_exhaustive]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeTableRow {
+    /// Whether the table row is a header row.
+    pub header: bool,
+}
+
+impl NodeTableRow {
+    /// Create a new `NodeTableRow`.
+    pub fn new(header: bool) -> Self {
+        NodeTableRow { header }
+    }
+}
+
+/// Metadata for an emphasis node.  Intentionally left blank.
+#[non_exhaustive]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeEmph {}
+
+/// Metadata for a strong node.  Intentionally left blank.
+#[non_exhaustive]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeStrong {}
+
+/// Metadata for a strikethrough node.  Intentionally left blank.
+#[non_exhaustive]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeStrikethrough {}
+
+/// Metadata for a thematic break node.  Intentionally left blank.
+#[non_exhaustive]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct NodeThematicBreak {}
+
 #[cfg(feature = "grid_table")]
 /// A grid table.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeGridTable {
     /// The table's column definitions.
     pub columns: Vec<GridTableColumn>,
 }
 
 #[cfg(feature = "grid_table")]
+impl NodeGridTable {
+    /// Create a new `NodeGridTable` with the given columns.
+    pub fn new(columns: Vec<GridTableColumn>) -> Self {
+        NodeGridTable { columns }
+    }
+}
+
+#[cfg(feature = "grid_table")]
 /// A column in a grid table.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct GridTableColumn {
     /// The alignment of this column, if any.
     pub alignment: TableAlignment,
 
     /// The column's width, in terms of display columns inside the borders.  Excludes the border characters themselves.  Wide characters (e.g. CJK) count as 2.
     pub width: usize,
+}
+
+#[cfg(feature = "grid_table")]
+impl GridTableColumn {
+    /// Create a new `GridTableColumn` with the given alignment and width.
+    pub fn new(alignment: TableAlignment, width: usize) -> Self {
+        GridTableColumn { alignment, width }
+    }
 }
 
 #[cfg(feature = "grid_table")]
@@ -395,7 +460,8 @@ impl GridTableSection {
 
 #[cfg(feature = "grid_table")]
 /// A cell in a grid table.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeGridTableCell {
     /// The cell's starting column index; 0-based.
     pub column: usize,
@@ -407,8 +473,21 @@ pub struct NodeGridTableCell {
     pub rowspan: usize,
 }
 
+#[cfg(feature = "grid_table")]
+impl NodeGridTableCell {
+    /// Create a new `NodeGridTableCell` with the given starting column and spans.
+    pub fn new(column: usize, colspan: usize, rowspan: usize) -> Self {
+        NodeGridTableCell {
+            column,
+            colspan,
+            rowspan,
+        }
+    }
+}
+
 /// A task list item's contents, and where it was found
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeTaskItem {
     /// The symbol within the brackets used to mark the task item as checked,
     /// or `None` if unchecked.
@@ -418,8 +497,19 @@ pub struct NodeTaskItem {
     pub symbol_sourcepos: Sourcepos,
 }
 
+impl NodeTaskItem {
+    /// Create a new `NodeTaskItem` with the given symbol.
+    pub fn new(symbol: Option<char>) -> Self {
+        NodeTaskItem {
+            symbol,
+            symbol_sourcepos: Sourcepos::default(),
+        }
+    }
+}
+
 /// An inline [code span](https://github.github.com/gfm/#code-spans).
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeCode {
     /// The number of backticks
     pub num_backticks: usize,
@@ -431,8 +521,19 @@ pub struct NodeCode {
     pub literal: String,
 }
 
+impl NodeCode {
+    /// Create a new `NodeCode` with the given info string.
+    pub fn new(literal: impl Into<String>) -> Self {
+        NodeCode {
+            num_backticks: 0,
+            literal: literal.into(),
+        }
+    }
+}
+
 /// The details of a link's destination, or an image's source.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeLink {
     /// The URL for the link destination or image source.
     pub url: String,
@@ -444,9 +545,20 @@ pub struct NodeLink {
     pub title: String,
 }
 
+impl NodeLink {
+    /// Create a new `NodeLink` with the given URL and title.
+    pub fn new(url: impl Into<String>, title: impl Into<String>) -> Self {
+        NodeLink {
+            url: url.into(),
+            title: title.into(),
+        }
+    }
+}
+
 /// The details of a wikilink's destination.
 /// For both `[[link]]` and `![[embed]]` syntax
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeWikiLink {
     /// The URL for the link destination.
     pub url: String,
@@ -454,8 +566,19 @@ pub struct NodeWikiLink {
     pub embed: bool,
 }
 
+impl NodeWikiLink {
+    /// Create a new `NodeWikiLink` with the given URL and embedded..ness.
+    pub fn new(url: impl Into<String>, embed: bool) -> Self {
+        NodeWikiLink {
+            url: url.into(),
+            embed,
+        }
+    }
+}
+
 /// The metadata of a list; the kind of list, the delimiter used and so on.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeList {
     /// The kind of list (bullet (unordered) or ordered).
     pub list_type: ListType,
@@ -483,8 +606,32 @@ pub struct NodeList {
     pub is_task_list: bool,
 }
 
+impl NodeList {
+    /// Create a new bullet `NodeList` with the given bullet character and tightness.
+    pub fn bullet(bullet_char: u8, tight: bool) -> Self {
+        NodeList {
+            list_type: ListType::Bullet,
+            bullet_char,
+            tight,
+            ..NodeList::default()
+        }
+    }
+
+    /// Create a new ordered `NodeList` with the given starting number, delimiter type, and tightness.
+    pub fn ordered(start: usize, delimiter: ListDelimType, tight: bool) -> Self {
+        NodeList {
+            list_type: ListType::Ordered,
+            start,
+            delimiter,
+            tight,
+            ..NodeList::default()
+        }
+    }
+}
+
 /// The metadata of a description list
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeDescriptionItem {
     /// Number of spaces before the list marker.
     pub marker_offset: usize,
@@ -495,6 +642,16 @@ pub struct NodeDescriptionItem {
     /// Whether the list is [tight](https://github.github.com/gfm/#tight), i.e. whether the
     /// paragraphs are wrapped in `<p>` tags when formatted as HTML.
     pub tight: bool,
+}
+
+impl NodeDescriptionItem {
+    /// Create a new `NodeDescriptionItem` with the given tightness.
+    pub fn new(tight: bool) -> Self {
+        NodeDescriptionItem {
+            tight,
+            ..NodeDescriptionItem::default()
+        }
+    }
 }
 
 /// The type of list.
@@ -530,6 +687,7 @@ impl ListDelimType {
 
 /// The metadata and data of a code block (fenced or indented).
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeCodeBlock {
     /// Whether the code block is fenced.
     pub fenced: bool,
@@ -557,8 +715,33 @@ pub struct NodeCodeBlock {
     pub closed: bool,
 }
 
+impl NodeCodeBlock {
+    /// Create a new fenced `NodeCodeBlock` with the given info string and literal content.
+    pub fn fenced(info: impl Into<String>, literal: impl Into<String>) -> Self {
+        NodeCodeBlock {
+            fenced: true,
+            fence_char: b'`',
+            fence_length: 3,
+            fence_offset: 0,
+            info: info.into(),
+            literal: literal.into(),
+            closed: true,
+        }
+    }
+
+    /// Create a new indented `NodeCodeBlock` with the given literal content.
+    pub fn indented(literal: impl Into<String>) -> Self {
+        NodeCodeBlock {
+            literal: literal.into(),
+            closed: true,
+            ..NodeCodeBlock::default()
+        }
+    }
+}
+
 /// The metadata of a heading.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeHeading {
     /// The level of the header; from 1 to 6 for ATX headings, 1 or 2 for setext headings.
     pub level: u8,
@@ -571,8 +754,20 @@ pub struct NodeHeading {
     pub closed: bool,
 }
 
+impl NodeHeading {
+    /// Create a new `NodeHeading` with the given level.
+    pub fn new(level: u8) -> Self {
+        NodeHeading {
+            level,
+            setext: false,
+            closed: false,
+        }
+    }
+}
+
 /// The metadata of an included HTML block.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeHtmlBlock {
     /// The HTML block's type
     pub block_type: u8,
@@ -582,8 +777,19 @@ pub struct NodeHtmlBlock {
     pub literal: String,
 }
 
+impl NodeHtmlBlock {
+    /// Create a new `NodeHtmlBlock` with the given literal content.
+    pub fn new(literal: impl Into<String>) -> Self {
+        NodeHtmlBlock {
+            block_type: 0,
+            literal: literal.into(),
+        }
+    }
+}
+
 /// The metadata of a footnote definition.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeFootnoteDefinition {
     /// The name of the footnote.
     pub name: String,
@@ -592,8 +798,19 @@ pub struct NodeFootnoteDefinition {
     pub total_references: u32,
 }
 
+impl NodeFootnoteDefinition {
+    /// Create a new `NodeFootnoteDefinition` with the given name.
+    pub fn new(name: impl Into<String>) -> Self {
+        NodeFootnoteDefinition {
+            name: name.into(),
+            total_references: 0,
+        }
+    }
+}
+
 /// The metadata of a footnote reference.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeFootnoteReference {
     /// The name of the footnote.
     pub name: String,
@@ -608,8 +825,19 @@ pub struct NodeFootnoteReference {
     pub ix: u32,
 }
 
+impl NodeFootnoteReference {
+    /// Create a new `NodeFootnoteReference` with the given name.
+    pub fn new(name: impl Into<String>) -> Self {
+        NodeFootnoteReference {
+            name: name.into(),
+            ..NodeFootnoteReference::default()
+        }
+    }
+}
+
 /// The metadata of a multiline blockquote.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeMultilineBlockQuote {
     /// The length of the fence.
     pub fence_length: usize,
@@ -620,6 +848,7 @@ pub struct NodeMultilineBlockQuote {
 
 /// An inline math span
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeMath {
     /// Whether this is dollar math (`$` or `$$`).
     /// `false` indicates it is code math
@@ -635,8 +864,20 @@ pub struct NodeMath {
     pub literal: String,
 }
 
+impl NodeMath {
+    /// Create a new `NodeMath` with the given literal content and displayness.
+    pub fn new(literal: impl Into<String>, display_math: bool) -> Self {
+        NodeMath {
+            dollar_math: true,
+            display_math,
+            literal: literal.into(),
+        }
+    }
+}
+
 /// A block math span delimited by standalone `$$` lines.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeMathBlock {
     /// The indentation level of the opening fence marker.
     pub fence_offset: usize,
@@ -648,16 +889,36 @@ pub struct NodeMathBlock {
     pub closed: bool,
 }
 
+impl NodeMathBlock {
+    /// Create a new `NodeMathBlock` with the given literal content.
+    pub fn new(literal: impl Into<String>) -> Self {
+        NodeMathBlock {
+            fence_offset: 0,
+            literal: literal.into(),
+            closed: true,
+        }
+    }
+}
+
 /// The metadata of an Obsidian block identifier marker.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeBlockId {
     /// The identifier itself, without the leading `^` and with the original
     /// casing preserved.
     pub name: String,
 }
 
+impl NodeBlockId {
+    /// Create a new `NodeBlockId` with the given name.
+    pub fn new(name: impl Into<String>) -> Self {
+        NodeBlockId { name: name.into() }
+    }
+}
+
 /// An inline comment span
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeComment {
     /// The literal contents of the comment span.
     /// As the contents are not interpreted as Markdown at all,
@@ -667,8 +928,18 @@ pub struct NodeComment {
     pub literal: String,
 }
 
+impl NodeComment {
+    /// Create a new `NodeComment` with the given literal content.
+    pub fn new(literal: impl Into<String>) -> Self {
+        NodeComment {
+            literal: literal.into(),
+        }
+    }
+}
+
 /// A block comment span
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeCommentBlock {
     /// The literal contents of the comment block.
     /// As the contents are not interpreted as Markdown at all,
@@ -680,8 +951,19 @@ pub struct NodeCommentBlock {
     pub closed: bool,
 }
 
+impl NodeCommentBlock {
+    /// Create a new `NodeCommentBlock` with the given literal content.
+    pub fn new(literal: impl Into<String>) -> Self {
+        NodeCommentBlock {
+            literal: literal.into(),
+            closed: true,
+        }
+    }
+}
+
 /// The metadata of an Alert node.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeAlert {
     /// Type of alert
     pub alert_type: AlertType,
@@ -699,6 +981,19 @@ pub struct NodeAlert {
     pub fence_offset: usize,
 }
 
+impl NodeAlert {
+    /// Create a new `NodeAlert` with the given type and title.
+    pub fn new(alert_type: AlertType, title: Option<String>) -> Self {
+        NodeAlert {
+            alert_type,
+            title,
+            multiline: false,
+            fence_length: 0,
+            fence_offset: 0,
+        }
+    }
+}
+
 /// The initial fold state of a callout.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CalloutFold {
@@ -714,6 +1009,7 @@ pub enum CalloutFold {
 
 /// The metadata of a callout node.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeCallout {
     /// The normalized callout type.
     pub callout_type: String,
@@ -726,6 +1022,19 @@ pub struct NodeCallout {
 }
 
 impl NodeCallout {
+    /// Create a new `NodeCallout` with the given type, metadata, and initial fold state.
+    pub fn new(
+        callout_type: impl Into<String>,
+        metadata: Option<String>,
+        fold: CalloutFold,
+    ) -> Self {
+        NodeCallout {
+            callout_type: callout_type.into(),
+            metadata,
+            fold,
+        }
+    }
+
     /// Returns the default title for a callout type.
     ///
     /// Hyphens are replaced with spaces, the result is lowercased, and the
@@ -805,6 +1114,7 @@ impl AlertType {
 
 /// The metadata of a container block directive node.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct NodeBlockDirective {
     /// The length of the fence.
     pub fence_length: usize,
@@ -814,6 +1124,17 @@ pub struct NodeBlockDirective {
 
     /// The info string after the opening fence, if any.
     pub info: String,
+}
+
+impl NodeBlockDirective {
+    /// Create a new `NodeBlockDirective` with the given info string.
+    pub fn new(info: impl Into<String>) -> Self {
+        NodeBlockDirective {
+            fence_length: 0,
+            fence_offset: 0,
+            info: info.into(),
+        }
+    }
 }
 
 /// Attributes on the node, if any.
@@ -846,6 +1167,7 @@ pub struct NodeBlockDirective {
 /// the block offset, or you'll get an unwanted code block!
 #[cfg(feature = "attributes")]
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Attributes {
     /// The id attribute, if any; specified like `#id` (last wins).
     pub id: Option<String>,
@@ -875,7 +1197,7 @@ impl NodeValue {
             | NodeValue::MathBlock(..)
             | NodeValue::Paragraph
             | NodeValue::Heading(..)
-            | NodeValue::ThematicBreak
+            | NodeValue::ThematicBreak(..)
             | NodeValue::Table(..)
             | NodeValue::TableRow(..)
             | NodeValue::TableCell
@@ -948,10 +1270,10 @@ impl NodeValue {
             NodeValue::HeexBlock(..) => "heex_block",
             NodeValue::Paragraph => "paragraph",
             NodeValue::Heading(..) => "heading",
-            NodeValue::ThematicBreak => "thematic_break",
+            NodeValue::ThematicBreak(..) => "thematic_break",
             NodeValue::Table(..) => "table",
-            NodeValue::TableRow(true) => "table_header",
-            NodeValue::TableRow(false) => "table_row",
+            NodeValue::TableRow(NodeTableRow { header: true }) => "table_header",
+            NodeValue::TableRow(NodeTableRow { header: false }) => "table_row",
             NodeValue::TableCell => "table_cell",
             #[cfg(feature = "grid_table")]
             NodeValue::GridTable(..) => "grid_table",
@@ -964,14 +1286,14 @@ impl NodeValue {
             NodeValue::LineBreak => "linebreak",
             NodeValue::Image(..) => "image",
             NodeValue::Link(..) => "link",
-            NodeValue::Emph => "emph",
-            NodeValue::Strong => "strong",
+            NodeValue::Emph(..) => "emph",
+            NodeValue::Strong(..) => "strong",
             NodeValue::Code(..) => "code",
             NodeValue::HtmlInline(..) => "html_inline",
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(..) => "heex_inline",
             NodeValue::Raw(..) => "raw",
-            NodeValue::Strikethrough => "strikethrough",
+            NodeValue::Strikethrough(..) => "strikethrough",
             NodeValue::Highlight => "highlight",
             NodeValue::Insert => "insert",
             NodeValue::FrontMatter(_) => "frontmatter",
@@ -1074,7 +1396,7 @@ const AST_SIZE_ASSERTION: [u8; 88] = [0; std::mem::size_of::<Ast>()];
 const AST_NODE_SIZE_ASSERTION: [u8; 136] = [0; std::mem::size_of::<AstNode<'_>>()];
 
 /// Represents the position in the source Markdown this node was rendered from.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sourcepos {
     /// The line and column of the first character of this node.
     pub start: LineColumn,
@@ -1298,12 +1620,12 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             NodeValue::ShortCode(..) => !child.block(),
             NodeValue::Paragraph
             | NodeValue::Heading(..)
-            | NodeValue::Emph
-            | NodeValue::Strong
+            | NodeValue::Emph(..)
+            | NodeValue::Strong(..)
             | NodeValue::Link(..)
             | NodeValue::Image(..)
             | NodeValue::WikiLink(..)
-            | NodeValue::Strikethrough
+            | NodeValue::Strikethrough(..)
             | NodeValue::Highlight
             | NodeValue::Insert
             | NodeValue::Superscript
@@ -1333,11 +1655,11 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                     *child,
                     NodeValue::Text(..)
                     | NodeValue::Code(..)
-                    | NodeValue::Emph
-                    | NodeValue::Strong
+                    | NodeValue::Emph(..)
+                    | NodeValue::Strong(..)
                     | NodeValue::Link(..)
                     | NodeValue::Image(..)
-                    | NodeValue::Strikethrough
+                    | NodeValue::Strikethrough(..)
                     | NodeValue::Highlight
                     | NodeValue::Insert
                     | NodeValue::HtmlInline(..)
@@ -1382,7 +1704,7 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
             NodeValue::FrontMatter(_)
             | NodeValue::CodeBlock(_)
             | NodeValue::HtmlBlock(_)
-            | NodeValue::ThematicBreak
+            | NodeValue::ThematicBreak(..)
             | NodeValue::Text(_)
             | NodeValue::SoftBreak
             | NodeValue::LineBreak
