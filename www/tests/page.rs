@@ -90,3 +90,24 @@ fn lede_must_open_page() {
         None
     );
 }
+
+#[test]
+fn page_covers_its_name_by_default() {
+    assert_eq!(load("widget.md", "Text.\n").covers, ["widget"]);
+}
+
+#[test]
+fn front_matter_lists_covered_extensions() {
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("page");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("widgets.md"),
+        "---\ntitle: Test\nextensions: [widget-a, widget-b]\n---\n\nText.\n",
+    )
+    .unwrap();
+
+    assert_eq!(
+        Doc::load(&root, PathBuf::from("widgets.md")).covers,
+        ["widget-a", "widget-b"]
+    );
+}

@@ -27,6 +27,7 @@ pub struct Doc {
     pub path: PathBuf,
     pub title: String,
     pub lede: Option<String>,
+    pub covers: Vec<String>,
     pub source: String,
     pub examples: Vec<Example>,
     pub headings: Vec<Heading>,
@@ -113,14 +114,14 @@ impl Doc {
             .filter(|node| matches!(node.data().value, NodeValue::Paragraph))
             .map(|node| collapse_whitespace(&node.collect_text()));
 
-        let mut title = None;
+        let mut front_matter = None;
         let mut examples = vec![];
         let mut terms = BTreeSet::new();
         let mut anchorizer = Anchorizer::new();
         let mut headings = vec![];
         for node in document.descendants() {
-            if let NodeValue::FrontMatter(ref front_matter) = node.data().value {
-                title = Some(parse_title(&path, front_matter));
+            if let NodeValue::FrontMatter(ref yaml) = node.data().value {
+                front_matter = Some(FrontMatter::parse(&path, yaml));
             } else if let NodeValue::Heading(ref heading) = node.data().value {
                 let text = node.collect_text();
                 headings.push(Heading {
@@ -153,9 +154,15 @@ impl Doc {
             );
         }
 
+        let FrontMatter { title, extensions } =
+            front_matter.unwrap_or_else(|| panic!("{}: no front matter", path.display()));
+        let covers = extensions
+            .unwrap_or_else(|| vec![path.file_stem().unwrap().to_str().unwrap().to_string()]);
+
         Doc {
-            title: title.unwrap_or_else(|| panic!("{}: no front matter", path.display())),
+            title,
             lede,
+            covers,
             path,
             source,
             examples,
@@ -262,19 +269,42 @@ fn collect_markdown(root: &Path, dir: &Path, paths: &mut Vec<PathBuf>) {
     }
 }
 
-fn parse_title(path: &Path, front_matter: &str) -> String {
-    let yaml: String = front_matter
-        .lines()
-        .skip(1)
-        .take_while(|line| *line != "---")
-        .flat_map(|line| [line, "\n"])
-        .collect();
-    let docs = YamlLoader::load_from_str(&yaml)
-        .unwrap_or_else(|e| panic!("{}: front matter: {e}", path.display()));
-    docs[0]["title"]
-        .as_str()
-        .unwrap_or_else(|| panic!("{}: front matter has no title", path.display()))
-        .to_string()
+struct FrontMatter {
+    title: String,
+    extensions: Option<Vec<String>>,
+}
+
+impl FrontMatter {
+    fn parse(path: &Path, front_matter: &str) -> FrontMatter {
+        let yaml: String = front_matter
+            .lines()
+            .skip(1)
+            .take_while(|line| *line != "---")
+            .flat_map(|line| [line, "\n"])
+            .collect();
+        let docs = YamlLoader::load_from_str(&yaml)
+            .unwrap_or_else(|e| panic!("{}: front matter: {e}", path.display()));
+        let doc = &docs[0];
+        let title = doc["title"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{}: front matter has no title", path.display()))
+            .to_string();
+        let extensions = (!doc["extensions"].is_badvalue()).then(|| {
+            doc["extensions"]
+                .as_vec()
+                .unwrap_or_else(|| panic!("{}: `extensions` must be a list", path.display()))
+                .iter()
+                .map(|name| {
+                    name.as_str()
+                        .unwrap_or_else(|| {
+                            panic!("{}: `extensions` must list names", path.display())
+                        })
+                        .to_string()
+                })
+                .collect()
+        });
+        FrontMatter { title, extensions }
+    }
 }
 
 impl Example {

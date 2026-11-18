@@ -963,7 +963,7 @@ With [spoilers](spoiler.html), the `||` delimiter doesn't separate cells:
 </table>
 ````````````````````````````````
 
-With [wikilinks](wikilinks-title-after-pipe.html), escape the pipe in a wikilink.  Otherwise, it separates cells:
+With [wikilinks](wikilinks.html), escape the pipe in a wikilink.  Otherwise, it separates cells:
 
 ```````````````````````````````` example -e table -e wikilinks-title-after-pipe
 | a | b |
