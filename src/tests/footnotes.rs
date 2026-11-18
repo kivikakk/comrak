@@ -1,3 +1,5 @@
+use pretty_assertions::assert_eq;
+
 use super::*;
 
 #[test]
@@ -230,6 +232,34 @@ fn footnote_name_parsed_into_multiple_nodes() {
 }
 
 #[test]
+fn footnote_reference_texts_hold_source_label() {
+    let mut options = Options::default();
+    options.extension.footnotes = true;
+
+    let arena = Arena::new();
+    let root = parse_document(
+        &arena,
+        "Foo.[^_ab] and [^&#97;].\n\n[^_ab]: x\n[^&#97;]: y\n",
+        &options,
+    );
+
+    let texts: Vec<_> = root
+        .descendants()
+        .filter_map(|n| match n.data().value {
+            NodeValue::FootnoteReference(ref nfr) => Some(nfr.texts.clone()),
+            _ => None,
+        })
+        .collect();
+    std::assert_eq!(
+        texts,
+        [
+            vec![("^_ab".to_string(), 4)],
+            vec![("^&#97;".to_string(), 6)]
+        ]
+    );
+}
+
+#[test]
 fn footnote_invalid_with_missing_name() {
     html_opts!(
         [extension.footnotes],
@@ -368,5 +398,223 @@ fn sourcepos_definition_ends_with_its_contents() {
                 (text (5:1-5:1) "z")
             ])
         ])
+    );
+}
+
+#[test]
+fn footnote_duplicate_definitions_first_wins() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("A[^a].\n", "\n", "[^a]: first\n", "\n", "[^a]: second\n",),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>first <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_duplicate_definitions_unused_are_dropped() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("A.\n", "\n", "[^a]: first\n", "\n", "[^a]: second\n",),
+        "<p>A.</p>\n",
+    );
+}
+
+#[test]
+fn footnote_definition_nested_in_definition() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^a] B[^b].\n",
+            "\n",
+            "[^a]: outer\n",
+            "\n",
+            "    [^b]: inner\n",
+        ),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup> B<sup class=\"footnote-ref\"><a href=\"#fn-b\" id=\"fnref-b\" data-footnote-ref>2</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>outer <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn-b\">\n",
+            "<p>inner <a href=\"#fnref-b\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_label_matches_raw_source() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^&#97;] B[^`b`].\n",
+            "\n",
+            "[^a]: plain\n",
+            "[^`b`]: code\n",
+        ),
+        concat!(
+            "<p>A[^a] B<sup class=\"footnote-ref\"><a href=\"#fn-%60b%60\" id=\"fnref-%60b%60\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-%60b%60\">\n",
+            "<p>code <a href=\"#fnref-%60b%60\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_unmatched_label_keeps_inlines() {
+    html_opts!(
+        [extension.footnotes],
+        "A[^*b*] and [^c&amp;].\n",
+        "<p>A[^<em>b</em>] and [^c&amp;].</p>\n",
+    );
+}
+
+#[test]
+fn footnote_numbering_follows_reading_order() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("[^a]: see[^b]\n", "[^b]: bee\n", "\n", "Text[^a].\n",),
+        concat!(
+            "<p>Text<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>see<sup class=\"footnote-ref\"><a href=\"#fn-b\" id=\"fnref-b\" data-footnote-ref>2</a></sup> <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn-b\">\n",
+            "<p>bee <a href=\"#fnref-b\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_unreachable_definitions_are_dropped() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^c].\n",
+            "\n",
+            "[^a]: see[^b]\n",
+            "[^b]: bee\n",
+            "[^c]: sea\n",
+        ),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-c\" id=\"fnref-c\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-c\">\n",
+            "<p>sea <a href=\"#fnref-c\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_empty_definition() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("A[^a].\n", "\n", "[^a]:\n",),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_numbering_with_leave_footnote_definitions() {
+    let mut options = Options::default();
+    options.extension.footnotes = true;
+    options.parse.leave_footnote_definitions = true;
+
+    let arena = Arena::new();
+    let root = parse_document(
+        &arena,
+        "[^u]: see[^b]\n\nA[^a].\n\n[^a]: alpha\n\n[^b]: bee\n",
+        &options,
+    );
+
+    let refs: Vec<_> = root
+        .descendants()
+        .filter_map(|n| match n.data().value {
+            NodeValue::FootnoteReference(ref nfr) => Some((nfr.name.clone(), nfr.ix)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(refs, [("b".to_string(), 2), ("a".to_string(), 1)]);
+}
+
+#[test]
+fn footnote_definition_continues_past_blank_line_in_container() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "> A[^a].\n",
+            ">\n",
+            "> [^a]: First.\n",
+            ">\n",
+            ">     Second.\n",
+        ),
+        concat!(
+            "<blockquote>\n",
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "</blockquote>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>First.</p>\n",
+            "<p>Second. <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_definition_continues_past_line_of_spaces() {
+    html_opts!(
+        [extension.footnotes],
+        "A[^a].\n\n[^a]: First.\n  \n    Second.\n",
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>First.</p>\n",
+            "<p>Second. <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
     );
 }

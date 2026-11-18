@@ -2,6 +2,7 @@ mod cjk;
 
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::ops::Range;
 use std::str;
@@ -1971,111 +1972,34 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
-        let bracket_inl_text = last.inl_text;
-
         if self.options.extension.footnotes
             && !last.bracket_after
-            && bracket_inl_text.next_sibling().is_some_and(|n| {
-                n.data()
-                    .value
-                    .text()
-                    .is_some_and(|t| t.as_bytes().starts_with(b"^"))
-            })
+            && let Some(label) = self.input[last.position..initial_pos - 1].strip_prefix('^')
+            && self.footnote_defs.is_defined(label)
         {
-            let mut text = String::new();
-            let mut sibling_iterator = bracket_inl_text.following_siblings();
+            let bracket_inl_text = last.inl_text;
+            let inl = self.make_inline(
+                NodeValue::FootnoteReference(Box::new(NodeFootnoteReference {
+                    name: label.to_string(),
+                    texts: vec![(format!("^{label}"), label.len() + 1)],
+                    ref_num: 0,
+                    ix: 0,
+                })),
+                initial_pos - 1,
+                initial_pos - 1,
+            );
+            inl.data_mut().sourcepos.start = bracket_inl_text.data().sourcepos.start;
+            bracket_inl_text.insert_before(inl);
 
+            let contents: Vec<_> = bracket_inl_text.following_siblings().collect();
+            for node in contents {
+                node.detach();
+            }
+
+            self.remove_delimiters(last.position);
+            self.brackets.pop();
             self.scanner.pos = initial_pos;
-
-            // Skip the initial node, which holds the `[`
-            sibling_iterator.next().unwrap();
-
-            // The footnote name could have been parsed into multiple text/htmlinline nodes.
-            // For example `[^_foo]` gives `^`, `_`, and `foo`. So pull them together.
-            // Since we're handling the closing bracket, the only siblings at this point are
-            // related to the footnote name.
-            //
-            // This re-construction of the original text value is an awful HACK
-            // we should reconsider.  Can't we go back to the subject and pull
-            // it from there?
-
-            // If there's a non-Text/HtmlInline, such as SoftBreak, don't try to
-            // do anything fancy here at all.
-            let mut sussy = false;
-
-            let mut texts = vec![];
-
-            for sibling in sibling_iterator {
-                let sibling_ast = sibling.data();
-                if sibling_ast.sourcepos.start.line != sibling_ast.sourcepos.end.line
-                    || sibling_ast.sourcepos.end.column < sibling_ast.sourcepos.start.column
-                {
-                    sussy = true;
-                    break;
-                }
-
-                match sibling_ast.value {
-                    NodeValue::Text(ref literal) => {
-                        text.push_str(literal);
-                        texts.push((
-                            literal.to_string(),
-                            sibling_ast.sourcepos.end.column - sibling_ast.sourcepos.start.column
-                                + 1,
-                        ));
-                    }
-                    NodeValue::HtmlInline(ref literal) => {
-                        text.push_str(literal);
-                        texts.push((
-                            literal.to_string(),
-                            sibling_ast.sourcepos.end.column - sibling_ast.sourcepos.start.column
-                                + 1,
-                        ));
-                    }
-                    _ => {
-                        sussy = true;
-                        break;
-                    }
-                };
-            }
-
-            if !sussy && text.len() > 1 {
-                let inl = self.make_inline(
-                    NodeValue::FootnoteReference(Box::new(NodeFootnoteReference {
-                        name: text[1..].to_string(),
-                        texts,
-                        ref_num: 0,
-                        ix: 0,
-                    })),
-                    // Overridden immediately below.
-                    self.scanner.pos,
-                    self.scanner.pos,
-                );
-                inl.data_mut().sourcepos.start.column =
-                    bracket_inl_text.data().sourcepos.start.column;
-                inl.data_mut().sourcepos.end.column = usize::try_from(
-                    self.scanner.pos as isize + self.column_offset + self.line_offset as isize,
-                )
-                .unwrap();
-                bracket_inl_text.insert_before(inl);
-
-                // detach all the nodes, including bracket_inl_text
-                sibling_iterator = bracket_inl_text.following_siblings();
-                for sibling in sibling_iterator {
-                    match sibling.data().value {
-                        NodeValue::Text(_) | NodeValue::HtmlInline(_) => {
-                            sibling.detach();
-                        }
-                        _ => {}
-                    };
-                }
-
-                // We don't need to process emphasis for footnote names, so cleanup
-                // any outstanding delimiters
-                self.remove_delimiters(last.position);
-
-                self.brackets.pop();
-                return None;
-            }
+            return None;
         }
 
         self.brackets.pop();
@@ -2565,6 +2489,7 @@ fn size_with_nul_replaced(s: &str) -> usize {
 pub struct FootnoteDefs<'a> {
     defs: Vec<Node<'a>>,
     next: usize,
+    labels: HashSet<String>,
 }
 
 impl<'a> FootnoteDefs<'a> {
@@ -2572,7 +2497,18 @@ impl<'a> FootnoteDefs<'a> {
         Self {
             defs: Vec::new(),
             next: 1,
+            labels: HashSet::new(),
         }
+    }
+
+    pub fn define_label(&mut self, label: &str) {
+        self.labels
+            .insert(strings::normalize_label(label, Case::Fold));
+    }
+
+    pub fn is_defined(&self, label: &str) -> bool {
+        self.labels
+            .contains(&strings::normalize_label(label, Case::Fold))
     }
 
     pub fn next_name(&mut self) -> String {
