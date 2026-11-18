@@ -325,10 +325,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 let mut wikilink_inl = None;
 
-                if self.options.extension.wikilinks().is_some()
-                    && self.brackets.is_empty()
-                    && self.peek_byte() == Some(b'[')
-                {
+                if self.options.extension.wikilinks().is_some() && self.peek_byte() == Some(b'[') {
                     wikilink_inl = self.handle_wikilink(false, line_offsets);
                 }
 
@@ -352,7 +349,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let mut wikilink_inl = None;
                 if self.options.extension.wikilinks().is_some()
                     && !self.options.extension.wikilinks_ignore_embeds
-                    && self.brackets.is_empty()
                     && self.peek_byte() == Some(b'[')
                     && self.peek_byte_n(1) == Some(b'[')
                 {
@@ -1031,6 +1027,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
             self.append_wikilink_label(inl, component.label, range_start, parent_line_offsets);
             self.adjust_node_newlines(inl, self.scanner.pos - range_start, 0, parent_line_offsets);
+            self.no_link_openers = true;
 
             Some(inl)
         } else {
@@ -1058,7 +1055,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if self.peek_byte() == Some(b']') && self.peek_byte_n(1) == Some(b']') {
             self.scanner.pos += 2;
             return Some(WikilinkComponents {
-                url: self.input[left.clone()].to_string(),
+                url: self.input[left.clone()].replace('\n', " "),
                 label: left,
             });
         } else if self.peek_byte() != Some(b'|') {
@@ -1085,7 +1082,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 None => unreachable!(),
             };
             Some(WikilinkComponents {
-                url: self.input[url].to_string(),
+                url: self.input[url].replace('\n', " "),
                 label,
             })
         } else {
