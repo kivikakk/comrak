@@ -246,13 +246,47 @@ fn commonmark_latex_math_with_dollars_enabled(markdown: &str, cm: &str) {
     commonmark(markdown, cm, Some(&options));
 }
 
-#[test_case("This [[url]] that", "This [[url|url]] that\n")]
-#[test_case("This [[url|link label]] that", "This [[url|link%20label]] that\n")]
+#[test_case("This [[url]] that", "This [[url]] that\n")]
+#[test_case("This [[url|link label]] that", "This [[url|link label]] that\n")]
+#[test_case("[[a\\|b|c\\]d]]", "[[a\\|b|c\\]d]]\n")]
+#[test_case("[[a&amp;amp;b]] [[a\\b]]", "[[a&amp;amp;b]] [[a\\\\b]]\n")]
+#[test_case("[[a\nb|c\nd]]", "[[a&#10;b|c d]]\n")]
+#[test_case("![[a|b]]", "![[a|b]]\n")]
 fn commonmark_wikilinks(markdown: &str, cm: &str) {
     let mut options = Options::default();
     options.extension.wikilinks_title_before_pipe = true;
 
     commonmark(markdown, cm, Some(&options));
+}
+
+#[test_case("This [[url]] that", "This [[url]] that\n")]
+#[test_case("[[url|link label]]", "[[url|link label]]\n")]
+#[test_case("[[a\\|b|c\\]d]]", "[[a\\|b|c\\]d]]\n")]
+#[test_case("[[a\nb|c\nd]]", "[[a b|c&#10;d]]\n")]
+#[test_case("[[a|b *c*]]", "[[a|b \\*c\\*]]\n")]
+fn commonmark_wikilinks_title_after_pipe(markdown: &str, cm: &str) {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+
+    commonmark(markdown, cm, Some(&options));
+}
+
+#[test]
+fn commonmark_wikilinks_in_table() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+    options.extension.table = true;
+
+    commonmark(
+        "| a |\n| - |\n| [[b\\|c]] [[d]] |\n",
+        "| a |\n| --- |\n| [[b\\|c]] [[d]] |\n",
+        Some(&options),
+    );
+}
+
+#[test]
+fn commonmark_link_url_control_character() {
+    commonmark("[x](<a\tb>)\n", "[x](a%09b)\n", None);
 }
 #[test]
 fn commonmark_relist() {

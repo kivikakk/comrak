@@ -105,6 +105,7 @@ enum Escaping {
     Normal,
     Url,
     Title,
+    WikilinkUrl,
 }
 
 impl Write for CommonMarkFormatter<'_, '_, '_, '_> {
@@ -349,12 +350,20 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                         || c == ')'
                         || c == '('))
                 || (escaping == Escaping::Title
-                    && (c == '`' || c == '<' || c == '>' || c == '"' || c == '\\')));
+                    && (c == '`' || c == '<' || c == '>' || c == '"' || c == '\\'))
+                || (escaping == Escaping::WikilinkUrl
+                    && (c == '\\'
+                        || c == '['
+                        || c == ']'
+                        || c == '|'
+                        || (c == '&' && (isalpha(nextb) || nextb == b'#')))));
 
         if needs_escaping {
             // (c as u64) < 256 is implied.
-            let out = if escaping == Escaping::Url && isspace_char(c) {
-                format!("%{:2X}", c as u8)
+            let out = if escaping == Escaping::WikilinkUrl && c == '&' {
+                "&amp;".to_string()
+            } else if escaping == Escaping::Url && isspace_char(c) {
+                format!("%{:02X}", c as u8)
             } else if c == '[' && self.options.extension.math_latex {
                 "&#91;".to_string()
             } else if ispunct_char(c) {
@@ -544,7 +553,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
             NodeValue::Math(ref math) => self.format_math(math, node, entering)?,
             NodeValue::MathBlock(ref math) => self.format_math_block(node, math, entering)?,
-            NodeValue::WikiLink(ref nl) => self.format_wikilink(nl, entering)?,
+            NodeValue::WikiLink(ref nl) => return self.format_wikilink(node, nl, entering),
             NodeValue::Underline => self.format_underline()?,
             NodeValue::Subscript => self.format_subscript()?,
             NodeValue::SpoileredText => self.format_spoiler()?,
@@ -1183,25 +1192,48 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(true)
     }
 
-    fn format_wikilink(&mut self, nl: &NodeWikiLink, entering: bool) -> fmt::Result {
+    fn format_wikilink(
+        &mut self,
+        node: Node<'a>,
+        nl: &NodeWikiLink,
+        entering: bool,
+    ) -> Result<bool, fmt::Error> {
+        let in_table = node
+            .ancestors()
+            .any(|ancestor| node_matches!(ancestor, NodeValue::Table(..)));
+        let title_is_url = node.first_child().is_some_and(|child| {
+            child.next_sibling().is_none()
+                && matches!(child.data().value, NodeValue::Text(ref t) if *t == nl.url)
+        });
         if entering {
             if nl.embed {
                 write!(self, "!")?;
             }
             write!(self, "[[")?;
+            if title_is_url {
+                self.output(&nl.url, false, Escaping::WikilinkUrl)?;
+                write!(self, "]]")?;
+                return Ok(false);
+            }
+            if !in_table {
+                self.custom_escape = Some(wikilink_title_escape);
+            }
             if self.options.extension.wikilinks() == Some(WikiLinksMode::UrlFirst) {
-                self.output(&nl.url, false, Escaping::Url)?;
-                write!(self, "|").unwrap();
+                self.output(&nl.url, false, Escaping::WikilinkUrl)?;
+                write!(self, "|")?;
             }
         } else {
             if self.options.extension.wikilinks() == Some(WikiLinksMode::TitleFirst) {
                 write!(self, "|")?;
-                self.output(&nl.url, false, Escaping::Url)?;
+                self.output(&nl.url, false, Escaping::WikilinkUrl)?;
             }
             write!(self, "]]")?;
+            if !in_table {
+                self.custom_escape = None;
+            }
         }
 
-        Ok(())
+        Ok(true)
     }
 
     fn format_image(&mut self, nl: &NodeLink, entering: bool) -> fmt::Result {
@@ -1568,6 +1600,10 @@ fn is_autolink(node: Node<'_>, nl: &NodeLink) -> bool {
     };
 
     trim_start_match(&nl.url, "mailto:") == link_text
+}
+
+fn wikilink_title_escape(node: Node<'_>, c: char) -> bool {
+    c == '|' && !node_matches!(node, NodeValue::WikiLink(..) | NodeValue::Escaped)
 }
 
 fn table_escape(node: Node<'_>, c: char) -> bool {

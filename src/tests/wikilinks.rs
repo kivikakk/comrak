@@ -8,14 +8,12 @@ fn wikilinks_does_not_unescape_html_entities_in_link_label() {
         [extension.wikilinks_title_after_pipe],
         "This is [[&lt;script&gt;alert(0)&lt;/script&gt;|a &lt;link]]",
         "<p>This is <a href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n",
-        no_roundtrip,
     );
 
     html_opts!(
         [extension.wikilinks_title_before_pipe],
         "This is [[a &lt;link|&lt;script&gt;alert(0)&lt;/script&gt;]]",
         "<p>This is <a href=\"%3Cscript%3Ealert(0)%3C/script%3E\" data-wikilink=\"true\">a &lt;link</a></p>\n",
-        no_roundtrip,
     );
 }
 
@@ -636,5 +634,50 @@ fn sourcepos_escape_on_a_later_line() {
                 (text (2:5-2:6) " x")
             ])
         ])
+    );
+}
+
+#[test]
+fn wikilinks_after_unclosed_bracket() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "[ see [[a]] and [[[b]]]",
+        concat!(
+            "<p>[ see <a href=\"a\" data-wikilink=\"true\">a</a> and ",
+            "[<a href=\"b\" data-wikilink=\"true\">b</a>]</p>\n",
+        ),
+    );
+}
+
+#[test]
+fn wikilinks_deactivate_link_openers() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "[a [[b]] c](/u) [d ![[e]] f](/v)",
+        concat!(
+            "<p>[a <a href=\"b\" data-wikilink=\"true\">b</a> c](/u) ",
+            "[d <a href=\"e\" data-wikilink=\"true\">e</a> f](/v)</p>\n",
+        ),
+    );
+}
+
+#[test]
+fn wikilinks_in_image_description() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "![a [[b]]](c)",
+        "<p><img src=\"c\" alt=\"a b\" /></p>\n",
+    );
+}
+
+#[test]
+fn wikilinks_url_line_endings_become_spaces() {
+    html_opts!(
+        [extension.wikilinks_title_after_pipe],
+        "[[a\nb]] [[c\nd|e\nf]]",
+        concat!(
+            "<p><a href=\"a%20b\" data-wikilink=\"true\">a\nb</a> ",
+            "<a href=\"c%20d\" data-wikilink=\"true\">e\nf</a></p>\n",
+        ),
     );
 }
