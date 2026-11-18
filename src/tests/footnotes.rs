@@ -1,3 +1,5 @@
+use pretty_assertions::assert_eq;
+
 use super::*;
 
 #[test]
@@ -483,4 +485,72 @@ fn footnote_unmatched_label_keeps_inlines() {
         "A[^*b*] and [^c&amp;].\n",
         "<p>A[^<em>b</em>] and [^c&amp;].</p>\n",
     );
+}
+
+#[test]
+fn footnote_numbering_follows_reading_order() {
+    html_opts!(
+        [extension.footnotes],
+        concat!("[^a]: see[^b]\n", "[^b]: bee\n", "\n", "Text[^a].\n",),
+        concat!(
+            "<p>Text<sup class=\"footnote-ref\"><a href=\"#fn-a\" id=\"fnref-a\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-a\">\n",
+            "<p>see<sup class=\"footnote-ref\"><a href=\"#fn-b\" id=\"fnref-b\" data-footnote-ref>2</a></sup> <a href=\"#fnref-a\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "<li id=\"fn-b\">\n",
+            "<p>bee <a href=\"#fnref-b\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"2\" aria-label=\"Back to reference 2\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_unreachable_definitions_are_dropped() {
+    html_opts!(
+        [extension.footnotes],
+        concat!(
+            "A[^c].\n",
+            "\n",
+            "[^a]: see[^b]\n",
+            "[^b]: bee\n",
+            "[^c]: sea\n",
+        ),
+        concat!(
+            "<p>A<sup class=\"footnote-ref\"><a href=\"#fn-c\" id=\"fnref-c\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-c\">\n",
+            "<p>sea <a href=\"#fnref-c\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn footnote_numbering_with_leave_footnote_definitions() {
+    let mut options = Options::default();
+    options.extension.footnotes = true;
+    options.parse.leave_footnote_definitions = true;
+
+    let arena = Arena::new();
+    let root = parse_document(
+        &arena,
+        "[^u]: see[^b]\n\nA[^a].\n\n[^a]: alpha\n\n[^b]: bee\n",
+        &options,
+    );
+
+    let refs: Vec<_> = root
+        .descendants()
+        .filter_map(|n| match n.data().value {
+            NodeValue::FootnoteReference(ref nfr) => Some((nfr.name.clone(), nfr.ix)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(refs, [("b".to_string(), 2), ("a".to_string(), 1)]);
 }
