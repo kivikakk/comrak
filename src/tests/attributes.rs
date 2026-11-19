@@ -72,6 +72,28 @@ fn fenced_code_with_attrs() {
 }
 
 #[test]
+fn fenced_code_attrs_are_literal_source() {
+    html_opts!(
+        [
+            extension.fenced_code_attributes,
+            render.attributes,
+            render.r#unsafe
+        ],
+        concat!(
+            "```rust \\{#x}\nz\n```\n",
+            "```rust &#123;#y}\nz\n```\n",
+            "```rust {k=\"a\\\"b&amp;c\"}\nz\n```\n",
+        ),
+        concat!(
+            "<pre><code class=\"language-rust\">z\n</code></pre>\n",
+            "<pre><code class=\"language-rust\">z\n</code></pre>\n",
+            "<pre k=\"a&quot;b&amp;c\"><code class=\"language-rust\">z\n</code></pre>\n",
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
 fn inline_code_with_attrs() {
     assert_ast_match!(
         [extension.inline_code_attributes],
