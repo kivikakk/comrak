@@ -1,5 +1,6 @@
 use std::mem;
 
+use crate::entity;
 use crate::nodes::Attributes;
 
 #[derive(Default)]
@@ -31,12 +32,16 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
 
     let mut state = State::Betwixt;
     let mut attrs = Attributes::default();
+    let mut skip_to = 0;
 
     // We permit ' ' | '\t' | '\r' | '\n' between/around attributes in the braces.
     // Is ASCII whitespace also '\v' | '\f'? Does anyone mind?
 
     loop {
         let (i, c) = ci.next()?;
+        if i < skip_to {
+            continue;
+        }
 
         loop {
             match state {
@@ -49,7 +54,7 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         state = State::Value(Kind::Class, String::new(), Quote::Bare);
                         break;
                     }
-                    'a'..='z' | 'A'..='Z' => {
+                    'a'..='z' | 'A'..='Z' | '_' | ':' => {
                         state = State::Key(c.to_string());
                         break;
                     }
@@ -62,6 +67,14 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         state = State::Value(mem::take(kind), mem::take(value), Quote::Quoted);
                         break;
                     }
+                    ' ' | '\t' | '\r' | '\n' | '}' => {
+                        if value.is_empty() {
+                            return None;
+                        }
+                        parse_attribute_value(kind, value, &mut attrs);
+                        state = State::Betwixt;
+                        // handle in loop
+                    }
                     // An id can contain [literally anything] in HTML5, just so long as it's non-empty.
                     // Consider looking at how Pandoc parses this part.
                     // Per above, classes are also literally anything, *except* ASCII whitespace.
@@ -73,13 +86,13 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         value.push(c);
                         break;
                     }
-                    ' ' | '\t' | '\r' | '\n' | '}' => {
-                        if value.is_empty() {
-                            return None;
-                        }
-                        parse_attribute_value(kind, value, &mut attrs);
-                        state = State::Betwixt;
-                        // handle in loop
+                    '&' if matches!(kind, Kind::Pair(_)) => {
+                        skip_to = push_entity(input, i, value);
+                        break;
+                    }
+                    _ if matches!(kind, Kind::Pair(_)) && is_unquoted_value_char(c) => {
+                        value.push(c);
+                        break;
                     }
                     _ => return None,
                 },
@@ -92,6 +105,10 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                     '\\' => {
                         state =
                             State::Value(mem::take(kind), mem::take(value), Quote::QuotedEscaped);
+                        break;
+                    }
+                    '&' => {
+                        skip_to = push_entity(input, i, value);
                         break;
                     }
                     _ => {
@@ -133,12 +150,58 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
     }
 }
 
+fn is_unquoted_value_char(c: char) -> bool {
+    !c.is_whitespace() && !matches!(c, '"' | '\'' | '=' | '<' | '>' | '`' | '}')
+}
+
+fn push_entity(input: &str, i: usize, value: &mut String) -> usize {
+    match entity::unescape(&input[i + 1..]) {
+        Some((decoded, len)) => {
+            value.push_str(&decoded);
+            i + 1 + len
+        }
+        None => {
+            value.push('&');
+            i + 1
+        }
+    }
+}
+
 fn parse_attribute_value(kind: &mut Kind, value: &mut String, attrs: &mut Attributes) {
     match kind {
         Kind::Id => attrs.id = Some(mem::take(value)),
-        Kind::Class => attrs.classes.push(mem::take(value)),
-        Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
+        Kind::Class => add_class(attrs, mem::take(value)),
+        Kind::Pair(key) => set_pair(attrs, mem::take(key), mem::take(value)),
     };
+}
+
+fn add_class(attrs: &mut Attributes, class: String) {
+    if !class.is_empty() {
+        attrs.classes.push(class);
+    }
+}
+
+fn set_pair(attrs: &mut Attributes, key: String, value: String) {
+    if key.eq_ignore_ascii_case("id") {
+        attrs.id = Some(value);
+    } else if key.eq_ignore_ascii_case("class") {
+        add_class(attrs, value);
+    } else {
+        attrs.pairs.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
+        attrs.pairs.push((key, value));
+    }
+}
+
+pub fn merge(into: &mut Attributes, from: Attributes) {
+    if from.id.is_some() {
+        into.id = from.id;
+    }
+    for class in from.classes {
+        add_class(into, class);
+    }
+    for (key, value) in from.pairs {
+        set_pair(into, key, value);
+    }
 }
 
 /// Use this only in contexts where there can *not* be any following text
@@ -178,13 +241,11 @@ pub fn parse_off(content: &mut String) -> Option<Attributes> {
                         break;
                     }
                     '{' => {
-                        let (attrs, j) = parse(&content[i..])?;
-
-                        // We can't transition into Within without setting `end`.
-                        // If these don't match up, something is Bad.
-                        if i + j != end.unwrap() {
-                            return None;
-                        }
+                        let Some((attrs, _)) =
+                            parse(&content[i..]).filter(|&(_, j)| i + j == end.unwrap())
+                        else {
+                            break;
+                        };
 
                         // Either there's nothing left (fine!) ORRRRR there's *at least*
                         // one (but possibly multiple) whitespace, which we truncate.
@@ -330,6 +391,76 @@ mod tests {
         );
     }
 
+    fn pairs(pairs: &[(&str, &str)]) -> Option<Attributes> {
+        Some(Attributes {
+            pairs: pairs
+                .iter()
+                .map(|&(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            ..Default::default()
+        })
+    }
+
+    #[test]
+    fn unquoted_values() {
+        let parsed = |input| parse(input).map(|(attrs, _)| attrs);
+        assert_eq!(parsed("{k=a/b+c#d}"), pairs(&[("k", "a/b+c#d")]));
+        assert_eq!(parsed("{k=café}"), pairs(&[("k", "café")]));
+        assert_eq!(parsed("{k=a{b\\c}"), pairs(&[("k", "a{b\\c")]));
+        assert_eq!(parsed("{k=a\'b}"), None);
+        assert_eq!(parsed("{k=a\"b}"), None);
+        assert_eq!(parsed("{k=a<b}"), None);
+        assert_eq!(parsed("{k=a`b}"), None);
+        assert_eq!(parsed("{k=a=b}"), None);
+        assert_eq!(parsed("{#a/b}"), None);
+        assert_eq!(parsed("{.a/b}"), None);
+    }
+
+    #[test]
+    fn keys() {
+        let parsed = |input| parse(input).map(|(attrs, _)| attrs);
+        assert_eq!(parsed("{_k=v :l=w}"), pairs(&[("_k", "v"), (":l", "w")]));
+        assert_eq!(parsed("{1k=v}"), None);
+        assert_eq!(parsed("{-k=v}"), None);
+    }
+
+    #[test]
+    fn entities() {
+        let parsed = |input| parse(input).map(|(attrs, _)| attrs);
+        assert_eq!(parsed("{k=a&amp;b}"), pairs(&[("k", "a&b")]));
+        assert_eq!(parsed("{k=\"v&#97;lue\"}"), pairs(&[("k", "value")]));
+        assert_eq!(parsed("{k=\"\\&amp;\"}"), pairs(&[("k", "&amp;")]));
+        assert_eq!(parsed("{k=a&b}"), pairs(&[("k", "a&b")]));
+        assert_eq!(
+            parsed("{#\"a&amp;b\"}"),
+            Some(Attributes {
+                id: Some("a&b".to_string()),
+                ..Default::default()
+            })
+        );
+        assert_eq!(parsed("{#a&amp;b}"), None);
+    }
+
+    #[test]
+    fn conflicts() {
+        let parsed = |input| parse(input).map(|(attrs, _)| attrs);
+        assert_eq!(
+            parsed("{#a id=b k=1 K=2 .c class=\"d e\" class=\"\"}"),
+            Some(Attributes {
+                id: Some("b".to_string()),
+                classes: vec!["c".to_string(), "d e".to_string()],
+                pairs: vec![("K".to_string(), "2".to_string())],
+            })
+        );
+        assert_eq!(
+            parsed("{ID=a #b}"),
+            Some(Attributes {
+                id: Some("b".to_string()),
+                ..Default::default()
+            })
+        );
+    }
+
     fn assert_parse_off(input: &str, expected_str: &str, expected_attrs: Option<Attributes>) {
         let mut s = input.to_string();
         let attrs = parse_off(&mut s);
@@ -350,6 +481,8 @@ mod tests {
         );
 
         assert_parse_off("Well!{#yay}", "Well!{#yay}", None);
+
+        assert_parse_off("hi {k=a{b}", "hi", pairs(&[("k", "a{b")]));
 
         assert_parse_off(
             "Well! {#okay} {Not really.}",

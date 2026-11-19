@@ -1,19 +1,12 @@
 ---
-title: Attributes
-draft: true
+title: Render attributes
 ---
 
-```````````````````````````````` example -e link-attributes --attributes --unsafe
-![Comrak](comrak.png){width=100 .logo}
-.
-<p><img src="comrak.png" alt="Comrak" class="logo" width="100" /></p>
-````````````````````````````````
+`--attributes` (`render.attributes`) includes parsed [attributes](../extensions/attributes.html) in HTML output.  It has no effect without `--unsafe` too, since any attribute can be turned against the page it's on, and none unless at least one attributes extension is enabled.
 
-```````````````````````````````` example -e link-attributes --attributes
-![Comrak](comrak.png){width=100 .logo}
-.
-<p><img src="comrak.png" alt="Comrak" /></p>
-````````````````````````````````
+For the full rules, see [Render attributes](../extensions/attributes.html#render-attributes).
+
+Without the option, Comrak parses attribute blocks but writes no attributes:
 
 ```````````````````````````````` example -e link-attributes --unsafe
 ![Comrak](comrak.png){width=100 .logo}
@@ -21,8 +14,10 @@ draft: true
 <p><img src="comrak.png" alt="Comrak" /></p>
 ````````````````````````````````
 
+With the option, it writes them:
+
 ```````````````````````````````` example -e link-attributes --attributes --unsafe
-[Comrak](https://comrak.ee "Home"){#home href="https://example.com"}
+![Comrak](comrak.png){width=100 .logo}
 .
-<p><a href="https://comrak.ee" title="Home" id="home" href="https://example.com">Comrak</a></p>
+<p><img src="comrak.png" alt="Comrak" class="logo" width="100" /></p>
 ````````````````````````````````

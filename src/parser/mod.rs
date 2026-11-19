@@ -2623,17 +2623,20 @@ where
                         pos += 1;
                     }
 
-                    let mut info = entity::unescape_html(&content[..pos]);
-                    strings::trim_cow(&mut info);
-                    let mut info = info.into_owned();
-                    strings::unescape(&mut info);
+                    #[cfg_attr(not(feature = "attributes"), allow(unused_mut))]
+                    let mut raw_info = content[..pos].to_string();
 
                     #[cfg(feature = "attributes")]
                     if self.options.extension.fenced_code_attributes
-                        && let Some(attrs) = attributes::parse_off(&mut info)
+                        && let Some(attrs) = attributes::parse_off(&mut raw_info)
                     {
                         ast.attrs = Some(Box::new(attrs));
                     }
+
+                    let mut info = entity::unescape_html(&raw_info);
+                    strings::trim_cow(&mut info);
+                    let mut info = info.into_owned();
+                    strings::unescape(&mut info);
 
                     if info.is_empty() {
                         ncb.info = self

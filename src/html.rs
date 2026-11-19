@@ -462,7 +462,7 @@ pub fn render_sourcepos<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Res
 /// nothing is written.
 #[cfg(feature = "attributes")]
 pub fn render_attributes<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Result {
-    write_attributes(context, node, true)
+    write_attributes(context, node, &[])
 }
 
 #[cfg(feature = "attributes")]
@@ -471,7 +471,7 @@ fn attributes_enabled<T>(context: &Context<T>) -> bool {
 }
 
 #[cfg(feature = "attributes")]
-fn write_attributes<T>(context: &mut Context<T>, node: Node<'_>, with_id: bool) -> fmt::Result {
+fn write_attributes<T>(context: &mut Context<T>, node: Node<'_>, written: &[&str]) -> fmt::Result {
     if !attributes_enabled(context) {
         return Ok(());
     }
@@ -479,22 +479,37 @@ fn write_attributes<T>(context: &mut Context<T>, node: Node<'_>, with_id: bool) 
     let Some(attrs) = &ast.attrs else {
         return Ok(());
     };
-    if with_id && let Some(id) = &attrs.id {
+    let taken = |name: &str| written.iter().any(|w| w.eq_ignore_ascii_case(name));
+    if !taken("id")
+        && let Some(id) = &attrs.id
+    {
         context.write_str(" id=\"")?;
         context.escape(id)?;
         context.write_str("\"")?;
     }
-    if !attrs.classes.is_empty() {
+    if !taken("class") && !attrs.classes.is_empty() {
         context.write_str(" class=\"")?;
         context.escape(&attrs.classes.join(" "))?;
         context.write_str("\"")?;
     }
     for (key, value) in &attrs.pairs {
+        if taken(key) {
+            continue;
+        }
         write!(context, " {key}=\"")?;
         context.escape(value)?;
         context.write_str("\"")?;
     }
     Ok(())
+}
+
+#[cfg(feature = "attributes")]
+fn written_with_sourcepos<'n, T>(context: &Context<T>, names: &[&'n str]) -> Vec<&'n str> {
+    let mut written = names.to_vec();
+    if context.options.render.sourcepos {
+        written.push("data-sourcepos");
+    }
+    written
 }
 
 #[cfg(feature = "attributes")]
@@ -666,7 +681,7 @@ fn render_code<T>(
         context.write_str("<code")?;
         render_sourcepos(context, node)?;
         #[cfg(feature = "attributes")]
-        render_attributes(context, node)?;
+        write_attributes(context, node, &written_with_sourcepos(context, &[]))?;
         context.write_str(">")?;
         context.escape(&nc.literal)?;
         context.write_str("</code>")?;
@@ -820,11 +835,13 @@ fn render_heading<T>(
                 render_block_id(context, node)?;
                 render_sourcepos(context, node)?;
                 #[cfg(feature = "attributes")]
-                write_attributes(
-                    context,
-                    node,
-                    context.options.extension.header_id_prefix.is_none(),
-                )?;
+                {
+                    let id_written = context.options.extension.header_id_prefix.is_some()
+                        || block_id(context.options, node).is_some();
+                    let written =
+                        written_with_sourcepos(context, if id_written { &["id"] } else { &[] });
+                    write_attributes(context, node, &written)?;
+                }
                 context.write_str(">")?;
             } else {
                 if let Some(prefix) = &context.options.extension.header_id_prefix {
@@ -975,7 +992,14 @@ fn render_image<T>(
         }
         context.write_str("\"")?;
         #[cfg(feature = "attributes")]
-        render_attributes(context, node)?;
+        {
+            let names: &[&str] = if nl.title.is_empty() {
+                &["src", "alt"]
+            } else {
+                &["src", "alt", "title"]
+            };
+            write_attributes(context, node, &written_with_sourcepos(context, names))?;
+        }
         context.write_str(" />")?;
         if context.options.render.figure_with_caption {
             if !nl.title.is_empty() {
@@ -1053,7 +1077,14 @@ fn render_link<T>(
             }
             context.write_str("\"")?;
             #[cfg(feature = "attributes")]
-            render_attributes(context, node)?;
+            {
+                let names: &[&str] = if nl.title.is_empty() {
+                    &["href"]
+                } else {
+                    &["href", "title"]
+                };
+                write_attributes(context, node, &written_with_sourcepos(context, names))?;
+            }
             context.write_str(">")?;
         } else {
             context.write_str("</a>")?;
