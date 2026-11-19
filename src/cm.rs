@@ -220,6 +220,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 // nvm
             } else if last_crs_consume > 0 {
                 last_crs_consume -= 1;
+                if self.need_cr > 1 {
+                    self.write_prefix()?;
+                    self.column = self.prefix.len();
+                }
             } else {
                 self.write("\n")?;
                 if self.need_cr > 1 {
