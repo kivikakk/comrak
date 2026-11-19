@@ -28,7 +28,7 @@ fn heading_with_attrs() {
         [extension.header_attributes],
         "## Yeww ## {x=y x=y #a #b}\n",
         (document (1:1-1:26) [
-            (heading (1:1-1:26) {#b x="y" x="y"} [
+            (heading (1:1-1:26) {#b x="y"} [
                 (text (1:4-1:10) "Yeww ##")
             ])
         ])
@@ -39,7 +39,7 @@ fn heading_with_attrs() {
         "Yeww {x=y x=y #a #b}\n"
         "====================\n",
         (document (1:1-2:20) [
-            (heading (1:1-2:20) {#b x="y" x="y"} [
+            (heading (1:1-2:20) {#b x="y"} [
                 (text (1:1-1:4) "Yeww")
             ])
         ])
@@ -189,6 +189,25 @@ fn render_inline_attrs() {
         ],
         "[a](u \"t\"){#i .c .d k=v} ![b](s \"t\"){.c k=\"v w\"} `x`{#y .c}\n",
         "<p><a href=\"u\" title=\"t\" id=\"i\" class=\"c d\" k=\"v\">a</a> <img src=\"s\" alt=\"b\" title=\"t\" class=\"c\" k=\"v w\" /> <code id=\"y\" class=\"c\">x</code></p>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_consecutive_inline_attrs() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            extension.inline_code_attributes,
+            render.attributes,
+            render.r#unsafe,
+            render.sourcepos
+        ],
+        "`x`{#a .b}{.c #d k=1}{k=2} [y](u){.e}\n{.f}\n",
+        concat!(
+            "<p data-sourcepos=\"1:1-2:4\"><code data-sourcepos=\"1:1-1:26\" id=\"d\" class=\"b c\" k=\"2\">x</code> ",
+            "<a data-sourcepos=\"1:28-1:37\" href=\"u\" class=\"e\">y</a>\n{.f}</p>\n"
+        ),
         no_roundtrip,
     );
 }

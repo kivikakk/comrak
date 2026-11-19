@@ -170,9 +170,38 @@ fn push_entity(input: &str, i: usize, value: &mut String) -> usize {
 fn parse_attribute_value(kind: &mut Kind, value: &mut String, attrs: &mut Attributes) {
     match kind {
         Kind::Id => attrs.id = Some(mem::take(value)),
-        Kind::Class => attrs.classes.push(mem::take(value)),
-        Kind::Pair(key) => attrs.pairs.push((mem::take(key), mem::take(value))),
+        Kind::Class => add_class(attrs, mem::take(value)),
+        Kind::Pair(key) => set_pair(attrs, mem::take(key), mem::take(value)),
     };
+}
+
+fn add_class(attrs: &mut Attributes, class: String) {
+    if !class.is_empty() {
+        attrs.classes.push(class);
+    }
+}
+
+fn set_pair(attrs: &mut Attributes, key: String, value: String) {
+    if key.eq_ignore_ascii_case("id") {
+        attrs.id = Some(value);
+    } else if key.eq_ignore_ascii_case("class") {
+        add_class(attrs, value);
+    } else {
+        attrs.pairs.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
+        attrs.pairs.push((key, value));
+    }
+}
+
+pub fn merge(into: &mut Attributes, from: Attributes) {
+    if from.id.is_some() {
+        into.id = from.id;
+    }
+    for class in from.classes {
+        add_class(into, class);
+    }
+    for (key, value) in from.pairs {
+        set_pair(into, key, value);
+    }
 }
 
 /// Use this only in contexts where there can *not* be any following text
@@ -410,6 +439,26 @@ mod tests {
             })
         );
         assert_eq!(parsed("{#a&amp;b}"), None);
+    }
+
+    #[test]
+    fn conflicts() {
+        let parsed = |input| parse(input).map(|(attrs, _)| attrs);
+        assert_eq!(
+            parsed("{#a id=b k=1 K=2 .c class=\"d e\" class=\"\"}"),
+            Some(Attributes {
+                id: Some("b".to_string()),
+                classes: vec!["c".to_string(), "d e".to_string()],
+                pairs: vec![("K".to_string(), "2".to_string())],
+            })
+        );
+        assert_eq!(
+            parsed("{ID=a #b}"),
+            Some(Attributes {
+                id: Some("b".to_string()),
+                ..Default::default()
+            })
+        );
     }
 
     fn assert_parse_off(input: &str, expected_str: &str, expected_attrs: Option<Attributes>) {

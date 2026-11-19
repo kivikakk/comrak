@@ -49,7 +49,7 @@ Yeww {x=y x=y #a #b}
 ```````````````````````````````` example -e header-attributes --attributes --unsafe
 ## Yeww ## {x=y x=y #a #b}
 .
-<h2 id="b" x="y" x="y">Yeww ##</h2>
+<h2 id="b" x="y">Yeww ##</h2>
 ````````````````````````````````
 
 ```````````````````````````````` example -e header-attributes --header-id-prefix user-content- --attributes --unsafe
