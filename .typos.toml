@@ -8,4 +8,7 @@ extend-ignore-re = [
 
   # it's german
   "egal",
+
+  # u drink it :)
+  "caf",
 ]
