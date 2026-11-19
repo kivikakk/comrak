@@ -1,5 +1,6 @@
 ---
-title: Ignore empty links (draft)
+title: Ignore empty links
+draft: true
 ---
 
 ```````````````````````````````` example

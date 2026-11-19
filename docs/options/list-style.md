@@ -1,5 +1,6 @@
 ---
-title: CommonMark list style (draft)
+title: CommonMark list style
+draft: true
 ---
 
 ```````````````````````````````` example

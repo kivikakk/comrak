@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use comrak::markdown_to_html_with_plugins;
-use comrak_www::{Doc, SNAP, escape, page_options, plugins};
+use comrak_www::{Doc, SNAP, escape, page_options, plugins, render_with_slots};
 use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
 
@@ -103,10 +103,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     let landing = fs::read_to_string(www_dir.join("docs.md"))?;
+    let (drafts, finished): (Vec<&Doc>, Vec<&Doc>) = docs.iter().partition(|doc| doc.draft);
     let body = format!(
-        "<nav class=\"breadcrumb\"><a href=\"/\">Comrak</a> / Docs</nav>\n{}{}",
-        markdown_to_html_with_plugins(&landing, &page_options(), &plugins()),
-        docs_nav(&docs, None)?,
+        "<nav class=\"breadcrumb\"><a href=\"/\">Comrak</a> / Docs</nav>\n{}",
+        render_with_slots(
+            &landing,
+            &[
+                ("docs", &docs_nav(&finished, None)?),
+                ("drafts", &docs_nav(&drafts, None)?),
+            ],
+        ),
     );
     fs::write(
         out_dir.join("docs.html"),
@@ -122,9 +128,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         ),
     )?;
 
+    let all: Vec<&Doc> = docs.iter().collect();
     for (i, doc) in docs.iter().enumerate() {
         let html_path = doc.html_path();
-        let title = format!("{} · Comrak", doc.title);
+        let display_title = doc.display_title();
+        let title = format!("{display_title} · Comrak");
         let prev = i.checked_sub(1).map(|i| &docs[i]);
         let next = docs.get(i + 1);
         let body = format!(
@@ -134,8 +142,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 {}{}</main>
 </div>
 "#,
-            docs_nav(&docs, Some(doc))?,
-            escape(&doc.title),
+            docs_nav(&all, Some(doc))?,
+            escape(&display_title),
             doc.render_page(),
             pager(prev, next),
         );
@@ -146,7 +154,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             templates.page(
                 &Meta {
                     title: &title,
-                    og_title: &doc.title,
+                    og_title: &display_title,
                     og_type: "article",
                     description: &description(doc),
                     path: &html_path,
@@ -173,7 +181,7 @@ fn description(doc: &Doc) -> String {
     format!("Documentation for Comrak's {}{thing}.", doc.title,)
 }
 
-fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error>> {
+fn docs_nav(docs: &[&Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error>> {
     let mut nav = String::from("<nav class=\"docs-nav\"><ul>\n");
     for group in docs.chunk_by(|a, b| a.path.parent() == b.path.parent()) {
         let dir = group[0].path.parent().unwrap().to_str().unwrap();
@@ -189,7 +197,7 @@ fn docs_nav(docs: &[Doc], current: Option<&Doc>) -> Result<String, Box<dyn Error
                 nav,
                 r#"<li><a href="{}"{aria_current}>{}</a>"#,
                 href(doc),
-                escape(&doc.title)
+                escape(&doc.display_title())
             )?;
             if is_current {
                 nav.push_str(&toc(doc)?);
@@ -238,14 +246,14 @@ fn pager(prev: Option<&Doc>, next: Option<&Doc>) -> String {
         format!(
             r#"<a rel="prev" href="{}">← {}</a>"#,
             href(doc),
-            escape(&doc.title)
+            escape(&doc.display_title())
         )
     });
     let next = next.map_or(String::new(), |doc| {
         format!(
             r#"<a rel="next" href="{}">{} →</a>"#,
             href(doc),
-            escape(&doc.title)
+            escape(&doc.display_title())
         )
     });
     format!("<nav class=\"docs-pager\">{prev}{next}</nav>\n")

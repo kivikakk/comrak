@@ -1,5 +1,6 @@
 ---
-title: Description/definition lists (draft)
+title: Description/definition lists
+draft: true
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/definition_lists.md
 ---
 

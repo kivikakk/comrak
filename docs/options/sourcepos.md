@@ -1,5 +1,6 @@
 ---
-title: Source positions (draft)
+title: Source positions
+draft: true
 ---
 
 ```````````````````````````````` example --sourcepos

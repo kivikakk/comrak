@@ -1,5 +1,6 @@
 ---
-title: Header attributes (draft)
+title: Header attributes
+draft: true
 ---
 
 ```````````````````````````````` example -e header-attributes

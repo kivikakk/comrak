@@ -1,5 +1,6 @@
 ---
-title: Attributes (draft)
+title: Attributes
+draft: true
 ---
 
 ```````````````````````````````` example -e link-attributes --attributes --unsafe

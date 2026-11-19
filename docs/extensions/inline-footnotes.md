@@ -1,5 +1,6 @@
 ---
-title: Inline footnotes (draft)
+title: Inline footnotes
+draft: true
 ---
 
 ```````````````````````````````` example -e footnotes -e inline-footnotes

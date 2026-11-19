@@ -1,5 +1,6 @@
 ---
-title: CommonMark wrap width (draft)
+title: CommonMark wrap width
+draft: true
 ---
 
 ```````````````````````````````` example

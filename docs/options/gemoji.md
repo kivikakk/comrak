@@ -1,5 +1,6 @@
 ---
-title: Gemoji shortcodes (draft)
+title: Gemoji shortcodes
+draft: true
 ---
 
 ```````````````````````````````` example

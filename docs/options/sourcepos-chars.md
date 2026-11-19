@@ -1,5 +1,6 @@
 ---
-title: Source positions in characters (draft)
+title: Source positions in characters
+draft: true
 ---
 
 ```````````````````````````````` example --sourcepos --sourcepos-chars

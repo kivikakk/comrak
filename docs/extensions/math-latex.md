@@ -1,5 +1,6 @@
 ---
-title: LaTeX math (draft)
+title: LaTeX math
+draft: true
 ---
 
 ```````````````````````````````` example -e math-latex

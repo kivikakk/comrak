@@ -421,3 +421,17 @@ fn commonmark_keeps_blank_lines_in_containers_in_tight_lists() {
         Some(&options),
     );
 }
+
+#[test]
+fn commonmark_prefixes_blank_line_after_block_ending_in_newline() {
+    commonmark(
+        "> a\n>\n>     code\n> e\n",
+        "> a\n> \n>     code\n> \n> e\n",
+        None,
+    );
+    commonmark(
+        "> a\n>\n> <div>\n> </div>\n>\n> e\n",
+        "> a\n> \n> <div>\n> </div>\n> \n> e\n",
+        None,
+    );
+}

@@ -1,5 +1,6 @@
 ---
-title: CJK-friendly emphasis (draft)
+title: CJK-friendly emphasis
+draft: true
 ---
 
 ```````````````````````````````` example -e cjk-friendly-emphasis

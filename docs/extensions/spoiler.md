@@ -1,5 +1,6 @@
 ---
-title: Spoilers (draft)
+title: Spoilers
+draft: true
 ---
 
 ```````````````````````````````` example -e spoiler

@@ -1,5 +1,6 @@
 ---
-title: Minimise CommonMark escapes (draft)
+title: Minimise CommonMark escapes
+draft: true
 ---
 
 ```````````````````````````````` example

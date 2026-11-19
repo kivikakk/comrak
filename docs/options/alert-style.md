@@ -1,71 +1,45 @@
 ---
-title: Alert style (draft)
+title: Alert style
 ---
 
-```````````````````````````````` example -e alerts --alert-style specific
-> [!note]
-> Pay attention
+`--alert-style` (`render.alert_style`) chooses the HTML structure of [alerts](../extensions/alerts.html).  With `specific`, the default, an alert is a `<div>` with `markdown-alert` classes, as GitHub renders it.  With `semantic`, an alert is an `<aside>` with `admonition` classes.  The option has no effect unless alerts are enabled.
+
+For the full rules, see [Alert style](../extensions/alerts.html#alert-style).
+
+By default, alerts are `<div>` elements:
+
+```````````````````````````````` example -e alerts
+> [!NOTE]
+> Highlights information that users should take into account, even when skimming.
+
+> [!WARNING] Careful now
+> Critical content demanding immediate user attention due to potential risks.
 .
 <div class="markdown-alert markdown-alert-note">
 <p class="markdown-alert-title">Note</p>
-<p>Pay attention</p>
+<p>Highlights information that users should take into account, even when skimming.</p>
+</div>
+<div class="markdown-alert markdown-alert-warning">
+<p class="markdown-alert-title">Careful now</p>
+<p>Critical content demanding immediate user attention due to potential risks.</p>
 </div>
 ````````````````````````````````
 
-```````````````````````````````` example -e alerts --alert-style semantic
-> [!note]
-> Pay attention
-.
-<aside class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Pay attention</p>
-</aside>
-````````````````````````````````
+With `--alert-style semantic`, they're `<aside>` elements:
 
 ```````````````````````````````` example -e alerts --alert-style semantic
 > [!NOTE]
 > Highlights information that users should take into account, even when skimming.
 
-> [!TIP]
-> Optional information to help a user be more successful.
-
-> [!IMPORTANT]
-> Crucial information necessary for users to succeed.
-
-> [!WARNING]
+> [!WARNING] Careful now
 > Critical content demanding immediate user attention due to potential risks.
-
-> [!CAUTION]
-> Negative potential consequences of an action.
 .
 <aside class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Highlights information that users should take into account, even when skimming.</p>
 </aside>
-<aside class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Optional information to help a user be more successful.</p>
-</aside>
-<aside class="admonition important">
-<p class="admonition-title">Important</p>
-<p>Crucial information necessary for users to succeed.</p>
-</aside>
 <aside class="admonition warning">
-<p class="admonition-title">Warning</p>
+<p class="admonition-title">Careful now</p>
 <p>Critical content demanding immediate user attention due to potential risks.</p>
-</aside>
-<aside class="admonition caution">
-<p class="admonition-title">Caution</p>
-<p>Negative potential consequences of an action.</p>
-</aside>
-````````````````````````````````
-
-```````````````````````````````` example -e alerts --alert-style semantic
-> [!NOTE] Pay attention
-> Highlights information that users should take into account, even when skimming.
-.
-<aside class="admonition note">
-<p class="admonition-title">Pay attention</p>
-<p>Highlights information that users should take into account, even when skimming.</p>
 </aside>
 ````````````````````````````````

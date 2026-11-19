@@ -2212,7 +2212,7 @@ pub fn html_block_end_5(s: &str) -> bool {
     }
 }
 
-pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
+pub fn alert_type(s: &str) -> Option<(crate::nodes::AlertType, usize)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
@@ -2233,7 +2233,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                     };
                     cursor += 1;
                     match yych {
-                        0x3E => {
+                        0x5B => {
                             yystate = 3;
                             continue 'yyl;
                         }
@@ -2260,14 +2260,9 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x20 => {
+                        0x21 => {
                             cursor += 1;
                             yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x3E => {
-                            cursor += 1;
-                            yystate = 6;
                             continue 'yyl;
                         }
                         _ => {
@@ -2285,9 +2280,29 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x5B => {
+                        0x43 | 0x63 => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x4E | 0x6E => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        0x57 | 0x77 => {
+                            cursor += 1;
+                            yystate = 10;
                             continue 'yyl;
                         }
                         _ => {
@@ -2310,14 +2325,9 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x20 => {
+                        0x41 | 0x61 => {
                             cursor += 1;
-                            yystate = 4;
-                            continue 'yyl;
-                        }
-                        0x3E => {
-                            cursor += 1;
-                            yystate = 6;
+                            yystate = 11;
                             continue 'yyl;
                         }
                         _ => {
@@ -2335,9 +2345,9 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x21 => {
+                        0x4D | 0x6D => {
                             cursor += 1;
-                            yystate = 8;
+                            yystate = 12;
                             continue 'yyl;
                         }
                         _ => {
@@ -2355,27 +2365,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x43 | 0x63 => {
-                            cursor += 1;
-                            yystate = 9;
-                            continue 'yyl;
-                        }
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 10;
-                            continue 'yyl;
-                        }
-                        0x4E | 0x6E => {
-                            cursor += 1;
-                            yystate = 11;
-                            continue 'yyl;
-                        }
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 12;
-                            continue 'yyl;
-                        }
-                        0x57 | 0x77 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 13;
                             continue 'yyl;
@@ -2395,7 +2385,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 14;
                             continue 'yyl;
@@ -2415,7 +2405,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4D | 0x6D => {
+                        0x41 | 0x61 => {
                             cursor += 1;
                             yystate = 15;
                             continue 'yyl;
@@ -2435,7 +2425,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x55 | 0x75 => {
                             cursor += 1;
                             yystate = 16;
                             continue 'yyl;
@@ -2455,7 +2445,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x49 | 0x69 => {
+                        0x50 | 0x70 => {
                             cursor += 1;
                             yystate = 17;
                             continue 'yyl;
@@ -2475,7 +2465,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x54 | 0x74 => {
                             cursor += 1;
                             yystate = 18;
                             continue 'yyl;
@@ -2495,7 +2485,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x55 | 0x75 => {
+                        0x50 | 0x70 => {
                             cursor += 1;
                             yystate = 19;
                             continue 'yyl;
@@ -2515,7 +2505,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x50 | 0x70 => {
+                        0x52 | 0x72 => {
                             cursor += 1;
                             yystate = 20;
                             continue 'yyl;
@@ -2555,7 +2545,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x50 | 0x70 => {
+                        0x4F | 0x6F => {
                             cursor += 1;
                             yystate = 22;
                             continue 'yyl;
@@ -2575,7 +2565,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x52 | 0x72 => {
+                        0x45 | 0x65 => {
                             cursor += 1;
                             yystate = 23;
                             continue 'yyl;
@@ -2595,7 +2585,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 24;
                             continue 'yyl;
@@ -2615,7 +2605,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4F | 0x6F => {
+                        0x4E | 0x6E => {
                             cursor += 1;
                             yystate = 25;
                             continue 'yyl;
@@ -2635,7 +2625,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x45 | 0x65 => {
+                        0x49 | 0x69 => {
                             cursor += 1;
                             yystate = 26;
                             continue 'yyl;
@@ -2655,7 +2645,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x5D => {
+                        0x52 | 0x72 => {
                             cursor += 1;
                             yystate = 27;
                             continue 'yyl;
@@ -2675,7 +2665,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 28;
                             continue 'yyl;
@@ -2687,6 +2677,9 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                     }
                 }
                 24 => {
+                    return Some((crate::nodes::AlertType::Tip, cursor));
+                }
+                25 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
@@ -2706,70 +2699,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     }
                 }
-                25 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x52 | 0x72 => {
-                            cursor += 1;
-                            yystate = 30;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
                 26 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x5D => {
-                            cursor += 1;
-                            yystate = 31;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                27 => {
-                    return Some(crate::nodes::AlertType::Tip);
-                }
-                28 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x49 | 0x69 => {
-                            cursor += 1;
-                            yystate = 32;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                29 => {
                     yych = unsafe {
                         if cursor < len {
                             *s.as_bytes().get_unchecked(cursor)
@@ -2780,7 +2710,50 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                     match yych {
                         0x4F | 0x6F => {
                             cursor += 1;
-                            yystate = 33;
+                            yystate = 30;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                27 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 31;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                28 => {
+                    return Some((crate::nodes::AlertType::Note, cursor));
+                }
+                29 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x4E | 0x6E => {
+                            cursor += 1;
+                            yystate = 32;
                             continue 'yyl;
                         }
                         _ => {
@@ -2798,7 +2771,27 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x54 | 0x74 => {
+                        0x4E | 0x6E => {
+                            cursor += 1;
+                            yystate = 33;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                31 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x41 | 0x61 => {
                             cursor += 1;
                             yystate = 34;
                             continue 'yyl;
@@ -2809,9 +2802,6 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     }
                 }
-                31 => {
-                    return Some(crate::nodes::AlertType::Note);
-                }
                 32 => {
                     yych = unsafe {
                         if cursor < len {
@@ -2821,7 +2811,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x47 | 0x67 => {
                             cursor += 1;
                             yystate = 35;
                             continue 'yyl;
@@ -2841,7 +2831,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 36;
                             continue 'yyl;
@@ -2861,7 +2851,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x41 | 0x61 => {
+                        0x4E | 0x6E => {
                             cursor += 1;
                             yystate = 37;
                             continue 'yyl;
@@ -2881,7 +2871,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x47 | 0x67 => {
+                        0x5D => {
                             cursor += 1;
                             yystate = 38;
                             continue 'yyl;
@@ -2893,24 +2883,7 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                     }
                 }
                 36 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x5D => {
-                            cursor += 1;
-                            yystate = 39;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
+                    return Some((crate::nodes::AlertType::Caution, cursor));
                 }
                 37 => {
                     yych = unsafe {
@@ -2921,7 +2894,30 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     };
                     match yych {
-                        0x4E | 0x6E => {
+                        0x54 | 0x74 => {
+                            cursor += 1;
+                            yystate = 39;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                38 => {
+                    return Some((crate::nodes::AlertType::Warning, cursor));
+                }
+                39 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x5D => {
                             cursor += 1;
                             yystate = 40;
                             continue 'yyl;
@@ -2932,74 +2928,8 @@ pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
                         }
                     }
                 }
-                38 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x5D => {
-                            cursor += 1;
-                            yystate = 41;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                39 => {
-                    return Some(crate::nodes::AlertType::Caution);
-                }
                 40 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x54 | 0x74 => {
-                            cursor += 1;
-                            yystate = 42;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                41 => {
-                    return Some(crate::nodes::AlertType::Warning);
-                }
-                42 => {
-                    yych = unsafe {
-                        if cursor < len {
-                            *s.as_bytes().get_unchecked(cursor)
-                        } else {
-                            255
-                        }
-                    };
-                    match yych {
-                        0x5D => {
-                            cursor += 1;
-                            yystate = 43;
-                            continue 'yyl;
-                        }
-                        _ => {
-                            yystate = 5;
-                            continue 'yyl;
-                        }
-                    }
-                }
-                43 => {
-                    return Some(crate::nodes::AlertType::Important);
+                    return Some((crate::nodes::AlertType::Important, cursor));
                 }
                 _ => panic!("internal lexer error"),
             }

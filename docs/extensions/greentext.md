@@ -1,5 +1,6 @@
 ---
-title: Greentext (draft)
+title: Greentext
+draft: true
 ---
 
 ```````````````````````````````` example -e greentext

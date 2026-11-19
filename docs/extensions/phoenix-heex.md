@@ -1,5 +1,6 @@
 ---
-title: Phoenix HEEx (draft)
+title: Phoenix HEEx
+draft: true
 ---
 
 ```````````````````````````````` example -e phoenix-heex
