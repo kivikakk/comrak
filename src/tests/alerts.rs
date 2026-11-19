@@ -141,3 +141,75 @@ fn surprise_eof() {
         ])
     );
 }
+
+#[test]
+fn marker_spacing_follows_block_quotes() {
+    html_opts!(
+        [extension.alerts],
+        concat!(
+            ">[!note]\n",
+            "> a\n",
+            "\n",
+            ">  [!tip]\n",
+            "> b\n",
+            "\n",
+            ">\t[!important]\n",
+            "> c\n",
+            "\n",
+            ">    [!warning]\n",
+            "> d\n",
+            "\n",
+            ">     [!caution]\n",
+            "> e\n",
+        ),
+        concat!(
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">Note</p>\n",
+            "<p>a</p>\n",
+            "</div>\n",
+            "<div class=\"markdown-alert markdown-alert-tip\">\n",
+            "<p class=\"markdown-alert-title\">Tip</p>\n",
+            "<p>b</p>\n",
+            "</div>\n",
+            "<div class=\"markdown-alert markdown-alert-important\">\n",
+            "<p class=\"markdown-alert-title\">Important</p>\n",
+            "<p>c</p>\n",
+            "</div>\n",
+            "<div class=\"markdown-alert markdown-alert-warning\">\n",
+            "<p class=\"markdown-alert-title\">Warning</p>\n",
+            "<p>d</p>\n",
+            "</div>\n",
+            "<blockquote>\n",
+            "<pre><code>[!caution]\n",
+            "</code></pre>\n",
+            "<p>e</p>\n",
+            "</blockquote>\n",
+        ),
+    );
+}
+
+#[test]
+fn multiline_marker_spacing() {
+    html_opts!(
+        [extension.alerts, extension.multiline_block_quotes],
+        concat!(
+            ">>>[!note]\n",
+            "a\n",
+            ">>>\n",
+            "\n",
+            ">>>  [!tip] T\n",
+            "b\n",
+            ">>>\n"
+        ),
+        concat!(
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">Note</p>\n",
+            "<p>a</p>\n",
+            "</div>\n",
+            "<div class=\"markdown-alert markdown-alert-tip\">\n",
+            "<p class=\"markdown-alert-title\">T</p>\n",
+            "<p>b</p>\n",
+            "</div>\n",
+        ),
+    );
+}

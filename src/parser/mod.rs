@@ -1118,23 +1118,11 @@ where
     }
 
     fn handle_alert(&mut self, container: &mut Node<'a>, line: &str) -> bool {
-        let Some(alert_type) = self.detect_alert(line) else {
+        let Some((alert_type, fence_length, title_startpos)) = self.detect_alert(line) else {
             return false;
         };
 
         let alert_startpos = self.first_nonspace;
-        let mut title_startpos = self.first_nonspace;
-        let mut fence_length = 0;
-
-        let bytes = line.as_bytes();
-        // The checks made here co-operate with the alert_start scanner for soundness.
-        while bytes[title_startpos] != b']' {
-            if bytes[title_startpos] == b'>' {
-                fence_length += 1
-            }
-            title_startpos += 1;
-        }
-        title_startpos += 1;
 
         if fence_length == 2
             || (fence_length >= 3 && !self.options.extension.multiline_block_quotes)
@@ -1168,13 +1156,37 @@ where
         true
     }
 
-    fn detect_alert(&self, line: &str) -> Option<AlertType> {
-        if self.options.extension.alerts && line.as_bytes().get(self.first_nonspace) == Some(&b'>')
-        {
-            scanners::alert_start(&line[self.first_nonspace..])
-        } else {
-            None
+    fn detect_alert(&self, line: &str) -> Option<(AlertType, usize, usize)> {
+        if !self.options.extension.alerts {
+            return None;
         }
+
+        let bytes = line.as_bytes();
+        let mut pos = self.first_nonspace;
+        while bytes.get(pos) == Some(&b'>') {
+            pos += 1;
+        }
+        let fence_length = pos - self.first_nonspace;
+        if fence_length == 0 {
+            return None;
+        }
+
+        let content_column = self.first_nonspace_column + fence_length;
+        let mut column = content_column;
+        loop {
+            match bytes.get(pos) {
+                Some(b' ') => column += 1,
+                Some(b'\t') => column += TAB_STOP - column % TAB_STOP,
+                _ => break,
+            }
+            pos += 1;
+        }
+        if column - content_column > CODE_INDENT {
+            return None;
+        }
+
+        let (alert_type, len) = scanners::alert_type(&line[pos..])?;
+        Some((alert_type, fence_length, pos + len))
     }
 
     fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {

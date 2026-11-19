@@ -169,17 +169,17 @@ pub fn html_block_end_5(s: &str) -> bool {
 */
 }
 
-pub fn alert_start(s: &str) -> Option<crate::nodes::AlertType> {
+pub fn alert_type(s: &str) -> Option<(crate::nodes::AlertType, usize)> {
     let mut cursor = 0;
     let mut marker = 0;
     let len = s.len();
 
 /*!re2c
-    [>]{1,} ' [!note]' { return Some(crate::nodes::AlertType::Note); }
-    [>]{1,} ' [!tip]' { return Some(crate::nodes::AlertType::Tip); }
-    [>]{1,} ' [!important]' { return Some(crate::nodes::AlertType::Important); }
-    [>]{1,} ' [!warning]' { return Some(crate::nodes::AlertType::Warning); }
-    [>]{1,} ' [!caution]' { return Some(crate::nodes::AlertType::Caution); }
+    '[!note]' { return Some((crate::nodes::AlertType::Note, cursor)); }
+    '[!tip]' { return Some((crate::nodes::AlertType::Tip, cursor)); }
+    '[!important]' { return Some((crate::nodes::AlertType::Important, cursor)); }
+    '[!warning]' { return Some((crate::nodes::AlertType::Warning, cursor)); }
+    '[!caution]' { return Some((crate::nodes::AlertType::Caution, cursor)); }
     * { return None; }
 */
 }
