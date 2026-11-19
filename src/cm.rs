@@ -97,6 +97,7 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     allow_wrap: bool,
     callout_title_depth: usize,
     callout_title_state_stack: Vec<(bool, bool, usize, bool, u8)>,
+    escape_braces: bool,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -138,6 +139,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             footnote_ix: 0,
             ol_stack: vec![],
             allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
+            escape_braces: false,
             callout_title_depth: 0,
             callout_title_state_stack: Vec::new(),
         }
@@ -333,6 +335,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                         && c == '$')
                     || (self.options.extension.ofm_comments && c == '%' && nextb == b'%')
                     || (c == '&' && isalpha(nextb))
+                    || (c == '{' && self.escape_braces)
                     || (c == '!' && nextb == 0x5b)
                     || (self.begin_content
                         && (self.options.extension.block_directive
@@ -421,7 +424,12 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     /// keep the output single-line without altering the value, and optionally
     /// encodes `:` as `&#58;` (for directive fences, since the scanner
     /// rejects literal colons before unescaping).
-    fn write_title_info(&mut self, info: &str, escape_colon: bool) -> fmt::Result {
+    fn write_title_info(
+        &mut self,
+        info: &str,
+        escape_colon: bool,
+        escape_brace: bool,
+    ) -> fmt::Result {
         for c in info.chars() {
             match c {
                 '\n' => {
@@ -438,6 +446,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 }
                 ':' if escape_colon => {
                     write!(self, "&#58;")?;
+                }
+                '{' if escape_brace => {
+                    write!(self, "\\{{")?;
                 }
                 _ => {
                     write!(self, "{}", c)?;
@@ -516,7 +527,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             }
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
             NodeValue::SoftBreak => self.format_soft_break(entering)?,
-            NodeValue::Code(ref code) => self.format_code(&code.literal, entering)?,
+            NodeValue::Code(ref code) => self.format_code(node, &code.literal, entering)?,
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             #[cfg(feature = "phoenix_heex")]
             NodeValue::HeexInline(ref literal) => self.format_heex_inline(literal, entering)?,
@@ -529,7 +540,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             NodeValue::Insert => self.format_insert()?,
             NodeValue::Superscript => self.format_superscript()?,
             NodeValue::Link(ref nl) => return self.format_link(node, nl, entering),
-            NodeValue::Image(ref nl) => self.format_image(nl, entering)?,
+            NodeValue::Image(ref nl) => self.format_image(node, nl, entering)?,
             #[cfg(feature = "shortcodes")]
             NodeValue::ShortCode(ref ne) => self.format_shortcode(ne, entering)?,
             NodeValue::Table(..) => self.format_table(entering),
@@ -757,7 +768,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.no_linebreaks = true;
             }
             self.begin_content = true;
+            self.escape_braces = self.header_attributes();
         } else {
+            self.escape_braces = false;
+            #[cfg(feature = "attributes")]
+            self.format_attributes(node, self.header_attributes(), true)?;
             if setext {
                 self.cr();
                 self.write_str(if nh.level == 1 { "===" } else { "---" })?;
@@ -800,8 +815,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 let fence_str = (fence_byte as char).to_string().repeat(numticks);
                 write!(self, "{}", fence_str)?;
                 if !ncb.info.is_empty() {
-                    self.write_title_info(&ncb.info, false)?;
+                    self.write_title_info(&ncb.info, false, self.fenced_code_attributes())?;
                 }
+                #[cfg(feature = "attributes")]
+                self.format_attributes(node, self.fenced_code_attributes(), !info.is_empty())?;
             } else {
                 write!(self, "    ")?;
                 let mut content = ncb.literal.clone();
@@ -824,6 +841,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                         )
                 })
                 || self.options.render.prefer_fenced
+                || self.fenced_code_attributes() && has_attributes(node)
                 || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
             {
                 write!(self, "    ")?;
@@ -838,8 +856,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     write!(self, "{}", fence_byte as char)?;
                 }
                 if !info.is_empty() {
-                    self.write_str(&ncb.info)?;
+                    if self.fenced_code_attributes() {
+                        self.write_str(&ncb.info.replace('{', "\\{"))?;
+                    } else {
+                        self.write_str(&ncb.info)?;
+                    }
                 }
+                #[cfg(feature = "attributes")]
+                self.format_attributes(node, self.fenced_code_attributes(), !info.is_empty())?;
                 self.cr();
                 self.write_str(&ncb.literal)?;
                 self.cr();
@@ -946,8 +970,16 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 }
             }
 
-            let body = &literal[leading.map_or(0, char::len_utf8)
+            let mut body = &literal[leading.map_or(0, char::len_utf8)
                 ..literal.len() - trailing.map_or(0, char::len_utf8)];
+            if body.starts_with('{')
+                && node
+                    .previous_sibling()
+                    .is_some_and(|previous| self.takes_inline_attributes(previous))
+            {
+                self.output("\\{", wrap, Escaping::Literal)?;
+                body = &body[1..];
+            }
             match block_ids::trailing_marker_caret(body).filter(|_| {
                 self.options.extension.ofm_block_ids
                     && node.parent().is_some_and(|p| p.data().value.block())
@@ -997,7 +1029,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_code(&mut self, literal: &str, entering: bool) -> fmt::Result {
+    fn format_code(&mut self, node: Node<'a>, literal: &str, entering: bool) -> fmt::Result {
         if entering {
             let literal_bytes = literal.as_bytes();
             let numticks = shortest_unused_sequence(literal_bytes, b'`');
@@ -1024,7 +1056,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             for _ in 0..numticks {
                 write!(self, "`")?;
             }
+            #[cfg(feature = "attributes")]
+            self.format_attributes(node, self.inline_code_attributes(), false)?;
         }
+        #[cfg(not(feature = "attributes"))]
+        let _ = node;
 
         Ok(())
     }
@@ -1191,6 +1227,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "\"")?;
             }
             write!(self, ")")?;
+            #[cfg(feature = "attributes")]
+            self.format_attributes(node, self.link_attributes(), false)?;
         }
 
         Ok(true)
@@ -1240,7 +1278,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(true)
     }
 
-    fn format_image(&mut self, nl: &NodeLink, entering: bool) -> fmt::Result {
+    fn format_image(&mut self, node: Node<'a>, nl: &NodeLink, entering: bool) -> fmt::Result {
         if entering {
             write!(self, "![")?;
         } else {
@@ -1252,8 +1290,71 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "\"")?;
             }
             write!(self, ")")?;
+            #[cfg(feature = "attributes")]
+            self.format_attributes(node, self.link_attributes(), false)?;
         }
+        #[cfg(not(feature = "attributes"))]
+        let _ = node;
         Ok(())
+    }
+
+    fn header_attributes(&self) -> bool {
+        #[cfg(feature = "attributes")]
+        return self.options.extension.header_attributes;
+        #[cfg(not(feature = "attributes"))]
+        return false;
+    }
+
+    fn fenced_code_attributes(&self) -> bool {
+        #[cfg(feature = "attributes")]
+        return self.options.extension.fenced_code_attributes;
+        #[cfg(not(feature = "attributes"))]
+        return false;
+    }
+
+    fn inline_code_attributes(&self) -> bool {
+        #[cfg(feature = "attributes")]
+        return self.options.extension.inline_code_attributes;
+        #[cfg(not(feature = "attributes"))]
+        return false;
+    }
+
+    fn link_attributes(&self) -> bool {
+        #[cfg(feature = "attributes")]
+        return self.options.extension.link_attributes;
+        #[cfg(not(feature = "attributes"))]
+        return false;
+    }
+
+    fn takes_inline_attributes(&self, node: Node<'a>) -> bool {
+        match node.data().value {
+            NodeValue::Code(..) => self.inline_code_attributes(),
+            NodeValue::Link(..) | NodeValue::Image(..) => self.link_attributes(),
+            _ => false,
+        }
+    }
+
+    #[cfg(feature = "attributes")]
+    fn format_attributes(&mut self, node: Node<'a>, enabled: bool, space: bool) -> fmt::Result {
+        if !enabled || !has_attributes(node) {
+            return Ok(());
+        }
+        let ast = node.data();
+        let attrs = ast.attrs.as_deref().unwrap();
+        let mut parts = vec![];
+        if let Some(id) = &attrs.id {
+            parts.push(format!("#{}", attribute_value(id)));
+        }
+        for class in &attrs.classes {
+            parts.push(format!(".{}", attribute_value(class)));
+        }
+        for (key, value) in &attrs.pairs {
+            parts.push(format!("{key}={}", attribute_value(value)));
+        }
+        if space {
+            self.write_str(" ")?;
+        }
+        write!(self, "{{{}}}", parts.join(" "))
     }
 
     #[cfg(feature = "shortcodes")]
@@ -1418,7 +1519,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             )?;
             if let Some(ref title) = alert.title {
                 write!(self, " ")?;
-                self.write_title_info(title, false)?;
+                self.write_title_info(title, false, false)?;
             }
             writeln!(self)?;
             write!(self, "> ")?;
@@ -1526,7 +1627,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     write!(self, "{fence}")?;
                 } else {
                     write!(self, "{fence}")?;
-                    self.write_title_info(&nbd.info, true)?;
+                    self.write_title_info(&nbd.info, true, false)?;
                 }
             } else if nbd.info.is_empty() {
                 writeln!(self, "{fence}")?;
@@ -1588,7 +1689,7 @@ fn shortest_unused_sequence(buffer: &[u8], f: u8) -> usize {
 }
 
 fn is_autolink(node: Node<'_>, nl: &NodeLink) -> bool {
-    if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() {
+    if nl.url.is_empty() || scanners::scheme(&nl.url).is_none() || has_attributes(node) {
         return false;
     }
 
@@ -1605,6 +1706,42 @@ fn is_autolink(node: Node<'_>, nl: &NodeLink) -> bool {
     };
 
     trim_start_match(&nl.url, "mailto:") == link_text
+}
+
+#[cfg(feature = "attributes")]
+fn has_attributes(node: Node<'_>) -> bool {
+    node.data().attrs.as_deref().is_some_and(|attrs| {
+        attrs.id.is_some() || !attrs.classes.is_empty() || !attrs.pairs.is_empty()
+    })
+}
+
+#[cfg(not(feature = "attributes"))]
+fn has_attributes(_node: Node<'_>) -> bool {
+    false
+}
+
+#[cfg(feature = "attributes")]
+fn attribute_value(value: &str) -> String {
+    if !value.is_empty()
+        && value
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | ':' | '.' | '%'))
+    {
+        return value.to_string();
+    }
+    let mut quoted = String::from("\"");
+    for c in value.chars() {
+        match c {
+            '"' => quoted.push_str("\\\""),
+            '\\' => quoted.push_str("\\\\"),
+            '&' => quoted.push_str("&amp;"),
+            '\n' => quoted.push_str("&#10;"),
+            '\r' => quoted.push_str("&#13;"),
+            _ => quoted.push(c),
+        }
+    }
+    quoted.push('"');
+    quoted
 }
 
 fn wikilink_title_escape(node: Node<'_>, c: char) -> bool {

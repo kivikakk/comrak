@@ -1,6 +1,7 @@
 #![cfg(feature = "attributes")]
 
-use crate::tests::{assert_ast_match, html_opts, html_opts_i};
+use crate::Options;
+use crate::tests::{assert_ast_match, commonmark, html_opts, html_opts_i};
 
 #[test]
 fn heading_with_attrs() {
@@ -89,7 +90,6 @@ fn fenced_code_attrs_are_literal_source() {
             "<pre><code class=\"language-rust\">z\n</code></pre>\n",
             "<pre k=\"a&quot;b&amp;c\"><code class=\"language-rust\">z\n</code></pre>\n",
         ),
-        no_roundtrip,
     );
 }
 
@@ -211,7 +211,6 @@ fn render_inline_attrs() {
         ],
         "[a](u \"t\"){#i .c .d k=v} ![b](s \"t\"){.c k=\"v w\"} `x`{#y .c}\n",
         "<p><a href=\"u\" title=\"t\" id=\"i\" class=\"c d\" k=\"v\">a</a> <img src=\"s\" alt=\"b\" title=\"t\" class=\"c\" k=\"v w\" /> <code id=\"y\" class=\"c\">x</code></p>\n",
-        no_roundtrip,
     );
 }
 
@@ -230,7 +229,6 @@ fn render_consecutive_inline_attrs() {
             "<p data-sourcepos=\"1:1-2:4\"><code data-sourcepos=\"1:1-1:26\" id=\"d\" class=\"b c\" k=\"2\">x</code> ",
             "<a data-sourcepos=\"1:28-1:37\" href=\"u\" class=\"e\">y</a>\n{.f}</p>\n"
         ),
-        no_roundtrip,
     );
 }
 
@@ -252,7 +250,6 @@ fn render_attrs_own_win() {
             "<img data-sourcepos=\"1:50-1:71\" src=\"/u\" alt=\"c\" /> ",
             "<code data-sourcepos=\"1:73-1:93\">e</code></p>\n"
         ),
-        no_roundtrip,
     );
 }
 
@@ -267,7 +264,6 @@ fn render_heading_attrs_own_id_wins() {
         ],
         "# a ^b {#x k=v}\n",
         "<h1 id=\"^b\" k=\"v\">a </h1>\n",
-        no_roundtrip,
     );
 
     html_opts!(
@@ -279,7 +275,6 @@ fn render_heading_attrs_own_id_wins() {
         ],
         "# a {id=q}\n",
         "<h1 id=\"p-q\">a<a href=\"#q\" aria-label=\"Link to heading 'a'\" data-heading-content=\"a\" class=\"anchor\"></a></h1>\n",
-        no_roundtrip,
     );
 }
 
@@ -293,7 +288,6 @@ fn render_attrs_after_own() {
         ],
         "![b](s){src=\"javascript:alert(1)\"} [a](u){href=v}\n",
         "<p><img src=\"s\" alt=\"b\" /> <a href=\"u\">a</a></p>\n",
-        no_roundtrip,
     );
 }
 
@@ -307,7 +301,6 @@ fn render_attrs_escaped() {
         ],
         "[a](u){title=\"x\\\"<y>&\" .\"p&q\"}\n",
         "<p><a href=\"u\" class=\"p&amp;q\" title=\"x&quot;&lt;y&gt;&amp;\">a</a></p>\n",
-        no_roundtrip,
     );
 }
 
@@ -323,7 +316,6 @@ fn render_attrs_needs_unsafe() {
         ],
         "# H {#h .c}\n\n[a](u){.c k=v} `x`{.c}\n\n```rust {.c}\nx\n```\n",
         "<h1>H</h1>\n<p><a href=\"u\">a</a> <code>x</code></p>\n<pre><code class=\"language-rust\">x\n</code></pre>\n",
-        no_roundtrip,
     );
 }
 
@@ -337,7 +329,6 @@ fn render_attrs_needs_render_option() {
         ],
         "[a](u){.c k=v} `x`{.c}\n",
         "<p><a href=\"u\">a</a> <code>x</code></p>\n",
-        no_roundtrip,
     );
 }
 
@@ -351,7 +342,6 @@ fn render_heading_attrs() {
         ],
         "# Hi {#greeting .c k=v}\n",
         "<h1 id=\"greeting\" class=\"c\" k=\"v\">Hi</h1>\n",
-        no_roundtrip,
     );
 }
 
@@ -384,7 +374,6 @@ fn render_code_block_attrs() {
         ],
         "```rust {#ex .c .d k=v}\nx\n```\n",
         "<pre class=\"c d\" id=\"ex\" k=\"v\"><code class=\"language-rust\">x\n</code></pre>\n",
-        no_roundtrip,
     );
 }
 
@@ -399,7 +388,6 @@ fn render_code_block_attrs_own_win() {
         ],
         "```rust {lang=evil k=v}\nx\n```\n",
         "<pre k=\"v\" lang=\"rust\"><code>x\n</code></pre>\n",
-        no_roundtrip,
     );
 }
 
@@ -478,5 +466,74 @@ fn link_tail_crossing_lines_sourcepos() {
                 (text (2:8-2:9) " x")
             ])
         ])
+    );
+}
+
+#[test]
+fn commonmark_writes_attributes() {
+    let mut options = Options::default();
+    options.extension.header_attributes = true;
+    options.extension.fenced_code_attributes = true;
+    options.extension.inline_code_attributes = true;
+    options.extension.link_attributes = true;
+    commonmark(
+        concat!(
+            "Head {#h k=\"a b\"}\n",
+            "===\n",
+            "\n",
+            "```rust {.x}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "```{#y}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "`a`{k=a&amp;b} [b](/u){.c} ![c](/v){#\"d e\"} [http://a.b](http://a.b){.e}\n",
+        ),
+        concat!(
+            "# Head {#h k=\"a b\"}\n",
+            "\n",
+            "```rust {.x}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "```{#y}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "`a`{k=\"a&amp;b\"} [b](/u){.c} ![c](/v){#\"d e\"} [http://a.b](http://a.b){.e}\n",
+        ),
+        Some(&options),
+    );
+}
+
+#[test]
+fn commonmark_escapes_attribute_lookalikes() {
+    let mut options = Options::default();
+    options.extension.header_attributes = true;
+    options.extension.fenced_code_attributes = true;
+    options.extension.inline_code_attributes = true;
+    options.extension.link_attributes = true;
+    commonmark(
+        concat!(
+            "# a {b} \\{.c}\n",
+            "\n",
+            "```rust \\{.x}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "`a`\\{k=v} [b](/u)\\{.c} d {e}\n",
+        ),
+        concat!(
+            "# a \\{b} \\{.c}\n",
+            "\n",
+            "```rust \\{.x}\n",
+            "z\n",
+            "```\n",
+            "\n",
+            "`a`\\{k=v} [b](/u)\\{.c} d {e}\n",
+        ),
+        Some(&options),
     );
 }
