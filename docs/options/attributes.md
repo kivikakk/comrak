@@ -24,5 +24,5 @@ draft: true
 ```````````````````````````````` example -e link-attributes --attributes --unsafe
 [Comrak](https://comrak.ee "Home"){#home href="https://example.com"}
 .
-<p><a href="https://comrak.ee" title="Home" id="home" href="https://example.com">Comrak</a></p>
+<p><a href="https://comrak.ee" title="Home" id="home">Comrak</a></p>
 ````````````````````````````````

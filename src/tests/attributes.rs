@@ -213,6 +213,55 @@ fn render_consecutive_inline_attrs() {
 }
 
 #[test]
+fn render_attrs_own_win() {
+    html_opts!(
+        [
+            extension.link_attributes,
+            extension.inline_code_attributes,
+            render.attributes,
+            render.r#unsafe,
+            render.sourcepos
+        ],
+        "[a](/u \"t\"){title=s HREF=/v #i} [b](/u){title=s} ![c](/u){src=/v alt=d} `e`{data-sourcepos=1}\n",
+        concat!(
+            "<p data-sourcepos=\"1:1-1:93\">",
+            "<a data-sourcepos=\"1:1-1:31\" href=\"/u\" title=\"t\" id=\"i\">a</a> ",
+            "<a data-sourcepos=\"1:33-1:48\" href=\"/u\" title=\"s\">b</a> ",
+            "<img data-sourcepos=\"1:50-1:71\" src=\"/u\" alt=\"c\" /> ",
+            "<code data-sourcepos=\"1:73-1:93\">e</code></p>\n"
+        ),
+        no_roundtrip,
+    );
+}
+
+#[test]
+fn render_heading_attrs_own_id_wins() {
+    html_opts!(
+        [
+            extension.header_attributes,
+            extension.ofm_block_ids,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "# a ^b {#x k=v}\n",
+        "<h1 id=\"^b\" k=\"v\">a </h1>\n",
+        no_roundtrip,
+    );
+
+    html_opts!(
+        [
+            extension.header_attributes = true,
+            extension.header_id_prefix = Some("p-".to_string()),
+            render.attributes = true,
+            render.r#unsafe = true
+        ],
+        "# a {id=q}\n",
+        "<h1 id=\"p-q\">a<a href=\"#q\" aria-label=\"Link to heading 'a'\" data-heading-content=\"a\" class=\"anchor\"></a></h1>\n",
+        no_roundtrip,
+    );
+}
+
+#[test]
 fn render_attrs_after_own() {
     html_opts!(
         [
@@ -221,7 +270,7 @@ fn render_attrs_after_own() {
             render.r#unsafe
         ],
         "![b](s){src=\"javascript:alert(1)\"} [a](u){href=v}\n",
-        "<p><img src=\"s\" alt=\"b\" src=\"javascript:alert(1)\" /> <a href=\"u\" href=\"v\">a</a></p>\n",
+        "<p><img src=\"s\" alt=\"b\" /> <a href=\"u\">a</a></p>\n",
         no_roundtrip,
     );
 }
