@@ -1,5 +1,6 @@
 ---
-title: Default info string (draft)
+title: Default info string
+draft: true
 ---
 
 ```````````````````````````````` example --default-info-string rust

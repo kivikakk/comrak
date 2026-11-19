@@ -1,5 +1,6 @@
 ---
-title: Full info string (draft)
+title: Full info string
+draft: true
 ---
 
 ```````````````````````````````` example --full-info-string

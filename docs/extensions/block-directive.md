@@ -1,5 +1,6 @@
 ---
-title: Block directives (draft)
+title: Block directives
+draft: true
 ---
 
 ```````````````````````````````` example -e block-directive

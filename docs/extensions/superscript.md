@@ -1,5 +1,6 @@
 ---
-title: Superscript (draft)
+title: Superscript
+draft: true
 ---
 
 ```````````````````````````````` example -e superscript

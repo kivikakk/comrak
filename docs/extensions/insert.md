@@ -1,5 +1,6 @@
 ---
-title: Insert (draft)
+title: Insert
+draft: true
 ---
 
 ```````````````````````````````` example -e insert

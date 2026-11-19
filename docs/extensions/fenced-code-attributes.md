@@ -1,5 +1,6 @@
 ---
-title: Fenced code attributes (draft)
+title: Fenced code attributes
+draft: true
 ---
 
 ```````````````````````````````` example -e fenced-code-attributes

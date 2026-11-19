@@ -1,5 +1,6 @@
 ---
-title: Front matter (draft)
+title: Front matter
+draft: true
 ---
 
 ```````````````````````````````` example

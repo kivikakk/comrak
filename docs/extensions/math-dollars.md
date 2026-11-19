@@ -1,5 +1,6 @@
 ---
-title: Dollar math (draft)
+title: Dollar math
+draft: true
 based_on: https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/math.md
 ---
 

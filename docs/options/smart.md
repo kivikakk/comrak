@@ -1,5 +1,6 @@
 ---
-title: Smart punctuation (draft)
+title: Smart punctuation
+draft: true
 ---
 
 ```````````````````````````````` example --smart

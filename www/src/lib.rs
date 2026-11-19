@@ -26,6 +26,7 @@ static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| SyntectAdapter::
 pub struct Doc {
     pub path: PathBuf,
     pub title: String,
+    pub draft: bool,
     pub lede: Option<String>,
     pub covers: Vec<String>,
     pub source: String,
@@ -154,13 +155,17 @@ impl Doc {
             );
         }
 
-        let FrontMatter { title, extensions } =
-            front_matter.unwrap_or_else(|| panic!("{}: no front matter", path.display()));
+        let FrontMatter {
+            title,
+            draft,
+            extensions,
+        } = front_matter.unwrap_or_else(|| panic!("{}: no front matter", path.display()));
         let covers = extensions
             .unwrap_or_else(|| vec![path.file_stem().unwrap().to_str().unwrap().to_string()]);
 
         Doc {
             title,
+            draft,
             lede,
             covers,
             path,
@@ -168,6 +173,14 @@ impl Doc {
             examples,
             headings,
             terms,
+        }
+    }
+
+    pub fn display_title(&self) -> String {
+        if self.draft {
+            format!("{} (draft)", self.title)
+        } else {
+            self.title.clone()
         }
     }
 
@@ -250,6 +263,40 @@ impl Doc {
     }
 }
 
+pub fn render_with_slots(source: &str, slots: &[(&str, &str)]) -> String {
+    let mut options = page_options();
+    options.render.r#unsafe = true;
+
+    let arena = Arena::new();
+    let document = parse_document(&arena, source, &options);
+
+    let mut filled: Vec<(Node<'_>, &str)> = vec![];
+    for &(name, html) in slots {
+        let marker = format!("{{{{{name}}}}}");
+        let paragraphs: Vec<_> = document
+            .descendants()
+            .filter(|node| {
+                matches!(node.data().value, NodeValue::Paragraph) && node.collect_text() == marker
+            })
+            .collect();
+        let [paragraph] = paragraphs[..] else {
+            panic!("`{marker}` must be its own paragraph exactly once");
+        };
+        filled.push((paragraph, html));
+    }
+
+    for (paragraph, html) in filled {
+        let mut nhb = NodeHtmlBlock::new(html.to_string());
+        nhb.block_type = 6;
+        paragraph.insert_after(arena.alloc(NodeValue::HtmlBlock(nhb).into()));
+        paragraph.detach();
+    }
+
+    let mut html = String::new();
+    format_html_with_plugins(document, &options, &mut html, &plugins()).unwrap();
+    html
+}
+
 fn group_rank(path: &Path) -> usize {
     GROUPS
         .iter()
@@ -271,6 +318,7 @@ fn collect_markdown(root: &Path, dir: &Path, paths: &mut Vec<PathBuf>) {
 
 struct FrontMatter {
     title: String,
+    draft: bool,
     extensions: Option<Vec<String>>,
 }
 
@@ -289,6 +337,10 @@ impl FrontMatter {
             .as_str()
             .unwrap_or_else(|| panic!("{}: front matter has no title", path.display()))
             .to_string();
+        let draft = !doc["draft"].is_badvalue()
+            && doc["draft"]
+                .as_bool()
+                .unwrap_or_else(|| panic!("{}: `draft` must be a boolean", path.display()));
         let extensions = (!doc["extensions"].is_badvalue()).then(|| {
             doc["extensions"]
                 .as_vec()
@@ -303,7 +355,11 @@ impl FrontMatter {
                 })
                 .collect()
         });
-        FrontMatter { title, extensions }
+        FrontMatter {
+            title,
+            draft,
+            extensions,
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 ---
-title: Header ID prefix in href (draft)
+title: Header ID prefix in href
+draft: true
 ---
 
 ```````````````````````````````` example --header-id-prefix user-content-

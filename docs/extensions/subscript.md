@@ -1,5 +1,6 @@
 ---
-title: Subscript (draft)
+title: Subscript
+draft: true
 ---
 
 ```````````````````````````````` example -e subscript

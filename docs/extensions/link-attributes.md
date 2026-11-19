@@ -1,5 +1,6 @@
 ---
-title: Link attributes (draft)
+title: Link attributes
+draft: true
 ---
 
 ```````````````````````````````` example -e link-attributes

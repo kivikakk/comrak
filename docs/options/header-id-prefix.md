@@ -1,5 +1,6 @@
 ---
-title: Header IDs (draft)
+title: Header IDs
+draft: true
 ---
 
 ```````````````````````````````` example

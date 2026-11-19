@@ -1,5 +1,6 @@
 ---
-title: Ignore setext headings (draft)
+title: Ignore setext headings
+draft: true
 ---
 
 ```````````````````````````````` example

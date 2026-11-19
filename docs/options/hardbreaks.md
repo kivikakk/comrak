@@ -1,5 +1,6 @@
 ---
-title: Hard line breaks (draft)
+title: Hard line breaks
+draft: true
 ---
 
 ```````````````````````````````` example --hardbreaks

@@ -1,5 +1,6 @@
 ---
-title: Code span-based math (draft)
+title: Code span-based math
+draft: true
 version: 0.1
 date: '2024-03-22'
 license: '[CC-BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/)'

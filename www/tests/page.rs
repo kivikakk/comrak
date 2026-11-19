@@ -1,12 +1,20 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use comrak_www::Doc;
+use comrak_www::{Doc, render_with_slots};
 
 fn load(name: &str, body: &str) -> Doc {
+    load_with(name, "", body)
+}
+
+fn load_with(name: &str, front_matter: &str, body: &str) -> Doc {
     let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("page");
     fs::create_dir_all(&root).unwrap();
-    fs::write(root.join(name), format!("---\ntitle: Test\n---\n\n{body}")).unwrap();
+    fs::write(
+        root.join(name),
+        format!("---\ntitle: Test\n{front_matter}---\n\n{body}"),
+    )
+    .unwrap();
     Doc::load(&root, PathBuf::from(name))
 }
 
@@ -110,4 +118,52 @@ fn front_matter_lists_covered_extensions() {
         Doc::load(&root, PathBuf::from("widgets.md")).covers,
         ["widget-a", "widget-b"]
     );
+}
+
+#[test]
+fn pages_are_finished_by_default() {
+    let doc = load("finished.md", "Text.\n");
+
+    assert!(!doc.draft);
+    assert_eq!(doc.display_title(), "Test");
+}
+
+#[test]
+fn front_matter_marks_drafts() {
+    let doc = load_with("draft.md", "draft: true\n", "Text.\n");
+
+    assert!(doc.draft);
+    assert_eq!(doc.title, "Test");
+    assert_eq!(doc.display_title(), "Test (draft)");
+}
+
+#[test]
+#[should_panic(expected = "`draft` must be a boolean")]
+fn draft_is_boolean() {
+    load_with("bad-draft.md", "draft: yes please\n", "Text.\n");
+}
+
+#[test]
+fn slots_fill_their_paragraphs() {
+    let html = render_with_slots(
+        "Before.\n\n{{a}}\n\nBetween.\n\n{{b}}\n\nAfter.\n",
+        &[("a", "<nav>A</nav>\n"), ("b", "<nav>B</nav>\n")],
+    );
+
+    assert_eq!(
+        html,
+        "<p>Before.</p>\n<nav>A</nav>\n<p>Between.</p>\n<nav>B</nav>\n<p>After.</p>\n"
+    );
+}
+
+#[test]
+#[should_panic(expected = "`{{a}}` must be its own paragraph exactly once")]
+fn slots_are_filled_once() {
+    render_with_slots("{{a}}\n\n{{a}}\n", &[("a", "")]);
+}
+
+#[test]
+#[should_panic(expected = "`{{a}}` must be its own paragraph exactly once")]
+fn slots_are_whole_paragraphs() {
+    render_with_slots("See {{a}}.\n", &[("a", "")]);
 }

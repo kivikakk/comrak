@@ -1,5 +1,6 @@
 ---
-title: Subtext (draft)
+title: Subtext
+draft: true
 ---
 
 ```````````````````````````````` example -e subtext

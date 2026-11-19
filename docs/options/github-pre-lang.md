@@ -1,5 +1,6 @@
 ---
-title: GitHub-style pre lang (draft)
+title: GitHub-style pre lang
+draft: true
 ---
 
 ```````````````````````````````` example --github-pre-lang

@@ -1,5 +1,6 @@
 ---
-title: GFM quirks (draft)
+title: GFM quirks
+draft: true
 ---
 
 ```````````````````````````````` example
