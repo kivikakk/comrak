@@ -1,5 +1,6 @@
 ---
 title: OFM block IDs
+draft: true
 ---
 
 Obsidian block IDs let a whole block be linked to from elsewhere. Append `^identifier` to the end of a block's last line, where the identifier is one or more ASCII letters, digits, or hyphens preceded by whitespace; the marker is removed from the rendered text, and the block gets an `id` attribute that includes the caret. See [Link to a block in a note](https://obsidian.md/help/links#Link+to+a+block+in+a+note).
