@@ -413,8 +413,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         self.need_cr = max(self.need_cr, 2);
     }
 
-    /// Encode an info string for single-line title output in code fences or
-    /// block directive fences.
+    /// Encode an info string for single-line title output in code fences,
+    /// block directive fences, or alert titles.
     ///
     /// Re-escapes `&` and `\` to counteract the parser's `unescape_html`
     /// and `unescape` passes, encodes newlines as character references to
@@ -1417,7 +1417,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 alert.alert_type.default_title().to_uppercase()
             )?;
             if let Some(ref title) = alert.title {
-                write!(self, " {title}")?;
+                write!(self, " ")?;
+                self.write_title_info(title, false)?;
             }
             writeln!(self)?;
             write!(self, "> ")?;

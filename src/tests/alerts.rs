@@ -213,3 +213,20 @@ fn multiline_marker_spacing() {
         ),
     );
 }
+
+#[test]
+fn title_escapes_roundtrip() {
+    html_opts!(
+        [extension.alerts],
+        concat!(
+            "> [!note] a \\\\* b \\* c &amp;lt; d \\\\[ e & f\n",
+            "> x\n"
+        ),
+        concat!(
+            "<div class=\"markdown-alert markdown-alert-note\">\n",
+            "<p class=\"markdown-alert-title\">a \\* b * c &amp;lt; d \\[ e &amp; f</p>\n",
+            "<p>x</p>\n",
+            "</div>\n",
+        ),
+    );
+}
