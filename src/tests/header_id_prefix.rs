@@ -135,3 +135,16 @@ fn header_ids_avoid_block_ids_under_prefix() {
         no_roundtrip,
     );
 }
+
+#[test]
+fn header_ids_are_never_empty() {
+    html_opts!(
+        [extension.header_id_prefix = Some(String::new())],
+        "#\n# !!!\n# -1\n",
+        concat!(
+            "<h1 id=\"-1\"><a href=\"#-1\" aria-label=\"Link to heading ''\" data-heading-content=\"\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"-2\">!!!<a href=\"#-2\" aria-label=\"Link to heading '!!!'\" data-heading-content=\"!!!\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"-1-1\">-1<a href=\"#-1-1\" aria-label=\"Link to heading '-1'\" data-heading-content=\"-1\" class=\"anchor\"></a></h1>\n",
+        ),
+    );
+}
