@@ -697,21 +697,13 @@ fn render_code_block<T>(
     ncb: &NodeCodeBlock,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        let info = &ncb.info;
-        let info_bytes = info.as_bytes();
-        let mut first_tag = 0;
-
-        while first_tag < info.len() && !isspace(info_bytes[first_tag]) {
-            first_tag += 1;
+        if ncb.is_math(context.options) {
+            return render_math_code_block(context, node, &ncb.literal);
         }
 
-        let lang = &info[..first_tag];
-        let meta = info[first_tag..].trim();
+        let (lang, meta) = split_info_string(&ncb.info);
 
-        let is_math = ncb.is_math(context.options);
-        if is_math {
-            render_math_code_block(context, node, &ncb.literal)?;
-        } else if !lang.is_empty()
+        if !lang.is_empty()
             && let Some(adapter) = context.plugins.render.codefence_renderers.get(lang)
         {
             context.cr()?;
@@ -728,66 +720,82 @@ fn render_code_block<T>(
             return Ok(ChildRendering::HTML);
         }
 
-        if !is_math {
-            context.cr()?;
+        context.cr()?;
 
-            #[cfg(feature = "attributes")]
-            let ast = node.data();
-            let mut pre_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
-            let mut code_attributes: BTreeMap<&str, Cow<str>> = BTreeMap::new();
-            let code_attr: String;
+        let ast = node.data();
+        let (pre_attributes, code_attributes) = code_block_attributes(context, &ast, false);
 
-            let literal = &ncb.literal;
+        match context.plugins.render.codefence_syntax_highlighter {
+            None => {
+                write_opening_tag(context, "pre", pre_attributes.into_iter())?;
+                write_opening_tag(context, "code", code_attributes.into_iter())?;
 
-            if !info.is_empty() {
-                if context.options.render.github_pre_lang {
-                    pre_attributes.insert("lang", lang.into());
+                context.escape(&ncb.literal)?;
 
-                    if context.options.render.full_info_string && !meta.is_empty() {
-                        pre_attributes.insert("data-meta", meta.into());
-                    }
-                } else {
-                    code_attr = format!("language-{}", lang);
-                    code_attributes.insert("class", code_attr.into());
-
-                    if context.options.render.full_info_string && !meta.is_empty() {
-                        code_attributes.insert("data-meta", meta.into());
-                    }
-                }
+                context.write_str("</code></pre>")?;
+                context.lf()?
             }
+            Some(highlighter) => {
+                let highlight = SyntaxHighlightMeta::new(lang, meta, &ncb.literal);
+                highlighter.write_pre_tag(context, &highlight, pre_attributes)?;
+                highlighter.write_code_tag(context, &highlight, code_attributes)?;
+                highlighter.write_highlighted(context, &highlight)?;
 
-            if context.options.render.sourcepos {
-                let ast = node.data();
-                pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
-            }
-
-            #[cfg(feature = "attributes")]
-            extend_with_attributes(context, &ast, &mut pre_attributes);
-
-            match context.plugins.render.codefence_syntax_highlighter {
-                None => {
-                    write_opening_tag(context, "pre", pre_attributes.into_iter())?;
-                    write_opening_tag(context, "code", code_attributes.into_iter())?;
-
-                    context.escape(literal)?;
-
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
-                }
-                Some(highlighter) => {
-                    let highlight = SyntaxHighlightMeta::new(lang, meta, &ncb.literal);
-                    highlighter.write_pre_tag(context, &highlight, pre_attributes)?;
-                    highlighter.write_code_tag(context, &highlight, code_attributes)?;
-                    highlighter.write_highlighted(context, &highlight)?;
-
-                    context.write_str("</code></pre>")?;
-                    context.lf()?
-                }
+                context.write_str("</code></pre>")?;
+                context.lf()?
             }
         }
     }
 
     Ok(ChildRendering::HTML)
+}
+
+fn split_info_string(info: &str) -> (&str, &str) {
+    let lang_end = info.bytes().position(isspace).unwrap_or(info.len());
+    (&info[..lang_end], info[lang_end..].trim())
+}
+
+type Attributes<'a> = BTreeMap<&'a str, Cow<'a, str>>;
+
+fn code_block_attributes<'a, T>(
+    context: &Context<T>,
+    ast: &'a crate::nodes::Ast,
+    math: bool,
+) -> (Attributes<'a>, Attributes<'a>) {
+    let NodeValue::CodeBlock(ref ncb) = ast.value else {
+        unreachable!()
+    };
+    let (lang, meta) = split_info_string(&ncb.info);
+
+    let mut pre_attributes = Attributes::new();
+    let mut code_attributes = Attributes::new();
+
+    if !ncb.info.is_empty() {
+        let lang_attributes = if context.options.render.github_pre_lang {
+            pre_attributes.insert("lang", lang.into());
+            &mut pre_attributes
+        } else {
+            code_attributes.insert("class", format!("language-{lang}").into());
+            &mut code_attributes
+        };
+
+        if context.options.render.full_info_string && !meta.is_empty() {
+            lang_attributes.insert("data-meta", meta.into());
+        }
+
+        if math {
+            lang_attributes.insert("data-math-style", "display".into());
+        }
+    }
+
+    if context.options.render.sourcepos {
+        pre_attributes.insert("data-sourcepos", ast.sourcepos.to_string().into());
+    }
+
+    #[cfg(feature = "attributes")]
+    extend_with_attributes(context, ast, &mut pre_attributes);
+
+    (pre_attributes, code_attributes)
 }
 
 fn render_emph<T>(
@@ -1810,25 +1818,8 @@ pub fn render_math_code_block<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     context.cr()?;
 
-    // use vectors to ensure attributes always written in the same order,
-    // for testing stability
-    let mut pre_attributes: Vec<(&str, Cow<str>)> = Vec::new();
-    let mut code_attributes: Vec<(&str, Cow<str>)> = Vec::new();
-    let lang_str = "math";
-
-    if context.options.render.github_pre_lang {
-        pre_attributes.push(("lang", lang_str.into()));
-        pre_attributes.push(("data-math-style", "display".into()));
-    } else {
-        let code_attr = format!("language-{}", lang_str);
-        code_attributes.push(("class", code_attr.into()));
-        code_attributes.push(("data-math-style", "display".into()));
-    }
-
-    if context.options.render.sourcepos {
-        let ast = node.data();
-        pre_attributes.push(("data-sourcepos", ast.sourcepos.to_string().into()));
-    }
+    let ast = node.data();
+    let (pre_attributes, code_attributes) = code_block_attributes(context, &ast, true);
 
     write_opening_tag(context, "pre", pre_attributes.into_iter())?;
     write_opening_tag(context, "code", code_attributes.into_iter())?;

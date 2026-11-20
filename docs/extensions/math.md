@@ -555,7 +555,7 @@ $ `x`$
 
 ### Maths code blocks
 
-A [fenced code block] whose [info string] begins with the word `math` is display maths.  Comrak ignores the rest of the info string:
+A [fenced code block] whose [info string] begins with the word `math` is display maths.  The rest of the info string doesn't affect whether the block is maths:
 
 ```````````````````````````````` example -e math-code
 ```math
@@ -615,7 +615,18 @@ With `--github-pre-lang`, a maths code block puts both `lang` and `data-math-sty
 x
 ```
 .
-<pre lang="math" data-math-style="display"><code>x
+<pre data-math-style="display" lang="math"><code>x
+</code></pre>
+````````````````````````````````
+
+Otherwise, a maths code block takes the same attributes as any other code block.  With `--full-info-string`, the rest of the info string becomes a `data-meta` attribute beside `data-math-style`, and [fenced code attributes](attributes.html#fenced-code-blocks) go on the `<pre>`:
+
+```````````````````````````````` example -e math-code -e fenced-code-attributes --full-info-string --attributes --unsafe
+```math numbered {#pythagoras}
+a^2 + b^2 = c^2
+```
+.
+<pre id="pythagoras"><code class="language-math" data-math-style="display" data-meta="numbered">a^2 + b^2 = c^2
 </code></pre>
 ````````````````````````````````
 
@@ -701,7 +712,7 @@ In image descriptions, maths contributes its content to the `alt` text:
 <p><img src="/x2.png" alt="x squared" /></p>
 ````````````````````````````````
 
-With [attributes](attributes.html), inline code maths doesn't take attributes.  The attributes page [covers this](attributes.html#interactions).
+With [attributes](attributes.html), inline code maths doesn't take attributes, but a maths code block does, as [Output](#output) shows.  The attributes page [covers both](attributes.html#interactions).
 
 ## Differences from Pandoc and GitHub
 
