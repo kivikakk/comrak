@@ -205,7 +205,7 @@ x ~~a~~ ~b~
 
 ## Interactions
 
-`--gfm` enables strikethrough, along with the other GitHub Flavored Markdown extensions:
+[`--gfm`](../options/gfm.html) enables strikethrough, along with the other GitHub Flavored Markdown extensions:
 
 ```````````````````````````````` example --gfm
 ~~a~~

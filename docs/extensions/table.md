@@ -923,7 +923,7 @@ The source position of an [added cell] is an empty range, just after the row's l
 
 ## Interactions
 
-`--gfm` enables tables, along with the other GitHub Flavored Markdown extensions:
+[`--gfm`](../options/gfm.html) enables tables, along with the other GitHub Flavored Markdown extensions:
 
 ```````````````````````````````` example --gfm
 | a |
