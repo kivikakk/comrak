@@ -17,7 +17,7 @@ Specify it as a requirement in `Cargo.toml`:
 
 ```toml
 [dependencies]
-comrak = "1.0"
+comrak = "1.1"
 ```
 
 Comrak's library supports Rust <span class="msrv">1.89</span>+.
@@ -62,7 +62,7 @@ Options:
   -c, --config-file <PATH>
           Path to config file containing command-line arguments, or 'none'
           
-          [default: /Users/kivikakk/.config/comrak/config]
+          [default: /home/runner/.config/comrak/config]
 
   -i, --inplace
           Reformat CommonMark files in-place

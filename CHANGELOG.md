@@ -1,3 +1,16 @@
+# [v1.1.0] - 2026-11-20
+
+## What's Changed
+* footnotes: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/935
+* wikilinks: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/936
+* alerts: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/938
+* attributes: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/939
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v1.0.0...v1.1.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
