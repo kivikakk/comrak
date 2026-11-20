@@ -59,7 +59,7 @@ Emphasis inside emphasis is unaffected:
 <p><em><em>foo</em></em></p>
 ````````````````````````````````
 
-With `--sourcepos`, only the outer strong emphasis has a source position, since it's the only one written:
+With [`--sourcepos`](sourcepos.html), only the outer strong emphasis has a source position, since it's the only one written:
 
 ```````````````````````````````` example --gfm-quirks --sourcepos
 ****abcd****

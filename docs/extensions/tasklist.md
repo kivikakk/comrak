@@ -444,7 +444,7 @@ CommonMark output writes the marker back with its symbol, followed by a space.
 
 In XML output, a task list item is a `taskitem` element.  Its `completed` attribute is `true` if the item is [complete], and `false` otherwise.  A task list's `list` element has `tasklist="true"`.
 
-In the AST, a task list item is a [`NodeValue::TaskItem`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.TaskItem).  Its [`NodeTaskItem`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeTaskItem.html) holds the symbol (`None` for a [space]) and the symbol's source position.  A task list's [`NodeList`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeList.html) has `is_task_list` set.
+In the AST, a task list item is a [`NodeValue::TaskItem`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.TaskItem).  Its [`NodeTaskItem`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeTaskItem.html) holds the symbol (`None` for a [space]) and the symbol's [source position](../options/sourcepos.html#source-position).  A task list's [`NodeList`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeList.html) has `is_task_list` set.
 
 ## Options
 

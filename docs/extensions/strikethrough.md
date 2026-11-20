@@ -195,7 +195,7 @@ In XML output, strikethrough is a `strikethrough` element.
 
 In the AST, strikethrough is a [`NodeValue::Strikethrough`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.Strikethrough), with its content as children.
 
-Strikethrough's source position covers its tilde runs:
+Strikethrough's [source position](../options/sourcepos.html#source-position) covers its tilde runs:
 
 ```````````````````````````````` example -e strikethrough --sourcepos
 x ~~a~~ ~b~

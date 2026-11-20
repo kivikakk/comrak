@@ -258,7 +258,7 @@ In XML output, a wikilink is a `wikilink` element with a `destination` attribute
 
 In the AST, a wikilink is a [`NodeValue::WikiLink`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.WikiLink).  Its [`NodeWikiLink`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeWikiLink.html) holds the destination (`url`), and whether it's an embed (`embed`), with the title as its children.
 
-A wikilink's source position covers its brackets, including an embed's `!`:
+A wikilink's [source position](../options/sourcepos.html#source-position) covers its brackets, including an embed's `!`:
 
 ```````````````````````````````` example -e wikilinks-title-after-pipe --sourcepos
 [[Home|Start here]] and ![[photo.png]]
