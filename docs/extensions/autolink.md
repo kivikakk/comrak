@@ -392,7 +392,7 @@ Comrak takes a www or URL autolink that runs into `](` to be the text of a link,
 
 ## Interactions
 
-`--gfm` enables autolinks, along with the other GitHub Flavored Markdown extensions:
+[`--gfm`](../options/gfm.html) enables autolinks, along with the other GitHub Flavored Markdown extensions:
 
 ```````````````````````````````` example --gfm
 www.commonmark.org

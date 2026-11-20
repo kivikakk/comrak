@@ -709,7 +709,7 @@ With [task list classes](#task-list-classes), only the checkbox gets a class:
 
 ## Interactions
 
-`--gfm` enables task lists, along with the other GitHub Flavored Markdown extensions:
+[`--gfm`](../options/gfm.html) enables task lists, along with the other GitHub Flavored Markdown extensions:
 
 ```````````````````````````````` example --gfm
 - [x] foo

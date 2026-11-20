@@ -89,6 +89,12 @@ code {
     &::before, &::after { content: '`'; opacity: var(--md-opacity); }
 }
 
+pre code {
+    display: block;
+
+    &::before, &::after { content: none; }
+}
+
 ul {
     list-style-type: none;
     padding-left: 1rem;
@@ -135,9 +141,6 @@ section.footnotes li:target {
 
     pre code {
         font-size: 0.8rem;
-        display: block;
-
-        &::before, &::after { content: none; }
     }
 }
 

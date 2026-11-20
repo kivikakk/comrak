@@ -449,6 +449,17 @@ $`x^2`${#x}
 <p><code data-math-style="inline">x^2</code>{#x}</p>
 ````````````````````````````````
 
+A maths code block takes them like any other fenced code block does:
+
+```````````````````````````````` example -e fenced-code-attributes -e math-code --attributes --unsafe
+```math {#euler}
+e^{i\pi} + 1 = 0
+```
+.
+<pre id="euler"><code class="language-math" data-math-style="display">e^{i\pi} + 1 = 0
+</code></pre>
+````````````````````````````````
+
 With [wikilinks](wikilinks.html), a wikilink doesn't take attributes:
 
 ```````````````````````````````` example -e link-attributes -e wikilinks-title-after-pipe --attributes --unsafe

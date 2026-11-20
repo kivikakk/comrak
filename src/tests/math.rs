@@ -534,3 +534,24 @@ fn math_code_block_xml() {
         |opts| opts.extension.math_code = true,
     );
 }
+
+#[test]
+#[cfg(feature = "attributes")]
+fn math_code_block_attributes() {
+    html_opts!(
+        [
+            extension.math_code,
+            extension.fenced_code_attributes,
+            render.full_info_string,
+            render.github_pre_lang,
+            render.sourcepos,
+            render.attributes,
+            render.r#unsafe
+        ],
+        "```math numbered {.eq data-math-style=inline}\nx\n```\n",
+        concat!(
+            "<pre class=\"eq\" data-math-style=\"display\" data-meta=\"numbered\" ",
+            "data-sourcepos=\"1:1-3:3\" lang=\"math\"><code>x\n</code></pre>\n",
+        ),
+    );
+}
