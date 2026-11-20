@@ -161,6 +161,20 @@ fn math_code_inline(markdown: &str, html: &str) {
     html_opts!([extension.math_code], markdown, &result);
 }
 
+#[test_case("$``a`b``$", "<p><math>a`b</math></p>\n")]
+#[test_case("$`` `a` ``$", "<p><math>`a`</math></p>\n")]
+#[test_case("$` a `$", "<p><math>a</math></p>\n")]
+#[test_case("$`a`b`$", "<p>$<code>a</code>b`$</p>\n")]
+#[test_case("$`a` $", "<p>$<code>a</code> $</p>\n")]
+#[test_case("$``a`$", "<p>$``a`$</p>\n")]
+fn math_code_is_a_code_span(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math>", "<code data-math-style=\"inline\">")
+        .replace("</math>", "</code>");
+
+    html_opts!([extension.math_code], markdown, &result);
+}
+
 #[test_case("```math\n2+2\n4+4\n```", "<pre><math>2+2\n4+4\n</math></pre>\n")]
 fn math_code_block(markdown: &str, html: &str) {
     let result = html
