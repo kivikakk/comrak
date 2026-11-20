@@ -441,7 +441,7 @@ fn main() {}
 </span></code></pre>
 ````````````````````````````````
 
-With [code span-based math](math-code.html), a math span doesn't take attributes:
+With [code maths](math.html#code-maths), inline code maths doesn't take attributes:
 
 ```````````````````````````````` example -e inline-code-attributes -e math-code --attributes --unsafe
 $`x^2`${#x}
