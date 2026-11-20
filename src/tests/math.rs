@@ -73,6 +73,25 @@ fn math_dollars_escapes(markdown: &str, html: &str) {
     html_opts!([extension.math_dollars], markdown, &result);
 }
 
+#[test_case("$a\nb$", "<p><math>a\nb</math></p>\n")]
+#[test_case(
+    "> $a\n> b$",
+    "<blockquote>\n<p><math>a\nb</math></p>\n</blockquote>\n"
+)]
+#[test_case("- $a\n  b$", "<ul>\n<li><math>a\nb</math></li>\n</ul>\n")]
+fn math_dollars_inline_keeps_line_endings(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math>", "<span data-math-style=\"inline\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        markdown,
+        &result
+    );
+}
+
 #[test_case("\\(a\\\\)b\\)", "<p><math:inline>a\\\\)b</math></p>\n")]
 #[test_case("\\(a\\\\\\)", "<p><math:inline>a\\\\</math></p>\n")]
 #[test_case("\\[a\\\\]b\\]", "<p><math:display>a\\\\]b</math></p>\n")]

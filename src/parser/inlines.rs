@@ -1369,16 +1369,10 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             .filter(|endpos| endpos - startpos >= opendollars * 2 + 1);
 
         if let Some(endpos) = endpos {
-            let buf = &self.input[startpos + opendollars..endpos - opendollars];
-            let buf = if opendollars == 1 {
-                strings::normalize_code(buf)
-            } else {
-                buf.into()
-            };
             let math = NodeMath {
                 dollar_math: true,
                 display_math: opendollars == 2,
-                literal: buf.into(),
+                literal: self.input[startpos + opendollars..endpos - opendollars].into(),
             };
             let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(

@@ -1891,7 +1891,6 @@ fn dollar_math_holds(math: &NodeMath, next: Option<Node<'_>>, math_code: bool) -
         && (!math_code || first != b'`')
         && !isspace(last)
         && !escaped(literal.len())
-        && !literal.contains(&b'\n')
         && !next_is_digit
         && literal
             .iter()
