@@ -537,3 +537,34 @@ fn commonmark_escapes_attribute_lookalikes() {
         Some(&options),
     );
 }
+
+#[test]
+fn header_ids_avoid_explicit_ids_anywhere() {
+    html_opts!(
+        [
+            extension.inline_code_attributes = true,
+            extension.header_id_prefix = Some(String::new()),
+            render.attributes = true,
+            render.r#unsafe = true
+        ],
+        "`x`{#a}\n\n# A\n",
+        concat!(
+            "<p><code id=\"a\">x</code></p>\n",
+            "<h1 id=\"a-1\">A<a href=\"#a-1\" aria-label=\"Link to heading 'A'\" data-heading-content=\"A\" class=\"anchor\"></a></h1>\n",
+        ),
+    );
+
+    html_opts!(
+        [
+            extension.inline_code_attributes = true,
+            extension.header_id_prefix = Some("p-".to_string()),
+            render.attributes = true,
+            render.r#unsafe = true
+        ],
+        "`x`{#p-a} `y`{#a}\n\n# A\n",
+        concat!(
+            "<p><code id=\"p-a\">x</code> <code id=\"a\">y</code></p>\n",
+            "<h1 id=\"p-a-1\">A<a href=\"#a-1\" aria-label=\"Link to heading 'A'\" data-heading-content=\"A\" class=\"anchor\"></a></h1>\n",
+        ),
+    );
+}

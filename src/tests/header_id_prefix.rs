@@ -96,3 +96,42 @@ fn header_id_prefix_in_href_without_prefix() {
         opts.extension.header_id_prefix_in_href = true;
     });
 }
+
+#[test]
+fn header_ids_avoid_footnote_ids() {
+    html_opts!(
+        [
+            extension.footnotes = true,
+            extension.header_id_prefix = Some(String::new())
+        ],
+        "# fn-1\n# fnref-1-2\n\nHi[^1][^1].\n\n[^1]: Note.\n",
+        concat!(
+            "<h1 id=\"fn-1-1\">fn-1<a href=\"#fn-1-1\" aria-label=\"Link to heading 'fn-1'\" data-heading-content=\"fn-1\" class=\"anchor\"></a></h1>\n",
+            "<h1 id=\"fnref-1-2-1\">fnref-1-2<a href=\"#fnref-1-2-1\" aria-label=\"Link to heading 'fnref-1-2'\" data-heading-content=\"fnref-1-2\" class=\"anchor\"></a></h1>\n",
+            "<p>Hi<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\" data-footnote-ref>1</a></sup><sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1-2\" data-footnote-ref>1</a></sup>.</p>\n",
+            "<section class=\"footnotes\" data-footnotes>\n",
+            "<ol>\n",
+            "<li id=\"fn-1\">\n",
+            "<p>Note. <a href=\"#fnref-1\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1\" aria-label=\"Back to reference 1\">↩</a> <a href=\"#fnref-1-2\" class=\"footnote-backref\" data-footnote-backref data-footnote-backref-idx=\"1-2\" aria-label=\"Back to reference 1-2\">↩<sup class=\"footnote-ref\">2</sup></a></p>\n",
+            "</li>\n",
+            "</ol>\n",
+            "</section>\n",
+        ),
+    );
+}
+
+#[test]
+fn header_ids_avoid_block_ids_under_prefix() {
+    html_opts!(
+        [
+            extension.ofm_block_ids = true,
+            extension.header_id_prefix = Some("^".to_string())
+        ],
+        "Para ^abc\n\n# abc\n",
+        concat!(
+            "<p id=\"^abc\">Para </p>\n",
+            "<h1 id=\"^abc-1\">abc<a href=\"#abc-1\" aria-label=\"Link to heading 'abc'\" data-heading-content=\"abc\" class=\"anchor\"></a></h1>\n",
+        ),
+        no_roundtrip,
+    );
+}
