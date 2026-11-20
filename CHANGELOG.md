@@ -17,6 +17,56 @@ Behind the scenes:
 
 -->
 
+# [v1.1.0] - 2026-11-20
+
+Remember this line from earlier this week?
+
+> * Any option or extension currently without a complete write-up per [#924](https://github.com/kivikakk/comrak/issues/924) _is liable to change output_ in the minor version it gets its spec!  It'll probably be in very edge-case-y ways you might never have run into, but be warned.
+
+WE'RE HERE.  Enjoy!
+
+Parser changes:
+
+* Footnotes have been specced, with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/935)
+  * When a label is defined more than once, the first definition takes precedence, like cmark-gfm. Before, every definition was rendered!
+  * Definitions nested inside other definitions are now found.
+  * Labels match as written in the source: `[^&#97;]` no longer matches `[^a]`, and `` [^`b`] `` now matches `` [^`b`]: ``. Unmatched references are just left as-is: `[^*b*]` renders emphasis!
+  * Footnotes are numbered in reading order; references inside definitions are numbered after the references thereto. Definitions only referenced from unreferenced definitions are dropped.
+  * A blank line inside a container, or a line of only spaces, no longer end a footnote definition.
+* Wikilinks have been specced, likewise with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/936)
+  * An unclosed `[` no longer stops a following wikilink from parsing, meaning `[blah [[Home]]` now links `[[Home]]` like you'd expect.
+  * A wikilink inside link text stops the outer link forming, as a link would, and wikilinks now parse in image descriptions.
+  * Line endings in wikilink destinations become spaces, not `%0A`.
+* Alert marker are now much more like blockquotes wrt. spacing: `>[!note]` and up to three spaces or a tab after the `>` now start an alert, and for multiline alerts too. (by @kivikakk in https://github.com/kivikakk/comrak/pull/938)
+* Attributes have been specced, with (you guessed it!) some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/939)
+  * Keys may start with `_` or `:`, values may be unquoted (e.g. `{k=a/b}`), and entities in values are decoded.
+  * `id=` and `class=` pairs set the ID and **add** classes; the last ID or pair with a given key takes precedence; consecutive attribute blocks on inline code and links get merged, e.g. `` `x`{.a}{#b} ``.
+  * Fenced code attributes are parsed from the info string as written, thus `\{` and `&#123;` no longer start them.
+
+Changed APIs:
+
+* With `render.attributes`, Comrak's own HTML attributes now take precedence over parsed ones, instead of being overridden, and we don't emit any attribute twice. `[a](/u){href=/v}` gets `href="/u"`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/939)
+
+Bug fixes:
+
+* `NodeFootnoteReference::texts` holds the label as written in the source, instead of one rebuilt from parsed inlines. So long, "awful HACK". (by @kivikakk in https://github.com/kivikakk/comrak/pull/935)
+* An empty footnote definition's `<li>` is followed by a newline in HTML. (by @kivikakk in https://github.com/kivikakk/comrak/pull/935)
+* Wikilinks roundtrip through the CommonMark formatter, no longer attracting a duplicate title or percent-encoded labels. (by @kivikakk in https://github.com/kivikakk/comrak/pull/936)
+* The CommonMark formatter percent-encodes control characters in link URLs correctly (`%09`, not `% 9` D:). (by @kivikakk in https://github.com/kivikakk/comrak/pull/936)
+* The CommonMark formatter keeps the `>` on blank lines after code and HTML blocks in blockquotes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/938)
+* The CommonMark formatter escapes alert titles! (by @kivikakk in https://github.com/kivikakk/comrak/pull/938)
+* The CommonMark formatter writes attributes, and escapes text that would otherwise parse as attributes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/939)
+
+Documentation:
+
+* Document footnotes, wikilinks, alerts, and attributes with care. (by @kivikakk in https://github.com/kivikakk/comrak/pull/935, https://github.com/kivikakk/comrak/pull/936, https://github.com/kivikakk/comrak/pull/938, https://github.com/kivikakk/comrak/pull/939)
+* comrak.ee differentias finished specs and drafts. (by @kivikakk in 140a1a11, https://github.com/kivikakk/comrak/pull/938, and https://github.com/kivikakk/comrak/pull/939)
+* The README links our GFM extension specs, and documents our stability guarantees. (931f5e47, 8129ed54, 448a093f)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v1.0.0...v1.1.0
+
+
 # [v1.0.0] - 2026-11-17
 
 Ten years ago today, we find 280de0d358:

@@ -1312,7 +1312,8 @@ pub struct Render {
     /// This option requires `unsafe` to be turned on to have any effect.
     ///
     /// With `unsafe`, the default HTML formatters include attributes in
-    /// their output, and override any attributes that they'd normally output.
+    /// their output.  Note that any attributes Comrak itself writes take
+    /// precedence over custom ones.
     ///
     /// Without `unsafe`, this option does nothing.  This is because you can
     /// produce real security vulnerabilities with any kind of custom attribute,
@@ -1336,6 +1337,9 @@ pub struct Render {
     /// let input = "![Comrak](comrak.png){width=100 .logo}";
     /// assert_eq!(markdown_to_html(input, &options),
     ///            "<p><img src=\"comrak.png\" alt=\"Comrak\" class=\"logo\" width=\"100\" /></p>\n");
+    /// let input = "[Comrak](https://comrak.ee){href=https://example.com}";
+    /// assert_eq!(markdown_to_html(input, &options),
+    ///            "<p><a href=\"https://comrak.ee\">Comrak</a></p>\n");
     /// ```
     #[cfg(feature = "attributes")]
     #[cfg_attr(feature = "bon", builder(default))]
