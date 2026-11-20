@@ -744,7 +744,7 @@ fn render_code_block<T>(
                     pre_attributes.insert("lang", lang.into());
 
                     if context.options.render.full_info_string && !meta.is_empty() {
-                        pre_attributes.insert("data-meta", meta.trim().into());
+                        pre_attributes.insert("data-meta", meta.into());
                     }
                 } else {
                     code_attr = format!("language-{}", lang);
