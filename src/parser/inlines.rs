@@ -2168,6 +2168,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let content_start = self.scanner.pos;
         let matcher = dollar_matcher();
         loop {
             let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
@@ -2184,7 +2185,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
 
             // dollar signs must also be backslash-escaped if they occur within math
-            if opendollarlength == 1 && c == b'\\' {
+            let backslashes = self.input.as_bytes()[content_start..self.scanner.pos]
+                .iter()
+                .rev()
+                .take_while(|&&b| b == b'\\')
+                .count();
+            if backslashes % 2 == 1 {
                 self.scanner.pos += 1;
                 continue;
             }
@@ -2226,11 +2232,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let input = bytes.get(startpos..)?;
         let matcher = backslash_matcher();
 
+        let mut escaped_until = startpos;
         for index in matcher.iter(input) {
             let pos = startpos + index;
+            if pos < escaped_until {
+                continue;
+            }
             if bytes.get(pos + 1) == Some(&closing_delimiter) {
                 return Some(pos);
             }
+            escaped_until = pos + 2;
         }
 
         None

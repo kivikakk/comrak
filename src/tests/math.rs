@@ -60,6 +60,40 @@ fn math_dollars_inline_display(markdown: &str, html: &str) {
     html_opts!([extension.math_dollars], markdown, &result);
 }
 
+#[test_case("$a\\\\$ b$", "<p><math:inline>a\\\\</math> b$</p>\n")]
+#[test_case("$a\\\\\\$b$", "<p><math:inline>a\\\\\\$b</math></p>\n")]
+#[test_case("$$\\$$$", "<p><math:display>\\$</math></p>\n")]
+#[test_case("$$a\\\\$$ b$$", "<p><math:display>a\\\\</math> b$$</p>\n")]
+fn math_dollars_escapes(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math:inline>", "<span data-math-style=\"inline\">")
+        .replace("<math:display>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+}
+
+#[test_case("\\(a\\\\)b\\)", "<p><math:inline>a\\\\)b</math></p>\n")]
+#[test_case("\\(a\\\\\\)", "<p><math:inline>a\\\\</math></p>\n")]
+#[test_case("\\[a\\\\]b\\]", "<p><math:display>a\\\\]b</math></p>\n")]
+fn math_latex_escapes(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math:inline>", "<span data-math-style=\"inline\">")
+        .replace("<math:display>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_latex], markdown, &result);
+}
+
+#[test]
+fn math_latex_keeps_form_escaped_backslash_before_dollar() {
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        "\\(a\\\\$b\\)",
+        "<p><span data-math-style=\"inline\">a\\\\$b</span></p>\n",
+    );
+}
+
 #[test_case("$$\n2+2\n4+4\n$$", "<p><math>\n2+2\n4+4\n</math></p>\n")]
 fn math_dollars_block(markdown: &str, html: &str) {
     let result = html

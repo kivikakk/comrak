@@ -1869,16 +1869,25 @@ fn dollar_math_holds(math: &NodeMath, next: Option<Node<'_>>, math_code: bool) -
         NodeValue::Text(ref t) => t.as_bytes().first().is_some_and(|&b| isdigit(b)),
         _ => false,
     });
+    let escaped = |end: usize| {
+        literal[..end]
+            .iter()
+            .rev()
+            .take_while(|&&b| b == b'\\')
+            .count()
+            % 2
+            == 1
+    };
     !isspace(first)
         && (!math_code || first != b'`')
         && !isspace(last)
-        && last != b'\\'
+        && !escaped(literal.len())
         && !literal.contains(&b'\n')
         && !next_is_digit
         && literal
             .iter()
             .enumerate()
-            .all(|(i, &b)| b != b'$' || (i > 0 && literal[i - 1] == b'\\'))
+            .all(|(i, &b)| b != b'$' || escaped(i))
 }
 
 fn tight_container(node: Node<'_>) -> bool {
