@@ -652,7 +652,7 @@ In XML output, dollar maths, LaTeX maths and inline code maths are `math` elemen
 
 In the AST, dollar maths, LaTeX maths and inline code maths are a [`NodeValue::Math`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.Math).  Its [`NodeMath`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeMath.html) holds the content, `display_math`, and `dollar_math`, which is false for code maths and true otherwise.  Block maths is a [`NodeValue::MathBlock`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.MathBlock), and a maths code block is a [`NodeValue::CodeBlock`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.CodeBlock).
 
-The source position of maths covers its delimiters:
+The [source position](../options/sourcepos.html#source-position) of maths covers its delimiters:
 
 ```````````````````````````````` example -e math-dollars -e math-code --sourcepos
 a $x$ and $`y`$

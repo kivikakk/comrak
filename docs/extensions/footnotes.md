@@ -508,7 +508,7 @@ In the AST, a footnote reference is a [`NodeValue::FootnoteReference`](https://d
 
 Comrak moves numbered footnote definitions to the end of the document, in number order, and removes the rest.  With `parse.leave_footnote_definitions`, every footnote definition stays where it is in the document, including those that would otherwise be dropped.  The option has no command-line flag yet.
 
-Footnote references and definitions have source positions:
+Footnote references and definitions have [source positions](../options/sourcepos.html#source-position):
 
 ```````````````````````````````` example -e footnotes --sourcepos
 A[^a].

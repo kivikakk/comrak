@@ -1,13 +1,12 @@
 ---
 title: Source positions in characters
-draft: true
 ---
 
-```````````````````````````````` example --sourcepos --sourcepos-chars
-aɽ好𐀀
-.
-<p data-sourcepos="1:1-1:4">aɽ好𐀀</p>
-````````````````````````````````
+`--sourcepos-chars` (`parse.sourcepos_chars`) counts the columns of [source positions](sourcepos.html#source-position) in Unicode characters instead of bytes.  It changes the positions in the AST, and doesn't change any output unless [`--sourcepos`](sourcepos.html) is set.
+
+For the full rules, see [Source positions in characters](sourcepos.html#source-positions-in-characters).
+
+Without the option, each byte of a character is a column:
 
 ```````````````````````````````` example --sourcepos
 aɽ好𐀀
@@ -15,26 +14,10 @@ aɽ好𐀀
 <p data-sourcepos="1:1-1:10">aɽ好𐀀</p>
 ````````````````````````````````
 
-```````````````````````````````` example --sourcepos --sourcepos-chars
-ɽ**ɽ**ɽ
-.
-<p data-sourcepos="1:1-1:7">ɽ<strong data-sourcepos="1:2-1:6">ɽ</strong>ɽ</p>
-````````````````````````````````
-
-```````````````````````````````` example --sourcepos
-ɽ**ɽ**ɽ
-.
-<p data-sourcepos="1:1-1:10">ɽ<strong data-sourcepos="1:3-1:8">ɽ</strong>ɽ</p>
-````````````````````````````````
+With the option, each character is a column:
 
 ```````````````````````````````` example --sourcepos --sourcepos-chars
-`𐀀`
+aɽ好𐀀
 .
-<p data-sourcepos="1:1-1:3"><code data-sourcepos="1:1-1:3">𐀀</code></p>
-````````````````````````````````
-
-```````````````````````````````` example --sourcepos
-`𐀀`
-.
-<p data-sourcepos="1:1-1:6"><code data-sourcepos="1:1-1:6">𐀀</code></p>
+<p data-sourcepos="1:1-1:4">aɽ好𐀀</p>
 ````````````````````````````````

@@ -997,7 +997,7 @@ In XML output, a grid table is a `grid_table` element.  Its `alignments` and `wi
 
 In the AST, a grid table is a [`NodeValue::GridTable`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.GridTable).  Its [`NodeGridTable`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeGridTable.html) holds a [`GridTableColumn`](https://docs.rs/comrak/latest/comrak/nodes/struct.GridTableColumn.html) for each column, with the column's alignment and its width between the borders, in display columns.  Each row is a [`NodeValue::GridTableRow`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.GridTableRow), whose value is its [`GridTableSection`](https://docs.rs/comrak/latest/comrak/nodes/enum.GridTableSection.html).  Each cell is a [`NodeValue::GridTableCell`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.GridTableCell), whose [`NodeGridTableCell`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeGridTableCell.html) holds the index of its first column and its spans.  A cell's children are blocks.
 
-A row's source position covers the lines between its borders, and a cell's covers its content, inside its borders.  A row with no lines between its borders has an empty range at the start of its top border:
+A row's [source position](../options/sourcepos.html#source-position) covers the lines between its borders, and a cell's covers its content, inside its borders.  A row with no lines between its borders has an [empty range](../options/sourcepos.html#empty-range) at the start of its top border:
 
 ```````````````````````````````` example -e grid-table --sourcepos
 +-----+---+

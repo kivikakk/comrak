@@ -357,7 +357,7 @@ XML output doesn't include attributes.
 
 In the AST, a node's attributes are in its [`Ast`](https://docs.rs/comrak/latest/comrak/nodes/struct.Ast.html)'s `attrs` field, an [`Attributes`](https://docs.rs/comrak/latest/comrak/nodes/struct.Attributes.html) holding the id (`id`), the classes (`classes`), and the key–value attributes (`pairs`).  Comrak parses attributes into the AST whenever their extension is enabled, regardless of render options, meaning custom formatters always see them.
 
-An element's source position covers its attribute blocks:
+An element's [source position](../options/sourcepos.html#source-position) covers its attribute blocks:
 
 ```````````````````````````````` example -e inline-code-attributes --attributes --unsafe --sourcepos
 `a`{#x

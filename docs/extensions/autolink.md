@@ -336,7 +336,7 @@ In XML output, an autolink is a `link` element with the destination in its `dest
 
 In the AST, an autolink is a [`NodeValue::Link`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.Link), like an inline link.  Its [`NodeLink`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeLink.html) holds the destination and an empty title, and its only child is a text node.  Nothing in the AST distinguishes an autolink from an inline link with the same text and destination.
 
-An autolink's source position covers its text:
+An autolink's [source position](../options/sourcepos.html#source-position) covers its text:
 
 ```````````````````````````````` example -e autolink --sourcepos
 x www.a.com y http://b.com z foo@bar.com

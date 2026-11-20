@@ -574,7 +574,7 @@ In XML output, an alert is an `alert` element.  Its `type` attribute is the aler
 
 In the AST, an alert is a [`NodeValue::Alert`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.Alert), with its content as children.  Its [`NodeAlert`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeAlert.html) holds the [`AlertType`](https://docs.rs/comrak/latest/comrak/nodes/enum.AlertType.html) and the title (`None` for the default title).  For a multi-line alert, it also has `multiline` set, and records the fence's length and indentation.
 
-An alert's source position covers all of its lines, including a multi-line alert's closing fence:
+An alert's [source position](../options/sourcepos.html#source-position) covers all of its lines, including a multi-line alert's closing fence:
 
 ```````````````````````````````` example -e alerts --sourcepos
 > [!NOTE] Title

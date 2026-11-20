@@ -898,7 +898,7 @@ In XML output, a table is a `table` element.  It contains a `table_header` eleme
 
 In the AST, a table is a [`NodeValue::Table`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.Table).  Its [`NodeTable`](https://docs.rs/comrak/latest/comrak/nodes/struct.NodeTable.html) holds each column's alignment, and the numbers of columns, rows, and cells parsed from the source.  The cell count excludes [added cells][added cell].  Each row is a [`NodeValue::TableRow`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.TableRow), whose `NodeTableRow`'s `header` field is `true` for the header row.  Each cell is a [`NodeValue::TableCell`](https://docs.rs/comrak/latest/comrak/nodes/enum.NodeValue.html#variant.TableCell).
 
-The source position of an [added cell] is an empty range, just after the row's last cell in the source:
+The [source position](../options/sourcepos.html#source-position) of an [added cell] is an [empty range](../options/sourcepos.html#empty-range), just after the row's last cell in the source:
 
 ```````````````````````````````` example -e table --sourcepos
 | a | b |

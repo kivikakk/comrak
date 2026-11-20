@@ -204,8 +204,6 @@ pub struct Extension<'c> {
     /// Each term must be defined in one paragraph, followed by a blank line,
     /// and then by the details.  Details begins with a colon.
     ///
-    /// Not (yet) compatible with render.sourcepos.
-    ///
     /// ```markdown
     /// First term
     ///
@@ -1289,12 +1287,6 @@ pub struct Render {
     pub list_style: ListStyleType,
 
     /// Include source position attributes in HTML and XML output.
-    ///
-    /// Sourcepos information is reliable for core block items excluding
-    /// lists and list items, all inlines, and most extensions.
-    /// The description lists extension still has issues; see
-    /// <https://github.com/kivikakk/comrak/blob/3bb6d4ce/src/tests/description_lists.rs#L60-L125>.
-    ///
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
