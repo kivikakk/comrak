@@ -184,7 +184,16 @@ fn math_code_block(markdown: &str, html: &str) {
         )
         .replace("</math>", "</code>");
 
-    html_opts!([extension.math_dollars], markdown, &result);
+    html_opts!([extension.math_code], markdown, &result);
+}
+
+#[test]
+fn math_code_block_needs_math_code() {
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        "```math\n2+2\n```",
+        "<pre><code class=\"language-math\">2+2\n</code></pre>\n",
+    );
 }
 
 #[test_case("`2+2`", "<p><code>2+2</code></p>\n")]
@@ -481,4 +490,28 @@ fn math_block_callout_title_roundtrip() {
     assert!(matches!(&math.data().value, NodeValue::MathBlock(m) if m.literal.is_empty()));
     let expected = markdown_to_html(input, &options);
     html_opts_w(input, &expected, true, &options);
+}
+
+#[test]
+fn math_code_block_xml() {
+    let expected = |math_style: &str| {
+        format!(
+            concat!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+                "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+                "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+                "  <code_block info=\"math foo\"{} xml:space=\"preserve\">x\n",
+                "</code_block>\n",
+                "</document>\n",
+            ),
+            math_style
+        )
+    };
+
+    xml_opts("```math foo\nx\n```\n", &expected(""), |_| {});
+    xml_opts(
+        "```math foo\nx\n```\n",
+        &expected(" math_style=\"display\""),
+        |opts| opts.extension.math_code = true,
+    );
 }

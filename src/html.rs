@@ -708,7 +708,8 @@ fn render_code_block<T>(
         let lang = &info[..first_tag];
         let meta = info[first_tag..].trim();
 
-        if lang.eq("math") {
+        let is_math = ncb.is_math(context.options);
+        if is_math {
             render_math_code_block(context, node, &ncb.literal)?;
         } else if !lang.is_empty()
             && let Some(adapter) = context.plugins.render.codefence_renderers.get(lang)
@@ -727,7 +728,7 @@ fn render_code_block<T>(
             return Ok(ChildRendering::HTML);
         }
 
-        if !lang.eq("math") {
+        if !is_math {
             context.cr()?;
 
             #[cfg(feature = "attributes")]
