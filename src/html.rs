@@ -294,8 +294,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
 
     let mut context = Context::new(output, options, plugins, user);
 
-    #[cfg(feature = "attributes")]
-    reserve_explicit_heading_ids(&mut context, root);
+    reserve_written_ids(&mut context, root);
 
     enum Phase {
         Pre,
@@ -525,21 +524,54 @@ fn explicit_id<T>(_context: &Context<T>, _node: Node<'_>) -> Option<String> {
     None
 }
 
-#[cfg(feature = "attributes")]
-fn reserve_explicit_heading_ids<T>(context: &mut Context<T>, root: Node<'_>) {
-    if !(context.options.extension.header_attributes
-        && context.options.extension.header_id_prefix.is_some()
-        && attributes_enabled(context))
-    {
+fn reserve_written_ids<T>(context: &mut Context<T>, root: Node<'_>) {
+    let options = context.options;
+    let Some(prefix) = options.extension.header_id_prefix.as_deref() else {
         return;
-    }
+    };
+
+    let mut written = vec![];
     for node in root.descendants() {
-        if !node_matches!(node, NodeValue::Heading(..)) {
-            continue;
+        let explicit = explicit_id(context, node);
+        match node.data().value {
+            NodeValue::Heading(..) => {
+                if let Some(id) = explicit {
+                    context.anchorizer.reserve(id);
+                }
+                continue;
+            }
+            NodeValue::FootnoteDefinition(ref nfd) => {
+                written.push(format!("fn-{}", href_escaped(options, &nfd.name)));
+            }
+            NodeValue::FootnoteReference(ref nfr) => {
+                written.push(href_escaped(options, &footnote_ref_id(nfr)));
+            }
+            _ => {}
         }
-        if let Some(id) = explicit_id(context, node) {
-            context.anchorizer.reserve(id);
+        written.extend(explicit);
+        if let Some(name) = block_id(options, node) {
+            written.push(format!("^{name}"));
         }
+    }
+
+    for id in written {
+        if let Some(rest) = id.strip_prefix(prefix) {
+            context.anchorizer.reserve(rest.to_string());
+        }
+    }
+}
+
+fn href_escaped(options: &Options<'_>, buffer: &str) -> String {
+    let mut out = String::new();
+    escape_href(&mut out, buffer, options.parse.relaxed_autolinks).unwrap();
+    out
+}
+
+fn footnote_ref_id(nfr: &NodeFootnoteReference) -> String {
+    if nfr.ref_num > 1 {
+        format!("fnref-{}-{}", nfr.name, nfr.ref_num)
+    } else {
+        format!("fnref-{}", nfr.name)
     }
 }
 
@@ -1328,10 +1360,7 @@ fn render_footnote_reference<T>(
     nfr: &NodeFootnoteReference,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        let mut ref_id = format!("fnref-{}", nfr.name);
-        if nfr.ref_num > 1 {
-            ref_id = format!("{}-{}", ref_id, nfr.ref_num);
-        }
+        let ref_id = footnote_ref_id(nfr);
 
         context.write_str("<sup")?;
         render_sourcepos(context, node)?;

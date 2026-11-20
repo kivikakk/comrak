@@ -18,18 +18,24 @@ use std::collections::{HashMap, HashSet};
 /// // Second "stuff" has "-1" appended to make it unique.
 /// assert_eq!("stuff-1", anchorizer.anchorize("Stuff"));
 /// ```
-#[derive(Debug, Default)]
+#[derive(Debug)]
 #[doc(hidden)]
 pub struct Anchorizer {
     ids: HashSet<String>,
     next_suffix: HashMap<String, usize>,
 }
 
+impl Default for Anchorizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Anchorizer {
     /// Construct a new anchorizer.
     pub fn new() -> Self {
         Anchorizer {
-            ids: HashSet::new(),
+            ids: HashSet::from([String::new()]),
             next_suffix: HashMap::new(),
         }
     }
@@ -81,7 +87,6 @@ impl Anchorizer {
         chosen
     }
 
-    #[cfg(feature = "attributes")]
     pub(crate) fn reserve(&mut self, id: String) {
         self.ids.insert(id);
     }
