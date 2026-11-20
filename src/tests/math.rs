@@ -536,6 +536,7 @@ fn math_code_block_xml() {
 }
 
 #[test]
+#[cfg(feature = "attributes")]
 fn math_code_block_attributes() {
     html_opts!(
         [
