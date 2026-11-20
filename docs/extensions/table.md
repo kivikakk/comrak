@@ -991,7 +991,7 @@ With [wikilinks](wikilinks.html), escape the pipe in a wikilink.  Otherwise, it 
 </table>
 ````````````````````````````````
 
-The same applies to a pipe in [dollar math](math-dollars.html):
+The same applies to a pipe in [dollar maths](math.html#dollar-maths):
 
 ```````````````````````````````` example -e table -e math-dollars
 | a | b |

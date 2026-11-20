@@ -218,7 +218,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                         self.output.write_str(&ncb.info)?;
                         self.output.write_str("\"")?;
 
-                        if ncb.info.eq("math") {
+                        if ncb.is_math(self.options) {
                             self.output.write_str(" math_style=\"display\"")?;
                         }
                     }

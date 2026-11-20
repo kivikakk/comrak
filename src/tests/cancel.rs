@@ -21,8 +21,7 @@ fn mixed_input() -> String {
     [
         include_str!("../../docs/extensions/alerts.md"),
         include_str!("../../docs/extensions/description-lists.md"),
-        include_str!("../../docs/extensions/math-code.md"),
-        include_str!("../../docs/extensions/math-dollars.md"),
+        include_str!("../../docs/extensions/math.md"),
         include_str!("../../docs/extensions/multiline-block-quotes.md"),
         include_str!("../../docs/extensions/wikilinks.md"),
         "| a | b |\n|---|---|\n| [ ] c | d@e.com |\n\n",

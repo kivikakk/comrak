@@ -302,24 +302,21 @@ fn syntax_highlighter_still_handles_unmatched_codefence_renderer() {
     html_plugins(input, expected, &plugins);
 }
 
-#[test]
-fn math_codefence_renderer_is_not_overridden_by_custom_renderer() {
-    struct MathAdapter;
+struct MathAdapter;
 
-    impl CodefenceRendererAdapter for MathAdapter {
-        fn write(
-            &self,
-            output: &mut dyn std::fmt::Write,
-            _codefence: &CodefenceMeta<'_>,
-        ) -> std::fmt::Result {
-            output.write_str("<div>custom-math</div>\n")
-        }
+impl CodefenceRendererAdapter for MathAdapter {
+    fn write(
+        &self,
+        output: &mut dyn std::fmt::Write,
+        _codefence: &CodefenceMeta<'_>,
+    ) -> std::fmt::Result {
+        output.write_str("<div>custom-math</div>\n")
     }
+}
 
-    let input = concat!("```math\n", "x^2\n", "```\n");
-    let expected =
-        "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n";
-
+fn math_codefence(math_code: bool) -> String {
+    let mut options = Options::default();
+    options.extension.math_code = math_code;
     let mut plugins = options::Plugins::default();
     let adapter = MathAdapter;
     plugins
@@ -327,7 +324,24 @@ fn math_codefence_renderer_is_not_overridden_by_custom_renderer() {
         .codefence_renderers
         .insert("math".to_string(), &adapter);
 
-    html_plugins(input, expected, &plugins);
+    let arena = Arena::new();
+    let root = parse_document(&arena, "```math\nx^2\n```\n", &options);
+    let mut output = String::new();
+    html::format_document_with_plugins(root, &options, &mut output, &plugins).unwrap();
+    output
+}
+
+#[test]
+fn math_codefence_renderer_is_not_overridden_by_custom_renderer() {
+    assert_eq!(
+        math_codefence(true),
+        "<pre><code class=\"language-math\" data-math-style=\"display\">x^2\n</code></pre>\n"
+    );
+}
+
+#[test]
+fn math_codefence_uses_custom_renderer_without_math_code() {
+    assert_eq!(math_codefence(false), "<div>custom-math</div>\n");
 }
 
 #[test]

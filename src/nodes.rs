@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
+use crate::ctype::isspace;
 #[cfg(feature = "phoenix_heex")]
 pub use crate::parser::phoenix_heex::{HeexNode, NodeHeexBlock};
 #[cfg(feature = "shortcodes")]
@@ -736,6 +737,15 @@ impl NodeCodeBlock {
             closed: true,
             ..NodeCodeBlock::default()
         }
+    }
+
+    pub(crate) fn is_math(&self, options: &crate::Options) -> bool {
+        let lang_end = self
+            .info
+            .bytes()
+            .position(isspace)
+            .unwrap_or(self.info.len());
+        options.extension.math_code && &self.info[..lang_end] == "math"
     }
 }
 

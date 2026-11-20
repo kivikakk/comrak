@@ -60,6 +60,59 @@ fn math_dollars_inline_display(markdown: &str, html: &str) {
     html_opts!([extension.math_dollars], markdown, &result);
 }
 
+#[test_case("$a\\\\$ b$", "<p><math:inline>a\\\\</math> b$</p>\n")]
+#[test_case("$a\\\\\\$b$", "<p><math:inline>a\\\\\\$b</math></p>\n")]
+#[test_case("$$\\$$$", "<p><math:display>\\$</math></p>\n")]
+#[test_case("$$a\\\\$$ b$$", "<p><math:display>a\\\\</math> b$$</p>\n")]
+fn math_dollars_escapes(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math:inline>", "<span data-math-style=\"inline\">")
+        .replace("<math:display>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+}
+
+#[test_case("$a\nb$", "<p><math>a\nb</math></p>\n")]
+#[test_case(
+    "> $a\n> b$",
+    "<blockquote>\n<p><math>a\nb</math></p>\n</blockquote>\n"
+)]
+#[test_case("- $a\n  b$", "<ul>\n<li><math>a\nb</math></li>\n</ul>\n")]
+fn math_dollars_inline_keeps_line_endings(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math>", "<span data-math-style=\"inline\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_dollars], markdown, &result);
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        markdown,
+        &result
+    );
+}
+
+#[test_case("\\(a\\\\)b\\)", "<p><math:inline>a\\\\)b</math></p>\n")]
+#[test_case("\\(a\\\\\\)", "<p><math:inline>a\\\\</math></p>\n")]
+#[test_case("\\[a\\\\]b\\]", "<p><math:display>a\\\\]b</math></p>\n")]
+fn math_latex_escapes(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math:inline>", "<span data-math-style=\"inline\">")
+        .replace("<math:display>", "<span data-math-style=\"display\">")
+        .replace("</math>", "</span>");
+
+    html_opts!([extension.math_latex], markdown, &result);
+}
+
+#[test]
+fn math_latex_keeps_form_escaped_backslash_before_dollar() {
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        "\\(a\\\\$b\\)",
+        "<p><span data-math-style=\"inline\">a\\\\$b</span></p>\n",
+    );
+}
+
 #[test_case("$$\n2+2\n4+4\n$$", "<p><math>\n2+2\n4+4\n</math></p>\n")]
 fn math_dollars_block(markdown: &str, html: &str) {
     let result = html
@@ -127,6 +180,20 @@ fn math_code_inline(markdown: &str, html: &str) {
     html_opts!([extension.math_code], markdown, &result);
 }
 
+#[test_case("$``a`b``$", "<p><math>a`b</math></p>\n")]
+#[test_case("$`` `a` ``$", "<p><math>`a`</math></p>\n")]
+#[test_case("$` a `$", "<p><math>a</math></p>\n")]
+#[test_case("$`a`b`$", "<p>$<code>a</code>b`$</p>\n")]
+#[test_case("$`a` $", "<p>$<code>a</code> $</p>\n")]
+#[test_case("$``a`$", "<p>$``a`$</p>\n")]
+fn math_code_is_a_code_span(markdown: &str, html: &str) {
+    let result = html
+        .replace("<math>", "<code data-math-style=\"inline\">")
+        .replace("</math>", "</code>");
+
+    html_opts!([extension.math_code], markdown, &result);
+}
+
 #[test_case("```math\n2+2\n4+4\n```", "<pre><math>2+2\n4+4\n</math></pre>\n")]
 fn math_code_block(markdown: &str, html: &str) {
     let result = html
@@ -136,7 +203,16 @@ fn math_code_block(markdown: &str, html: &str) {
         )
         .replace("</math>", "</code>");
 
-    html_opts!([extension.math_dollars], markdown, &result);
+    html_opts!([extension.math_code], markdown, &result);
+}
+
+#[test]
+fn math_code_block_needs_math_code() {
+    html_opts!(
+        [extension.math_dollars, extension.math_latex],
+        "```math\n2+2\n```",
+        "<pre><code class=\"language-math\">2+2\n</code></pre>\n",
+    );
 }
 
 #[test_case("`2+2`", "<p><code>2+2</code></p>\n")]
@@ -433,4 +509,28 @@ fn math_block_callout_title_roundtrip() {
     assert!(matches!(&math.data().value, NodeValue::MathBlock(m) if m.literal.is_empty()));
     let expected = markdown_to_html(input, &options);
     html_opts_w(input, &expected, true, &options);
+}
+
+#[test]
+fn math_code_block_xml() {
+    let expected = |math_style: &str| {
+        format!(
+            concat!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+                "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+                "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+                "  <code_block info=\"math foo\"{} xml:space=\"preserve\">x\n",
+                "</code_block>\n",
+                "</document>\n",
+            ),
+            math_style
+        )
+    };
+
+    xml_opts("```math foo\nx\n```\n", &expected(""), |_| {});
+    xml_opts(
+        "```math foo\nx\n```\n",
+        &expected(" math_style=\"display\""),
+        |opts| opts.extension.math_code = true,
+    );
 }

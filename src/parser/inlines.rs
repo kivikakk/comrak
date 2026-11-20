@@ -1355,58 +1355,70 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
         let startpos = self.scanner.pos;
         let opendollars = self.take_while(b'$');
-        let mut code_math = false;
 
-        // check for code math
-        if opendollars == 1 && self.options.extension.math_code && (self.peek_byte() == Some(b'`'))
-        {
-            code_math = true;
-            self.scanner.pos += 1;
+        if opendollars == 1 && self.options.extension.math_code && self.peek_byte() == Some(b'`') {
+            if let Some(node) = self.handle_code_math(startpos, parent_line_offsets) {
+                return node;
+            }
+            self.scanner.pos = startpos + 1;
+            return self.make_inline(NodeValue::Text("$".into()), startpos, startpos);
         }
-        let fence_length = if code_math { 2 } else { opendollars };
 
-        let endpos: Option<usize> = if code_math {
-            self.scan_to_closing_code_dollar()
-        } else {
-            self.scan_to_closing_dollar(opendollars)
-        }
-        .filter(|endpos| endpos - startpos >= fence_length * 2 + 1);
+        let endpos: Option<usize> = self
+            .scan_to_closing_dollar(opendollars)
+            .filter(|endpos| endpos - startpos >= opendollars * 2 + 1);
 
         if let Some(endpos) = endpos {
-            let buf = &self.input[startpos + fence_length..endpos - fence_length];
-            let buf = if code_math || opendollars == 1 {
-                strings::normalize_code(buf)
-            } else {
-                buf.into()
-            };
             let math = NodeMath {
-                dollar_math: !code_math,
+                dollar_math: true,
                 display_math: opendollars == 2,
-                literal: buf.into(),
+                literal: self.input[startpos + opendollars..endpos - opendollars].into(),
             };
             let node = self.make_inline(NodeValue::Math(math), startpos, endpos - 1);
             self.adjust_node_newlines(
                 node,
-                endpos - startpos - fence_length,
-                fence_length,
+                endpos - startpos - opendollars,
+                opendollars,
                 parent_line_offsets,
             );
             node
-        } else if code_math {
-            self.scanner.pos = startpos + 1;
-            self.make_inline(
-                NodeValue::Text("$".into()),
-                self.scanner.pos - 1,
-                self.scanner.pos - 1,
-            )
         } else {
-            self.scanner.pos = startpos + fence_length;
+            self.scanner.pos = startpos + opendollars;
             self.make_inline(
                 NodeValue::Text("$".repeat(opendollars).into()),
-                self.scanner.pos - fence_length,
+                startpos,
                 self.scanner.pos - 1,
             )
         }
+    }
+
+    fn handle_code_math(
+        &mut self,
+        startpos: usize,
+        parent_line_offsets: &[usize],
+    ) -> Option<Node<'a>> {
+        let openticks = self.take_while(b'`');
+        let content_start = self.scanner.pos;
+        let endpos = self.scan_to_closing_backtick(openticks)?;
+        if self.peek_byte() != Some(b'$') {
+            return None;
+        }
+        self.scanner.pos += 1;
+
+        let fence_length = openticks + 1;
+        let math = NodeMath {
+            dollar_math: false,
+            display_math: false,
+            literal: strings::normalize_code(&self.input[content_start..endpos - openticks]).into(),
+        };
+        let node = self.make_inline(NodeValue::Math(math), startpos, self.scanner.pos - 1);
+        self.adjust_node_newlines(
+            node,
+            self.scanner.pos - startpos - fence_length,
+            fence_length,
+            parent_line_offsets,
+        );
+        Some(node)
     }
 
     /////////////////////////////////////
@@ -2168,6 +2180,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             return None;
         }
 
+        let content_start = self.scanner.pos;
         let matcher = dollar_matcher();
         loop {
             let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
@@ -2184,7 +2197,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
 
             // dollar signs must also be backslash-escaped if they occur within math
-            if opendollarlength == 1 && c == b'\\' {
+            let backslashes = self.input.as_bytes()[content_start..self.scanner.pos]
+                .iter()
+                .rev()
+                .take_while(|&&b| b == b'\\')
+                .count();
+            if backslashes % 2 == 1 {
                 self.scanner.pos += 1;
                 continue;
             }
@@ -2202,35 +2220,21 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn scan_to_closing_code_dollar(&mut self) -> Option<usize> {
-        assert!(self.options.extension.math_code);
-
-        let matcher = dollar_matcher();
-        loop {
-            let Some(index) = matcher.find(&self.input.as_bytes()[self.scanner.pos..]) else {
-                self.scanner.pos = self.input.len();
-                return None;
-            };
-            self.scanner.pos += index;
-
-            let c = self.input.as_bytes()[self.scanner.pos - 1];
-            self.scanner.pos += 1;
-            if c == b'`' {
-                return Some(self.scanner.pos);
-            }
-        }
-    }
-
     fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
         let bytes = self.input.as_bytes();
         let input = bytes.get(startpos..)?;
         let matcher = backslash_matcher();
 
+        let mut escaped_until = startpos;
         for index in matcher.iter(input) {
             let pos = startpos + index;
+            if pos < escaped_until {
+                continue;
+            }
             if bytes.get(pos + 1) == Some(&closing_delimiter) {
                 return Some(pos);
             }
+            escaped_until = pos + 2;
         }
 
         None

@@ -1029,33 +1029,38 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
+    fn write_code_span(&mut self, literal: &str) -> fmt::Result {
+        let literal_bytes = literal.as_bytes();
+        let numticks = shortest_unused_sequence(literal_bytes, b'`');
+        for _ in 0..numticks {
+            write!(self, "`")?;
+        }
+
+        let all_space = literal_bytes
+            .iter()
+            .all(|&c| c == b' ' || c == b'\r' || c == b'\n');
+        let has_edge_space =
+            literal_bytes[0] == b' ' || literal_bytes[literal_bytes.len() - 1] == b' ';
+        let has_edge_backtick =
+            literal_bytes[0] == b'`' || literal_bytes[literal_bytes.len() - 1] == b'`';
+
+        let pad = literal.is_empty() || has_edge_backtick || (!all_space && has_edge_space);
+        if pad {
+            write!(self, " ")?
+        }
+        self.output(literal, true, Escaping::Literal)?;
+        if pad {
+            write!(self, " ")?;
+        }
+        for _ in 0..numticks {
+            write!(self, "`")?;
+        }
+        Ok(())
+    }
+
     fn format_code(&mut self, node: Node<'a>, literal: &str, entering: bool) -> fmt::Result {
         if entering {
-            let literal_bytes = literal.as_bytes();
-            let numticks = shortest_unused_sequence(literal_bytes, b'`');
-            for _ in 0..numticks {
-                write!(self, "`")?;
-            }
-
-            let all_space = literal_bytes
-                .iter()
-                .all(|&c| c == b' ' || c == b'\r' || c == b'\n');
-            let has_edge_space =
-                literal_bytes[0] == b' ' || literal_bytes[literal_bytes.len() - 1] == b' ';
-            let has_edge_backtick =
-                literal_bytes[0] == b'`' || literal_bytes[literal_bytes.len() - 1] == b'`';
-
-            let pad = literal.is_empty() || has_edge_backtick || (!all_space && has_edge_space);
-            if pad {
-                write!(self, " ")?
-            }
-            self.output(literal, true, Escaping::Literal)?;
-            if pad {
-                write!(self, " ")?;
-            }
-            for _ in 0..numticks {
-                write!(self, "`")?;
-            }
+            self.write_code_span(literal)?;
             #[cfg(feature = "attributes")]
             self.format_attributes(node, self.inline_code_attributes(), false)?;
         }
@@ -1447,6 +1452,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     fn format_math(&mut self, math: &NodeMath, node: Node<'a>, entering: bool) -> fmt::Result {
         if entering {
             let literal = &math.literal;
+            if !math.dollar_math {
+                self.output("$", false, Escaping::Literal)?;
+                self.write_code_span(literal)?;
+                return self.output("$", false, Escaping::Literal);
+            }
             let latex = self.options.extension.math_latex
                 && ((math.display_math && self.options.extension.math_dollars_block)
                     || !(self.options.extension.math_dollars
@@ -1455,12 +1465,11 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                             node.next_sibling(),
                             self.options.extension.math_code,
                         )));
-            let (start_fence, end_fence) = match (math.dollar_math, math.display_math, latex) {
-                (false, _, _) => ("$`", "`$"),
-                (true, true, true) => ("\\[", "\\]"),
-                (true, false, true) => ("\\(", "\\)"),
-                (true, true, false) => ("$$", "$$"),
-                (true, false, false) => ("$", "$"),
+            let (start_fence, end_fence) = match (math.display_math, latex) {
+                (true, true) => ("\\[", "\\]"),
+                (false, true) => ("\\(", "\\)"),
+                (true, false) => ("$$", "$$"),
+                (false, false) => ("$", "$"),
             };
 
             self.output(start_fence, false, Escaping::Literal)?;
@@ -1869,16 +1878,24 @@ fn dollar_math_holds(math: &NodeMath, next: Option<Node<'_>>, math_code: bool) -
         NodeValue::Text(ref t) => t.as_bytes().first().is_some_and(|&b| isdigit(b)),
         _ => false,
     });
+    let escaped = |end: usize| {
+        literal[..end]
+            .iter()
+            .rev()
+            .take_while(|&&b| b == b'\\')
+            .count()
+            % 2
+            == 1
+    };
     !isspace(first)
         && (!math_code || first != b'`')
         && !isspace(last)
-        && last != b'\\'
-        && !literal.contains(&b'\n')
+        && !escaped(literal.len())
         && !next_is_digit
         && literal
             .iter()
             .enumerate()
-            .all(|(i, &b)| b != b'$' || (i > 0 && literal[i - 1] == b'\\'))
+            .all(|(i, &b)| b != b'$' || escaped(i))
 }
 
 fn tight_container(node: Node<'_>) -> bool {
