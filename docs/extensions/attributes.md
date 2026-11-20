@@ -396,7 +396,7 @@ With both:
 <h1>Heading {#a}</h1>
 ````````````````````````````````
 
-With `--header-id-prefix`, an id attribute replaces a heading's generated `id`, and gets the prefix too.  Generated `id`s avoid any `id` given by an attribute, wherever it appears in the document:
+With [`--header-id-prefix`](../options/header-id-prefix.html), an id attribute replaces a heading's generated `id`, and gets the prefix too.  Generated `id`s avoid any `id` given by an attribute, wherever it appears in the document:
 
 ```````````````````````````````` example -e header-attributes --header-id-prefix user-content- --attributes --unsafe
 # Hi!
