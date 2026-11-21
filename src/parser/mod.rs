@@ -721,7 +721,11 @@ where
         if self.indent >= di.marker_offset + di.padding {
             self.advance_offset(line, di.marker_offset + di.padding, true);
             true
-        } else if self.blank && container.first_child().is_some() {
+        } else if self.blank
+            && container
+                .last_child()
+                .is_some_and(|details| details.first_child().is_some())
+        {
             let offset = self.first_nonspace - self.offset;
             self.advance_offset(line, offset, false);
             true
@@ -1850,30 +1854,30 @@ where
     }
 
     fn handle_description_list(&mut self, container: &mut Node<'a>, line: &str) -> bool {
-        let Some(matched) = self.detect_description_list(container, line) else {
+        let bytes = line.as_bytes();
+        if !self.options.extension.description_lists
+            || !matches!(bytes.get(self.first_nonspace), Some(b':' | b'~'))
+            || !bytes
+                .get(self.first_nonspace + 1)
+                .is_none_or(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
+        {
             return false;
-        };
+        }
 
-        let offset = self.first_nonspace + matched - self.offset;
+        let saved = (self.offset, self.column, self.partially_consumed_tab);
+        let offset = self.first_nonspace + 1 - self.offset;
         self.advance_offset(line, offset, false);
-        if byte_matches(line.as_bytes(), self.offset, strings::is_space_or_tab) {
-            self.advance_offset(line, 1, true);
+        let padding = self.marker_padding(line, 1);
+
+        if !self.parse_desc_list_details(container, padding) {
+            (self.offset, self.column, self.partially_consumed_tab) = saved;
+            return false;
         }
 
         true
     }
 
-    fn detect_description_list(&mut self, container: &mut Node<'a>, line: &str) -> Option<usize> {
-        if self.options.extension.description_lists
-            && let Some(matched) = scanners::description_item_start(&line[self.first_nonspace..])
-            && self.parse_desc_list_details(container, matched)
-        {
-            return Some(matched);
-        }
-        None
-    }
-
-    fn parse_desc_list_details(&mut self, container: &mut Node<'a>, matched: usize) -> bool {
+    fn parse_desc_list_details(&mut self, container: &mut Node<'a>, padding: usize) -> bool {
         let mut tight = false;
         let last_child = match container.last_child() {
             Some(lc) => lc,
@@ -1929,7 +1933,7 @@ where
 
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
-                padding: matched,
+                padding,
                 tight,
             };
 
@@ -1959,7 +1963,7 @@ where
 
             let metadata = NodeDescriptionItem {
                 marker_offset: self.indent,
-                padding: matched,
+                padding,
                 tight,
             };
 
@@ -1993,29 +1997,7 @@ where
 
         let offset = self.first_nonspace + matched - self.offset;
         self.advance_offset(line, offset, false);
-        let (save_partially_consumed_tab, save_offset, save_column) =
-            (self.partially_consumed_tab, self.offset, self.column);
-
-        let bytes = line.as_bytes();
-        while self.column - save_column <= 5
-            && byte_matches(bytes, self.offset, strings::is_space_or_tab)
-        {
-            self.advance_offset(line, 1, true);
-        }
-
-        let i = self.column - save_column;
-        if !(1..5).contains(&i) || byte_matches(bytes, self.offset, strings::is_line_end_char) {
-            nl.padding = matched + 1;
-            self.offset = save_offset;
-            self.column = save_column;
-            self.partially_consumed_tab = save_partially_consumed_tab;
-            if i > 0 {
-                self.advance_offset(line, 1, true);
-            }
-        } else {
-            nl.padding = matched + i;
-        }
-
+        nl.padding = self.marker_padding(line, matched);
         nl.marker_offset = self.indent;
 
         if match container.data().value {
@@ -2032,6 +2014,31 @@ where
         *container = self.add_child(container, NodeValue::Item(nl), self.first_nonspace + 1);
 
         true
+    }
+
+    fn marker_padding(&mut self, line: &str, marker_width: usize) -> usize {
+        let (save_partially_consumed_tab, save_offset, save_column) =
+            (self.partially_consumed_tab, self.offset, self.column);
+
+        let bytes = line.as_bytes();
+        while self.column - save_column <= 5
+            && byte_matches(bytes, self.offset, strings::is_space_or_tab)
+        {
+            self.advance_offset(line, 1, true);
+        }
+
+        let i = self.column - save_column;
+        if !(1..5).contains(&i) || byte_matches(bytes, self.offset, strings::is_line_end_char) {
+            self.offset = save_offset;
+            self.column = save_column;
+            self.partially_consumed_tab = save_partially_consumed_tab;
+            if i > 0 {
+                self.advance_offset(line, 1, true);
+            }
+            marker_width + 1
+        } else {
+            marker_width + i
+        }
     }
 
     fn detect_list(
@@ -2683,6 +2690,11 @@ where
             NodeValue::List(ref mut nl) => {
                 nl.tight = self.determine_list_tight(node);
             }
+            NodeValue::DescriptionItem(ref mut ndi) => {
+                if ndi.tight {
+                    ndi.tight = !Self::loosen_description_item(node);
+                }
+            }
             NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]
                 if self.options.extension.header_attributes
@@ -2740,6 +2752,34 @@ where
             ch = item.next_sibling();
         }
 
+        true
+    }
+
+    fn loosen_description_item(item: Node<'a>) -> bool {
+        let starts_group =
+            |item: Node<'a>| node_matches!(item.first_child().unwrap(), NodeValue::DescriptionTerm);
+        let is_loose = |item: Node<'a>| matches!(item.data().value, NodeValue::DescriptionItem(ref ndi) if !ndi.tight);
+
+        let gap = item
+            .last_child()
+            .unwrap()
+            .children()
+            .any(|block| block.next_sibling().is_some() && block.ends_with_blank_line());
+
+        if !gap {
+            return !starts_group(item) && item.previous_sibling().is_some_and(is_loose);
+        }
+
+        let mut current = item;
+        while !starts_group(current)
+            && let Some(previous) = current.previous_sibling()
+            && !is_loose(previous)
+        {
+            if let NodeValue::DescriptionItem(ref mut ndi) = previous.data_mut().value {
+                ndi.tight = false;
+            }
+            current = previous;
+        }
         true
     }
 

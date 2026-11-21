@@ -920,7 +920,7 @@ fn commonmark_blank_line_after_absorbing_blocks() {
             "<tbody>\n<tr>\n<td>c</td>\n</tr>\n</tbody>\n",
             "</table>\n",
             "</li>\n",
-            "<li>d</li>\n",
+            "<li>\n<p>d</p>\n</li>\n",
             "</ul>\n",
         ),
     );

@@ -206,7 +206,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::MultilineBlockQuote(..) => {}
                 NodeValue::Item(..) => {}
                 NodeValue::DescriptionList => {}
-                NodeValue::DescriptionItem(..) => (),
+                NodeValue::DescriptionItem(ref ndi) => {
+                    write!(self.output, " tight=\"{}\"", ndi.tight)?;
+                }
                 NodeValue::DescriptionTerm => {}
                 NodeValue::DescriptionDetails => {}
                 NodeValue::Heading(ref nh) => {

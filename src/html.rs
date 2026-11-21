@@ -639,7 +639,8 @@ fn is_labelled_container(node: Node<'_>) -> bool {
             | NodeValue::Table(_)
             | NodeValue::Callout(_)
             | NodeValue::Alert(_)
-            | NodeValue::DescriptionList
+            | NodeValue::DescriptionTerm
+            | NodeValue::DescriptionDetails
             | NodeValue::Subtext
             | NodeValue::BlockDirective(_)
             | NodeValue::Item(_)
@@ -652,7 +653,11 @@ fn trailing_marker(node: Node<'_>) -> Option<String> {
     while let Some(last) = current.last_child() {
         match last.data().value {
             NodeValue::BlockId(ref n) => return Some(n.name.clone()),
-            NodeValue::List(_) | NodeValue::Item(_) | NodeValue::TaskItem(_) => return None,
+            NodeValue::List(_)
+            | NodeValue::Item(_)
+            | NodeValue::TaskItem(_)
+            | NodeValue::DescriptionList
+            | NodeValue::DescriptionItem(_) => return None,
             _ => current = last,
         }
     }
@@ -1639,6 +1644,7 @@ fn render_description_details<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.write_str("<dd")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {
@@ -1745,6 +1751,7 @@ fn render_description_term<T>(
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
         context.write_str("<dt")?;
+        render_block_id(context, node)?;
         render_sourcepos(context, node)?;
         context.write_str(">")?;
     } else {

@@ -31,6 +31,14 @@ fn ofm_block_ids_html() {
             "<ul>\n<li id=\"^x\">\n<p>a </p>\n</li>\n<li>\n<p>b</p>\n</li>\n</ul>\n",
         ),
         (
+            "a ^t\n: b ^d\n: c\n",
+            "<dl>\n<dt id=\"^t\">a </dt>\n<dd id=\"^d\">b </dd>\n<dd>c</dd>\n</dl>\n",
+        ),
+        (
+            "> a\n> : b ^x\n",
+            "<blockquote>\n<dl>\n<dt>a</dt>\n<dd id=\"^x\">b </dd>\n</dl>\n</blockquote>\n",
+        ),
+        (
             "- outer\n  - inner ^inner\n",
             "<ul>\n<li>outer\n<ul>\n<li id=\"^inner\">inner </li>\n</ul>\n</li>\n</ul>\n",
         ),
@@ -63,7 +71,8 @@ fn ofm_block_ids_html() {
             [
                 extension.ofm_block_ids,
                 extension.ofm_callouts,
-                extension.table
+                extension.table,
+                extension.description_lists
             ],
             input,
             expected

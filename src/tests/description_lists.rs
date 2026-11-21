@@ -112,7 +112,11 @@ fn description_lists_edge_cases() {
 
     html_opts!([extension.description_lists], ": foo", "<p>: foo</p>\n",);
 
-    html_opts!([extension.description_lists], "a\n:", "<p>a\n:</p>\n",);
+    html_opts!(
+        [extension.description_lists],
+        "a\n:",
+        "<dl>\n<dt>a</dt>\n<dd></dd>\n</dl>\n",
+    );
 
     html_opts!(
         [extension.description_lists],
@@ -124,6 +128,102 @@ fn description_lists_edge_cases() {
             "<ul>\n",
             "<li>baz</li>\n",
             "</ul>\n",
+            "</li>\n",
+            "</ul>\n",
+        ),
+    );
+}
+
+#[test]
+fn description_details_marker_padding() {
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\n  b\n",
+        "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n",
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\n\n  b\n",
+        "<dl>\n<dt>a</dt>\n<dd></dd>\n</dl>\n<p>b</p>\n",
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:     b\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>\n",
+            "<pre><code>b\n",
+            "</code></pre>\n",
+            "</dd>\n",
+            "</dl>\n",
+        ),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\tb\n\n  c\n\n    d\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>b</dd>\n",
+            "</dl>\n",
+            "<p>c</p>\n",
+            "<pre><code>d\n",
+            "</code></pre>\n",
+        ),
+    );
+}
+
+#[test]
+fn description_details_gap_loosens_group() {
+    html_opts!(
+        [extension.description_lists],
+        "a\n: b\n: c\n\n  d\n: e\n\nf\n: g\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>\n<p>b</p>\n</dd>\n",
+            "<dd>\n<p>c</p>\n<p>d</p>\n</dd>\n",
+            "<dd>\n<p>e</p>\n</dd>\n",
+            "<dt>f</dt>\n",
+            "<dd>g</dd>\n",
+            "</dl>\n",
+        ),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n: - b\n\n  - c\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>\n",
+            "<ul>\n",
+            "<li>\n<p>b</p>\n</li>\n",
+            "<li>\n<p>c</p>\n</li>\n",
+            "</ul>\n",
+            "</dd>\n",
+            "</dl>\n",
+        ),
+    );
+}
+
+#[test]
+fn description_list_gap_loosens_enclosing_list() {
+    html_opts!(
+        [extension.description_lists],
+        "- a\n  : b\n\n  c\n",
+        concat!(
+            "<ul>\n",
+            "<li>\n",
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>b</dd>\n",
+            "</dl>\n",
+            "<p>c</p>\n",
             "</li>\n",
             "</ul>\n",
         ),
@@ -297,18 +397,18 @@ fn commonmark_keeps_details_tightness() {
 
 #[test_case(
     "a\n: b\n\n  c\n",
-    "a\n: b\n  \n  c\n",
-    "<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n"
+    "a\n\n: b\n  \n  c\n",
+    "<dl>\n<dt>a</dt>\n<dd>\n<p>b</p>\n<p>c</p>\n</dd>\n</dl>\n"
 )]
 #[test_case(
     "a\n: b\n\n  - x\n  - y\n",
-    "a\n: b\n  \n  - x\n  - y\n",
-    "<dl>\n<dt>a</dt>\n<dd>b\n<ul>\n<li>x</li>\n<li>y</li>\n</ul>\n</dd>\n</dl>\n"
+    "a\n\n: b\n  \n  - x\n  - y\n",
+    "<dl>\n<dt>a</dt>\n<dd>\n<p>b</p>\n<ul>\n<li>x</li>\n<li>y</li>\n</ul>\n</dd>\n</dl>\n"
 )]
 #[test_case(
     "> a\n> : b\n>\n>   c\n",
-    "> a\n> : b\n>   \n>   c\n",
-    "<blockquote>\n<dl>\n<dt>a</dt>\n<dd>b\nc</dd>\n</dl>\n</blockquote>\n"
+    "> a\n> \n> : b\n>   \n>   c\n",
+    "<blockquote>\n<dl>\n<dt>a</dt>\n<dd>\n<p>b</p>\n<p>c</p>\n</dd>\n</dl>\n</blockquote>\n"
 )]
 fn commonmark_indents_details_continuation(input: &str, cm: &str, expected: &str) {
     let mut options = Options::default();
@@ -342,8 +442,8 @@ fn commonmark_escapes_leading_colon(input: &str, cm: &str, expected: &str) {
 )]
 #[test_case(
     "a\n: b\n\n  <div>\n",
-    "a\n: b\n  \n  <div>\n",
-    "<dl>\n<dt>a</dt>\n<dd>b\n<div>\n</dd>\n</dl>\n"
+    "a\n\n: b\n  \n  <div>\n",
+    "<dl>\n<dt>a</dt>\n<dd>\n<p>b</p>\n<div>\n</dd>\n</dl>\n"
 )]
 fn commonmark_indented_html_block_stays_after_details(input: &str, cm: &str, expected: &str) {
     let mut options = Options::default();
