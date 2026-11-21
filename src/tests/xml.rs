@@ -68,3 +68,43 @@ fn sourcepos() {
         |opts| opts.render.sourcepos = true,
     );
 }
+
+#[test]
+fn description_item_tight() {
+    xml_opts(
+        "a\n: b\n\nc\n\n: d\n",
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <description_list>\n",
+            "    <description_item tight=\"true\">\n",
+            "      <description_term>\n",
+            "        <paragraph>\n",
+            "          <text xml:space=\"preserve\">a</text>\n",
+            "        </paragraph>\n",
+            "      </description_term>\n",
+            "      <description_details>\n",
+            "        <paragraph>\n",
+            "          <text xml:space=\"preserve\">b</text>\n",
+            "        </paragraph>\n",
+            "      </description_details>\n",
+            "    </description_item>\n",
+            "    <description_item tight=\"false\">\n",
+            "      <description_term>\n",
+            "        <paragraph>\n",
+            "          <text xml:space=\"preserve\">c</text>\n",
+            "        </paragraph>\n",
+            "      </description_term>\n",
+            "      <description_details>\n",
+            "        <paragraph>\n",
+            "          <text xml:space=\"preserve\">d</text>\n",
+            "        </paragraph>\n",
+            "      </description_details>\n",
+            "    </description_item>\n",
+            "  </description_list>\n",
+            "</document>\n",
+        ),
+        |opts| opts.extension.description_lists = true,
+    );
+}
