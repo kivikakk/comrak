@@ -519,15 +519,6 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
 */
 }
 
-pub fn description_item_start(s: &str) -> Option<usize> {
-    let mut cursor = 0;
-    let len = s.len();
-/*!re2c
-    [:~] ([ \t]+) { return Some(cursor); }
-    * { return None; }
-*/
-}
-
 #[cfg(feature = "phoenix_heex")]
 pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;

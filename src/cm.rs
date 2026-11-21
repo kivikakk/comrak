@@ -750,6 +750,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             self.prefix.push_str(&" ".repeat(width));
         } else {
             self.prefix.truncate(self.prefix.len() - width);
+            self.cr();
         }
         Ok(())
     }

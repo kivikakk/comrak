@@ -112,7 +112,11 @@ fn description_lists_edge_cases() {
 
     html_opts!([extension.description_lists], ": foo", "<p>: foo</p>\n",);
 
-    html_opts!([extension.description_lists], "a\n:", "<p>a\n:</p>\n",);
+    html_opts!(
+        [extension.description_lists],
+        "a\n:",
+        "<dl>\n<dt>a</dt>\n<dd></dd>\n</dl>\n",
+    );
 
     html_opts!(
         [extension.description_lists],
@@ -126,6 +130,49 @@ fn description_lists_edge_cases() {
             "</ul>\n",
             "</li>\n",
             "</ul>\n",
+        ),
+    );
+}
+
+#[test]
+fn description_details_marker_padding() {
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\n  b\n",
+        "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n",
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\n\n  b\n",
+        "<dl>\n<dt>a</dt>\n<dd></dd>\n</dl>\n<p>b</p>\n",
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:     b\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>\n",
+            "<pre><code>b\n",
+            "</code></pre>\n",
+            "</dd>\n",
+            "</dl>\n",
+        ),
+    );
+
+    html_opts!(
+        [extension.description_lists],
+        "a\n:\tb\n\n  c\n\n    d\n",
+        concat!(
+            "<dl>\n",
+            "<dt>a</dt>\n",
+            "<dd>b</dd>\n",
+            "</dl>\n",
+            "<p>c</p>\n",
+            "<pre><code>d\n",
+            "</code></pre>\n",
         ),
     );
 }
