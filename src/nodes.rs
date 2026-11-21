@@ -1804,9 +1804,12 @@ impl<'a> arena_tree::Node<'a, RefCell<Ast>> {
                 return true;
             }
             match cur.data().value {
-                NodeValue::List(..) | NodeValue::Item(..) | NodeValue::TaskItem(..) => {
-                    it = cur.last_child()
-                }
+                NodeValue::List(..)
+                | NodeValue::Item(..)
+                | NodeValue::TaskItem(..)
+                | NodeValue::DescriptionList
+                | NodeValue::DescriptionItem(..)
+                | NodeValue::DescriptionDetails => it = cur.last_child(),
                 _ => it = None,
             };
         }

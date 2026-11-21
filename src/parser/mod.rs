@@ -2690,6 +2690,11 @@ where
             NodeValue::List(ref mut nl) => {
                 nl.tight = self.determine_list_tight(node);
             }
+            NodeValue::DescriptionItem(ref mut ndi) => {
+                if ndi.tight {
+                    ndi.tight = !Self::loosen_description_item(node);
+                }
+            }
             NodeValue::Heading(_) => {
                 #[cfg(feature = "attributes")]
                 if self.options.extension.header_attributes
@@ -2747,6 +2752,34 @@ where
             ch = item.next_sibling();
         }
 
+        true
+    }
+
+    fn loosen_description_item(item: Node<'a>) -> bool {
+        let starts_group =
+            |item: Node<'a>| node_matches!(item.first_child().unwrap(), NodeValue::DescriptionTerm);
+        let is_loose = |item: Node<'a>| matches!(item.data().value, NodeValue::DescriptionItem(ref ndi) if !ndi.tight);
+
+        let gap = item
+            .last_child()
+            .unwrap()
+            .children()
+            .any(|block| block.next_sibling().is_some() && block.ends_with_blank_line());
+
+        if !gap {
+            return !starts_group(item) && item.previous_sibling().is_some_and(is_loose);
+        }
+
+        let mut current = item;
+        while !starts_group(current)
+            && let Some(previous) = current.previous_sibling()
+            && !is_loose(previous)
+        {
+            if let NodeValue::DescriptionItem(ref mut ndi) = previous.data_mut().value {
+                ndi.tight = false;
+            }
+            current = previous;
+        }
         true
     }
 
