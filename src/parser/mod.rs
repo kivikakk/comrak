@@ -51,6 +51,11 @@ const CODE_INDENT: usize = 4;
 // be nested this deeply.
 const MAX_LIST_DEPTH: usize = 100;
 
+// Blockquote nesting is otherwise unbounded, and consumers that walk the AST
+// recursively can overflow the stack on a contrived document. This caps the
+// absolute depth of newly opened blocks; deeper markers stay literal text.
+pub(crate) const MAX_BLOCK_DEPTH: usize = 100;
+
 const MAX_REF_SIZE_FLOOR: usize = 100_000;
 
 /// Parse a Markdown document to an AST.
@@ -946,7 +951,6 @@ where
     ) {
         let mut maybe_lazy =
             node_matches!(self.current, NodeValue::Paragraph) || allow_lazy_callout;
-        let mut depth = 0;
 
         while !node_matches!(
             container,
@@ -976,7 +980,15 @@ where
             if self.cancellation.step() {
                 break;
             }
-            depth += 1;
+            // The absolute depth of the current container; the root is depth 0.
+            // Recomputed each iteration, as handlers can move the container by
+            // more than one level (a list marker opens a list and its item); the
+            // walk is bounded by the cap below, so the loop costs at most
+            // MAX_BLOCK_DEPTH^2 pointer hops per line.
+            let depth = container.ancestors().count().saturating_sub(1);
+            if depth >= MAX_BLOCK_DEPTH {
+                break;
+            }
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 

@@ -399,3 +399,96 @@ fn pathological_grid_table_consecutive_in_tight_list() {
     let html = markdown_to_html(&commonmark, &options);
     assert_eq!(html.matches("<table>").count(), n);
 }
+
+#[test]
+#[timeout(4000)]
+fn pathological_blockquote_nesting() {
+    let n = 50_000;
+    let input = format!("{}deep\n", "> ".repeat(n));
+
+    let arena = Arena::new();
+    let root = parse_document(&arena, &input, &Options::default());
+    // The root counts as depth 0, so the deepest node is the text inside the
+    // paragraph inside the innermost blockquote.
+    assert!(
+        max_ast_depth(root) <= crate::parser::MAX_BLOCK_DEPTH + 2,
+        "blockquote nesting exceeded the cap"
+    );
+    // Markers past the cap stay literal text in the innermost blockquote.
+    let mut output = String::new();
+    html::format_document(root, &Options::default(), &mut output).unwrap();
+    assert!(output.contains("deep"));
+    assert!(output.contains("&gt; deep"));
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_blockquote_nesting_across_lines() {
+    let n = 500;
+    let mut input = String::new();
+    for i in 1..=n {
+        input.push_str(&"> ".repeat(i));
+        input.push_str("deep\n");
+    }
+
+    let arena = Arena::new();
+    let root = parse_document(&arena, &input, &Options::default());
+    assert!(
+        max_ast_depth(root) <= crate::parser::MAX_BLOCK_DEPTH + 2,
+        "blockquote nesting exceeded the cap"
+    );
+}
+
+// A marker past the cap stays literal text, so a later closing marker has
+// nothing to close and is just an opener like any other: the fence below
+// swallows the rest of the document instead of the blockquote chain.
+#[test]
+#[timeout(4000)]
+fn pathological_blockquote_nesting_unclosed_fence() {
+    let input = format!(
+        "{}```\nx\n```\ny\n",
+        "> ".repeat(crate::parser::MAX_BLOCK_DEPTH)
+    );
+
+    let arena = Arena::new();
+    let root = parse_document(&arena, &input, &Options::default());
+    assert!(max_ast_depth(root) <= crate::parser::MAX_BLOCK_DEPTH + 2);
+
+    let mut html = String::new();
+    html::format_document(root, &Options::default(), &mut html).unwrap();
+    assert!(html.contains("<pre><code>y\n</code></pre>"));
+}
+
+// A list level costs two levels of AST (the list, then the item), so the cap
+// bites sooner here than it does for blockquotes.
+#[test]
+#[timeout(4000)]
+fn pathological_list_nesting_across_lines() {
+    let n = 150;
+    let mut input = String::new();
+    for i in 0..n {
+        input.push_str(&"  ".repeat(i));
+        input.push_str("- a\n");
+    }
+
+    let arena = Arena::new();
+    let root = parse_document(&arena, &input, &Options::default());
+    assert!(
+        max_ast_depth(root) <= crate::parser::MAX_BLOCK_DEPTH + 2,
+        "list nesting exceeded the cap"
+    );
+}
+
+fn max_ast_depth(root: Node<'_>) -> usize {
+    let mut stack = vec![(root, 0)];
+    let mut max = 0;
+
+    while let Some((node, depth)) = stack.pop() {
+        max = max.max(depth);
+        for child in node.reverse_children() {
+            stack.push((child, depth + 1));
+        }
+    }
+
+    max
+}
