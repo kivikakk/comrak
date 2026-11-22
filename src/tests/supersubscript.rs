@@ -104,3 +104,15 @@ fn subscript_leaves_strikethrough_flanking_alone() {
         "<p>a~~(b)~~ c and a<sub>(b)</sub> c</p>\n",
     );
 }
+
+#[test]
+fn carets_pair_one_at_a_time() {
+    html_opts!(
+        [extension.superscript],
+        "^^a^^ ^^^b^^^ ^^c^\n",
+        concat!(
+            "<p><sup><sup>a</sup></sup> <sup><sup><sup>b</sup></sup></sup> ",
+            "^<sup>c</sup></p>\n"
+        ),
+    );
+}

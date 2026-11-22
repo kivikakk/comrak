@@ -1679,7 +1679,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let opener_byte = opener.inl.data().value.text().unwrap().as_bytes()[0];
         let mut opener_num_bytes = opener.inl.data().value.text().unwrap().len();
         let mut closer_num_bytes = closer.inl.data().value.text().unwrap().len();
-        let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
+        let use_delims = if opener_byte != b'^' && closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
             1
