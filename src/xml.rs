@@ -360,7 +360,9 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::Subscript => {}
                 NodeValue::SpoileredText => {}
                 NodeValue::EscapedTag(data) => {
-                    self.output.write_str(data)?;
+                    self.output.write_str(" tag=\"")?;
+                    self.escape(data)?;
+                    self.output.write_str("\"")?;
                 }
                 NodeValue::MultilineComment(ref nmc) => {
                     self.output.write_str(" xml:space=\"preserve\">")?;
