@@ -2300,11 +2300,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
         let mut two_before_char: Option<char> = None;
 
+        let ignore_punctuation = (self.options.extension.superscript && b == b'^')
+            || (self.options.extension.subscript && b == b'~' && numdelims == 1);
+
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
-            && (!after_char.is_cmark_punctuation()
-                || (self.options.extension.superscript && b == b'^')
-                || (self.options.extension.subscript && b == b'~')
+            && (ignore_punctuation
+                || !after_char.is_cmark_punctuation()
                 || before_char.is_whitespace()
                 || if !cjk_friendly {
                     before_char.is_cmark_punctuation()
@@ -2328,28 +2330,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 });
         let right_flanking = numdelims > 0
             && !before_char.is_whitespace()
-            && (!if !cjk_friendly {
-                before_char.is_cmark_punctuation()
-            } else {
-                !after_char.is_cjk()
-                    && if before_char.is_non_emoji_general_purpose_vs() {
-                        let two_before_char = if let Some(two_before_char_) = two_before_char {
-                            two_before_char_
-                        } else if let Some(before_char_pos) = before_char_pos {
-                            let (two_before_char_, _) = self.get_before_char(before_char_pos);
-                            two_before_char = Some(two_before_char_);
-                            two_before_char_
+            && (ignore_punctuation
+                || !if !cjk_friendly {
+                    before_char.is_cmark_punctuation()
+                } else {
+                    !after_char.is_cjk()
+                        && if before_char.is_non_emoji_general_purpose_vs() {
+                            let two_before_char = if let Some(two_before_char_) = two_before_char {
+                                two_before_char_
+                            } else if let Some(before_char_pos) = before_char_pos {
+                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                two_before_char = Some(two_before_char_);
+                                two_before_char_
+                            } else {
+                                '\n'
+                            };
+                            !two_before_char.is_cjk()
+                                && two_before_char.is_cmark_punctuation()
+                                && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
+                                    && before_char == '\u{fe01}')
                         } else {
-                            '\n'
-                        };
-                        !two_before_char.is_cjk()
-                            && two_before_char.is_cmark_punctuation()
-                            && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
-                                && before_char == '\u{fe01}')
-                    } else {
-                        !before_char.is_cjk() && before_char.is_cmark_punctuation()
-                    }
-            } || after_char.is_whitespace()
+                            !before_char.is_cjk() && before_char.is_cmark_punctuation()
+                        }
+                }
+                || after_char.is_whitespace()
                 || after_char.is_cmark_punctuation());
 
         if b == b'_' {

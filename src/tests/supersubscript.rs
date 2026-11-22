@@ -69,3 +69,38 @@ fn superscript_beside_footnote_references() {
         ),
     );
 }
+
+#[test]
+fn punctuation_does_not_affect_flanking() {
+    html_opts!(
+        [extension.superscript, extension.subscript],
+        "a^b.^c a~b.~c 「^a」^b 「~a」~b x^(1)^y\n",
+        concat!(
+            "<p>a<sup>b.</sup>c a<sub>b.</sub>c 「<sup>a」</sup>b 「<sub>a」</sub>b ",
+            "x<sup>(1)</sup>y</p>\n"
+        ),
+    );
+}
+
+#[test]
+fn whitespace_still_affects_flanking() {
+    html_opts!(
+        [extension.superscript, extension.subscript],
+        "a^ b^ a^b ^ a~ b~ a~b ~\n",
+        "<p>a^ b^ a^b ^ a~ b~ a~b ~</p>\n",
+    );
+}
+
+#[test]
+fn subscript_leaves_strikethrough_flanking_alone() {
+    html_opts!(
+        [extension.strikethrough],
+        "a~~(b)~~ c\n",
+        "<p>a~~(b)~~ c</p>\n",
+    );
+    html_opts!(
+        [extension.strikethrough, extension.subscript],
+        "a~~(b)~~ c and a~(b)~ c\n",
+        "<p>a~~(b)~~ c and a<sub>(b)</sub> c</p>\n",
+    );
+}
